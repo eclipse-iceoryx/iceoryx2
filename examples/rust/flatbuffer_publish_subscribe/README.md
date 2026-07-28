@@ -39,7 +39,7 @@ To use the FlatBuffers example, first install the FlatBuffers package.
 pacman -S flatbuffers
 
 # Debian/Ubuntu
-apt install flatbuffers
+apt install libflatbuffers-dev
 ```
 
 ## Usage
