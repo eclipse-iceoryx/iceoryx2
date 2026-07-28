@@ -17,7 +17,6 @@ use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt};
 use iceoryx2::prelude::*;
 use iceoryx2::service::attribute::{AttributeKey, AttributeValue};
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;

@@ -96,14 +96,14 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl #struct_storage_name {
             const fn assert_storage_layout() {
-                static_assert_ge::<
-                { ::core::mem::align_of::<#struct_storage_name>() },
-                { ::core::mem::align_of::<Option<#my_type>>() },
-                >();
-                static_assert_ge::<
-                { ::core::mem::size_of::<#struct_storage_name>() },
-                { ::core::mem::size_of::<Option<#my_type>>() },
-                >();
+                iceoryx2_bb_elementary::static_assert_ge!(
+                    ::core::mem::align_of::<#struct_storage_name>(),
+                    ::core::mem::align_of::<Option<#my_type>>()
+                );
+                iceoryx2_bb_elementary::static_assert_ge!(
+                    ::core::mem::size_of::<#struct_storage_name>(),
+                    ::core::mem::size_of::<Option<#my_type>>()
+                );
             }
 
             fn init(&mut self, value: #my_type) {

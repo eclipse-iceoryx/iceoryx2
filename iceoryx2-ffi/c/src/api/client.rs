@@ -17,7 +17,6 @@ use core::mem::ManuallyDrop;
 use iceoryx2::pending_response::PendingResponse;
 use iceoryx2::port::client::Client;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::IOX2_OK;

@@ -25,7 +25,6 @@ use super::{
 };
 use iceoryx2::active_request::ActiveRequest;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition

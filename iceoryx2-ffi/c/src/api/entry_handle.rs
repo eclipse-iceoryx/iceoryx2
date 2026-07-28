@@ -19,7 +19,6 @@ use crate::{
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
 use iceoryx2::port::reader::__InternalEntryHandle;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition

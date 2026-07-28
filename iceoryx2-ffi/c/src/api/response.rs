@@ -16,7 +16,6 @@
 
 use core::{ffi::c_void, mem::ManuallyDrop};
 use iceoryx2::response::Response;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use super::{

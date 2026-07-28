@@ -25,7 +25,6 @@ use crate::{
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::port::reader::{EntryHandleError, Reader};
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 

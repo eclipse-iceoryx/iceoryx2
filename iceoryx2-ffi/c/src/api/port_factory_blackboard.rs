@@ -28,7 +28,7 @@ use core::mem::ManuallyDrop;
 use core::time::Duration;
 use iceoryx2::service::dynamic_config::blackboard::{ReaderDetails, WriterDetails};
 use iceoryx2::service::port_factory::blackboard::PortFactory;
-use iceoryx2_bb_elementary::{CallbackProgression, static_assert::*};
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition

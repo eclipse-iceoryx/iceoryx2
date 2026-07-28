@@ -21,7 +21,6 @@ use crate::api::{
 
 use iceoryx2::port::subscriber::SubscriberCreateError;
 use iceoryx2::service::port_factory::subscriber::PortFactorySubscriber;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;

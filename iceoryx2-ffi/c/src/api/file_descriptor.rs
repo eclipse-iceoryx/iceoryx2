@@ -12,7 +12,6 @@
 
 #![allow(non_camel_case_types)]
 
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_posix::{
     file_descriptor::{FileDescriptor, FileDescriptorBased},
     file_descriptor_set::SynchronousMultiplexing,

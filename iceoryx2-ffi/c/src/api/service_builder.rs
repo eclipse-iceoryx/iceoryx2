@@ -27,7 +27,6 @@ use iceoryx2::service::builder::{
     request_response::Builder as ServiceBuilderRequestResponse,
 };
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::mem::ManuallyDrop;

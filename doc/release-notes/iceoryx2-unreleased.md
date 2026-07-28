@@ -62,6 +62,7 @@
 * [#1613](https://github.com/eclipse-iceoryx/iceoryx2/issues/1613) Remove `NonNullCompat` after moving to Rust 1.89
 * [#1776](https://github.com/eclipse-iceoryx/iceoryx2/issues/1776) Rename AtomicCopy::__for_each_field() to for_each_field()
 * [#1845](https://github.com/eclipse-iceoryx/iceoryx2/issues/1845) Reduce imports for usage of the `semantic_string` macro
+* [#1853](https://github.com/eclipse-iceoryx/iceoryx2/issues/1853) Improve error message in static asserts
 
 ### Workflow
 

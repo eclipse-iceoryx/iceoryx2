@@ -37,7 +37,7 @@ use alloc::string::String;
 
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary::static_assert::{static_assert_ge, static_assert_le};
+use iceoryx2_bb_elementary::{static_assert_ge, static_assert_le};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_pal_configuration::FILENAME_LENGTH;
 
@@ -101,8 +101,8 @@ impl<const CAPACITY: usize>
     for RestrictedFileName<CAPACITY>
 {
     unsafe fn new_empty() -> Self {
-        static_assert_le::<{ CAPACITY }, { FILENAME_LENGTH }>();
-        static_assert_ge::<{ CAPACITY }, 1>();
+        static_assert_le!(CAPACITY, FILENAME_LENGTH);
+        static_assert_ge!(CAPACITY, 1);
 
         Self {
             value: iceoryx2_bb_container::string::StaticString::new(),

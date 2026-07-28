@@ -25,7 +25,6 @@ use super::{AssertNonNullHandle, HandleToType, IntoCInt, iox2_signal_handling_mo
 use iceoryx2::waitset::{
     WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
 };
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
