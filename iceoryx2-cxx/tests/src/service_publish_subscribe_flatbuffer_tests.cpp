@@ -17,12 +17,15 @@
 #include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/testing.hpp"
 #include "iox2/type_variant.hpp"
 
 #include "test.hpp"
 #include <array>
 #include <cstdint>
+#include <cstdio>
 #include <flatbuffers/flatbuffers.h>
+#include <fstream>
 #include <gtest/gtest.h>
 
 namespace {
@@ -176,7 +179,7 @@ inline void FinishSizePrefixedUnboundedDataBuffer(::flatbuffers::FlatBufferBuild
 } // namespace Example
 // NOLINTEND
 
-std::string SchemaFile = R"(
+const char* SCHEMA_FILE = R"(
     namespace Example;
 
     table Entry {
@@ -197,12 +200,31 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
   public:
     static constexpr ServiceType TYPE = T::TYPE;
 
-    void create_schema_file(const std::string& content) {
+
+    ServicePublishSubscribeFlatbufferTest()
+        : m_schema_file { iox2::testing::generate_file_path() } {
+        iox2::testing::create_test_directory();
     }
+
+    ~ServicePublishSubscribeFlatbufferTest() {
+        static_cast<void>(std::remove(m_schema_file.as_string().unchecked_access().c_str()));
+    }
+
+    void create_schema_file(const char* content) {
+        std::ofstream file(m_schema_file.as_string().unchecked_access().c_str());
+        EXPECT_THAT(file.is_open(), Eq(true));
+        if (file.is_open()) {
+            file << content;
+        }
+    }
+
+  private:
+    bb::FilePath m_schema_file;
 };
 
 TYPED_TEST_SUITE(ServicePublishSubscribeFlatbufferTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, created_service_does_exist) {
+    this->create_schema_file(SCHEMA_FILE);
 }
 } // namespace

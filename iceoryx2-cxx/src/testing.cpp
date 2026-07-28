@@ -33,7 +33,7 @@ auto generate_file_path() -> bb::FilePath {
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) C library abstraction
     char buffer[bb::platform::IOX2_MAX_PATH_LENGTH] {};
 
-    iox2_testing_generate_file_name(&buffer[0], bb::platform::IOX2_MAX_PATH_LENGTH);
+    iox2_testing_generate_file_path(&buffer[0], bb::platform::IOX2_MAX_PATH_LENGTH);
     return bb::FilePath::create(&buffer[0]).value();
 }
 
