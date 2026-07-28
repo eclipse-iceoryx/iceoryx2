@@ -16,6 +16,9 @@
 
 #include "iox2/iceoryx2.hpp"
 #include "unbounded_data_generated.h"
+// Explicitly sets the type name of our generated type so that the auto path-lookup
+// works.
+IOX2_DEFINE_TYPE_NAME(Example::UnboundedData, "UnboundedData");
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 

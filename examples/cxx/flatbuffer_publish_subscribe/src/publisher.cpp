@@ -20,6 +20,10 @@
 #include "iox2/iceoryx2.hpp"
 #include "unbounded_data_generated.h"
 
+// Explicitly sets the type name of our generated type so that the auto path-lookup
+// works.
+IOX2_DEFINE_TYPE_NAME(Example::UnboundedData, "UnboundedData");
+
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main() -> int {
@@ -27,6 +31,7 @@ auto main() -> int {
     using namespace Example;
 
     set_log_level_from_env_or(LogLevel::Info);
+
 
     const auto* lookup_path = std::getenv("IOX2_FLATBUFFER_SCHEMA_PATH");
     if (lookup_path == nullptr) {
