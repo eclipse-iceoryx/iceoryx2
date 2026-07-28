@@ -85,6 +85,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_publish_subscribe.cpp
     src/static_config_request_response.cpp
     src/subscriber_details.cpp
+    src/testing.cpp
     src/type_variant.cpp
     src/unique_node_id.cpp
     src/unique_port_id.cpp
