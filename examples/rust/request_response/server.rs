@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             active_request.send_copy(response)?;
 
             // use zero copy API, send out some responses to demonstrate the streaming API
-            for n in 0..*active_request % 2 {
+            for n in 0..active_request.payload() % 2 {
                 let response = active_request.loan_uninit()?;
                 let response = response.write_payload(TransmissionData {
                     x: counter * (n as i32 + 1),
