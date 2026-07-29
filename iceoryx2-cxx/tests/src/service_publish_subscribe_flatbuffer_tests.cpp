@@ -605,4 +605,43 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_can_read_its_own_ser
         ASSERT_EQ(data->entries()->Get(i)->data_2(), 221);
     }
 }
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_with_user_header_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .template user_header<uint64_t>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value().publisher_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "Weg vom Tisch!", 123, 456, 2); // NOLINT
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    initialized_sample.user_header_mut() = 819231; // NOLINT
+    send(std::move(initialized_sample)).value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value()->user_header(), Eq(819231));
+    const auto* recv_data = recv_sample_result.value()->payload_root();
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "Weg vom Tisch!");
+    ASSERT_EQ(recv_data->entries()->size(), 2);
+
+    for (auto i = 0; i < 2; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 123);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 456);
+    }
+}
 } // namespace

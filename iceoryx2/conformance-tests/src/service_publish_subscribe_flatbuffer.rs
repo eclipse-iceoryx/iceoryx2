@@ -818,4 +818,43 @@ pub mod service_publish_subscribe_flatbuffer {
             assert_that!(unbounded_data.entries().unwrap().get(n).data_2(), eq 221);
         }
     }
+
+    #[conformance_test]
+    pub fn publish_subscribe_with_user_header_works<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_schema_file(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .user_header::<u128>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data = produce_example_data(builder, "nala rocket", 123, 456, 1);
+        let mut sample = sample.assume_init(unbounded_data);
+        *sample.user_header_mut() = 44564;
+        sample.send().unwrap();
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        let unbounded_data = sample.payload_root().unwrap();
+
+        assert_that!(*sample.user_header(), eq 44564);
+        assert_that!(unbounded_data.title(), eq Some("nala rocket"));
+        assert_that!(unbounded_data.entries().unwrap().len(), eq 1);
+        assert_that!(unbounded_data.entries().unwrap().get(0).data_1(), eq 123);
+        assert_that!(unbounded_data.entries().unwrap().get(0).data_2(), eq 456);
+    }
 }
