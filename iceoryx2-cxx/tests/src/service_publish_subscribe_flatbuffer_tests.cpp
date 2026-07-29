@@ -18,19 +18,13 @@
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/bb/static_string.hpp"
-#include "iox2/custom_header_marker.hpp"
-#include "iox2/custom_payload_marker.hpp"
-#include "iox2/legacy/uninitialized_array.hpp"
-#include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
-#include "iox2/service.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/testing.hpp"
 #include "iox2/type_name.hpp"
-#include "iox2/type_variant.hpp"
 
 #include "test.hpp"
-#include <array>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -191,7 +185,7 @@ IOX2_DEFINE_TYPE_NAME(Example::UnboundedData, "UnboundedData");
 namespace {
 using namespace iox2;
 
-const char* SCHEMA = R"(
+constexpr const char* SCHEMA = R"(
     namespace Example;
 
     table Entry {
@@ -207,7 +201,7 @@ const char* SCHEMA = R"(
     root_type UnboundedData;
 )";
 
-const char* ALT_SCHEMA = R"(
+constexpr const char* ALT_SCHEMA = R"(
     namespace Example;
 
     table BoundedData {
@@ -224,17 +218,7 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
   public:
     static constexpr ServiceType TYPE = T::TYPE;
 
-
-    ServicePublishSubscribeFlatbufferTest() {
-        iox2::testing::create_test_directory();
-    }
-
-    ~ServicePublishSubscribeFlatbufferTest() override {
-        for (auto file : m_schema_files) {
-            static_cast<void>(std::remove(file.as_string().unchecked_access().c_str()));
-        }
-    }
-
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) fine for tests
     auto create_schema_file(const char* content, const char* file_name = "") -> bb::FilePath {
         auto schema_file_path = iox2::testing::test_directory_path();
         auto file_name_str =
@@ -254,6 +238,17 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
 
         m_schema_files.push_back(schema_file);
         return schema_file;
+    }
+
+  protected:
+    void SetUp() override {
+        iox2::testing::create_test_directory();
+    }
+
+    void TearDown() override {
+        for (auto file : m_schema_files) {
+            static_cast<void>(std::remove(file.as_string().unchecked_access().c_str()));
+        }
     }
 
   private:
@@ -372,10 +367,11 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, schema_path_lookup_works_when_
 }
 
 // Helper function to produce example Flatbuffer data
+// NOLINTNEXTLINE(readability-function-size) fine for tests
 auto produce_example_data(flatbuffers::FlatBufferBuilder& builder,
                           const char* title,
                           int32_t data_1,
-                          uint64_t data_2,
+                          uint64_t data_2, // NOLINT (bugprone-easily-swappable-parameters) fine for tests
                           size_t number_of_entries) -> flatbuffers::Offset<Example::UnboundedData> {
     auto title_str = builder.CreateString(title);
     std::vector<flatbuffers::Offset<Example::Entry>> entries;
@@ -387,6 +383,7 @@ auto produce_example_data(flatbuffers::FlatBufferBuilder& builder,
     return Example::CreateUnboundedData(builder, title_str, entries_vec);
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file = this->create_schema_file(SCHEMA);
@@ -417,12 +414,13 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_works) {
     ASSERT_STREQ(recv_data->title()->c_str(), "Weg vom Tisch!");
     ASSERT_EQ(recv_data->entries()->size(), 2);
 
-    for (auto i = 0; i < 2; ++i) {
+    for (auto i = 0U; i < 2; ++i) {
         ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 123);
         ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 456);
     }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
            publisher_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_power_of_two) {
     constexpr int64_t ARRAY_SIZE = 50;
@@ -459,12 +457,13 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
 
     ASSERT_STREQ(recv_data->title()->c_str(), "zombieschlaechter");
     ASSERT_EQ(recv_data->entries()->size(), ARRAY_SIZE);
-    for (auto i = 0; i < ARRAY_SIZE; ++i) {
+    for (auto i = 0U; i < ARRAY_SIZE; ++i) {
         ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 78);
         ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 9);
     }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
            publisher_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_best_fit) {
     constexpr int64_t ARRAY_SIZE = 50;
@@ -502,7 +501,7 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
 
     ASSERT_STREQ(recv_data->title()->c_str(), "I am hungry, no I do not want to lick that frog!");
     ASSERT_EQ(recv_data->entries()->size(), ARRAY_SIZE);
-    for (auto i = 0; i < ARRAY_SIZE; ++i) {
+    for (auto i = 0U; i < ARRAY_SIZE; ++i) {
         ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 18);
         ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 19);
     }
@@ -537,6 +536,7 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_does_not_allocate_wh
     EXPECT_DEATH(builder.CreateString("oh no more memory"), "");
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, data_can_be_reconstructed_from_payload_bytes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file = this->create_schema_file(SCHEMA);
@@ -568,12 +568,13 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, data_can_be_reconstructed_from
 
     ASSERT_STREQ(recv_data->title()->c_str(), "are chameleons good at multi-tasking?");
     ASSERT_EQ(recv_data->entries()->size(), 1);
-    for (auto i = 0; i < 1; ++i) {
+    for (auto i = 0U; i < 1; ++i) {
         ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 44);
         ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 55);
     }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_can_read_its_own_serialized_data) {
     constexpr int64_t ARRAY_SIZE = 50;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -604,12 +605,13 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_can_read_its_own_ser
 
     ASSERT_STREQ(data->title()->c_str(), "dib dib dudel dib");
     ASSERT_EQ(data->entries()->size(), ARRAY_SIZE);
-    for (auto i = 0; i < ARRAY_SIZE; ++i) {
+    for (auto i = 0U; i < ARRAY_SIZE; ++i) {
         ASSERT_EQ(data->entries()->Get(i)->data_1(), 123);
         ASSERT_EQ(data->entries()->Get(i)->data_2(), 221);
     }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_with_user_header_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file = this->create_schema_file(SCHEMA);
@@ -643,7 +645,7 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_with_user_he
     ASSERT_STREQ(recv_data->title()->c_str(), "Weg vom Tisch!");
     ASSERT_EQ(recv_data->entries()->size(), 2);
 
-    for (auto i = 0; i < 2; ++i) {
+    for (auto i = 0U; i < 2; ++i) {
         ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 123);
         ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 456);
     }
