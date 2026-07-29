@@ -136,7 +136,7 @@ impl DynamicConfig {
             self.publishers.recover(
                 node_id.owner_id(),
                 |registered_publisher| {
-                    // additional comparision, since the node_id.owner_id() might be not enough
+                    // additional comparison, since the node_id.owner_id() might be not enough
                     registered_publisher.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Publisher(
                             registered_publisher.publisher_id,
@@ -148,7 +148,7 @@ impl DynamicConfig {
             self.subscribers.recover(
                 node_id.owner_id(),
                 |registered_subscriber| {
-                    // additional comparision, since the node_id.owner_id() might be not enough
+                    // additional comparison, since the node_id.owner_id() might be not enough
                     registered_subscriber.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Subscriber(
                             registered_subscriber.subscriber_id,

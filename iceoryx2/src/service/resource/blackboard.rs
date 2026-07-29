@@ -265,7 +265,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
             Ok(false) => Ok(()),
             Err(NamedConceptRemoveError::InsufficientPermissions) => {
                 fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
-                    "{msg} since the blackboard mgmt segment cannot be removed due to insufficient permisssions.");
+                    "{msg} since the blackboard mgmt segment cannot be removed due to insufficient permissions.");
             }
             Err(NamedConceptRemoveError::Interrupt) => {
                 fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,

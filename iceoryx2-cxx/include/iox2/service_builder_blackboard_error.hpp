@@ -22,7 +22,7 @@ enum class BlackboardOpenError : uint8_t {
     Interrupt,
     /// The [`Service`] could not be opened since it does not exist.
     DoesNotExist,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// The [`Service`] has the wrong key type.
     IncompatibleKeys,
@@ -65,7 +65,7 @@ enum class BlackboardCreateError : uint8_t {
     InternalFailure,
     /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.

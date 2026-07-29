@@ -260,7 +260,7 @@ enum_gen! {
     /// The ThreadError enum is a generalization when one doesn't require the fine-grained error
     /// handling enums. One can forward ThreadError as more generic return value when a method
     /// returns a Thread***Error.
-    /// On a higher level it is again convertable to [`crate::Error`].
+    /// On a higher level it is again convertible to [`crate::Error`].
     ThreadError
   generalization:
     FailedToSpawn <= ThreadSpawnError,

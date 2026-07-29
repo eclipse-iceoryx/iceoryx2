@@ -24,7 +24,7 @@
 //!
 //! The individual types used by [`ServiceTypes`](crate::recorder::ServiceTypes) can be acquired
 //! from the [`StaticConfig`](iceoryx2::service::static_config::StaticConfig) of a
-//! [`Service`](iceoryx2::service::Service). For publish susbcribe one can call for instance
+//! [`Service`](iceoryx2::service::Service). For publish subscribe one can call for instance
 //! [`publish_subscribe::StaticConfig::message_type_details()`](iceoryx2::service::static_config::publish_subscribe::StaticConfig::message_type_details())
 //!
 //! ```
@@ -126,7 +126,7 @@ extern crate alloc;
 /// Free functions to convert bytes to a hex string and back.
 pub mod hex_conversion;
 
-/// Loads a meaninful subset.
+/// Loads a meaningful subset.
 pub mod prelude;
 
 /// Contains the [`Record`](crate::record::Record) and [`RawRecord`](crate::record::RawRecord)

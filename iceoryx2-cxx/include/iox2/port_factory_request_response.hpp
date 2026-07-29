@@ -32,7 +32,7 @@
 
 namespace iox2 {
 /// The factory for [`MessagingPattern::RequestResponse`]. It can acquire
-/// dynamic and static service informations and create [`crate::port::client::Client`]
+/// dynamic and static service information and create [`crate::port::client::Client`]
 /// or [`crate::port::server::Server`] ports.
 template <ServiceType Service,
           typename RequestPayload,

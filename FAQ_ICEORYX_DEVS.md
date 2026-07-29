@@ -25,7 +25,7 @@ Users can override the log level in the following ways:
 
 ## Tests marked with `#[should_panic]` attribute do not panic in release builds
 
-This usually happens when the panic is triggert via a `debug_assert` macro.
+This usually happens when the panic is triggered via a `debug_assert` macro.
 This macro is not active when the `-C debug-assertions` flag is not set, which
 is the case for release builds.
 To fix this problem, just add a `#[cfg(debug_assertions)]` to the test.

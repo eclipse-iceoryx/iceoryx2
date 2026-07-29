@@ -169,7 +169,7 @@ impl DynamicConfig {
             match self.nodes.recover(
                 node_id.owner_id(),
                 |entry_node_id| {
-                    // additional comparision, since the node_id.owner_id() might be not enough
+                    // additional comparison, since the node_id.owner_id() might be not enough
                     entry_node_id == *node_id
                 },
                 ReleaseMode::LockIfLastIndex,

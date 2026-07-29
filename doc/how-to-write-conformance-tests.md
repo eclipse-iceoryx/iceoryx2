@@ -188,8 +188,8 @@ conformance test module:
 
 ```rs
 trait Foo {}
-struc Bar {}
-struc Baz {}
+struct Bar {}
+struct Baz {}
 
 impl Foo for Bar {}
 impl Foo for Baz {}

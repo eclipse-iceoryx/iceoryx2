@@ -119,7 +119,7 @@ pub trait ResizableSharedMemoryViewBuilder<
 {
     /// The timeout defines how long the
     /// [`SharedMemoryBuilder`](crate::shared_memory::SharedMemoryBuilder) should wait for
-    /// [`SharedMemoryBuilder::create()`](crate::shared_memory::SharedMemoryBuilder::create()) to finialize
+    /// [`SharedMemoryBuilder::create()`](crate::shared_memory::SharedMemoryBuilder::create()) to finalize
     /// the initialization. This is required when the [`SharedMemory`] is created and initialized
     /// concurrently from another process. By default it is set to [`Duration::ZERO`] for no
     /// timeout.
@@ -162,7 +162,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
     Debug + Send + Abandonable
 {
     /// Registers a received [`PointerOffset`] at the [`ResizableSharedMemoryView`] and returns the
-    /// absolut pointer to the data. If the segment of the received [`PointerOffset`] was not yet
+    /// absolute pointer to the data. If the segment of the received [`PointerOffset`] was not yet
     /// mapped into the processes space, it will be opened and mapped. If this fails a
     /// [`SharedMemoryOpenError`] is returned.
     ///

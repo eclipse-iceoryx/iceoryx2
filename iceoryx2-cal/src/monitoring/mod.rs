@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Allows one process to monitor the state of another process. Can detect if the process is
-//! [`State::Alive`], [`State::Dead`] or the existance with [`State::DoesNotExist`]. To activate
+//! [`State::Alive`], [`State::Dead`] or the existence with [`State::DoesNotExist`]. To activate
 //! monitoring the process that shall be monitored must instantiate a [`MonitoringToken`]. As long
 //! as the [`MonitoringToken`] is in scope the [`MonitoringMonitor`] will detect the process as
 //! [`State::Alive`]. When the process crashes it will be detected as [`State::Dead`]. If the

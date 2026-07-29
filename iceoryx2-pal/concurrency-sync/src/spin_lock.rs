@@ -109,7 +109,7 @@ pub struct SpinLockGuard<'lk, T> {
     lock: &'lk SpinLock<T>,
 }
 
-// Sync implmentation needed because the unsafe Deref(Mut) implementation causes the SpinLockGuard
+// Sync implementation needed because the unsafe Deref(Mut) implementation causes the SpinLockGuard
 // to behave like &(mut) T
 // Send implementation not needed as the SpinLock implements Send, i.e. lock (&SpinLock<T>) is Send
 // only if T is Send

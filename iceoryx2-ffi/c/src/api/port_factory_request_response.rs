@@ -591,7 +591,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_hash(
 }
 
 /// Calls the callback repeatedly for every connected [`iox2_server_h`](crate::iox2_server_h)
-/// and provides all communcation details with a [`iox2_server_details_ptr`].
+/// and provides all communication details with a [`iox2_server_details_ptr`].
 ///
 /// # Safety
 ///
@@ -630,7 +630,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_
 }
 
 /// Calls the callback repeatedly with for every connected [`iox2_client_h`](crate::iox2_client_h)
-/// and provides all communcation details with a [`iox2_client_details_ptr`].
+/// and provides all communication details with a [`iox2_client_details_ptr`].
 ///
 /// # Safety
 ///

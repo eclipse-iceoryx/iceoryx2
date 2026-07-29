@@ -63,7 +63,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe).
-/// It can acquire dynamic and static service informations and create
+/// It can acquire dynamic and static service information and create
 /// [`crate::port::publisher::Publisher`]
 /// or [`crate::port::subscriber::Subscriber`] ports.
 #[derive(Debug)]

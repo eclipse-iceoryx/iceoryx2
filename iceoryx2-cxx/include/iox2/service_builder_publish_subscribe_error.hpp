@@ -54,7 +54,7 @@ enum class PublishSubscribeOpenError : uint8_t {
     /// The process has not enough permissions to open the [`Service`]
     InsufficientPermissions,
     /// Some underlying resources of the [`Service`] are either missing,
-    /// corrupted or unaccessible.
+    /// corrupted or inaccessible.
     ServiceInCorruptedState,
     /// The [`Service`]s creation timeout has passed and it is still not
     /// initialized. Can be caused
@@ -85,7 +85,7 @@ enum class PublishSubscribeCreateError : uint8_t {
     /// An interrupt signal was raised.
     Interrupt,
     /// Some underlying resources of the [`Service`] are either missing,
-    /// corrupted or unaccessible.
+    /// corrupted or inaccessible.
     ServiceInCorruptedState,
     /// Invalid [`Service`] configuration provided. The
     /// [`Subscriber`]s buffer size must be
@@ -154,7 +154,7 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// The process has not enough permissions to open the [`Service`]
     OpenInsufficientPermissions,
     /// Some underlying resources of the [`Service`] are either missing,
-    /// corrupted or unaccessible.
+    /// corrupted or inaccessible.
     OpenServiceInCorruptedState,
     /// The [`Service`]s creation timeout has passed and it is still not
     /// initialized. Can be caused
@@ -182,7 +182,7 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// An interrupt signal was raised.
     CreateInterrupt,
     /// Some underlying resources of the [`Service`] are either missing,
-    /// corrupted or unaccessible.
+    /// corrupted or inaccessible.
     CreateServiceInCorruptedState,
     /// Invalid [`Service`] configuration provided. The
     /// [`Subscriber`]s buffer size must be

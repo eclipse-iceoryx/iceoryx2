@@ -93,7 +93,7 @@ sudo systemctl restart waydroid-container.service
 
 The `suspend` property prevents the Android session to activate the lock-screen.
 Without turning suspend off, the `adb` commands will fail a few minutes after
-the last interaction with `waydroid`. Alternatively, the option could als be set
+the last interaction with `waydroid`. Alternatively, the option could also be set
 via `adb` with:
 
 ```bash

@@ -54,7 +54,7 @@ impl PortFactoryNotifier {
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
-                    // lifes long enough
+                    // lives long enough
                     PortFactoryNotifierType::Ipc(unsafe { &*v }.notifier_builder())
                 }
                 PortFactoryEventType::Local(v) => {
@@ -63,7 +63,7 @@ impl PortFactoryNotifier {
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
-                    // lifes long enough
+                    // lives long enough
                     PortFactoryNotifierType::Local(unsafe { &*v }.notifier_builder())
                 }
             },

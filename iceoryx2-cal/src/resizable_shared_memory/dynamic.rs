@@ -195,7 +195,7 @@ where
                                                         .config(&self.config.shm)
                                                         .has_ownership(false)
                                                         .open(access_mode),
-                                    "{msg} since the managment segment could not be opened.");
+                                    "{msg} since the management segment could not be opened.");
 
         let shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
 
@@ -472,7 +472,7 @@ where
 
         let mgmt_name = Self::managment_segment_name(name);
         let mut shm_removed = fail!(from origin, when unsafe {Shm::remove_cfg(&mgmt_name, config)},
-            "{msg} since the underlying managment segment could not be removed.");
+            "{msg} since the underlying management segment could not be removed.");
 
         let raw_names = match Shm::list_cfg(config) {
             Ok(names) => names,
@@ -509,7 +509,7 @@ where
         let mgmt_name = Self::managment_segment_name(name);
         Ok(
             fail!(from origin, when Shm::does_exist_cfg(&mgmt_name, config),
-            "{msg} since the existance of the underlying managment segment could not be verified."),
+            "{msg} since the existence of the underlying management segment could not be verified."),
         )
     }
 
@@ -578,7 +578,7 @@ where
             let mut raw_segment_id = *name.as_string();
             raw_segment_id.remove_range(0, segment_id_start_pos);
 
-            // check nymber of digits
+            // check number of digits
             for byte in raw_segment_id.as_bytes() {
                 if !byte.is_ascii_digit() {
                     return None;

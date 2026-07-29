@@ -45,7 +45,7 @@
 ///     }
 ///
 ///     fn evenMore(&self) -> Result<(), u64> {
-///         // forward error when it is compatible or convertable
+///         // forward error when it is compatible or convertible
 ///         fail!(from self, when self.doMore(), "doMore failed");
 ///         Ok(())
 ///     }

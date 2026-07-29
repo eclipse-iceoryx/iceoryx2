@@ -62,7 +62,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard).
-/// It can acquire dynamic and static service informations and create
+/// It can acquire dynamic and static service information and create
 /// [`crate::port::reader::Reader`] or [`crate::port::writer::Writer`] ports.
 #[derive(Debug)]
 pub struct PortFactory<

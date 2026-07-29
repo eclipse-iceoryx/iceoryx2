@@ -119,8 +119,8 @@ impl<T: Debug> RelocatablePointer<T> {
     }
 
     /// Initializes the [`RelocatablePointer`] by setting the distance to the memory destination
-    /// by providing an absolut pointer to it. The distance can be calculated from the
-    /// [`RelocatablePointer`] memory location and the absolut position of the destination.
+    /// by providing an absolute pointer to it. The distance can be calculated from the
+    /// [`RelocatablePointer`] memory location and the absolute position of the destination.
     /// **Important:** The pointer must point into the same shared memory object.
     ///
     /// # Safety

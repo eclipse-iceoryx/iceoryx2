@@ -14,7 +14,7 @@
 //!
 //! The individual types used by [`ServiceTypes`](crate::recorder::ServiceTypes) can be acquired
 //! from the [`StaticConfig`](iceoryx2::service::static_config::StaticConfig) of a
-//! [`Service`](iceoryx2::service::Service). For publish susbcribe one can call for instance
+//! [`Service`](iceoryx2::service::Service). For publish subscribe one can call for instance
 //! [`publish_subscribe::StaticConfig::message_type_details()`](iceoryx2::service::static_config::publish_subscribe::StaticConfig::message_type_details())
 //!
 //! ```

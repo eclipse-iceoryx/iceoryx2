@@ -564,7 +564,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_r
 }
 
 /// Calls the callback repeatedly for every connected [`iox2_reader_h`](crate::iox2_reader_h)
-/// and provides all communcation details with a [`iox2_reader_details_ptr`].
+/// and provides all communication details with a [`iox2_reader_details_ptr`].
 ///
 /// # Safety
 ///
@@ -603,7 +603,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_reader
 }
 
 /// Calls the callback repeatedly for every connected [`iox2_writer_h`](crate::iox2_writer_h)
-/// and provides all communcation details with a [`iox2_writer_details_ptr`].
+/// and provides all communication details with a [`iox2_writer_details_ptr`].
 ///
 /// # Safety
 ///

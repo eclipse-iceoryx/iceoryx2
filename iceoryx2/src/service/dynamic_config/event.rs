@@ -157,7 +157,7 @@ impl DynamicConfig {
             self.listeners.recover(
                 node_id.owner_id(),
                 |registered_listener| {
-                    // additional comparision, since the node_id.owner_id() might be not enough
+                    // additional comparison, since the node_id.owner_id() might be not enough
                     registered_listener.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Listener(
                             registered_listener.listener_id,
@@ -169,7 +169,7 @@ impl DynamicConfig {
             self.notifiers.recover(
                 node_id.owner_id(),
                 |registered_notifier| {
-                    // additional comparision, since the node_id.owner_id() might be not enough
+                    // additional comparison, since the node_id.owner_id() might be not enough
                     registered_notifier.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Notifier(
                             registered_notifier.notifier_id,

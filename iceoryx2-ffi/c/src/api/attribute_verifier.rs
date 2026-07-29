@@ -233,7 +233,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     }
 }
 
-/// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.
+/// Returns a [`iox2_attribute_set_ptr`] to the underlying attribute set.
 ///
 /// # Safety
 ///

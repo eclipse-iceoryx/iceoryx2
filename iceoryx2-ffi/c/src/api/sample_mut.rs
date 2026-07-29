@@ -246,7 +246,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
+/// * `payload_len` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     handle: iox2_sample_mut_h_ref,
@@ -281,7 +281,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
+/// * `payload_len` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_payload(
     handle: iox2_sample_mut_h_ref,

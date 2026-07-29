@@ -904,7 +904,7 @@ pub mod details {
             // 10          1               3
             // 11          2               3
             //
-            // to map an index to a segment id, we need to substract from index the
+            // to map an index to a segment id, we need to subtract from index the
             // rounded down value of index which is rounded down to the greatest multiple
             // of number_of_segments.
             SegmentId::new((index - (index / number_of_segments) * number_of_segments) as u8)

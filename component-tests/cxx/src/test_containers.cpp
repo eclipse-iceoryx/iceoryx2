@@ -117,7 +117,7 @@ auto check_metrics_for_vector(ContainerTestRequest const& req) -> bool {
     }
     if ((stats.storage_metrics.storage_alignment > std::numeric_limits<int32_t>::max())
         || (static_cast<int32_t>(stats.storage_metrics.storage_alignment) != req.container_alignment)) {
-        std::cout << "Storage alignmnent mismatch\n";
+        std::cout << "Storage alignment mismatch\n";
         return false;
     }
     if ((stats.storage_metrics.sizeof_bytes > std::numeric_limits<int32_t>::max())

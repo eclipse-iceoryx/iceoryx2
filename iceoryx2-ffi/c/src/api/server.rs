@@ -230,7 +230,7 @@ pub unsafe extern "C" fn iox2_server_has_requests(
     }
 }
 
-/// Returns the initial max slice len of the server. In the dynamic memory case, slice lenght might
+/// Returns the initial max slice len of the server. In the dynamic memory case, slice length might
 /// increase over time.
 ///
 /// # Safety

@@ -193,7 +193,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     }
 }
 
-/// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.
+/// Returns a [`iox2_attribute_set_ptr`] to the underlying attribute set.
 ///
 /// # Safety
 ///

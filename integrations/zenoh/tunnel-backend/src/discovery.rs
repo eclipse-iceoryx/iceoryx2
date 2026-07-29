@@ -287,7 +287,7 @@ impl Discovery {
             let service_hash = match parse_service_hash(key) {
                 Some(h) => h,
                 None => {
-                    warn!("Skipping liveliness sample with unparseable key: {}", key);
+                    warn!("Skipping liveliness sample with unparsable key: {}", key);
                     continue;
                 }
             };
@@ -393,7 +393,7 @@ fn check_pending(
         match serde_json::from_slice::<ServiceDescription>(&sample.payload().to_bytes()) {
             Ok(description) => return Ok(Some(description)),
             Err(e) => warn!(
-                "Skipping unparseable reply for service {}: {}",
+                "Skipping unparsable reply for service {}: {}",
                 hash.as_str(),
                 e
             ),

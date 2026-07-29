@@ -329,11 +329,11 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
             Ok(file) => Ok(file),
             Err(FileAccessError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
-                        "{} due to insufficient permissions to verify the existance of the underlying file.", msg);
+                        "{} due to insufficient permissions to verify the existence of the underlying file.", msg);
             }
             Err(e) => {
                 fail!(from origin, with NamedConceptDoesExistError::InternalError,
-                    "{} due to an unknown failure while determing the existance of the underlying file. [{e:?}]", msg);
+                    "{} due to an unknown failure while determing the existence of the underlying file. [{e:?}]", msg);
             }
         };
 
@@ -365,7 +365,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
             }
 
             fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
-                "{} due to an internal failure ({:?}) while acquiring underlying file informations, is static storage in a corrupted state?",
+                "{} due to an internal failure ({:?}) while acquiring underlying file information, is static storage in a corrupted state?",
                 msg, metadata.err().unwrap());
         }
         let metadata = metadata.unwrap();

@@ -83,7 +83,7 @@ enum class EventCreateError : uint8_t {
     /// An interrupt signal was raised.
     Interrupt,
     /// Some underlying resources of the [`Service`] are either missing,
-    /// corrupted or unaccessible.
+    /// corrupted or inaccessible.
     ServiceInCorruptedState,
     /// Errors that indicate either an implementation issue or a wrongly
     /// configured system.
@@ -172,7 +172,7 @@ enum class EventOpenOrCreateError : uint8_t {
     /// An interrupt signal was raised.
     CreateInterrupt,
     /// Some underlying resources of the [`Service`] are either missing,
-    /// corrupted or unaccessible.
+    /// corrupted or inaccessible.
     CreateServiceInCorruptedState,
     /// Errors that indicate either an implementation issue or a wrongly
     /// configured system.

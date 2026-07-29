@@ -1043,7 +1043,7 @@ pub mod service {
     }
 
     #[cfg(not(target_os = "windows"))]
-    // disabled since the windows defender interfers and causes ERROR_ACCESS_DENIED failures on the platform when it locks file for scanning
+    // disabled since the windows defender interferes and causes ERROR_ACCESS_DENIED failures on the platform when it locks file for scanning
     #[conformance_test]
     pub fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let test =

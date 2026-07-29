@@ -55,7 +55,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event). It can
-/// acquire dynamic and static service informations and create [`crate::port::notifier::Notifier`]
+/// acquire dynamic and static service information and create [`crate::port::notifier::Notifier`]
 /// or [`crate::port::listener::Listener`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service> {

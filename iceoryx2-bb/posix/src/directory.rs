@@ -142,7 +142,7 @@ enum_gen! {
     /// The DirectoryError enum is a generalization when one doesn't require the fine-grained error
     /// handling enums. One can forward DirectoryError as more generic return value when a method
     /// returns a Directory***Error.
-    /// On a higher level it is again convertable to [`crate::Error`].
+    /// On a higher level it is again convertible to [`crate::Error`].
     DirectoryError
   generalization:
     Create <= DirectoryCreateError,
@@ -152,7 +152,7 @@ enum_gen! {
 }
 
 /// Represents an entry of a [`Directory`]. It provides the name of the entry and [`Metadata`] to
-/// acquire additional informations about the entry.
+/// acquire additional information about the entry.
 ///
 /// # Example
 ///

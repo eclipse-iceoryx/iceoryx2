@@ -73,7 +73,7 @@ fn normalize(this: &FileName) -> FileName {
 }
 
 semantic_string! {
-  /// Represents a file name. The restriction are choosen in a way that it is platform independent.
+  /// Represents a file name. The restriction are chosen in a way that it is platform independent.
   /// This means characters/strings which would be legal on some platforms are forbidden as well.
   name: FileName,
   capacity: FILENAME_LENGTH,

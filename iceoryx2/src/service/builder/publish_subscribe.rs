@@ -73,7 +73,7 @@ pub enum PublishSubscribeOpenError {
     IncompatibleOverflowBehavior,
     /// The process has not enough permissions to open the [`Service`]
     InsufficientPermissions,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
@@ -205,7 +205,7 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
 pub enum PublishSubscribeCreateError {
     /// An interrupt signal was received.
     Interrupt,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// Invalid [`Service`] configuration provided. The
     /// [`Subscriber`](crate::port::subscriber::Subscriber)s buffer size must be at least the size

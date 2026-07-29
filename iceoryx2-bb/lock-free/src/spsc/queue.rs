@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! A **threadsafe** **lock-free** single produce single consumer queue.
-//! **IMPORTANT** Can only be used with trivially copyable types which are also trivially dropable.
+//! **IMPORTANT** Can only be used with trivially copyable types which are also trivially droppable.
 //!
 //! # Example
 //!

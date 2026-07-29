@@ -18,7 +18,7 @@ use crate::allocator::{Allocate, AllocationError};
 
 /// Describes a container which can shared between processes. Since the shared memory is often
 /// mapped at a different virtual memory position the underlying constructs must be relocatable in
-/// the sense that they should not rely on absolut memory positions.
+/// the sense that they should not rely on absolute memory positions.
 pub trait RelocatableContainer {
     /// Creates a new uninitialized RelocatableContainer. Before the container can be used the method
     /// [`RelocatableContainer::init()`] must be called.

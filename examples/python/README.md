@@ -9,7 +9,7 @@ Python bindings. e.g.
 pip install iceoryx2==0.9.999
 ```
 
-Be sure to switch to the matching release tag to ensure compatability:
+Be sure to switch to the matching release tag to ensure compatibility:
 
 ```console
 git checkout v0.9.999
@@ -42,7 +42,7 @@ poetry --project iceoryx2-ffi/python install
 
 ## Build
 
-Compile the iceoryx2 Python language bindings into the virutal
+Compile the iceoryx2 Python language bindings into the virtual
 environment by calling:
 
 ```sh

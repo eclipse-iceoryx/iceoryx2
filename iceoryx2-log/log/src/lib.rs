@@ -18,7 +18,7 @@
 //! The Logging API for iceoryx2. It has 6 [`LogLevel`]s which can be set via
 //! [`set_log_level()`] and read via [`get_log_level()`].
 //!
-//! The API includes convinience macros to combine error/panic handling
+//! The API includes convenience macros to combine error/panic handling
 //! directly with a logger selected from the `iceoryx2_bb_loggers` crate.
 //! The [`fail!`] macro can return when the function which was called return an
 //! error containing result.
@@ -91,7 +91,7 @@
 //!     }
 //!
 //!     fn evenMore(&self) -> Result<(), u64> {
-//!         // forward error when it is compatible or convertable
+//!         // forward error when it is compatible or convertible
 //!         fail!(from self, when self.doMore(), "doMore failed");
 //!         Ok(())
 //!     }

@@ -49,7 +49,7 @@ pub(crate) enum PortFactoryPublishSubscribeType {
 
 #[pyclass]
 /// The factory for `MessagingPattern::PublishSubscribe`. It can acquire dynamic and static service
-/// informations and create `Publisher` or `Subscriber` ports.
+/// information and create `Publisher` or `Subscriber` ports.
 pub struct PortFactoryPublishSubscribe {
     pub(crate) value: Parc<PortFactoryPublishSubscribeType>,
     payload_type_details: TypeStorage,

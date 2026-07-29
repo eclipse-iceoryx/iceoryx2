@@ -201,7 +201,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                     }
                     Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
                         fail!(from origin, with ServiceOpenError::HangsInCreation,
-                            "{msg} since the type defintion file is not yet initialized.");
+                            "{msg} since the type definition file is not yet initialized.");
                     }
                     Err(StaticStorageOpenError::DoesNotExist) => {
                         fail!(from origin, with ServiceOpenError::ServiceInCorruptedState,

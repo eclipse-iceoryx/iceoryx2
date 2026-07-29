@@ -191,7 +191,7 @@ impl<T: Copy + Debug> ContainerState<T> {
 /// A **threadsafe** and **lock-free** runtime fixed size container. The compile time fixed size
 /// container is called [`FixedSizeContainer`].
 ///
-/// **Restriction:** T is not allowed to implement [`Drop`], it must be trivially dropable!
+/// **Restriction:** T is not allowed to implement [`Drop`], it must be trivially droppable!
 #[repr(C)]
 #[derive(Debug)]
 pub struct Container<T: Copy + Debug> {
@@ -672,8 +672,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainerData<T, CAPACITY>
 /// A **threadsafe** and **lock-free** compile time fixed size container. The runtime time fixed size
 /// container is called [`Container`].
 ///
-/// **Restriction:** T is not allowed to implement [`Drop`], it must be trivially dropable!
-// T is not allowed to implement Drop - must be trivially dropable
+/// **Restriction:** T is not allowed to implement [`Drop`], it must be trivially droppable!
+// T is not allowed to implement Drop - must be trivially droppable
 #[repr(C)]
 #[derive(Debug)]
 pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {

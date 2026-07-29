@@ -148,7 +148,7 @@ enum_gen! {
     /// The MutexError enum is a generalization when one doesn't require the fine-grained error
     /// handling enums. One can forward MutexError as more generic return value when a method
     /// returns a Mutex***Error.
-    /// On a higher level it is again convertable to [`crate::Error`].
+    /// On a higher level it is again convertible to [`crate::Error`].
     MutexError
   entry:
     CreationFailed,

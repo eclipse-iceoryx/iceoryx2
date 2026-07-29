@@ -573,7 +573,7 @@ pub mod service;
 /// [`WaitSet`](crate::waitset::WaitSet) shall handle system signals.
 pub mod signal_handling_mode;
 
-/// Loads a meaninful subset to cover 90% of the iceoryx2 communication use cases.
+/// Loads a meaningful subset to cover 90% of the iceoryx2 communication use cases.
 pub mod prelude;
 
 #[doc(hidden)]

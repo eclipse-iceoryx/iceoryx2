@@ -55,7 +55,7 @@ auto main() -> int {
                                .notifier_created_event(iox2::bb::into<EventId>(PubSubEvent::PublisherConnected))
                                .notifier_dropped_event(iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected))
                                // This event is emitted when either the central daemon or a decentralized process
-                               // detects a dead node and cleaned up all of its stale resources succesfully.
+                               // detects a dead node and cleaned up all of its stale resources successfully.
                                .notifier_dead_event(iox2::bb::into<EventId>(PubSubEvent::ProcessDied))
                                .open_or_create()
                                .value();

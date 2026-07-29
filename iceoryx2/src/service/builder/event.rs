@@ -169,7 +169,7 @@ impl From<EventOpenError> for ServiceOpenError {
 pub enum EventCreateError {
     /// An interrupt signal was received.
     Interrupt,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,

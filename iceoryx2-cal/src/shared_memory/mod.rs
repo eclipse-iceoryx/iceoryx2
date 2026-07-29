@@ -161,7 +161,7 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     fn size(self, value: usize) -> Self;
 
     /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
-    /// [`SharedMemoryBuilder::create()`] to finialize
+    /// [`SharedMemoryBuilder::create()`] to finalize
     /// the initialization. This is required when the [`SharedMemory`] is created and initialized
     /// concurrently from another process. By default it is set to [`Duration::ZERO`] for no
     /// timeout.

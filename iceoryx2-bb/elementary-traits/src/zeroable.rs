@@ -19,7 +19,7 @@
 /// 1. The user must ensure that an all-zero bit pattern is valid.
 ///
 pub unsafe trait Zeroable: core::marker::Sized {
-    /// Creates a new zerod value.
+    /// Creates a new zeroed value.
     fn new_zeroed() -> Self {
         unsafe { core::mem::zeroed() }
     }
