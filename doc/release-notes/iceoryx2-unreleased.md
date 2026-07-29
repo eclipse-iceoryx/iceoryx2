@@ -41,6 +41,7 @@
 * [#1695](https://github.com/eclipse-iceoryx/iceoryx2/issues/1695) Remove port_tag when stale resources of port are removed.
 * [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from tunnel conformance test crate to fix a linker error on macOS.
 * [#1718](https://github.com/eclipse-iceoryx/iceoryx2/issues/1718) Protect `ProcessState` from accidental file lock release.
+* [#1737](https://github.com/eclipse-iceoryx/iceoryx2/issues/1737) Fix error log output in Windows for languages with non UTF-8 characters.
 * [#1739](https://github.com/eclipse-iceoryx/iceoryx2/issues/1739) Make sure MSVC defines __cplusplus with accurate value
 * [#1746](https://github.com/eclipse-iceoryx/iceoryx2/issues/1746) Disable `POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY` on FreeBSD and move CI job for FreeBSD to main pipeline
 * [#1777](https://github.com/eclipse-iceoryx/iceoryx2/issues/1777) Fix service root folder creation named concept of iceoryx2-cal fixing execution on Windows platform.
@@ -183,13 +184,13 @@
         bar: u8,
         baz: u64,
     }
-    
+
     unsafe impl AtomicCopy for Foo {
         fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
             // ...
         }
     }
-    
+
     // new
     // ...
     unsafe impl AtomicCopy for Foo {
