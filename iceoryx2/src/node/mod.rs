@@ -1167,10 +1167,12 @@ impl<Service: service::Service> Node<Service> {
         match Self::list_all_nodes(&monitoring_config) {
             Ok(node_list) => {
                 for node_name in node_list {
-                    let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
+                    // not bad, just found a file that is not a node
+                    let Ok(node_id) = core::str::from_utf8(node_name.as_bytes()) else {
+                        continue;
+                    };
                     let node_id = match node_id.parse::<u128>() {
                         Ok(v) => UniqueNodeId(v.into()),
-                        // not bad, just found a file that is not a node
                         Err(_) => continue,
                     };
 
