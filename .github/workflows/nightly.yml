@@ -14,7 +14,7 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1
       - name: Build and cache cargo-nextest
         uses: ./.github/actions/build-and-cache-rust-tool
         with:
@@ -141,7 +141,7 @@ jobs:
         mode: ["debug"]
     steps:
       - name: Checkout sources
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1
 
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
@@ -149,7 +149,7 @@ jobs:
           mode: "remove-unneeded-software-from-runner"
 
       - name: Build and Test
-        uses: vmactions/freebsd-vm@5a72679103d223925653750faa878a143340fbd0 # version v1.5.0
+        uses: vmactions/freebsd-vm@77ed28d336d03fe19a3f4f7266c1d2c4714dd79d # version v1.5.2
         with:
           release: ${{ matrix.freebsd_version }}
           mem: 16384

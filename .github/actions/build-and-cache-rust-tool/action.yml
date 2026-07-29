@@ -65,7 +65,7 @@ runs:
       shell: bash
     - name: Upload artifact
       if: runner.os != 'Windows'
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # version: v7.0.1
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: ~/.cargo/bin/${{ inputs.artifact-bin-name }}
@@ -73,7 +73,7 @@ runs:
         if-no-files-found: error
     - name: Upload artifact
       if: runner.os == 'Windows'
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # version: v7.0.1
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: C:/Users/runneradmin/.cargo/bin/${{ inputs.artifact-bin-name }}.exe
