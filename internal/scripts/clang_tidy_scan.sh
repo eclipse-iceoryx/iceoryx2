@@ -167,7 +167,8 @@ cmake -S . -B target/clang-tidy-scan \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_CXX=ON \
     -DBUILD_EXAMPLES=ON \
-    -DBUILD_TESTING=ON
+    -DBUILD_TESTING=ON \
+    -DIOX2_FEATURE_FLATBUFFERS=ON
 cmake --build target/clang-tidy-scan -j$NUM_JOBS
 
 echo "Using clang-tidy version: $(clang-tidy --version | sed -n "s/.*version \([0-9.]*\)/\1/p" )"
@@ -217,6 +218,10 @@ function scan() {
         if test -f "$FILE"; then
             # TODO: remove this if statement before finishing #301
             if [[ "$FILE" == iceoryx2-bb/cxx/include/iox2/legacy/* || "$FILE" == iceoryx2-bb/cxx/src/* || "$FILE" == iceoryx2-bb/cxx/tests/src/legacy/* ]]; then
+                continue
+            fi
+
+            if [[ "$FILE" == *flatbuffer*_generated.h ]]; then
                 continue
             fi
 
