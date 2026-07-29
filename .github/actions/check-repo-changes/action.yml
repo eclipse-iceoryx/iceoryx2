@@ -1,0 +1,15 @@
+name: 'Repository Check for source code changes'
+description: 'Check against added or changed files in the GitHub Workspace (requires checkout before)'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check for added/changed files in repository
+      shell: bash
+      run: |
+        if ! [[ -z "$(git status --porcelain)" ]] \
+        || ! git diff --exit-code HEAD; then
+          git status --porcelain
+          echo "Error: source code has been added or changed while running the CI."
+          exit 1
+        fi
