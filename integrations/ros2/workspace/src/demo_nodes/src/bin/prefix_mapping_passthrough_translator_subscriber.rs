@@ -10,25 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Native iceoryx2 subscriber following the bridge contract: receives
-//! `std_msgs/msg/String` as CDR bytes from the service mapped to the ROS 2
-//! topic `/chatter` and prints the message together with the remote origin
-//! from the [`RosHeader`].
-//!
-//! With a tunnel running, messages of any ROS 2 publisher of `/chatter`
-//! arrive here:
+//! Receives `std_msgs/msg/String` as CDR bytes from the service
+//! prefix-mapped to the ROS 2 topic `/chatter` and prints it with the
+//! remote origin from the [`RosHeader`]. The application does its own
+//! (de)serialization.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 listener
+//! ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_subscriber
 //! # in other shells:
-//! #   <tunnel runner>             # bridges ros2://topics/chatter ↔ /chatter
+//! #   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --topic /chatter:std_msgs/msg/String
 //! #   ros2 run demo_nodes_cpp talker
 //! ```
 
 use core::time::Duration;
 
-use demo_nodes_iceoryx2::{RosHeader, SERVICE_NAME, StdMsgStringByte, as_bytes};
 use iceoryx2::prelude::*;
+use demo_nodes_iceoryx2::{RosHeader, StdMsgStringByte, as_bytes};
+
+/// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
+/// `/chatter`.
+const SERVICE_NAME: &str = "ros2://topics/chatter";
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 

@@ -3,7 +3,7 @@
 <package format="3">
     <name>demo_nodes_iceoryx2</name>
     <version>0.9.999</version>
-    <description>Native iceoryx2 demo nodes exchanging std_msgs with ROS 2 demo nodes</description>
+    <description>Native iceoryx2 example nodes bridged to ROS 2 by the tunnel</description>
     <maintainer email="iceoryx-oss-support@ekxide.io">ekxide developers</maintainer>
     <license>Apache 2.0</license>
     <license>MIT</license>

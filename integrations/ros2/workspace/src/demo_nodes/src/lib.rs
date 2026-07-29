@@ -10,14 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! The bridge contract for the `/chatter` demo, shared by the publisher and
-//! subscriber binaries.
-
 use iceoryx2::prelude::*;
 use rosidl_runtime_rs::{Message, RmwMessage};
-
-/// The iceoryx2 service mapped to the ROS 2 topic `/chatter`.
-pub const SERVICE_NAME: &str = "ros2://topics/chatter";
 
 /// The service payload is a byte slice holding the CDR-serialized message.
 /// The type name is taken from the IDL-generated struct to match the
