@@ -14,7 +14,8 @@
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(FlatBuffers)
+@IOX2_FLATBUFFERS_DEPENDENCY_CONFIG_CMAKE_IN@
+
 find_dependency(iceoryx2-bb-cxx)
 find_dependency(iceoryx2-c)
 

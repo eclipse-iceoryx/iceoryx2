@@ -13,6 +13,10 @@
 #ifndef IOX2_RESIZABLE_MEMORY_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_RESIZABLE_MEMORY_PUBLISH_SUBSCRIBE_HPP
 
+#include "iox2/iceoryx2_cxx_deployment.hpp"
+
+#if IOX2_FEATURE_FLATBUFFERS
+
 #include <flatbuffers/allocator.h>
 
 #include "iox2/internal/iceoryx2.hpp"
@@ -58,4 +62,7 @@ class ResizableMemoryPublishSubscribe : public flatbuffers::Allocator {
 };
 } // namespace internal
 } // namespace iox2
-#endif
+
+#endif // IOX2_FEATURE_FLATBUFFERS
+
+#endif // IOX2_RESIZABLE_MEMORY_PUBLISH_SUBSCRIBE_HPP

@@ -16,12 +16,17 @@
 #include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
-#include "iox2/internal/resizable_memory_publish_subscribe.hpp"
+#include "iox2/iceoryx2_cxx_deployment.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
+
+#if IOX2_FEATURE_FLATBUFFERS
+#include "iox2/internal/resizable_memory_publish_subscribe.hpp"
+
 #include <flatbuffers/buffer.h>
 #include <flatbuffers/flatbuffer_builder.h>
+#endif
 
 namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -85,10 +90,12 @@ class SampleMutUninit {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
     auto write_from_slice(bb::ImmutableSlice<ValueType>& value) -> SampleMut<S, Payload, UserHeader>;
 
+#if IOX2_FEATURE_FLATBUFFERS
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
     /// allocator to enable true zero-copy data transfer.
     template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
     auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
   private:
     template <ServiceType, typename, typename>
@@ -96,10 +103,12 @@ class SampleMutUninit {
 
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
     friend auto assume_init(SampleMutUninit<ST, PayloadT, UserHeaderT>&& self) -> SampleMut<ST, PayloadT, UserHeaderT>;
+
+#if IOX2_FEATURE_FLATBUFFERS
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
     friend auto assume_init(SampleMutUninit<ST, Flatbuffer<PayloadT>, UserHeaderT>&& self,
                             flatbuffers::Offset<PayloadT>) -> SampleMut<ST, Flatbuffer<PayloadT>, UserHeaderT>;
-
+#endif // IOX2_FEATURE_FLATBUFFERS
 
     // The sample is defaulted since both members are initialized in Publisher::loan_uninit() or
     // Publisher::loan_slice_uninit()
@@ -108,8 +117,11 @@ class SampleMutUninit {
     auto get_handle() -> iox2_sample_mut_h;
 
     SampleMut<S, Payload, UserHeader> m_sample;
+
+#if IOX2_FEATURE_FLATBUFFERS
     internal::ResizableMemoryPublishSubscribe<S>* m_memory = nullptr;
     bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
+#endif // IOX2_FEATURE_FLATBUFFERS
 };
 
 /// Acquires the ownership and converts the uninitialized [`SampleMutUninit`] into the
@@ -118,6 +130,8 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> SampleMut<S, Payload, UserHeader> {
     return std::move(self.m_sample);
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
 
 /// Acquires the ownership and converts the uninitialized [`SampleMutUninit`] into the
 /// initialized version [`SampleMut`] containing the root payload.
@@ -137,14 +151,16 @@ inline auto assume_init(SampleMutUninit<S, Flatbuffer<Payload>, UserHeader>&& se
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::get_handle() -> iox2_sample_mut_h {
-    return m_sample.m_handle;
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::flatbuffer_builder() -> flatbuffers::FlatBufferBuilder& {
     return m_flatbuffer_builder.value();
+}
+
+#endif // IOX2_FEATURE_FLATBUFFERS
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMutUninit<S, Payload, UserHeader>::get_handle() -> iox2_sample_mut_h {
+    return m_sample.m_handle;
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

@@ -17,8 +17,6 @@ find_package(iceoryx2-cmake-modules REQUIRED)
 
 include(Iceoryx2PlatformSettings)
 
-include(Iceoryx2Flatbuffers)
-
 set(CMAKE_CXX_STANDARD ${ICEORYX2_CXX_STD_VALUE})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -51,7 +49,6 @@ add_subdirectory(domains)
 add_subdirectory(event)
 add_subdirectory(event_multiplexing)
 add_subdirectory(event_based_communication)
-add_subdirectory(flatbuffer_publish_subscribe)
 add_subdirectory(health_monitoring)
 add_subdirectory(publish_subscribe)
 add_subdirectory(publish_subscribe_dynamic_data)
@@ -61,3 +58,20 @@ add_subdirectory(request_response)
 add_subdirectory(request_response_dynamic_data)
 add_subdirectory(service_attributes)
 add_subdirectory(service_types)
+
+include(Iceoryx2OptionAndParamMacros)
+# Flatbuffer support
+add_option(
+    NAME IOX2_FEATURE_FLATBUFFERS
+    DESCRIPTION "Enables the FlatBuffers integration"
+    DEFAULT_VALUE OFF
+)
+add_option(
+    NAME IOX2_DEPENDENCY_USE_SYSTEM_FLATBUFFERS
+    DESCRIPTION "Use the FlatBuffers provided by the system instead of using FetchContent"
+    DEFAULT_VALUE OFF
+)
+if($IOX2_FEATURE_FLABUFFERS)
+    include(Iceoryx2Flatbuffers)
+    add_subdirectory(flatbuffer_publish_subscribe)
+endif()

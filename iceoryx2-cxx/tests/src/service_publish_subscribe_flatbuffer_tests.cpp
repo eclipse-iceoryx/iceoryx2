@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/iceoryx2_cxx_deployment.hpp"
+
+#if IOX2_FEATURE_FLATBUFFERS
+
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/optional.hpp"
@@ -645,3 +649,5 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_with_user_he
     }
 }
 } // namespace
+
+#endif // IOX2_FEATURE_FLATBUFFERS

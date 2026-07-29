@@ -16,8 +16,14 @@ if(NOT ICEORYX2_CXX_OPTIONS_AND_PARAMS_LISTED)
     message(STATUS "[i] iceoryx2-cxx options:")
 
     add_option(
+        NAME IOX2_FEATURE_FLATBUFFERS
+        DESCRIPTION "Enables the FlatBuffers integration"
+        DEFAULT_VALUE OFF
+    )
+
+    add_option(
         NAME IOX2_DEPENDENCY_USE_SYSTEM_FLATBUFFERS
-        DESCRIPTION "Use the flatbuffers provided by the system instead of using FetchContent"
+        DESCRIPTION "Use the FlatBuffers provided by the system instead of using FetchContent"
         DEFAULT_VALUE OFF
     )
 
