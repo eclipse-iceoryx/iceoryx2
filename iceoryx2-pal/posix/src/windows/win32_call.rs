@@ -112,21 +112,11 @@ macro_rules! win32call {
                 match last_error {
                     $($error => ()),*,
                     _ => {
-                        let mut buffer = [0u8; 1024];
-                        windows_sys::Win32::System::Diagnostics::Debug::FormatMessageA(
-                            windows_sys::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_FROM_SYSTEM |
-                            windows_sys::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_IGNORE_INSERTS,
-                            core::ptr::null::<void>(),
-                            last_error,
-                            0,
-                            buffer.as_mut_ptr(),
-                            buffer.len() as u32,
-                            core::ptr::null::<*const i8>()
-                        );
-                        std::eprintln!(
+                       let os_error = std::io::Error::from_raw_os_error(last_error as i32);
+                       std::eprintln!(
                             "< Win32 API error > {}:{} {} \n [ {} ] {}",
                             std::file!(), std::line!(), std::stringify!($call), last_error,
-                            core::str::from_utf8(&buffer).unwrap_or("non UTF-8 error messages are not supported")
+                            os_error
                         );
                     },
                 }
@@ -153,21 +143,11 @@ macro_rules! win32call {
                 match last_error {
                     $($error => ()),*,
                     _ => {
-                        let mut buffer = [0u8; 1024];
-                        windows_sys::Win32::System::Diagnostics::Debug::FormatMessageA(
-                            windows_sys::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_FROM_SYSTEM |
-                            windows_sys::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_IGNORE_INSERTS,
-                            core::ptr::null::<void>(),
-                            last_error as _,
-                            0,
-                            buffer.as_mut_ptr(),
-                            buffer.len() as u32,
-                            core::ptr::null::<*const i8>(),
-                        );
+                        let os_error = std::io::Error::from_raw_os_error(last_error as i32);
                         std::eprintln!(
                             "< Win32 WinSock2 API error > {}:{} {} \n [ {} ] {}",
                             std::file!(), std::line!(), std::stringify!($call), last_error,
-                            core::str::from_utf8(&buffer).unwrap_or("non UTF-8 error messages are not supported")
+                            os_error
                         );
                     },
                 }
