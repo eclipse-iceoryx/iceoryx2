@@ -124,7 +124,7 @@ _coverage-profile-cmake:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    cmake . -B"{{CMAKE_COV_DIR}}" -DCOVERAGE=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+    cmake . -B"{{CMAKE_COV_DIR}}" -DCOVERAGE=ON -DBUILD_TESTING=ON -DIOX2_FEATURE_FLATBUFFERS=ON -DCMAKE_BUILD_TYPE=Debug
     cmake --build "{{CMAKE_COV_DIR}}" -j
     ctest --test-dir "{{CMAKE_COV_DIR}}" --output-on-failure
 
