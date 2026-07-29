@@ -279,7 +279,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                         _ => None,
                     })
                     .unwrap_or_else(|| {
-                        // No explicity `CStr` is provided.
+                        // No explicitly `CStr` is provided.
                         // Convert variant name from 'UpperCamelCase' or 'UPPER_SNAKE_CASE'
                         // to 'lowercase with spaces'.
                         let enum_string = variant_name_to_string(&enum_name.to_string());

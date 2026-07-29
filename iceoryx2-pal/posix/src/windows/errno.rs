@@ -185,7 +185,7 @@ pub unsafe fn strerror(errnum: int) -> *const c_char {
         Errno::ENOENT => c"A required system-resource does not exist.".as_ptr() as *const c_char,
         Errno::ENOTSUP => c"The feature is not supported on this system.".as_ptr() as *const c_char,
         Errno::EBUSY => {
-            c"The resource is currently busy and unaccessable.".as_ptr() as *const c_char
+            c"The resource is currently busy and inaccessible.".as_ptr() as *const c_char
         }
         _ => c"Unknown error has occurred.".as_ptr() as *const c_char,
     }

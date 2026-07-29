@@ -484,7 +484,7 @@ impl Event {
     }
 
     #[getter]
-    /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
+    /// Defines the maximum allowed time between two consecutive notifications. If a notification
     /// is not sent after the defined time, every `Listener`
     /// that is attached to a `WaitSet` will be notified.
     pub fn deadline(&self) -> Duration {

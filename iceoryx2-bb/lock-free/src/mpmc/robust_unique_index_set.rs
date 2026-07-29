@@ -509,7 +509,7 @@ impl RobustUniqueIndexSet {
             .borrowed_indices as usize
     }
 
-    /// This funtion returns the number of borrowed indices, meaning how many
+    /// This function returns the number of borrowed indices, meaning how many
     /// `cell`s != `OwnerId::EMPTY` combined with the generation counter at that
     /// time.
     fn borrowed_indices_and_generation_counter(&self) -> SetState {

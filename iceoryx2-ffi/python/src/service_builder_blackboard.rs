@@ -94,7 +94,7 @@ impl ServiceBuilderBlackboardCreator {
     }
 
     /// Defines the key type. To be able to connect to a `Service`, the `TypeDetail` must be
-    /// indentical in all participants since the communication is always strongly typed.
+    /// identical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&mut self, value: &TypeDetail) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -324,7 +324,7 @@ impl ServiceBuilderBlackboardOpener {
     }
 
     /// Defines the key type. To be able to connect to a `Service`, the `TypeDetail` must be
-    /// indentical in all participants since the communication is always strongly typed.
+    /// identical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&mut self, value: &TypeDetail) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {

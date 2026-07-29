@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .notifier_created_event(PubSubEvent::PublisherConnected.into())
         .notifier_dropped_event(PubSubEvent::PublisherDisconnected.into())
         // This event is emitted when either the central daemon or a decentralized process detects
-        // a dead node and cleaned up all of its stale resources succesfully.
+        // a dead node and cleaned up all of its stale resources successfully.
         .notifier_dead_event(PubSubEvent::ProcessDied.into())
         .open_or_create()?;
 

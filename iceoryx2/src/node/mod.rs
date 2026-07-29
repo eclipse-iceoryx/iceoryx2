@@ -310,7 +310,7 @@ enum NodeReadPortTagsFailure {
     InternalError,
 }
 
-/// Optional detailed informations that a [`Node`] can have. They can only be obtained when the
+/// Optional detailed information that a [`Node`] can have. They can only be obtained when the
 /// process has sufficient access permissions.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
@@ -449,7 +449,7 @@ pub trait NodeView {
     fn details(&self) -> &Option<NodeDetails>;
 }
 
-/// All the informations of a [`Node`] that is alive.
+/// All the information of a [`Node`] that is alive.
 #[derive(Debug)]
 pub struct AliveNodeView<Service: service::Service> {
     id: UniqueNodeId,
@@ -477,7 +477,7 @@ impl<Service: service::Service> NodeView for AliveNodeView<Service> {
     }
 }
 
-/// All the informations and management operations belonging to a dead [`Node`].
+/// All the information and management operations belonging to a dead [`Node`].
 #[derive(Debug)]
 pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
 
@@ -649,7 +649,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
             Err(NodeReadServiceTagsFailure::InsufficientPermissions) => {
                 cleaner.abandon();
                 fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
-                    "{} since the service tags could not be read due to insufficent permissions.", msg);
+                    "{} since the service tags could not be read due to insufficient permissions.", msg);
             }
             Err(NodeReadServiceTagsFailure::InternalError) => {
                 cleaner.abandon();
@@ -695,7 +695,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
             Err(NodeReadPortTagsFailure::InsufficientPermissions) => {
                 cleaner.abandon();
                 fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
-                    "{} since the port tags could not be read due to insufficent permissions.", msg);
+                    "{} since the port tags could not be read due to insufficient permissions.", msg);
             }
             Err(NodeReadPortTagsFailure::InternalError) => {
                 cleaner.abandon();

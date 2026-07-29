@@ -31,7 +31,7 @@ do
     # check that SPDX license identifier is used only once
     SPDX_LICENSE_IDENTIFIER_COUNT=$(echo $(grep "SPDX-License-Identifier: Apache-2.0 OR MIT" --count $FILE))
     if [[ "$SPDX_LICENSE_IDENTIFIER_COUNT" == "0" ]]; then
-        echo "The file '$FILE' has no valid SPDX license identifier with 'Aoache-2.0 OR MIT'."
+        echo "The file '$FILE' has no valid SPDX license identifier with 'Apache-2.0 OR MIT'."
         RET_VAL=1
     elif [[ "$SPDX_LICENSE_IDENTIFIER_COUNT" != "1" ]]; then
         if [[ "$FILE" != "./internal/scripts/ci_test_spdx_license_header.sh" \

@@ -14,7 +14,7 @@ use core::fmt::Debug;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 /// Internal helper struct to handle the Python memory model where everything
-/// which is shared - even accross thread boundaries - is just a pointer to
+/// which is shared - even across thread boundaries - is just a pointer to
 /// some heap memory location. The `Arc<Mutex<T>>` ensures basic safety and this
 /// construct takes also care of the annoying `unwrap` inside the mutex. A mutex
 /// can fail when the thread died holding the mutex but in those cases a panic

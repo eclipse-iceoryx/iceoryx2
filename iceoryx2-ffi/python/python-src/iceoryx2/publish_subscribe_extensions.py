@@ -47,7 +47,7 @@ def user_header(self: Any) -> Any:
 def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
-    """Returns the `ServiceBuilderPublishSusbcribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
+    """Returns the `ServiceBuilderPublishSubscribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
     if hasattr(t, "__name__"):
         type_name = getattr(t, "__name__")
     else:

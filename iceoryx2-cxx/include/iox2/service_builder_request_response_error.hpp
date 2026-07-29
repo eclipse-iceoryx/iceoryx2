@@ -65,7 +65,7 @@ enum class RequestResponseOpenError : uint8_t {
     /// When the call creation call is repeated with a little delay the [`Service`] should be
     /// recreatable.
     IsMarkedForDestruction,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
@@ -93,7 +93,7 @@ enum class RequestResponseCreateError : uint8_t {
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     ServiceInCorruptedState,
     /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
@@ -155,7 +155,7 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// When the call creation call is repeated with a little delay the [`Service`] should be
     /// recreatable.
     OpenIsMarkedForDestruction,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     OpenServiceInCorruptedState,
     /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     OpenUnableToCreateServiceTag,
@@ -180,7 +180,7 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     CreateHangsInCreation,
-    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or inaccessible.
     CreateServiceInCorruptedState,
     /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     CreateUnableToCreateServiceTag,

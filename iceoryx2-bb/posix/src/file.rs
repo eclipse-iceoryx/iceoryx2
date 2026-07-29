@@ -32,7 +32,7 @@
 //! file.read_to_vector(&mut content).expect("Failed to read file");
 //! file.write(content.as_slice()).expect("Failed to write file");
 //!
-//! if File::does_exist(&file_name).expect("Failed to check for existance") {
+//! if File::does_exist(&file_name).expect("Failed to check for existence") {
 //!   println!("Woohoo file exists");
 //! }
 //!
@@ -252,7 +252,7 @@ enum_gen! {
     /// The FileError enum is a generalization when one doesn't require the fine-grained error
     /// handling enums. One can forward FileError as more generic return value when a method
     /// returns a File***Error.
-    /// On a higher level it is again convertable to [`crate::Error`].
+    /// On a higher level it is again convertible to [`crate::Error`].
     FileError
   generalization:
     Create <= FileCreationError,
@@ -543,7 +543,7 @@ impl File {
         {
             CreationMode::CreateExclusive => create_file(),
             CreationMode::PurgeAndCreate => {
-                if fail!(from config, when File::does_exist(&config.file_path), "{} since the file existance verification failed.", msg)
+                if fail!(from config, when File::does_exist(&config.file_path), "{} since the file existence verification failed.", msg)
                 {
                     fail!(from config, when File::remove(&config.file_path), "{} since the removal of the already existing file failed.", msg);
                 }
@@ -551,7 +551,7 @@ impl File {
                 create_file()
             }
             CreationMode::OpenOrCreate => {
-                match fail!(from config, when File::does_exist(&config.file_path), "{} since the file existance verification failed.", msg)
+                match fail!(from config, when File::does_exist(&config.file_path), "{} since the file existence verification failed.", msg)
                 {
                     true => Ok(FileDescriptor::new(unsafe {
                         posix::open(config.file_path.as_c_str(), config.access_mode.as_oflag())
@@ -993,7 +993,7 @@ impl File {
             Errno::ELOOP => (LoopInSymbolicLinks, "{} \"{}\" since a loop exists in the symbolic links.", msg, path),
             Errno::ENAMETOOLONG => (MaxSupportedPathLengthExceeded, "{} \"{}\" since it is longer than the maximum path name length.", msg, path),
             Errno::EROFS => (PartOfReadOnlyFileSystem, "{} \"{}\" since it is part of a read-only filesystem.", msg, path),
-            v => (UnknownError(v as i32), "{} \"{}\" since an unkown error occurred ({}).", msg, path, v)
+            v => (UnknownError(v as i32), "{} \"{}\" since an unknown error occurred ({}).", msg, path, v)
         );
     }
 

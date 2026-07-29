@@ -299,7 +299,7 @@ pub trait SemanticString<const CAPACITY: usize>:
         temp.remove_range(idx, len);
         if Self::is_invalid_content(temp.as_bytes()) {
             fail!(from self, with SemanticStringError::InvalidContent,
-                "Unable to remove range from {} with lenght {} since it would result in the illegal content \"{}\".",
+                "Unable to remove range from {} with length {} since it would result in the illegal content \"{}\".",
                     idx, len, temp);
         }
 

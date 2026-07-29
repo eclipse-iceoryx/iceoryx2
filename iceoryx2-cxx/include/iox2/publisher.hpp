@@ -75,7 +75,7 @@ class Publisher {
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
-    /// can be used to loan an uninitalized [`SampleMut`].
+    /// can be used to loan an uninitialized [`SampleMut`].
     ///
     /// On failure it returns [`LoanError`] describing the failure.
     template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>

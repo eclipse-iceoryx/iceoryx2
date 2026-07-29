@@ -267,7 +267,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
     }
 }
 
-/// Returnes the services attributes.
+/// Returns the services attributes.
 ///
 /// # Safety
 ///
@@ -580,7 +580,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_subs
 }
 
 /// Calls the callback repeatedly for every connected [`iox2_subscriber_h`](crate::iox2_subscriber_h)
-/// and provides all communcation details with a [`iox2_subscriber_details_ptr`].
+/// and provides all communication details with a [`iox2_subscriber_details_ptr`].
 ///
 /// # Safety
 ///
@@ -620,7 +620,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_subscribe
 }
 
 /// Calls the callback repeatedly for every connected [`iox2_publisher_h`](crate::iox2_publisher_h)
-/// and provides all communcation details with a [`iox2_publisher_details_ptr`].
+/// and provides all communication details with a [`iox2_publisher_details_ptr`].
 ///
 /// # Safety
 ///

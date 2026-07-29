@@ -380,7 +380,7 @@ pub struct Event {
     pub max_nodes: usize,
     /// The largest event id supported by the event service
     pub event_id_max_value: usize,
-    /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
+    /// Defines the maximum allowed time between two consecutive notifications. If a notification
     /// is not sent after the defined time, every [`Listener`](crate::port::listener::Listener)
     /// that is attached to a [`WaitSet`](crate::waitset::WaitSet) will be notified.
     pub deadline: Option<Duration>,

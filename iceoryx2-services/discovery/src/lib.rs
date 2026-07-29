@@ -14,7 +14,7 @@
 //!
 //! The `iceoryx2-services-discovery` crate provides discovery services for the components
 //! of an iceoryx2 system. These services enable other applications built on iceoryx2 to
-//! get informed of the presense of these components.
+//! get informed of the presence of these components.
 //!
 
 #![no_std]

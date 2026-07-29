@@ -985,7 +985,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                     Err(RegisterNodeResult::ExceedsMaxNumberOfNodes) => {
                         fail!(from self, with OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes,
-                            "{} since it would exceed the maxium supported number of nodes.", msg);
+                            "{} since it would exceed the maximum supported number of nodes.", msg);
                     }
                 }
             },

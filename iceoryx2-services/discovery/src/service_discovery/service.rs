@@ -479,7 +479,7 @@ impl<S: ServiceType> Service<S> {
     /// Returns the service details of all the current services.
     ///
     /// This function is called within the spin function, so that
-    /// if any requests are recieved for the discovery states,
+    /// if any requests are received for the discovery states,
     /// it can be provided via the RequestResponse method.
     ///
     /// # Returns
@@ -489,7 +489,7 @@ impl<S: ServiceType> Service<S> {
     /// # Errors
     ///
     /// Returns a `ServerSpinError` if there was an error in Responsding,
-    /// Loaning or recieving Requests.
+    /// Loaning or receiving Requests.
     pub fn handle_discovery_requests(&mut self) -> Result<(), ServerSpinError> {
         let include_internal = self.discovery_config.include_internal;
         if let Some(server) = &mut self.server {

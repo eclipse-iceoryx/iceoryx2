@@ -35,7 +35,7 @@ pub(crate) enum PortFactoryEventType {
 
 #[pyclass]
 /// The factory for `MessagingPattern::Event`. It can acquire dynamic and static service
-/// informations and create `Notifier` or `Listener` ports.
+/// information and create `Notifier` or `Listener` ports.
 pub struct PortFactoryEvent(pub(crate) Parc<PortFactoryEventType>);
 
 #[pymethods]

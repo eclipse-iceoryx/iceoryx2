@@ -210,11 +210,11 @@ for the runtime configuration in TOML format as described above.
 
 The default settings are already tailored to the most common
 operating systems but it can happen that users may face a specific limitation
-(e.g. the `TEMP_DIRECTORY` is not writeable) on their specific platform.
+(e.g. the `TEMP_DIRECTORY` is not writable) on their specific platform.
 To provide the flexibility to easily handle such cases, it is possible to
 define a custom platform configuration to be used in the build.
 
-The first step is to create a file with custom configurtion
+The first step is to create a file with custom configuration
 at any location (e.g. `/my/funky/platform/platform_configuration.rs`).
 
 An example configuration may look like this, however be sure to check the

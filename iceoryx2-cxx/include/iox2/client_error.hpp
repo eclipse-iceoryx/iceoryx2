@@ -31,7 +31,7 @@ enum class ClientCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
-    /// When the [`Client`] requires more acitve requests than the
+    /// When the [`Client`] requires more active requests than the
     /// [`Service`] offers, the creation will fail.
     MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService,
 };

@@ -189,7 +189,7 @@
         * Contains trait and all impls as pubs under same namespace
 * `DynamicStorage`
     * Restrict `T` to
-    <https://doc.rust-lang.org/std/intrinsics/fn.needs_drop.html> non dropable
+    <https://doc.rust-lang.org/std/intrinsics/fn.needs_drop.html> non droppable
 
 ## Advanced
 

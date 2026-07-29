@@ -202,7 +202,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         unsafe { &(*self.connections[index].get()) }
     }
 
-    // only used internally as convinience function
+    // only used internally as convenience function
     #[allow(clippy::mut_from_ref)]
     fn get_mut(&self, index: usize) -> &mut Option<Connection<Service, Resource>> {
         #[deny(clippy::mut_from_ref)]

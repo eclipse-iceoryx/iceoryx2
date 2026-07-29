@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! [`Metadata`] contains all informations like type, credentials, size, access times about every
+//! [`Metadata`] contains all information like type, credentials, size, access times about every
 //! structure which has a file handle representation. Every struct which implements the
 //! [`crate::file_descriptor::FileDescriptorManagement`] trait can emit a [`Metadata`].
 //! One struct is for instance [`crate::file::File`].
@@ -22,7 +22,7 @@ use crate::permission::{Permission, PermissionExt};
 use crate::user::Uid;
 use iceoryx2_pal_posix::*;
 
-/// Contains all informations like type, credentials, size, access times about every
+/// Contains all information like type, credentials, size, access times about every
 /// structure which has a file handle representation. Every struct which implements the
 /// [`crate::file_descriptor::FileDescriptorManagement`] trait can emit a [`Metadata`].
 /// One struct is for instance [`crate::file::File`].

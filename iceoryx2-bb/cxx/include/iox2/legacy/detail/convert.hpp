@@ -60,7 +60,7 @@ class convert {
     static constexpr uint32_t FLOAT_SIGNALING_NAN_MASK { static_cast<uint32_t>(1) << static_cast<uint32_t>(22) };
     static constexpr uint64_t DOUBLE_SIGNALING_NAN_MASK { static_cast<uint64_t>(1) << static_cast<uint64_t>(51) };
 
-    /// @brief Converts every type which is either a pod (plain old data) type or is convertable
+    /// @brief Converts every type which is either a pod (plain old data) type or is convertible
     ///         to a string (this means that the operator std::string() is defined)
     /// @param Source type of the value which should be converted to a string
     /// @param[in] t value which should be converted to a string
@@ -69,7 +69,7 @@ class convert {
     static typename std::enable_if<!std::is_convertible<Source, std::string>::value, std::string>::type
     toString(const Source& t) noexcept;
 
-    /// @brief Converts every type which is either a pod (plain old data) type or is convertable
+    /// @brief Converts every type which is either a pod (plain old data) type or is convertible
     ///         to a string (this means that the operator std::string() is defined)
     /// @param Source type of the value which should be converted to a string
     /// @param[in] t value which should be converted to a string

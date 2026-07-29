@@ -481,7 +481,7 @@ impl<
     }
 }
 
-/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
+/// Wrapper around an uninitialized entry value that can be used for a zero-copy update.
 pub struct EntryValueUninit<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
@@ -793,7 +793,7 @@ impl<Service: service::Service> __InternalEntryHandleMut<Service> {
     }
 }
 
-/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update. Used
+/// Wrapper around an uninitialized entry value that can be used for a zero-copy update. Used
 /// for the language bindings where key and value type cannot be passed as generics.
 #[doc(hidden)]
 pub struct __InternalEntryValueUninit<Service: service::Service> {

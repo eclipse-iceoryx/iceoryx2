@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains two building blocks to generate unique ids. Useful for parallized unit test to
+//! Contains two building blocks to generate unique ids. Useful for parallelized unit test to
 //! generate names which point to OS resources or to enumerate constructs uniquely.
 //!
 //! # Examples

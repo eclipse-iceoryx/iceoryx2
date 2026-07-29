@@ -240,7 +240,7 @@ class Event {
     auto notifier_dead_event() && -> bb::Optional<size_t>;
     /// Sets the event id value that is emitted if a notifier was identified as dead.
     void set_notifier_dead_event(bb::Optional<size_t> value) &&;
-    /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
+    /// Defines the maximum allowed time between two consecutive notifications. If a notification
     /// is not sent after the defined time, every [`Listener`]
     /// that is attached to a [`WaitSet`] will be notified.
     auto deadline() && -> bb::Optional<iox2::bb::Duration>;

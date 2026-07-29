@@ -119,7 +119,7 @@ impl<T> MaybeTorn<T> {
     /// The caller must guarantee that the underlying memory does not contain a torn state,
     /// otherwise `T` may be "logically" invalid. In the context of [`FixedSizeByteAtomic::read()`],
     /// this means that the caller must have verified via synchronization primitives that no
-    /// concurrent writes occured during the read operation. If called on a torn value, using the
+    /// concurrent writes occurred during the read operation. If called on a torn value, using the
     /// resulting `T` may lead to undefined behavior.
     pub unsafe fn assume_consistent(self) -> T {
         unsafe { self.inner.assume_init() }

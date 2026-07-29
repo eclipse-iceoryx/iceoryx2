@@ -32,7 +32,7 @@
 
 namespace iox2 {
 /// The factory for [`MessagingPattern::PublishSubscribe`].
-/// It can acquire dynamic and static service informations and create
+/// It can acquire dynamic and static service information and create
 /// [`Publisher`] or [`Subscriber`] ports.
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublishSubscribe {

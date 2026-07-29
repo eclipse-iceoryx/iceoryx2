@@ -662,7 +662,7 @@ pub unsafe extern "C" fn iox2_node_list(
     }
 }
 
-/// Removes the stale system resources of all dead nodess. The dead nodess are also
+/// Removes the stale system resources of all dead nodes. The dead nodes are also
 /// removed from all registered services.
 ///
 /// If a node cannot be cleaned up since the process has insufficient permissions or it

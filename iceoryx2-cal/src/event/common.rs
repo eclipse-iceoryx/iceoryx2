@@ -706,7 +706,7 @@ impl<
             }
             Err(DynamicStorageCreateError::InitializationFailed) => {
                 fail!(from self, with ListenerCreateError::InternalFailure,
-                    "{msg} since the initialization of the underyling waiter failed.");
+                    "{msg} since the initialization of the underlying waiter failed.");
             }
             Err(DynamicStorageCreateError::InternalError) => {
                 fail!(from self, with ListenerCreateError::InternalFailure,

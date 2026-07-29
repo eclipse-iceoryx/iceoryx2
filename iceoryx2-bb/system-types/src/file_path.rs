@@ -42,7 +42,7 @@ use crate::file_name::FileName;
 use crate::path::Path;
 
 semantic_string! {
-  /// Represents a file path. The restriction are choosen in a way that it is platform independent.
+  /// Represents a file path. The restriction are chosen in a way that it is platform independent.
   /// This means characters/strings which would be legal on some platforms are forbidden as well.
   name: FilePath,
   capacity: PATH_LENGTH,

@@ -160,7 +160,7 @@ pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
     }
 }
 
-/// Returns true if the corresponding pending response is still connected anc can receive responses.
+/// Returns true if the corresponding pending response is still connected and can receive responses.
 ///
 /// # Arguments
 ///

@@ -48,7 +48,7 @@ enum_gen! { NanosleepError
 
 enum_gen! {
 /// Use this more generic error enum when you do not require the fine grained error handling.
-/// Every error enum is convertable into this one and on a higher level this is convertable into
+/// Every error enum is convertible into this one and on a higher level this is convertible into
 /// [`crate::Error`].
     ClockError
   generalization:

@@ -74,7 +74,7 @@ pub unsafe fn gethostpid() -> pid_t {
         match pids.as_slice() {
             // in a PID namespace, the first value is the host PID
             [host_pid, _, ..] => *host_pid, // In a namespace, first value is host PID
-            // if there is no PID namespce, then we use the only PID listed
+            // if there is no PID namespace, then we use the only PID listed
             [only_pid] => *only_pid,
             // the NSpid: field is empty and we fall back to getpid
             [] => posix::getpid(),

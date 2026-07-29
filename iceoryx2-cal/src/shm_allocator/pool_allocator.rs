@@ -46,8 +46,8 @@ impl ShmAllocatorConfig for Config {}
 #[repr(C)]
 pub struct PoolAllocator {
     allocator: iceoryx2_bb_memory::pool_allocator::PoolAllocator,
-    // is even with absolut base address relocatable since every process acquire and return
-    // the same relative offset which map then to the same absolut base address
+    // is even with absolute base address relocatable since every process acquire and return
+    // the same relative offset which map then to the same absolute base address
     // the allocator only manages a range of numbers
     base_address: usize,
     max_supported_alignment_by_memory: usize,
@@ -279,7 +279,7 @@ impl ShmAllocator for PoolAllocator {
 
         fail!(from self, when unsafe { self.allocator.init(mgmt_allocator)  },
             with ShmAllocatorInitError::AllocationFailed,
-            "{} since the allocation of the allocator managment memory failed.", msg);
+            "{} since the allocation of the allocator management memory failed.", msg);
 
         Ok(())
     }

@@ -106,7 +106,7 @@ enum_gen! {
     /// The SemaphoreError enum is a generalization when one doesn't require the fine-grained error
     /// handling enums. One can forward SemaphoreError as more generic return value when a method
     /// returns a Semaphore***Error.
-    /// On a higher level it is again convertable to [`crate::Error`].
+    /// On a higher level it is again convertible to [`crate::Error`].
     SemaphoreError
   generalization:
     FailedToCreate <= NamedSemaphoreCreationError; UnnamedSemaphoreCreationError,

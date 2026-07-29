@@ -237,7 +237,7 @@ if [[ ${SELECTION} == ${YES} ]]; then
 
     echo -e "Did you check the release notes for dummy entries and cleaned it up?"
     show_default_selector
-    echo -e "Shall the changes be commited?"
+    echo -e "Shall the changes be committed?"
     show_default_selector
     if [[ ${SELECTION} == ${YES} ]]; then
         git add doc/release-notes/iceoryx2-v${ICEORYX2_RELEASE_VERSION}.md
@@ -300,7 +300,7 @@ if [[ ${SELECTION} == ${YES} ]]; then
     git add .
 
     echo -e ""
-    echo -e "Shall the changes be commited?"
+    echo -e "Shall the changes be committed?"
     show_default_selector
     if [[ ${SELECTION} == ${YES} ]]; then
         git commit -m"[#77] Update version number to v${ICEORYX2_RELEASE_VERSION}"

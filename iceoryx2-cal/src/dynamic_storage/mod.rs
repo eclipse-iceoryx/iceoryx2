@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Traits that provide modifyable memory which can be accessed by multiple processes
+//! Traits that provide modifiable memory which can be accessed by multiple processes
 //! identified by a name.
 //!
 //! A [`DynamicStorage`] has to fulfill the following contract:
@@ -151,7 +151,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
 
     /// The timeout defines how long the [`DynamicStorageBuilder`] should wait for
     /// [`DynamicStorageBuilder::create()`]
-    /// to finialize the initialization. This is required when the [`DynamicStorage`] is
+    /// to finalize the initialization. This is required when the [`DynamicStorage`] is
     /// created and initialized concurrently from another process.
     /// By default it is set to [`Duration::ZERO`] for no timeout.
     fn timeout(self, value: Duration) -> Self;
@@ -180,7 +180,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
 }
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide
-/// inter-process access to a modifyable piece of memory identified by some name.
+/// inter-process access to a modifiable piece of memory identified by some name.
 pub trait DynamicStorage<T: Send + Sync + ZeroCopySend>:
     Sized + Debug + NamedConceptMgmt + NamedConcept + Send + Sync + Abandonable
 {
@@ -215,7 +215,7 @@ pub trait DynamicStorage<T: Send + Sync + ZeroCopySend>:
     /// # Safety
     ///
     /// * ensure that the contained type matches the semantic type_name given with `T`
-    /// * if `T` is some arbitary placeholder, then only use it to remove the concept or list it
+    /// * if `T` is some arbitrary placeholder, then only use it to remove the concept or list it
     ///   * DO NOT OPEN IT
     unsafe fn __internal_set_type_name_in_config(config: &mut Self::Configuration, type_name: &str);
 }

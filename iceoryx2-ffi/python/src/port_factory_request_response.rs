@@ -54,7 +54,7 @@ pub(crate) enum PortFactoryRequestResponseType {
 
 #[pyclass]
 /// The factory for `MessagingPattern::RequestResponse`. It can acquire dynamic and static service
-/// informations and create `Client` or `Server` ports.
+/// information and create `Client` or `Server` ports.
 pub struct PortFactoryRequestResponse {
     pub(crate) value: Parc<PortFactoryRequestResponseType>,
     pub(crate) request_payload_type_details: TypeStorage,

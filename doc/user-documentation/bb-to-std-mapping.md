@@ -3,7 +3,7 @@
 ## Overview
 
 This document provides an overview of the iceoryx2 building blocks and their
-similiarities to Rust `std` types.
+similarities to Rust `std` types.
 
 ## Version
 

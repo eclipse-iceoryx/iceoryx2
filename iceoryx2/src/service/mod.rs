@@ -443,7 +443,7 @@ pub struct ServiceDetails<S: Service> {
     /// The static configuration of the [`Service`] that never changes during the [`Service`]
     /// lifetime.
     pub static_details: StaticConfig,
-    /// The dynamic configuration of the [`Service`] that can conaints runtime informations.
+    /// The dynamic configuration of the [`Service`] that can conaints runtime information.
     pub dynamic_details: Option<ServiceDynamicDetails<S>>,
 }
 

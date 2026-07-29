@@ -42,7 +42,7 @@
 //! // add a new thing
 //! my_things.push(MyThing { some_property: 456, tag: global_tagger.create_tag() });
 //!
-//! // remove all non-taged things
+//! // remove all non-tagged things
 //! my_things.retain(|thing| thing.was_tagged_by(&global_tagger));
 //! ```
 

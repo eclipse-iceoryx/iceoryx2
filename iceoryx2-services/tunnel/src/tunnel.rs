@@ -173,7 +173,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         self.bridges.keys().cloned().collect()
     }
 
-    /// Updates the locally offerred services.
+    /// Updates the locally offered services.
     fn iceoryx_discovery(&mut self) -> Result<(), DiscoveryError> {
         match &self.discovery_strategy {
             LocalDiscoveryStrategy::Subscriber(_) => self.subscriber_discovery(),
@@ -181,7 +181,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         }
     }
 
-    /// Updates the remotely offerred services.
+    /// Updates the remotely offered services.
     fn backend_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::backend_discovery", self.node.id());
 
