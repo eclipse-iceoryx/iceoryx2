@@ -70,6 +70,8 @@ fn duration_since_epoch() -> core::time::Duration {
         not(any(target_os = "linux", target_os = "nto",))
     ))]
     {
+        use core::time::Duration;
+
         Duration::from_secs(0)
     }
 }
