@@ -57,10 +57,19 @@ fn topic_description(topic: &str) -> TopicDescription {
 
 #[test]
 fn validate_config_used_for_examples() {
-    let config: Config = toml::from_str(include_str!("../examples/mapping.toml")).unwrap();
+    let chatter_config: Config = toml::from_str(include_str!(
+        "../../workspace/src/demo_nodes/static_mapping_chatter.toml"
+    ))
+    .unwrap();
+    assert_that!(chatter_config.entries, is_not_empty);
+    assert_that!(StaticMapping::new(chatter_config), is_ok);
 
-    assert_that!(config.entries, is_not_empty);
-    assert_that!(StaticMapping::new(config), is_ok);
+    let cmdvel_config: Config = toml::from_str(include_str!(
+        "../../workspace/src/demo_nodes/static_mapping_cmdvel.toml"
+    ))
+    .unwrap();
+    assert_that!(cmdvel_config.entries, is_not_empty);
+    assert_that!(StaticMapping::new(cmdvel_config), is_ok);
 }
 
 #[test]

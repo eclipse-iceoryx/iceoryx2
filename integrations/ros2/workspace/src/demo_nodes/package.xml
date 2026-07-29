@@ -10,6 +10,7 @@
     <url type="bugtracker">https://github.com/eclipse-iceoryx/iceoryx2/issues</url>
     <url type="repository">https://github.com/eclipse-iceoryx/iceoryx2</url>
     <depend>std_msgs</depend>
+    <depend>geometry_msgs</depend>
     <export>
         <build_type>ament_cargo</build_type>
     </export>
