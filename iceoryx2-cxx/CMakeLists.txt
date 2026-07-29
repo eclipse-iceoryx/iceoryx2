@@ -29,6 +29,8 @@ include(cmake/options.cmake)
 
 include(Iceoryx2PlatformSettings)
 
+include(Iceoryx2Flatbuffers)
+
 # include only lib -> includes are installed only once despite being used in static lib as well as shared lib
 
 add_library(includes-only-cxx INTERFACE)
@@ -110,6 +112,7 @@ set_target_properties(iceoryx2-cxx-object-lib
 
 target_link_libraries(iceoryx2-cxx-object-lib
     PUBLIC
+    flatbuffers::flatbuffers
     iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::includes-only
     iceoryx2-cxx::includes-only-cxx
@@ -131,6 +134,7 @@ set_target_properties(static-lib-cxx
 
 target_link_libraries(static-lib-cxx
     PUBLIC
+    flatbuffers::flatbuffers
     iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::static-lib
     iceoryx2-cxx::includes-only-cxx
@@ -150,6 +154,7 @@ set_target_properties(shared-lib-cxx
 
 target_link_libraries(shared-lib-cxx
     PUBLIC
+    flatbuffers::flatbuffers
     iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::shared-lib
     iceoryx2-cxx::includes-only-cxx

@@ -17,6 +17,8 @@ find_package(iceoryx2-cmake-modules REQUIRED)
 
 include(Iceoryx2PlatformSettings)
 
+include(Iceoryx2Flatbuffers)
+
 set(CMAKE_CXX_STANDARD ${ICEORYX2_CXX_STD_VALUE})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
