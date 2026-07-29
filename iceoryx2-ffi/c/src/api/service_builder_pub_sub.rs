@@ -18,7 +18,7 @@ use crate::api::{
     iox2_port_factory_pub_sub_t, iox2_service_builder_pub_sub_h,
     iox2_service_builder_pub_sub_h_ref, iox2_service_type_e,
 };
-use crate::create_type_details;
+use crate::{create_type_details, iox2_config_ptr};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::publish_subscribe::{
@@ -1125,6 +1125,28 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
         }
     }
     IOX2_OK
+}
+
+/// Returns the [`iox2_config_ptr`](crate::iox2_config_ptr), an immutable pointer to the config.
+///
+/// # Safety
+///
+/// * The `handle` must be valid
+/// * The returned `iox2_config_ptr` is valid until the node that owns it goes out-of-scope.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_config(
+    handle: iox2_service_builder_pub_sub_h_ref,
+) -> iox2_config_ptr {
+    handle.assert_non_null();
+    unsafe {
+        let node = &mut *handle.as_type();
+
+        match node.service_type {
+            iox2_service_type_e::IPC => node.value.as_ref().ipc.pub_sub.__internal_config(),
+            iox2_service_type_e::LOCAL => node.value.as_ref().local.pub_sub.__internal_config(),
+        }
+    }
 }
 
 // END C API

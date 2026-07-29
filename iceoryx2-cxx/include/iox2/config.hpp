@@ -433,6 +433,8 @@ class ConfigView {
     friend class Config;
     template <ServiceType>
     friend class Node;
+    template <typename, typename, ServiceType>
+    friend class ServiceBuilderPublishSubscribe;
 
     template <ServiceType>
     friend class Service;

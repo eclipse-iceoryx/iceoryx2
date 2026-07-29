@@ -18,6 +18,7 @@ use core::marker::PhantomData;
 
 use alloc::format;
 
+use crate::config::Config;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -489,6 +490,11 @@ impl<
             Ok(None) => Ok(None),
             Err(e) => Err(e),
         }
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_config(&self) -> &Config {
+        self.base.shared_node.config()
     }
 
     /// Sets the user header type of the [`Service`].
