@@ -135,6 +135,17 @@ class WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// **Important:** The [`WaitSet`] only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the [`WaitSet`] wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a [`Listener`], consume pending notifications with [`Listener::try_wait()`].
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     auto wait_and_process(const iox2::bb::StaticFunction<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> bb::Expected<WaitSetRunResult, WaitSetRunError>;
 
@@ -154,6 +165,17 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// **Important:** The [`WaitSet`] only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the [`WaitSet`] wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a [`Listener`], consume pending notifications with [`Listener::try_wait()`].
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     auto wait_and_process_once(const iox2::bb::StaticFunction<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> bb::Expected<WaitSetRunResult, WaitSetRunError>;
 
@@ -173,6 +195,17 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// **Important:** The [`WaitSet`] only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the [`WaitSet`] wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a [`Listener`], consume pending notifications with [`Listener::try_wait()`].
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     auto wait_and_process_once_with_timeout(
         const iox2::bb::StaticFunction<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
         iox2::bb::Duration timeout) -> bb::Expected<WaitSetRunResult, WaitSetRunError>;
