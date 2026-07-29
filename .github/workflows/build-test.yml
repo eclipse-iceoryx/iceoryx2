@@ -537,6 +537,7 @@ jobs:
           bazel build //... --verbose_failures
 
       - name: Check for changed files after CI run
+        if: ${{ matrix.bazel-version == '7.4.1' }}
         uses: ./.github/actions/check-repo-changes
 
   cxx-vocabulary-types:
