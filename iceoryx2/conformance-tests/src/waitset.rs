@@ -308,6 +308,61 @@ pub mod waitset {
     }
 
     #[conformance_test]
+    pub fn wait_and_process_once_with_timeout_blocks_after_consumed_event_with_multiple_listeners<
+        S: Service,
+    >()
+    where
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
+    {
+        let test = Test::<S>::new_with_custom_watchdog(Watchdog::new_with_timeout(TIMEOUT * 40));
+        let node = test.create_node();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let (listener_1, notifier_1) = create_event::<S>(&node);
+        let (listener_2, _notifier_2) = create_event::<S>(&node);
+
+        let guard_1 = sut.attach_notification(&listener_1).unwrap();
+        let _guard_2 = sut.attach_notification(&listener_2).unwrap();
+
+        notifier_1.notify().unwrap();
+
+        // the pending event is delivered and consumed here, therefore this call
+        // is allowed to return before the timeout has passed
+        let mut event_was_delivered = false;
+        sut.wait_and_process_once_with_timeout(
+            |attachment_id| {
+                if attachment_id.has_event_from(&guard_1) {
+                    listener_1.try_wait(|_| {}).unwrap();
+                    event_was_delivered = true;
+                }
+                CallbackProgression::Continue
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+
+        assert_that!(event_was_delivered, eq true);
+
+        // with the event consumed, every further call must block for the full
+        // timeout again instead of returning immediately
+        for _ in 0..3 {
+            let mut callback_called = false;
+            let start = Time::now().unwrap();
+            sut.wait_and_process_once_with_timeout(
+                |_| {
+                    callback_called = true;
+                    CallbackProgression::Continue
+                },
+                TIMEOUT,
+            )
+            .unwrap();
+
+            assert_that!(callback_called, eq false);
+            assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+        }
+    }
+
+    #[conformance_test]
     pub fn wait_and_process_once_does_block_until_interval_when_user_timeout_is_larger<S: Service>()
     where
         <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
