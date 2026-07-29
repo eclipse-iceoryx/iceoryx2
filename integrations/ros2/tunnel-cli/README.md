@@ -1,5 +1,12 @@
 # iox2-tunnel-ros2
 
+> [!IMPORTANT]
+> The ROS 2 integrations are currently prototypes and require validation in
+> real ROS 2 workflows. Only recommended for experiementation in development
+> deployments.
+>
+> If encountering issues, create an issue to help us converge to stability.
+
 CLI running the tunnel that bridges iceoryx2 services and ROS 2 topics.
 
 ## Coupling to ROS 2 workspaces
