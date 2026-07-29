@@ -114,7 +114,6 @@ auto ResizableMemoryPublishSubscribe<Service>::reallocate_downward(
     IOX2_ASSERT(iox2_resizable_memory_publish_subscribe_grow_downwards(&m_handle, new_size, in_use_front, &m_ptr)
                     == IOX2_OK,
                 "Failed to grow underlying data segment.");
-
     return m_ptr;
 }
 

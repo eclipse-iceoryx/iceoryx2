@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/file_name.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/static_string.hpp"
 #include "iox2/custom_header_marker.hpp"
 #include "iox2/custom_payload_marker.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
@@ -19,18 +21,17 @@
 #include "iox2/service.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/testing.hpp"
+#include "iox2/type_name.hpp"
 #include "iox2/type_variant.hpp"
 
 #include "test.hpp"
 #include <array>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <flatbuffers/flatbuffers.h>
 #include <fstream>
 #include <gtest/gtest.h>
-
-namespace {
-using namespace iox2;
 
 // NOLINTBEGIN
 namespace Example {
@@ -180,6 +181,11 @@ inline void FinishSizePrefixedUnboundedDataBuffer(::flatbuffers::FlatBufferBuild
 } // namespace Example
 // NOLINTEND
 
+IOX2_DEFINE_TYPE_NAME(Example::UnboundedData, "UnboundedData");
+
+namespace {
+using namespace iox2;
+
 const char* SCHEMA = R"(
     namespace Example;
 
@@ -206,6 +212,8 @@ const char* ALT_SCHEMA = R"(
     root_type BoundedData;
 )";
 
+constexpr uint64_t INITIAL_RESERVED_MEMORY = 1024;
+
 template <typename T>
 class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
   public:
@@ -222,8 +230,17 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
         }
     }
 
-    auto create_schema_file(const char* content, const bb::FilePath& schema_file = iox2::testing::generate_file_path())
-        -> bb::FilePath {
+    auto create_schema_file(const char* content, const char* file_name = "") -> bb::FilePath {
+        auto schema_file_path = iox2::testing::test_directory_path();
+        auto file_name_str =
+            bb::StaticString<bb::platform::IOX2_MAX_FILENAME_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
+                file_name, strlen(file_name));
+        schema_file_path
+            .append(strlen(file_name) == 0 ? iox2::testing::generate_file_name().as_string() : file_name_str)
+            .value();
+
+        auto schema_file = bb::FilePath::create(schema_file_path.as_string()).value();
+
         std::ofstream file(schema_file.as_string().unchecked_access().c_str());
         EXPECT_THAT(file.is_open(), Eq(true));
         if (file.is_open()) {
@@ -313,4 +330,273 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, open_succeeds_when_schema_cont
 
     ASSERT_THAT(sut_open.has_value(), Eq(true));
 }
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, schema_path_lookup_works_when_creating_a_service) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+
+    auto sut =
+        node.service_builder(service_name).template publish_subscribe<Flatbuffer<Example::UnboundedData>>().create();
+
+    ASSERT_THAT(sut.has_value(), Eq(true));
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, schema_path_lookup_works_when_opening_a_service) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto schema_file = this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+
+    auto sut_create =
+        node.service_builder(service_name).template publish_subscribe<Flatbuffer<Example::UnboundedData>>().create();
+    ASSERT_THAT(sut_create.has_value(), Eq(true));
+    static_cast<void>(schema_file);
+
+    auto sut_open =
+        node.service_builder(service_name).template publish_subscribe<Flatbuffer<Example::UnboundedData>>().open();
+
+    ASSERT_THAT(sut_open.has_value(), Eq(true));
+}
+
+// Helper function to produce example Flatbuffer data
+auto produce_example_data(flatbuffers::FlatBufferBuilder& builder,
+                          const char* title,
+                          int32_t data_1,
+                          uint64_t data_2,
+                          size_t number_of_entries) -> flatbuffers::Offset<Example::UnboundedData> {
+    auto title_str = builder.CreateString(title);
+    std::vector<flatbuffers::Offset<Example::Entry>> entries;
+    entries.reserve(number_of_entries);
+    for (size_t i = 0; i < number_of_entries; ++i) {
+        entries.emplace_back(Example::CreateEntry(builder, data_1, data_2));
+    }
+    auto entries_vec = builder.CreateVector(entries);
+    return Example::CreateUnboundedData(builder, title_str, entries_vec);
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publish_subscribe_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value().publisher_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "Weg vom Tisch!", 123, 456, 2); // NOLINT
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    send(std::move(initialized_sample)).value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    const auto* recv_data = recv_sample_result.value()->payload_root();
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "Weg vom Tisch!");
+    ASSERT_EQ(recv_data->entries()->size(), 2);
+
+    for (auto i = 0; i < 2; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 123);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 456);
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
+           publisher_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_power_of_two) {
+    constexpr int64_t ARRAY_SIZE = 50;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value()
+                         .publisher_builder()
+                         .initial_reserved_memory(1)
+                         .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                         .create()
+                         .value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "zombieschlaechter", 78, 9, ARRAY_SIZE); // NOLINT
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    send(std::move(initialized_sample)).value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    const auto* recv_data = recv_sample_result.value()->payload_root();
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "zombieschlaechter");
+    ASSERT_EQ(recv_data->entries()->size(), ARRAY_SIZE);
+    for (auto i = 0; i < ARRAY_SIZE; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 78);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 9);
+    }
+}
+#if 0
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
+           publisher_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_best_fit) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value()
+                         .publisher_builder()
+                         .initial_reserved_memory(1)
+                         .allocation_strategy(AllocationStrategy::BestFit)
+                         .create()
+                         .value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "go away, nothing to sniff here", 78, 9, 50);
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    initialized_sample.send().value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    const auto* recv_data = recv_sample_result.value().value()->payload_root();
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "go away, nothing to sniff here");
+    ASSERT_EQ(recv_data->entries()->size(), 50u);
+    for (size_t i = 0; i < 50; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 78);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 9u);
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_does_not_allocate_when_allocation_strategy_is_static) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value()
+                         .publisher_builder()
+                         .initial_reserved_memory(1)
+                         .allocation_strategy(AllocationStrategy::Static)
+                         .create()
+                         .value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+
+    // This should fail because Static allocation strategy does not allow reallocations
+    // and the initial_reserved_memory is set to 1, which is too small for a string.
+    // flatbuffers handles out-of-memory from the allocator with an assertion.
+    EXPECT_DEATH(builder.CreateString("oh no more memory"), "");
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, data_can_be_reconstructed_from_payload_bytes) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value().publisher_builder().initial_reserved_memory(4096).create().value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "there is a butterfly on nalas nose", 44, 55, 1);
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    initialized_sample.send().value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    auto& recv_sample = recv_sample_result.value().value();
+    auto payload_bytes = recv_sample->payload_bytes();
+    const auto* recv_data = flatbuffers::GetRoot<Example::UnboundedData>(payload_bytes.data());
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "there is a butterfly on nalas nose");
+    ASSERT_EQ(recv_data->entries()->size(), 1u);
+    for (size_t i = 0; i < 1; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 44);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 55u);
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_can_read_its_own_serialized_data) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value().publisher_builder().initial_reserved_memory(4096).create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "ouh bailey", 123, 221, 10);
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+
+    auto payload_bytes = initialized_sample.payload_bytes();
+    const auto* recv_data = flatbuffers::GetRoot<Example::UnboundedData>(payload_bytes.data());
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "ouh bailey");
+    ASSERT_EQ(recv_data->entries()->size(), 10u);
+    for (size_t i = 0; i < 10; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 123);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 221u);
+    }
+}
+#endif
 } // namespace
