@@ -163,6 +163,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
     new_ptr: *mut *mut u8,
 ) -> c_int {
     handle.assert_non_null();
+    let header_len = unsafe { iox2_resizable_memory_publish_subscribe_reserved_header_len(handle) };
     unsafe {
         let resizable_memory = &mut *handle.as_type();
 
@@ -172,7 +173,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .ipc
-                    .grow_downwards_with_size(new_size, in_use_front)
+                    .grow_downwards_with_size(new_size, in_use_front, header_len)
                 {
                     return e.into_c_int();
                 }
@@ -183,7 +184,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .local
-                    .grow_downwards_with_size(new_size, in_use_front)
+                    .grow_downwards_with_size(new_size, in_use_front, header_len)
                 {
                     return e.into_c_int();
                 }

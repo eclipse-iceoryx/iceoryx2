@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/allocation_strategy.hpp"
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/bb/static_string.hpp"
@@ -459,10 +460,10 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
         ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 9);
     }
 }
-#if 0
 
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
            publisher_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_best_fit) {
+    constexpr int64_t ARRAY_SIZE = 50;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file = this->create_schema_file(SCHEMA);
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -485,20 +486,21 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest,
     auto sample = publisher.loan_flatbuffer();
     ASSERT_THAT(sample.has_value(), Eq(true));
     auto& builder = sample->flatbuffer_builder();
-    auto unbounded_data = produce_example_data(builder, "go away, nothing to sniff here", 78, 9, 50);
+    auto unbounded_data =
+        produce_example_data(builder, "I am hungry, no I do not want to lick that frog!", 18, 19, ARRAY_SIZE); // NOLINT
     auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
-    initialized_sample.send().value();
+    send(std::move(initialized_sample)).value();
 
     auto recv_sample_result = subscriber.receive();
     ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
     ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
-    const auto* recv_data = recv_sample_result.value().value()->payload_root();
+    const auto* recv_data = recv_sample_result.value()->payload_root();
 
-    ASSERT_STREQ(recv_data->title()->c_str(), "go away, nothing to sniff here");
-    ASSERT_EQ(recv_data->entries()->size(), 50u);
-    for (size_t i = 0; i < 50; ++i) {
-        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 78);
-        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 9u);
+    ASSERT_STREQ(recv_data->title()->c_str(), "I am hungry, no I do not want to lick that frog!");
+    ASSERT_EQ(recv_data->entries()->size(), ARRAY_SIZE);
+    for (auto i = 0; i < ARRAY_SIZE; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 18);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 19);
     }
 }
 
@@ -543,32 +545,33 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, data_can_be_reconstructed_from
                    .create();
     ASSERT_THAT(sut.has_value(), Eq(true));
 
-    auto publisher = sut.value().publisher_builder().initial_reserved_memory(4096).create().value();
+    auto publisher = sut.value().publisher_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
     auto subscriber = sut.value().subscriber_builder().create().value();
 
     auto sample = publisher.loan_flatbuffer();
     ASSERT_THAT(sample.has_value(), Eq(true));
     auto& builder = sample->flatbuffer_builder();
-    auto unbounded_data = produce_example_data(builder, "there is a butterfly on nalas nose", 44, 55, 1);
+    auto unbounded_data = produce_example_data(builder, "are chameleons good at multi-tasking?", 44, 55, 1); // NOLINT
     auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
-    initialized_sample.send().value();
+    send(std::move(initialized_sample)).value();
 
     auto recv_sample_result = subscriber.receive();
     ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
     ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
-    auto& recv_sample = recv_sample_result.value().value();
+    auto& recv_sample = recv_sample_result.value();
     auto payload_bytes = recv_sample->payload_bytes();
     const auto* recv_data = flatbuffers::GetRoot<Example::UnboundedData>(payload_bytes.data());
 
-    ASSERT_STREQ(recv_data->title()->c_str(), "there is a butterfly on nalas nose");
-    ASSERT_EQ(recv_data->entries()->size(), 1u);
-    for (size_t i = 0; i < 1; ++i) {
+    ASSERT_STREQ(recv_data->title()->c_str(), "are chameleons good at multi-tasking?");
+    ASSERT_EQ(recv_data->entries()->size(), 1);
+    for (auto i = 0; i < 1; ++i) {
         ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 44);
-        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 55u);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 55);
     }
 }
 
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_can_read_its_own_serialized_data) {
+    constexpr int64_t ARRAY_SIZE = 50;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file = this->create_schema_file(SCHEMA);
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -580,23 +583,26 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_can_read_its_own_ser
                    .create();
     ASSERT_THAT(sut.has_value(), Eq(true));
 
-    auto publisher = sut.value().publisher_builder().initial_reserved_memory(4096).create().value();
+    auto publisher = sut.value()
+                         .publisher_builder()
+                         .initial_reserved_memory(INITIAL_RESERVED_MEMORY)
+                         .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                         .create()
+                         .value();
 
     auto sample = publisher.loan_flatbuffer();
     ASSERT_THAT(sample.has_value(), Eq(true));
     auto& builder = sample->flatbuffer_builder();
-    auto unbounded_data = produce_example_data(builder, "ouh bailey", 123, 221, 10);
+    auto unbounded_data = produce_example_data(builder, "dib dib dudel dib", 123, 221, ARRAY_SIZE); // NOLINT
     auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
 
-    auto payload_bytes = initialized_sample.payload_bytes();
-    const auto* recv_data = flatbuffers::GetRoot<Example::UnboundedData>(payload_bytes.data());
+    const auto* data = initialized_sample.payload_root();
 
-    ASSERT_STREQ(recv_data->title()->c_str(), "ouh bailey");
-    ASSERT_EQ(recv_data->entries()->size(), 10u);
-    for (size_t i = 0; i < 10; ++i) {
-        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 123);
-        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 221u);
+    ASSERT_STREQ(data->title()->c_str(), "dib dib dudel dib");
+    ASSERT_EQ(data->entries()->size(), ARRAY_SIZE);
+    for (auto i = 0; i < ARRAY_SIZE; ++i) {
+        ASSERT_EQ(data->entries()->Get(i)->data_1(), 123);
+        ASSERT_EQ(data->entries()->Get(i)->data_2(), 221);
     }
 }
-#endif
 } // namespace

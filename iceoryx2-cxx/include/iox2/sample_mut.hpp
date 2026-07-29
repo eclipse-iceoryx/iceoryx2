@@ -24,6 +24,7 @@
 #include "iox2/publisher_error.hpp"
 #include "iox2/service_type.hpp"
 
+#include <flatbuffers/flatbuffers.h>
 #include <type_traits>
 
 namespace iox2 {
@@ -80,9 +81,19 @@ class SampleMut {
               typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> ValueType&;
 
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+
+    /// Returns an immutable slice to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
+    /// Returns a mutable slice to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
@@ -223,6 +234,26 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> bb::MutableSlice
 
     return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), length);
 }
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMut<S, Payload, UserHeader>::payload_bytes() const -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_sample_mut_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+auto SampleMut<S, Payload, UserHeader>::payload_root() const -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
+}
+
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> bb::Expected<size_t, SendError> {
