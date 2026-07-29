@@ -18,7 +18,6 @@ use crate::{
 };
 use core::ffi::c_int;
 use iceoryx2::sample_mut::SampleMutSharedState;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::AllocationGrowError};
