@@ -13,6 +13,7 @@
 #include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/testing.hpp"
 #include "iox2/type_name.hpp"
 
 #include "test.hpp"
@@ -124,7 +125,7 @@ TYPED_TEST_SUITE(ServiceTypeNameTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_publish_subscribe_service_with_same_custom_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
@@ -137,7 +138,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_publish_subscribe_service_with_
 TYPED_TEST(ServiceTypeNameTest,
            opening_existing_publish_subscribe_service_with_different_payload_but_same_custom_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
@@ -150,7 +151,7 @@ TYPED_TEST(ServiceTypeNameTest,
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_publish_subscribe_service_with_payload_using_default_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
@@ -163,7 +164,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_publish_subscribe_service_with_
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_publish_subscribe_service_with_different_custom_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create =
@@ -181,7 +182,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_publish_subscribe_service_with_
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_request_response_service_with_same_custom_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -198,7 +199,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_request_response_service_with_s
 TYPED_TEST(ServiceTypeNameTest,
            opening_existing_request_response_service_with_different_payload_but_same_custom_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -215,7 +216,7 @@ TYPED_TEST(ServiceTypeNameTest,
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_request_response_service_with_payload_using_default_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -232,7 +233,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_request_response_service_with_p
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_request_response_service_with_different_custom_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -253,7 +254,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_request_response_service_with_d
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_blackboard_service_with_same_custom_key_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -269,7 +270,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_blackboard_service_with_same_cu
 TYPED_TEST(ServiceTypeNameTest,
            opening_existing_blackboard_service_with_different_key_but_same_custom_key_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -285,7 +286,7 @@ TYPED_TEST(ServiceTypeNameTest,
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_blackboard_service_with_key_using_default_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -301,7 +302,7 @@ TYPED_TEST(ServiceTypeNameTest, opening_existing_blackboard_service_with_key_usi
 
 TYPED_TEST(ServiceTypeNameTest, opening_existing_blackboard_service_with_different_custom_key_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)

@@ -16,9 +16,13 @@
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/file_path.hpp"
 #include "iox2/bb/path.hpp"
+#include "iox2/service_name.hpp"
 
 namespace iox2 {
 namespace testing {
+/// Generates a random all-time unique service name.
+auto generate_service_name() -> ServiceName;
+
 /// Creates the test directory to store test artifacts.
 void create_test_directory();
 

@@ -206,7 +206,7 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
         iox2::testing::create_test_directory();
     }
 
-    ~ServicePublishSubscribeFlatbufferTest() {
+    ~ServicePublishSubscribeFlatbufferTest() override {
         static_cast<void>(std::remove(m_schema_file.as_string().unchecked_access().c_str()));
     }
 
@@ -225,6 +225,7 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
 TYPED_TEST_SUITE(ServicePublishSubscribeFlatbufferTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, created_service_does_exist) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     this->create_schema_file(SCHEMA_FILE);
 }
 } // namespace
