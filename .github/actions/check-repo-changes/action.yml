@@ -7,9 +7,9 @@ runs:
     - name: Check for added/changed files in repository
       shell: bash
       run: |
-        if ! [[ -z "$(git status --porcelain)" ]] \
-        || ! git diff --exit-code HEAD; then
-          git status --porcelain
+        if ! git diff --exit-code HEAD \
+        || ! [[ -z "$(git status --porcelain)" ]]; then
+          git status
           echo "Error: source code has been added or changed while running the CI."
           exit 1
         fi
