@@ -233,7 +233,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::lookup_and_s
     auto schema_path = config.global().service().flatbuffer_schema_path();
 
     auto type_name = iox2::internal::get_type_name<typename Payload::ValueType>();
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays) Certified std::array not available
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) Certified std::array not available
     char schema_file[bb::platform::IOX2_MAX_PATH_LENGTH] {};
 
     if (schema_path.has_value()
