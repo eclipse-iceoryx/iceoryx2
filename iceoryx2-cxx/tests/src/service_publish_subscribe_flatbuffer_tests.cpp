@@ -17,6 +17,7 @@
 #include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/testing.hpp"
 #include "iox2/type_variant.hpp"
 
@@ -179,7 +180,7 @@ inline void FinishSizePrefixedUnboundedDataBuffer(::flatbuffers::FlatBufferBuild
 } // namespace Example
 // NOLINTEND
 
-const char* SCHEMA_FILE = R"(
+const char* SCHEMA = R"(
     namespace Example;
 
     table Entry {
@@ -195,37 +196,121 @@ const char* SCHEMA_FILE = R"(
     root_type UnboundedData;
 )";
 
+const char* ALT_SCHEMA = R"(
+    namespace Example;
+
+    table BoundedData {
+        data_1: int32;
+    }
+
+    root_type BoundedData;
+)";
+
 template <typename T>
 class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
   public:
     static constexpr ServiceType TYPE = T::TYPE;
 
 
-    ServicePublishSubscribeFlatbufferTest()
-        : m_schema_file { iox2::testing::generate_file_path() } {
+    ServicePublishSubscribeFlatbufferTest() {
         iox2::testing::create_test_directory();
     }
 
     ~ServicePublishSubscribeFlatbufferTest() override {
-        static_cast<void>(std::remove(m_schema_file.as_string().unchecked_access().c_str()));
+        for (auto file : m_schema_files) {
+            static_cast<void>(std::remove(file.as_string().unchecked_access().c_str()));
+        }
     }
 
-    void create_schema_file(const char* content) {
-        std::ofstream file(m_schema_file.as_string().unchecked_access().c_str());
+    auto create_schema_file(const char* content, const bb::FilePath& schema_file = iox2::testing::generate_file_path())
+        -> bb::FilePath {
+        std::ofstream file(schema_file.as_string().unchecked_access().c_str());
         EXPECT_THAT(file.is_open(), Eq(true));
         if (file.is_open()) {
             file << content;
         }
+
+        m_schema_files.push_back(schema_file);
+        return schema_file;
     }
 
   private:
-    bb::FilePath m_schema_file;
+    std::vector<bb::FilePath> m_schema_files;
 };
 
 TYPED_TEST_SUITE(ServicePublishSubscribeFlatbufferTest, iox2_testing::ServiceTypes, );
 
-TYPED_TEST(ServicePublishSubscribeFlatbufferTest, created_service_does_exist) {
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, create_fails_when_no_schema_file_is_available) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA_FILE);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name).template publish_subscribe<Flatbuffer<uint64_t>>().create();
+
+    ASSERT_THAT(sut.error(), Eq(PublishSubscribeCreateError::UnableToAcquireTypeDefinition));
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, create_succeeds_with_schema_file) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<uint64_t>>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+
+    ASSERT_THAT(sut.has_value(), Eq(true));
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, open_fails_when_no_schema_file_is_available) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut_create = node.service_builder(service_name)
+                          .template publish_subscribe<Flatbuffer<uint64_t>>()
+                          .flatbuffer_schema_path(schema_file)
+                          .create();
+
+    auto sut_open = node.service_builder(service_name).template publish_subscribe<Flatbuffer<uint64_t>>().open();
+
+    ASSERT_THAT(sut_open.error(), Eq(PublishSubscribeOpenError::UnableToAcquireTypeDefinition));
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, open_fails_when_schema_is_not_the_same) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto alt_schema_file = this->create_schema_file(ALT_SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut_create = node.service_builder(service_name)
+                          .template publish_subscribe<Flatbuffer<uint64_t>>()
+                          .flatbuffer_schema_path(schema_file)
+                          .create();
+
+    auto sut_open = node.service_builder(service_name)
+                        .template publish_subscribe<Flatbuffer<uint64_t>>()
+                        .flatbuffer_schema_path(alt_schema_file)
+                        .open();
+
+    ASSERT_THAT(sut_open.error(), Eq(PublishSubscribeOpenError::IncompatibleTypes));
+}
+
+TYPED_TEST(ServicePublishSubscribeFlatbufferTest, open_succeeds_when_schema_content_is_identical) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut_create = node.service_builder(service_name)
+                          .template publish_subscribe<Flatbuffer<uint64_t>>()
+                          .flatbuffer_schema_path(schema_file)
+                          .create();
+
+    auto sut_open = node.service_builder(service_name)
+                        .template publish_subscribe<Flatbuffer<uint64_t>>()
+                        .flatbuffer_schema_path(schema_file)
+                        .open();
+
+    ASSERT_THAT(sut_open.has_value(), Eq(true));
 }
 } // namespace

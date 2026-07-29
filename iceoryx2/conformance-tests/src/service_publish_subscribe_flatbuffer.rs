@@ -19,12 +19,14 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod service_publish_subscribe_flatbuffer {
     use alloc::vec;
     use flatbuffers::{FlatBufferBuilder, WIPOffset};
+    use iceoryx2::prelude::{FileName, FilePath, SemanticString};
     use iceoryx2::sample_mut_uninit::FlatbufferMemory;
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
     use iceoryx2::service::{Service, marker::Flatbuffer};
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+    use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::file::{CreationMode, File, FileBuilder};
     use iceoryx2_bb_posix::testing::*;
     use iceoryx2_bb_testing::assert_that;
@@ -423,6 +425,21 @@ pub mod service_publish_subscribe_flatbuffer {
         file
     }
 
+    fn create_schema_file_at(schema: &str, file_name: &str) -> File {
+        let schema_file = FilePath::from_path_and_file(
+            &TEST_DIRECTORY,
+            &FileName::new(file_name.as_bytes()).unwrap(),
+        )
+        .unwrap();
+        let mut file = FileBuilder::new(&schema_file)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .create()
+            .unwrap();
+        file.acquire_ownership();
+        file.write(schema.as_bytes()).unwrap();
+        file
+    }
+
     #[conformance_test]
     pub fn create_fails_when_no_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
@@ -514,6 +531,44 @@ pub mod service_publish_subscribe_flatbuffer {
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
             .flatbuffer_schema_path(alt_schema_file.path().unwrap())
+            .open();
+
+        assert_that!(sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn schema_path_lookup_works_when_creating_a_service<Sut: Service>() {
+        let mut test = Test::<Sut>::new();
+        test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _schema_file = create_schema_file_at(SCHEMA, "unbounded_data.fbs");
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .create();
+
+        assert_that!(sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn schema_path_lookup_works_when_opening_a_service<Sut: Service>() {
+        let mut test = Test::<Sut>::new();
+        test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _schema_file = create_schema_file_at(SCHEMA, "unbounded_data.fbs");
+
+        let _sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .create()
+            .unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
             .open();
 
         assert_that!(sut, is_ok);
