@@ -103,3 +103,6 @@ jobs:
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           echo "Using RMW: $RMW_IMPLEMENTATION"
           just test-e2e integrations-ros2
+
+      - name: Check for changed files after CI run
+        uses: ./.github/actions/check-repo-changes

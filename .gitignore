@@ -5,9 +5,9 @@ debug/
 .vscode
 build
 bazel-*
+Cargo.Bazel.lock
 CMakeUserPresets.json
 
-Cargo.lock
 **/*.rs.bk
 *.pdb
 **/rusty-tags.vi
