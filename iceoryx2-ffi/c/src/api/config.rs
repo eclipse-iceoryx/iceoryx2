@@ -880,7 +880,7 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destr
 /////////////////
 
 /// Returns the directory which will be used to automatically lookup flatbuffer schema files.
-/// If not directory was defined it returns a nullptr.
+/// If no directory was defined it returns a nullptr.
 ///
 /// # Safety
 ///
@@ -903,7 +903,7 @@ pub unsafe extern "C" fn iox2_config_global_service_flatbuffer_schema_path(
     }
 }
 
-/// Sets the directory which will be used to automatically lookup flatbuffer schema files. If th
+/// Sets the directory which will be used to automatically lookup flatbuffer schema files. If the
 /// provided string literal is a nullptr, the path will be unset.
 ///
 /// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
@@ -911,8 +911,8 @@ pub unsafe extern "C" fn iox2_config_global_service_flatbuffer_schema_path(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_h_ref`] or a nullptr.
-/// * `value` - A valid null-terminated string the corresponds to a valid path
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - A valid null-terminated string the corresponds to a valid path or a nullptr
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_flatbuffer_schema_path(

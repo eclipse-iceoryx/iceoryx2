@@ -186,7 +186,7 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and was initialized with
+/// * `header_handle` is valid, non-null and was initialized with
 ///   [`iox2_sample_header()`](crate::iox2_sample_header)
 ///
 /// # Safety
