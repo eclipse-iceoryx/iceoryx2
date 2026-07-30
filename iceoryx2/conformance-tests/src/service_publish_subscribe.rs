@@ -1118,7 +1118,10 @@ pub mod service_publish_subscribe {
 
     #[conformance_test]
     pub fn publisher_reclaims_all_samples_after_disconnect<Sut: Service>() {
-        let test = Test::<Sut>::new();
+        let test =
+            Test::<Sut>::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(
+                30,
+            )));
         let node = test.create_node();
         let service_name = generate_service_name();
         const RECONNECTIONS: usize = 20;
