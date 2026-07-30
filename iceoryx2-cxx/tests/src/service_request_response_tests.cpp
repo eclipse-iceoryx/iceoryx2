@@ -12,8 +12,7 @@
 
 #include "iox2/bb/optional.hpp"
 #include "iox2/client_error.hpp"
-#include "iox2/custom_header_marker.hpp"
-#include "iox2/custom_payload_marker.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/pending_response.hpp"

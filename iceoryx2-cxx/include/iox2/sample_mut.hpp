@@ -15,7 +15,6 @@
 
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/slice.hpp"
-#include "iox2/custom_payload_marker.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/iceoryx2_cxx_deployment.hpp"

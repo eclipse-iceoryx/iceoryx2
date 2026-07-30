@@ -22,6 +22,15 @@ struct Flatbuffer {
     static constexpr const char* IOX2_TYPE_NAME = "iox2::Flatbuffer";
 };
 
+/// User header type for a service whose user header type details are set at runtime.
+struct CustomHeaderMarker { };
+
+/// Payload element for a service whose payload type details are set at runtime.
+struct CustomPayloadMarker {
+    uint8_t value;
+};
+
+
 namespace internal {
 template <typename Given, template <typename> class Required>
 struct HasMarker {
