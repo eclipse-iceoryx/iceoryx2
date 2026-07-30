@@ -22,6 +22,7 @@ else()
         flatbuffers
         GIT_REPOSITORY https://github.com/google/flatbuffers.git
         GIT_TAG        v25.12.19
+        OVERRIDE_FIND_PACKAGE
         EXCLUDE_FROM_ALL
     )
 
@@ -32,6 +33,8 @@ else()
     set(FLATBUFFERS_BUILD_FLATC ON CACHE BOOL "Build flatbuffers flatc compiler")
     set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Skip building flatbuffers tests")
     FetchContent_MakeAvailable(flatbuffers)
+
+    find_package(flatbuffers)
 
 endif()
 
