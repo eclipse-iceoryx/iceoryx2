@@ -91,9 +91,6 @@ class SemanticString {
     ///         the expected returns an error describing the cause.
     /// @param[in] value the value of the SemanticString
     /// @return expected either containing the new SemanticString or an error
-    // avoid-c-arrays: we would like to assign string literals, safe since it is known
-    //                 at compile time.
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
     static auto create(const char* value) noexcept -> bb::Expected<Child, SemanticStringError>;
 
     /// @brief Returns the number of characters.

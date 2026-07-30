@@ -76,7 +76,7 @@ impl ResizableMemoryPublishSubscribeUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<NotifierUnion>
 pub struct iox2_resizable_memory_publish_subscribe_storage_t {
-    internal: [u8; 64], // magic number obtained with size_of::<Option<NotifierUnion>>()
+    internal: [u8; 64], // magic number obtained with size_of::<Option<ResizableMemoryPublishSubscribeUnion>>()
 }
 
 #[repr(C)]
@@ -104,7 +104,7 @@ pub struct iox2_resizable_memory_publish_subscribe_h_t;
 /// The owning handle for `iox2_resizable_memory_publish_subscribe_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_resizable_memory_publish_subscribe_h =
     *mut iox2_resizable_memory_publish_subscribe_h_t;
-/// The non-owning handle for `iox2_notifier_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_resizable_memory_publish_subscribe_t`. Passing the handle to an function does not transfers the ownership.
 pub type iox2_resizable_memory_publish_subscribe_h_ref =
     *const iox2_resizable_memory_publish_subscribe_h;
 

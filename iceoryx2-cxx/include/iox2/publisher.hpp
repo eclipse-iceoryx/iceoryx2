@@ -62,7 +62,7 @@ class Publisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
 
-    /// Copies the input `value` into a [`SampleMut`] and delivers it.
+    /// Copies the input `payload` slice into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`SendError`] describing the failure.
     template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
@@ -237,6 +237,10 @@ inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
 
     auto result = iox2_publisher_loan_slice_uninit(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, 1);
 
+    if (result != IOX2_OK) {
+        return bb::err(iox2::bb::into<LoanError>(result));
+    }
+
     iox2_resizable_memory_publish_subscribe_h resizable_memory_handle {};
     iox2_sample_mut_create_resizable_memory_builder(&sample.m_sample.m_handle, nullptr, &resizable_memory_handle);
 
@@ -246,11 +250,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
     auto initial_size = sample.m_memory->len();
     sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, sample.m_memory, true);
 
-    if (result == IOX2_OK) {
-        return std::move(sample);
-    }
-
-    return bb::err(iox2::bb::into<LoanError>(result));
+    return std::move(sample);
 }
 
 #endif // IOX2_FEATURE_FLATBUFFERS

@@ -31,7 +31,15 @@ pub enum iox2_flatbuffer_find_schema_file_error_e {
     NO_SCHEMA_FILE_FOUND,
 }
 
-/// Generates a random and all time unique file name.
+/// Returns the best fitting schema file for a given [`TypeName`]. If no schema file could be found
+/// [`None`] is returned.
+///
+/// The best fitting schema file in descending order:
+///
+/// 1. `namespace/name.fbs`
+/// 2. `name.fbs`
+/// 3. `something/namespace/name.fbs`
+/// 4. `something/name.fbs`
 ///
 /// # Safety
 ///
