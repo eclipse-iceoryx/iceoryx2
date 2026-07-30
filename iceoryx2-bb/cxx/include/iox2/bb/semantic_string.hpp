@@ -276,6 +276,13 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
     // avoid-c-arrays: justification in header
     // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
     const char* value) noexcept -> bb::Expected<Child, SemanticStringError> {
+    if (strnlen(value, Capacity + 1) > Capacity) {
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \""
+                     << value << "\" exceeds the maximum valid length of " << Capacity << ".");
+        return bb::err(SemanticStringError::ExceedsMaximumLength);
+    }
+
     return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
         template create_impl<Capacity>(value);
 }

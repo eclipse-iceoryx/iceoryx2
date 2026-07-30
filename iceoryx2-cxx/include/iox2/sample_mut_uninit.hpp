@@ -17,6 +17,7 @@
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2_cxx_deployment.hpp"
+#include "iox2/internal/helper.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
@@ -138,8 +139,7 @@ inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> Sampl
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto assume_init(SampleMutUninit<S, Flatbuffer<Payload>, UserHeader>&& self, flatbuffers::Offset<Payload> root)
     -> SampleMut<S, Flatbuffer<Payload>, UserHeader> {
-    // TODO: important fix this
-    // internal::PlacementDefault<UserHeader>::placement_default(self);
+    internal::PlacementDefault<UserHeader>::placement_default(self.m_sample);
     auto final_size = self.m_memory->len() + self.m_memory->reserved_header_len();
     self.flatbuffer_builder().Finish(root, nullptr);
     const auto* payload_ptr = self.flatbuffer_builder().GetBufferPointer();
