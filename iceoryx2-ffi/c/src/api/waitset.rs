@@ -663,7 +663,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
 /// a busy loop and high CPU usage.
 ///
-/// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+/// For a `Listener`, consume pending notifications with `iox2_listener_try_wait()`.
 /// For a socket or another file-descriptor-based attachment, consume the pending
 /// data using its corresponding read or receive API.
 ///
@@ -757,7 +757,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
 /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
 /// a busy loop and high CPU usage.
 ///
-/// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+/// For a `Listener`, consume pending notifications with `iox2_listener_try_wait()`.
 /// For a socket or another file-descriptor-based attachment, consume the pending
 /// data using its corresponding read or receive API.
 ///
@@ -853,7 +853,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once_with_timeout(
 /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
 /// a busy loop and high CPU usage.
 ///
-/// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+/// For a `Listener`, consume pending notifications with `iox2_listener_try_wait()`.
 /// For a socket or another file-descriptor-based attachment, consume the pending
 /// data using its corresponding read or receive API.
 ///

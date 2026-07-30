@@ -28,7 +28,7 @@ namespace iox2 {
 /// The [`WaitSetGuard`] is returned by [`WaitSet::attach_deadline()`], [`WaitSet::attach_notification()`]
 /// or [`WaitSet::attach_interval()`]. As soon as it goes out-of-scope it detaches the attachment.
 /// It can also be used to determine the origin of an event in [`WaitSet::wait_and_process()`] or
-/// [`WaitSet::try_wait_and_process()`] via [`WaitSetAttachmentId::has_event_from()`] or
+/// [`WaitSet::wait_and_process_once()`] via [`WaitSetAttachmentId::has_event_from()`] or
 /// [`WaitSetAttachmentId::has_missed_deadline()`].
 template <ServiceType S>
 class WaitSetGuard {
@@ -104,8 +104,8 @@ template <ServiceType S>
 auto operator<<(std::ostream& stream, const WaitSetAttachmentId<S>& self) -> std::ostream&;
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
-/// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
+/// single call [`WaitSet::wait_and_process_once()`] until it wakes up or to run repeatedly with
+/// [`WaitSet::wait_and_process()`] until an interrupt or termination signal was received or the user
 /// has explicitly requested to stop by returning [`CallbackProgression::Stop`] in the provided
 /// callback.
 ///
