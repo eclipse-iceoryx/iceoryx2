@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
-#include "iox2/marker.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
