@@ -15,6 +15,8 @@
 #include "iox2/bb/file_path.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
+#include <chrono>
+
 namespace iox2 {
 namespace testing {
 void create_test_directory() {
