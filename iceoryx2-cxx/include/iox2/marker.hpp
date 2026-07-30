@@ -13,6 +13,8 @@
 #ifndef IOX2_MARKER_HPP
 #define IOX2_MARKER_HPP
 
+#include <cstdint>
+
 namespace iox2 {
 /// Identifies payloads that are serialized via flatbuffer.
 template <typename T>
@@ -27,7 +29,7 @@ struct CustomHeaderMarker { };
 
 /// Payload element for a service whose payload type details are set at runtime.
 struct CustomPayloadMarker {
-    uint8_t value;
+    uint8_t value = 0;
 };
 
 
