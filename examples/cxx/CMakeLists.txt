@@ -71,7 +71,7 @@ add_option(
     DESCRIPTION "Use the FlatBuffers provided by the system instead of using FetchContent"
     DEFAULT_VALUE OFF
 )
-if($IOX2_FEATURE_FLABUFFERS)
+if(${IOX2_FEATURE_FLATBUFFERS})
     include(Iceoryx2Flatbuffers)
     add_subdirectory(flatbuffer_publish_subscribe)
 endif()

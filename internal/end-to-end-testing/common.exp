@@ -91,3 +91,8 @@ proc show_test_passed { } {
     puts "${C_GREEN}Test passed!${C_OFF}"
 }
 
+proc show_test_skipped { } {
+    global C_YELLOW C_OFF
+    puts "${C_YELLOW}Test skipped!${C_OFF}"
+}
+

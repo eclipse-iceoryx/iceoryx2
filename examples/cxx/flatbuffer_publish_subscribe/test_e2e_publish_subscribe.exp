@@ -20,6 +20,14 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/cxx/flatbuffer_publish_subscribe/src
 
+set publisher_binary target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_publisher
+
+if {![file executable $publisher_binary]} {
+    puts stdout "Flatbuffer example does not exist"
+    show_test_skipped
+    exit 0
+}
+
 #### Test Setup
 
 set timeout 10
