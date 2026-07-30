@@ -21,6 +21,7 @@ cc_binary(
         "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
+    target_compatible_with = ["@platforms//:incompatible"], #TODO make it work with bazel
 )
 
 cc_binary(
@@ -32,4 +33,5 @@ cc_binary(
         "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
+    target_compatible_with = ["@platforms//:incompatible"], #TODO make it work with bazel
 )
