@@ -28,7 +28,7 @@ namespace iox2 {
 /// The [`WaitSetGuard`] is returned by [`WaitSet::attach_deadline()`], [`WaitSet::attach_notification()`]
 /// or [`WaitSet::attach_interval()`]. As soon as it goes out-of-scope it detaches the attachment.
 /// It can also be used to determine the origin of an event in [`WaitSet::wait_and_process()`] or
-/// [`WaitSet::try_wait_and_process()`] via [`WaitSetAttachmentId::has_event_from()`] or
+/// [`WaitSet::wait_and_process_once()`] via [`WaitSetAttachmentId::has_event_from()`] or
 /// [`WaitSetAttachmentId::has_missed_deadline()`].
 template <ServiceType S>
 class WaitSetGuard {
@@ -104,8 +104,8 @@ template <ServiceType S>
 auto operator<<(std::ostream& stream, const WaitSetAttachmentId<S>& self) -> std::ostream&;
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
-/// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
+/// single call [`WaitSet::wait_and_process_once()`] until it wakes up or to run repeatedly with
+/// [`WaitSet::wait_and_process()`] until an interrupt or termination signal was received or the user
 /// has explicitly requested to stop by returning [`CallbackProgression::Stop`] in the provided
 /// callback.
 ///
@@ -135,6 +135,17 @@ class WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// **Important:** The [`WaitSet`] only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the [`WaitSet`] wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a [`Listener`], consume pending notifications with [`Listener::try_wait()`].
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     auto wait_and_process(const iox2::bb::StaticFunction<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> bb::Expected<WaitSetRunResult, WaitSetRunError>;
 
@@ -154,6 +165,17 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// **Important:** The [`WaitSet`] only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the [`WaitSet`] wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a [`Listener`], consume pending notifications with [`Listener::try_wait()`].
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     auto wait_and_process_once(const iox2::bb::StaticFunction<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> bb::Expected<WaitSetRunResult, WaitSetRunError>;
 
@@ -173,6 +195,17 @@ class WaitSet {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// **Important:** The [`WaitSet`] only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the [`WaitSet`] wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a [`Listener`], consume pending notifications with [`Listener::try_wait()`].
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     auto wait_and_process_once_with_timeout(
         const iox2::bb::StaticFunction<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
         iox2::bb::Duration timeout) -> bb::Expected<WaitSetRunResult, WaitSetRunError>;

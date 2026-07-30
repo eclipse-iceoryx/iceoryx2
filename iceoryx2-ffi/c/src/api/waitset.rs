@@ -656,6 +656,17 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 ///
 /// When no signal was received and all events were handled, it will return
 /// [`iox2_waitset_run_result_e::ALL_EVENTS_HANDLED`].
+///
+/// **Important:** The `WaitSet` only reports that an attachment is ready; it
+/// does not consume the notification or data that caused the wake-up. If the
+/// callback returns without consuming any pending input, the attachment remains
+/// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
+/// a busy loop and high CPU usage.
+///
+/// For a `Listener`, consume pending notifications with `iox2_listener_try_wait()`.
+/// For a socket or another file-descriptor-based attachment, consume the pending
+/// data using its corresponding read or receive API.
+///
 /// # Return
 ///
 /// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
@@ -739,6 +750,17 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
 ///
 /// When no signal was received and all events were handled, it will return
 /// [`iox2_waitset_run_result_e::ALL_EVENTS_HANDLED`].
+///
+/// **Important:** The `WaitSet` only reports that an attachment is ready; it
+/// does not consume the notification or data that caused the wake-up. If the
+/// callback returns without consuming any pending input, the attachment remains
+/// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
+/// a busy loop and high CPU usage.
+///
+/// For a `Listener`, consume pending notifications with `iox2_listener_try_wait()`.
+/// For a socket or another file-descriptor-based attachment, consume the pending
+/// data using its corresponding read or receive API.
+///
 /// # Return
 ///
 /// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
@@ -824,6 +846,16 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once_with_timeout(
 /// If the deadline was hit the function
 /// [`iox2_waitset_attachment_id_has_missed_deadline()`](crate::iox2_waitset_attachment_id_has_missed_deadline())
 /// can be used to identify it.
+///
+/// **Important:** The `WaitSet` only reports that an attachment is ready; it
+/// does not consume the notification or data that caused the wake-up. If the
+/// callback returns without consuming any pending input, the attachment remains
+/// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
+/// a busy loop and high CPU usage.
+///
+/// For a `Listener`, consume pending notifications with `iox2_listener_try_wait()`.
+/// For a socket or another file-descriptor-based attachment, consume the pending
+/// data using its corresponding read or receive API.
 ///
 /// # Return
 ///

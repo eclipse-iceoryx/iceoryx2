@@ -330,6 +330,17 @@ impl WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// **Important:** The `WaitSet` only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     pub fn wait_and_process(
         &self,
         py: Python<'_>,
@@ -363,6 +374,17 @@ impl WaitSet {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// **Important:** The `WaitSet` only reports that an attachment is ready; it
+    /// does not consume the notification or data that caused the wake-up. If the
+    /// callback returns without consuming any pending input, the attachment remains
+    /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
+    /// a busy loop and high CPU usage.
+    ///
+    /// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+    /// For a socket or another file-descriptor-based attachment, consume the pending
+    /// data using its corresponding read or receive API.
+    ///
     pub fn wait_and_process_with_timeout(
         &self,
         timeout: &Duration,
