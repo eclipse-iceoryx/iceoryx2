@@ -172,7 +172,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .ipc
-                    .grow_downwards_with_size(new_size, in_use_front, header_len)
+                    .grow_downwards_with_size(new_size + header_len, in_use_front)
                 {
                     return e.into_c_int();
                 }
@@ -183,7 +183,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .local
-                    .grow_downwards_with_size(new_size, in_use_front, header_len)
+                    .grow_downwards_with_size(new_size + header_len, in_use_front)
                 {
                     return e.into_c_int();
                 }

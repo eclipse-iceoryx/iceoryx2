@@ -79,7 +79,9 @@ class Node {
 /// All configurable settings of a [`Service`].
 class Service {
   public:
-    /// The directory in which all service files are stored
+    /// A list of directories where iceoryx2 will look for `.fbs` flatbuffer schemas. If no path is
+    /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
+    /// the flatbuffer schemas.
     auto flatbuffer_schema_path() && -> bb::Optional<const char*>;
     /// Set the directory in which all service files are stored
     void set_flatbuffer_schema_path(bb::Optional<bb::Path> value) &&;

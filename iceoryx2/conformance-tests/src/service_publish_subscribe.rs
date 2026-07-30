@@ -4063,4 +4063,66 @@ pub mod service_publish_subscribe {
         assert_that!(second, is_some);
         assert_that!(*second.unwrap(), eq 4567);
     }
+
+    #[conformance_test]
+    pub fn subscriber_created_first_receives_first_sample_when_safe_overflow_is_disabled<
+        Sut: Service,
+    >() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .enable_safe_overflow(false)
+            .create()
+            .unwrap();
+
+        let sut2 = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .enable_safe_overflow(false)
+            .open()
+            .unwrap();
+
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut2
+            .publisher_builder()
+            .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+            .create()
+            .unwrap();
+
+        // The subscriber exists and is discovered before the first send, but it
+        // only attaches its receiver-side connection lazily, on its first
+        // receive(). With safe overflow disabled the publisher refuses to deliver
+        // to a not-yet-attached receiver (NoConnectedReceiver) and silently drops
+        // the sample, so the first sample is lost even though the subscriber was
+        // there the whole time.
+        //
+        // - lazy receiver attach: `subscriber.rs`: `receive_impl()` ->
+        //   `update_connections()` -> `details/receiver.rs`:
+        //   `update_connection()` -> `Connection::new()`
+        // - refused delivery: `iceoryx2-cal/src/zero_copy_connection/common.rs`:
+        //   `blocking_send()`, where the `!enable_safe_overflow` branch gates on
+        //   `is_connected()` (both endpoints open) and bails out with
+        //   `ZeroCopySendError::NoConnectedReceiver`
+        // - silent drop: `details/sender.rs`:
+        //   `deliver_offset_to_connection_impl()` treats `NoConnectedReceiver`
+        //   as a no-op - comment only considers lost connections, not those
+        //   yet to be established
+        assert_that!(publisher.send_copy(1234), is_ok);
+
+        // This receive attaches the receiver side -- too late for 1234 if it was
+        // dropped on send.
+        let first = subscriber.receive().unwrap();
+
+        assert_that!(publisher.send_copy(4567), is_ok);
+        let second = subscriber.receive().unwrap();
+
+        assert_that!(first, is_some);
+        assert_that!(*first.unwrap(), eq 1234);
+        assert_that!(second, is_some);
+        assert_that!(*second.unwrap(), eq 4567);
+    }
 }

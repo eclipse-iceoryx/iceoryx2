@@ -59,7 +59,7 @@ commands.
 
 ```sh
 export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/cxx/flatbuffer_publish_subscribe/src"
-./target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_subscriber
+./target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_publisher
 ```
 
 ### Terminal 2
