@@ -44,8 +44,8 @@ impl Listener {
         }
     }
 
-    /// Non-blocking wait for new `EventId`s. Collects all `EventId`s that were received and
-    /// calls the provided callback is with the `EventId` as input argument.
+    /// Non-blocking wait for new events. Collects all `EventActivation`s that were received
+    /// and returns them.
     /// On error it emits `ListenerWaitError`.
     pub fn try_wait(&self) -> PyResult<Vec<EventActivation>> {
         let mut event_ids = vec![];
@@ -63,9 +63,9 @@ impl Listener {
         Ok(event_ids)
     }
 
-    /// Blocking wait for new `EventId`s until the provided timeout has passed. Unblocks as soon
-    /// as an `EventId` was received and then collects all `EventId`s that were received and
-    /// calls the provided callback is with the `EventId` as input argument.
+    /// Blocking wait for new events until the provided timeout has passed. Unblocks as soon
+    /// as an event was received and then collects all `EventActivation`s that were received
+    /// and returns them.
     /// On error it emits `ListenerWaitError`.
     pub fn timed_wait(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
         py.detach(move || {
@@ -85,9 +85,9 @@ impl Listener {
         })
     }
 
-    /// Blocking wait for new `EventId`s. Unblocks as soon
-    /// as an `EventId` was received and then collects all `EventId`s that were received and
-    /// calls the provided callback is with the `EventId` as input argument.
+    /// Blocking wait for new events. Unblocks as soon
+    /// as an event was received and then collects all `EventActivation`s that were received
+    /// and returns them.
     /// On error it emits `ListenerWaitError`.
     pub fn blocking_wait(&self, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
         py.detach(move || {
