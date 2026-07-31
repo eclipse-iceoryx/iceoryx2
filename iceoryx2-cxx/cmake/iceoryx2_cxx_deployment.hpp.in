@@ -10,14 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CUSTOM_HEADER_MARKER_HPP
-#define IOX2_CUSTOM_HEADER_MARKER_HPP
+#ifndef IOX2_DEPLOYMENT_HPP
+#define IOX2_DEPLOYMENT_HPP
 
-namespace iox2 {
+#define IOX2_FEATURE_FLATBUFFERS @IOX2_FEATURE_FLATBUFFERS_ENABLED@
 
-/// User header type for a service whose user header type details are set at runtime.
-struct CustomHeaderMarker { };
-
-} // namespace iox2
-
-#endif
+#endif // IOX2_DEPLOYMENT_HPP

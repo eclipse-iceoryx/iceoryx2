@@ -10,18 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CUSTOM_PAYLOAD_MARKER_HPP
-#define IOX2_CUSTOM_PAYLOAD_MARKER_HPP
+namespace Example;
 
-#include <cstdint>
+table Entry {
+    data_1: int32;
+    data_2: uint64;
+}
 
-namespace iox2 {
+table UnboundedData {
+    title: string;
+    entries: [Entry];
+}
 
-/// Payload element for a service whose payload type details are set at runtime.
-struct CustomPayloadMarker {
-    uint8_t value;
-};
-
-} // namespace iox2
-
-#endif
+root_type UnboundedData;

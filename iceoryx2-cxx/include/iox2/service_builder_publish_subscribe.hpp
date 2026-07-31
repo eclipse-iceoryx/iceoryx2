@@ -17,18 +17,17 @@
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/bb/file_path.hpp"
 #include "iox2/bb/layout.hpp"
 #include "iox2/bb/slice.hpp"
-#include "iox2/custom_header_marker.hpp"
-#include "iox2/custom_payload_marker.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/type_name.hpp"
 #include "iox2/type_variant.hpp"
 
 #include <cstring>
@@ -141,6 +140,12 @@ class ServiceBuilderPublishSubscribe {
 #endif
 
   public:
+    /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    template <typename U = Payload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
+    auto flatbuffer_schema_path(const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&&;
+
     /// Sets the user header type of the [`Service`].
     template <typename NewHeader>
     auto user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&&;
@@ -191,6 +196,11 @@ class ServiceBuilderPublishSubscribe {
 
     explicit ServiceBuilderPublishSubscribe(iox2_service_builder_h handle);
 
+    template <typename U = Payload>
+    auto lookup_and_set_flatbuffer_schema() -> std::enable_if_t<has_flatbuffer_marker<U>(), void>;
+    template <typename U = Payload>
+    auto lookup_and_set_flatbuffer_schema() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void>;
+
     void set_parameters();
     void derive_payload_type_details();
     void override_payload_type_details(const TypeDetail& value);
@@ -198,6 +208,7 @@ class ServiceBuilderPublishSubscribe {
     void override_user_header_type_details(const TypeDetail& value);
 
     iox2_service_builder_pub_sub_h m_handle = nullptr;
+    bool m_has_flatbuffer_schema_defined = false;
     bb::Optional<TypeDetail> m_user_header_type_details_override;
     bb::Optional<TypeDetail> m_payload_type_details_override;
 };
@@ -206,6 +217,38 @@ template <typename Payload, typename UserHeader, ServiceType S>
 inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPublishSubscribe(
     iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_pub_sub(handle) } {
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename U>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::lookup_and_set_flatbuffer_schema()
+    -> std::enable_if_t<has_flatbuffer_marker<U>(), void> {
+    if (m_has_flatbuffer_schema_defined) {
+        return;
+    }
+
+    auto config = ConfigView { iox2_service_builder_pub_sub_config(&m_handle) }.to_owned();
+    auto schema_path = config.global().service().flatbuffer_schema_path();
+
+    auto type_name = iox2::internal::get_type_name<typename Payload::ValueType>();
+    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) Certified std::array not available
+    char schema_file[bb::platform::IOX2_MAX_PATH_LENGTH] {};
+
+    if (schema_path.has_value()
+        && iox2_flatbuffer_find_best_fitting_schema_file(type_name.unchecked_access().c_str(),
+                                                         nullptr,
+                                                         *schema_path,
+                                                         &schema_file[0],
+                                                         bb::platform::IOX2_MAX_PATH_LENGTH)
+               == IOX2_OK) {
+        iox2_service_builder_pub_sub_set_flatbuffer_schema_path(&m_handle, &schema_file[0]);
+    }
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename U>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::lookup_and_set_flatbuffer_schema()
+    -> std::enable_if_t<!has_flatbuffer_marker<U>(), void> {
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -247,6 +290,8 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     } else {
         derive_payload_type_details();
     }
+
+    lookup_and_set_flatbuffer_schema();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -328,6 +373,16 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
     // required here since we just change the template header type but the builder structure stays the same
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return std::move(*reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>*>(this));
+}
+
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename U, typename>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::flatbuffer_schema_path(
+    const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&& {
+    iox2_service_builder_pub_sub_set_flatbuffer_schema_path(&m_handle, value.as_string().unchecked_access().c_str());
+    m_has_flatbuffer_schema_defined = true;
+    return std::move(*this);
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>

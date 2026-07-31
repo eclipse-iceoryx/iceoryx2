@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/config.hpp"
+#include "iox2/bb/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
@@ -405,6 +406,23 @@ void PublishSubscribe::set_subscriber_expired_connection_buffer(size_t value) &&
 /////////////////////////
 Service::Service(iox2_config_h* config)
     : m_config { config } {
+}
+
+auto Service::flatbuffer_schema_path() && -> bb::Optional<const char*> {
+    const auto* result = iox2_config_global_service_flatbuffer_schema_path(m_config);
+    if (result == nullptr) {
+        return bb::NULLOPT;
+    }
+
+    return result;
+}
+
+void Service::set_flatbuffer_schema_path(bb::Optional<bb::Path> value) && {
+    if (value.has_value()) {
+        iox2_config_global_service_set_flatbuffer_schema_path(m_config, value->as_string().unchecked_access().c_str());
+    } else {
+        iox2_config_global_service_set_flatbuffer_schema_path(m_config, nullptr);
+    }
 }
 
 auto Service::directory() && -> const char* {

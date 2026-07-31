@@ -15,6 +15,7 @@
 #include "iox2/node.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service.hpp"
+#include "iox2/testing.hpp"
 
 #include "test.hpp"
 
@@ -32,7 +33,7 @@ TYPED_TEST_SUITE(ServiceTest, iox2_testing::ServiceTypes, );
 TYPED_TEST(ServiceTest, does_exist_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -78,10 +79,10 @@ TYPED_TEST(ServiceTest, does_exist_works) {
 TYPED_TEST(ServiceTest, list_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name_1 = iox2_testing::generate_service_name();
-    const auto service_name_2 = iox2_testing::generate_service_name();
-    const auto service_name_3 = iox2_testing::generate_service_name();
-    const auto service_name_4 = iox2_testing::generate_service_name();
+    const auto service_name_1 = iox2::testing::generate_service_name();
+    const auto service_name_2 = iox2::testing::generate_service_name();
+    const auto service_name_3 = iox2::testing::generate_service_name();
+    const auto service_name_4 = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
@@ -143,10 +144,10 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     auto value_2 = *Attribute::Value::from_utf8("has left the field!");
 
 
-    const auto service_name_1 = iox2_testing::generate_service_name();
-    const auto service_name_2 = iox2_testing::generate_service_name();
-    const auto service_name_3 = iox2_testing::generate_service_name();
-    const auto service_name_4 = iox2_testing::generate_service_name();
+    const auto service_name_1 = iox2::testing::generate_service_name();
+    const auto service_name_2 = iox2::testing::generate_service_name();
+    const auto service_name_3 = iox2::testing::generate_service_name();
+    const auto service_name_4 = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
@@ -257,8 +258,8 @@ TYPED_TEST(ServiceTest, details_works) {
     auto value_2 = *Attribute::Value::from_utf8("or at least sticky");
 
 
-    const auto service_name_1 = iox2_testing::generate_service_name();
-    const auto service_name_2 = iox2_testing::generate_service_name();
+    const auto service_name_1 = iox2::testing::generate_service_name();
+    const auto service_name_2 = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
@@ -309,7 +310,7 @@ TYPED_TEST(ServiceTest, details_works) {
 TYPED_TEST(ServiceTest, force_remove_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 

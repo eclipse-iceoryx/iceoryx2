@@ -35,12 +35,18 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     config.global.service.flatbuffer_schema_path = Some(lookup_path.as_str().try_into()?);
 
     let node = NodeBuilder::new()
+        // Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
+        // schema file lookup.
         .config(&config)
         .create::<ipc::Service>()?;
 
     let service = node
         .service_builder(&"My/Flatbuffer/Service".try_into()?)
         .publish_subscribe::<Flatbuffer<UnboundedData>>()
+        // This method allows us to use a custom schema file path when no schema lookup path was
+        // defined or when a custom file is required (maybe outside of the lookup path).
+        //
+        //.flatbuffer_schema_path(&"unbounded_data.fbs".try_into()?)
         .user_header::<u64>()
         .open_or_create()?;
 
@@ -52,8 +58,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         while let Some(sample) = subscriber.receive()? {
             let data = sample.payload_root()?;
 
-            coutln!("user header: {}", sample.user_header());
             coutln!("title: {}", data.title().unwrap_or_default());
+            coutln!("user header: {}", sample.user_header());
 
             if let Some(entries) = data.entries() {
                 for (index, entry) in entries.iter().enumerate() {
@@ -64,6 +70,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     );
                 }
             }
+            coutln!("");
         }
     }
 

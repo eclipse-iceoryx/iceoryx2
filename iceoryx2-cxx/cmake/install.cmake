@@ -68,6 +68,7 @@ install(
 install(
     # the '/' at the end is important in order to not have the 'include' folder installed but only the content
     DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+              ${ICEORYX2_CXX_GEN_DIR}/include/
     DESTINATION ${DESTINATION_INCLUDEDIR}
     COMPONENT dev
 )

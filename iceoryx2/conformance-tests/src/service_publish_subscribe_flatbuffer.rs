@@ -19,12 +19,14 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod service_publish_subscribe_flatbuffer {
     use alloc::vec;
     use flatbuffers::{FlatBufferBuilder, WIPOffset};
+    use iceoryx2::prelude::{FileName, FilePath, SemanticString};
     use iceoryx2::sample_mut_uninit::FlatbufferMemory;
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
     use iceoryx2::service::{Service, marker::Flatbuffer};
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+    use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::file::{CreationMode, File, FileBuilder};
     use iceoryx2_bb_posix::testing::*;
     use iceoryx2_bb_testing::assert_that;
@@ -423,6 +425,21 @@ pub mod service_publish_subscribe_flatbuffer {
         file
     }
 
+    fn create_schema_file_at(schema: &str, file_name: &str) -> File {
+        let schema_file = FilePath::from_path_and_file(
+            &TEST_DIRECTORY,
+            &FileName::new(file_name.as_bytes()).unwrap(),
+        )
+        .unwrap();
+        let mut file = FileBuilder::new(&schema_file)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .create()
+            .unwrap();
+        file.acquire_ownership();
+        file.write(schema.as_bytes()).unwrap();
+        file
+    }
+
     #[conformance_test]
     pub fn create_fails_when_no_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
@@ -514,6 +531,44 @@ pub mod service_publish_subscribe_flatbuffer {
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
             .flatbuffer_schema_path(alt_schema_file.path().unwrap())
+            .open();
+
+        assert_that!(sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn schema_path_lookup_works_when_creating_a_service<Sut: Service>() {
+        let mut test = Test::<Sut>::new();
+        test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _schema_file = create_schema_file_at(SCHEMA, "unbounded_data.fbs");
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .create();
+
+        assert_that!(sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn schema_path_lookup_works_when_opening_a_service<Sut: Service>() {
+        let mut test = Test::<Sut>::new();
+        test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _schema_file = create_schema_file_at(SCHEMA, "unbounded_data.fbs");
+
+        let _sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .create()
+            .unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
             .open();
 
         assert_that!(sut, is_ok);
@@ -727,5 +782,79 @@ pub mod service_publish_subscribe_flatbuffer {
             assert_that!(unbounded_data.entries().unwrap().get(n).data_1(), eq 44);
             assert_that!(unbounded_data.entries().unwrap().get(n).data_2(), eq 55);
         }
+    }
+
+    #[conformance_test]
+    pub fn publisher_can_read_its_own_serialized_data<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_schema_file(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data = produce_example_data(builder, "ouh bailey", 123, 221, 10);
+        let sample = sample.assume_init(unbounded_data);
+
+        let unbounded_data = root_as_unbounded_data(sample.payload_bytes()).unwrap();
+
+        assert_that!(unbounded_data.title(), eq Some("ouh bailey"));
+        assert_that!(unbounded_data.entries().unwrap().len(), eq 10);
+        for n in 0..10 {
+            assert_that!(unbounded_data.entries().unwrap().get(n).data_1(), eq 123);
+            assert_that!(unbounded_data.entries().unwrap().get(n).data_2(), eq 221);
+        }
+    }
+
+    #[conformance_test]
+    pub fn publish_subscribe_with_user_header_works<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_schema_file(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .user_header::<u128>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data = produce_example_data(builder, "nala rocket", 123, 456, 1);
+        let mut sample = sample.assume_init(unbounded_data);
+        *sample.user_header_mut() = 44564;
+        sample.send().unwrap();
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        let unbounded_data = sample.payload_root().unwrap();
+
+        assert_that!(*sample.user_header(), eq 44564);
+        assert_that!(unbounded_data.title(), eq Some("nala rocket"));
+        assert_that!(unbounded_data.entries().unwrap().len(), eq 1);
+        assert_that!(unbounded_data.entries().unwrap().get(0).data_1(), eq 123);
+        assert_that!(unbounded_data.entries().unwrap().get(0).data_2(), eq 456);
     }
 }

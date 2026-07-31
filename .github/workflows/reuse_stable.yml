@@ -135,6 +135,7 @@ jobs:
                 -B target/ff/cc/build \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
+                -DIOX2_FEATURE_FLATBUFFERS=ON \
                 -DWARNING_AS_ERROR=ON \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
@@ -179,6 +180,7 @@ jobs:
         run: |
           cmake -S examples/cxx \
                 -B target/ff/out-of-tree-cxx \
+                -DIOX2_FEATURE_FLATBUFFERS=ON \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \

@@ -38,6 +38,22 @@ set(CMAKE_CXX_FLAGS "\
     ${ICEORYX2_SANITIZER_FLAGS_STRING} \
 ")
 
+include(Iceoryx2OptionAndParamMacros)
+# Flatbuffer support
+add_option(
+    NAME IOX2_FEATURE_FLATBUFFERS
+    DESCRIPTION "Enables the FlatBuffers integration"
+    DEFAULT_VALUE OFF
+)
+add_option(
+    NAME IOX2_DEPENDENCY_USE_SYSTEM_FLATBUFFERS
+    DESCRIPTION "Use the FlatBuffers provided by the system instead of using FetchContent"
+    DEFAULT_VALUE OFF
+)
+if(${IOX2_FEATURE_FLATBUFFERS})
+    include(Iceoryx2Flatbuffers)
+endif()
+
 add_subdirectory(blackboard)
 add_subdirectory(complex_data_types)
 add_subdirectory(cross_language_communication_basics)
@@ -49,6 +65,9 @@ add_subdirectory(domains)
 add_subdirectory(event)
 add_subdirectory(event_multiplexing)
 add_subdirectory(event_based_communication)
+if(${IOX2_FEATURE_FLATBUFFERS})
+    add_subdirectory(flatbuffer_publish_subscribe)
+endif()
 add_subdirectory(health_monitoring)
 add_subdirectory(publish_subscribe)
 add_subdirectory(publish_subscribe_dynamic_data)

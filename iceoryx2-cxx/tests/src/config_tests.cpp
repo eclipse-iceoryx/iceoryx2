@@ -190,6 +190,20 @@ TEST(Config, global_service_directory) {
     ASSERT_THAT(config.global().service().directory(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
+TEST(Config, global_service_flatbuffer_schema_path) {
+    const auto test_value = iox2::bb::Path::create("strawberry/of/eternal/blissfulness").value();
+    auto config = Config();
+
+    config.global().service().set_flatbuffer_schema_path(test_value);
+    ASSERT_THAT(config.global().service().flatbuffer_schema_path().has_value(), Eq(true));
+    const char* value = config.global().service().flatbuffer_schema_path().value();
+
+    ASSERT_THAT(value, StrEq(test_value.as_string().unchecked_access().c_str()));
+
+    config.global().service().set_flatbuffer_schema_path(bb::NULLOPT);
+    ASSERT_THAT(config.global().service().flatbuffer_schema_path().has_value(), Eq(false));
+}
+
 TEST(Config, global_service_data_segment_suffix) {
     const auto test_value = iox2::bb::FileName::create("no_touchy_fishy").value();
     auto config = Config();

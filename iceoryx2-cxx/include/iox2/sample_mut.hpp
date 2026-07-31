@@ -15,15 +15,19 @@
 
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/slice.hpp"
-#include "iox2/custom_payload_marker.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"
+#include "iox2/iceoryx2_cxx_deployment.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
-#include "iox2/publisher_error.hpp"
 #include "iox2/service_type.hpp"
 
 #include <type_traits>
+
+#if IOX2_FEATURE_FLATBUFFERS
+#include <flatbuffers/flatbuffers.h>
+#endif
 
 namespace iox2 {
 
@@ -70,16 +74,30 @@ class SampleMut {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the const payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const ValueType&;
 
     /// Returns a reference to the payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> ValueType&;
 
+#if IOX2_FEATURE_FLATBUFFERS
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+#endif // IOX2_FEATURE_FLATBUFFERS
+
+    /// Returns an immutable slice to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
+    /// Returns a mutable slice to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
@@ -220,6 +238,29 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> bb::MutableSlice
 
     return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), length);
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMut<S, Payload, UserHeader>::payload_bytes() const -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_sample_mut_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+auto SampleMut<S, Payload, UserHeader>::payload_root() const -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
+}
+
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> bb::Expected<size_t, SendError> {

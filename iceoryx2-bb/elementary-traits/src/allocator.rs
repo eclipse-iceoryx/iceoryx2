@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Contains the traits [`Allocate`], [`AllocateZeroed`], [`Deallocate`], [`Grow`] and [`Shrink`]
-//! which contains the functional elements of an allocator and the [`Allocator`] trait with more
+//! which contains the functional elements of an allocator and the [`Allocator`] trait
 //! which combines most functional elements in one trait.
 
 pub use core::{alloc::Layout, ptr::NonNull};

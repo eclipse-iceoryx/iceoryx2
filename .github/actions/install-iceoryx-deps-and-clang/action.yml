@@ -1,4 +1,4 @@
-name: 'Install iceoryx dependencies and clang-tidy'
+name: "Install iceoryx dependencies and clang-tidy"
 runs:
   using: "composite"
   steps:
@@ -17,7 +17,7 @@ runs:
         echo "Components: main" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
         sudo apt-get update
         sudo apt-get install -y libacl1-dev
-        sudo apt-get install -y clang-format-21 clang-tidy-21 clang-tools-21 clang-21 lld
+        sudo apt-get install -y clang-format-21 clang-tidy-21 clang-tools-21 clang-21 lld libflatbuffers-dev
         sudo rm /usr/bin/clang
         sudo rm /usr/bin/clang++
         sudo rm /usr/bin/clang-tidy

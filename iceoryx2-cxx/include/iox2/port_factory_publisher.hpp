@@ -22,6 +22,7 @@
 #include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/port_name.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
@@ -84,11 +85,17 @@ class PortFactoryPublisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryPublisher&&;
 
+    /// Sets the maximum initial reserved memory that the underlying allocator reserves
+    /// for the flatbuffer builder.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto initial_reserved_memory(uint64_t value) && -> PortFactoryPublisher&&;
+
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryPublisher::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires a more than max slice len in [`Publisher::loan_slice()`] or
     /// [`Publisher::loan_slice_uninit()`].
-    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<bb::IsSlice<T>::VALUE || has_flatbuffer_marker<T>(), void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
 
     /// Sets the [`DegradationHandler`] of the [`Publisher`]. Whenever a connection to a
@@ -150,6 +157,14 @@ template <typename T, typename>
 inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
     AllocationStrategy value) && -> PortFactoryPublisher&& {
     m_allocation_strategy.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto
+PortFactoryPublisher<S, Payload, UserHeader>::initial_reserved_memory(uint64_t value) && -> PortFactoryPublisher&& {
+    m_max_slice_len.emplace(value);
     return std::move(*this);
 }
 

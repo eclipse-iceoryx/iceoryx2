@@ -18,7 +18,7 @@ use crate::api::{
     iox2_port_factory_pub_sub_t, iox2_service_builder_pub_sub_h,
     iox2_service_builder_pub_sub_h_ref, iox2_service_type_e,
 };
-use crate::create_type_details;
+use crate::{create_type_details, iox2_config_ptr};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::publish_subscribe::{
@@ -409,6 +409,59 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
                 let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
                 service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
                     service_builder.__internal_set_payload_type_details(&value),
+                ));
+            }
+        }
+    }
+    IOX2_OK
+}
+
+/// Sets flatbuffer schema path for the builder. Only allowed when the payload is a flatbuffer.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+/// * `path_str` - Null-terminated string of the flatbuffer path.
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `path_str` must be a valid pointer to an utf8 string
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_flatbuffer_schema_path(
+    service_builder_handle: iox2_service_builder_pub_sub_h_ref,
+    path_str: *const c_char,
+) -> c_int {
+    service_builder_handle.assert_non_null();
+
+    let path = match unsafe { FilePath::from_c_str(path_str) } {
+        Ok(p) => p,
+        Err(e) => return e as c_int,
+    };
+
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.__internal_flatbuffer_schema_path(&path),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.__internal_flatbuffer_schema_path(&path),
                 ));
             }
         }
@@ -1072,6 +1125,28 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
         }
     }
     IOX2_OK
+}
+
+/// Returns the [`iox2_config_ptr`](crate::iox2_config_ptr), an immutable pointer to the config.
+///
+/// # Safety
+///
+/// * The `handle` must be valid
+/// * The returned `iox2_config_ptr` is valid until the node that owns it goes out-of-scope.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_config(
+    handle: iox2_service_builder_pub_sub_h_ref,
+) -> iox2_config_ptr {
+    handle.assert_non_null();
+    unsafe {
+        let node = &mut *handle.as_type();
+
+        match node.service_type {
+            iox2_service_type_e::IPC => node.value.as_ref().ipc.pub_sub.__internal_config(),
+            iox2_service_type_e::LOCAL => node.value.as_ref().local.pub_sub.__internal_config(),
+        }
+    }
 }
 
 // END C API

@@ -580,6 +580,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         }
                     };
 
+                    let resource = open_service_resource(&existing_static_config)?;
+
                     let dynamic_config = match self
                         .open_dynamic_config_storage(existing_static_config.unique_service_id())
                     {
@@ -620,7 +622,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
-                    let resource = open_service_resource(&existing_static_config)?;
 
                     return Ok(service::ServiceState::new(
                         existing_static_config,

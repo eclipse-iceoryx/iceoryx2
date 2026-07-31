@@ -17,10 +17,10 @@
 #include "iox2/bb/slice.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
+#include "iox2/iceoryx2_cxx_deployment.hpp"
 #include "iox2/internal/helper.hpp"
-#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/port_name.hpp"
-#include "iox2/publisher_error.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/sample_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
@@ -28,6 +28,11 @@
 
 #include <cstdint>
 #include <type_traits>
+
+#if IOX2_FEATURE_FLATBUFFERS
+#include "iox2/internal/resizable_memory_publish_subscribe.hpp"
+#include <flatbuffers/flatbuffer_builder.h>
+#endif
 
 namespace iox2 {
 /// Sending endpoint of a publish-subscriber based communication.
@@ -63,14 +68,24 @@ class Publisher {
     template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto send_copy(const Payload& payload) const -> bb::Expected<size_t, SendError>;
 
+    /// Copies the input `payload` slice into a [`SampleMut`] and delivers it.
+    /// On success it returns the number of [`Subscriber`]s that received
+    /// the data, otherwise a [`SendError`] describing the failure.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto send_slice_copy(bb::ImmutableSlice<ValueType>& payload) const -> bb::Expected<size_t, SendError>;
+
+#if IOX2_FEATURE_FLATBUFFERS
+    /// Acquires a [`SampleMutUninit`] with an integrated flatbuffer builder.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto loan_flatbuffer() -> bb::Expected<SampleMutUninit<S, Payload, UserHeader>, LoanError>;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`LoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto loan_uninit() -> bb::Expected<SampleMutUninit<S, Payload, UserHeader>, LoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -78,7 +93,8 @@ class Publisher {
     /// can be used to loan an uninitialized [`SampleMut`].
     ///
     /// On failure it returns [`LoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto loan() -> bb::Expected<SampleMut<S, Payload, UserHeader>, LoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -210,6 +226,34 @@ inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(bb::ImmutableSlic
 
     return bb::err(iox2::bb::into<SendError>(result));
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
+    -> bb::Expected<SampleMutUninit<S, Payload, UserHeader>, LoanError> {
+    SampleMutUninit<S, Payload, UserHeader> sample;
+
+    auto result = iox2_publisher_loan_slice_uninit(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, 1);
+
+    if (result != IOX2_OK) {
+        return bb::err(iox2::bb::into<LoanError>(result));
+    }
+
+    iox2_resizable_memory_publish_subscribe_h resizable_memory_handle {};
+    iox2_sample_mut_create_resizable_memory_builder(&sample.m_sample.m_handle, nullptr, &resizable_memory_handle);
+
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) The FlatBufferBuilder takes the ownership and the external interface requires a raw pointer.
+    sample.m_memory = new internal::ResizableMemoryPublishSubscribe<S>(resizable_memory_handle);
+
+    auto initial_size = sample.m_memory->len();
+    sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, sample.m_memory, true);
+
+    return std::move(sample);
+}
+
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>

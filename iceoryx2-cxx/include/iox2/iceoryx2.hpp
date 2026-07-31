@@ -49,6 +49,7 @@
 #include "iox2/listener_error.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node.hpp"

@@ -33,16 +33,6 @@ using ServiceTypeIpc = TypeServiceType<ServiceType::Ipc>;
 using ServiceTypeLocal = TypeServiceType<ServiceType::Local>;
 
 using ServiceTypes = ::testing::Types<ServiceTypeIpc, ServiceTypeLocal>;
-
-inline auto generate_service_name() -> ServiceName {
-    static std::atomic<uint64_t> COUNTER { 0 };
-    const auto now = std::chrono::system_clock::now().time_since_epoch().count();
-    const auto random_number = rand(); // NOLINT(cert-msc30-c,cert-msc50-cpp, misc-predictable-rand)
-    return ServiceName::create((std::string("test_") + std::to_string(COUNTER.fetch_add(1)) + "_" + std::to_string(now)
-                                + "_" + std::to_string(random_number))
-                                   .c_str())
-        .value();
-}
 } // namespace iox2_testing
 
 #endif // IOX2_CXX_TESTS_TEST_HPP

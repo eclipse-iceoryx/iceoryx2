@@ -879,6 +879,79 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destr
 // BEGIN: service
 /////////////////
 
+/// Returns the directory which will be used to automatically lookup flatbuffer schema files.
+/// If no directory was defined it returns a nullptr.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_service_flatbuffer_schema_path(
+    handle: iox2_config_h_ref,
+) -> *const c_char {
+    handle.assert_non_null();
+    let config = unsafe { &*handle.as_type() };
+    match unsafe { config.value.as_ref() }
+        .value
+        .global
+        .service
+        .flatbuffer_schema_path
+        .as_ref()
+    {
+        Some(v) => v.as_c_str(),
+        None => core::ptr::null(),
+    }
+}
+
+/// Sets the directory which will be used to automatically lookup flatbuffer schema files. If the
+/// provided string literal is a nullptr, the path will be unset.
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid path was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - A valid null-terminated string the corresponds to a valid path or a nullptr
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_service_set_flatbuffer_schema_path(
+    handle: iox2_config_h_ref,
+    value: *const c_char,
+) -> c_int {
+    handle.assert_non_null();
+    let config = unsafe { &mut *handle.as_type() };
+
+    if value.is_null() {
+        unsafe {
+            config
+                .value
+                .as_mut()
+                .value
+                .global
+                .service
+                .flatbuffer_schema_path = None
+        };
+        IOX2_OK as _
+    } else {
+        unsafe {
+            match Path::from_c_str(value) {
+                Ok(n) => {
+                    config
+                        .value
+                        .as_mut()
+                        .value
+                        .global
+                        .service
+                        .flatbuffer_schema_path = Some(n);
+                    IOX2_OK as _
+                }
+                Err(e) => e as c_int,
+            }
+        }
+    }
+}
+
 /// Returns the directory in which all service files are stored
 ///
 /// # Safety

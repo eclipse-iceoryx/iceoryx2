@@ -16,18 +16,12 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use iceoryx2_bb_elementary::{enum_gen, relocatable_pointer::Pointer};
+use iceoryx2_bb_elementary::{math::align, relocatable_pointer::Pointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
 use iceoryx2_log::fail;
 
 pub use flatbuffers::Allocator;
 pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-
-enum_gen! {
-    ResizableMemoryError
-  entry:
-    ReservedHeaderLenExceedsInitialSize
-}
 
 #[derive(Debug)]
 pub struct ResizableMemoryBuilder<P: Pointer<u8>> {
@@ -62,24 +56,24 @@ impl<P: Pointer<u8>> ResizableMemoryBuilder<P> {
         self
     }
 
-    pub fn create<A: Grow<P>>(
-        self,
-        allocatable: A,
-    ) -> Result<ResizableMemory<P, A>, ResizableMemoryError> {
-        let msg = "Unable to create ResizableMemory";
-        if self.reserved_header_len >= self.initial_layout.size() {
-            fail!(from self, with ResizableMemoryError::ReservedHeaderLenExceedsInitialSize,
-                "{msg} since the reserved header len {} exceeds the initial memory size {}.",
-                self.reserved_header_len, self.initial_layout.size());
-        }
+    pub fn create<A: Grow<P>>(mut self, allocatable: A) -> ResizableMemory<P, A> {
+        self.initial_layout = unsafe {
+            Layout::from_size_align_unchecked(
+                align(
+                    self.initial_layout.size().max(self.reserved_header_len + 1),
+                    self.initial_layout.align(),
+                ),
+                self.initial_layout.align(),
+            )
+        };
 
-        Ok(ResizableMemory {
+        ResizableMemory {
             ptr: self.ptr,
             strategy: self.strategy,
             allocatable,
             current_layout: self.initial_layout,
             reserved_header_len: self.reserved_header_len,
-        })
+        }
     }
 }
 
@@ -127,26 +121,22 @@ impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
     }
 }
 
-unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
-    type Error = AllocationGrowError;
+impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
+    pub fn reserved_header_len(&self) -> usize {
+        self.reserved_header_len
+    }
 
-    fn grow_downwards(&mut self) -> Result<(), Self::Error> {
-        let msg = "Unable to grow memory";
-        let new_layout = match self.strategy {
-            AllocationStrategy::Static => {
-                fail!(from self, with AllocationGrowError::OutOfMemory,
-                    "{msg} since the allocation strategy is static.");
-            }
-            AllocationStrategy::PowerOfTwo => unsafe {
-                let size = (self.current_layout.size() + 1).next_power_of_two();
-                Layout::from_size_align_unchecked(size, self.current_layout.align())
-            },
-            AllocationStrategy::BestFit => {
-                let size =
-                    (self.current_layout.size() + 1).next_multiple_of(self.current_layout.align());
-                unsafe { Layout::from_size_align_unchecked(size, self.current_layout.align()) }
-            }
-        };
+    /// Grows the memory downwards to the specified `new_size`.
+    ///
+    /// - `in_use_front` indicates how many bytes are in use at the front of the
+    ///   memory chunk and need to be copied to the beginning of the new chunk
+    pub fn grow_downwards_with_size(
+        &mut self,
+        new_size: usize,
+        in_use_front: usize,
+    ) -> Result<(), AllocationGrowError> {
+        let new_layout =
+            unsafe { Layout::from_size_align_unchecked(new_size, self.current_layout.align()) };
 
         self.ptr = unsafe {
             self.allocatable.grow(
@@ -162,12 +152,32 @@ unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
             core::ptr::copy(
                 self.ptr.as_ptr().add(offset),
                 self.ptr.as_mut_ptr(),
-                self.reserved_header_len,
+                self.reserved_header_len + in_use_front,
             )
         };
 
         self.current_layout = new_layout;
         Ok(())
+    }
+}
+
+unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
+    type Error = AllocationGrowError;
+
+    fn grow_downwards(&mut self) -> Result<(), Self::Error> {
+        let msg = "Unable to grow memory";
+        let new_size = match self.strategy {
+            AllocationStrategy::Static => {
+                fail!(from self, with AllocationGrowError::OutOfMemory,
+                    "{msg} since the allocation strategy is static.");
+            }
+            AllocationStrategy::PowerOfTwo => (self.current_layout.size() + 1).next_power_of_two(),
+            AllocationStrategy::BestFit => {
+                (self.current_layout.size() + 1).next_multiple_of(self.current_layout.align())
+            }
+        };
+
+        self.grow_downwards_with_size(new_size, 0)
     }
 
     fn len(&self) -> usize {

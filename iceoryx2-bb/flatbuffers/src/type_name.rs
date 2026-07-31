@@ -31,7 +31,7 @@ impl TypeName {
             name = &full_name[pos + 2..];
         }
 
-        if let Some(pos) = name.rfind("<") {
+        if let Some(pos) = name.find(|c: char| !c.is_ascii_alphanumeric()) {
             name = &name[..pos];
         }
 

@@ -13,6 +13,16 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//bazel:configure_file.bzl", "configure_file")
+
+configure_file(
+    name = "iceoryx2_cxx_deployment",
+    template = "cmake/iceoryx2_cxx_deployment.hpp.in",
+    output = "include/iox2/iceoryx2_cxx_deployment.hpp",
+    substitutions = {
+        "IOX2_FEATURE_FLATBUFFERS_ENABLED": "0",
+    },
+)
 
 filegroup(
     name = "all_srcs",
@@ -26,7 +36,9 @@ cc_library(
             "src/**",
         ],
     ),
-    hdrs = glob(["include/**"]),
+    hdrs = glob(["include/**"]) + [
+        ":iceoryx2_cxx_deployment",
+    ],
     strip_include_prefix = "include",
     deps = [
         "//:iceoryx2-c-shared",
@@ -42,7 +54,9 @@ cc_library(
             "src/**",
         ],
     ),
-    hdrs = glob(["include/**"]),
+    hdrs = glob(["include/**"]) + [
+        ":iceoryx2_cxx_deployment",
+    ],
     strip_include_prefix = "include",
     deps = [
         "//:iceoryx2-c-static",

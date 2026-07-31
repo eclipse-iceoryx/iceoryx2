@@ -308,6 +308,52 @@ TYPED_TEST(SemanticStringFixture, initialize_with_too_long_content_fails) {
     }
 }
 
+TYPED_TEST(SemanticStringFixture, initialize_with_valid_string_literal_value_works) {
+    using SutType = typename TestFixture::SutType;
+
+    for (const auto& value : TestValues<SutType>::VALID_VALUES) {
+        auto sut = SutType::create(value.c_str());
+
+        ASSERT_THAT(sut.has_value(), Eq(true));
+        EXPECT_THAT(sut->size(), Eq(value.size()));
+        EXPECT_THAT(sut->capacity(), Eq(TestValues<SutType>::CAPACITY));
+        EXPECT_THAT(sut->as_string().unchecked_access().c_str(), StrEq(value));
+    }
+}
+
+TYPED_TEST(SemanticStringFixture, initialize_with_string_literal_containing_illegal_characters_fails) {
+    using SutType = typename TestFixture::SutType;
+
+    for (auto& value : TestValues<SutType>::INVALID_CHARACTER_VALUES) {
+        auto sut = SutType::create(value.c_str());
+
+        ASSERT_THAT(sut.has_value(), Eq(false));
+        ASSERT_THAT(sut.error(), Eq(SemanticStringError::InvalidContent));
+    }
+}
+
+TYPED_TEST(SemanticStringFixture, initialize_with_string_literal_containing_illegal_content_fails) {
+    using SutType = typename TestFixture::SutType;
+
+    for (auto& value : TestValues<SutType>::INVALID_CONTENT_VALUES) {
+        auto sut = SutType::create(value.c_str());
+
+        ASSERT_THAT(sut.has_value(), Eq(false));
+        ASSERT_THAT(sut.error(), Eq(SemanticStringError::InvalidContent));
+    }
+}
+
+TYPED_TEST(SemanticStringFixture, initialize_with_string_literal_too_long_content_fails) {
+    using SutType = typename TestFixture::SutType;
+
+    for (auto& value : TestValues<SutType>::TOO_LONG_CONTENT_VALUES) {
+        auto sut = SutType::create(value.c_str());
+
+        ASSERT_THAT(sut.has_value(), Eq(false));
+        ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
+    }
+}
+
 // NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(SemanticStringFixture, append_valid_content_to_valid_string_works) {
     ::testing::Test::RecordProperty("TEST_ID", "0994fccc-5baa-4408-b17e-e2955439608d");

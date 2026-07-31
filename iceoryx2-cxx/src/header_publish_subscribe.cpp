@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/header_publish_subscribe.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 HeaderPublishSubscribe::HeaderPublishSubscribe(iox2_publish_subscribe_header_h handle)
@@ -52,5 +53,9 @@ auto HeaderPublishSubscribe::publisher_id() const -> UniquePublisherId {
 
 auto HeaderPublishSubscribe::number_of_elements() const -> uint64_t {
     return iox2_publish_subscribe_header_number_of_elements(&m_handle);
+}
+
+auto HeaderPublishSubscribe::payload_offset() const -> uint64_t {
+    return iox2_publish_subscribe_header_payload_offset(&m_handle);
 }
 } // namespace iox2

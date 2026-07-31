@@ -86,6 +86,13 @@ class SemanticString {
     template <uint64_t N>
     static auto create(const bb::StaticString<N>& value) noexcept -> bb::Expected<Child, SemanticStringError>;
 
+    /// @brief Creates a new SemanticString from the provided string literal.
+    ///         If the value contains invalid characters or invalid content
+    ///         the expected returns an error describing the cause.
+    /// @param[in] value the value of the SemanticString
+    /// @return expected either containing the new SemanticString or an error
+    static auto create(const char* value) noexcept -> bb::Expected<Child, SemanticStringError>;
+
     /// @brief Returns the number of characters.
     /// @return number of characters
     constexpr auto size() const noexcept -> uint64_t;
@@ -259,6 +266,23 @@ inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesC
     const bb::StaticString<N>& value) noexcept -> bb::Expected<Child, SemanticStringError> {
     return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
         template create_impl<N>(value.unchecked_access().c_str());
+}
+
+template <typename Child,
+          uint64_t Capacity,
+          DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
+          DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
+inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
+    const char* value) noexcept -> bb::Expected<Child, SemanticStringError> {
+    if (strnlen(value, Capacity + 1) > Capacity) {
+        IOX2_LOG(Debug,
+                 "Unable to create semantic string since the value \""
+                     << value << "\" exceeds the maximum valid length of " << Capacity << ".");
+        return bb::err(SemanticStringError::ExceedsMaximumLength);
+    }
+
+    return SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::
+        template create_impl<Capacity>(value);
 }
 
 template <typename Child,

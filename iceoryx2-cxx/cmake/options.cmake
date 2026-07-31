@@ -13,14 +13,18 @@
 if(NOT ICEORYX2_CXX_OPTIONS_AND_PARAMS_LISTED)
     set(ICEORYX2_CXX_OPTIONS_AND_PARAMS_LISTED true)
 
-    # NOTE: uncomment the lines below to add C++ binding specific options
+    message(STATUS "[i] iceoryx2-cxx options:")
 
-    # message(STATUS "[i] iceoryx2-cxx options:")
-    #
-    # add_option(
-    #     NAME HYPNOTOAD
-    #     DESCRIPTION "Enables hypnotoad"
-    #     DEFAULT_VALUE ON
-    # )
+    add_option(
+        NAME IOX2_FEATURE_FLATBUFFERS
+        DESCRIPTION "Enables the FlatBuffers integration"
+        DEFAULT_VALUE OFF
+    )
+
+    add_option(
+        NAME IOX2_DEPENDENCY_USE_SYSTEM_FLATBUFFERS
+        DESCRIPTION "Use the FlatBuffers provided by the system instead of using FetchContent"
+        DEFAULT_VALUE OFF
+    )
 
 endif()

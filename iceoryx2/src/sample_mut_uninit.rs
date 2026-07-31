@@ -101,7 +101,6 @@ use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::Z
 use iceoryx2_cal::shared_memory::ShmPointer;
 
 use crate::port::details::chunk::ChunkMut;
-use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::{
     port::publisher::PublisherSharedState,
     sample_mut::{SampleMut, SampleMutSharedState},
@@ -140,6 +139,60 @@ where
 {
 }
 
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, Payload, UserHeader>
+{
+    #[doc(hidden)]
+    pub fn __internal_create_resizable_memory_builder(
+        &self,
+    ) -> ResizableMemory<ShmPointer, SampleMutSharedState<Service>> {
+        let shared_state_guard = self.shared_state.state.lock();
+        let guard = shared_state_guard.publisher_shared_state.lock();
+        let allocation_strategy = guard.sender.data_segment.allocation_strategy();
+        let reserved_header_len = guard.sender.message_type_details.all_headers_len();
+
+        ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
+            .allocation_strategy(allocation_strategy)
+            .initial_layout(self.chunk.layout())
+            .reserved_header_len(reserved_header_len)
+            .create(self.shared_state.clone())
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8, allocation_size: u64) {
+        let message_type_details = self
+            .shared_state
+            .state
+            .lock()
+            .publisher_shared_state
+            .lock()
+            .sender
+            .message_type_details;
+
+        self.chunk.header = self
+            .shared_state
+            .state
+            .lock()
+            .shm_raw_ptr
+            .load(Ordering::Relaxed) as *mut u8;
+        self.chunk.user_header = message_type_details
+            .user_header_ptr_from_header(self.chunk.header)
+            .cast_mut();
+        self.chunk.payload = message_type_details
+            .payload_ptr_from_header(self.chunk.header)
+            .cast_mut();
+
+        let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
+
+        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
+        header.number_of_elements = allocation_size;
+        header.payload_offset = payload_offset as u64;
+    }
+}
+
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>
 {
@@ -147,37 +200,23 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
     ) -> Self {
-        let shared_state = SampleMutSharedState::new(
-            publisher_shared_state,
-            chunk.to_shm_pointer(),
-            chunk.layout().size(),
-        );
-        let allocation_strategy = publisher_shared_state
-            .lock()
-            .sender
-            .data_segment
-            .allocation_strategy();
-        let reserved_header_len = MessageTypeDetails::from::<
-            crate::service::header::publish_subscribe::Header,
-            UserHeader,
-            u8,
-        >(TypeVariant::Dynamic)
-        .all_headers_len();
-
-        let resizable_memory = ResizableMemoryBuilder::new(chunk.to_shm_pointer())
-            .allocation_strategy(allocation_strategy)
-            .initial_layout(chunk.layout())
-            .reserved_header_len(reserved_header_len)
-            .create(shared_state.clone())
-            .unwrap();
-
-        Self {
-            flatbuffer_builder: Some(FlatBufferBuilder::new_in(resizable_memory)),
-            shared_state,
+        let mut new_self = Self {
+            flatbuffer_builder: None,
+            shared_state: SampleMutSharedState::new(
+                publisher_shared_state,
+                chunk.to_shm_pointer(),
+                chunk.layout().size(),
+            ),
             chunk,
             _payload: PhantomData,
             _user_header: PhantomData,
-        }
+        };
+
+        new_self.flatbuffer_builder = Some(FlatBufferBuilder::new_in(
+            new_self.__internal_create_resizable_memory_builder(),
+        ));
+
+        new_self
     }
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
@@ -195,32 +234,8 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         root: WIPOffset<Payload>,
     ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
         self.flatbuffer_builder().finish(root, None);
-        let flatbuffer_payload_start = self.flatbuffer_builder().finished_data().as_ptr() as usize;
-
-        let message_type_details = MessageTypeDetails::from::<
-            crate::service::header::publish_subscribe::Header,
-            UserHeader,
-            u8,
-        >(TypeVariant::Dynamic);
-
-        self.chunk.header = self
-            .shared_state
-            .state
-            .lock()
-            .shm_raw_ptr
-            .load(Ordering::Relaxed) as *mut u8;
-        self.chunk.user_header = message_type_details
-            .user_header_ptr_from_header(self.chunk.header)
-            .cast_mut();
-        self.chunk.payload = message_type_details
-            .payload_ptr_from_header(self.chunk.header)
-            .cast_mut();
-
-        let payload_offset = flatbuffer_payload_start - self.chunk.payload_ptr() as usize;
-
-        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
-        header.number_of_elements = self.shared_state.slice_len() as u64;
-        header.payload_offset = payload_offset as u64;
+        let payload_ptr = self.flatbuffer_builder().finished_data().as_ptr();
+        self.__internal_finish_serialized(payload_ptr, self.shared_state.slice_len() as u64);
 
         SampleMut {
             shared_state: self.shared_state,

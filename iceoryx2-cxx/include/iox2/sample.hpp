@@ -14,14 +14,20 @@
 #define IOX2_SAMPLE_HPP
 
 #include "iox2/bb/slice.hpp"
-#include "iox2/custom_payload_marker.hpp"
 #include "iox2/header_publish_subscribe.hpp"
+#include "iox2/iceoryx2_cxx_deployment.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
 #include <type_traits>
+
+#if IOX2_FEATURE_FLATBUFFERS
+#include <cstdint>
+#include <flatbuffers/flatbuffers.h>
+#endif
 
 namespace iox2 {
 
@@ -50,12 +56,23 @@ class Sample {
     auto operator=(const Sample&) -> Sample& = delete;
 
     /// Returns a reference to the payload of the [`Sample`]
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const ValueType&;
 
     /// Returns a slice to navigate the payload of the [`Sample`]
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
+
+#if IOX2_FEATURE_FLATBUFFERS
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
     /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same<void, UserHeader>::value, T>>
@@ -143,6 +160,29 @@ inline auto Sample<S, Payload, UserHeader>::payload() const -> bb::ImmutableSlic
 
     return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), length);
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Sample<S, Payload, UserHeader>::payload_bytes() const -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_sample_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+auto Sample<S, Payload, UserHeader>::payload_root() const -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
+}
+
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>

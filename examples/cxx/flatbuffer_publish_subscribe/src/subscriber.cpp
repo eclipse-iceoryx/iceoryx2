@@ -1,0 +1,81 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#include <cstdint>
+#include <flatbuffers/flatbuffers.h>
+#include <iostream>
+
+#include "iox2/iceoryx2.hpp"
+#include "unbounded_data_generated.h"
+// Explicitly sets the type name of our generated type so that the auto path-lookup
+// works.
+IOX2_DEFINE_TYPE_NAME(Example::UnboundedData, "UnboundedData");
+
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
+
+auto main() -> int {
+    using namespace iox2;
+    using namespace Example;
+
+    set_log_level_from_env_or(LogLevel::Info);
+
+    const auto* lookup_path = std::getenv("IOX2_FLATBUFFER_SCHEMA_PATH");
+    if (lookup_path == nullptr) {
+        std::cout << "Please define IOX2_FLATBUFFER_SCHEMA_PATH!" << std::endl;
+        return -1;
+    }
+
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(bb::Path::create(lookup_path).value());
+
+    auto node = NodeBuilder()
+                    // Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
+                    // schema file lookup.
+                    .config(config)
+                    .create<ServiceType::Ipc>()
+                    .value();
+
+    auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
+                       .publish_subscribe<Flatbuffer<UnboundedData>>()
+                       // This method allows us to use a custom schema file path when no schema lookup path was
+                       // defined or when a custom file is required (maybe outside of the lookup path).
+                       // IOX2_DEFINE_TYPE_NAME must be called for the generated payload type.
+                       // .flatbuffer_schema_path(bb::FilePath::create("unbounded_data.fbs").value())
+                       .user_header<uint64_t>()
+                       .open_or_create()
+                       .value();
+
+    auto subscriber = service.subscriber_builder().create().value();
+
+    std::cout << "Subscriber ready to receive data!" << std::endl;
+
+    while (node.wait(CYCLE_TIME).has_value()) {
+        auto sample = subscriber.receive().value();
+        while (sample.has_value()) {
+            const auto* data = sample->payload_root();
+            std::cout << "title: " << data->title()->c_str() << std::endl;
+            std::cout << "user header: " << sample->user_header() << std::endl;
+
+            for (uint32_t i = 0; i < data->entries()->size(); ++i) {
+                std::cout << "Entry " << i << ": data_1=" << data->entries()->Get(i)->data_1()
+                          << ", data_2=" << data->entries()->Get(i)->data_2() << std::endl;
+            }
+            std::cout << std::endl;
+
+            sample = subscriber.receive().value();
+        }
+    }
+
+    std::cout << "exit" << std::endl;
+
+    return 0;
+}

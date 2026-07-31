@@ -29,6 +29,17 @@ include(cmake/options.cmake)
 
 include(Iceoryx2PlatformSettings)
 
+set(IOX2_FEATURE_FLATBUFFERS_ENABLED 0)
+if(${IOX2_FEATURE_FLATBUFFERS})
+    include(Iceoryx2Flatbuffers)
+    set(IOX2_FLATBUFFERS_DEPENDENCY_CONFIG_CMAKE_IN "find_dependency(flatbuffers REQUIRED)")
+    set(IOX2_FEATURE_FLATBUFFERS_ENABLED 1)
+endif()
+
+set(ICEORYX2_CXX_GEN_DIR ${CMAKE_BINARY_DIR}/generated/iceoryx2-cxx)
+configure_file(cmake/iceoryx2_cxx_deployment.hpp.in
+               ${ICEORYX2_CXX_GEN_DIR}/include/iox2/iceoryx2_cxx_deployment.hpp @ONLY)
+
 # include only lib -> includes are installed only once despite being used in static lib as well as shared lib
 
 add_library(includes-only-cxx INTERFACE)
@@ -37,6 +48,7 @@ add_library(iceoryx2-cxx::includes-only-cxx ALIAS includes-only-cxx)
 target_include_directories(includes-only-cxx
     INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${ICEORYX2_CXX_GEN_DIR}/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
@@ -73,6 +85,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/port_name.cpp
     src/publisher_details.cpp
     src/reader_details.cpp
+    src/resizable_memory_publish_subscribe.cpp
     src/server_details.cpp
     src/service.cpp
     src/service_builder_event.cpp
@@ -84,6 +97,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_publish_subscribe.cpp
     src/static_config_request_response.cpp
     src/subscriber_details.cpp
+    src/testing.cpp
     src/type_variant.cpp
     src/unique_node_id.cpp
     src/unique_port_id.cpp
@@ -115,6 +129,10 @@ target_link_libraries(iceoryx2-cxx-object-lib
     ${ICEORYX2_COVERAGE_FLAGS}
 )
 
+if(${IOX2_FEATURE_FLATBUFFERS})
+    target_link_libraries(iceoryx2-cxx-object-lib PUBLIC flatbuffers::flatbuffers)
+endif()
+
 # static lib
 
 add_library(static-lib-cxx STATIC $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
@@ -134,6 +152,10 @@ target_link_libraries(static-lib-cxx
     iceoryx2-cxx::includes-only-cxx
 )
 
+if(${IOX2_FEATURE_FLATBUFFERS})
+    target_link_libraries(static-lib-cxx PUBLIC flatbuffers::flatbuffers)
+endif()
+
 # shared lib
 
 add_library(shared-lib-cxx SHARED $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
@@ -152,6 +174,10 @@ target_link_libraries(shared-lib-cxx
     iceoryx2-c::shared-lib
     iceoryx2-cxx::includes-only-cxx
 )
+
+if(${IOX2_FEATURE_FLATBUFFERS})
+    target_link_libraries(shared-lib-cxx PUBLIC flatbuffers::flatbuffers)
+endif()
 
 # include install setup
 

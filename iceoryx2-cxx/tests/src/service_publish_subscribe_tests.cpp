@@ -11,12 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
-#include "iox2/custom_header_marker.hpp"
-#include "iox2/custom_payload_marker.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/testing.hpp"
 #include "iox2/type_variant.hpp"
 
 #include "test.hpp"
@@ -60,7 +60,7 @@ TYPED_TEST_SUITE(ServicePublishSubscribeTest, iox2_testing::ServiceTypes, );
 TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -83,7 +83,7 @@ TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
 TYPED_TEST(ServicePublishSubscribeTest, service_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -98,7 +98,7 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
 
     const auto node_name_1 = NodeName::create("nala is hungry").value();
     const auto node_name_2 = NodeName::create("maybe octo-wolf can help?").value();
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().value();
     auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().value();
@@ -137,7 +137,7 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
 TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -154,7 +154,7 @@ TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
 TYPED_TEST(ServicePublishSubscribeTest, open_or_create_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -194,7 +194,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_service_does_exist) {
 TYPED_TEST(ServicePublishSubscribeTest, opening_non_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
@@ -205,7 +205,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_non_existing_service_fails) {
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -216,7 +216,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_works) {
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_wrong_payload_type_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -228,7 +228,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_wrong_payl
 TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wrong_payload_type_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -240,7 +240,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wro
 TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -259,7 +259,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -280,7 +280,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -301,7 +301,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, override_preallocated_samples_to_one_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -330,7 +330,7 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -367,7 +367,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -401,7 +401,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, number_of_publishers_subscribers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -430,7 +430,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -472,7 +472,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -505,7 +505,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -539,7 +539,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -576,7 +576,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -604,7 +604,7 @@ TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
 TYPED_TEST(ServicePublishSubscribeTest, history_request_reduces_delivered_history) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -639,7 +639,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr uint64_t SUBSCRIBER_MAX_BORROWED_SAMPLES = 15;
     constexpr uint64_t PAYLOAD_ALIGNMENT = alignof(uint64_t) * 2;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -677,7 +677,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_incorrect_ali
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t PAYLOAD_ALIGNMENT = alignof(uint64_t) / 2;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -694,7 +694,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_incorrect_ali
 TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
@@ -715,7 +715,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_r
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 11;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -737,7 +737,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -758,7 +758,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_backpressure_strategy) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -777,7 +777,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {
     constexpr uint64_t DESIRED_MAX_SLICE_LEN = 10;
     using ValueType = uint8_t;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -791,7 +791,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {
 TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service_pub = node.service_builder(service_name)
@@ -831,7 +831,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_has_default_constructed_user_header
     using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -851,7 +851,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_has_default_constructed_user
     using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -871,7 +871,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_has_default_constructed_user_
     using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -891,7 +891,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_has_default_constructe
     using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
@@ -908,7 +908,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_has_default_constructe
 TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
@@ -928,7 +928,7 @@ TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
 TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_publisher) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const uint64_t payload = 9871273;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = bb::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
@@ -974,7 +974,7 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_pu
 TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_subscriber) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const uint64_t payload = 57812;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = bb::Optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
@@ -1022,7 +1022,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_reallocates_memory_when_alloca
     using ValueType = uint8_t;
     constexpr uint64_t INITIAL_SIZE = 128;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
         node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
@@ -1054,7 +1054,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_alloc
     using ValueType = uint8_t;
     constexpr uint64_t INITIAL_SIZE = 128;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
         node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
@@ -1082,7 +1082,7 @@ TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) 
 
     auto key = *Attribute::Key::from_utf8("want to make your machine run faster:");
     auto value = *Attribute::Value::from_utf8("sudo rm -rf /");
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto attribute_specifier = AttributeSpecifier();
@@ -1117,7 +1117,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
     auto key = *Attribute::Key::from_utf8("whats hypnotoad doing these days?");
     auto value = *Attribute::Value::from_utf8("eating hypnoflies?");
     auto missing_key = *Attribute::Key::from_utf8("no he is singing a song!");
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto attribute_verifier = AttributeVerifier();
     attribute_verifier.require(key, value).value();
@@ -1212,7 +1212,7 @@ struct CustomHeader {
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_payload_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
@@ -1223,7 +1223,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_payloa
 TYPED_TEST(ServicePublishSubscribeTest,
            opening_existing_service_with_different_payload_but_same_set_payload_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
@@ -1234,7 +1234,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
@@ -1251,7 +1251,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload
 TYPED_TEST(ServicePublishSubscribeTest,
            opening_existing_service_with_same_payload_but_different_payload_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
@@ -1263,7 +1263,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_payload_type_name_but_different_size_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
@@ -1277,7 +1277,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_paylo
 TYPED_TEST(ServicePublishSubscribeTest,
            opening_existing_service_with_same_payload_type_name_but_different_alignment_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().value();
@@ -1291,7 +1291,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_user_header_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -1309,7 +1309,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_user_h
 TYPED_TEST(ServicePublishSubscribeTest,
            opening_existing_service_with_different_header_but_same_set_user_header_type_name_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -1326,7 +1326,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_user_header_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -1350,7 +1350,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_user_he
 TYPED_TEST(ServicePublishSubscribeTest,
            opening_existing_service_with_same_header_but_different_user_header_type_name_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -1369,7 +1369,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_header_type_but_different_size_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -1388,7 +1388,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_header_type_but_different_alignment_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut_create = node.service_builder(service_name)
@@ -1407,7 +1407,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
 
 TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixedSizeIntegersFloatsAndSlicesOfThem) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     {
         auto service = node.service_builder(service_name).template publish_subscribe<uint8_t>().create().value();
@@ -1523,7 +1523,7 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixe
 
 TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfProvided) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<bb::Slice<Payload>>().create().value();
 
@@ -1534,8 +1534,8 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfPro
 
 TYPED_TEST(ServicePublishSubscribeTest, service_hash_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    const auto service_name_1 = iox2_testing::generate_service_name();
-    const auto service_name_2 = iox2_testing::generate_service_name();
+    const auto service_name_1 = iox2::testing::generate_service_name();
+    const auto service_name_2 = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
 
     auto service_1_create =
@@ -1551,7 +1551,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 16;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template publish_subscribe<uint64_t>()
@@ -1583,7 +1583,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_stops_on_request
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 13;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template publish_subscribe<uint64_t>()
@@ -1612,7 +1612,7 @@ TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto HISTORY_REQUEST = 1;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut =
         node.service_builder(service_name).template publish_subscribe<uint64_t>().history_size(2).create().value();
@@ -1637,7 +1637,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 16;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template publish_subscribe<uint64_t>()
@@ -1669,7 +1669,7 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_stops_on_request)
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 13;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name)
                    .template publish_subscribe<uint64_t>()
@@ -1696,7 +1696,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t INITIAL_MAX_SLICE_LEN = 5;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto sut = node.service_builder(service_name).template publish_subscribe<bb::Slice<uint64_t>>().create().value();
 
@@ -1718,7 +1718,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_details_are_correct) {
 TYPED_TEST(ServicePublishSubscribeTest, only_max_publishers_can_be_created) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -1738,7 +1738,7 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_publishers_can_be_created) {
 TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service =
@@ -1760,7 +1760,7 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_user_header_type_details_override
     constexpr const char* HEADER_TYPE_NAME = "MyHeader";
     constexpr uint64_t HEADER_SIZE = 16;
     constexpr uint64_t HEADER_ALIGNMENT = 8;
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service_builder = node.service_builder(service_name)
@@ -1783,7 +1783,7 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_payload_type_details_override_is_
     constexpr uint64_t PAYLOAD_SIZE = 12;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service_builder =
@@ -1812,7 +1812,7 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_header_payload_marker_send_receiv
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
     constexpr uint8_t PAYLOAD_BASE_VALUE = 1;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service_builder = node.service_builder(service_name)
@@ -1865,7 +1865,7 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_header_payload_marker_send_receiv
 TYPED_TEST(ServicePublishSubscribeTest, port_names_can_be_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();

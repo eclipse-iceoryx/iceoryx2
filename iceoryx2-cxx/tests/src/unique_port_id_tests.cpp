@@ -19,6 +19,7 @@
 #include "iox2/reader.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/subscriber.hpp"
+#include "iox2/testing.hpp"
 #include "iox2/unique_port_id.hpp"
 #include "iox2/writer.hpp"
 
@@ -35,7 +36,7 @@ struct UniquePortIdTest : public ::testing::Test {
 
     UniquePortIdTest()
         : node { NodeBuilder().create<TYPE>().value() }
-        , service_name { iox2_testing::generate_service_name() }
+        , service_name { iox2::testing::generate_service_name() }
         , event { node.service_builder(service_name).event().create().value() }
         , pubsub { node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value() }
         , blackboard { node.service_builder(service_name)
