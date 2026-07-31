@@ -12,15 +12,15 @@
 
 //! Receives `geometry_msgs/msg/Twist` from the service statically mapped to
 //! the ROS 2 topic `/cmd_vel`. The application handles only the native
-//! [`Twist`] struct; the tunnel's introspection translator does the CDR
+//! [`Twist`] struct; the tunnel's plain-struct translator does the CDR
 //! (de)serialization.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 static_mapping_introspection_translator_subscriber
+//! ros2 run demo_nodes_iceoryx2 static_mapping_plain_struct_translator_subscriber
 //! # in other shells:
 //! #   cargo run --bin iox2-tunnel-ros2 -- \
 //! #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
-//! #       --translator introspection
+//! #       --translator PlainStruct
 //! #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 //! ```
 

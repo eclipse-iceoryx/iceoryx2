@@ -16,7 +16,7 @@ use iceoryx2::service::local::Service;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_integrations_ros2_tunnel_backend::{
-    IntrospectionTranslator, QosProfile, TopicDescription, TopicName, TranslationError, TypeName,
+    PlainStructTranslator, QosProfile, TopicDescription, TopicName, TranslationError, TypeName,
 };
 use iceoryx2_services_tunnel_backend::traits::{
     PayloadLayout, Transcoder, Translation, Translator,
@@ -49,7 +49,7 @@ fn topic_description(type_name: &str) -> TopicDescription {
 
 #[test]
 fn create_succeeds_for_fixed_size_types() {
-    let translator = IntrospectionTranslator;
+    let translator = PlainStructTranslator;
 
     let translation = translator
         .create(
@@ -69,7 +69,7 @@ fn create_succeeds_for_fixed_size_types() {
 
 #[test]
 fn create_fails_for_dynamically_sized_types() {
-    let translator = IntrospectionTranslator;
+    let translator = PlainStructTranslator;
 
     let result = translator.create(
         &service_description(TypeDetail::new::<u8>(TypeVariant::Dynamic)),
@@ -81,7 +81,7 @@ fn create_fails_for_dynamically_sized_types() {
 
 #[test]
 fn create_accepts_layout_compatible_fixed_size_payloads() {
-    let translator = IntrospectionTranslator;
+    let translator = PlainStructTranslator;
 
     let result = translator.create(
         &service_description(TypeDetail::new::<[f64; 6]>(TypeVariant::FixedSize)),
@@ -93,7 +93,7 @@ fn create_accepts_layout_compatible_fixed_size_payloads() {
 
 #[test]
 fn create_fails_on_layout_incompatible_fixed_size_payloads() {
-    let translator = IntrospectionTranslator;
+    let translator = PlainStructTranslator;
 
     let result = translator.create(
         &service_description(TypeDetail::new::<u64>(TypeVariant::FixedSize)),
@@ -105,7 +105,7 @@ fn create_fails_on_layout_incompatible_fixed_size_payloads() {
 
 #[test]
 fn twist_round_trips_through_the_wire() {
-    let translator = IntrospectionTranslator;
+    let translator = PlainStructTranslator;
     let service = service_description(TypeDetail::new::<[f64; 6]>(TypeVariant::FixedSize));
     let endpoint = topic_description(TWIST_TYPE_NAME);
 

@@ -112,11 +112,12 @@ pub enum Mapping {
 }
 
 #[derive(ValueEnum, Debug, Clone, Copy, Eq, PartialEq)]
+#[value(rename_all = "PascalCase")]
 pub enum Translator {
     /// Payload bytes cross unmodified.
     Passthrough,
     /// (De)serializes payloads at the boundary to ROS 2 using
     /// the ROS 2 typesupport libraries. Only supports fixed-sized structs
     /// that can be placed in shared memory.
-    Introspection,
+    PlainStruct,
 }

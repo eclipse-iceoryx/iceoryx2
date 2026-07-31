@@ -1,5 +1,5 @@
 # Pairs the iceoryx2 service "CmdVel" with the ROS 2 topic "/cmd_vel",
-# with default QoS. Separate from static_mapping_chatter.toml: the introspection
+# with default QoS. Separate from static_mapping_chatter.toml: the plain-struct
 # translator only admits fixed-size types and fails resolution for
 # std_msgs/msg/String, so the chatter entry must not be in scope.
 

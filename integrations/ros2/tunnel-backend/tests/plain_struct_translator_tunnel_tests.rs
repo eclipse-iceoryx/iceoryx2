@@ -27,7 +27,7 @@ use iceoryx2_integrations_ros2_tunnel_backend::mapping::static_mapping::{
 use iceoryx2_integrations_ros2_tunnel_backend::ros_header::RosHeader;
 use iceoryx2_integrations_ros2_tunnel_backend::testing::{TestPeer, Testing, take_serialized};
 use iceoryx2_integrations_ros2_tunnel_backend::{
-    IntrospectionTranslator, QosProfile, Ros2Backend, StaticMapping, TopicName, TypeName,
+    PlainStructTranslator, QosProfile, Ros2Backend, StaticMapping, TopicName, TypeName,
 };
 use iceoryx2_services_tunnel::Tunnel;
 use iceoryx2_services_tunnel_backend::traits::testing::Testing as _;
@@ -87,13 +87,13 @@ fn twist_mapping(topic: &str, service: &str) -> StaticMapping {
 #[test]
 fn translates_inbound_messages_into_fixed_size_payloads() {
     let pid = std::process::id();
-    let topic = format!("/introspection_translator_tunnel_tests/inbound_{pid}");
-    let service = format!("IntrospectionInbound_{pid}");
+    let topic = format!("/plain_struct_translator_tunnel_tests/inbound_{pid}");
+    let service = format!("PlainStructInbound_{pid}");
 
     let iceoryx_config = generate_isolated_config();
     let mapping = twist_mapping(&topic, &service);
     let mut tunnel =
-        Tunnel::<Service, Ros2Backend<Service, StaticMapping, IntrospectionTranslator>>::new()
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, PlainStructTranslator>>::new()
             .iceoryx_config(iceoryx_config.clone())
             .backend_config(BackendConfig {
                 topics: mapping.topics(),
@@ -172,8 +172,8 @@ fn translates_inbound_messages_into_fixed_size_payloads() {
 #[test]
 fn translates_outbound_fixed_size_payloads_onto_the_wire() {
     let pid = std::process::id();
-    let topic = format!("/introspection_translator_tunnel_tests/outbound_{pid}");
-    let service = format!("IntrospectionOutbound_{pid}");
+    let topic = format!("/plain_struct_translator_tunnel_tests/outbound_{pid}");
+    let service = format!("PlainStructOutbound_{pid}");
 
     let iceoryx_config = generate_isolated_config();
     let iceoryx_node = NodeBuilder::new()
@@ -191,7 +191,7 @@ fn translates_outbound_fixed_size_payloads_onto_the_wire() {
         .expect("failed to create publisher");
 
     let mut tunnel =
-        Tunnel::<Service, Ros2Backend<Service, StaticMapping, IntrospectionTranslator>>::new()
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, PlainStructTranslator>>::new()
             .iceoryx_config(iceoryx_config)
             .backend_config(BackendConfig::default())
             .mapping(twist_mapping(&topic, &service))

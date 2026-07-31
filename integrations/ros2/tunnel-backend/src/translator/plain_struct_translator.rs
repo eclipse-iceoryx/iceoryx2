@@ -90,9 +90,9 @@ impl core::error::Error for TranslationError {}
 /// Types introspected to have dynamically sized members (strings, sequences)
 /// are rejected.
 #[derive(Debug, Default)]
-pub struct IntrospectionTranslator;
+pub struct PlainStructTranslator;
 
-impl Translator for IntrospectionTranslator {
+impl Translator for PlainStructTranslator {
     type Error = TranslationError;
     type EndpointDescription = TopicDescription;
     type Transcoder = CdrTranscoder;
@@ -102,7 +102,7 @@ impl Translator for IntrospectionTranslator {
         service_description: &ServiceDescription,
         topic_description: &TopicDescription,
     ) -> Result<Translation<Self::Transcoder>, Self::Error> {
-        let origin = "IntrospectionTranslator::create";
+        let origin = "PlainStructTranslator::create";
         let type_name = topic_description.type_name.as_str();
 
         let introspection = fail!(from origin,
