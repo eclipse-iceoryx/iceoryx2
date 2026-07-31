@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,11 +10,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Python language bindings for iceoryx2."""
+"""Flatbuffer - A marker class to indicate that T is a flatbuffer serializable object."""
 
-from ._iceoryx2 import *
-from .blackboard_extensions import *
-from .flatbuffer import Flatbuffer
-from .publish_subscribe_extensions import *
-from .request_response_extensions import *
-from .slice import Slice
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+
+class Flatbuffer(Generic[T]):
+    """
+    A class representing flatbuffer serializable T.
+    """

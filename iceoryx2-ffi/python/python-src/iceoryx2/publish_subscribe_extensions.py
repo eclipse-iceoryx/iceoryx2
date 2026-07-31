@@ -16,6 +16,7 @@ import ctypes
 from typing import Any, Type, TypeVar, get_args, get_origin
 
 from ._iceoryx2 import *
+from .flatbuffer import Flatbuffer
 from .slice import Slice
 from .type_name import get_type_name
 
@@ -48,17 +49,18 @@ def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSubscribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
-    if hasattr(t, "__name__"):
-        type_name = getattr(t, "__name__")
-    else:
-        origin_type = get_origin(t)
-        assert origin_type is not None
-        type_name = getattr(origin_type, "__name__")
+    type_name = ""
     type_size = 0
     type_align = 0
     type_variant = TypeVariant.FixedSize
 
-    if get_origin(t) is Slice:
+    if get_origin(t) is Flatbuffer:
+        (contained_type,) = get_args(t)
+        type_name = "iox2::Flatbuffer"
+        type_variant = TypeVariant.FixedSize
+        type_size = 1
+        type_align = 1
+    elif get_origin(t) is Slice:
         (contained_type,) = get_args(t)
         type_name = get_type_name(contained_type)
         type_variant = TypeVariant.Dynamic
@@ -165,13 +167,51 @@ def allocation_strategy(
     self: PortFactoryPublisher, value: AllocationStrategy
 ) -> PortFactoryPublisher:
     """Defines the allocation strategy that is used when the memory is exhausted."""
-    assert get_origin(self.__payload_type_details) is Slice
+    assert (
+        get_origin(self.__payload_type_details) is Slice
+        or get_origin(self.__payload_type_details) is Flatbuffer
+    )
 
     return self.__allocation_strategy(value)
 
 
+def flatbuffer_schema_path(
+    self: PortFactoryPublisher, value: FilePath
+) -> PortFactoryPublisher:
+    """Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    will try to find the best fitting schema file in the configured filebuffer schema paths
+    defined in the config."""
+    # assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    return self.__flatbuffer_schema_path(value)
+
+
+def initial_reserved_memory(
+    self: PortFactoryPublisher, value: int
+) -> PortFactoryPublisher:
+    """Sets the maximum initial reserved memory that the underlying allocator reserves
+    for the flatbuffer builder."""
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    return self.__initial_max_slice_len(value)
+
+
+def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUninit:
+    """
+    Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
+
+    The user has to initialize the payload before it can be sent.
+    Fails when it is called for data types which are not a slice.
+    On failure it returns `LoanError` describing the failure.
+    """
+    assert get_origin(self.__payload_type_details) is Slice
+
+    return self.__loan_slice_uninit(number_of_elements)
+
+
 PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len
 PortFactoryPublisher.allocation_strategy = allocation_strategy
+PortFactoryPublisher.initial_reserved_memory = initial_reserved_memory
 
 Publisher.send_copy = send_copy
 Publisher.loan_uninit = loan_uninit
@@ -189,3 +229,4 @@ SampleMutUninit.user_header = user_header
 
 ServiceBuilder.publish_subscribe = publish_subscribe
 ServiceBuilderPublishSubscribe.user_header = set_user_header
+ServiceBuilderPublishSubscribe.flatbuffer_schema_path = flatbuffer_schema_path

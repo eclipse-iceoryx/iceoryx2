@@ -27,6 +27,9 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
 ]
+dependencies = [
+    "flatbuffers==25.12.19"
+]
 
 [project.optional-dependencies]
 test = [

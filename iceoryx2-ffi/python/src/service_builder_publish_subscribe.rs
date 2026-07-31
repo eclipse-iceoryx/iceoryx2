@@ -19,6 +19,7 @@ use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
+use crate::file_path::FilePath;
 use crate::port_factory_publish_subscribe::{
     PortFactoryPublishSubscribe, PortFactoryPublishSubscribeType,
 };
@@ -256,6 +257,24 @@ impl ServiceBuilderPublishSubscribe {
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    pub fn __flatbuffer_schema_path(&self, path: &FilePath) -> Self {
+        match &self.value {
+            ServiceBuilderPublishSubscribeType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_flatbuffer_schema_path(&path.0) };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderPublishSubscribeType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_flatbuffer_schema_path(&path.0) };
                 self.clone_local(this)
             }
         }

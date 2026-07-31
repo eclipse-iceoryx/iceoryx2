@@ -12,7 +12,9 @@
 
 """Publisher example."""
 
-import Example
+import ctypes
+
+from Example import UnboundedData
 
 import iceoryx2 as iox2
 
@@ -21,13 +23,24 @@ cycle_time = iox2.Duration.from_secs(1)
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
-# service = (
-#     node.service_builder(iox2.ServiceName.new("My/Flatbuffer/Service"))
-#     .publish_subscribe(TransmissionData)
-#     .open_or_create()
-# )
+service = (
+    node.service_builder(iox2.ServiceName.new("My/Flatbuffer/Service"))
+    .publish_subscribe(iox2.Flatbuffer[UnboundedData])
+    .user_header(ctypes.c_uint64)
+    .flatbuffer_schema_path(
+        iox2.FilePath.new(
+            "/home/elchris/Development/ekxide/prime/iceoryx2/examples/python/flatbuffer_publish_subscribe/unbounded_data.fbs"
+        )
+    )
+    .open_or_create()
+)
 
-# publisher = service.publisher_builder().create()
+publisher = (
+    service.publisher_builder()
+    .initial_reserved_memory(1024)
+    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+    .create()
+)
 
 COUNTER = 0
 try:
