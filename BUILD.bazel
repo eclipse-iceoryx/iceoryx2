@@ -203,6 +203,23 @@ config_setting(
 )
 
 #
+# C++ Binding Feature Flags
+#
+
+string_flag(
+    name = "feature_flatbuffers",
+    build_setting_default = "off",
+    visibility = ["//visibility:public"],
+    )
+
+config_setting(
+    name = "cfg_feature_flatbuffers",
+    flag_values = {
+        "//:feature_flatbuffers": "on",
+    },
+)
+
+#
 # Alias
 #
 

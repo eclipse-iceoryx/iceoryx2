@@ -18,10 +18,11 @@ load("//bazel:configure_file.bzl", "configure_file")
 configure_file(
     name = "iceoryx2_cxx_deployment",
     template = "cmake/iceoryx2_cxx_deployment.hpp.in",
-    output = "include/iox2/iceoryx2_cxx_deployment.hpp",
-    substitutions = {
-        "IOX2_FEATURE_FLATBUFFERS_ENABLED": "0",
-    },
+    out = "include/iox2/iceoryx2_cxx_deployment.hpp",
+    # NOTE: format for substitutions is
+    #       substitutions = ["FOO_ENABLED"] + select({ "//:cfg_foo": ["1"], "//conditions:default": ["0"] }) # replaces "@FOO_ENABLED@" with the selected value
+    #                     + ["BAR_ENABLED"] + select({ "//:cfg_bar": ["1"], "//conditions:default": ["0"] }) # replaces "@BAR_ENABLED@" with the selected value
+    substitutions = ["IOX2_FEATURE_FLATBUFFERS_ENABLED"] + select({ "//:cfg_feature_flatbuffers": ["1"], "//conditions:default": ["0"] })
 )
 
 filegroup(
