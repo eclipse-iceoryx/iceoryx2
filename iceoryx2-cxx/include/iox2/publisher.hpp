@@ -62,13 +62,13 @@ class Publisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
 
-    /// Copies the input `payload` slice into a [`SampleMut`] and delivers it.
+    /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`SendError`] describing the failure.
     template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
     auto send_copy(const Payload& payload) const -> bb::Expected<size_t, SendError>;
 
-    /// Copies the input `value` into a [`SampleMut`] and delivers it.
+    /// Copies the input `payload` slice into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`SendError`] describing the failure.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>

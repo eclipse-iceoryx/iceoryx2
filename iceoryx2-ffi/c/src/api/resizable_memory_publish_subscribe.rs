@@ -74,7 +74,7 @@ impl ResizableMemoryPublishSubscribeUnion {
 }
 
 #[repr(C)]
-#[repr(align(8))] // alignment of Option<NotifierUnion>
+#[repr(align(8))] // alignment of Option<ResizableMemoryPublishSubscribeUnion>
 pub struct iox2_resizable_memory_publish_subscribe_storage_t {
     internal: [u8; 64], // magic number obtained with size_of::<Option<ResizableMemoryPublishSubscribeUnion>>()
 }

@@ -83,7 +83,7 @@ class Service {
     /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
     /// the flatbuffer schemas.
     auto flatbuffer_schema_path() && -> bb::Optional<const char*>;
-    /// Set the directory in which all service files are stored
+    /// Set the flatbuffer schema lookup path.
     void set_flatbuffer_schema_path(bb::Optional<bb::Path> value) &&;
     /// The directory in which all service files are stored
     auto directory() && -> const char*;

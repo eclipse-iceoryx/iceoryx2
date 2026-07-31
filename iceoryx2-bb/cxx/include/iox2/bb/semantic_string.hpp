@@ -273,8 +273,6 @@ template <typename Child,
           DoesContainInvalidContent<Capacity> DoesContainInvalidContentCall,
           DoesContainInvalidCharacter<Capacity> DoesContainInvalidCharacterCall>
 inline auto SemanticString<Child, Capacity, DoesContainInvalidContentCall, DoesContainInvalidCharacterCall>::create(
-    // avoid-c-arrays: justification in header
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, hicpp-explicit-conversions, modernize-avoid-c-arrays)
     const char* value) noexcept -> bb::Expected<Child, SemanticStringError> {
     if (strnlen(value, Capacity + 1) > Capacity) {
         IOX2_LOG(Debug,

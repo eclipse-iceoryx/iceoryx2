@@ -42,6 +42,15 @@ pacman -S flatbuffers
 apt install libflatbuffers-dev
 ```
 
+## Build
+
+Please ensure to activate `IOX2_FEATURE_FLATBUFFERS` when compiling iceoryx2.
+
+```bash
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DIOX2_FEATURE_FLATBUFFERS=ON
+cmake --build target/ff/cc/build
+```
+
 ## Usage
 
 The generated Rust code is already included in this example. For completeness,
