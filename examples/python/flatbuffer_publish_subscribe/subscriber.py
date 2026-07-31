@@ -12,33 +12,50 @@
 
 """Subscriber example."""
 
+import ctypes
+import os
+
+from Example import UnboundedData
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
-# service = (
-#     node.service_builder(iox2.ServiceName.new("My/Funk/ServiceName"))
-#     .publish_subscribe(TransmissionData)
-#     .open_or_create()
-# )
-#
-# subscriber = service.subscriber_builder().create()
+config = iox2.config.global_config()
+
+try:
+    config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(
+        os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
+    )
+except KeyError:
+    raise RuntimeError("Please define IOX2_FLATBUFFER_SCHEMA_PATH!")
+
+node = iox2.NodeBuilder.new().config(config).create(iox2.ServiceType.Ipc)
+
+service = (
+    node.service_builder(iox2.ServiceName.new("My/Flatbuffer/Service"))
+    .publish_subscribe(iox2.Flatbuffer[UnboundedData])
+    .user_header(ctypes.c_uint64)
+    .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
+    .open_or_create()
+)
+
+subscriber = service.subscriber_builder().create()
 
 print("Subscriber ready to receive data!")
 
 try:
     while True:
         node.wait(cycle_time)
-        # while True:
-        #     sample = subscriber.receive()
-        #     if sample is not None:
-        #         data = sample.payload()
-        #         print("received:", data.contents)
-        #     else:
-        #         break
+        while True:
+            sample = subscriber.receive()
+            if sample is not None:
+                # data = sample.payload()
+                print("received:")
+            else:
+                break
 
 except iox2.NodeWaitFailure:
     print("exit")

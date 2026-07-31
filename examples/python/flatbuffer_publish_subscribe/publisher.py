@@ -13,6 +13,7 @@
 """Publisher example."""
 
 import ctypes
+import os
 
 from Example import UnboundedData
 
@@ -21,17 +22,23 @@ import iceoryx2 as iox2
 cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
+
+config = iox2.config.global_config()
+
+try:
+    config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(
+        os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
+    )
+except KeyError:
+    raise RuntimeError("Please define IOX2_FLATBUFFER_SCHEMA_PATH!")
+
+node = iox2.NodeBuilder.new().config(config).create(iox2.ServiceType.Ipc)
 
 service = (
     node.service_builder(iox2.ServiceName.new("My/Flatbuffer/Service"))
     .publish_subscribe(iox2.Flatbuffer[UnboundedData])
     .user_header(ctypes.c_uint64)
-    .flatbuffer_schema_path(
-        iox2.FilePath.new(
-            "/home/elchris/Development/ekxide/prime/iceoryx2/examples/python/flatbuffer_publish_subscribe/unbounded_data.fbs"
-        )
-    )
+    .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
     .open_or_create()
 )
 
