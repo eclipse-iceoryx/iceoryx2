@@ -281,7 +281,7 @@ def assume_init(self: SampleMutUninit, root=None) -> SampleMut:
     )
 
     if root is None:
-        return self.assume_init()
+        return self.__assume_init()
 
     builder = self.flatbuffer_builder()
     builder.Finish(root)
