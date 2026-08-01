@@ -51,5 +51,5 @@ runs:
         if: ${{ inputs.mode == 'cleanup-rust-build-files-from-cargo-target-folder' }}
         shell: bash
         run: |
-          rm -rf ${{ github.workspace }}/target/{debug,release}/{deps,incremental}
-          rm -rf ${{ github.workspace }}/target/*/{debug,release}/{deps,incremental} # Cleanup subfolders for target triples
+          rm -rf ${{ github.workspace }}/target/{debug,release,dev-fast-build,release-fast-build}/{deps,incremental}
+          rm -rf ${{ github.workspace }}/target/*/{debug,release}/{deps,incremental,dev-fast-build,release-fast-build} # Cleanup subfolders for target triples

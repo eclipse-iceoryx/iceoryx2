@@ -161,9 +161,9 @@ echo -e "${COLOR_YELLOW}Building iceoryx-ffi and C/C++ bindings as preparation f
 export CXX=clang++
 export CC=clang
 
-cargo build --package iceoryx2-ffi-c
+cargo build --package iceoryx2-ffi-c --profile dev-fast-build
 cmake -S . -B target/clang-tidy-scan \
-    -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
+    -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/dev-fast-build" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_CXX=ON \
     -DBUILD_EXAMPLES=ON \

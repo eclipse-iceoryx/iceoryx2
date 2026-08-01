@@ -175,8 +175,8 @@ jobs:
 
       - name: Run code examples in documentation
         run: |
-          just test sdk --doc
-          just test integrations-zenoh --doc
+          just test sdk --doc --profile dev-fast-build
+          just test integrations-zenoh --doc --profile dev-fast-build
 
       - name: Build documentation
         run: |
@@ -368,7 +368,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      profile: "debug"
+      profile: "dev-fast-build"
 
   sdk-stable-debug:
     needs: [preflight-check, cargo-nextest]
@@ -384,7 +384,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      profile: "debug"
+      profile: "dev-fast-build"
       workspace: sdk
 
   integrations-zenoh-stable-debug:
@@ -398,7 +398,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      profile: "debug"
+      profile: "dev-fast-build"
       workspace: zenoh
 
   integrations-ros2-stable-debug:
@@ -415,7 +415,7 @@ jobs:
       ros-distro: ${{ matrix.ros.distro }}
       rmw: ${{ matrix.ros.rmw }}
       toolchain: stable
-      profile: "debug"
+      profile: "dev-fast-build"
 
   sdk-stable-release:
     needs: [preflight-check, cargo-nextest]
@@ -424,7 +424,7 @@ jobs:
     with:
       os: ubuntu-latest
       toolchain: stable
-      profile: "release"
+      profile: "release-fast-build"
       workspace: sdk
 
   integrations-zenoh-stable-release:
@@ -434,7 +434,7 @@ jobs:
     with:
       os: ubuntu-latest
       toolchain: stable
-      profile: "release"
+      profile: "release-fast-build"
       workspace: zenoh
 
   unstable:
@@ -448,7 +448,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
-      profile: "debug"
+      profile: "dev-fast-build"
 
   freebsd:
     needs: [preflight-check]
@@ -458,7 +458,7 @@ jobs:
       matrix:
         freebsd_version: [ "15.0" ]
         toolchain: [ "stable" ]
-        mode: ["debug"]
+        mode: ["dev"]
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1

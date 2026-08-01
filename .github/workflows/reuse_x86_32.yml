@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           rustc --version
-          just build sdk +${{ inputs.toolchain }} --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
+          just build sdk +${{ inputs.toolchain }} --target i686-unknown-linux-gnu --profile ${{ inputs.profile }} \
           -- \
           --all-targets \
           --exclude iceoryx2-ffi-python
@@ -93,7 +93,7 @@ jobs:
         shell: bash
         run: |
           rustc --version
-          just test sdk +${{ inputs.toolchain }} --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
+          just test sdk +${{ inputs.toolchain }} --target i686-unknown-linux-gnu --profile ${{ inputs.profile }} \
           -- \
           --all-targets \
           --exclude iceoryx2-ffi-python \
@@ -118,7 +118,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
-                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/i686-unknown-linux-gnu/${{ inputs.profile }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/i686-unknown-linux-gnu/${{ steps.set-build-flags.outputs.c-binding-artifacts-folder-name }}" \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

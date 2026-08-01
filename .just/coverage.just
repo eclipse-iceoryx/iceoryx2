@@ -18,8 +18,8 @@ COLOR_OFF    := "\\033[0m"
 COLOR_GREEN  := "\\033[1;32m"
 COLOR_YELLOW := "\\033[1;33m"
 
-LLVM_PROFILE_PATH := "target/debug/llvm-profile-files"
-RUST_COV_DIR      := "target/debug/rust_cov_build"
+LLVM_PROFILE_PATH := "target/dev-fast-build/llvm-profile-files"
+RUST_COV_DIR      := "target/dev-fast-build/rust_cov_build"
 CMAKE_COV_DIR     := "target/ff/cc/cmake_cov_build"
 COVERAGE_OUT_DIR  := "target/ff/coverage"
 
@@ -133,7 +133,14 @@ _coverage-profile-cmake:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    cmake . -B"{{CMAKE_COV_DIR}}" -DCOVERAGE=ON -DBUILD_TESTING=ON -DIOX2_FEATURE_FLATBUFFERS=ON -DCMAKE_BUILD_TYPE=Debug
+    just build iceoryx2-ffi-c --profile dev-fast-build
+    cmake -S . \
+          -B "{{CMAKE_COV_DIR}}" \
+          -DCOVERAGE=ON \
+          -DBUILD_TESTING=ON \
+          -DIOX2_FEATURE_FLATBUFFERS=ON \
+          -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/dev-fast-build \
+          -DCMAKE_BUILD_TYPE=Debug
     cmake --build "{{CMAKE_COV_DIR}}" --parallel $(nproc)
     ctest --test-dir "{{CMAKE_COV_DIR}}" --output-on-failure
 
@@ -152,7 +159,7 @@ _coverage-profile-rust:
         echo -e "{{COLOR_YELLOW}}no rust nightly compiler found, MC/DC coverage is not available only line coverage{{COLOR_OFF}}"
         export RUSTFLAGS="-C instrument-coverage"
     fi
-    just test sdk
+    just test sdk --profile dev-fast-build -- --all-targets
 
 # --- generate-report ---------------------------------------------------------
 
@@ -208,7 +215,7 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
     grcov \
         **/{{LLVM_PROFILE_PATH}} \
         **/**/{{LLVM_PROFILE_PATH}} \
-        --binary-path target/debug \
+        --binary-path target/dev-fast-build \
         --source-dir . \
         --output-type {{output_type}} \
         --branch \
@@ -244,7 +251,7 @@ _coverage-summarize detailed *packages:
 
     just _coverage-merge-profiles
 
-    FILES=$(find ./target/debug/deps/ -type f -executable)
+    FILES=$(find ./target/dev-fast-build/deps/ -type f -executable)
 
     IGNORE_PATTERNS=('/\.cargo/registry' '/target/')
     for pattern in {{COVERAGE_IGNORE}}; do

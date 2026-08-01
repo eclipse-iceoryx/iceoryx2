@@ -45,10 +45,10 @@ ENABLE_PREPROCESSING            = YES
 PREDEFINED                     += DOXYGEN_MACRO_FIX
 
 # Input
-INPUT                           = "../../../target/release/iceoryx2-ffi-c-cbindgen/include" \
+INPUT                           = "../../../target/dev-fast-build/iceoryx2-ffi-c-cbindgen/include" \
                                   "mainpage.md"
 
-STRIP_FROM_PATH                 = "../../../target/release/iceoryx2-ffi-c-cbindgen/include" \
+STRIP_FROM_PATH                 = "../../../target/dev-fast-build/iceoryx2-ffi-c-cbindgen/include" \
                                   "../../../doc/api/c"
 FILE_PATTERNS                   = *.h \
                                   *.c \

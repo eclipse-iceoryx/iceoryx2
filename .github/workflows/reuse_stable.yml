@@ -93,28 +93,28 @@ jobs:
         shell: bash
         run: |
           rustc --version
-          just build sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          just build sdk +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
 
       - name: Test sdk workspace
         if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
         run: |
           rustc --version
-          just test sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          just test sdk +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
 
       - name: Build zenoh workspace
         if: ${{ inputs.workspace == 'zenoh' }}
         shell: bash
         run: |
           rustc --version
-          just build integrations-zenoh +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          just build integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
 
       - name: Test zenoh workspace
         if: ${{ inputs.workspace == 'zenoh' }}
         shell: bash
         run: |
           rustc --version
-          just test integrations-zenoh +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          just test integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
@@ -143,7 +143,7 @@ jobs:
                 -DWARNING_AS_ERROR=ON \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/${{ inputs.profile }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/${{ steps.set-build-flags.outputs.c-binding-artifacts-folder-name }}" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build \
