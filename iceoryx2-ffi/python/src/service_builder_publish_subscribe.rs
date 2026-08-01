@@ -87,6 +87,11 @@ impl ServiceBuilderPublishSubscribe {
         self.user_header_type_details.value = Some(value)
     }
 
+    #[getter]
+    pub fn __get_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.payload_type_details.clone().value
+    }
+
     /// Defines the payload type. To be able to connect to a `Service` the `TypeDetail` must be
     /// identical in all participants since the communication is always strongly typed.
     pub fn __payload_type_details(&self, value: &TypeDetail) -> Self {

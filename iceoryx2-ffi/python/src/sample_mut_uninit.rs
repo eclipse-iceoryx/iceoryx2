@@ -134,7 +134,7 @@ impl SampleMutUninit {
     /// initialized `SampleMut`
     ///
     /// After this call the `SampleMutUninit` is no longer usable!
-    pub fn assume_init(&self) -> SampleMut {
+    pub fn __assume_init(&self) -> SampleMut {
         match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(v) => {
                 let sample = v.take().unwrap();

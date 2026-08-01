@@ -15,7 +15,15 @@
 import ctypes
 import os
 
-from Example import UnboundedData
+from Example.Entry import EntryAddData1, EntryAddData2, EntryEnd, EntryStart
+from Example.UnboundedData import (
+    UnboundedData,
+    UnboundedDataAddEntries,
+    UnboundedDataAddTitle,
+    UnboundedDataEnd,
+    UnboundedDataStart,
+    UnboundedDataStartEntriesVector,
+)
 
 import iceoryx2 as iox2
 
@@ -54,11 +62,33 @@ try:
     while True:
         COUNTER += 1
         node.wait(cycle_time)
-        # sample = publisher.loan_uninit()
-        # sample = sample.write_payload(
-        #     TransmissionData(x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12)
-        # )
-        # sample.send()
+        sample = publisher.loan_flatbuffer()
+        builder = sample.flatbuffer_builder()
+
+        # BEGIN: standard flatbuffer API
+        entry_offsets = []
+        for i in range(0, 15):
+            EntryStart(builder)
+            EntryAddData1(builder, 6 * i + 5)
+            EntryAddData2(builder, 6 * i + 7)
+            entry_offsets.append(EntryEnd(builder))
+
+        UnboundedDataStartEntriesVector(builder, len(entry_offsets))
+        for offset in reversed(entry_offsets):
+            builder.PrependUOffsetTRelative(offset)
+        entries_vector = builder.EndVector()
+
+        title = builder.CreateString("Hello World!")
+
+        UnboundedDataStart(builder)
+        UnboundedDataAddTitle(builder, title)
+        UnboundedDataAddEntries(builder, entries_vector)
+        unbounded_data = UnboundedDataEnd(builder)
+        # END: standard flatbuffer API
+
+        sample = sample.assume_init(unbounded_data)
+
+        sample.delete()
         print("Send sample", COUNTER, "...")
 
 except iox2.NodeWaitFailure:

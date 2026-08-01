@@ -13,7 +13,9 @@
 """Strong type safe extensions for the publish-subscribe messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar, get_args, get_origin
+from typing import Any, Type, TypeVar, get_args, get_origin, overload
+
+import flatbuffers
 
 from ._iceoryx2 import *
 from .flatbuffer import Flatbuffer
@@ -108,7 +110,10 @@ def set_user_header(
 
 def send_copy(self: Publisher, t: Type[T]) -> Any:
     """Sends a copy of the provided type."""
-    assert self.__payload_type_details is not None
+    assert (
+        self.__payload_type_details is not None
+        and get_origin(self.__payload_type_details) != Flatbuffer
+    )
     sample_uninit = self.loan_uninit()
 
     assert ctypes.sizeof(t) == ctypes.sizeof(sample_uninit.__payload_type_details)
@@ -121,7 +126,10 @@ def send_copy(self: Publisher, t: Type[T]) -> Any:
 
 def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
     """Writes the provided payload into the sample."""
-    assert self.__payload_type_details is not None
+    assert (
+        self.__payload_type_details is not None
+        and get_origin(self.__payload_type_details) != Flatbuffer
+    )
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__payload_type_details)
 
@@ -136,7 +144,8 @@ def loan_uninit(self: Publisher) -> SampleMutUninit:
     The user has to initialize the payload before it can be sent. On failure it returns
     `LoanError` describing the failure.
     """
-    assert not get_origin(self.__payload_type_details) is Slice
+    origin = get_origin(self.__payload_type_details)
+    assert origin != Slice and origin != Flatbuffer
 
     return self.__loan_uninit()
 
@@ -176,12 +185,12 @@ def allocation_strategy(
 
 
 def flatbuffer_schema_path(
-    self: PortFactoryPublisher, value: FilePath
+    self: ServiceBuilderPublishSubscribe, value: FilePath
 ) -> PortFactoryPublisher:
     """Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
     will try to find the best fitting schema file in the configured filebuffer schema paths
     defined in the config."""
-    # assert get_origin(self.__payload_type_details) is Flatbuffer
+    assert get_origin(self.__get_payload_type_details) is Flatbuffer
 
     return self.__flatbuffer_schema_path(value)
 
@@ -209,6 +218,63 @@ def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUnin
     return self.__loan_slice_uninit(number_of_elements)
 
 
+def loan_flatbuffer(self: Publisher) -> SampleMutUninit:
+    """
+    Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`
+    with an integrated `FlatbufferBuilder`.
+    """
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
+    # in python not zero-copy and completely resides on the heap since they do not have
+    # an API to provide a custom allocator.
+    #
+    # When the data production is finished the sample payload is grown/resized and the
+    # serialized flatbuffer content is copied into the sample.
+    return self.__loan_slice_uninit(1)
+
+
+_sample_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
+
+
+def flatbuffer_builder(self: SampleMutUninit) -> flatbuffers.Builder:
+    """
+    Returns the flatbuffers.Builder to produce the data that shall be sent.
+    """
+    key = id(self)
+    builder = _sample_mut_uninit_dict.get(key)
+    if builder is None:
+        builder = flatbuffers.Builder(1024)
+        _sample_mut_uninit_dict[key] = builder
+    return builder
+
+
+@overload
+def assume_init(self: SampleMutUninit) -> SampleMut: ...
+@overload
+def assume_init(self: SampleMutUninit, root: int) -> SampleMut: ...
+
+
+def assume_init(self: SampleMutUninit, root=None) -> SampleMut:
+    """Extracts the value of the uninitialized payload and labels the `SampleMutUninit` as
+    initialized `SampleMut`
+
+    After this call the `SampleMutUninit` is no longer usable!"""
+
+    origin = get_origin(self.__payload_type_details)
+    assert (origin == Flatbuffer and root != None) or (
+        origin != Flatbuffer and root == None
+    )
+
+    if root is None:
+        return self.assume_init()
+
+    builder = self.flatbuffer_builder()
+    builder.Finish(root)
+
+    return self.__assume_init()
+
+
 PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len
 PortFactoryPublisher.allocation_strategy = allocation_strategy
 PortFactoryPublisher.initial_reserved_memory = initial_reserved_memory
@@ -216,6 +282,7 @@ PortFactoryPublisher.initial_reserved_memory = initial_reserved_memory
 Publisher.send_copy = send_copy
 Publisher.loan_uninit = loan_uninit
 Publisher.loan_slice_uninit = loan_slice_uninit
+Publisher.loan_flatbuffer = loan_flatbuffer
 
 Sample.payload = payload
 Sample.user_header = user_header
@@ -226,6 +293,8 @@ SampleMut.user_header = user_header
 SampleMutUninit.write_payload = write_payload
 SampleMutUninit.payload = payload
 SampleMutUninit.user_header = user_header
+SampleMutUninit.flatbuffer_builder = flatbuffer_builder
+SampleMutUninit.assume_init = assume_init
 
 ServiceBuilder.publish_subscribe = publish_subscribe
 ServiceBuilderPublishSubscribe.user_header = set_user_header
