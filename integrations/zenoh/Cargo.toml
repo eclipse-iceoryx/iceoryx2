@@ -63,9 +63,20 @@ zenoh = { version = "1.9.0", default-features = false, features = [
 [profile.dev]
 panic = "abort"
 
+[profile.dev-fast-build]
+inherits = "dev"
+debug = "line-tables-only"
+incremental = false
+
 [profile.release]
 codegen-units = 1
 strip = true
 lto = true
 # opt-level = "z"
 panic = "abort"
+
+[profile.release-fast-build]
+inherits = "release"
+codegen-units = 16
+lto = false
+incremental = false

@@ -29,20 +29,18 @@ _parse-prepare-release-args *flags:
         case "$1" in
             --version)   NEW_VERSION="$2";              shift 2 ;;
             --version=*) NEW_VERSION="${1#--version=}"; shift ;;
-            *)           shift ;;
+            *)           echo "Invalid argument '$1'! Try 'just prepare-release --help' for options." >&2; exit 1 ;;
         esac
     done
 
     echo "NEW_VERSION='$NEW_VERSION'"
 
 [private]
-_prepare-release-dispatch workspace action *flags:
+_prepare-release-dispatch what action *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval "$(just _parse-prepare-release-args {{flags}})"
-
-    if [ -z "{{workspace}}" ] || [ -z "{{action}}" ]; then
+    show_help() {
         echo "Usage: just prepare-release <workspace> <action> [flags]"
         echo ""
         echo "Workspace:"
@@ -53,13 +51,25 @@ _prepare-release-dispatch workspace action *flags:
         echo ""
         echo "Flags:"
         echo "  --version <X.Y.Z>    the new version to set"
-        exit 1
-    fi
+    }
 
-    if [ "{{workspace}}" != "all" ]; then
-        echo "Error: only 'all' is supported for prepare-release (got: {{workspace}})" >&2
-        exit 1
-    fi
+    PARSED_ARGS=$(just _parse-prepare-release-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
+
+    case "{{what}}" in
+        all)
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Error: only 'all' is supported for prepare-release (got: {{what}})" >&2
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
 
     case "{{action}}" in
         versions) just _prepare-release-all-versions "$NEW_VERSION" ;;
