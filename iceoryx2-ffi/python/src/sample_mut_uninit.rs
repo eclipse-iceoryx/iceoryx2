@@ -91,10 +91,9 @@ impl SampleMutUninit {
             SampleMutUninitType::Ipc(v) => {
                 let mut sample = v.take().unwrap();
                 let mut memory_buffer = sample.__internal_create_resizable_memory_builder();
-                let reserved_header_len = memory_buffer.reserved_header_len();
                 if memory_buffer.len() < buffer_len {
                     memory_buffer
-                        .grow_downwards_with_size(buffer_len + reserved_header_len, 0)
+                        .grow_downwards_with_size(buffer_len, 0)
                         .unwrap();
                 }
                 unsafe {
@@ -105,10 +104,9 @@ impl SampleMutUninit {
                     )
                 };
 
-                sample.__internal_finish_serialized(
-                    unsafe { memory_buffer.as_ptr().add(payload_offset) },
-                    (payload_len + memory_buffer.reserved_header_len()) as u64,
-                );
+                sample.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
                 SampleMut {
                     value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
                     payload_type_details: self.payload_type_details.clone(),

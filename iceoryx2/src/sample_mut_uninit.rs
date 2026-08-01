@@ -153,6 +153,11 @@ impl<
         let guard = shared_state_guard.publisher_shared_state.lock();
         let allocation_strategy = guard.sender.data_segment.allocation_strategy();
         let reserved_header_len = guard.sender.message_type_details.all_headers_len();
+        self.shared_state
+            .state
+            .lock()
+            .slice_len
+            .store(self.chunk.layout().size(), Ordering::Relaxed);
 
         ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
@@ -162,7 +167,7 @@ impl<
     }
 
     #[doc(hidden)]
-    pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8, allocation_size: u64) {
+    pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8) {
         let message_type_details = self
             .shared_state
             .state
@@ -188,7 +193,7 @@ impl<
         let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
 
         let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
-        header.number_of_elements = allocation_size;
+        header.number_of_elements = self.shared_state.slice_len() as u64;
         header.payload_offset = payload_offset as u64;
     }
 }
@@ -235,7 +240,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
         self.flatbuffer_builder().finish(root, None);
         let payload_ptr = self.flatbuffer_builder().finished_data().as_ptr();
-        self.__internal_finish_serialized(payload_ptr, self.shared_state.slice_len() as u64);
+        self.__internal_finish_serialized(payload_ptr);
 
         SampleMut {
             shared_state: self.shared_state,

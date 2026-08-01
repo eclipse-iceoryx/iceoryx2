@@ -122,10 +122,6 @@ impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
 }
 
 impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
-    pub fn reserved_header_len(&self) -> usize {
-        self.reserved_header_len
-    }
-
     /// Grows the memory downwards to the specified `new_size`.
     ///
     /// - `in_use_front` indicates how many bytes are in use at the front of the
@@ -135,6 +131,7 @@ impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
         new_size: usize,
         in_use_front: usize,
     ) -> Result<(), AllocationGrowError> {
+        let new_size = new_size + self.reserved_header_len;
         let new_layout =
             unsafe { Layout::from_size_align_unchecked(new_size, self.current_layout.align()) };
 

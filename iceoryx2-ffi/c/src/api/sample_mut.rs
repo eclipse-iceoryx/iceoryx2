@@ -402,7 +402,6 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
 pub unsafe extern "C" fn iox2_sample_mut_finish_serialized(
     handle: iox2_sample_mut_h_ref,
     payload_ptr: *const u8,
-    allocation_size: u64,
 ) {
     handle.assert_non_null();
     unsafe {
@@ -412,12 +411,12 @@ pub unsafe extern "C" fn iox2_sample_mut_finish_serialized(
                 .value
                 .as_mut()
                 .ipc
-                .__internal_finish_serialized(payload_ptr, allocation_size),
+                .__internal_finish_serialized(payload_ptr),
             iox2_service_type_e::LOCAL => sample
                 .value
                 .as_mut()
                 .local
-                .__internal_finish_serialized(payload_ptr, allocation_size),
+                .__internal_finish_serialized(payload_ptr),
         };
     }
 }

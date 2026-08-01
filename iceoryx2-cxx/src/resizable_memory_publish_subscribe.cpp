@@ -87,11 +87,6 @@ auto ResizableMemoryPublishSubscribe<Service>::len() const -> size_t {
 }
 
 template <ServiceType Service>
-auto ResizableMemoryPublishSubscribe<Service>::reserved_header_len() const -> size_t {
-    return iox2_resizable_memory_publish_subscribe_reserved_header_len(&m_handle);
-}
-
-template <ServiceType Service>
 auto ResizableMemoryPublishSubscribe<Service>::as_ptr() const -> const uint8_t* {
     return m_ptr;
 }
