@@ -494,6 +494,9 @@ jobs:
         os: [ubuntu-24.04]
         toolchain: [stable]
         bazel-version: ["7.4.1", "8.5.1"]
+        include:
+          - bazel-version: "8.5.1"
+            feature-flatbuffers: "--//:feature_flatbuffers=on"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -516,12 +519,12 @@ jobs:
       - name: Run Bazel build
         env:
           USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-        run: bazel build //... --verbose_failures
+        run: bazel build //... --verbose_failures ${{ matrix.feature-flatbuffers }}
 
       - name: Run Bazel test
         env:
           USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-        run: bazel test //... --verbose_failures
+        run: bazel test //... --verbose_failures ${{ matrix.feature-flatbuffers }}
 
       - name: Run Bazel query
         env:
