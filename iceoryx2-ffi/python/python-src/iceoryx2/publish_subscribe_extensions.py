@@ -25,6 +25,20 @@ from .type_name import get_type_name
 T = TypeVar("T", bound=ctypes.Structure)
 
 
+def payload_bytes(self: Any) -> Slice[ctypes.c_int8]:
+    assert self.__payload_type_details is not None
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    number_of_elements = self.header.number_of_elements
+    offset = self.header.payload_offset
+    return Slice(
+        self.payload_ptr + offset,
+        number_of_elements - offset,
+        ctypes.c_uint8,
+        owner=self,
+    )
+
+
 def payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the payload."""
     assert self.__payload_type_details is not None
@@ -304,9 +318,11 @@ Publisher.loan_flatbuffer = loan_flatbuffer
 
 Sample.payload = payload
 Sample.user_header = user_header
+Sample.payload_bytes = payload_bytes
 
 SampleMut.payload = payload
 SampleMut.user_header = user_header
+SampleMut.payload_bytes = payload_bytes
 
 SampleMutUninit.write_payload = write_payload
 SampleMutUninit.payload = payload

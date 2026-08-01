@@ -52,8 +52,7 @@ try:
         while True:
             sample = subscriber.receive()
             if sample is not None:
-                # data = sample.payload()
-                print("received:")
+                print("received:", sample.payload_bytes().len())
             else:
                 break
 
