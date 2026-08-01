@@ -108,7 +108,9 @@ then
     echo "# Clean the target directory to reduce memory usage on VM #"
     echo "###########################################################"
 
-    cargo clean
+    # remove unimportant build artifacts but keep the generated lib and headers for the C binding
+    rm -rf ./target/{debug,release}/{deps,incremental}
+    rm -rf ./target/*/{debug,release}/{deps,incremental} # Cleanup subfolders for target triples
 
     echo "###########################"
     echo "# Build language bindings #"
