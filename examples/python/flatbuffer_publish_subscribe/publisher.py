@@ -31,28 +31,49 @@ cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 
-config = iox2.config.global_config()
-
+# export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/rust/flatbuffer_publish_subscribe
 try:
-    config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(
-        os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
-    )
+    lookup_path = os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
 except KeyError:
     raise RuntimeError("Please define IOX2_FLATBUFFER_SCHEMA_PATH!")
 
-node = iox2.NodeBuilder.new().config(config).create(iox2.ServiceType.Ipc)
+config = iox2.config.global_config()
+config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(lookup_path)
+
+node = (
+    iox2.NodeBuilder.new()
+    # Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
+    # schema file lookup.
+    .config(config)
+    .create(iox2.ServiceType.Ipc)
+)
 
 service = (
     node.service_builder(iox2.ServiceName.new("My/Flatbuffer/Service"))
     .publish_subscribe(iox2.Flatbuffer[UnboundedData])
     .user_header(ctypes.c_uint64)
+    # This method allows us to use a custom schema file path when no schema lookup path was
+    # defined or when a custom file is required (maybe outside of the lookup path).
+    #
     .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
     .open_or_create()
 )
 
 publisher = (
     service.publisher_builder()
+    # We start with 1024 bytes. The more accurate the initial_reserved_memory
+    # estimate is, the fewer reallocations will be required. Reallocations occur
+    # only at the beginning of communication. Once the publisher's data segment
+    # has been resized appropriately, all subsequent samples will use that size.
     .initial_reserved_memory(1024)
+    # By default, the allocation strategy is Static, which does not allow
+    # reallocations when initial_reserved_memory is exhausted. Set it to
+    # PowerOfTwo or BestFit to enable reallocations.
+    #
+    # The maximum number of reallocations is 256. BestFit allocates only the
+    # explicitly requested amount of memory, so this limit can be reached
+    # quickly. Increasing initial_reserved_memory reduces the number of
+    # reallocations.
     .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
     .create()
 )
@@ -68,7 +89,7 @@ try:
 
         # BEGIN: standard flatbuffer API
         entry_offsets = []
-        for i in range(0, 15):
+        for i in range(0, COUNTER % 15):
             EntryStart(builder)
             EntryAddData1(builder, 6 * i + 5)
             EntryAddData2(builder, 6 * i + 7)
