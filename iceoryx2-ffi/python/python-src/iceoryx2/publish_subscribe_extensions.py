@@ -120,7 +120,7 @@ def send_copy(self: Publisher, t: Type[T]) -> Any:
     assert ctypes.alignment(t) == ctypes.alignment(sample_uninit.__payload_type_details)
 
     ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
-    sample = sample_uninit.assume_init()
+    sample = sample_uninit.__assume_init()
     return sample.send()
 
 
@@ -134,7 +134,7 @@ def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
     assert ctypes.alignment(t) == ctypes.alignment(self.__payload_type_details)
 
     ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
-    return self.assume_init()
+    return self.__assume_init()
 
 
 def loan_uninit(self: Publisher) -> SampleMutUninit:
@@ -277,7 +277,20 @@ def assume_init(self: SampleMutUninit, root=None) -> SampleMut:
     base_view = (ctypes.c_ubyte * buffer_len).from_buffer(builder.Bytes)
     buffer_ptr = ctypes.addressof(base_view)
 
-    return self.__assume_init_flatbuffer(buffer_ptr, buffer_len, payload_offset)
+    initialized_sample = self.__assume_init_flatbuffer(
+        buffer_ptr, buffer_len, payload_offset
+    )
+    _sample_mut_uninit_dict.pop(id(self), None)
+    return initialized_sample
+
+
+_sample_mut_uninit_del_original = getattr(SampleMutUninit, "__del__", None)
+
+
+def _sample_mut_uninit_del(self: SampleMutUninit) -> None:
+    _sample_mut_uninit_dict.pop(id(self), None)
+    if _sample_mut_uninit_del_original is not None:
+        _sample_mut_uninit_del_original(self)
 
 
 PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len
@@ -300,6 +313,7 @@ SampleMutUninit.payload = payload
 SampleMutUninit.user_header = user_header
 SampleMutUninit.flatbuffer_builder = flatbuffer_builder
 SampleMutUninit.assume_init = assume_init
+SampleMutUninit.__del__ = _sample_mut_uninit_del
 
 ServiceBuilder.publish_subscribe = publish_subscribe
 ServiceBuilderPublishSubscribe.user_header = set_user_header

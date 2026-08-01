@@ -63,6 +63,7 @@ try:
         COUNTER += 1
         node.wait(cycle_time)
         sample = publisher.loan_flatbuffer()
+        sample.user_header().contents.value = COUNTER
         builder = sample.flatbuffer_builder()
 
         # BEGIN: standard flatbuffer API
@@ -87,7 +88,6 @@ try:
         # END: standard flatbuffer API
 
         sample = sample.assume_init(unbounded_data)
-        sample.user_header().contents = ctypes.c_uint64(COUNTER)
         sample.send()
 
         print("Send sample", COUNTER, "...")
