@@ -272,7 +272,12 @@ def assume_init(self: SampleMutUninit, root=None) -> SampleMut:
     builder = self.flatbuffer_builder()
     builder.Finish(root)
 
-    return self.__assume_init()
+    payload_offset = builder.Head()
+    buffer_len = len(builder.Bytes)
+    base_view = (ctypes.c_ubyte * buffer_len).from_buffer(builder.Bytes)
+    buffer_ptr = ctypes.addressof(base_view)
+
+    return self.__assume_init_flatbuffer(buffer_ptr, buffer_len, payload_offset)
 
 
 PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len

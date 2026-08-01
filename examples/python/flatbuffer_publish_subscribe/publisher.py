@@ -87,8 +87,9 @@ try:
         # END: standard flatbuffer API
 
         sample = sample.assume_init(unbounded_data)
+        sample.user_header().contents = ctypes.c_uint64(COUNTER)
+        sample.send()
 
-        sample.delete()
         print("Send sample", COUNTER, "...")
 
 except iox2.NodeWaitFailure:
