@@ -27,6 +27,16 @@ from Example.UnboundedData import (
 
 import iceoryx2 as iox2
 
+
+# Explicitly sets the type name of our generated type so that the auto path-lookup
+# works.
+def type_name() -> str:
+    """Returns the system-wide unique type name required for communication."""
+    return "UnboundedData"
+
+
+UnboundedData.type_name = staticmethod(type_name)
+
 cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
@@ -53,7 +63,8 @@ service = (
     .publish_subscribe(iox2.Flatbuffer[UnboundedData])
     .user_header(ctypes.c_uint64)
     # This method allows us to use a custom schema file path when no schema lookup path was
-    # defined or when a custom file is required (maybe outside of the lookup path).
+    # defined or when a custom file is required (maybe outside of the lookup path or
+    # or the type_name() was not defined).
     #
     .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
     .open_or_create()
