@@ -104,6 +104,10 @@ jobs:
         with:
           mode: "cleanup-rust-build-files-from-cargo-target-folder"
 
+      - name: Get CPU count
+        id: cpu
+        uses: ./.github/actions/cpu-count
+
       - name: Build language bindings
         shell: bash
         run: |
@@ -118,7 +122,7 @@ jobs:
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build
+          cmake --build target/ff/cc/build --parallel ${{ steps.cpu.outputs.count }}
           cmake --install target/ff/cc/build
 
       - name: Run C++ iceoryx2-bb tests
@@ -142,7 +146,7 @@ jobs:
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/out-of-tree-c
+          cmake --build target/ff/out-of-tree-c --parallel ${{ steps.cpu.outputs.count }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         shell: bash
@@ -155,4 +159,4 @@ jobs:
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/out-of-tree-cxx
+          cmake --build target/ff/out-of-tree-cxx --parallel ${{ steps.cpu.outputs.count }}

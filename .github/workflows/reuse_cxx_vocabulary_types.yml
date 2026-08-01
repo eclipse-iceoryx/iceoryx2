@@ -28,6 +28,10 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Get CPU count
+        id: cpu
+        uses: ./.github/actions/cpu-count
+
       - name: Build iceoryx2-ffi-c
         run: cargo build --package iceoryx2-ffi-c
 
@@ -43,7 +47,7 @@ jobs:
                 -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build
+          cmake --build target/ff/cc/build --parallel ${{ steps.cpu.outputs.count }}
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
           target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
@@ -54,7 +58,7 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/out-of-tree
+          cmake --build target/ff/cc/out-of-tree --parallel ${{ steps.cpu.outputs.count }}
 
           rm -rf target/ff/cc
 
@@ -69,7 +73,7 @@ jobs:
                 -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=OFF \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build
+          cmake --build target/ff/cc/build --parallel ${{ steps.cpu.outputs.count }}
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
           target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
@@ -80,7 +84,7 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/out-of-tree
+          cmake --build target/ff/cc/out-of-tree --parallel ${{ steps.cpu.outputs.count }}
 
           rm -rf target/ff/cc
 
@@ -95,7 +99,7 @@ jobs:
                 -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build
+          cmake --build target/ff/cc/build --parallel ${{ steps.cpu.outputs.count }}
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
           target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
@@ -106,7 +110,7 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/out-of-tree
+          cmake --build target/ff/cc/out-of-tree --parallel ${{ steps.cpu.outputs.count }}
 
           rm -rf target/ff/cc
 
@@ -121,7 +125,7 @@ jobs:
                 -DIOX2_BB_CXX_CONFIG_USE_STD_OPTIONAL=ON \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build
+          cmake --build target/ff/cc/build --parallel ${{ steps.cpu.outputs.count }}
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
           target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
@@ -132,7 +136,7 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/out-of-tree
+          cmake --build target/ff/cc/out-of-tree --parallel ${{ steps.cpu.outputs.count }}
 
           rm -rf target/ff/cc
 
@@ -152,7 +156,7 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build
+          cmake --build target/ff/cc/build --parallel ${{ steps.cpu.outputs.count }}
           cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
           target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
@@ -163,6 +167,6 @@ jobs:
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/out-of-tree
+          cmake --build target/ff/cc/out-of-tree --parallel ${{ steps.cpu.outputs.count }}
 
           rm -rf target/ff/cc

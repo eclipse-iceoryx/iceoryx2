@@ -127,6 +127,10 @@ jobs:
           cd iceoryx2-ffi/c
           cargo rustc -q -- --print=native-static-libs
 
+      - name: Get CPU count
+        id: cpu
+        uses: ./.github/actions/cpu-count
+
       - name: Build language bindings
         if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
@@ -142,8 +146,11 @@ jobs:
                 -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/${{ inputs.profile }}" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/cc/build ${{ steps.set-build-flags.outputs.cmake-build-config }}
-          cmake --install target/ff/cc/build ${{ steps.set-build-flags.outputs.cmake-build-config }}
+          cmake --build target/ff/cc/build \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }} \
+                --parallel ${{ steps.cpu.outputs.count }}
+          cmake --install target/ff/cc/build \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }}
 
       - name: Run C++ iceoryx2-bb tests
         if: ${{ inputs.workspace == 'sdk' }}
@@ -172,7 +179,9 @@ jobs:
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/out-of-tree-c ${{ steps.set-build-flags.outputs.cmake-build-config }}
+          cmake --build target/ff/out-of-tree-c \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }} \
+                --parallel ${{ steps.cpu.outputs.count }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         if: ${{ inputs.workspace == 'sdk' }}
@@ -185,7 +194,9 @@ jobs:
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build target/ff/out-of-tree-cxx ${{ steps.set-build-flags.outputs.cmake-build-config }}
+          cmake --build target/ff/out-of-tree-cxx \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }} \
+                --parallel ${{ steps.cpu.outputs.count }}
 
       - name: Check for changed files after CI run
         uses: ./.github/actions/check-repo-changes

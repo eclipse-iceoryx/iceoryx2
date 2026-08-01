@@ -125,7 +125,7 @@ _coverage-profile-cmake:
     set -euo pipefail
 
     cmake . -B"{{CMAKE_COV_DIR}}" -DCOVERAGE=ON -DBUILD_TESTING=ON -DIOX2_FEATURE_FLATBUFFERS=ON -DCMAKE_BUILD_TYPE=Debug
-    cmake --build "{{CMAKE_COV_DIR}}" -j
+    cmake --build "{{CMAKE_COV_DIR}}" --parallel $(nproc)
     ctest --test-dir "{{CMAKE_COV_DIR}}" --output-on-failure
 
 [private]

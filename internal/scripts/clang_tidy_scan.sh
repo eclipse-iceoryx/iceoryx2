@@ -169,7 +169,7 @@ cmake -S . -B target/clang-tidy-scan \
     -DBUILD_EXAMPLES=ON \
     -DBUILD_TESTING=ON \
     -DIOX2_FEATURE_FLATBUFFERS=ON
-cmake --build target/clang-tidy-scan -j$NUM_JOBS
+cmake --build target/clang-tidy-scan --parallel $NUM_JOBS
 
 echo "Using clang-tidy version: $(clang-tidy --version | sed -n "s/.*version \([0-9.]*\)/\1/p" )"
 
