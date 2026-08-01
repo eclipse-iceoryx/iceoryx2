@@ -15,7 +15,7 @@
 import ctypes
 import os
 
-from Example import UnboundedData
+from Example.UnboundedData import UnboundedData
 
 import iceoryx2 as iox2
 
@@ -23,21 +23,30 @@ cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 
-config = iox2.config.global_config()
-
+# export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/rust/flatbuffer_publish_subscribe
 try:
-    config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(
-        os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
-    )
+    lookup_path = os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
 except KeyError:
     raise RuntimeError("Please define IOX2_FLATBUFFER_SCHEMA_PATH!")
 
-node = iox2.NodeBuilder.new().config(config).create(iox2.ServiceType.Ipc)
+config = iox2.config.global_config()
+config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(lookup_path)
+
+node = (
+    iox2.NodeBuilder.new()
+    # Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
+    # schema file lookup.
+    .config(config)
+    .create(iox2.ServiceType.Ipc)
+)
 
 service = (
     node.service_builder(iox2.ServiceName.new("My/Flatbuffer/Service"))
     .publish_subscribe(iox2.Flatbuffer[UnboundedData])
     .user_header(ctypes.c_uint64)
+    # This method allows us to use a custom schema file path when no schema lookup path was
+    # defined or when a custom file is required (maybe outside of the lookup path).
+    #
     .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
     .open_or_create()
 )
@@ -52,7 +61,15 @@ try:
         while True:
             sample = subscriber.receive()
             if sample is not None:
-                print("received:", sample.payload_bytes().len())
+                data = UnboundedData.GetRootAs(
+                    sample.payload_bytes().as_memory_view(), 0
+                )
+                print("title:", data.Title().decode("utf-8"))
+                print("user header:", sample.user_header().contents.value)
+                for i in range(data.EntriesLength()):
+                    entry = data.Entries(i)
+                    print(f"Entry {i}: data_1={entry.Data1()}, data_2={entry.Data2()}")
+                print(" ")
             else:
                 break
 

@@ -68,3 +68,9 @@ class Slice(Generic[T]):
     def as_ptr(self) -> int:
         """Returns a pointer to the first element of the `Slice`."""
         return self.data_ptr
+
+    def as_memory_view(self) -> memoryview:
+        """Returns a `memoryview` over the elements of the `Slice`, without copying."""
+        array_type = self.contained_type * self.number_of_elements
+        view = memoryview(array_type.from_address(self.data_ptr))
+        return view
