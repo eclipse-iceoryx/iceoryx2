@@ -197,9 +197,9 @@ class ServiceBuilderPublishSubscribe {
     explicit ServiceBuilderPublishSubscribe(iox2_service_builder_h handle);
 
     template <typename U = Payload>
-    auto lookup_and_set_flatbuffer_schema() -> std::enable_if_t<has_flatbuffer_marker<U>(), void>;
+    auto set_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void>;
     template <typename U = Payload>
-    auto lookup_and_set_flatbuffer_schema() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void>;
+    auto set_type_definition_name_hint() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void>;
 
     void set_parameters();
     void derive_payload_type_details();
@@ -221,33 +221,16 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename U>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::lookup_and_set_flatbuffer_schema()
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_type_definition_name_hint()
     -> std::enable_if_t<has_flatbuffer_marker<U>(), void> {
-    if (m_has_flatbuffer_schema_defined) {
-        return;
-    }
-
-    auto config = ConfigView { iox2_service_builder_pub_sub_config(&m_handle) }.to_owned();
-    auto schema_path = config.global().service().flatbuffer_schema_path();
-
     auto type_name = iox2::internal::get_type_name<typename Payload::ValueType>();
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) Certified std::array not available
-    char schema_file[bb::platform::IOX2_MAX_PATH_LENGTH] {};
-
-    if (schema_path.has_value()
-        && iox2_flatbuffer_find_best_fitting_schema_file(type_name.unchecked_access().c_str(),
-                                                         nullptr,
-                                                         *schema_path,
-                                                         &schema_file[0],
-                                                         bb::platform::IOX2_MAX_PATH_LENGTH)
-               == IOX2_OK) {
-        iox2_service_builder_pub_sub_set_flatbuffer_schema_path(&m_handle, &schema_file[0]);
-    }
+    iox2_service_builder_pub_sub_type_definition_name_hint(
+        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), "", 0);
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename U>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::lookup_and_set_flatbuffer_schema()
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_type_definition_name_hint()
     -> std::enable_if_t<!has_flatbuffer_marker<U>(), void> {
 }
 
@@ -291,7 +274,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
         derive_payload_type_details();
     }
 
-    lookup_and_set_flatbuffer_schema();
+    set_type_definition_name_hint();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
