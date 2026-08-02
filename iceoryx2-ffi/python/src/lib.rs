@@ -146,6 +146,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::entry_value_uninit::EntryValueUninit>()?;
     m.add_class::<crate::event_activation::EventActivation>()?;
     m.add_class::<crate::event_id::EventId>()?;
+    m.add_class::<crate::file_descriptor::FileDescriptor>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::header_publish_subscribe::HeaderPublishSubscribe>()?;
