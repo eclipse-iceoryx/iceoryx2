@@ -16,6 +16,7 @@ extern crate alloc;
 
 use crate::TypeName;
 use alloc::format;
+use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::code_style::{camel_to_snake_case, snake_to_upper_camel_case};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_posix::directory::{
@@ -53,10 +54,11 @@ fn is_schema_for_type_name(file_name: &FileName, type_name: &TypeName) -> bool {
 
     if let Some(pos) = file_name.as_str().rfind(".") {
         let name_without_extension = &file_name.as_str()[0..pos];
-        name_without_extension.eq_ignore_ascii_case(type_name.name)
-            || name_without_extension.eq_ignore_ascii_case(&camel_to_snake_case(type_name.name))
+        name_without_extension.eq_ignore_ascii_case(type_name.name.as_str())
             || name_without_extension
-                .eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.name))
+                .eq_ignore_ascii_case(&camel_to_snake_case(type_name.name.as_str()))
+            || name_without_extension
+                .eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.name.as_str()))
     } else {
         false
     }
@@ -65,9 +67,9 @@ fn is_schema_for_type_name(file_name: &FileName, type_name: &TypeName) -> bool {
 fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
     let name = file_name.as_str();
 
-    name.eq_ignore_ascii_case(type_name.namespace)
-        || name.eq_ignore_ascii_case(&camel_to_snake_case(type_name.namespace))
-        || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.namespace))
+    name.eq_ignore_ascii_case(type_name.namespace.as_str())
+        || name.eq_ignore_ascii_case(&camel_to_snake_case(type_name.namespace.as_str()))
+        || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.namespace.as_str()))
 }
 
 /// Returns the best fitting schema file for a given [`TypeName`]. If no schema file could be found

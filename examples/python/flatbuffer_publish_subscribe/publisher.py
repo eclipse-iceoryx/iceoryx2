@@ -66,7 +66,7 @@ service = (
     # defined or when a custom file is required (maybe outside of the lookup path or
     # or the type_name() was not defined).
     #
-    .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
+    # .flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
     .open_or_create()
 )
 

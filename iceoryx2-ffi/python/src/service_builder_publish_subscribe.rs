@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2_bb_container::string::StaticString;
+use iceoryx2_bb_flatbuffers::TypeName;
 use pyo3::prelude::*;
 
 use crate::alignment::Alignment;
@@ -267,9 +269,27 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
-    /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
-    /// defined in the config.
+    pub fn __type_definition_name_hint(&self, name: &str, namespace: &str) -> Self {
+        let type_name = TypeName {
+            name: StaticString::from_str_truncated(name)
+                .expect("Typenames contain only valid UTF-8 characters."),
+            namespace: StaticString::from_str_truncated(namespace)
+                .expect("Namespace names contain only valid UTF-8 characters."),
+        };
+        match &self.value {
+            ServiceBuilderPublishSubscribeType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.__internal_type_definition_name_hint(&type_name);
+                self.clone_ipc(this)
+            }
+            ServiceBuilderPublishSubscribeType::Local(v) => {
+                let this = v.clone();
+                let this = this.__internal_type_definition_name_hint(&type_name);
+                self.clone_local(this)
+            }
+        }
+    }
+
     pub fn __flatbuffer_schema_path(&self, path: &FilePath) -> Self {
         match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {

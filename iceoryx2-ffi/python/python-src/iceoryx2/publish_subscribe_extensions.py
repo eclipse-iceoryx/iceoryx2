@@ -106,6 +106,10 @@ def publish_subscribe(
     result = self.__publish_subscribe()
     result.__set_payload_type(t)
 
+    if get_origin(t) is Flatbuffer:
+        (PayloadType,) = get_args(t)
+        result = result.__type_definition_name_hint(get_type_name(PayloadType), "")
+
     return result.__payload_type_details(
         TypeDetail.new()
         .type_variant(type_variant)
