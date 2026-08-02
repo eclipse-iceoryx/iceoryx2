@@ -1455,4 +1455,27 @@ pub mod service {
         let service_2 = test.open(&node_2, &service_name, &AttributeVerifier::new());
         assert_that!(service_2, is_err);
     }
+
+    #[conformance_test]
+    pub fn creating_service_with_different_root_path_works<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let mut test = Factory::new();
+        #[cfg(windows)]
+        let root_path = "C:\\Temp2\\fuu";
+        #[cfg(not(windows))]
+        let root_path = "/tmp/fuu";
+
+        test.context_mut()
+            .config_mut()
+            .global
+            .set_root_path(&root_path.try_into().unwrap());
+        let service_name = generate_service_name();
+        let node = test.context().create_node();
+
+        let sut = test.create(&node, &service_name, &AttributeSpecifier::new());
+
+        assert_that!(sut, is_ok);
+    }
 }
