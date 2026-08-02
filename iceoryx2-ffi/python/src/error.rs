@@ -313,3 +313,10 @@ create_exception!(
     PyException,
     "Errors caused when a Service is removed with Node::force_remove_service()."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    AllocationGrowError,
+    PyException,
+    "Errors caused when growing a payload memory."
+);

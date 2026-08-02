@@ -39,6 +39,21 @@ def payload_bytes(self: Any) -> Slice[ctypes.c_int8]:
     )
 
 
+def payload_root(self: Any) -> Any:
+    assert self.__payload_type_details is not None
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    (PayloadType,) = get_args(self.__payload_type_details)
+
+    bytes = self.payload_bytes()
+    view = bytes.as_memory_view()
+    n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, view, 0)
+
+    data = PayloadType()
+    data.Init(view, n)
+    return data
+
+
 def payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the payload."""
     assert self.__payload_type_details is not None
@@ -319,10 +334,12 @@ Publisher.loan_flatbuffer = loan_flatbuffer
 Sample.payload = payload
 Sample.user_header = user_header
 Sample.payload_bytes = payload_bytes
+Sample.payload_root = payload_root
 
 SampleMut.payload = payload
 SampleMut.user_header = user_header
 SampleMut.payload_bytes = payload_bytes
+SampleMut.payload_root = payload_root
 
 SampleMutUninit.write_payload = write_payload
 SampleMutUninit.payload = payload

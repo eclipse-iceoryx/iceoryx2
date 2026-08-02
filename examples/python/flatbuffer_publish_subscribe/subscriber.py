@@ -73,9 +73,7 @@ try:
         while True:
             sample = subscriber.receive()
             if sample is not None:
-                data = UnboundedData.GetRootAs(
-                    sample.payload_bytes().as_memory_view(), 0
-                )
+                data = sample.payload_root()
                 print("title:", data.Title().decode("utf-8"))
                 print("user header:", sample.user_header().contents.value)
                 for i in range(data.EntriesLength()):

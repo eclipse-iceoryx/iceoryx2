@@ -17,6 +17,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
+    error::AllocationGrowError,
     header_publish_subscribe::HeaderPublishSubscribe,
     parc::Parc,
     sample_mut::{SampleMut, SampleMutType},
@@ -84,7 +85,7 @@ impl SampleMutUninit {
         buffer_ptr: usize,
         buffer_len: usize,
         payload_offset: usize,
-    ) -> SampleMut {
+    ) -> PyResult<SampleMut> {
         let payload_ptr = (buffer_ptr + payload_offset) as *const u8;
         let payload_len = buffer_len - payload_offset;
         match &mut *self.value.lock() {
@@ -94,7 +95,7 @@ impl SampleMutUninit {
                 if memory_buffer.len() < buffer_len {
                     memory_buffer
                         .grow_downwards_with_size(buffer_len, 0)
-                        .unwrap();
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
                 }
                 unsafe {
                     core::ptr::copy(
@@ -107,16 +108,36 @@ impl SampleMutUninit {
                 sample.__internal_finish_serialized(unsafe {
                     memory_buffer.as_ptr().add(payload_offset)
                 });
-                SampleMut {
+                Ok(SampleMut {
                     value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
                     payload_type_details: self.payload_type_details.clone(),
                     user_header_type_details: self.user_header_type_details.clone(),
-                }
+                })
             }
             SampleMutUninitType::Local(v) => {
-                let sample = v.as_ref().unwrap();
-                sample.__internal_create_resizable_memory_builder();
-                todo!()
+                let mut sample = v.take().unwrap();
+                let mut memory_buffer = sample.__internal_create_resizable_memory_builder();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                sample.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(SampleMut {
+                    value: Parc::new(SampleMutType::Local(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
         }
     }

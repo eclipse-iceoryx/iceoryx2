@@ -377,6 +377,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "ServiceRemoveError",
         py.get_type::<crate::error::ServiceRemoveError>(),
     )?;
+    m.add(
+        "AllocationGrowError",
+        py.get_type::<crate::error::AllocationGrowError>(),
+    )?;
 
     Ok(())
 }
