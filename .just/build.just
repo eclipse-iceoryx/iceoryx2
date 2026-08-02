@@ -21,6 +21,7 @@ _parse-build-args *flags:
 
     TOOLCHAIN=""
     TARGET_TRIPLET=""
+    BUILD_TYPE=""
     PROFILE=""
     HAS_NOSTD="false"
     HAS_TESTS="false"
@@ -33,12 +34,24 @@ _parse-build-args *flags:
             +*)         TOOLCHAIN="$1";                    shift ;;
             --target)   TARGET_TRIPLET="$2";               shift 2 ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
-            --release)  PROFILE="--release";               shift ;;
+            --release)  BUILD_TYPE="--release";            shift ;;
+            --profile)  PROFILE="$2";                      shift 2 ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
             --tests)    HAS_TESTS="true";                  shift ;;
-            *)          shift ;;
+            *)          echo "Invalid argument '$1'! Try 'just build --help' for options." >&2; exit 1 ;;
         esac
     done
+
+    if [[ -n "$BUILD_TYPE" && -n "$PROFILE" ]]; then
+        echo "Error: --release and --profile cannot be used together." >&2
+        exit 1
+    fi
+
+    if [[ -n "$BUILD_TYPE" ]]; then
+        PROFILE="release"
+    elif [[ -z "$PROFILE" ]]; then
+        PROFILE="dev"
+    fi
 
     echo "TOOLCHAIN='$TOOLCHAIN'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
@@ -52,26 +65,44 @@ _build-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval $(just _parse-build-args {{flags}})
+    show_help() {
+        echo "Usage: just build <scope> [flags]"
+        echo ""
+        echo "Scope:"
+        echo "  sdk                    build the main workspace"
+        echo "  integrations-zenoh     build the zenoh workspace"
+        echo "  integrations-ros2      build the ros2 workspace (requires a sourced ROS 2 env)"
+        echo "  <package>              build a specific package"
+        echo ""
+        echo "Flags:"
+        echo "  +<toolchain>           use a specific toolchain"
+        echo "  --target <triplet>     cross-compile for target"
+        echo "  --release              build in release mode (default: debug)"
+        echo "                         note: cannot be used in combination with --profile <profile>"
+        echo "  --profile <profile>    build with the specified cargo profile"
+        echo "                         note: cannot be used in combination with --release"
+        echo "  --no_std               build without std"
+        echo "  --tests                also build tests"
+        echo "  -- <args>              forward remaining args to cargo"
+    }
+
+    PARSED_ARGS=$(just _parse-build-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
 
     case "{{what}}" in
         "")
-            echo "Usage: just build <scope> [flags]"
-            echo ""
-            echo "Scope:"
-            echo "  sdk                    build the main workspace"
-            echo "  integrations-zenoh     build the zenoh workspace"
-            echo "  integrations-ros2      build the ros2 workspace (requires a sourced ROS 2 env)"
-            echo "  <package>              build a specific package"
-            echo ""
-            echo "Flags:"
-            echo "  +<toolchain>           use a specific toolchain"
-            echo "  --target <triplet>     cross-compile for target"
-            echo "  --release              build in release profile (default: debug)"
-            echo "  --no_std               build without std"
-            echo "  --tests                also build tests"
-            echo "  -- <args>              forward remaining args to cargo"
+            show_help
             exit 1
+            ;;
+        -*|+*)
+            echo "Invalid argument '{{what}}'!"
+            echo ""
+            show_help
+            exit 1
+            ;;
+        --help|-h)
+            show_help
+            exit 0
             ;;
         sdk)
             just _build-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
@@ -132,7 +163,7 @@ _build-sdk toolchain target_triplet profile has_nostd has_tests extra_args:
             TARGET_ARG="--target {{target_triplet}}"
         fi
 
-        cargo {{toolchain}} build --workspace {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
+        cargo {{toolchain}} build --workspace --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
     fi
 
 [private]
@@ -157,7 +188,7 @@ _build-integrations-zenoh toolchain target_triplet profile has_nostd has_tests e
 
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations-zenoh)
 
-    cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
+    cargo {{toolchain}} build --workspace $MANIFEST_ARG --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 
 [private]
 _build-integrations-ros2 toolchain target_triplet profile has_nostd has_tests extra_args:
@@ -181,7 +212,7 @@ _build-integrations-ros2 toolchain target_triplet profile has_nostd has_tests ex
 
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations-ros2)
 
-    cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
+    cargo {{toolchain}} build --workspace $MANIFEST_ARG --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 
 [private]
 _build-package package toolchain target_triplet profile has_nostd extra_args:
@@ -207,11 +238,11 @@ _build-package package toolchain target_triplet profile has_nostd extra_args:
                     $MANIFEST_ARG \
                     --no-default-features \
                     -Zbuild-std=core,alloc \
-                    {{profile}} \
+                    --profile {{profile}} \
                     $TARGET_ARG \
                     {{extra_args}}
         else
-            cargo {{toolchain}} build --package {{package}} $MANIFEST_ARG --no-default-features {{profile}} {{extra_args}}
+            cargo {{toolchain}} build --package {{package}} $MANIFEST_ARG --no-default-features --profile {{profile}} {{extra_args}}
         fi
     else
         TARGET_ARG=""
@@ -219,5 +250,5 @@ _build-package package toolchain target_triplet profile has_nostd extra_args:
             TARGET_ARG="--target {{target_triplet}}"
         fi
 
-        cargo {{toolchain}} build --package {{package}} $MANIFEST_ARG {{profile}} $TARGET_ARG {{extra_args}}
+        cargo {{toolchain}} build --package {{package}} $MANIFEST_ARG --profile {{profile}} $TARGET_ARG {{extra_args}}
     fi

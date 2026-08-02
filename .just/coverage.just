@@ -53,7 +53,7 @@ _parse-coverage-args *flags:
             --lcov)      HAS_LCOV="true";        shift ;;
             --detailed)  HAS_DETAILED="true";    shift ;;
             --package)   PACKAGES+=("$2");       shift 2 ;;
-            *)           shift ;;
+            *)          echo "Invalid argument '$1'! Try 'just build --help' for options." >&2; exit 1 ;;
         esac
     done
 
@@ -67,18 +67,27 @@ _coverage-dispatch action *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval "$(just _parse-coverage-args {{flags}})"
+    show_help() {
+        echo "Usage: just coverage <command> [flags]"
+        echo ""
+        echo "Commands:"
+        echo "  generate-profile                      generate coverage profile"
+        echo "  generate-report --html|--lcov         generate rendered report"
+        echo "  summarize [--detailed] [--package X]  show coverage summary"
+        echo "  clean                                 remove all coverage data"
+    }
+
+    PARSED_ARGS=$(just _parse-coverage-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
 
     case "{{action}}" in
         "")
-            echo "Usage: just coverage <command> [flags]"
-            echo ""
-            echo "Commands:"
-            echo "  generate-profile                      generate coverage profile"
-            echo "  generate-report --html|--lcov         generate rendered report"
-            echo "  summarize [--detailed] [--package X]  show coverage summary"
-            echo "  clean                                 remove all coverage data"
+            show_help
             exit 1
+            ;;
+        --help|-h)
+            show_help
+            exit 0
             ;;
         generate-profile)
             if [ "${#PACKAGES[@]}" -gt 0 ]; then

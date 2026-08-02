@@ -19,6 +19,8 @@ _parse-verify-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    TARGET_TRIPLET=""
+    BUILD_TYPE=""
     PROFILE=""
     HAS_NOSTD="false"
     EXTRA_ARGS=""
@@ -26,13 +28,28 @@ _parse-verify-args *flags:
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --)        shift; EXTRA_ARGS="$*"; break ;;
-            --release) PROFILE="--release"; shift ;;
-            --no_std)  HAS_NOSTD="true";    shift ;;
-            *)         shift ;;
+            --)         shift; EXTRA_ARGS="$*";            break ;;
+            --target)   TARGET_TRIPLET="$2";               shift 2 ;;
+            --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --release)  BUILD_TYPE="--release";            shift ;;
+            --profile)  PROFILE="$2";                      shift 2 ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            *)          echo "Invalid argument '$1'! Try 'just verify --help' for options." >&2; exit 1 ;;
         esac
     done
 
+    if [[ -n "$BUILD_TYPE" && -n "$PROFILE" ]]; then
+        echo "Error: --release and --profile cannot be used together." >&2
+        exit 1
+    fi
+
+    if [[ -n "$BUILD_TYPE" ]]; then
+        PROFILE="release"
+    elif [[ -z "$PROFILE" ]]; then
+        PROFILE="dev"
+    fi
+
+    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
     echo "PROFILE='$PROFILE'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
@@ -42,9 +59,7 @@ _verify-dispatch what tool *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval $(just _parse-verify-args {{flags}})
-
-    if [ -z "{{what}}" ] || [ -z "{{tool}}" ]; then
+    show_help() {
         echo "Usage: just verify <what> <tool> [flags]"
         echo ""
         echo "Scope:"
@@ -60,13 +75,38 @@ _verify-dispatch what tool *flags:
         echo "  std-propagation        verify std feature propagation"
         echo ""
         echo "Flags (clippy):"
-        echo "  --release              run in release profile (default: debug)"
+        echo "  --target <triplet>     cross-compile for target"
+        echo "  --release              build in release mode (default: debug)"
+        echo "                         note: cannot be used in combination with --profile <profile>"
+        echo "  --profile <profile>    build with the specified cargo profile"
+        echo "                         note: cannot be used in combination with --release"
         echo "  --no_std               run with --no-default-features (sdk only)"
-        exit 1
-    fi
+    }
+
+    PARSED_ARGS=$(just _parse-verify-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
+
+    case "{{what}}" in
+        "")
+            show_help
+            exit 1
+            ;;
+        -*|+*)
+            echo "Invalid argument '{{what}}'!"
+            echo ""
+            show_help
+            exit 1
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            ;;
+    esac
 
     case "{{tool}}" in
-        clippy)          just _verify-clippy "{{what}}" "$PROFILE" "$HAS_NOSTD" "$EXTRA_ARGS" ;;
+        clippy)          just _verify-clippy "{{what}}" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$EXTRA_ARGS" ;;
         miri)            just _verify-miri "{{what}}" "$EXTRA_ARGS" ;;
         std-propagation) just _verify-std-propagation "{{what}}" ;;
         *)
@@ -80,7 +120,7 @@ _verify-dispatch what tool *flags:
 # -----------------------------------------------------------------------------
 
 [private]
-_verify-clippy workspace profile has_nostd extra_args:
+_verify-clippy workspace target_triplet profile has_nostd extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -94,18 +134,24 @@ _verify-clippy workspace profile has_nostd extra_args:
 
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
+        TARGET_ARG=""
+        if [ -n "{{target_triplet}}" ]; then
+            TARGET_ARG="--target {{target_triplet}}"
+        fi
+
         # TODO: Only run on subset of crates included in the no_std deployment
         if [ "{{has_nostd}}" = "true" ]; then
             echo "Running clippy for '$WS' (no_std {{profile}})..."
-            cargo clippy --no-deps --workspace --all-targets {{profile}} \
+            cargo clippy --no-deps --workspace --all-targets --profile {{profile}} \
                 --no-default-features \
                 --exclude iceoryx2-ffi-c \
                 --exclude iceoryx2-cli \
+                $TARGET_ARG \
                 {{extra_args}} \
                 -- -D warnings
         else
             echo "Running clippy for '$WS' (std {{profile}})..."
-            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG {{profile}} {{extra_args}} -- -D warnings
+            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings
         fi
     done
 

@@ -21,46 +21,75 @@ _parse-bundle-args *flags:
 
     TOOLCHAIN=""
     TARGET_TRIPLET=""
+    BUILD_TYPE=""
+    PROFILE=""
     DO_STRIP="false"
     DO_COMPRESS="false"
     HAS_NOSTD="false"
+    EXTRA_ARGS=""
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --)         shift; EXTRA_ARGS="$*";            break ;;
             +*)         TOOLCHAIN="$1";                    shift ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
+            --target)   TARGET_TRIPLET="$2";               shift 2 ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --release)  BUILD_TYPE="--release";            shift ;;
+            --profile)  PROFILE="$2";                      shift 2 ;;
             --strip)    DO_STRIP="true";                   shift ;;
             --compress) DO_COMPRESS="true";                shift ;;
-            *)          shift ;;
+            *)          echo "Invalid argument '$1'! Try 'just bundle --help' for options." >&2; exit 1 ;;
         esac
     done
 
+    if [[ -n "$BUILD_TYPE" && -n "$PROFILE" ]]; then
+        echo "Error: --release and --profile cannot be used together." >&2
+        exit 1
+    fi
+
+    if [[ -n "$BUILD_TYPE" ]]; then
+        PROFILE="release"
+    elif [[ -z "$PROFILE" ]]; then
+        PROFILE="dev"
+    fi
+
     echo "TOOLCHAIN='$TOOLCHAIN'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "PROFILE='$PROFILE'"
     echo "DO_STRIP='$DO_STRIP'"
     echo "DO_COMPRESS='$DO_COMPRESS'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
 _bundle-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    show_help() {
+        echo "Usage: just bundle <what> [flags]"
+        echo ""
+        echo "  tests                  bundle no_std tests for deployment"
+        echo ""
+        echo "Flags:"
+        echo "  --no_std               bundle without std"
+        echo "  --strip                strip debug symbols"
+        echo "  --compress             create compressed tarball"
+        echo "  +<toolchain>           use a specific toolchain"
+        echo "  --target <triplet>     bundle for target"
+        echo "  -- <args>              forward remaining args to cargo"
+    }
+
     case "{{what}}" in
         "")
-            echo "Usage: just bundle <what> [flags]"
-            echo ""
-            echo "  tests                  bundle no_std tests for deployment"
-            echo ""
-            echo "Flags:"
-            echo "  --no_std               bundle without std"
-            echo "  --strip                strip debug symbols"
-            echo "  --compress             create compressed tarball"
-            echo "  +<toolchain>           use a specific toolchain"
-            echo "  --target=<triplet>     bundle for target"
+            show_help
             exit 1
+            ;;
+        --help|-h)
+            show_help
+            exit 0
             ;;
         tests) ;;
         *)
@@ -69,17 +98,18 @@ _bundle-dispatch what *flags:
             ;;
     esac
 
-    eval $(just _parse-bundle-args {{flags}})
+    PARSED_ARGS=$(just _parse-bundle-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
 
     if [ "$HAS_NOSTD" != "true" ]; then
         echo "Error: bundle command currently only supports 'tests --no_std'" >&2
         exit 1
     fi
 
-    just _bundle-nostd-tests "$TOOLCHAIN" "$TARGET_TRIPLET" "$DO_STRIP" "$DO_COMPRESS"
+    just _bundle-nostd-tests "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$DO_STRIP" "$DO_COMPRESS" "$EXTRA_ARGS"
 
 [private]
-_bundle-nostd-tests toolchain target_triplet do_strip do_compress:
+_bundle-nostd-tests toolchain target_triplet profile do_strip do_compress extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -96,7 +126,7 @@ _bundle-nostd-tests toolchain target_triplet do_strip do_compress:
         echo "Using toolchain: {{toolchain}}"
     fi
 
-    just _build-sdk "{{toolchain}}" "{{target_triplet}}" "true" "true"
+    just _build-sdk "{{toolchain}}" "{{target_triplet}}" "{{profile}}" "true" "true" "{{extra_args}}"
 
     BUNDLE_DIR="target/{{target_triplet}}/tests-nostd"
     just _create-bundle-dir "$TARGET_DIR" "$BUNDLE_DIR"
