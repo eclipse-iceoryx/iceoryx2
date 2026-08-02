@@ -15,7 +15,8 @@
 #![allow(unused_variables)]
 
 use crate::posix::{
-    Errno, MemZeroedStruct, constants::*, settings::*, to_dir_search_string, types::*,
+    Errno, MemZeroedStruct, constants::*, create_system_directories, settings::*,
+    to_dir_search_string, types::*,
 };
 use crate::win32call;
 
@@ -201,6 +202,7 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
 }
 
 pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
+    create_system_directories();
     unsafe {
         let name = remove_leading_path_separator(name.cast());
         let handle: HANDLE = 0;
