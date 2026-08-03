@@ -125,7 +125,12 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
         let payload_ptr = self.ptr.as_payload_ref() as *const Flatbuffer<Payload> as *const u8;
         let payload_len = self.ptr.as_header_ref().number_of_elements as usize;
 
-        unsafe { core::slice::from_raw_parts(payload_ptr.add(payload_offset), payload_len) }
+        unsafe {
+            core::slice::from_raw_parts(
+                payload_ptr.add(payload_offset),
+                payload_len - payload_offset,
+            )
+        }
     }
 
     /// Returns the root of the flatbuffer.

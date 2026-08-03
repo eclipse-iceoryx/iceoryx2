@@ -25,7 +25,7 @@ from .type_name import get_type_name
 T = TypeVar("T", bound=ctypes.Structure)
 
 
-def payload_bytes(self: Any) -> Slice[ctypes.c_int8]:
+def payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
     """Returns the serialized flatbuffer data as bytes."""
     assert self.__payload_type_details is not None
     assert get_origin(self.__payload_type_details) is Flatbuffer

@@ -85,7 +85,7 @@ impl SampleMutUninit {
         match &*self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => v.__internal_available_payload_memory(),
             SampleMutUninitType::Local(Some(v)) => v.__internal_available_payload_memory(),
-            _ => fatal_panic!(from "Sample::__chunk_len()",
+            _ => fatal_panic!(from "SampleMutUninit::__available_payload_memory()",
                 "Accessing a released sample."),
         }
     }

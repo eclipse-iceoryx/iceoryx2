@@ -16,15 +16,8 @@ import ctypes
 import os
 
 import iceoryx2 as iox2
-from Example.Entry import EntryAddData1, EntryAddData2, EntryEnd, EntryStart
-from Example.UnboundedData import (
-    UnboundedData,
-    UnboundedDataAddEntries,
-    UnboundedDataAddTitle,
-    UnboundedDataEnd,
-    UnboundedDataStart,
-    UnboundedDataStartEntriesVector,
-)
+from Example.Entry import *
+from Example.UnboundedData import *
 
 
 # Explicitly sets the type name of our generated type so that the auto path-lookup
@@ -40,7 +33,7 @@ cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 
-# export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/rust/flatbuffer_publish_subscribe
+# export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/python/flatbuffer_publish_subscribe
 try:
     lookup_path = os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
 except KeyError:

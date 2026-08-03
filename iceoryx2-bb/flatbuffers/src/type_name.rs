@@ -43,9 +43,9 @@ impl TypeName {
 
         TypeName {
             name: StaticString::from_str_truncated(name)
-                .expect("Type names consists only of valid UTF-8 characters."),
+                .expect("Type name consists only of valid UTF-8 characters."),
             namespace: StaticString::from_str_truncated(namespace)
-                .expect("Namespaces consists only of valid UTF-8 characters."),
+                .expect("Namespace consists only of valid UTF-8 characters."),
         }
     }
 }

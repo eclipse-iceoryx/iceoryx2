@@ -32,6 +32,7 @@ auto main() -> int {
 
     set_log_level_from_env_or(LogLevel::Info);
 
+    // export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/cxx/flatbuffer_publish_subscribe/src
     const auto* lookup_path = std::getenv("IOX2_FLATBUFFER_SCHEMA_PATH");
     if (lookup_path == nullptr) {
         std::cout << "Please define IOX2_FLATBUFFER_SCHEMA_PATH!" << std::endl;
