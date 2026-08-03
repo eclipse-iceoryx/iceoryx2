@@ -1,0 +1,163 @@
+name: Reusable workflow for stable
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      profile:
+        required: true
+        type: string
+
+jobs:
+  stable:
+    timeout-minutes: 90
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1
+
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0
+
+      - name: Setup cmake
+        if: ${{ runner.os != 'Windows' }}
+        uses: jwlawson/actions-setup-cmake@0d6a7d60b009d01c9e7523be22153ff8f19460d3 # version: v2.2.0
+        with:
+          cmake-version: "3.31.x"
+
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # version: v0.0.11
+
+      - name: Set caching env vars on non-Windows
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set caching env vars on Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "RUSTC_WRAPPER=sccache"
+
+      - name: Prepare Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+
+      - name: Prepare Linux
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Additional setup for libc platform binding
+        if: ${{ runner.os == 'Linux' }}
+        run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if libc binding is not used correctly and bindgen is invoked
+
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "remove-unneeded-software-from-runner"
+
+      - name: Set build flags
+        id: set-build-flags
+        uses: ./.github/actions/set-build-flags
+        with:
+          profile: ${{ inputs.profile }}
+
+      - name: Build iceoryx2-ffi-c crate
+        shell: bash
+        run: |
+          rustc --version
+          just build iceoryx2-ffi-c +${{ inputs.toolchain }} --profile ${{ inputs.profile }}
+
+      - name: Cleanup build artifacts
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "cleanup-rust-build-files-from-cargo-target-folder"
+
+      - name: Print native libs of FFI target
+        if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
+        run: |
+          cd iceoryx2-ffi/c
+          cargo rustc -q -- --print=native-static-libs
+
+      - name: Get CPU count
+        id: cpu
+        uses: ./.github/actions/cpu-count
+
+      - name: Build language bindings
+        shell: bash
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DIOX2_FEATURE_FLATBUFFERS=ON \
+                -DWARNING_AS_ERROR=ON \
+                ${{ steps.set-build-flags.outputs.cmake-build-type }} \
+                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
+                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/${{ steps.set-build-flags.outputs.c-binding-artifacts-folder-name }}" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build target/ff/cc/build \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }} \
+                --parallel ${{ steps.cpu.outputs.count }}
+          cmake --install target/ff/cc/build \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }}
+
+      - name: Run C++ iceoryx2-bb tests
+        run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
+
+      - name: Run C language binding tests
+        run: target/ff/cc/build/tests/iceoryx2-c-tests
+
+      - name: Run C++ language binding tests
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+      - name: Remove language binding build artifacts
+        shell: bash
+        run: rm -rf target/ff/cc/build
+
+      - name: Build C language binding examples in out-of-tree configuration
+        shell: bash
+        run: |
+          cmake -S examples/c \
+                -B target/ff/out-of-tree-c \
+                ${{ steps.set-build-flags.outputs.cmake-build-type }} \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build target/ff/out-of-tree-c \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }} \
+                --parallel ${{ steps.cpu.outputs.count }}
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        shell: bash
+        run: |
+          cmake -S examples/cxx \
+                -B target/ff/out-of-tree-cxx \
+                -DIOX2_FEATURE_FLATBUFFERS=ON \
+                ${{ steps.set-build-flags.outputs.cmake-build-type }} \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build target/ff/out-of-tree-cxx \
+                ${{ steps.set-build-flags.outputs.cmake-build-config }} \
+                --parallel ${{ steps.cpu.outputs.count }}
+
+      - name: Check for changed files after CI run
+        uses: ./.github/actions/check-repo-changes

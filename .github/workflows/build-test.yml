@@ -437,6 +437,31 @@ jobs:
       profile: "release-fast-build"
       workspace: zenoh
 
+  c-cxx-bindings-debug:
+    needs: [preflight-check]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable, 1.89.0]
+        include:
+          - toolchain: stable
+            os: ubuntu-24.04-arm
+    uses: ./.github/workflows/reuse_c_cxx_bindings.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: "dev-fast-build"
+
+  c-cxx-bindings-release:
+    needs: [preflight-check]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    uses: ./.github/workflows/reuse_c_cxx_bindings.yml
+    with:
+      os: ubuntu-latest
+      toolchain: stable
+      profile: "release-fast-build"
+
   unstable:
     needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
@@ -619,6 +644,8 @@ jobs:
         Bazel,
         x86_32-debug,
         no_std,
+        c-cxx-bindings-debug,
+        c-cxx-bindings-release,
         cxx-vocabulary-types,
         python-bindings,
         end-to-end-tests,
