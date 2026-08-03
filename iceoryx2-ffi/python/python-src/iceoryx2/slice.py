@@ -13,9 +13,11 @@
 """Slice - A class representing a set of contiguous elements of type T."""
 
 import ctypes
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, Type, TypeVar, Union
 
-T = TypeVar("T", bound=ctypes.Structure)
+T = TypeVar(
+    "T", bound=Union[ctypes.Structure, ctypes.Union, ctypes.Array, ctypes._SimpleCData]
+)
 
 
 class Slice(Generic[T]):
