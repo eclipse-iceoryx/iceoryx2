@@ -13,71 +13,11 @@
 import ctypes
 import os
 
-import flatbuffers
 import iceoryx2 as iox2
 import pytest
-from flatbuffers.compat import import_numpy
-
-np = import_numpy()
+from unbounded_data_generated import UnboundedData, create_unbounded_data
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
-
-
-class UnboundedData(object):
-    __slots__ = ["_tab"]
-
-    @classmethod
-    def GetRootAs(cls, buf, offset=0):
-        n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
-        x = UnboundedData()
-        x.Init(buf, n + offset)
-        return x
-
-    @classmethod
-    def GetRootAsUnboundedData(cls, buf, offset=0):
-        """This method is deprecated. Please switch to GetRootAs."""
-        return cls.GetRootAs(buf, offset)
-
-    # UnboundedData
-    def Init(self, buf, pos):
-        self._tab = flatbuffers.table.Table(buf, pos)
-
-    # UnboundedData
-    def Data1(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
-        return 0
-
-
-def UnboundedDataStart(builder):
-    builder.StartObject(1)
-
-
-def Start(builder):
-    UnboundedDataStart(builder)
-
-
-def UnboundedDataAddData1(builder, data1):
-    builder.PrependInt32Slot(0, data1, 0)
-
-
-def AddData1(builder, data1):
-    UnboundedDataAddData1(builder, data1)
-
-
-def UnboundedDataEnd(builder):
-    return builder.EndObject()
-
-
-def End(builder):
-    return UnboundedDataEnd(builder)
-
-
-def create_unbounded_data(builder, data_1):
-    UnboundedDataStart(builder)
-    UnboundedDataAddData1(builder, data_1)
-    return UnboundedDataEnd(builder)
 
 
 schema = """
@@ -100,7 +40,7 @@ root_type BoundedData;
 def create_schema_file(content) -> iox2.FilePath:
     iox2.testing.create_test_directory()
     file_path = iox2.testing.generate_file_path()
-    with open(file_path.to_string(), "w") as file:
+    with open(file_path.to_string(), "w", encoding="utf-8") as file:
         file.write(content)
 
     return file_path
@@ -111,7 +51,7 @@ def create_schema_file_at(content: str, file_name: str) -> iox2.FilePath:
     lookup_path = iox2.testing.test_directory()
     dir_path = lookup_path.to_string()
     full_path = os.path.join(dir_path, file_name)
-    with open(full_path, "w") as file:
+    with open(full_path, "w", encoding="utf-8") as file:
         file.write(content)
 
     return iox2.FilePath.new(full_path)
@@ -162,7 +102,7 @@ def test_open_fails_when_no_schema_file_is_available(
     service_name = iox2.testing.generate_service_name()
 
     try:
-        sut = (
+        _sut = (
             node.service_builder(service_name)
             .publish_subscribe(iox2.Flatbuffer[UnboundedData])
             .flatbuffer_schema_path(schema_file_path)
@@ -192,7 +132,7 @@ def test_open_fails_schema_is_not_the_same(
     service_name = iox2.testing.generate_service_name()
 
     try:
-        sut = (
+        _sut = (
             node.service_builder(service_name)
             .publish_subscribe(iox2.Flatbuffer[UnboundedData])
             .flatbuffer_schema_path(schema_file_path)
@@ -222,7 +162,7 @@ def test_open_succeeds_when_schema_content_is_identical(
     service_name = iox2.testing.generate_service_name()
 
     try:
-        sut = (
+        _sut = (
             node.service_builder(service_name)
             .publish_subscribe(iox2.Flatbuffer[UnboundedData])
             .flatbuffer_schema_path(schema_file_path)
@@ -274,7 +214,7 @@ def test_schema_path_lookup_works_when_opening_a_service(
     schema_file_path = create_schema_file_at(schema, "UnboundedData.fbs")
 
     try:
-        sut = (
+        _sut = (
             node.service_builder(service_name)
             .publish_subscribe(iox2.Flatbuffer[UnboundedData])
             .flatbuffer_schema_path(schema_file_path)
@@ -558,7 +498,7 @@ def test_builder_is_cleaned_up_when_sample_is_initialized(
         .create()
     )
 
-    for i in range(1000):
+    for _ in range(1000):
         sample = publisher.loan_flatbuffer()
         builder = sample.flatbuffer_builder()
         unbounded_data = create_unbounded_data(builder, 91912)
