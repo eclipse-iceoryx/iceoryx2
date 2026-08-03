@@ -94,11 +94,11 @@ pub enum PayloadLayout {
 }
 
 /// The identity [`Translator`]: payloads cross unmodified in both directions.
-pub struct Passthrough<E> {
-    _endpoint: PhantomData<fn() -> E>,
+pub struct Passthrough<EndpointDescription> {
+    _endpoint: PhantomData<fn() -> EndpointDescription>,
 }
 
-impl<E> Passthrough<E> {
+impl<EndpointDescription> Passthrough<EndpointDescription> {
     pub fn new() -> Self {
         Self {
             _endpoint: PhantomData,
@@ -106,13 +106,13 @@ impl<E> Passthrough<E> {
     }
 }
 
-impl<E> Default for Passthrough<E> {
+impl<EndpointDescription> Default for Passthrough<EndpointDescription> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<E> Debug for Passthrough<E> {
+impl<EndpointDescription> Debug for Passthrough<EndpointDescription> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Passthrough")
     }
@@ -126,9 +126,9 @@ impl<E> Clone for Passthrough<E> {
 
 impl<E> Copy for Passthrough<E> {}
 
-impl<E: 'static> Translator for Passthrough<E> {
+impl<EndpointDescription: 'static> Translator for Passthrough<EndpointDescription> {
     type Error = core::convert::Infallible;
-    type EndpointDescription = E;
+    type EndpointDescription = EndpointDescription;
     type Transcoder = Never;
 
     fn create(
