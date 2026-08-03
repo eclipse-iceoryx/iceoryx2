@@ -12,17 +12,25 @@
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_cal::{event::NamedConceptMgmt, static_storage::StaticStorage};
-use iceoryx2_log::warn;
+use iceoryx2_log::{fail, warn};
 
 use crate::{
     node::SharedNode,
     service::{
         self,
-        resource::{ServiceResource, type_definition::TypeDefinition},
+        builder::ServiceCreateError,
+        resource::{
+            ServiceResource,
+            type_definition::{TypeDefinition, TypeDefinitionStorage},
+        },
     },
 };
+
+const REQUEST_TYPE_DEFINITION: FileName = unsafe { FileName::new_unchecked_const(b"request") };
+const RESPONSE_TYPE_DEFINITION: FileName = unsafe { FileName::new_unchecked_const(b"response") };
 
 pub struct RequestResponseResourceConfig<ServiceType: service::Service> {
     pub(crate) request: TypeDefinition,
@@ -92,6 +100,19 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         static_config: &service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, service::builder::ServiceCreateError> {
+        let request_storage = Self::create_type_storage(
+            &resource_config.request,
+            &REQUEST_TYPE_DEFINITION,
+            resource_config.shared_node.config(),
+            static_config,
+        )?;
+        let response_storage = Self::create_type_storage(
+            &resource_config.request,
+            &RESPONSE_TYPE_DEFINITION,
+            resource_config.shared_node.config(),
+            static_config,
+        )?;
+
         todo!()
     }
 
@@ -107,5 +128,23 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         static_config: &service::static_config::StaticConfig,
     ) -> Result<(), super::RemoveStaleResourcesError> {
         todo!()
+    }
+}
+
+impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
+    fn create_type_storage(
+        type_definition: &TypeDefinition,
+        name: &FileName,
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceCreateError> {
+        match type_definition.create_storage::<ServiceType>(name, config, static_config) {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                fail!(from "RequestResponseResources::create_type_storage()",
+                    with e,
+                    "Unable to create request response resources since the type definition storage {name} could not be created. [{e:?}]");
+            }
+        }
     }
 }
