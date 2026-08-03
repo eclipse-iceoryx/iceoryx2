@@ -18,7 +18,6 @@ use crate::service::resource::{RemoveStaleResourcesError, ServiceResource};
 use crate::{node::SharedNode, service::builder::ServiceCreateError};
 use alloc::vec;
 use alloc::vec::Vec;
-use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -53,7 +52,6 @@ pub struct PublishSubscribeResources<ServiceType: service::Service> {
     type_definition: Option<ServiceType::StaticStorage>,
     path_hint: Option<Path>,
     has_ownership: AtomicBool,
-    _service_type: PhantomData<ServiceType>,
 }
 
 enum SchemaPathError {
@@ -96,6 +94,12 @@ impl<ServiceType: service::Service> Abandonable for PublishSubscribeResources<Se
     unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         this.has_ownership.store(false, Ordering::Relaxed);
+
+        if let Some(td) = this.type_definition.as_mut() {
+            unsafe {
+                ServiceType::StaticStorage::abandon_in_place(core::ptr::NonNull::from_mut(td))
+            };
+        }
     }
 }
 
@@ -161,14 +165,12 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 type_definition: Some(static_storage),
                 path_hint: Some(*config.get_path_hint()),
                 has_ownership: AtomicBool::new(false),
-                _service_type: PhantomData,
             })
         } else {
             Ok(Self {
                 type_definition: None,
                 path_hint: None,
                 has_ownership: AtomicBool::new(false),
-                _service_type: PhantomData,
             })
         }
     }
@@ -241,14 +243,12 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 has_ownership: AtomicBool::new(false),
                 type_definition: Some(static_storage),
                 path_hint: Some(*config.get_path_hint()),
-                _service_type: PhantomData,
             })
         } else {
             Ok(Self {
                 has_ownership: AtomicBool::new(false),
                 type_definition: None,
                 path_hint: None,
-                _service_type: PhantomData,
             })
         }
     }
