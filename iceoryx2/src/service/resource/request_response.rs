@@ -21,7 +21,7 @@ use crate::{
     node::SharedNode,
     service::{
         self,
-        builder::ServiceCreateError,
+        builder::{ServiceCreateError, ServiceOpenError},
         resource::{
             ServiceResource,
             type_definition::{TypeDefinition, TypeDefinitionStorage},
@@ -107,27 +107,82 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
             static_config,
         )?;
         let response_storage = Self::create_type_storage(
-            &resource_config.request,
+            &resource_config.response,
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
 
-        todo!()
+        let mut path_hint = request_storage.as_ref().map(|v| v.path_hint);
+        if path_hint.is_none() {
+            path_hint = response_storage.as_ref().map(|v| v.path_hint);
+        }
+
+        Ok(Self {
+            request_type_definition: request_storage.map(|v| v.storage),
+            response_type_definition: response_storage.map(|v| v.storage),
+            path_hint,
+            has_ownership: AtomicBool::new(false),
+        })
     }
 
     fn open(
         static_config: &service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, service::builder::ServiceOpenError> {
-        todo!()
+        let request_storage = Self::open_type_storage(
+            &resource_config.request,
+            &REQUEST_TYPE_DEFINITION,
+            resource_config.shared_node.config(),
+            static_config,
+        )?;
+        let response_storage = Self::open_type_storage(
+            &resource_config.response,
+            &RESPONSE_TYPE_DEFINITION,
+            resource_config.shared_node.config(),
+            static_config,
+        )?;
+
+        let mut path_hint = request_storage.as_ref().map(|v| v.path_hint);
+        if path_hint.is_none() {
+            path_hint = response_storage.as_ref().map(|v| v.path_hint);
+        }
+
+        Ok(Self {
+            request_type_definition: request_storage.map(|v| v.storage),
+            response_type_definition: response_storage.map(|v| v.storage),
+            path_hint,
+            has_ownership: AtomicBool::new(false),
+        })
     }
 
     unsafe fn remove_stale_resources(
         config: &crate::config::Config,
         static_config: &service::static_config::StaticConfig,
     ) -> Result<(), super::RemoveStaleResourcesError> {
-        todo!()
+        let origin = "RequestResponseResources::remove_stale_resources()";
+        let msg = "Failed to remove the stale request response resource";
+        if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
+            &REQUEST_TYPE_DEFINITION,
+            config,
+            static_config,
+        ) {
+            fail!(from origin,
+                with e,
+                "{msg} since the request type definition storage could not be removed. [{e:?}]");
+        }
+
+        if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
+            &RESPONSE_TYPE_DEFINITION,
+            config,
+            static_config,
+        ) {
+            fail!(from origin,
+                with e,
+                "{msg} since the response type definition storage could not be removed. [{e:?}]");
+        }
+
+        Ok(())
     }
 }
 
@@ -144,6 +199,22 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
                 fail!(from "RequestResponseResources::create_type_storage()",
                     with e,
                     "Unable to create request response resources since the type definition storage {name} could not be created. [{e:?}]");
+            }
+        }
+    }
+
+    fn open_type_storage(
+        type_definition: &TypeDefinition,
+        name: &FileName,
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceOpenError> {
+        match type_definition.open_storage::<ServiceType>(name, config, static_config) {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                fail!(from "RequestResponseResources::open_type_storage()",
+                    with e,
+                    "Unable to open request response resources since the type definition storage {name} could not be created. [{e:?}]");
             }
         }
     }
