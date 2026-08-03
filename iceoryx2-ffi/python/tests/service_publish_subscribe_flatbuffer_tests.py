@@ -532,3 +532,37 @@ def test_publish_subscribe_with_user_header_works(
     assert data.Data1() == 91912
 
     os.remove(schema_file_path.to_string())
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_builder_is_cleaned_up_when_sample_is_initialized(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    schema_file_path = create_schema_file(schema)
+
+    sut = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Flatbuffer[UnboundedData])
+        .user_header(ctypes.c_uint64)
+        .flatbuffer_schema_path(schema_file_path)
+        .create()
+    )
+
+    publisher = (
+        sut.publisher_builder()
+        .initial_reserved_memory(1)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
+
+    for i in range(1000):
+        sample = publisher.loan_flatbuffer()
+        builder = sample.flatbuffer_builder()
+        unbounded_data = create_unbounded_data(builder, 91912)
+        sample = sample.assume_init(unbounded_data)
+        assert len(builder.Bytes) <= 128
+
+    os.remove(schema_file_path.to_string())

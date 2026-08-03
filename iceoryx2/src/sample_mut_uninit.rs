@@ -146,6 +146,14 @@ impl<
 > SampleMutUninit<Service, Payload, UserHeader>
 {
     #[doc(hidden)]
+    pub fn __internal_available_payload_memory(&self) -> usize {
+        let shared_state_guard = self.shared_state.state.lock();
+        let guard = shared_state_guard.publisher_shared_state.lock();
+        let reserved_header_len = guard.sender.message_type_details.all_headers_len();
+        self.chunk.layout().size() - reserved_header_len
+    }
+
+    #[doc(hidden)]
     pub fn __internal_create_resizable_memory_builder(
         &self,
     ) -> ResizableMemory<ShmPointer, SampleMutSharedState<Service>> {

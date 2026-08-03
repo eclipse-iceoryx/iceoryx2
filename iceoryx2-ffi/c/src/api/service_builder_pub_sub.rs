@@ -1151,9 +1151,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_config(
     }
 }
 
-/// Sets the type definition name hint. This enables the type definition auto-lookup
-/// Returns `IOX2_OK` when the hint was set successfully, otherwise it returns an
-/// error describing the failure.
+/// Sets the type definition name hint. This enables the type definition auto-lookup.
 ///
 /// # Arguments
 ///
@@ -1175,7 +1173,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_type_definition_name_hint(
     name_len: c_size_t,
     namespace: *const c_char,
     namespace_len: c_size_t,
-) -> c_int {
+) {
     service_builder_handle.assert_non_null();
     debug_assert!(!name.is_null());
     debug_assert!(!namespace.is_null());
@@ -1190,8 +1188,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_type_definition_name_hint(
                 warn!(
                     "Unable to set type definition name hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
                 );
-                // TODO:
-                return 1;
+                return;
             }
         },
         namespace: match StaticString::from_bytes(namespace_bytes) {
@@ -1200,8 +1197,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_type_definition_name_hint(
                 warn!(
                     "Unable to set type definition namespace hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
                 );
-                // TODO:
-                return 1;
+                return;
             }
         },
     };
@@ -1230,8 +1226,6 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_type_definition_name_hint(
             }
         }
     }
-
-    IOX2_OK
 }
 
 // END C API

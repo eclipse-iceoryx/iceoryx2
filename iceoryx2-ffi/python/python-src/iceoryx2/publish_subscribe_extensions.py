@@ -277,7 +277,7 @@ def flatbuffer_builder(self: SampleMutUninit) -> flatbuffers.Builder:
     key = id(self)
     builder = _sample_mut_uninit_dict.get(key)
     if builder is None:
-        builder = flatbuffers.Builder(1024)
+        builder = flatbuffers.Builder(self.__available_payload_memory)
         _sample_mut_uninit_dict[key] = builder
     return builder
 
