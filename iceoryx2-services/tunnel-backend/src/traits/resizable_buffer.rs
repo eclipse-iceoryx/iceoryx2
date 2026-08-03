@@ -10,6 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// The requested capacity exceeds what the buffer can provide.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct ResizeError {
+    /// The capacity the buffer can actually provide.
+    pub available: usize,
+}
+
+impl core::fmt::Display for ResizeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ResizeError {{ available: {} }}", self.available)
+    }
+}
+
+impl core::error::Error for ResizeError {}
+
 /// Resizable destination for translated bytes.
 ///
 /// The backing storage could be scratch memory, shared memory or anything
@@ -17,14 +32,16 @@
 pub trait ResizableBuffer {
     /// Ensures at least `min_capacity` writable bytes and returns the whole
     /// writable region.
-    fn resize(&mut self, min_capacity: usize) -> &mut [u8];
+    ///
+    /// Fails when the buffer cannot grow to `min_capacity`.
+    fn resize(&mut self, min_capacity: usize) -> Result<&mut [u8], ResizeError>;
 }
 
 impl ResizableBuffer for alloc::vec::Vec<u8> {
-    fn resize(&mut self, min_capacity: usize) -> &mut [u8] {
+    fn resize(&mut self, min_capacity: usize) -> Result<&mut [u8], ResizeError> {
         if self.len() < min_capacity {
             self.resize(min_capacity, 0);
         }
-        self
+        Ok(self)
     }
 }

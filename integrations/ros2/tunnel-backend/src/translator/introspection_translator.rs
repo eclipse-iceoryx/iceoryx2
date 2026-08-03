@@ -65,6 +65,8 @@ pub enum TranslationError {
     LayoutMismatch,
     /// The payload size does not match the resolved layout.
     UnexpectedPayloadSize,
+    /// The destination buffer cannot hold the translated bytes.
+    InsufficientCapacity,
     /// Failed to serialize the payload.
     Serialize,
     /// Failed to deserialize the wire bytes.
@@ -228,7 +230,13 @@ impl Transcoder for CdrTranscoder {
     ) -> Result<usize, Self::Error> {
         let origin = "CdrTranscoder::from_wire";
 
-        let destination = payload.resize(self.layout.size());
+        let destination = fail!(from origin,
+            when payload.resize(self.layout.size()),
+            with TranslationError::InsufficientCapacity,
+            "Payload buffer cannot hold the deserialized type '{}' ({} bytes)",
+            self.type_name,
+            self.layout.size()
+        );
         debug_assert!(
             (destination.as_ptr() as usize).is_multiple_of(self.layout.align()),
             "the payload buffer must be aligned to the resolved layout"
@@ -324,14 +332,18 @@ fn basic_member_alignment(type_id: u8) -> Option<usize> {
 
 /// An `rcutils` allocator over a [`ResizableBuffer`], letting the
 /// middleware serialize directly into it. The buffer stays owned by the
-/// caller; deallocation is a no-op.
+/// caller; deallocation is a no-op. A buffer that cannot provide the
+/// requested capacity surfaces as a null allocation.
 fn buffer_allocator<B: ResizableBuffer>(buffer: &mut B) -> rcutils_allocator_t {
     unsafe extern "C" fn allocate<B: ResizableBuffer>(
         size: usize,
         state: *mut c_void,
     ) -> *mut c_void {
         let buffer = unsafe { &mut *(state as *mut B) };
-        buffer.resize(size).as_mut_ptr().cast::<c_void>()
+        match buffer.resize(size) {
+            Ok(region) => region.as_mut_ptr().cast::<c_void>(),
+            Err(_) => core::ptr::null_mut(),
+        }
     }
 
     unsafe extern "C" fn reallocate<B: ResizableBuffer>(
@@ -355,7 +367,10 @@ fn buffer_allocator<B: ResizableBuffer>(buffer: &mut B) -> rcutils_allocator_t {
             return core::ptr::null_mut();
         };
         let buffer = unsafe { &mut *(state as *mut B) };
-        let region = &mut buffer.resize(size)[..size];
+        let Ok(region) = buffer.resize(size) else {
+            return core::ptr::null_mut();
+        };
+        let region = &mut region[..size];
         region.fill(0);
         region.as_mut_ptr().cast::<c_void>()
     }

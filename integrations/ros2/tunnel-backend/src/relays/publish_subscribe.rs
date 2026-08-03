@@ -19,8 +19,8 @@ use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{
-    Mapping, PayloadLayout, PublishSubscribeRelay, RelayBuilder, ResizableBuffer, Transcoder,
-    Translation, Translator,
+    Mapping, PayloadLayout, PublishSubscribeRelay, RelayBuilder, ResizableBuffer, ResizeError,
+    Transcoder, Translation, Translator,
 };
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::{
     LoanFn, Sample, SampleMut, SampleMutUninit,
@@ -103,13 +103,13 @@ struct LoanedBuffer<'a> {
 }
 
 impl ResizableBuffer for LoanedBuffer<'_> {
-    fn resize(&mut self, min_capacity: usize) -> &mut [u8] {
-        assert!(
-            min_capacity <= self.bytes.len(),
-            "translated payload ({min_capacity} bytes) exceeds the loaned capacity ({} bytes)",
-            self.bytes.len()
-        );
-        self.bytes
+    fn resize(&mut self, min_capacity: usize) -> Result<&mut [u8], ResizeError> {
+        if min_capacity > self.bytes.len() {
+            return Err(ResizeError {
+                available: self.bytes.len(),
+            });
+        }
+        Ok(self.bytes)
     }
 }
 
