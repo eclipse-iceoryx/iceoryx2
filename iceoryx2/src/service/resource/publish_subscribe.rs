@@ -21,9 +21,6 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::{
-    NamedConceptConfiguration, NamedConceptPathHintRemoveError, NamedConceptRemoveError,
-};
 use iceoryx2_cal::static_storage::StaticStorage;
 use iceoryx2_log::{fail, warn};
 
@@ -139,58 +136,22 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {
-        let origin = "PublishSubscribeResources::remove_stale_resources()";
-        let msg = "Unable to remove stale publish subscribe resources";
-        let storage_config = Self::type_definition_static_storage_config(config, static_config);
-        match unsafe {
-            <ServiceType::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::remove_cfg(
-            &PAYLOAD_TYPE_DEFINITION, &storage_config,
-        )
-        } {
-            Ok(_) => (),
-            Err(NamedConceptRemoveError::Interrupt) => {
-                fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,
-                    "{msg} since it was interrupted by a signal.");
-            }
-            Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
-                    "{msg} due to insufficient permissions.");
-            }
-            Err(NamedConceptRemoveError::InternalError) => {
-                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
-                    "{msg} due to an internal failure.");
-            }
+        if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
+            &PAYLOAD_TYPE_DEFINITION,
+            config,
+            static_config,
+        ) {
+            fail!(from "PublishSubscribeResources::remove_stale_resources()",
+                with e,
+                "Failed to remove the stale publish subscribe resources since the type definition storage could not be removed. [{e:?}]");
         }
 
-        let dir = Self::service_resource_directory(config, static_config);
-        match <ServiceType::StaticStorage as NamedConceptMgmt>::remove_path_hint(&dir) {
-            Ok(()) => Ok(()),
-            Err(NamedConceptPathHintRemoveError::InsufficientPermissions) => {
-                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
-                    "{msg} since the resource directory could not be removed due to insufficient permissions.");
-            }
-            Err(NamedConceptPathHintRemoveError::InternalError) => {
-                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
-                    "{msg} since the resource directory could not be removed due to an internal failure.");
-            }
-        }
+        Ok(())
     }
 }
 
 impl<ServiceType: service::Service> PublishSubscribeResources<ServiceType> {
     pub fn type_definition(&self) -> Option<&ServiceType::StaticStorage> {
         self.type_definition_storage.as_ref()
-    }
-
-    fn type_definition_static_storage_config(
-        config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
-    ) -> <ServiceType::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::Configuration
-    {
-        let dir = Self::service_resource_directory(config, static_config);
-        (<<ServiceType::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::Configuration as Default>::default())
-            .path_hint(&dir)
-            .prefix(&config.global.prefix)
-            .suffix(&config.global.service.type_definition_suffix)
     }
 }

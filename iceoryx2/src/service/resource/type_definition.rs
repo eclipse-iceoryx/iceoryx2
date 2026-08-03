@@ -16,8 +16,10 @@ use iceoryx2_bb_flatbuffers::{FindSchemaFileError, TypeName, find_best_fitting_s
 use iceoryx2_bb_posix::file::{AccessMode, FileBuilder, FileOpenError, FileReadError};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use iceoryx2_cal::{
-    event::{NamedConceptBuilder, SemanticString},
-    named_concept::NamedConceptConfiguration,
+    event::{NamedConceptBuilder, NamedConceptMgmt, SemanticString},
+    named_concept::{
+        NamedConceptConfiguration, NamedConceptPathHintRemoveError, NamedConceptRemoveError,
+    },
     static_storage::{
         StaticStorage, StaticStorageBuilder, StaticStorageCreateError, StaticStorageOpenError,
         StaticStorageReadError, StaticStorageView,
@@ -25,7 +27,10 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::service::builder::{ServiceCreateError, ServiceOpenError};
+use crate::service::{
+    builder::{ServiceCreateError, ServiceOpenError},
+    resource::RemoveStaleResourcesError,
+};
 
 enum SchemaPathError {
     NoFlatbufferSchemaSearchPathConfigured,
@@ -186,6 +191,50 @@ impl TypeDefinition {
             storage: static_storage,
             path_hint: *static_storage_config.get_path_hint(),
         }))
+    }
+
+    pub fn remove_stale_storage<S: crate::service::Service>(
+        name: &FileName,
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<(), RemoveStaleResourcesError> {
+        let origin = "TypeDefinition::remove_stale_storage()";
+        let msg = "Unable to remove stale type definition storage";
+        let storage_config =
+            Self::type_definition_static_storage_config::<S>(config, static_config);
+        match unsafe {
+            <S::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::remove_cfg(
+                name,
+                &storage_config,
+            )
+        } {
+            Ok(_) => (),
+            Err(NamedConceptRemoveError::Interrupt) => {
+                fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,
+                    "{msg} {name} since it was interrupted by a signal.");
+            }
+            Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
+                    "{msg} {name} due to insufficient permissions.");
+            }
+            Err(NamedConceptRemoveError::InternalError) => {
+                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
+                    "{msg} {name} due to an internal failure.");
+            }
+        }
+
+        let dir = Self::service_resource_directory(config, static_config);
+        match <S::StaticStorage as NamedConceptMgmt>::remove_path_hint(&dir) {
+            Ok(()) => Ok(()),
+            Err(NamedConceptPathHintRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
+                    "{msg} {name} since the resource directory could not be removed due to insufficient permissions.");
+            }
+            Err(NamedConceptPathHintRemoveError::InternalError) => {
+                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
+                    "{msg} since the resource directory could not be removed due to an internal failure.");
+            }
+        }
     }
 
     fn type_definition_static_storage_config<S: crate::service::Service>(
