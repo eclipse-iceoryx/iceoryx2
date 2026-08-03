@@ -15,6 +15,7 @@ extern crate alloc;
 pub mod blackboard;
 pub mod publish_subscribe;
 pub mod request_response;
+pub(crate) mod type_definition;
 
 use alloc::string::ToString;
 use core::fmt::Debug;

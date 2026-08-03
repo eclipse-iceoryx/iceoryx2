@@ -12,26 +12,21 @@
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_flatbuffers::TypeName;
-use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_cal::{event::NamedConceptMgmt, static_storage::StaticStorage};
 use iceoryx2_log::warn;
 
 use crate::{
     node::SharedNode,
-    service::{self, resource::ServiceResource},
+    service::{
+        self,
+        resource::{ServiceResource, type_definition::TypeDefinition},
+    },
 };
 
-pub(crate) struct TypeDefinitionDetails {
-    pub(crate) use_type_definition: bool,
-    pub(crate) schema_path: Option<FilePath>,
-    pub(crate) type_name: TypeName,
-}
-
 pub struct RequestResponseResourceConfig<ServiceType: service::Service> {
-    pub(crate) request: TypeDefinitionDetails,
-    pub(crate) response: TypeDefinitionDetails,
+    pub(crate) request: TypeDefinition,
+    pub(crate) response: TypeDefinition,
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 

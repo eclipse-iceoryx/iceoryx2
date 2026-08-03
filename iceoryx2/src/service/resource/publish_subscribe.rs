@@ -14,6 +14,7 @@ extern crate alloc;
 
 use crate::service;
 use crate::service::builder::ServiceOpenError;
+use crate::service::resource::type_definition::TypeDefinition;
 use crate::service::resource::{RemoveStaleResourcesError, ServiceResource};
 use crate::{node::SharedNode, service::builder::ServiceCreateError};
 use alloc::vec;
@@ -22,7 +23,7 @@ use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_flatbuffers::{FindSchemaFileError, TypeName, find_best_fitting_schema_file};
+use iceoryx2_bb_flatbuffers::{FindSchemaFileError, find_best_fitting_schema_file};
 use iceoryx2_bb_posix::file::FileOpenError;
 use iceoryx2_bb_posix::file::{AccessMode, FileBuilder, FileReadError};
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -41,15 +42,13 @@ use iceoryx2_log::{fail, warn};
 const PAYLOAD_TYPE_DEFINITION: FileName = unsafe { FileName::new_unchecked_const(b"payload") };
 
 pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
-    pub(crate) use_type_definition: bool,
-    pub(crate) schema_path: Option<FilePath>,
-    pub(crate) type_name: TypeName,
+    pub(crate) type_definition: TypeDefinition,
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
 #[derive(Debug)]
 pub struct PublishSubscribeResources<ServiceType: service::Service> {
-    type_definition: Option<ServiceType::StaticStorage>,
+    type_definition_storage: Option<ServiceType::StaticStorage>,
     path_hint: Option<Path>,
     has_ownership: AtomicBool,
 }
@@ -95,7 +94,7 @@ impl<ServiceType: service::Service> Abandonable for PublishSubscribeResources<Se
         let this = unsafe { this.as_mut() };
         this.has_ownership.store(false, Ordering::Relaxed);
 
-        if let Some(td) = this.type_definition.as_mut() {
+        if let Some(td) = this.type_definition_storage.as_mut() {
             unsafe {
                 ServiceType::StaticStorage::abandon_in_place(core::ptr::NonNull::from_mut(td))
             };
@@ -106,7 +105,7 @@ impl<ServiceType: service::Service> Abandonable for PublishSubscribeResources<Se
 impl<ServiceType: service::Service> Drop for PublishSubscribeResources<ServiceType> {
     fn drop(&mut self) {
         if let Some(path_hint) = &self.path_hint {
-            drop(self.type_definition.take());
+            drop(self.type_definition_storage.take());
             if self.has_ownership.load(Ordering::Relaxed)
                 && let Err(e) =
                     <ServiceType::StaticStorage as NamedConceptMgmt>::remove_path_hint(path_hint)
@@ -123,7 +122,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
 
     fn acquire_ownership(&self) {
         self.has_ownership.store(true, Ordering::Relaxed);
-        if let Some(s) = &self.type_definition {
+        if let Some(s) = &self.type_definition_storage {
             s.acquire_ownership();
         }
     }
@@ -135,7 +134,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         let origin = "PublishSubscribeResourceConfig::create()";
         let msg = "Unable to create publish subscribe resources";
 
-        if resource_config.use_type_definition {
+        if resource_config.type_definition.use_type_definition {
             let config = Self::type_definition_static_storage_config(
                 resource_config.shared_node.config(),
                 static_config,
@@ -162,13 +161,13 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
             static_storage.release_ownership();
 
             Ok(Self {
-                type_definition: Some(static_storage),
+                type_definition_storage: Some(static_storage),
                 path_hint: Some(*config.get_path_hint()),
                 has_ownership: AtomicBool::new(false),
             })
         } else {
             Ok(Self {
-                type_definition: None,
+                type_definition_storage: None,
                 path_hint: None,
                 has_ownership: AtomicBool::new(false),
             })
@@ -182,7 +181,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         let origin = "PublishSubscribeResource::open()";
         let msg = "Unable to open publish subscribe resources";
 
-        if resource_config.use_type_definition {
+        if resource_config.type_definition.use_type_definition {
             let config = Self::type_definition_static_storage_config(
                 resource_config.shared_node.config(),
                 static_config,
@@ -241,13 +240,13 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
 
             Ok(Self {
                 has_ownership: AtomicBool::new(false),
-                type_definition: Some(static_storage),
+                type_definition_storage: Some(static_storage),
                 path_hint: Some(*config.get_path_hint()),
             })
         } else {
             Ok(Self {
                 has_ownership: AtomicBool::new(false),
-                type_definition: None,
+                type_definition_storage: None,
                 path_hint: None,
             })
         }
@@ -297,7 +296,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
 
 impl<ServiceType: service::Service> PublishSubscribeResources<ServiceType> {
     pub fn type_definition(&self) -> Option<&ServiceType::StaticStorage> {
-        self.type_definition.as_ref()
+        self.type_definition_storage.as_ref()
     }
 
     fn type_definition_static_storage_config(
@@ -374,7 +373,7 @@ impl<ServiceType: service::Service> PublishSubscribeResources<ServiceType> {
             }
         };
 
-        match resource_config.schema_path {
+        match resource_config.type_definition.schema_path {
             Some(file_path) if file_path.path().is_absolute() => Ok(file_path),
             Some(file_path) => {
                 let mut path = flatbuffer_schema_path()?;
@@ -383,7 +382,7 @@ impl<ServiceType: service::Service> PublishSubscribeResources<ServiceType> {
             }
             None => {
                 match find_best_fitting_schema_file(
-                    &resource_config.type_name,
+                    &resource_config.type_definition.type_name,
                     &flatbuffer_schema_path()?,
                 ) {
                     Ok(Some(file)) => Ok(file),
