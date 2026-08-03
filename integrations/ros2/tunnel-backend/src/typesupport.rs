@@ -42,24 +42,26 @@ impl core::error::Error for LoadError {}
 /// A resolved ROS 2 *typesupport* handle.
 ///
 /// In ROS 2 a "typesupport" is the per-message-type descriptor that rcl and
-/// the underlying middleware (DDS) need in order to work with a type: its
-/// fully-qualified name, a type hash used to match endpoints, and the function
-/// table to (de)serialize it. The `rosidl` code generator emits one for every
-/// `.msg` definition.
+/// the underlying middleware (DDS) need in order to work with a type. The
+/// `rosidl` code generator emits two of them for every `.msg` definition.
+/// The regular typesupport carries the function table to (de)serialize the
+/// type and the introspection typesupport a description of its fields and
+/// the layout of its generated C struct. Both are described by the same C
+/// handle type, so `TypeSupport` represents either.
 ///
 /// The tunnel must handle whatever message types the user bridges, known only
 /// by *name* (a string from config or graph discovery) at runtime, never at
-/// compile time. ROS ships each package's typesupport as a compiled shared
-/// object (`lib<pkg>__rosidl_typesupport_c.so`) exporting a C getter function
-/// per type, so the only way to obtain the handle for a given name is to
-/// `dlopen` that library and resolve the getter symbol at runtime. Without
-/// the handle, rcl cannot create a publisher or subscription that DDS peers
-/// will match.
+/// compile time. ROS ships each package's typesupports as one compiled shared
+/// object each (`lib<pkg>__rosidl_typesupport_c.so`, ...) exporting a
+/// C getter function per type, so the only way to obtain the handle for a
+/// given name is to `dlopen` that library and resolve the getter symbol at
+/// runtime. Without the handle, rcl cannot create a publisher or
+/// subscription that DDS peers will match.
 ///
 /// The handle points into the loaded library's memory, so the `Library` is
-/// kept alive here. The typesupport is shared: the registry cache and every
-/// endpoint using it hold a share of one `Rc<TypeSupport>`, keeping the
-/// library loaded as long as any share is alive.
+/// kept alive here. Resolved handles are cached and handed out as shares of
+/// one `Rc<TypeSupport>`, keeping each library loaded for as long as any
+/// share survives.
 #[derive(Debug)]
 pub struct TypeSupport {
     handle: *const rosidl_message_type_support_t,
@@ -72,32 +74,24 @@ impl TypeSupport {
     }
 }
 
-/// Resolves and caches typesupport handles. Entries are never evicted; the
-/// registry must outlive all endpoints created from its handles.
-#[derive(Debug, Default)]
-pub struct TypeSupportRegistry {
-    entries: RefCell<HashMap<String, Rc<TypeSupport>>>,
+thread_local! {
+    /// Cached typesupport handles resolved so far.
+    static TYPESUPPORT: RefCell<HashMap<String, Rc<TypeSupport>>> =
+        RefCell::new(HashMap::new());
+
+    /// Cached introspection typesupport handles resolved so far.
+    static INTROSPECTION: RefCell<HashMap<String, Rc<TypeSupport>>> =
+        RefCell::new(HashMap::new());
 }
 
-impl TypeSupportRegistry {
-    pub fn load(&self, type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-        if let Some(type_support) = self.entries.borrow().get(type_name) {
-            return Ok(Rc::clone(type_support));
-        }
+/// Returns the typesupport handle of `type_name`, driving rcl endpoint
+/// creation and `rmw_serialize`/`rmw_deserialize`.
+pub(crate) fn load(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
+    let origin = "typesupport::load";
 
-        let type_support = Rc::new(load_typesupport_library(type_name)?);
-        self.entries
-            .borrow_mut()
-            .insert(type_name.to_string(), Rc::clone(&type_support));
-
-        Ok(type_support)
+    if let Some(type_support) = TYPESUPPORT.with(|cache| cache.borrow().get(type_name).cloned()) {
+        return Ok(type_support);
     }
-}
-
-/// Loads the typesupport library of the type's package and looks up the
-/// type's handle in it.
-fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
-    let origin = "TypeSupportRegistry::load";
 
     let (package, message) = fail!(
         from origin,
@@ -105,17 +99,69 @@ fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
         "Invalid ROS 2 type name '{}'",
         type_name
     );
-    let library_name = format!("lib{package}__rosidl_typesupport_c.so");
-    let symbol_name =
-        format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}");
+    let type_support = Rc::new(load_handle(
+        type_name,
+        format!("lib{package}__rosidl_typesupport_c.so"),
+        format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}"),
+    )?);
+
+    TYPESUPPORT.with(|cache| {
+        cache
+            .borrow_mut()
+            .insert(type_name.to_string(), Rc::clone(&type_support));
+    });
+
+    Ok(type_support)
+}
+
+/// Returns the introspection typesupport handle of `type_name`, describing
+/// the members of the type's C struct.
+pub(crate) fn load_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
+    let origin = "typesupport::load_introspection";
+
+    if let Some(type_support) = INTROSPECTION.with(|cache| cache.borrow().get(type_name).cloned()) {
+        return Ok(type_support);
+    }
+
+    let (package, message) = fail!(
+        from origin,
+        when split_type_name(type_name),
+        "Invalid ROS 2 type name '{}'",
+        type_name
+    );
+    let type_support = Rc::new(load_handle(
+        type_name,
+        format!("lib{package}__rosidl_typesupport_introspection_c.so"),
+        format!(
+            "rosidl_typesupport_introspection_c__get_message_type_support_handle__{package}__msg__{message}"
+        ),
+    )?);
+
+    INTROSPECTION.with(|cache| {
+        cache
+            .borrow_mut()
+            .insert(type_name.to_string(), Rc::clone(&type_support));
+    });
+
+    Ok(type_support)
+}
+
+/// Loads `library_name` and retrieves the handle pointer that `symbol_name`
+/// returns.
+fn load_handle(
+    type_name: &str,
+    library_name: String,
+    symbol_name: String,
+) -> Result<TypeSupport, LoadError> {
+    let origin = "typesupport::load_handle";
 
     // Load the typesupport library, found via the sourced environment's
     // LD_LIBRARY_PATH.
     let library = fail!(from origin,
         when unsafe { Library::new(&library_name) },
         with LoadError::LibraryNotFound { library: library_name },
-        "Failed to load typesupport library for package '{}'",
-        package
+        "Failed to load typesupport library for type '{}'",
+        type_name
     );
 
     // Get the typesupport handle from the loaded library.
@@ -127,7 +173,7 @@ fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
             when unsafe { library.get(symbol_name.as_bytes()) },
             with LoadError::SymbolNotFound { symbol: symbol_name },
             "Failed to resolve typesupport symbol for type '{}'",
-            message
+            type_name
         );
         unsafe { get_handle() }
     };

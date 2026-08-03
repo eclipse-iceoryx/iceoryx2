@@ -25,6 +25,8 @@ pub mod qos;
 pub mod relays;
 pub mod ros_header;
 pub mod testing;
+#[allow(unsafe_code)]
+pub mod translator;
 
 #[allow(unsafe_code)]
 pub(crate) mod payload;
@@ -37,6 +39,7 @@ pub use backend::*;
 pub use config::*;
 pub use mapping::{PrefixMapping, StaticMapping, TopicDescription};
 pub use qos::*;
+pub use translator::*;
 
 /// The name of the ROS 2 node representing the tunnel.
 #[allow(unsafe_code)]

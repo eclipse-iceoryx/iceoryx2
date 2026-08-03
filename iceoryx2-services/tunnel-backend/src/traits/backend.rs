@@ -74,7 +74,9 @@ pub trait Backend<S: Service>: Sized {
     type Mapping: Mapping;
 
     /// Payload translation strategy applied by this backend.
-    type Translator: Translator;
+    type Translator: Translator<
+        EndpointDescription = <Self::Mapping as Mapping>::EndpointDescription,
+    >;
 
     /// Error type that can occur during backend creation
     type CreationError: Error;

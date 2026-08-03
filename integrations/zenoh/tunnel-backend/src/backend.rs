@@ -41,7 +41,13 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub struct ZenohBackend<S: Service, M: Mapping = Identity, T: Translator = Passthrough> {
+pub struct ZenohBackend<
+    S: Service,
+    M: Mapping = Identity,
+    T: Translator<EndpointDescription = <M as Mapping>::EndpointDescription> = Passthrough<
+        <M as Mapping>::EndpointDescription,
+    >,
+> {
     session: Session,
     discovery: Discovery,
     /// `Some` when constructed in reactive mode. Cloned into each relay's
@@ -53,7 +59,9 @@ pub struct ZenohBackend<S: Service, M: Mapping = Identity, T: Translator = Passt
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service, M: Mapping, T: Translator> Backend<S> for ZenohBackend<S, M, T> {
+impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>> Backend<S>
+    for ZenohBackend<S, M, T>
+{
     type Config = Config;
     type Mapping = M;
     type Translator = T;
@@ -91,7 +99,14 @@ impl<S: Service, M: Mapping, T: Translator> Backend<S> for ZenohBackend<S, M, T>
 
 /// Builder for [`ZenohBackend`].
 #[derive(Debug)]
-pub struct Builder<'config, S: Service, M: Mapping = Identity, T: Translator = Passthrough> {
+pub struct Builder<
+    'config,
+    S: Service,
+    M: Mapping = Identity,
+    T: Translator<EndpointDescription = <M as Mapping>::EndpointDescription> = Passthrough<
+        <M as Mapping>::EndpointDescription,
+    >,
+> {
     config: &'config Config,
     wake: Option<WakeHandle<local_threadsafe::Service>>,
     mapping: M,
@@ -99,7 +114,9 @@ pub struct Builder<'config, S: Service, M: Mapping = Identity, T: Translator = P
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'config, S: Service, M: Mapping, T: Translator> Builder<'config, S, M, T> {
+impl<'config, S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
+    Builder<'config, S, M, T>
+{
     pub fn new(config: &'config Config) -> Self {
         Self {
             config,
@@ -111,7 +128,9 @@ impl<'config, S: Service, M: Mapping, T: Translator> Builder<'config, S, M, T> {
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator> BackendBuilder<S> for Builder<'_, S, M, T> {
+impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
+    BackendBuilder<S> for Builder<'_, S, M, T>
+{
     type Backend = ZenohBackend<S, M, T>;
     type CreationError = CreationError;
 
@@ -160,7 +179,9 @@ impl<S: Service, M: Mapping, T: Translator> BackendBuilder<S> for Builder<'_, S,
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator> ReactiveBackendBuilder<S> for Builder<'_, S, M, T> {
+impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
+    ReactiveBackendBuilder<S> for Builder<'_, S, M, T>
+{
     type WakeService = local_threadsafe::Service;
 
     fn reactive(mut self, wake: WakeHandle<local_threadsafe::Service>) -> Self {

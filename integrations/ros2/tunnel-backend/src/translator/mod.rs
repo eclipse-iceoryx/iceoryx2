@@ -10,13 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
+mod introspection_translator;
 
-use iceoryx2::prelude::*;
-
-pub const DISCOVERY_RETRY_PERIOD: Duration = Duration::from_millis(50);
-pub const DISCOVERY_RETRY_ATTEMPTS: usize = 200;
-
-pub fn service_name(name: &str) -> ServiceName {
-    name.try_into().expect("valid service name")
-}
+pub use introspection_translator::*;

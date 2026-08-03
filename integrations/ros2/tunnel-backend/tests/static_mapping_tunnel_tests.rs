@@ -14,7 +14,7 @@ mod common;
 
 use core::time::Duration;
 
-use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, RosString, service_name};
+use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, service_name};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service as _;
@@ -29,7 +29,8 @@ use iceoryx2_integrations_ros2_tunnel_backend::mapping::static_mapping::{
 use iceoryx2_integrations_ros2_tunnel_backend::ros_header::RosHeader;
 use iceoryx2_integrations_ros2_tunnel_backend::testing::{TestPeer, Testing};
 use iceoryx2_integrations_ros2_tunnel_backend::{
-    Durability, QosProfile, Reliability, Ros2Backend, StaticMapping, TopicName, TypeName,
+    Durability, QosProfile, Reliability, Ros2Backend, StaticMapping, TopicDescription, TopicName,
+    TypeName,
 };
 use iceoryx2_services_tunnel::Tunnel;
 use iceoryx2_services_tunnel_backend::traits::Passthrough;
@@ -37,6 +38,11 @@ use iceoryx2_services_tunnel_backend::traits::testing::Testing as _;
 use iceoryx2_services_tunnel_backend::types::service_description::{
     PortSettings, PublishSubscribeSettings,
 };
+
+#[derive(Debug, ZeroCopySend)]
+#[type_name("std_msgs/msg/String")]
+#[repr(C)]
+struct RosString(u8);
 
 #[test]
 fn maps_iceoryx_services_onto_ros_topics() {
@@ -72,7 +78,9 @@ fn maps_iceoryx_services_onto_ros_topics() {
     })
     .expect("valid mapping config");
 
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(iceoryx_config)
         .backend_config(BackendConfig::default())
         .mapping(mapping)
@@ -136,7 +144,9 @@ fn does_not_map_iceoryx_services_without_an_entry() {
     })
     .expect("valid mapping config");
 
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(iceoryx_config)
         .backend_config(BackendConfig::default())
         .mapping(mapping)
@@ -185,7 +195,9 @@ fn maps_ros_topics_onto_iceoryx_services() {
     .expect("valid mapping config");
 
     let iceoryx_config = generate_isolated_config();
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(iceoryx_config.clone())
         .backend_config(BackendConfig {
             topics: mapping.topics(),
@@ -271,7 +283,9 @@ fn applies_specified_qos_to_ros_endpoints() {
     })
     .expect("valid mapping config");
 
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(iceoryx_config)
         .backend_config(BackendConfig::default())
         .mapping(mapping)
@@ -338,7 +352,9 @@ fn applies_specified_settings_to_iceoryx_services() {
     .expect("valid mapping config");
 
     let iceoryx_config = generate_isolated_config();
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(iceoryx_config.clone())
         .backend_config(BackendConfig {
             topics: mapping.topics(),

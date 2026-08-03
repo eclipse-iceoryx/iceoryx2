@@ -114,9 +114,7 @@ impl From<&QosProfile> for PublishSubscribeSettings {
             max_nodes: defaults.max_nodes,
             history_size: match profile.durability {
                 Durability::TransientLocal => depth,
-                Durability::SystemDefault | Durability::Volatile => {
-                    defaults.publisher_history_size
-                }
+                Durability::SystemDefault | Durability::Volatile => defaults.publisher_history_size,
             },
             subscriber_max_buffer_size: depth,
             subscriber_max_borrowed_samples: defaults.subscriber_max_borrowed_samples,
