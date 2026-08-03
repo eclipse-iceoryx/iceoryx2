@@ -15,6 +15,7 @@
 import ctypes
 import os
 
+import iceoryx2 as iox2
 from Example.Entry import EntryAddData1, EntryAddData2, EntryEnd, EntryStart
 from Example.UnboundedData import (
     UnboundedData,
@@ -24,8 +25,6 @@ from Example.UnboundedData import (
     UnboundedDataStart,
     UnboundedDataStartEntriesVector,
 )
-
-import iceoryx2 as iox2
 
 
 # Explicitly sets the type name of our generated type so that the auto path-lookup
@@ -54,8 +53,7 @@ node = (
     iox2.NodeBuilder.new()
     # Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
     # schema file lookup.
-    .config(config)
-    .create(iox2.ServiceType.Ipc)
+    .config(config).create(iox2.ServiceType.Ipc)
 )
 
 service = (
@@ -85,8 +83,7 @@ publisher = (
     # explicitly requested amount of memory, so this limit can be reached
     # quickly. Increasing initial_reserved_memory reduces the number of
     # reallocations.
-    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
-    .create()
+    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
 )
 
 COUNTER = 0

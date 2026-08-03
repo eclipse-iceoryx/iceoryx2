@@ -26,6 +26,7 @@ T = TypeVar("T", bound=ctypes.Structure)
 
 
 def payload_bytes(self: Any) -> Slice[ctypes.c_int8]:
+    """Returns the serialized flatbuffer data as bytes."""
     assert self.__payload_type_details is not None
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
@@ -40,13 +41,14 @@ def payload_bytes(self: Any) -> Slice[ctypes.c_int8]:
 
 
 def payload_root(self: Any) -> Any:
+    """Returns the root of the flatbuffer."""
     assert self.__payload_type_details is not None
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
     (PayloadType,) = get_args(self.__payload_type_details)
 
-    bytes = self.payload_bytes()
-    view = bytes.as_memory_view()
+    payload_bytes = self.payload_bytes()
+    view = payload_bytes.as_memory_view()
     n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, view, 0)
 
     data = PayloadType()
@@ -178,7 +180,7 @@ def loan_uninit(self: Publisher) -> SampleMutUninit:
     `LoanError` describing the failure.
     """
     origin = get_origin(self.__payload_type_details)
-    assert origin != Slice and origin != Flatbuffer
+    assert origin not in (Slice, Flatbuffer)
 
     return self.__loan_uninit()
 
@@ -220,9 +222,12 @@ def allocation_strategy(
 def flatbuffer_schema_path(
     self: ServiceBuilderPublishSubscribe, value: FilePath
 ) -> PortFactoryPublisher:
-    """Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    will try to find the best fitting schema file in the configured filebuffer schema paths
-    defined in the config."""
+    """
+    Sets the path to the flatbuffer schema file.
+
+    If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
+    in the configured filebuffer schema paths defined in the config.
+    """
     assert get_origin(self.__get_payload_type_details) is Flatbuffer
 
     return self.__flatbuffer_schema_path(value)
@@ -231,31 +236,14 @@ def flatbuffer_schema_path(
 def initial_reserved_memory(
     self: PortFactoryPublisher, value: int
 ) -> PortFactoryPublisher:
-    """Sets the maximum initial reserved memory that the underlying allocator reserves
-    for the flatbuffer builder."""
+    """Sets the maximum initial reserved memory that the underlying allocator reserves for the flatbuffer builder."""
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
     return self.__initial_max_slice_len(value)
 
 
-def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUninit:
-    """
-    Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
-
-    The user has to initialize the payload before it can be sent.
-    Fails when it is called for data types which are not a slice.
-    On failure it returns `LoanError` describing the failure.
-    """
-    assert get_origin(self.__payload_type_details) is Slice
-
-    return self.__loan_slice_uninit(number_of_elements)
-
-
 def loan_flatbuffer(self: Publisher) -> SampleMutUninit:
-    """
-    Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`
-    with an integrated `FlatbufferBuilder`.
-    """
+    """Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`  with an integrated `FlatbufferBuilder`."""
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
@@ -271,9 +259,7 @@ _sample_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
 
 
 def flatbuffer_builder(self: SampleMutUninit) -> flatbuffers.Builder:
-    """
-    Returns the flatbuffers.Builder to produce the data that shall be sent.
-    """
+    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
     key = id(self)
     builder = _sample_mut_uninit_dict.get(key)
     if builder is None:
@@ -283,20 +269,22 @@ def flatbuffer_builder(self: SampleMutUninit) -> flatbuffers.Builder:
 
 
 @overload
-def assume_init(self: SampleMutUninit) -> SampleMut: ...
+def assume_init(self: SampleMutUninit) -> SampleMut: ...  # noqa: E704
+
+
 @overload
-def assume_init(self: SampleMutUninit, root: int) -> SampleMut: ...
+def assume_init(self: SampleMutUninit, root: int) -> SampleMut: ...  # noqa: E704
 
 
 def assume_init(self: SampleMutUninit, root=None) -> SampleMut:
-    """Extracts the value of the uninitialized payload and labels the `SampleMutUninit` as
-    initialized `SampleMut`
+    """
+    Extracts the value of the uninitialized payload and labels the `SampleMutUninit` as initialized `SampleMut`.
 
-    After this call the `SampleMutUninit` is no longer usable!"""
-
+    After this call the `SampleMutUninit` is no longer usable.
+    """
     origin = get_origin(self.__payload_type_details)
-    assert (origin == Flatbuffer and root != None) or (
-        origin != Flatbuffer and root == None
+    assert (origin is Flatbuffer and root is not None) or (
+        origin is not Flatbuffer and root is None
     )
 
     if root is None:

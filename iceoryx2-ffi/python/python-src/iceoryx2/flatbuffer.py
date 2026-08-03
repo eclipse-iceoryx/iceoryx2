@@ -18,6 +18,4 @@ T = TypeVar("T")
 
 
 class Flatbuffer(Generic[T]):
-    """
-    A class representing flatbuffer serializable T.
-    """
+    """A class representing flatbuffer serializable T."""

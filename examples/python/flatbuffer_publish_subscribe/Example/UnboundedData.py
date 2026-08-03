@@ -4,10 +4,12 @@
 
 import flatbuffers
 from flatbuffers.compat import import_numpy
+
 np = import_numpy()
 
+
 class UnboundedData(object):
-    __slots__ = ['_tab']
+    __slots__ = ["_tab"]
 
     @classmethod
     def GetRootAs(cls, buf, offset=0):
@@ -20,6 +22,7 @@ class UnboundedData(object):
     def GetRootAsUnboundedData(cls, buf, offset=0):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
+
     # UnboundedData
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -39,6 +42,7 @@ class UnboundedData(object):
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
             from Example.Entry import Entry
+
             obj = Entry()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -56,38 +60,54 @@ class UnboundedData(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         return o == 0
 
+
 def UnboundedDataStart(builder):
     builder.StartObject(2)
+
 
 def Start(builder):
     UnboundedDataStart(builder)
 
+
 def UnboundedDataAddTitle(builder, title):
-    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(title), 0)
+    builder.PrependUOffsetTRelativeSlot(
+        0, flatbuffers.number_types.UOffsetTFlags.py_type(title), 0
+    )
+
 
 def AddTitle(builder, title):
     UnboundedDataAddTitle(builder, title)
 
+
 def UnboundedDataAddEntries(builder, entries):
-    builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(entries), 0)
+    builder.PrependUOffsetTRelativeSlot(
+        1, flatbuffers.number_types.UOffsetTFlags.py_type(entries), 0
+    )
+
 
 def AddEntries(builder, entries):
     UnboundedDataAddEntries(builder, entries)
 
+
 def UnboundedDataStartEntriesVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
+
 
 def StartEntriesVector(builder, numElems):
     return UnboundedDataStartEntriesVector(builder, numElems)
 
+
 def UnboundedDataCreateEntriesVector(builder, data):
     return builder.CreateVectorOfTables(data)
+
 
 def CreateEntriesVector(builder, data):
     UnboundedDataCreateEntriesVector(builder, data)
 
+
 def UnboundedDataEnd(builder):
     return builder.EndObject()
+
 
 def End(builder):
     return UnboundedDataEnd(builder)

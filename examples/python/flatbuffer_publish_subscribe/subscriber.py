@@ -15,9 +15,8 @@
 import ctypes
 import os
 
-from Example.UnboundedData import UnboundedData
-
 import iceoryx2 as iox2
+from Example.UnboundedData import UnboundedData
 
 
 # Explicitly sets the type name of our generated type so that the auto path-lookup
@@ -47,8 +46,7 @@ node = (
     iox2.NodeBuilder.new()
     # Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
     # schema file lookup.
-    .config(config)
-    .create(iox2.ServiceType.Ipc)
+    .config(config).create(iox2.ServiceType.Ipc)
 )
 
 service = (
