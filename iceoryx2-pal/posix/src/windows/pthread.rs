@@ -14,13 +14,17 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use alloc::sync::Arc;
 use core::panic;
+
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use std::{
     os::windows::prelude::OsStrExt, os::windows::prelude::OsStringExt, time::SystemTime,
     time::UNIX_EPOCH,
 };
-use windows_sys::Win32::Foundation::ERROR_INVALID_HANDLE;
+use windows_sys::Win32::Foundation::{
+    ERROR_ACCESS_DENIED, ERROR_INVALID_HANDLE, ERROR_INVALID_PARAMETER,
+};
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
@@ -293,13 +297,17 @@ struct CallbackArguments {
     arg: *mut void,
 }
 
-unsafe extern "system" fn thread_callback(args: *mut void) -> u32 {
-    let thread = args as *mut CallbackArguments;
-    unsafe {
-        let start_routine = (*thread).start_routine;
-        let arg = (*thread).arg;
+// safe for our usage since we access only the barrier from both threads
+unsafe impl Send for CallbackArguments {}
+unsafe impl Sync for CallbackArguments {}
 
-        barrier_wait(&(*thread).startup_barrier);
+unsafe extern "system" fn thread_callback(args: *mut void) -> u32 {
+    unsafe {
+        let thread_args = Arc::from_raw(args as *const CallbackArguments);
+        let start_routine = thread_args.start_routine;
+        let arg = thread_args.arg;
+
+        barrier_wait(&thread_args.startup_barrier);
 
         start_routine(arg);
     }
@@ -315,20 +323,32 @@ pub unsafe fn pthread_create(
     unsafe {
         thread.write(pthread_t::new_zeroed());
 
-        let mut thread_args = CallbackArguments {
+        let thread_args = Arc::new(CallbackArguments {
             startup_barrier: Barrier::new(2),
             start_routine,
             arg,
-        };
+        });
 
-        let (handle, _) = win32call! {CreateThread(
+        let thread_args_spawned = Arc::into_raw(thread_args.clone());
+        let (handle, error) = win32call! {CreateThread(
             core::ptr::null(),
             (*attributes).stacksize,
             Some(thread_callback),
-            (&mut thread_args as *mut CallbackArguments) as *mut void,
+            (thread_args_spawned as *mut CallbackArguments).cast(),
             0,
             core::ptr::null_mut(),
         )};
+
+        if handle == 0 {
+            // the creation of the thread failed and we need to re-take ownership of the raw pointer
+            let _ = Arc::from_raw(thread_args_spawned);
+            let errno = match error {
+                ERROR_INVALID_PARAMETER => Errno::EINVAL,
+                ERROR_ACCESS_DENIED => Errno::EPERM,
+                _ => Errno::EAGAIN,
+            };
+            return errno as int;
+        }
 
         win32call! { SetThreadPriority(handle, to_win_priority((*attributes).priority)) };
         win32call! { SetThreadAffinityMask(handle, usize::from_ne_bytes((*attributes).affinity.__bits) )};
