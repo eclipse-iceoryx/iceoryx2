@@ -12,6 +12,17 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
+constraint_setting(
+    name = "requires_feature_flatbuffers",
+    visibility = ["//visibility:private"],
+)
+
+constraint_value(
+    name = "requires_feature_flatbuffers_on",
+    constraint_setting = ":requires_feature_flatbuffers",
+    visibility = ["//visibility:private"],
+)
+
 cc_binary(
     name = "example_cxx_flatbuffer_publish_subscribe_publisher",
     srcs = [
@@ -21,7 +32,11 @@ cc_binary(
         "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
-    target_compatible_with = ["@platforms//:incompatible"], #TODO make it work with bazel
+    target_compatible_with = select({
+        "//:cfg_feature_flatbuffers": [],
+        # NOTE: '@platforms//:incompatible' would also be an option but does not give the user a hint why it does not build
+        "//conditions:default": [":requires_feature_flatbuffers_on"],
+    }),
 )
 
 cc_binary(
@@ -33,5 +48,9 @@ cc_binary(
         "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
-    target_compatible_with = ["@platforms//:incompatible"], #TODO make it work with bazel
+    target_compatible_with = select({
+        "//:cfg_feature_flatbuffers": [],
+        # NOTE: '@platforms//:incompatible' would also be an option but does not give the user a hint why it does not build
+        "//conditions:default": [":requires_feature_flatbuffers_on"],
+    }),
 )
