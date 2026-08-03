@@ -54,6 +54,7 @@
 * [#1810](https://github.com/eclipse-iceoryx/iceoryx2/issues/1810) Make mgmt segment globally accessible
 * [#1844](https://github.com/eclipse-iceoryx/iceoryx2/issues/1844) Fix `semantic_string` macro for `rust-analyzer` auto-completion
 * [#1872](https://github.com/eclipse-iceoryx/iceoryx2/issues/1872) Register FileDescriptor pyclass with the python module
+* [#1878](https://github.com/eclipse-iceoryx/iceoryx2/issues/1878) Fix race in `pthread_create` on macOS and Windows
 
 ### Refactoring
 
