@@ -41,6 +41,7 @@
 use core::fmt::Debug;
 use core::ops::Deref;
 
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
@@ -58,7 +59,7 @@ use crate::service;
 /// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
 pub struct Response<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<
@@ -73,7 +74,7 @@ pub struct Response<
 
 unsafe impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for Response<Service, ResponsePayload, ResponseHeader>
 where
@@ -83,7 +84,7 @@ where
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Drop for Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -97,7 +98,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Debug for Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -115,7 +116,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref for Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -127,7 +128,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -143,7 +144,10 @@ impl<
     }
 
     /// Returns a reference to the payload of the response.
-    pub fn payload(&self) -> &ResponsePayload {
+    pub fn payload(&self) -> &ResponsePayload
+    where
+        ResponsePayload: ZeroCopySend,
+    {
         self.ptr.as_payload_ref()
     }
 

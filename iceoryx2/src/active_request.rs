@@ -42,6 +42,7 @@
 use alloc::sync::Arc;
 use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_cal::zero_copy_connection::ChannelState;
 
@@ -80,9 +81,9 @@ pub type RequestId = ChannelState;
 /// [`Response`](crate::response::Response)s.
 pub struct ActiveRequest<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<
@@ -103,9 +104,9 @@ pub struct ActiveRequest<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Abandonable
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -119,9 +120,9 @@ impl<
 
 unsafe impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
@@ -131,9 +132,9 @@ where
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Debug for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -155,9 +156,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -169,9 +170,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Drop for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -186,9 +187,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -234,7 +235,10 @@ impl<
 
     /// Returns a reference to the payload of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn payload(&self) -> &RequestPayload {
+    pub fn payload(&self) -> &RequestPayload
+    where
+        RequestPayload: ZeroCopySend,
+    {
         self.ptr.as_payload_ref()
     }
 
@@ -284,7 +288,7 @@ impl<
 ////////////////////////
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + ZeroCopySend + Sized,
     ResponseHeader: Default + Debug + ZeroCopySend,
@@ -399,16 +403,7 @@ impl<
 
         response.write_payload(value).send()
     }
-}
 
-impl<
-    Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
-    RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + Default + ZeroCopySend + Sized,
-    ResponseHeader: Default + Debug + ZeroCopySend,
-> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-{
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
     ///
@@ -436,7 +431,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError> {
+    pub fn loan(&self) -> Result<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>
+    where
+        ResponsePayload: Default,
+    {
         Ok(self
             .loan_uninit()?
             .write_payload(ResponsePayload::default()))
@@ -451,9 +449,9 @@ impl<
 ////////////////////////
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + Default + ZeroCopySend + 'static,
+    ResponsePayload: Debug + ZeroCopySend + 'static,
     ResponseHeader: Default + Debug + ZeroCopySend,
 > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
@@ -493,20 +491,14 @@ impl<
     pub fn loan_slice(
         &self,
         slice_len: usize,
-    ) -> Result<ResponseMut<Service, [ResponsePayload], ResponseHeader>, LoanError> {
+    ) -> Result<ResponseMut<Service, [ResponsePayload], ResponseHeader>, LoanError>
+    where
+        ResponsePayload: Default,
+    {
         let response = self.loan_slice_uninit(slice_len)?;
         Ok(response.write_from_fn(|_| ResponsePayload::default()))
     }
-}
 
-impl<
-    Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
-    RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + 'static,
-    ResponseHeader: Default + Debug + ZeroCopySend,
-> ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
-{
     /// Loans/allocates a [`ResponseMutUninit`] from the underlying data segment of the
     /// [`Server`](crate::port::server::Server).
     /// The user has to initialize the payload before it can be sent.

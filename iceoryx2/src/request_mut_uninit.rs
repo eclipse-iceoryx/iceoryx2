@@ -37,7 +37,7 @@
 //! # }
 //! ```
 
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 
 use crate::{port::client::ClientSharedState, request_mut::RequestMut, service};
 use core::{fmt::Debug, mem::MaybeUninit};
@@ -48,9 +48,9 @@ use core::{fmt::Debug, mem::MaybeUninit};
 #[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
@@ -59,9 +59,9 @@ pub struct RequestMutUninit<
 
 unsafe impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
@@ -71,9 +71,9 @@ where
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Debug
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -85,9 +85,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -108,12 +108,18 @@ impl<
     }
 
     /// Returns a reference to the user defined request payload.
-    pub fn payload(&self) -> &RequestPayload {
+    pub fn payload(&self) -> &RequestPayload
+    where
+        RequestPayload: ZeroCopySend,
+    {
         self.request.payload()
     }
 
     /// Returns a mutable reference to the user defined request payload.
-    pub fn payload_mut(&mut self) -> &mut RequestPayload {
+    pub fn payload_mut(&mut self) -> &mut RequestPayload
+    where
+        RequestPayload: ZeroCopySend,
+    {
         self.request.payload_mut()
     }
 }
@@ -122,7 +128,7 @@ impl<
     Service: crate::service::Service,
     RequestPayload: Debug + ZeroCopySend + Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 >
     RequestMutUninit<
@@ -191,7 +197,7 @@ impl<
     Service: crate::service::Service,
     RequestPayload: Debug + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 >
     RequestMutUninit<
@@ -295,7 +301,7 @@ impl<
     Service: crate::service::Service,
     RequestPayload: Debug + Copy + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 >
     RequestMutUninit<

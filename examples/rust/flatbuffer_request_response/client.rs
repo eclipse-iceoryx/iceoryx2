@@ -45,12 +45,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .config(&config)
         .create::<ipc::Service>()?;
 
-    // let service = node
-    //     .service_builder(&"My/Funk/ServiceName".try_into()?)
-    //     .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
-    //     .open_or_create()?;
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
+        .open_or_create()?;
 
-    // let client = service.client_builder().create()?;
+    let client = service.client_builder().create()?;
 
     let mut request_counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {

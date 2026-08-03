@@ -81,6 +81,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -319,9 +320,9 @@ impl<Service: service::Service> ClientSharedState<Service> {
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
@@ -335,9 +336,9 @@ pub struct Client<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Abandonable for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -353,9 +354,9 @@ impl<
 
 unsafe impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
@@ -365,9 +366,9 @@ where
 
 unsafe impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Sync for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
@@ -377,9 +378,9 @@ where
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -662,9 +663,9 @@ impl<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > UpdateConnections
     for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -681,7 +682,7 @@ impl<
     Service: service::Service,
     RequestPayload: Debug + ZeroCopySend,
     RequestHeader: Default + Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -828,7 +829,7 @@ impl<
     Service: service::Service,
     RequestPayload: Debug + Default + ZeroCopySend,
     RequestHeader: Default + Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -882,7 +883,7 @@ impl<
     Service: service::Service,
     RequestPayload: Default + Debug + ZeroCopySend + 'static,
     RequestHeader: Default + Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -937,7 +938,7 @@ impl<
     Service: service::Service,
     RequestPayload: Debug + ZeroCopySend + 'static,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -951,7 +952,7 @@ impl<
     Service: service::Service,
     RequestPayload: Debug + ZeroCopySend + 'static,
     RequestHeader: Default + Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {

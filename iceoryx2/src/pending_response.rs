@@ -59,6 +59,7 @@ use core::ops::Deref;
 use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
@@ -80,9 +81,9 @@ use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, ser
 /// [`Server`](crate::port::server::Server)s are informed.
 pub struct PendingResponse<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
@@ -95,9 +96,9 @@ pub struct PendingResponse<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Abandonable
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -110,9 +111,9 @@ impl<
 
 unsafe impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
@@ -122,9 +123,9 @@ where
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Drop
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -141,9 +142,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -156,9 +157,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Debug
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -179,9 +180,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -236,7 +237,10 @@ impl<
 
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
-    pub fn payload(&self) -> &RequestPayload {
+    pub fn payload(&self) -> &RequestPayload
+    where
+        RequestPayload: ZeroCopySend,
+    {
         self.request.payload()
     }
 
@@ -270,9 +274,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + Sized,
+    ResponsePayload: Debug + IceoryxSend + Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -339,7 +343,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,

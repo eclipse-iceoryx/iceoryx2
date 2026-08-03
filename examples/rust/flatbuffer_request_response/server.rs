@@ -45,12 +45,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .config(&config)
         .create::<ipc::Service>()?;
 
-    //let service = node
-    //    .service_builder(&"My/Funk/ServiceName".try_into()?)
-    //    .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
-    //    .open_or_create()?;
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
+        .open_or_create()?;
 
-    //let server = service.server_builder().create()?;
+    let server = service.server_builder().create()?;
 
     coutln!("Server ready to receive requests!");
 

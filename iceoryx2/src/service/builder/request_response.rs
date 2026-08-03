@@ -16,6 +16,7 @@ use core::marker::PhantomData;
 use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
@@ -374,9 +375,9 @@ struct Verify {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > {
@@ -396,9 +397,9 @@ pub struct Builder<
 }
 
 impl<
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > Clone for Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
@@ -422,9 +423,9 @@ impl<
 }
 
 impl<
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
@@ -945,9 +946,9 @@ impl<
 }
 
 impl<
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + IceoryxSend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
@@ -1082,7 +1083,7 @@ impl<
 impl<
     RequestPayload: Debug + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
@@ -1354,7 +1355,7 @@ impl<
 }
 
 impl<
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + IceoryxSend,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,
