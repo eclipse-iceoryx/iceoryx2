@@ -254,9 +254,8 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
     ) -> Result<SampleMutUninit<S>, ReceiveError> {
         let origin = "publish_subscribe::Relay::translate_fixed_size";
 
-        let mut sample = match loan(layout.size()) {
-            Ok(sample) => sample,
-            Err(_) => return Err(ReceiveError::Loan),
+        let Ok(mut sample) = loan(layout.size()) else {
+            return Err(ReceiveError::Loan);
         };
 
         let mut loan_buffer = LoanedBuffer {
@@ -305,10 +304,10 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
             );
         }
 
-        let mut sample = match loan(written) {
-            Ok(sample) => sample,
-            Err(_) => return Err(ReceiveError::Loan),
+        let Ok(mut sample) = loan(written) else {
+            return Err(ReceiveError::Loan);
         };
+
         payload::copy_into_uninit(sample.payload_mut(), &payload_bytes[..written]);
 
         Ok(sample)
