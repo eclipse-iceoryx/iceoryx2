@@ -58,14 +58,14 @@ commands.
 ### Terminal 1
 
 ```sh
-export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/rust/flatbuffer_publish_subscribe"
+export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/python/flatbuffer_publish_subscribe"
 poetry --project iceoryx2-ffi/python run python examples/python/flatbuffer_publish_subscribe/subscriber.py
 ```
 
 ### Terminal 2
 
 ```sh
-export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/rust/flatbuffer_publish_subscribe"
+export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/python/flatbuffer_publish_subscribe"
 poetry --project iceoryx2-ffi/python run python examples/python/flatbuffer_publish_subscribe/publisher.py
 ```
 
