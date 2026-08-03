@@ -2,6 +2,9 @@
 # crate dependencies to the install space.
 /.cargo/
 
+# Dontents are specific to the distro that built it.
+/src/demo_nodes/Cargo.lock
+
 # Imported by `vcs import src < <distro>.repos`.
 /src/common_interfaces/
 /src/rcl_interfaces/
