@@ -129,7 +129,7 @@ pub struct Relay<S: Service, T: Translator<EndpointDescription = TopicDescriptio
 impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S, T> {
     /// Propagate bytes without any modification.
     fn send_passthrough(&self, payload: &[u8]) -> Result<(), SendError> {
-        let origin = "publish_subscribe::Relay::send";
+        let origin = "publish_subscribe::Relay::send_passthrough";
 
         fail!(from origin,
             when self.publisher.publish(payload),
@@ -142,7 +142,7 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
 
     /// Transcode bytes into intermediate scratch buffer then propagate.
     fn send_translated(&self, transcoder: &T::Transcoder, payload: &[u8]) -> Result<(), SendError> {
-        let origin = "publish_subscribe::Relay::send";
+        let origin = "publish_subscribe::Relay::send_translated";
 
         let mut wire_scratch = self.scratch.wire.borrow_mut();
         let written = fail!(from origin,
@@ -252,7 +252,7 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         layout: Layout,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<SampleMutUninit<S>, ReceiveError> {
-        let origin = "publish_subscribe::Relay::receive";
+        let origin = "publish_subscribe::Relay::translate_fixed_size";
 
         let mut sample = match loan(layout.size()) {
             Ok(sample) => sample,
@@ -288,7 +288,7 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         element: Layout,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<SampleMutUninit<S>, ReceiveError> {
-        let origin = "publish_subscribe::Relay::receive";
+        let origin = "publish_subscribe::Relay::translate_dynamic_size";
 
         let mut payload_bytes = self.scratch.payload.borrow_mut();
         let written = fail!(from origin,
