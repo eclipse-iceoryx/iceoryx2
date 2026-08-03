@@ -32,6 +32,7 @@ bazel_dep(name = "rules_rust", version = "0.68.1")
 bazel_dep(name = "rules_rust_bindgen", version = "0.68.1")
 bazel_dep(name = "toolchains_llvm", version = "1.5.0")
 
+# NOTE: keep in sync with Cargo.toml and Iceoryx2Flatbuffers.cmake
 bazel_dep(name = "flatbuffers", version = "25.12.19")
 
 # LLVM for bindgen
