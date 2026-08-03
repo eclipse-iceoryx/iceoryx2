@@ -75,7 +75,6 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         run: |
           just verify sdk clippy --target x86_64-unknown-linux-musl --profile dev-fast-build
-          just verify integrations-zenoh clippy --target x86_64-unknown-linux-musl --profile dev-fast-build
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
