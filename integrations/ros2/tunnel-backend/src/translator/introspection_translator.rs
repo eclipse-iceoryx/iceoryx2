@@ -54,9 +54,9 @@ const MESSAGE: u8 = FieldType::rosidl_typesupport_introspection_c__ROS_TYPE_MESS
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TranslationError {
     /// The introspection library of the type's package failed to load.
-    Introspection,
+    FailedToLoadIntrospectionLibrary,
     /// The typesupport library of the type's package failed to load.
-    TypeSupport,
+    FailedToLoadTypeSupportLibrary,
     /// The type has pointer-backed (strings, sequences) or
     /// platform-defined (long double) members and cannot be translated.
     UnsupportedType,
@@ -107,7 +107,7 @@ impl Translator for IntrospectionTranslator {
 
         let introspection = fail!(from origin,
             when typesupport::load_introspection(type_name),
-            with TranslationError::Introspection,
+            with TranslationError::FailedToLoadIntrospectionLibrary,
             "Failed to load introspection for type '{}'",
             type_name
         );
@@ -146,7 +146,7 @@ impl Translator for IntrospectionTranslator {
 
         let type_support = fail!(from origin,
             when typesupport::load(type_name),
-            with TranslationError::TypeSupport,
+            with TranslationError::FailedToLoadTypeSupportLibrary,
             "Failed to load typesupport for type '{}'",
             type_name
         );
