@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .service_builder(&"Flatbuffer/Request/Response".try_into()?)
         .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
         .open_or_create()?;
 
