@@ -139,11 +139,13 @@ inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> Sampl
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto assume_init(SampleMutUninit<S, Flatbuffer<Payload>, UserHeader>&& self, flatbuffers::Offset<Payload> root)
     -> SampleMut<S, Flatbuffer<Payload>, UserHeader> {
-    internal::PlacementDefault<UserHeader>::placement_default(self.m_sample);
     self.flatbuffer_builder().Finish(root, nullptr);
     const auto* payload_ptr = self.flatbuffer_builder().GetBufferPointer();
     auto handle = self.get_handle();
     iox2_sample_mut_finish_serialized(&handle, payload_ptr);
+    // must be the last statement since `iox2_sample_mut_finish_serialized` updates the
+    // header and user header ptrs when the flatbuffer builder has resized the memory
+    internal::PlacementDefault<UserHeader>::placement_default(self.m_sample);
 
     return std::move(self.m_sample);
 }
