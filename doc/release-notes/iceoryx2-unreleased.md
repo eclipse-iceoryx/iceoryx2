@@ -84,6 +84,7 @@
 * [#1714](https://github.com/eclipse-iceoryx/iceoryx2/issues/1714) Add locking for all file descriptor based constructs
 * [#1815](https://github.com/eclipse-iceoryx/iceoryx2/issues/1815) Set Rust minimum required version (MSRV) to version 1.89.0
 * [#1884](https://github.com/eclipse-iceoryx/iceoryx2/issues/1884) Bump `googletest` to 1.16.0
+* [#1885](https://github.com/eclipse-iceoryx/iceoryx2/issues/1885) Bump bazel modules `bazel_features` to 1.32.0, `bazel_skylib` to 1.9.2, `platforms` to 1.1.0, `rules_cc` to 0.2.17, `rules_rust`/`rules_rust_bindgen` to 0.73.0 and `toolchains_llvm` to 1.8.0 with `llvm_version` 21.1.6
 
 ### New API features
 
