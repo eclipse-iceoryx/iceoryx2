@@ -83,6 +83,7 @@
 * [#1712](https://github.com/eclipse-iceoryx/iceoryx2/issues/1712) Add iceoryx2 version to static service config
 * [#1714](https://github.com/eclipse-iceoryx/iceoryx2/issues/1714) Add locking for all file descriptor based constructs
 * [#1815](https://github.com/eclipse-iceoryx/iceoryx2/issues/1815) Set Rust minimum required version (MSRV) to version 1.89.0
+* [#1884](https://github.com/eclipse-iceoryx/iceoryx2/issues/1884) Bump `googletest` to 1.16.0
 
 ### New API features
 
