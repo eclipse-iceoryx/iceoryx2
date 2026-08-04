@@ -48,43 +48,31 @@ class ErrorReporting_test : public Test {
 TEST_F(ErrorReporting_test, panicWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "27f25cec-c815-4541-9f7d-fd2aa02474c1");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicWorks' test is disabled on Windows";
-#else
     auto f = []() { panic(); };
 
     iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
-#endif
 }
 
 TEST_F(ErrorReporting_test, panicWithLocationWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "5aca0c31-1c1b-4004-bd41-b4b400258c12");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicWithLocationWorks' test is disabled on Windows";
-#else
     auto f = []() { panic(SourceLocation::current()); };
 
     iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
-#endif
 }
 
 TEST_F(ErrorReporting_test, panicWithMessageWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "f0e44332-ea9b-4041-88f4-8155ccf7538d");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicWithMessageWorks' test is disabled on Windows";
-#else
     auto f = []() { panic(SourceLocation::current(), "message"); };
 
     iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
-#endif
 }
 
 TEST_F(ErrorReporting_test, reportNonFatalErrorWorks) {
