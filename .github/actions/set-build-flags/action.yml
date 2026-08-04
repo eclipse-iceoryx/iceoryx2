@@ -2,12 +2,12 @@ name: 'Set Build Flags'
 description: 'Sets flags for Cargo and CMake'
 inputs:
   profile:
-    description: "Build profile {debug;release}"
+    description: "Build profile {dev;dev-fast-build;release;release-fast-build}"
     required: true
 outputs:
-  cargo-build-mode:
-    description: "Cargo Build Mode"
-    value: ${{ steps.set-build-flags.outputs.cargo-build-mode}}
+  c-binding-artifacts-folder-name:
+    description: "The name of the folder with the C binding artifacts"
+    value: ${{ steps.set-build-flags.outputs.c-binding-artifacts-folder-name}}
   cmake-build-type:
     description: "CMake Build Type"
     value: ${{ steps.set-build-flags.outputs.cmake-build-type }}
@@ -21,24 +21,27 @@ runs:
         id: set-build-flags
         shell: bash
         run: |
-          CARGO_BUILD_MODE=""
+          C_BINDING_ARTIFACTS_FOLDER_NAME="${{ inputs.profile }}"
           CMAKE_BUILD_TYPE=""
           CMAKE_BUILD_CONFIG=""
-          if [[ ${{ inputs.profile }} == 'release' ]]; then
-            CARGO_BUILD_MODE="--release"
+
+          if [[ ${{ inputs.profile }} == dev ]]; then
+            C_BINDING_ARTIFACTS_FOLDER_NAME="debug"
+          fi
+
+          if [[ ${{ inputs.profile }} == release* ]]; then
             CMAKE_BUILD_TYPE="-DCMAKE_BUILD_TYPE=Release"
             CMAKE_BUILD_CONFIG="--config Release"
-            echo "cargo-build-mode=$(echo $CARGO_BUILD_MODE)" >> $GITHUB_OUTPUT
-            echo "cmake-build-type=$(echo $CMAKE_BUILD_TYPE)" >> $GITHUB_OUTPUT
-            echo "cmake-build-config=$(echo $CMAKE_BUILD_CONFIG)" >> $GITHUB_OUTPUT
           fi
-          if [[ ${{ inputs.profile }} == 'debug' ]]; then
-            CARGO_BUILD_MODE=""
+          if [[ ${{ inputs.profile }} == dev* ]]; then
             CMAKE_BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
             CMAKE_BUILD_CONFIG="--config Debug"
-            echo "cargo-build-mode=$(echo $CARGO_BUILD_MODE)" >> $GITHUB_OUTPUT
-            echo "cmake-build-type=$(echo $CMAKE_BUILD_TYPE)" >> $GITHUB_OUTPUT
-            echo "cmake-build-config=$(echo $CMAKE_BUILD_CONFIG)" >> $GITHUB_OUTPUT
           fi
-          echo "Cargo build mode: ${CARGO_BUILD_MODE}"
+
+          echo "c-binding-artifacts-folder-name=$(echo $C_BINDING_ARTIFACTS_FOLDER_NAME)" >> $GITHUB_OUTPUT
+          echo "cmake-build-type=$(echo $CMAKE_BUILD_TYPE)" >> $GITHUB_OUTPUT
+          echo "cmake-build-config=$(echo $CMAKE_BUILD_CONFIG)" >> $GITHUB_OUTPUT
+
+          echo "Cargo profile: ${{ inputs.profile }}"
           echo "CMake build type: ${CMAKE_BUILD_TYPE}"
+          echo "C binding artifacts folder name: ${C_BINDING_ARTIFACTS_FOLDER_NAME}"

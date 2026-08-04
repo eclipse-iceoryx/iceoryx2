@@ -82,20 +82,20 @@ jobs:
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           rustc --version
-          just build integrations-ros2 +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          just build integrations-ros2 +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
 
       - name: Check clippy
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just verify integrations-ros2 clippy ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+          just verify integrations-ros2 clippy --profile ${{ inputs.profile }}
 
       - name: Test workspace
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           echo "Using RMW: $RMW_IMPLEMENTATION"
-          just test integrations-ros2 +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          just test integrations-ros2 +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
 
       - name: End-to-end test workspace
         shell: bash

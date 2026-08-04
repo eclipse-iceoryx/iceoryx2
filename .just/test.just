@@ -21,6 +21,8 @@ _parse-test-args *flags:
 
     TOOLCHAIN=""
     TARGET_TRIPLET=""
+    BUILD_TYPE=""
+    PROFILE=""
     HAS_NOSTD="false"
     HAS_DOC="false"
     EXTRA_ARGS=""
@@ -32,14 +34,28 @@ _parse-test-args *flags:
             +*)         TOOLCHAIN="$1";                    shift ;;
             --target)   TARGET_TRIPLET="$2";               shift 2 ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --release)  BUILD_TYPE="--release";            shift ;;
+            --profile)  PROFILE="$2";                      shift 2 ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
             --doc)      HAS_DOC="true";                    shift ;;
-            *)          shift ;;
+            *)          echo "Invalid argument '$1'! Try 'just test --help' for options." >&2; exit 1 ;;
         esac
     done
 
+    if [[ -n "$BUILD_TYPE" && -n "$PROFILE" ]]; then
+        echo "Error: --release and --profile cannot be used together." >&2
+        exit 1
+    fi
+
+    if [[ -n "$BUILD_TYPE" ]]; then
+        PROFILE="release"
+    elif [[ -z "$PROFILE" ]]; then
+        PROFILE="dev"
+    fi
+
     echo "TOOLCHAIN='$TOOLCHAIN'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "PROFILE='$PROFILE'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "HAS_DOC='$HAS_DOC'"
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
@@ -49,41 +65,60 @@ _test-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval $(just _parse-test-args {{flags}})
+    show_help() {
+        echo "Usage: just test <scope> [flags]"
+        echo ""
+        echo "Scope:"
+        echo "  sdk                    run all tests for the main workspace"
+        echo "  integrations-zenoh     run all tests for the zenoh workspace"
+        echo "  integrations-ros2      run all tests for the ros2 workspace (requires a sourced ROS 2 env)"
+        echo "  <package>              run tests for a specific package"
+        echo ""
+        echo "Flags:"
+        echo "  +<toolchain>           use a specific toolchain"
+        echo "  --target <triplet>     cross-compile for target"
+        echo "  --release              test in release mode (default: debug)"
+        echo "                         note: cannot be used in combination with --profile <profile>"
+        echo "  --profile <profile>    test with the specified cargo profile"
+        echo "                         note: cannot be used in combination with --release"
+        echo "  --no_std               test without std"
+        echo "  --doc                  run documentation tests"
+    }
+
+    PARSED_ARGS=$(just _parse-test-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
 
     case "{{what}}" in
         "")
-            echo "Usage: just test <scope> [flags]"
+            show_help
+            exit 1
+            ;;
+        -*|+*)
+            echo "Invalid argument '{{what}}'!"
             echo ""
-            echo "Scope:"
-            echo "  sdk                    run all tests for the main workspace"
-            echo "  integrations-zenoh     run all tests for the zenoh workspace"
-            echo "  integrations-ros2      run all tests for the ros2 workspace (requires a sourced ROS 2 env)"
-            echo "  <package>              run tests for a specific package"
-            echo ""
-            echo "Flags:"
-            echo "  +<toolchain>           use a specific toolchain"
-            echo "  --target <triplet>     cross-compile for target"
-            echo "  --no_std               test without std"
-            echo "  --doc                  run documentation tests"
+            show_help
+            exit 1
+            ;;
+        --help|-h)
+            show_help
             exit 1
             ;;
         sdk)
-            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         integrations-zenoh)
-            just _test-integrations-zenoh "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            just _test-integrations-zenoh "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         integrations-ros2)
-            just _test-integrations-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            just _test-integrations-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         *)
-            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
     esac
 
 [private]
-_test-sdk toolchain target_triplet has_nostd has_doc extra_args:
+_test-sdk toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -92,7 +127,7 @@ _test-sdk toolchain target_triplet has_nostd has_doc extra_args:
             echo "Error: --doc cannot be combined with --no_std" >&2
             exit 1
         fi
-        cargo {{toolchain}} test --workspace --doc {{extra_args}}
+        cargo {{toolchain}} test --workspace --profile {{profile}} --doc {{extra_args}}
         exit 0
     fi
 
@@ -115,7 +150,7 @@ _test-sdk toolchain target_triplet has_nostd has_doc extra_args:
             echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $crate..."
             echo "------------------------------------------"
 
-            if just _test-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true" "false" "{{extra_args}}"; then
+            if just _test-package "$crate" "{{toolchain}}" "{{target_triplet}}" "{{profile}}" "true" "false" "{{extra_args}}"; then
                 echo "✓ $crate PASSED"
                 PASSED=$((PASSED + 1))
                 PASSED_CRATES+=("$crate")
@@ -152,11 +187,11 @@ _test-sdk toolchain target_triplet has_nostd has_doc extra_args:
             exit 1
         fi
     else
-        cargo {{toolchain}} nextest run --workspace {{extra_args}}
+        cargo {{toolchain}} nextest run --workspace --cargo-profile {{profile}} {{extra_args}}
     fi
 
 [private]
-_test-integrations-zenoh toolchain target_triplet has_nostd has_doc extra_args:
+_test-integrations-zenoh toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -168,13 +203,13 @@ _test-integrations-zenoh toolchain target_triplet has_nostd has_doc extra_args:
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations-zenoh)
 
     if [ "{{has_doc}}" = "true" ]; then
-        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}
+        cargo {{toolchain}} test --workspace --profile {{profile}} --doc $MANIFEST_ARG {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG {{extra_args}}
+        cargo {{toolchain}} nextest run --workspace --cargo-profile {{profile}} $MANIFEST_ARG {{extra_args}}
     fi
 
 [private]
-_test-integrations-ros2 toolchain target_triplet has_nostd has_doc extra_args:
+_test-integrations-ros2 toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -186,13 +221,13 @@ _test-integrations-ros2 toolchain target_triplet has_nostd has_doc extra_args:
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations-ros2)
 
     if [ "{{has_doc}}" = "true" ]; then
-        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}
+        cargo {{toolchain}} test --workspace --profile {{profile}} --doc $MANIFEST_ARG {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG {{extra_args}}
+        cargo {{toolchain}} nextest run --workspace --cargo-profile {{profile}} $MANIFEST_ARG {{extra_args}}
     fi
 
 [private]
-_test-package package toolchain target_triplet has_nostd has_doc extra_args:
+_test-package package toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -204,7 +239,7 @@ _test-package package toolchain target_triplet has_nostd has_doc extra_args:
             echo "Error: --doc cannot be combined with --no_std" >&2
             exit 1
         fi
-        cargo {{toolchain}} test --package {{package}} $MANIFEST_ARG --doc {{extra_args}}
+        cargo {{toolchain}} test --package {{package}} --profile {{profile}} $MANIFEST_ARG --doc {{extra_args}}
         exit 0
     fi
 
@@ -225,8 +260,9 @@ _test-package package toolchain target_triplet has_nostd has_doc extra_args:
                 $MANIFEST_ARG \
                 --no-default-features \
                 -Zbuild-std=core,alloc \
+                --profile {{profile}} \
                 $TARGET_ARG \
                 {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --package {{package}} $MANIFEST_ARG {{extra_args}}
+        cargo {{toolchain}} nextest run --package {{package}} --cargo-profile {{profile}} $MANIFEST_ARG {{extra_args}}
     fi

@@ -1,0 +1,17 @@
+name: CPU count
+description: Get the number of available CPU cores
+
+outputs:
+  count:
+    description: Number of available CPU cores
+    value: ${{ steps.cpu.outputs.count }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: cpu
+      shell: pwsh
+      run: |
+        $count = [System.Environment]::ProcessorCount
+        Write-Host "Available CPU cores: $count"
+        "count=$count" >> $env:GITHUB_OUTPUT

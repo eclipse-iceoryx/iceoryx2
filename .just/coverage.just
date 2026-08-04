@@ -18,8 +18,8 @@ COLOR_OFF    := "\\033[0m"
 COLOR_GREEN  := "\\033[1;32m"
 COLOR_YELLOW := "\\033[1;33m"
 
-LLVM_PROFILE_PATH := "target/debug/llvm-profile-files"
-RUST_COV_DIR      := "target/debug/rust_cov_build"
+LLVM_PROFILE_PATH := "target/dev-fast-build/llvm-profile-files"
+RUST_COV_DIR      := "target/dev-fast-build/rust_cov_build"
 CMAKE_COV_DIR     := "target/ff/cc/cmake_cov_build"
 COVERAGE_OUT_DIR  := "target/ff/coverage"
 
@@ -53,7 +53,7 @@ _parse-coverage-args *flags:
             --lcov)      HAS_LCOV="true";        shift ;;
             --detailed)  HAS_DETAILED="true";    shift ;;
             --package)   PACKAGES+=("$2");       shift 2 ;;
-            *)           shift ;;
+            *)          echo "Invalid argument '$1'! Try 'just build --help' for options." >&2; exit 1 ;;
         esac
     done
 
@@ -67,18 +67,27 @@ _coverage-dispatch action *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval "$(just _parse-coverage-args {{flags}})"
+    show_help() {
+        echo "Usage: just coverage <command> [flags]"
+        echo ""
+        echo "Commands:"
+        echo "  generate-profile                      generate coverage profile"
+        echo "  generate-report --html|--lcov         generate rendered report"
+        echo "  summarize [--detailed] [--package X]  show coverage summary"
+        echo "  clean                                 remove all coverage data"
+    }
+
+    PARSED_ARGS=$(just _parse-coverage-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
 
     case "{{action}}" in
         "")
-            echo "Usage: just coverage <command> [flags]"
-            echo ""
-            echo "Commands:"
-            echo "  generate-profile                      generate coverage profile"
-            echo "  generate-report --html|--lcov         generate rendered report"
-            echo "  summarize [--detailed] [--package X]  show coverage summary"
-            echo "  clean                                 remove all coverage data"
+            show_help
             exit 1
+            ;;
+        --help|-h)
+            show_help
+            exit 0
             ;;
         generate-profile)
             if [ "${#PACKAGES[@]}" -gt 0 ]; then
@@ -124,8 +133,15 @@ _coverage-profile-cmake:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    cmake . -B"{{CMAKE_COV_DIR}}" -DCOVERAGE=ON -DBUILD_TESTING=ON -DIOX2_FEATURE_FLATBUFFERS=ON -DCMAKE_BUILD_TYPE=Debug
-    cmake --build "{{CMAKE_COV_DIR}}" -j
+    just build iceoryx2-ffi-c --profile dev-fast-build
+    cmake -S . \
+          -B "{{CMAKE_COV_DIR}}" \
+          -DCOVERAGE=ON \
+          -DBUILD_TESTING=ON \
+          -DIOX2_FEATURE_FLATBUFFERS=ON \
+          -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/dev-fast-build \
+          -DCMAKE_BUILD_TYPE=Debug
+    cmake --build "{{CMAKE_COV_DIR}}" --parallel $(nproc)
     ctest --test-dir "{{CMAKE_COV_DIR}}" --output-on-failure
 
 [private]
@@ -143,7 +159,7 @@ _coverage-profile-rust:
         echo -e "{{COLOR_YELLOW}}no rust nightly compiler found, MC/DC coverage is not available only line coverage{{COLOR_OFF}}"
         export RUSTFLAGS="-C instrument-coverage"
     fi
-    just test sdk
+    just test sdk --profile dev-fast-build -- --all-targets
 
 # --- generate-report ---------------------------------------------------------
 
@@ -199,7 +215,7 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
     grcov \
         **/{{LLVM_PROFILE_PATH}} \
         **/**/{{LLVM_PROFILE_PATH}} \
-        --binary-path target/debug \
+        --binary-path target/dev-fast-build \
         --source-dir . \
         --output-type {{output_type}} \
         --branch \
@@ -235,7 +251,7 @@ _coverage-summarize detailed *packages:
 
     just _coverage-merge-profiles
 
-    FILES=$(find ./target/debug/deps/ -type f -executable)
+    FILES=$(find ./target/dev-fast-build/deps/ -type f -executable)
 
     IGNORE_PATTERNS=('/\.cargo/registry' '/target/')
     for pattern in {{COVERAGE_IGNORE}}; do

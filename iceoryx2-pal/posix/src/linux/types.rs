@@ -54,8 +54,17 @@ pub type siginfo_t = libc::siginfo_t;
 pub type size_t = usize;
 pub type socklen_t = libc::socklen_t;
 pub type ssize_t = isize;
+
+#[cfg(not(target_env = "musl"))]
 pub type suseconds_t = libc::suseconds_t;
+#[cfg(target_env = "musl")]
+pub type suseconds_t = i64; // changed from 32 to 64 bit with musl 1.2; libc::time_t is deprecated until libc adopts the breaking change in musl
+
+#[cfg(not(target_env = "musl"))]
 pub type time_t = libc::time_t;
+#[cfg(target_env = "musl")]
+pub type time_t = i64; // changed from 32 to 64 bit with musl 1.2; libc::time_t is deprecated until libc adopts the breaking change in musl
+
 pub type timer_t = libc::timer_t;
 pub type uchar = core::ffi::c_uchar;
 pub type uid_t = libc::uid_t;

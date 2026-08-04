@@ -28,7 +28,7 @@ _parse-lint-args *flags:
             --)      shift; EXTRA_ARGS="$*"; break ;;
             --fix)   MODE="fix";   shift ;;
             --check) MODE="check"; shift ;;
-            *)       shift ;;
+            *)       echo "Invalid argument '$1'! Try 'just lint --help' for options." >&2; exit 1 ;;
         esac
     done
 
@@ -36,13 +36,11 @@ _parse-lint-args *flags:
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
-_lint-dispatch workspace target *flags:
+_lint-dispatch what target *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval $(just _parse-lint-args {{flags}})
-
-    if [ -z "{{workspace}}" ] || [ -z "{{target}}" ]; then
+    show_help() {
         echo "Usage: just lint <workspace> <target> [flags]"
         echo ""
         echo "Workspace:"
@@ -56,13 +54,32 @@ _lint-dispatch workspace target *flags:
         echo "  markdown            markdownlint check / fix"
         echo ""
         echo "Flags:"
+        echo "  --check             check for linting issues"
         echo "  --fix               fix linting issues when possible"
-        exit 1
-    fi
+    }
+
+    PARSED_ARGS=$(just _parse-lint-args {{flags}}) || exit $?
+    eval "$PARSED_ARGS"
+
+    case "{{what}}" in
+        sdk|integrations-zenoh|integrations-ros2|all)
+            WORKSPACE="{{what}}"
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Invalid argument '{{what}}'!"
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
 
     case "{{target}}" in
-        rust)     just _lint-rust "{{workspace}}" "$MODE" "$EXTRA_ARGS" ;;
-        markdown) just _lint-markdown "{{workspace}}" "$MODE" ;;
+        rust)     just _lint-rust "$WORKSPACE" "$MODE" "$EXTRA_ARGS" ;;
+        markdown) just _lint-markdown "$WORKSPACE" "$MODE" ;;
         *)
             echo "Error: unknown target '{{target}}' (expected: rust|markdown)" >&2
             exit 1

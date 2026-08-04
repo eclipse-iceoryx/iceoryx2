@@ -91,7 +91,7 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
         -DBUILD_EXAMPLES=ON \
         -DBUILD_TESTING=ON \
         -DIOX2_FEATURE_FLATBUFFERS=ON
-    cmake --build target/ff/cc/build -j$NUM_JOBS
+    cmake --build target/ff/cc/build --parallel $NUM_JOBS
 
     # Build the Python bindings
     if [[ ${PYTHON_END_TO_END_TESTS} == true ]]; then

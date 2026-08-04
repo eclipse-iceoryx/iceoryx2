@@ -52,10 +52,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.89.0]
-        profile: ["release", "debug"]
+        profile: ["release", "dev"]
         include:
           - toolchain: stable
-            profile: "debug"
+            profile: "dev"
             os: ubuntu-24.04-arm
         exclude:
           - os: ubuntu-latest # already tested in Pull-Requests and main branch
@@ -74,7 +74,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         toolchain: [stable, 1.89.0]
-        profile: ["release", "debug"]
+        profile: ["release", "dev"]
         exclude:
           - os: ubuntu-latest # already tested in Pull-Requests and main branch
             toolchain: stable
@@ -95,10 +95,10 @@ jobs:
           - { distro: jazzy, rmw: rmw_fastrtps_cpp }
           - { distro: humble, rmw: rmw_cyclonedds_cpp }
         toolchain: [stable, 1.89.0]
-        profile: ["release", "debug"]
+        profile: ["release", "dev"]
         exclude:
           - toolchain: stable
-            profile: "debug"
+            profile: "dev"
     uses: ./.github/workflows/reuse_ros2.yml
     with:
       ros-distro: ${{ matrix.ros.distro }}
@@ -112,18 +112,18 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [beta, nightly]
-        profile: ["debug", "release"]
+        profile: ["dev", "release"]
         include:
           - toolchain: nightly
-            profile: "debug"
+            profile: "dev"
             os: ubuntu-24.04-arm
         exclude:
           - os: ubuntu-latest # Already run in Pull-Requests
             toolchain: beta
-            profile: "debug"
+            profile: "dev"
           - os: ubuntu-latest # Already run in Pull-Requests
             toolchain: nightly
-            profile: "debug"
+            profile: "dev"
     uses: ./.github/workflows/reuse_unstable.yml
     with:
       os: ${{ matrix.os }}
@@ -138,7 +138,7 @@ jobs:
       matrix:
         freebsd_version: ["15.0"]
         toolchain: ["stable"]
-        mode: ["debug"]
+        mode: ["dev"]
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1

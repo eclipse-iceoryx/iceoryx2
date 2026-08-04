@@ -14,7 +14,7 @@
 set -e
 
 RUST_TOOLCHAIN="stable"
-RUST_BUILD_TYPE_FLAG=""
+CARGO_PROFILE="dev-fast-build"
 CMAKE_BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Debug"
 BUILD_ARGS="--workspace --all-targets"
 TEST_ARGS="--workspace --all-targets --no-fail-fast"
@@ -24,7 +24,7 @@ while (( "$#" )); do
   case "$1" in
     --mode)
         if [[ "$2" == "release" ]]; then
-            RUST_BUILD_TYPE_FLAG="--release"
+            CARGO_PROFILE="release-fast-build"
             CMAKE_BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
         fi
         shift 2
@@ -94,13 +94,13 @@ echo "###################"
 echo "# Run cargo build #"
 echo "###################"
 echo "BUILD_ARGS: $BUILD_ARGS"
-cargo build $RUST_BUILD_TYPE_FLAG $BUILD_ARGS
+cargo build --profile $CARGO_PROFILE $BUILD_ARGS
 
 echo "######################"
 echo "# Run cargo nextest #"
 echo "#####################"
 echo "TEST_ARGS: $TEST_ARGS"
-cargo nextest run $RUST_BUILD_TYPE_FLAG $TEST_ARGS
+cargo nextest run --cargo-profile $CARGO_PROFILE $TEST_ARGS
 
 if [ "$CMAKE_BUILD" = true ]
 then
@@ -108,16 +108,26 @@ then
     echo "# Clean the target directory to reduce memory usage on VM #"
     echo "###########################################################"
 
-    cargo clean
+    # remove unimportant build artifacts but keep the generated lib and headers for the C binding
+    rm -rf ./target/{debug,release}/{deps,incremental}
+    rm -rf ./target/*/{debug,release}/{deps,incremental} # Cleanup subfolders for target triples
 
     echo "###########################"
     echo "# Build language bindings #"
     echo "###########################"
 
+    CPU_COUNT=$(sysctl -n hw.ncpu)
+    echo "Using $CPU_COUNT CPU cores"
+
     # Build examples only in out-of-tree, else we are running out of disk space on the VM
-    cmake -S . -B target/ff/cc/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install
-    cmake --build target/ff/cc/build
-    cmake --install target/ff/cc/build
+    cmake -S . \
+          -B target/ff/cc/build \
+          $CMAKE_BUILD_TYPE_FLAG \
+          -DBUILD_EXAMPLES=OFF \
+          -DBUILD_TESTING=ON \
+          -DRUST_BUILD_ARTIFACT_PATH=$(pwd)/target/$CARGO_PROFILE
+    cmake --build target/ff/cc/build --parallel $CPU_COUNT
+    cmake --install target/ff/cc/build --prefix target/ff/cc/install
 
     echo "##############################"
     echo "# Run language binding tests #"
@@ -132,10 +142,10 @@ then
 
     rm -rf target/ff/cc/build
     cmake -S examples/c -B target/ff/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/cc/install"
-    cmake --build target/ff/out-of-tree-c
+    cmake --build target/ff/out-of-tree-c --parallel $CPU_COUNT
     rm -rf target/ff/out-of-tree-c
 
     cmake -S examples/cxx -B target/ff/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/cc/install"
-    cmake --build target/ff/out-of-tree-cxx
+    cmake --build target/ff/out-of-tree-cxx --parallel $CPU_COUNT
     rm -rf target/ff/out-of-tree-cxx
 fi
