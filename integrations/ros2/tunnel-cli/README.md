@@ -22,5 +22,5 @@ From the repository, in a sourced shell (e.g. the development distrobox,
 see [../README.md](../README.md)):
 
 ```bash
-cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --help
+cargo run --bin iox2-tunnel-ros2 -- --help
 ```

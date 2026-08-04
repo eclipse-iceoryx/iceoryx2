@@ -21,11 +21,11 @@ Conversely, the introspection translator shares the self-contained POD structs
 generated from ROS 2 messages via shared memory. The tunnel serializes these
 to CDR at the boundary to ROS 2.
 
-See [../../README.md](../../README.md) for the build setup common to all examples.
+See [ros2/workspace/README.md](../../README.md) for the build setup common to all examples.
 
 ## Building
 
-Ensure the pre-requisites described in [../../README.md](../../README.md)
+Ensure the pre-requisites described in [ros2/workspace/README.md](../../README.md)
 are done and run, from the workspace root:
 
 ```bash
@@ -42,7 +42,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_publisher
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli
+#   cargo run --bin iox2-tunnel-ros2
 #   ros2 run demo_nodes_cpp listener
 ```
 
@@ -54,7 +54,7 @@ explicitly told about instead of mirroring the entire graph:
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_subscriber
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --topic /chatter:std_msgs/msg/String
+#   cargo run --bin iox2-tunnel-ros2 -- --topic /chatter:std_msgs/msg/String
 #   ros2 run demo_nodes_cpp talker
 ```
 
@@ -66,7 +66,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_introspection_translator_publisher
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --translator introspection
+#   cargo run --bin iox2-tunnel-ros2 -- --translator introspection
 #   ros2 topic echo /cmd_vel
 ```
 
@@ -76,7 +76,7 @@ Inbound (ROS 2 → iceoryx2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_introspection_translator_subscriber
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- \
+#   cargo run --bin iox2-tunnel-ros2 -- \
 #       --topic /cmd_vel:geometry_msgs/msg/Twist \
 #       --translator introspection
 #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
@@ -94,7 +94,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_publisher
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
+#   cargo run --bin iox2-tunnel-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
 #   ros2 run demo_nodes_cpp listener
 ```
 
@@ -104,7 +104,7 @@ Inbound (ROS 2 → iceoryx2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_subscriber
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
+#   cargo run --bin iox2-tunnel-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
 #   ros2 run demo_nodes_cpp talker
 ```
 
@@ -122,7 +122,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_introspection_translator_publisher
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- \
+#   cargo run --bin iox2-tunnel-ros2 -- \
 #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
 #       --translator introspection
 #   ros2 topic echo /cmd_vel
@@ -134,7 +134,7 @@ Inbound (ROS 2 → iceoryx2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_introspection_translator_subscriber
 # in other shells:
-#   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- \
+#   cargo run --bin iox2-tunnel-ros2 -- \
 #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
 #       --translator introspection
 #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
