@@ -26,7 +26,7 @@ def type_name() -> str:
     return "UnboundedData"
 
 
-UnboundedData.type_name = staticmethod(type_name)
+UnboundedData.type_name = staticmethod(type_name)  # type: ignore[attr-defined]
 
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -36,8 +36,8 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 # export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/python/flatbuffer_publish_subscribe
 try:
     lookup_path = os.environ["IOX2_FLATBUFFER_SCHEMA_PATH"]
-except KeyError:
-    raise RuntimeError("Please define IOX2_FLATBUFFER_SCHEMA_PATH!")
+except KeyError as exc:
+    raise RuntimeError("Please define IOX2_FLATBUFFER_SCHEMA_PATH!") from exc
 
 config = iox2.config.global_config()
 config.global_cfg.service.flatbuffer_schema_path = iox2.Path.new(lookup_path)
