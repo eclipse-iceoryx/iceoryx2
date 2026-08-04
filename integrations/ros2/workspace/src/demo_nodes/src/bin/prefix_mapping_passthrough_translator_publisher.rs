@@ -25,8 +25,8 @@
 use core::time::Duration;
 
 use cdr::{CdrLe, Infinite};
-use iceoryx2::prelude::*;
 use demo_nodes_iceoryx2::{RosHeader, StdMsgStringByte};
+use iceoryx2::prelude::*;
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
 /// `/chatter`.
@@ -59,10 +59,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         };
         let payload = cdr::serialize::<_, _, CdrLe>(&message, Infinite)?;
 
-        let mut sample = publisher.loan_slice_uninit(payload.len())?;
-        // Outgoing samples carry no origin information; the header exists
-        // so that the service type matches the bridged subscriber side.
-        *sample.user_header_mut() = RosHeader::default();
+        let sample = publisher.loan_slice_uninit(payload.len())?;
         let sample = sample.write_from_fn(|index| StdMsgStringByte(payload[index]));
         sample.send()?;
 

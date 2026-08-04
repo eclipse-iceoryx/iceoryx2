@@ -24,8 +24,8 @@
 
 use core::time::Duration;
 
-use iceoryx2::prelude::*;
 use demo_nodes_iceoryx2::{RosHeader, Twist};
+use iceoryx2::prelude::*;
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
 /// `/cmd_vel`.
@@ -52,10 +52,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         twist.0.linear.x = 0.5;
         twist.0.angular.z = (counter % 10) as f64 * 0.1;
 
-        let mut sample = publisher.loan_uninit()?;
-        // Outgoing samples carry no origin information; the header exists
-        // so that the service type matches the bridged subscriber side.
-        *sample.user_header_mut() = RosHeader::default();
+        let sample = publisher.loan_uninit()?;
         let sample = sample.write_payload(twist.clone());
         sample.send()?;
 
