@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/testing/testing_error_handler.hpp"
+
 #include "test.hpp"
 
 auto main(int argc, char* argv[]) -> int {
+    iox2::bb::testing::TestingErrorHandler::init();
+
     ::testing::InitGoogleTest(&argc, argv);
 
     return RUN_ALL_TESTS();
