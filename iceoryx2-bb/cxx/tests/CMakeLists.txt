@@ -55,9 +55,6 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/mocks/logger_mock.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/barrier.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/lifetime_and_assignment_tracker.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/testing_logger.hpp
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/testing_logger.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_a/errors.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_a/error_reporting.hpp
