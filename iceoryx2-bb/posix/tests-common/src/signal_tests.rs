@@ -81,6 +81,23 @@ pub fn register_single_handler_works() {
 }
 
 #[test]
+pub fn register_continue_handler_works() {
+    // Regression guard for #81: when `Continue` was mapped via a bindgen
+    // binding that emitted swapped SIGCONT/SIGSTOP values, registering it
+    // actually registered the uncatchable SIGSTOP and `sigaction` failed.
+    // Linux now resolves `SIGCONT` through the `libc` crate, so the signal
+    // must register and be deliverable like any other fetchable signal.
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
+
+    let test = TestFixture::new();
+    let _guard =
+        SignalHandler::register(FetchableSignal::Continue, &TestFixture::signal_callback);
+
+    Process::from_self().send_signal(Signal::Continue).ok();
+    test.verify(NonFatalFetchableSignal::Continue, 1)
+}
+
+#[test]
 pub fn register_multiple_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 

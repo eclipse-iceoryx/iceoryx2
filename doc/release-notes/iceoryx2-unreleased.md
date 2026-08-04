@@ -33,6 +33,7 @@
     conflicts when merging.
 -->
 
+* [#81](https://github.com/eclipse-iceoryx/iceoryx2/issues/81) Re-enable the `FetchableSignal::Continue` (`SIGCONT`) signal variant.
 * [#156](https://github.com/eclipse-iceoryx/iceoryx2/issues/156) Remove `fchmod`/`shm_open` macOS workarounds; route permissions through a trampoline state file.
 * [#588](https://github.com/eclipse-iceoryx/iceoryx2/issues/588) Replace deprecated `serde_yaml` dependency with `yaml_serde`.
 * [#1152](https://github.com/eclipse-iceoryx/iceoryx2/issues/1152) Fix `no_std` build of the console logger on platforms other than linux and nto.
