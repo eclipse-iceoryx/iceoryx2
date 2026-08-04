@@ -35,6 +35,7 @@ mod service_event_tests;
 mod service_publish_subscribe_flatbuffer_tests;
 mod service_publish_subscribe_tests;
 mod service_request_response_builder_tests;
+mod service_request_response_flatbuffer_tests;
 mod service_request_response_tests;
 mod service_tests;
 mod subscriber_tests;

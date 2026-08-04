@@ -36,6 +36,7 @@ pub mod service_publish_subscribe;
 pub mod service_publish_subscribe_flatbuffer;
 pub mod service_request_response;
 pub mod service_request_response_builder;
+pub mod service_request_response_flatbuffer;
 pub mod subscriber;
 pub mod waitset;
 pub mod writer;

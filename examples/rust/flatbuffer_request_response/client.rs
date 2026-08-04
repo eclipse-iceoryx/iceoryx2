@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
         .open_or_create()?;
 
-    let client = service.client_builder().create()?;
+    let _client = service.client_builder().create()?;
 
     let mut request_counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {

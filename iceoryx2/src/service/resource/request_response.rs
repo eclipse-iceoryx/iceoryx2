@@ -218,4 +218,12 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
             }
         }
     }
+
+    pub fn request_type_definition(&self) -> Option<&ServiceType::StaticStorage> {
+        self.request_type_definition.as_ref()
+    }
+
+    pub fn response_type_definition(&self) -> Option<&ServiceType::StaticStorage> {
+        self.response_type_definition.as_ref()
+    }
 }

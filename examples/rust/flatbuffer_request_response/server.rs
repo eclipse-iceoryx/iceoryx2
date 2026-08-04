@@ -50,14 +50,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
         .open_or_create()?;
 
-    let server = service.server_builder().create()?;
+    let _server = service.server_builder().create()?;
 
     coutln!("Server ready to receive requests!");
 
-    let mut counter = 0;
-    while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-    }
+    while node.wait(CYCLE_TIME).is_ok() {}
 
     coutln!("exit");
 

@@ -19,6 +19,7 @@ use iceoryx2_log::fatal_panic;
 
 use crate::config::TEST_DIRECTORY;
 use crate::directory::{Directory, DirectoryCreateError};
+use crate::file::{CreationMode, File, FileBuilder};
 use crate::permission::Permission;
 use crate::unique_system_id::UniqueSystemId;
 
@@ -49,5 +50,24 @@ pub fn generate_file_name() -> FileName {
             .as_bytes(),
     )
     .unwrap();
+    file
+}
+
+pub fn create_file_with_content(content: &str) -> File {
+    create_file_with_content_at(content, generate_file_name().as_str())
+}
+
+pub fn create_file_with_content_at(content: &str, file_name: &str) -> File {
+    let file_path = FilePath::from_path_and_file(
+        &TEST_DIRECTORY,
+        &FileName::new(file_name.as_bytes()).unwrap(),
+    )
+    .unwrap();
+    let mut file = FileBuilder::new(&file_path)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    file.acquire_ownership();
+    file.write(content.as_bytes()).unwrap();
     file
 }
