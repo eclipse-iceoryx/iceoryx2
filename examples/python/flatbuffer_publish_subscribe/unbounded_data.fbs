@@ -10,19 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(non_camel_case_types)]
+namespace Example;
 
-use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::CStrRepr;
-
-use crate::IOX2_OK;
-
-#[repr(C)]
-#[derive(Copy, Clone, CStrRepr)]
-pub enum iox2_flatbuffer_find_schema_file_error_e {
-    INVALID_TYPE_NAME_CHARACTERS = IOX2_OK as isize + 1,
-    INVALID_TYPE_NAMESPACE_CHARACTERS,
-    INVALID_ROOT_PATH,
-    BUFFER_TOO_SMALL,
-    NO_SCHEMA_FILE_FOUND,
+table Entry {
+    data_1: int32;
+    data_2: uint64;
 }
+
+table UnboundedData {
+    title: string;
+    entries: [Entry];
+}
+
+root_type UnboundedData;

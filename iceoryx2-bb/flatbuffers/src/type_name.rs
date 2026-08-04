@@ -12,11 +12,13 @@
 
 //! An iceoryx2 support library that helps to deduce type names.
 
+use iceoryx2_bb_container::string::StaticString;
+
 /// Defines a flatbuffer type name, consisting of the actual name and the namespace.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct TypeName {
-    pub name: &'static str,
-    pub namespace: &'static str,
+    pub name: StaticString<128>,
+    pub namespace: StaticString<128>,
 }
 
 impl TypeName {
@@ -39,6 +41,11 @@ impl TypeName {
             namespace = &namespace[pos + 2..];
         }
 
-        TypeName { name, namespace }
+        TypeName {
+            name: StaticString::from_str_truncated(name)
+                .expect("Type name consists only of valid UTF-8 characters."),
+            namespace: StaticString::from_str_truncated(namespace)
+                .expect("Namespace consists only of valid UTF-8 characters."),
+        }
     }
 }

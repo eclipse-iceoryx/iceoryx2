@@ -384,6 +384,7 @@ pub struct Builder<
     override_payload_type: Option<TypeDetail>,
     override_user_header_type: Option<TypeDetail>,
     flatbuffer_schema_path: Option<FilePath>,
+    type_definition_name_hint: TypeName,
     verify: Verify,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -402,6 +403,7 @@ impl<
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
             flatbuffer_schema_path: self.flatbuffer_schema_path,
+            type_definition_name_hint: self.type_definition_name_hint,
             verify: self.verify,
             _data: PhantomData,
             _user_header: PhantomData,
@@ -437,6 +439,7 @@ impl<
             override_payload_type: None,
             override_user_header_type: None,
             flatbuffer_schema_path: None,
+            type_definition_name_hint: TypeName::new::<Payload>(),
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -737,7 +740,7 @@ impl<
                         use_type_definition: self.has_flatbuffer_payload(),
                         schema_path: self.flatbuffer_schema_path,
                         shared_node: self.base.shared_node.clone(),
-                        type_name: TypeName::new::<Payload>(),
+                        type_name: self.type_definition_name_hint,
                     },
                 )
             },
@@ -769,7 +772,7 @@ impl<
                         use_type_definition: self.has_flatbuffer_payload(),
                         schema_path: self.flatbuffer_schema_path,
                         shared_node: self.base.shared_node.clone(),
-                        type_name: TypeName::new::<Payload>(),
+                        type_name: self.type_definition_name_hint,
                     },
                 )
             },
@@ -816,6 +819,12 @@ impl<
 impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<[CustomPayloadMarker], UserHeader, ServiceType>
 {
+    #[doc(hidden)]
+    pub fn __internal_type_definition_name_hint(mut self, value: &TypeName) -> Self {
+        self.type_definition_name_hint = *value;
+        self
+    }
+
     #[doc(hidden)]
     pub unsafe fn __internal_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
         self.flatbuffer_schema_path = Some(*path);

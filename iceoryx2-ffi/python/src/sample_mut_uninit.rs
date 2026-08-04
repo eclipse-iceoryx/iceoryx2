@@ -17,6 +17,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
+    error::AllocationGrowError,
     header_publish_subscribe::HeaderPublishSubscribe,
     parc::Parc,
     sample_mut::{SampleMut, SampleMutType},
@@ -80,6 +81,99 @@ impl SampleMutUninit {
     }
 
     #[getter]
+    pub fn __available_payload_memory(&self) -> usize {
+        match &*self.value.lock() {
+            SampleMutUninitType::Ipc(Some(v)) => v.__internal_available_payload_memory(),
+            SampleMutUninitType::Local(Some(v)) => v.__internal_available_payload_memory(),
+            _ => fatal_panic!(from "SampleMutUninit::__available_payload_memory()",
+                "Accessing a released sample."),
+        }
+    }
+
+    pub fn __assume_init_flatbuffer(
+        &self,
+        buffer_ptr: usize,
+        buffer_len: usize,
+        payload_offset: usize,
+    ) -> PyResult<SampleMut> {
+        let payload_ptr = (buffer_ptr + payload_offset) as *const u8;
+        let payload_len = buffer_len - payload_offset;
+        match &mut *self.value.lock() {
+            SampleMutUninitType::Ipc(v) => {
+                let mut sample = v.take().unwrap();
+                let mut memory_buffer = sample.__internal_create_resizable_memory_builder();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                sample.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(SampleMut {
+                    value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
+            }
+            SampleMutUninitType::Local(v) => {
+                let mut sample = v.take().unwrap();
+                let mut memory_buffer = sample.__internal_create_resizable_memory_builder();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                sample.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(SampleMut {
+                    value: Parc::new(SampleMutType::Local(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
+            }
+        }
+    }
+
+    pub fn __assume_init(&self) -> SampleMut {
+        match &mut *self.value.lock() {
+            SampleMutUninitType::Ipc(v) => {
+                let sample = v.take().unwrap();
+                SampleMut {
+                    value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                }
+            }
+            SampleMutUninitType::Local(v) => {
+                let sample = v.take().unwrap();
+                SampleMut {
+                    value: Parc::new(SampleMutType::Local(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                }
+            }
+        }
+    }
+
+    #[getter]
     /// Returns the `HeaderPublishSubscribe` of the `Sample`.
     pub fn header(&self) -> HeaderPublishSubscribe {
         match &*self.value.lock() {
@@ -126,31 +220,6 @@ impl SampleMutUninit {
             }
             SampleMutUninitType::Local(v) => {
                 v.take();
-            }
-        }
-    }
-
-    /// Extracts the value of the uninitialized payload and labels the `SampleMutUninit` as
-    /// initialized `SampleMut`
-    ///
-    /// After this call the `SampleMutUninit` is no longer usable!
-    pub fn assume_init(&self) -> SampleMut {
-        match &mut *self.value.lock() {
-            SampleMutUninitType::Ipc(v) => {
-                let sample = v.take().unwrap();
-                SampleMut {
-                    value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
-                    payload_type_details: self.payload_type_details.clone(),
-                    user_header_type_details: self.user_header_type_details.clone(),
-                }
-            }
-            SampleMutUninitType::Local(v) => {
-                let sample = v.take().unwrap();
-                SampleMut {
-                    value: Parc::new(SampleMutType::Local(Some(unsafe { sample.assume_init() }))),
-                    payload_type_details: self.payload_type_details.clone(),
-                    user_header_type_details: self.user_header_type_details.clone(),
-                }
             }
         }
     }

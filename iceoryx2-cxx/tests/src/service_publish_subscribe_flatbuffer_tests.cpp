@@ -537,6 +537,100 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_does_not_allocate_wh
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
+TYPED_TEST(
+    ServicePublishSubscribeFlatbufferTest,
+    publisher_with_user_header_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_power_of_two) {
+    constexpr int64_t ARRAY_SIZE = 50;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .template user_header<uint64_t>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value()
+                         .publisher_builder()
+                         .initial_reserved_memory(1)
+                         .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                         .create()
+                         .value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "i am hungry", 113, 114, ARRAY_SIZE); // NOLINT
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    initialized_sample.user_header_mut() = 5151515; // NOLINT
+    send(std::move(initialized_sample)).value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    const auto* recv_data = recv_sample_result.value()->payload_root();
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "i am hungry");
+    ASSERT_EQ(recv_data->entries()->size(), ARRAY_SIZE);
+    ASSERT_EQ(recv_sample_result.value()->user_header(), 5151515);
+    for (auto i = 0U; i < ARRAY_SIZE; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 113);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 114);
+    }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
+TYPED_TEST(
+    ServicePublishSubscribeFlatbufferTest,
+    publisher_with_user_header_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_best_fit) {
+    constexpr int64_t ARRAY_SIZE = 50;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                   .template user_header<uint64_t>()
+                   .flatbuffer_schema_path(schema_file)
+                   .create();
+    ASSERT_THAT(sut.has_value(), Eq(true));
+
+    auto publisher = sut.value()
+                         .publisher_builder()
+                         .initial_reserved_memory(1)
+                         .allocation_strategy(AllocationStrategy::BestFit)
+                         .create()
+                         .value();
+    auto subscriber = sut.value().subscriber_builder().create().value();
+
+    auto sample = publisher.loan_flatbuffer();
+    ASSERT_THAT(sample.has_value(), Eq(true));
+    auto& builder = sample->flatbuffer_builder();
+    auto unbounded_data = produce_example_data(builder, "I don't like paprika!", 158, 159, ARRAY_SIZE); // NOLINT
+    auto initialized_sample = assume_init(std::move(*sample), unbounded_data);
+    initialized_sample.user_header_mut() = 4242424; // NOLINT
+    send(std::move(initialized_sample)).value();
+
+    auto recv_sample_result = subscriber.receive();
+    ASSERT_THAT(recv_sample_result.has_value(), Eq(true));
+    ASSERT_THAT(recv_sample_result.value().has_value(), Eq(true));
+    const auto* recv_data = recv_sample_result.value()->payload_root();
+
+    ASSERT_STREQ(recv_data->title()->c_str(), "I don't like paprika!");
+    ASSERT_EQ(recv_data->entries()->size(), ARRAY_SIZE);
+    ASSERT_EQ(recv_sample_result.value()->user_header(), 4242424);
+    for (auto i = 0U; i < ARRAY_SIZE; ++i) {
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_1(), 158);
+        ASSERT_EQ(recv_data->entries()->Get(i)->data_2(), 159);
+    }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros
 TYPED_TEST(ServicePublishSubscribeFlatbufferTest, data_can_be_reconstructed_from_payload_bytes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file = this->create_schema_file(SCHEMA);

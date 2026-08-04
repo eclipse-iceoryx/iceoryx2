@@ -42,23 +42,14 @@ pacman -S flatbuffers
 apt install libflatbuffers-dev
 ```
 
-## Build
-
-Please ensure to activate `IOX2_FEATURE_FLATBUFFERS` when compiling iceoryx2.
-
-```bash
-cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DIOX2_FEATURE_FLATBUFFERS=ON
-cmake --build target/ff/cc/build
-```
-
 ## Usage
 
-The generated C++ code is already included in this example. For completeness,
+The generated Python code is already included in this example. For completeness,
 the command used to generate it is documented below:
 
 ```sh
-flatc -o examples/cxx/flatbuffer_publish_subscribe/src --cpp \
-    examples/cxx/flatbuffer_publish_subscribe/src/unbounded_data.fbs
+flatc -o examples/python/flatbuffer_publish_subscribe --python \
+    examples/python/flatbuffer_publish_subscribe/unbounded_data.fbs
 ```
 
 To observe the communication in action, open two terminals and run the following
@@ -67,15 +58,15 @@ commands.
 ### Terminal 1
 
 ```sh
-export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/cxx/flatbuffer_publish_subscribe/src"
-./target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_publisher
+export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/python/flatbuffer_publish_subscribe"
+poetry --project iceoryx2-ffi/python run python examples/python/flatbuffer_publish_subscribe/subscriber.py
 ```
 
 ### Terminal 2
 
 ```sh
-export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/cxx/flatbuffer_publish_subscribe/src"
-./target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_subscriber
+export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/python/flatbuffer_publish_subscribe"
+poetry --project iceoryx2-ffi/python run python examples/python/flatbuffer_publish_subscribe/publisher.py
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

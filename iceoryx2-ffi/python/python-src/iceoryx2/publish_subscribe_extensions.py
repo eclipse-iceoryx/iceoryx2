@@ -13,13 +13,47 @@
 """Strong type safe extensions for the publish-subscribe messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar, get_args, get_origin
+from typing import Any, Type, TypeVar, get_args, get_origin, overload
+
+import flatbuffers
 
 from ._iceoryx2 import *
+from .flatbuffer import Flatbuffer
 from .slice import Slice
 from .type_name import get_type_name
 
 T = TypeVar("T", bound=ctypes.Structure)
+
+
+def payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
+    """Returns the serialized flatbuffer data as bytes."""
+    assert self.__payload_type_details is not None
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    number_of_elements = self.header.number_of_elements
+    offset = self.header.payload_offset
+    return Slice(
+        self.payload_ptr + offset,
+        number_of_elements - offset,
+        ctypes.c_uint8,
+        owner=self,
+    )
+
+
+def payload_root(self: Any) -> Any:
+    """Returns the root of the flatbuffer."""
+    assert self.__payload_type_details is not None
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    (PayloadType,) = get_args(self.__payload_type_details)
+
+    payload_bytes = self.payload_bytes()
+    view = payload_bytes.as_memory_view()
+    n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, view, 0)
+
+    data = PayloadType()
+    data.Init(view, n)
+    return data
 
 
 def payload(self: Any) -> Any:
@@ -48,17 +82,18 @@ def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSubscribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
-    if hasattr(t, "__name__"):
-        type_name = getattr(t, "__name__")
-    else:
-        origin_type = get_origin(t)
-        assert origin_type is not None
-        type_name = getattr(origin_type, "__name__")
+    type_name = ""
     type_size = 0
     type_align = 0
     type_variant = TypeVariant.FixedSize
 
-    if get_origin(t) is Slice:
+    if get_origin(t) is Flatbuffer:
+        (contained_type,) = get_args(t)
+        type_name = "iox2::Flatbuffer"
+        type_variant = TypeVariant.FixedSize
+        type_size = 1
+        type_align = 1
+    elif get_origin(t) is Slice:
         (contained_type,) = get_args(t)
         type_name = get_type_name(contained_type)
         type_variant = TypeVariant.Dynamic
@@ -72,6 +107,10 @@ def publish_subscribe(
 
     result = self.__publish_subscribe()
     result.__set_payload_type(t)
+
+    if get_origin(t) is Flatbuffer:
+        (PayloadType,) = get_args(t)
+        result = result.__type_definition_name_hint(get_type_name(PayloadType), "")
 
     return result.__payload_type_details(
         TypeDetail.new()
@@ -106,25 +145,31 @@ def set_user_header(
 
 def send_copy(self: Publisher, t: Type[T]) -> Any:
     """Sends a copy of the provided type."""
-    assert self.__payload_type_details is not None
+    assert (
+        self.__payload_type_details is not None
+        and get_origin(self.__payload_type_details) != Flatbuffer
+    )
     sample_uninit = self.loan_uninit()
 
     assert ctypes.sizeof(t) == ctypes.sizeof(sample_uninit.__payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(sample_uninit.__payload_type_details)
 
     ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
-    sample = sample_uninit.assume_init()
+    sample = sample_uninit.__assume_init()
     return sample.send()
 
 
 def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
     """Writes the provided payload into the sample."""
-    assert self.__payload_type_details is not None
+    assert (
+        self.__payload_type_details is not None
+        and get_origin(self.__payload_type_details) != Flatbuffer
+    )
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__payload_type_details)
 
     ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
-    return self.assume_init()
+    return self.__assume_init()
 
 
 def loan_uninit(self: Publisher) -> SampleMutUninit:
@@ -134,7 +179,8 @@ def loan_uninit(self: Publisher) -> SampleMutUninit:
     The user has to initialize the payload before it can be sent. On failure it returns
     `LoanError` describing the failure.
     """
-    assert not get_origin(self.__payload_type_details) is Slice
+    origin = get_origin(self.__payload_type_details)
+    assert origin not in (Slice, Flatbuffer)
 
     return self.__loan_uninit()
 
@@ -165,27 +211,135 @@ def allocation_strategy(
     self: PortFactoryPublisher, value: AllocationStrategy
 ) -> PortFactoryPublisher:
     """Defines the allocation strategy that is used when the memory is exhausted."""
-    assert get_origin(self.__payload_type_details) is Slice
+    assert (
+        get_origin(self.__payload_type_details) is Slice
+        or get_origin(self.__payload_type_details) is Flatbuffer
+    )
 
     return self.__allocation_strategy(value)
 
 
+def flatbuffer_schema_path(
+    self: ServiceBuilderPublishSubscribe, value: FilePath
+) -> PortFactoryPublisher:
+    """
+    Sets the path to the flatbuffer schema file.
+
+    If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
+    in the configured filebuffer schema paths defined in the config.
+    """
+    assert get_origin(self.__get_payload_type_details) is Flatbuffer
+
+    return self.__flatbuffer_schema_path(value)
+
+
+def initial_reserved_memory(
+    self: PortFactoryPublisher, value: int
+) -> PortFactoryPublisher:
+    """Sets the maximum initial reserved memory that the underlying allocator reserves for the flatbuffer builder."""
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    return self.__initial_max_slice_len(value)
+
+
+def loan_flatbuffer(self: Publisher) -> SampleMutUninit:
+    """Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`  with an integrated `FlatbufferBuilder`."""
+    assert get_origin(self.__payload_type_details) is Flatbuffer
+
+    # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
+    # in python not zero-copy and completely resides on the heap since they do not have
+    # an API to provide a custom allocator.
+    #
+    # When the data production is finished the sample payload is grown/resized and the
+    # serialized flatbuffer content is copied into the sample.
+    return self.__loan_slice_uninit(1)
+
+
+_sample_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
+
+
+def flatbuffer_builder(self: SampleMutUninit) -> flatbuffers.Builder:
+    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
+    key = id(self)
+    builder = _sample_mut_uninit_dict.get(key)
+    if builder is None:
+        builder = flatbuffers.Builder(self.__available_payload_memory)
+        _sample_mut_uninit_dict[key] = builder
+    return builder
+
+
+@overload
+def assume_init(self: SampleMutUninit) -> SampleMut: ...  # noqa: E704
+
+
+@overload
+def assume_init(self: SampleMutUninit, root: int) -> SampleMut: ...  # noqa: E704
+
+
+def assume_init(self: SampleMutUninit, root=None) -> SampleMut:
+    """
+    Extracts the value of the uninitialized payload and labels the `SampleMutUninit` as initialized `SampleMut`.
+
+    After this call the `SampleMutUninit` is no longer usable.
+    """
+    origin = get_origin(self.__payload_type_details)
+    assert (origin is Flatbuffer and root is not None) or (
+        origin is not Flatbuffer and root is None
+    )
+
+    if root is None:
+        return self.__assume_init()
+
+    builder = self.flatbuffer_builder()
+    builder.Finish(root)
+
+    payload_offset = builder.Head()
+    buffer_len = len(builder.Bytes)
+    base_view = (ctypes.c_ubyte * buffer_len).from_buffer(builder.Bytes)
+    buffer_ptr = ctypes.addressof(base_view)
+
+    initialized_sample = self.__assume_init_flatbuffer(
+        buffer_ptr, buffer_len, payload_offset
+    )
+    _sample_mut_uninit_dict.pop(id(self), None)
+    return initialized_sample
+
+
+_sample_mut_uninit_del_original = getattr(SampleMutUninit, "__del__", None)
+
+
+def _sample_mut_uninit_del(self: SampleMutUninit) -> None:
+    _sample_mut_uninit_dict.pop(id(self), None)
+    if _sample_mut_uninit_del_original is not None:
+        _sample_mut_uninit_del_original(self)
+
+
 PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len
 PortFactoryPublisher.allocation_strategy = allocation_strategy
+PortFactoryPublisher.initial_reserved_memory = initial_reserved_memory
 
 Publisher.send_copy = send_copy
 Publisher.loan_uninit = loan_uninit
 Publisher.loan_slice_uninit = loan_slice_uninit
+Publisher.loan_flatbuffer = loan_flatbuffer
 
 Sample.payload = payload
 Sample.user_header = user_header
+Sample.payload_bytes = payload_bytes
+Sample.payload_root = payload_root
 
 SampleMut.payload = payload
 SampleMut.user_header = user_header
+SampleMut.payload_bytes = payload_bytes
+SampleMut.payload_root = payload_root
 
 SampleMutUninit.write_payload = write_payload
 SampleMutUninit.payload = payload
 SampleMutUninit.user_header = user_header
+SampleMutUninit.flatbuffer_builder = flatbuffer_builder
+SampleMutUninit.assume_init = assume_init
+SampleMutUninit.__del__ = _sample_mut_uninit_del
 
 ServiceBuilder.publish_subscribe = publish_subscribe
 ServiceBuilderPublishSubscribe.user_header = set_user_header
+ServiceBuilderPublishSubscribe.flatbuffer_schema_path = flatbuffer_schema_path

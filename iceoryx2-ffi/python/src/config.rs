@@ -141,6 +141,25 @@ impl Service {
     }
 
     #[getter]
+    /// A list of directories where iceoryx2 will look for `.fbs` flatbuffer schemas. If no path is
+    /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
+    /// the flatbuffer schemas.
+    pub fn flatbuffer_schema_path(&self) -> Option<Path> {
+        self.0
+            .lock()
+            .global
+            .service
+            .flatbuffer_schema_path
+            .map(Path)
+    }
+
+    #[setter]
+    /// Set the directory which will be used to lookup flatbuffer schema files.
+    pub fn set_flatbuffer_schema_path(&self, value: Option<&Path>) {
+        self.0.lock().global.service.flatbuffer_schema_path = value.map(|v| v.0)
+    }
+
+    #[getter]
     /// The directory in which all service files are stored
     pub fn directory(&self) -> Path {
         Path(self.0.lock().global.service.directory)

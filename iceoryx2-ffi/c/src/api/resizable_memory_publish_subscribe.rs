@@ -162,7 +162,6 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
     new_ptr: *mut *mut u8,
 ) -> c_int {
     handle.assert_non_null();
-    let header_len = unsafe { iox2_resizable_memory_publish_subscribe_reserved_header_len(handle) };
     unsafe {
         let resizable_memory = &mut *handle.as_type();
 
@@ -172,7 +171,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .ipc
-                    .grow_downwards_with_size(new_size + header_len, in_use_front)
+                    .grow_downwards_with_size(new_size, in_use_front)
                 {
                     return e.into_c_int();
                 }
@@ -183,7 +182,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .local
-                    .grow_downwards_with_size(new_size + header_len, in_use_front)
+                    .grow_downwards_with_size(new_size, in_use_front)
                 {
                     return e.into_c_int();
                 }
@@ -233,30 +232,6 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_len(
         match resizable_memory.service_type {
             iox2_service_type_e::IPC => resizable_memory.value.as_mut().ipc.len(),
             iox2_service_type_e::LOCAL => resizable_memory.value.as_mut().local.len(),
-        }
-    }
-}
-
-/// Returns the current reserved header length of the memory that is managed by the
-/// resizable memory.
-///
-/// # Safety
-///
-/// * `handle` is valid and non-null
-///
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_reserved_header_len(
-    handle: iox2_resizable_memory_publish_subscribe_h_ref,
-) -> usize {
-    handle.assert_non_null();
-    unsafe {
-        let resizable_memory = &mut *handle.as_type();
-
-        match resizable_memory.service_type {
-            iox2_service_type_e::IPC => resizable_memory.value.as_mut().ipc.reserved_header_len(),
-            iox2_service_type_e::LOCAL => {
-                resizable_memory.value.as_mut().local.reserved_header_len()
-            }
         }
     }
 }

@@ -173,7 +173,7 @@ inline auto Sample<S, Payload, UserHeader>::payload_bytes() const -> bb::Immutab
     auto payload_offset = header().payload_offset();
     auto payload_len = header().number_of_elements();
 
-    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len);
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len - payload_offset);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

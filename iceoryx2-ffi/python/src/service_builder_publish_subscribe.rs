@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2_bb_container::string::StaticString;
+use iceoryx2_bb_flatbuffers::TypeName;
 use pyo3::prelude::*;
 
 use crate::alignment::Alignment;
@@ -19,6 +21,7 @@ use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
+use crate::file_path::FilePath;
 use crate::port_factory_publish_subscribe::{
     PortFactoryPublishSubscribe, PortFactoryPublishSubscribeType,
 };
@@ -84,6 +87,11 @@ impl ServiceBuilderPublishSubscribe {
 
     pub fn __set_user_header_type(&mut self, value: Py<PyAny>) {
         self.user_header_type_details.value = Some(value)
+    }
+
+    #[getter]
+    pub fn __get_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.payload_type_details.clone().value
     }
 
     /// Defines the payload type. To be able to connect to a `Service` the `TypeDetail` must be
@@ -256,6 +264,42 @@ impl ServiceBuilderPublishSubscribe {
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn __type_definition_name_hint(&self, name: &str, namespace: &str) -> Self {
+        let type_name = TypeName {
+            name: StaticString::from_str_truncated(name)
+                .expect("Typenames contain only valid UTF-8 characters."),
+            namespace: StaticString::from_str_truncated(namespace)
+                .expect("Namespace names contain only valid UTF-8 characters."),
+        };
+        match &self.value {
+            ServiceBuilderPublishSubscribeType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.__internal_type_definition_name_hint(&type_name);
+                self.clone_ipc(this)
+            }
+            ServiceBuilderPublishSubscribeType::Local(v) => {
+                let this = v.clone();
+                let this = this.__internal_type_definition_name_hint(&type_name);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn __flatbuffer_schema_path(&self, path: &FilePath) -> Self {
+        match &self.value {
+            ServiceBuilderPublishSubscribeType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_flatbuffer_schema_path(&path.0) };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderPublishSubscribeType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_flatbuffer_schema_path(&path.0) };
                 self.clone_local(this)
             }
         }

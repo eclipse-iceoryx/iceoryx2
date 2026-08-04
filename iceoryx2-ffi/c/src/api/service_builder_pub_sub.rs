@@ -27,9 +27,11 @@ use iceoryx2::service::builder::publish_subscribe::{
 };
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary_traits::AsCStr;
+use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_ffi_macros::CStrRepr;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{fatal_panic, warn};
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -1145,6 +1147,83 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_config(
         match node.service_type {
             iox2_service_type_e::IPC => node.value.as_ref().ipc.pub_sub.__internal_config(),
             iox2_service_type_e::LOCAL => node.value.as_ref().local.pub_sub.__internal_config(),
+        }
+    }
+}
+
+/// Sets the type definition name hint. This enables the type definition auto-lookup.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+/// * `name` - Pointer to a valid string literal
+/// * `name_len` - The length of the name
+/// * `namespace` - Pointer to a valid string literal
+/// * `namespace_len` - The length of the namespace
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_type_definition_name_hint(
+    service_builder_handle: iox2_service_builder_pub_sub_h_ref,
+    name: *const c_char,
+    name_len: c_size_t,
+    namespace: *const c_char,
+    namespace_len: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+    debug_assert!(!name.is_null());
+    debug_assert!(!namespace.is_null());
+
+    let name_bytes = unsafe { core::slice::from_raw_parts(name.cast(), name_len) };
+    let namespace_bytes = unsafe { core::slice::from_raw_parts(namespace.cast(), namespace_len) };
+
+    let type_name = TypeName {
+        name: match StaticString::from_bytes(name_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "Unable to set type definition name hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
+                );
+                return;
+            }
+        },
+        namespace: match StaticString::from_bytes(namespace_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "Unable to set type definition namespace hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
+                );
+                return;
+            }
+        },
+    };
+
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.__internal_type_definition_name_hint(&type_name),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.__internal_type_definition_name_hint(&type_name),
+                ));
+            }
         }
     }
 }

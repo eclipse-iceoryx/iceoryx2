@@ -287,7 +287,12 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
         let payload_ptr = self.chunk.payload_ptr();
         let payload_len = self.header().number_of_elements() as usize;
 
-        unsafe { core::slice::from_raw_parts(payload_ptr.add(payload_offset), payload_len) }
+        unsafe {
+            core::slice::from_raw_parts(
+                payload_ptr.add(payload_offset),
+                payload_len - payload_offset,
+            )
+        }
     }
 
     /// Returns the root of the flatbuffer.

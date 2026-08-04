@@ -1450,6 +1450,9 @@ name = "iceoryx2-ffi-python"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-flatbuffers",
+ "iceoryx2-bb-posix",
  "iceoryx2-log",
  "pyo3",
  "pyo3-log",
