@@ -39,6 +39,14 @@ pub mod win32_handle_translator;
 pub mod win32_security_attributes;
 mod win32_udp_port_to_uds_name;
 
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
+use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+use iceoryx2_pal_configuration::GLOBAL_CONFIG_PATH;
+use iceoryx2_pal_configuration::ICEORYX2_ROOT_PATH;
+use iceoryx2_pal_configuration::SHARED_MEMORY_DIRECTORY;
+use iceoryx2_pal_configuration::TEMP_DIRECTORY;
+use iceoryx2_pal_configuration::TEST_DIRECTORY;
+
 pub use crate::os::posix::constants::*;
 pub use crate::os::posix::dirent::*;
 pub use crate::os::posix::errno::*;
@@ -60,3 +68,45 @@ pub use crate::os::posix::support::*;
 pub use crate::os::posix::time::*;
 pub use crate::os::posix::types::*;
 pub use crate::os::posix::unistd::*;
+
+const MISSING: u8 = 0;
+const IN_CREATION: u8 = 1;
+const CREATED: u8 = 2;
+static SYSTEM_DIRECTORIES_CREATION_STATE: AtomicU8 = AtomicU8::new(MISSING);
+
+fn create_directory(bytes: &[u8]) {
+    let s = match core::str::from_utf8(bytes) {
+        Ok(v) => v,
+        Err(e) => {
+            panic!("Non-utf-8 characters are not allowed in iceoryx2 system directories. [{e:?}]")
+        }
+    };
+    let path = std::path::PathBuf::from(s);
+    if let Err(e) = std::fs::create_dir_all(path.clone()) {
+        panic!("Unable to create iceoryx2 system directory: {path:?}. [{e:?}]");
+    }
+}
+
+pub fn create_system_directories() {
+    match SYSTEM_DIRECTORIES_CREATION_STATE.compare_exchange(
+        MISSING,
+        IN_CREATION,
+        Ordering::SeqCst,
+        Ordering::SeqCst,
+    ) {
+        Ok(_) => {
+            create_directory(GLOBAL_CONFIG_PATH);
+            create_directory(TEMP_DIRECTORY);
+            create_directory(TEST_DIRECTORY);
+            create_directory(SHARED_MEMORY_DIRECTORY);
+            create_directory(ICEORYX2_ROOT_PATH);
+            SYSTEM_DIRECTORIES_CREATION_STATE.store(CREATED, Ordering::SeqCst);
+        }
+        Err(IN_CREATION) => {
+            while SYSTEM_DIRECTORIES_CREATION_STATE.load(Ordering::SeqCst) == IN_CREATION {
+                core::hint::spin_loop();
+            }
+        }
+        Err(_) => {}
+    }
+}

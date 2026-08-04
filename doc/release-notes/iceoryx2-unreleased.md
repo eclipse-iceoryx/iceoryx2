@@ -53,6 +53,7 @@
 * [#1807](https://github.com/eclipse-iceoryx/iceoryx2/issues/1807) Fix generated C FFI strings for `UPPER_SNAKE_CASE` enum variants.
 * [#1810](https://github.com/eclipse-iceoryx/iceoryx2/issues/1810) Make mgmt segment globally accessible
 * [#1844](https://github.com/eclipse-iceoryx/iceoryx2/issues/1844) Fix `semantic_string` macro for `rust-analyzer` auto-completion
+* [#1868](https://github.com/eclipse-iceoryx/iceoryx2/issues/1868) Automatically create windows platform directories
 * [#1872](https://github.com/eclipse-iceoryx/iceoryx2/issues/1872) Register FileDescriptor pyclass with the python module
 
 ### Refactoring
