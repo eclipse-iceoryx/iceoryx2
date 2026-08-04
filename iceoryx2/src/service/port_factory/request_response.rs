@@ -46,8 +46,9 @@ use crate::{
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, ServiceState, SharedServiceState, dynamic_config, resource::NoResource,
-        service_hash::ServiceHash, service_name::ServiceName, static_config,
+        self, ServiceState, SharedServiceState, dynamic_config,
+        resource::request_response::RequestResponseResources, service_hash::ServiceHash,
+        service_name::ServiceName, static_config,
     },
 };
 use alloc::sync::Arc;
@@ -71,7 +72,7 @@ pub struct PortFactory<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: SharedServiceState<Service, NoResource>,
+    pub(crate) service: SharedServiceState<Service, RequestResponseResources<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -189,7 +190,7 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, RequestResponseResources<Service>>) -> Self {
         Self {
             service: SharedServiceState {
                 state: Arc::new(service),

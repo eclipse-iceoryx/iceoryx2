@@ -15,9 +15,12 @@ use core::marker::PhantomData;
 
 use alloc::format;
 
+use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::TypeName;
+use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
@@ -27,7 +30,11 @@ use crate::service::builder::{
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
-use crate::service::resource::NoResource;
+use crate::service::resource::ServiceResource;
+use crate::service::resource::request_response::{
+    RequestResponseResourceConfig, RequestResponseResources,
+};
+use crate::service::resource::type_definition::TypeDefinition;
 use crate::service::static_config::StaticConfig;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -35,7 +42,7 @@ use crate::service::{Service, builder, dynamic_config};
 use crate::service::{header, static_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -388,6 +395,10 @@ pub struct Builder<
     override_response_payload_type: Option<TypeDetail>,
     override_request_header_type: Option<TypeDetail>,
     override_response_header_type: Option<TypeDetail>,
+    request_flatbuffer_schema_path: Option<FilePath>,
+    request_type_definition_name_hint: TypeName,
+    response_flatbuffer_schema_path: Option<FilePath>,
+    response_type_definition_name_hint: TypeName,
     verify: Verify,
 
     _request_payload: PhantomData<RequestPayload>,
@@ -413,6 +424,10 @@ impl<
             override_response_payload_type: self.override_response_payload_type,
             override_request_header_type: self.override_request_header_type,
             override_response_header_type: self.override_response_header_type,
+            request_flatbuffer_schema_path: self.request_flatbuffer_schema_path,
+            response_flatbuffer_schema_path: self.response_flatbuffer_schema_path,
+            request_type_definition_name_hint: self.request_type_definition_name_hint,
+            response_type_definition_name_hint: self.response_type_definition_name_hint,
             verify: self.verify,
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -439,11 +454,43 @@ impl<
             override_request_payload_type: None,
             override_response_header_type: None,
             override_response_payload_type: None,
+            request_flatbuffer_schema_path: None,
+            response_flatbuffer_schema_path: None,
+            request_type_definition_name_hint: TypeName::new::<RequestPayload>(),
+            response_type_definition_name_hint: TypeName::new::<ResponsePayload>(),
             verify: Verify::default(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
+        }
+    }
+
+    fn request_has_flatbuffer_payload(&self) -> bool {
+        use iceoryx2_bb_elementary_traits::type_name::TypeName;
+
+        match &self.override_request_payload_type {
+            Some(payload_type) => unsafe {
+                payload_type.type_name().as_str() == Flatbuffer::<()>::type_name()
+            },
+            None => unsafe {
+                <RequestPayload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
+                    == Flatbuffer::<()>::type_name()
+            },
+        }
+    }
+
+    fn response_has_flatbuffer_payload(&self) -> bool {
+        use iceoryx2_bb_elementary_traits::type_name::TypeName;
+
+        match &self.override_response_payload_type {
+            Some(payload_type) => unsafe {
+                payload_type.type_name().as_str() == Flatbuffer::<()>::type_name()
+            },
+            None => unsafe {
+                <ResponsePayload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
+                    == Flatbuffer::<()>::type_name()
+            },
         }
     }
 
@@ -833,7 +880,24 @@ impl<
             || self.is_service_available(msg),
             |_| Ok(()),
             generate_dynamic_config,
-            |_| Ok(NoResource),
+            |service_config| {
+                RequestResponseResources::create(
+                    service_config,
+                    &RequestResponseResourceConfig::<ServiceType> {
+                        request: TypeDefinition {
+                            use_type_definition: self.request_has_flatbuffer_payload(),
+                            schema_path: self.request_flatbuffer_schema_path,
+                            type_name: self.request_type_definition_name_hint,
+                        },
+                        response: TypeDefinition {
+                            use_type_definition: self.response_has_flatbuffer_payload(),
+                            schema_path: self.response_flatbuffer_schema_path,
+                            type_name: self.response_type_definition_name_hint,
+                        },
+                        shared_node: self.base.shared_node.clone(),
+                    },
+                )
+            },
             |_| {},
         )?;
 
@@ -861,7 +925,24 @@ impl<
             |existing_service_config| -> Result<(), RequestResponseOpenError> {
                 self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
-            |_| Ok(NoResource),
+            |service_config| {
+                RequestResponseResources::open(
+                    service_config,
+                    &RequestResponseResourceConfig::<ServiceType> {
+                        request: TypeDefinition {
+                            use_type_definition: self.request_has_flatbuffer_payload(),
+                            schema_path: self.request_flatbuffer_schema_path,
+                            type_name: self.request_type_definition_name_hint,
+                        },
+                        response: TypeDefinition {
+                            use_type_definition: self.response_has_flatbuffer_payload(),
+                            schema_path: self.response_flatbuffer_schema_path,
+                            type_name: self.response_type_definition_name_hint,
+                        },
+                        shared_node: self.base.shared_node.clone(),
+                    },
+                )
+            },
         )?;
 
         Ok(request_response::PortFactory::new(service_state))
@@ -1527,6 +1608,40 @@ impl<ServiceType: Service>
         value: &TypeDetail,
     ) -> Self {
         self.override_response_header_type = Some(*value);
+        self
+    }
+}
+
+impl<
+    RequestPayload: Debug,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+{
+    /// Sets the path to the request type flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    pub fn request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.request_flatbuffer_schema_path = Some(*path);
+        self
+    }
+}
+
+impl<
+    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<RequestPayload, RequestHeader, Flatbuffer<ResponsePayload>, ResponseHeader, ServiceType>
+{
+    /// Sets the path to the response type flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    pub fn response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.response_flatbuffer_schema_path = Some(*path);
         self
     }
 }
