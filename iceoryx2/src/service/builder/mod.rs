@@ -31,7 +31,6 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 
-use alloc::format;
 use alloc::string::String;
 use alloc::vec;
 
@@ -473,7 +472,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut verify_service_configuration: F1,
         mut open_service_resource: F2,
     ) -> Result<service::ServiceState<ServiceType, R>, ErrorType> {
-        let origin = format!("{self:?}");
         let config = self.shared_node.config();
 
         if config.global.service.cleanup_dead_nodes_on_open {
@@ -483,13 +481,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         for node in dynamic_details.nodes {
                             let node_id = *node.node_id();
                             if let NodeState::Dead(node) = node {
-                                warn!(from origin,
+                                warn!(from self,
                                     "Detected dead node {} in service {}. Trying to cleanup stale resources.",
                                     node_id, self.service_config.service_hash());
                                 if let Err(e) = node
                                     .blocking_remove_stale_resources(config.global.creation_timeout)
                                 {
-                                    warn!(from origin,
+                                    warn!(from self,
                                         "Detected dead node ({}) in service {} but failed to cleanup the resources. This might cause problems when stale port resources block the creation of new ones. [{e:?}]", node_id, self.service_config.service_hash())
                                 }
                             }
@@ -498,18 +496,18 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 }
                 Ok(None) => (),
                 Err(e) => {
-                    warn!(from origin,
+                    warn!(from self,
                         "Failed to check if the service {} contains dead nodes. [{e:?}]",
                         self.service_config.service_hash())
                 }
             };
         }
 
-        let mut adaptive_wait = fail!(from origin,
+        let mut adaptive_wait = fail!(from self,
               when AdaptiveWaitBuilder::new().strategy(iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitStrategy::FixedTicks(IO_TICK_TIME)).create(),
               with ServiceOpenError::InternalFailure.into(),
               "{msg} since the adaptive wait could not be created.");
-        let start = fail!(from origin,
+        let start = fail!(from self,
               when Time::now(),
               with ServiceOpenError::InternalFailure.into(),
               "{msg} since the current time could not be acquired.");
@@ -521,7 +519,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                 with ServiceOpenError::InternalFailure.into(),
                                 "{} since the elapsed time could not be acquired.", msg);
             if elapsed > creation_timeout {
-                fail!(from origin,
+                fail!(from self,
                       with ServiceOpenError::HangsInCreation.into(),
                       "{} since the service hangs in creation", msg);
             } else {
@@ -530,12 +528,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     Err(AdaptiveWaitError::NanosleepError(
                         NanosleepError::InterruptedBySignal(_),
                     )) => {
-                        fail!(from origin,
+                        fail!(from self,
                               with ServiceOpenError::Interrupt.into(),
                               "{} since the adaptive wait was interrupted by a signal.", msg);
                     }
                     Err(e) => {
-                        fail!(from origin,
+                        fail!(from self,
                               with ServiceOpenError::InternalFailure.into(),
                               "{} since the adaptive wait failed. [{e:?}]", msg);
                     }
