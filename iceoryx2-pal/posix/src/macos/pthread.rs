@@ -25,6 +25,8 @@ use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::strategy::rwlock::*;
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 
+use alloc::sync::Arc;
+
 #[derive(Clone, Copy)]
 struct ThreadState {
     id: u64,
@@ -290,14 +292,19 @@ struct CallbackArguments {
     start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 }
+// safe for our usage since we access only the barrier concurrently form two threads,
+// the one that spawns the new thread and the new thread itself
+unsafe impl Send for CallbackArguments {}
+unsafe impl Sync for CallbackArguments {}
 
 unsafe extern "C" fn thread_callback(args: *mut void) -> *mut void {
-    let thread = args as *mut CallbackArguments;
     unsafe {
-        let start_routine = (*thread).start_routine;
-        let arg = (*thread).arg;
-        let startup_barrier = &(*thread).startup_barrier;
-        startup_barrier.wait(|_, _| {}, |_| {});
+        let thread_args = Arc::from_raw(args as *const CallbackArguments);
+        let start_routine = thread_args.start_routine;
+        let arg = thread_args.arg;
+        thread_args.startup_barrier.wait(|_, _| {}, |_| {});
+        // drop thread args right away to prevent leaks in case a thread dies
+        drop(thread_args);
 
         start_routine(arg);
 
@@ -311,22 +318,26 @@ pub unsafe fn pthread_create(
     start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 ) -> int {
-    let mut thread_args = CallbackArguments {
+    let thread_args = Arc::new(CallbackArguments {
         startup_barrier: Barrier::new(2),
         start_routine,
         arg,
-    };
+    });
     unsafe {
+        let thread_args_spawned = Arc::into_raw(thread_args.clone());
         let result = crate::internal::pthread_create(
             thread,
             &(*attr).attr,
             Some(thread_callback),
-            (&mut thread_args as *mut CallbackArguments).cast(),
+            (thread_args_spawned as *mut CallbackArguments).cast(),
         );
         if result == 0 {
             ThreadStates::get_instance().add(*thread);
             ThreadStates::get_instance().get_mut(*thread).affinity = (*attr).affinity;
             thread_args.startup_barrier.wait(|_, _| {}, |_| {});
+        } else {
+            // the creation of the thread failed and we need to re-take ownership of the raw pointer
+            let _ = Arc::from_raw(thread_args_spawned);
         }
         result
     }
