@@ -22,7 +22,7 @@ _setup-dispatch what:
             echo "Usage: just setup <what>"
             echo ""
             echo "  all                    setup all dependencies"
-            echo "  dev-tools              setup development tools (nextest, ...)"
+            echo "  testing-dependencies   setup testing tools (nextest, ...)"
             echo "  script-dependencies    setup just script dependencies"
             echo "  ros2-workspace         prepare the colcon workspace for the ros2 examples"
             exit 1
@@ -150,13 +150,6 @@ _setup-testing-dependencies:
         _install_cargo_nextest
     fi
 
-# Colcon workspace the ROS 2 examples live in, alongside the generated
-# message crates they depend on. Build artifacts are placed in `target/`.
-ROS2_EXAMPLE_WORKSPACE := INTEGRATIONS_ROS2_DIR / "workspace"
-ROS2_EXAMPLE_BUILD_BASE := justfile_directory() / "target" / "ros2" / "build"
-ROS2_EXAMPLE_INSTALL_BASE := justfile_directory() / "target" / "ros2" / "install"
-ROS2_EXAMPLE_PACKAGE := "demo_nodes_iceoryx2"
-
 [private]
 _setup-ros2-workspace:
     #!/usr/bin/env bash
@@ -172,7 +165,7 @@ _setup-ros2-workspace:
     just _setup-ros2-example-message-crates
     just _setup-ros2-example-package
 
-    echo "✓ ros2 example workspace built at {{ROS2_EXAMPLE_INSTALL_BASE}}"
+    echo "✓ ros2 example workspace built at {{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}"
 
 # Installs the cargo-aware colcon build tools.
 [private]
@@ -203,13 +196,13 @@ _setup-ros2-example-message-crates:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    REPOS="{{ROS2_EXAMPLE_WORKSPACE}}/${ROS_DISTRO}.repos"
+    REPOS="{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}/${ROS_DISTRO}.repos"
     if [ ! -f "${REPOS}" ]; then
         echo "Error: no repository set for '${ROS_DISTRO}' at ${REPOS}" >&2
         exit 1
     fi
 
-    cd "{{ROS2_EXAMPLE_WORKSPACE}}"
+    cd "{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}"
     vcs import --skip-existing src < "${REPOS}"
 
     just _setup-ros2-colcon-build "--packages-up-to std_msgs geometry_msgs rosidl_generator_rs"
@@ -219,9 +212,11 @@ _setup-ros2-example-package:
     #!/usr/bin/env bash
     set -eo pipefail
 
-    source "{{ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash"
+    PACKAGE="demo_nodes_iceoryx2"
 
-    just _setup-ros2-colcon-build "--packages-select {{ROS2_EXAMPLE_PACKAGE}}"
+    source "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash"
+
+    just _setup-ros2-colcon-build "--packages-select ${PACKAGE}"
 
 # Runs colcon from the workspace root, which is also where colcon-ros-cargo
 # writes the `.cargo/config.toml` to patch the message crate dependencies.
@@ -231,8 +226,8 @@ _setup-ros2-colcon-build *args:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    cd "{{ROS2_EXAMPLE_WORKSPACE}}"
+    cd "{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}"
     colcon build \
-        --build-base "{{ROS2_EXAMPLE_BUILD_BASE}}" \
-        --install-base "{{ROS2_EXAMPLE_INSTALL_BASE}}" \
+        --build-base "{{INTEGRATIONS_ROS2_EXAMPLE_BUILD_BASE}}" \
+        --install-base "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}" \
         {{args}}

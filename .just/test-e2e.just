@@ -67,8 +67,8 @@ _test-e2e-integrations-ros2-examples:
         exit 1
     fi
 
-    if [ ! -f "{{ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash" ]; then
-        echo "Error: no built example workspace at {{ROS2_EXAMPLE_INSTALL_BASE}}" >&2
+    if [ ! -f "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash" ]; then
+        echo "Error: no built example workspace at {{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}" >&2
         echo "  Build it first: just setup ros2-workspace" >&2
         exit 1
     fi
@@ -78,9 +78,9 @@ _test-e2e-integrations-ros2-examples:
 
     # Puts the example nodes on the path of `ros2 run`, so the tests themselves
     # stay free of any workspace knowledge.
-    source "{{ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash"
+    source "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash"
 
-    just _test-e2e-run-tests "{{ROS2_EXAMPLE_WORKSPACE}}"
+    just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}"
 
 # Lists every `*.exp` under `root`
 [private]
