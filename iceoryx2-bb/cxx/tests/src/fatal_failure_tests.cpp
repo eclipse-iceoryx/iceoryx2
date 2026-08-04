@@ -12,34 +12,33 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/detail/assertions.hpp"
-#include "iox2/legacy/detail/hoofs_error_reporting.hpp"
-#include "iox2/legacy/testing/fatal_failure.hpp"
+#include "iox2/bb/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace {
 using namespace ::testing;
-using namespace ::iox2::legacy::testing;
+using namespace ::iox2::bb::testing;
 
 TEST(FatalFailure, UsingExpectFatalFailureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "26393210-9738-462f-9d35-dbd53fbae9d2");
 
-#if defined _WIN32
+#ifdef _WIN32
     GTEST_SKIP() << "The 'UsingExpectFatalFailureWorks' test is disabled on Windows";
 #else
-    auto hasFatalFailure =
-        IOX2_EXPECT_FATAL_FAILURE([&] { IOX2_ENFORCE(false, ""); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    auto has_fatal_failure = IOX2_TESTING_EXPECT_FATAL_FAILURE([&]() -> auto { IOX2_ENFORCE(false, ""); },
+                                                               iox2::legacy::er::ENFORCE_VIOLATION);
 
-    EXPECT_TRUE(hasFatalFailure);
+    EXPECT_TRUE(has_fatal_failure);
 #endif
 }
 
 TEST(FatalFailure, UsingExpectNoFatalFailureWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "80bf8050-bfaa-4482-b69c-d0c80699bd4b");
 
-    auto hasNoFatalFailure = IOX2_EXPECT_NO_FATAL_FAILURE([&] { });
+    auto has_no_fatal_failure = IOX2_TESTING_EXPECT_NO_FATAL_FAILURE([&]() -> auto { });
 
-    EXPECT_TRUE(hasNoFatalFailure);
+    EXPECT_TRUE(has_no_fatal_failure);
 }
 } // namespace

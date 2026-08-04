@@ -15,14 +15,14 @@
 #include "iox2/legacy/detail/hoofs_error_reporting.hpp"
 #include "iox2/legacy/expected.hpp"
 
-#include "iox2/legacy/testing/fatal_failure.hpp"
+#include "iox2/bb/testing/fatal_failure.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 using namespace ::testing;
 using namespace ::iox2::legacy;
-using namespace ::iox2::legacy::testing;
+using namespace ::iox2::bb::testing;
 
 namespace {
 class MockCallables {
@@ -698,7 +698,7 @@ TEST_F(expected_test, AccessingValueOfLValueExpectedWhichContainsErrorWithArrowO
 #else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { IOX2_DISCARD_RESULT(sut->m_a); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { IOX2_DISCARD_RESULT(sut->m_a); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -711,7 +711,7 @@ TEST_F(expected_test, AccessingValueOfConstLValueExpectedWhichContainsErrorWithA
 #else
     const expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { IOX2_DISCARD_RESULT(sut->m_a); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { IOX2_DISCARD_RESULT(sut->m_a); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -724,7 +724,7 @@ TEST_F(expected_test, AccessingValueOfLValueExpectedWhichContainsErrorWithDerefO
 #else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { *sut; }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { *sut; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -737,7 +737,7 @@ TEST_F(expected_test, AccessingValueOfConstLValueExpectedWhichContainsErrorWithD
 #else
     const expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { *sut; }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { *sut; }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -750,7 +750,7 @@ TEST_F(expected_test, AccessingValueOfLValueExpectedWhichContainsErrorLeadsToErr
 #else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -763,7 +763,7 @@ TEST_F(expected_test, AccessingValueOfConstLValueExpectedWhichContainsErrorLeads
 #else
     const expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { sut.value(); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -776,7 +776,7 @@ TEST_F(expected_test, AccessingValueOfRValueExpectedWhichContainsErrorLeadsToErr
 #else
     expected<TestClass, TestError> sut = err(TestError::ERROR1);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { std::move(sut).value(); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { std::move(sut).value(); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -790,7 +790,7 @@ TEST_F(expected_test, AccessingErrorOfLValueExpectedWhichContainsValueLeadsToErr
     constexpr int VALID_VALUE { 42 };
     expected<TestClass, TestError> sut = ok<TestClass>(VALID_VALUE, VALID_VALUE);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { sut.error(); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { sut.error(); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -804,7 +804,7 @@ TEST_F(expected_test, AccessingErrorOfConstLValueExpectedWhichContainsValueLeads
     constexpr int VALID_VALUE { 42 };
     const expected<TestClass, TestError> sut = ok<TestClass>(VALID_VALUE, VALID_VALUE);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { sut.error(); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { sut.error(); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 
@@ -818,7 +818,7 @@ TEST_F(expected_test, AccessingErrorOfRValueExpectedWhichContainsValueLeadsToErr
     constexpr int VALID_VALUE { 42 };
     expected<TestClass, TestError> sut = ok<TestClass>(VALID_VALUE, VALID_VALUE);
 
-    IOX2_EXPECT_FATAL_FAILURE([&] { std::move(sut).error(); }, iox2::legacy::er::ENFORCE_VIOLATION);
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&] { std::move(sut).error(); }, iox2::legacy::er::ENFORCE_VIOLATION);
 #endif
 }
 

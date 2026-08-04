@@ -20,14 +20,14 @@
 #include "module_b/error_reporting.hpp"
 
 // simplifies checking for errors during test execution
-#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
+#include "iox2/bb/testing/testing_support.hpp"
 
 #include <iostream>
 
 namespace {
 using namespace ::testing;
 using namespace iox2::legacy::er;
-using namespace iox2::legacy::testing;
+using namespace iox2::bb::testing;
 
 using MyErrorA = module_a::errors::Error;
 using MyCodeA = module_a::errors::Code;
@@ -52,7 +52,7 @@ TEST_F(ErrorReportingMacroApi_test, panicWithoutMessage) {
 #else
     auto f = []() { IOX2_PANIC(""); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
 #endif
@@ -66,7 +66,7 @@ TEST_F(ErrorReportingMacroApi_test, panicWithMessage) {
 #else
     auto f = []() { IOX2_PANIC("message"); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
 #endif
@@ -76,7 +76,7 @@ TEST_F(ErrorReportingMacroApi_test, reportNonFatal) {
     ::testing::Test::RecordProperty("TEST_ID", "408a30b5-2764-4792-a5c6-97bff74f8902");
     auto f = []() { IOX2_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_NO_PANIC(); // but also not OK as there is an error!
     IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
@@ -90,7 +90,7 @@ TEST_F(ErrorReportingMacroApi_test, reportFatal) {
 #else
     auto f = []() { IOX2_REPORT_FATAL(MyCodeA::OutOfBounds); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
@@ -101,7 +101,7 @@ TEST_F(ErrorReportingMacroApi_test, reportConditionalError) {
     ::testing::Test::RecordProperty("TEST_ID", "d95fe843-5e1b-422f-bd15-a791b639b43e");
     auto f = []() { IOX2_REPORT_IF(true, MyCodeA::OutOfBounds, RUNTIME_ERROR); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
 }
@@ -114,7 +114,7 @@ TEST_F(ErrorReportingMacroApi_test, reportConditionalFatalError) {
 #else
     auto f = []() { IOX2_REPORT_FATAL_IF(true, MyCodeA::OutOfMemory); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfMemory);
@@ -125,7 +125,7 @@ TEST_F(ErrorReportingMacroApi_test, reportConditionalNoError) {
     ::testing::Test::RecordProperty("TEST_ID", "9d9d6464-4586-4382-8d5f-38f3795af791");
     auto f = []() { IOX2_REPORT_IF(false, MyCodeA::Unknown, RUNTIME_ERROR); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_OK();
 }
@@ -134,7 +134,7 @@ TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionSatisfied) {
     ::testing::Test::RecordProperty("TEST_ID", "3c684878-20f8-426f-bb8b-7576b567d04f");
     auto f = []() { IOX2_ENFORCE(true, ""); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_OK();
 }
@@ -147,7 +147,7 @@ TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionViolate) {
 #else
     auto f = []() { IOX2_ENFORCE(false, ""); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
@@ -158,7 +158,7 @@ TEST_F(ErrorReportingMacroApi_test, checkAssertConditionSatisfied) {
     ::testing::Test::RecordProperty("TEST_ID", "a76ce780-3387-4ae8-8e4c-c96bdb8aa753");
     auto f = [](int x) { IOX2_ASSERT(x > 0, ""); };
 
-    runInTestThread([&]() { f(1); });
+    run_in_test_thread([&]() { f(1); });
 
     IOX2_TESTING_EXPECT_OK();
 }
@@ -171,7 +171,7 @@ TEST_F(ErrorReportingMacroApi_test, checkAssertConditionNotSatisfied) {
 #else
     auto f = [](int x) { IOX2_ASSERT(x > 0, ""); };
 
-    runInTestThread([&]() { f(0); });
+    run_in_test_thread([&]() { f(0); });
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
@@ -186,7 +186,7 @@ TEST_F(ErrorReportingMacroApi_test, checkEnforceConditionNotSatisfiedWithMessage
 #else
     auto f = [](int x) { IOX2_ENFORCE(x > 0, "some message"); };
 
-    runInTestThread([&]() { f(0); });
+    run_in_test_thread([&]() { f(0); });
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
@@ -201,7 +201,7 @@ TEST_F(ErrorReportingMacroApi_test, checkAssertNotSatisfiedWithMessage) {
 #else
     auto f = [](int x) { IOX2_ASSERT(x > 0, "some message"); };
 
-    runInTestThread([&]() { f(0); });
+    run_in_test_thread([&]() { f(0); });
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
@@ -215,7 +215,7 @@ TEST_F(ErrorReportingMacroApi_test, reportErrorsFromDifferentModules) {
         IOX2_REPORT(MyCodeB::OutOfMemory, RUNTIME_ERROR);
     };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_NO_PANIC();
     IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
@@ -226,14 +226,14 @@ TEST_F(ErrorReportingMacroApi_test, distinguishErrorsFromDifferentModules) {
     ::testing::Test::RecordProperty("TEST_ID", "f9547051-2ff7-477b-8144-e58995ff8366");
     auto f = []() { IOX2_REPORT(MyCodeA::OutOfBounds, RUNTIME_ERROR); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     // these two are equivalent
     IOX2_TESTING_EXPECT_ERROR(MyCodeA::OutOfBounds);
-    EXPECT_TRUE(hasError(MyCodeA::OutOfBounds));
+    EXPECT_TRUE(has_error(MyCodeA::OutOfBounds));
 
     // note that the below fails due to different enums (the errors are not the same)
-    EXPECT_FALSE(hasError(MyCodeB::OutOfBounds));
+    EXPECT_FALSE(has_error(MyCodeB::OutOfBounds));
 }
 
 TEST_F(ErrorReportingMacroApi_test, reportErrorsAndViolations) {
@@ -248,7 +248,7 @@ TEST_F(ErrorReportingMacroApi_test, reportErrorsAndViolations) {
         IOX2_ENFORCE(false, "");
     };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
     IOX2_TESTING_EXPECT_VIOLATION();
@@ -265,7 +265,7 @@ TEST_F(ErrorReportingMacroApi_test, panicAtUnreachableCode) {
 #else
     auto f = []() { IOX2_UNREACHABLE(); };
 
-    runInTestThread(f);
+    run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
 #endif
