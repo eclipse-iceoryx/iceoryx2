@@ -4,7 +4,7 @@
     <name>iceoryx2_cxx</name>
     <version>0.9.999</version>
     <description>iceoryx2 with c/c++ bindings</description>
-    <maintainer email="iceoryx-oss-support@ekxide.io">ekxide developers</maintainer>
+    <maintainer email="oss@ekxide.io">ekxide developers</maintainer>
     <license>Apache 2.0</license>
     <license>MIT</license>
     <url type="bugtracker">https://github.com/eclipse-iceoryx/iceoryx2/issues</url>
