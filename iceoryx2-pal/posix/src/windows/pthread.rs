@@ -296,8 +296,8 @@ struct CallbackArguments {
     start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 }
-
-// safe for our usage since we access only the barrier from both threads
+// safe for our usage since we access only the barrier concurrently form two threads,
+// the one that spawns the new thread and the new thread itself
 unsafe impl Send for CallbackArguments {}
 unsafe impl Sync for CallbackArguments {}
 
