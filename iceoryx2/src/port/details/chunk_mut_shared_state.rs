@@ -131,7 +131,7 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         self.state.lock().port_shared_state.lock().header_len()
     }
 
-    pub fn update_chunk_pointers_to_reallocated_layout(&self, layout: Layout) -> ChunkMut {
+    pub fn update_chunk_pointers_to_reallocated_layout(&self) -> ChunkMut {
         let state = self.state.lock();
         let port_state = state.port_shared_state.lock();
 
@@ -143,10 +143,11 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         let payload = message_type_details
             .payload_ptr_from_header(header)
             .cast_mut();
+        let header_len = message_type_details.all_headers_len();
 
         ChunkMut {
             offset: PointerOffset::from_value(state.offset_to_chunk.load(Ordering::Relaxed)),
-            layout,
+            size: state.slice_len.load(Ordering::Relaxed) + header_len,
             header,
             user_header,
             payload,

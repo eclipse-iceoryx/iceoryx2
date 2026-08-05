@@ -90,14 +90,6 @@
 //! # }
 //! ```
 
-use core::marker::PhantomData;
-use core::{fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
-
-use flatbuffers::{FlatBufferBuilder, WIPOffset};
-use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::shared_memory::ShmPointer;
-
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::{
@@ -105,6 +97,13 @@ use crate::{
     sample_mut::SampleMut,
     service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
+use core::alloc::Layout;
+use core::marker::PhantomData;
+use core::{fmt::Debug, mem::MaybeUninit};
+use flatbuffers::{FlatBufferBuilder, WIPOffset};
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
+use iceoryx2_cal::shared_memory::ShmPointer;
 
 /// The memory used inside the [`FlatBufferBuilder`].
 pub type FlatbufferMemory<Service> =
@@ -147,7 +146,7 @@ impl<
 {
     #[doc(hidden)]
     pub fn __internal_available_payload_memory(&self) -> usize {
-        self.chunk.layout().size() - self.shared_state.header_len()
+        self.chunk.size() - self.shared_state.header_len()
     }
 
     #[doc(hidden)]
@@ -159,7 +158,7 @@ impl<
 
         ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
-            .initial_layout(self.chunk.layout())
+            .initial_layout(unsafe { Layout::from_size_align_unchecked(self.chunk.size(), 1) })
             .reserved_header_len(reserved_header_len)
             .create(self.shared_state.clone())
     }
@@ -168,7 +167,7 @@ impl<
     pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8) {
         self.chunk = self
             .shared_state
-            .update_chunk_pointers_to_reallocated_layout(self.chunk.layout);
+            .update_chunk_pointers_to_reallocated_layout();
 
         let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
 
@@ -190,7 +189,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
             shared_state: ChunkMutSharedState::new(
                 publisher_shared_state,
                 chunk.to_shm_pointer(),
-                chunk.layout().size(),
+                chunk.size(),
             )
             .unwrap(),
             chunk,

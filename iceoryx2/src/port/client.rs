@@ -794,7 +794,7 @@ impl<
         Ok(RequestMutUninit {
             request: RequestMut {
                 ptr,
-                sample_size: chunk.layout().size(),
+                sample_size: chunk.size(),
                 channel_id,
                 offset_to_chunk: chunk.offset,
                 client_shared_state: self.client_shared_state.clone(),
@@ -1080,7 +1080,7 @@ impl<
         Ok(RequestMutUninit {
             request: RequestMut {
                 ptr,
-                sample_size: chunk.layout().size(),
+                sample_size: chunk.size(),
                 channel_id,
                 offset_to_chunk: chunk.offset,
                 client_shared_state: self.client_shared_state.clone(),

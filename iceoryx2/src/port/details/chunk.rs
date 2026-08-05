@@ -10,11 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::alloc::Layout;
-
-use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
-
 use crate::service::static_config::message_type_details::MessageTypeDetails;
+use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -40,7 +37,7 @@ pub struct ChunkMut {
     pub(crate) header: *mut u8,
     pub(crate) user_header: *mut u8,
     pub(crate) payload: *mut u8,
-    pub(crate) layout: Layout,
+    pub(crate) size: usize,
 }
 
 impl ChunkMut {
@@ -58,12 +55,7 @@ impl ChunkMut {
                 .cast_mut(),
             header: shm_pointer.data_ptr,
             offset: shm_pointer.offset,
-            layout: unsafe {
-                Layout::from_size_align_unchecked(
-                    size,
-                    message_type_details.sample_layout(1).align(),
-                )
-            },
+            size,
         }
     }
 
@@ -102,7 +94,7 @@ impl ChunkMut {
         }
     }
 
-    pub fn layout(&self) -> Layout {
-        self.layout
+    pub fn size(&self) -> usize {
+        self.size
     }
 }
