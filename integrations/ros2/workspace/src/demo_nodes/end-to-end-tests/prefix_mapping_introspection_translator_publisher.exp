@@ -21,7 +21,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 #### Test Setup
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-tunnel-cli 2>@1
+    --bin iox2-tunnel-ros2 2>@1
 
 #### Test
 
@@ -30,7 +30,7 @@ set timeout 30
 # The example publishes on `ros2://topics/cmd_vel`, which the tunnel maps to
 # the ROS 2 topic `/cmd_vel` by the name prefix without further configuration.
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-tunnel-cli -- --translator introspection
+    --bin iox2-tunnel-ros2 -- --translator introspection
 set id_tunnel $spawn_id
 expect_output_from $id_tunnel "Local Discovery via Tracker"
 

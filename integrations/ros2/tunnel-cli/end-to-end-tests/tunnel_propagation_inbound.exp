@@ -29,14 +29,14 @@ set HELLO_CDR "00 01 00 00 06 00 00 00 68 65 6c 6c 6f 00"
 
 exec cargo build --bin iox2-service 2>@1
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-tunnel-cli 2>@1
+    --bin iox2-tunnel-ros2 2>@1
 
 #### Test
 
 set timeout 30
 
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-tunnel-cli -- \
+    --bin iox2-tunnel-ros2 -- \
     --topic /chatter:std_msgs/msg/String
 set id_tunnel $spawn_id
 expect_output_from $id_tunnel "Local Discovery via Tracker"

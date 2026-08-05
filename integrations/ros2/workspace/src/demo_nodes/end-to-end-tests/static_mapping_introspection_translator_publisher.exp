@@ -23,7 +23,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_cmdvel.toml
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-tunnel-cli 2>@1
+    --bin iox2-tunnel-ros2 2>@1
 
 #### Test
 
@@ -33,7 +33,7 @@ set timeout 30
 # `/cmd_vel`, kept separate from the chatter mapping because the introspection
 # translator admits fixed-size types only.
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-tunnel-cli -- \
+    --bin iox2-tunnel-ros2 -- \
     --static-mapping ${MAPPING} \
     --translator introspection
 set id_tunnel $spawn_id

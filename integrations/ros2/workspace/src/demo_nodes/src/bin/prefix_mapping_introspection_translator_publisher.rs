@@ -18,7 +18,7 @@
 //! ```bash
 //! ros2 run demo_nodes_iceoryx2 prefix_mapping_introspection_translator_publisher
 //! # in other shells:
-//! #   cargo run -p iceoryx2-integrations-ros2-tunnel-cli -- --translator introspection
+//! #   cargo run --bin iox2-tunnel-ros2 -- --translator introspection
 //! #   ros2 topic echo /cmd_vel
 //! ```
 
