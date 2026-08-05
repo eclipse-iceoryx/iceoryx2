@@ -37,7 +37,7 @@ expect_output_from $id_tunnel "Local Discovery via Tracker"
 spawn ros2 run demo_nodes_iceoryx2 \
     prefix_mapping_introspection_translator_publisher
 set id_publisher $spawn_id
-expect_output_from $id_publisher "sent:"
+expect_output_from $id_publisher "send:"
 
 spawn ros2 topic echo /cmd_vel
 set id_echo $spawn_id

@@ -61,9 +61,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         let sample = publisher.loan_slice_uninit(payload.len())?;
         let sample = sample.write_from_fn(|index| StdMsgStringByte(payload[index]));
-        sample.send()?;
 
-        coutln!("sent: \"{}\" ({} bytes)", message.data, payload.len());
+        coutln!("send: \"{}\" ({} bytes)", message.data, payload.len());
+        sample.send()?;
         counter += 1;
     }
 

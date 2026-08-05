@@ -48,15 +48,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 1u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        let mut twist = Twist::default();
+        let mut sample = publisher.loan()?;
+
+        let twist = sample.payload_mut();
         twist.0.linear.x = 0.5;
         twist.0.angular.z = (counter % 10) as f64 * 0.1;
 
-        let sample = publisher.loan_uninit()?;
-        let sample = sample.write_payload(twist.clone());
+        coutln!("send: {:?}", sample.payload());
         sample.send()?;
-
-        coutln!("sent: {:?}", twist);
         counter += 1;
     }
 
