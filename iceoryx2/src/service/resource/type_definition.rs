@@ -10,8 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
+extern crate alloc;
 
+use crate::service::{
+    builder::{ServiceCreateError, ServiceOpenError},
+    resource::RemoveStaleResourcesError,
+};
+use alloc::string::ToString;
+use alloc::vec;
+use core::time::Duration;
 use iceoryx2_bb_flatbuffers::{FindSchemaFileError, TypeName, find_best_fitting_schema_file};
 use iceoryx2_bb_posix::file::{AccessMode, FileBuilder, FileOpenError, FileReadError};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
@@ -26,11 +33,6 @@ use iceoryx2_cal::{
     },
 };
 use iceoryx2_log::{fail, fatal_panic};
-
-use crate::service::{
-    builder::{ServiceCreateError, ServiceOpenError},
-    resource::RemoveStaleResourcesError,
-};
 
 enum SchemaPathError {
     NoFlatbufferSchemaSearchPathConfigured,
