@@ -198,9 +198,7 @@ macro_rules! define_signals {
 
 define_signals! {
   fetchable:
-    //TODO: https://github.com/eclipse-iceoryx/iceoryx2/issues/81
-    //  comment in Continue again when the bindgen bug is fixed
-    //Continue = posix::SIGCONT,
+    Continue = posix::SIGCONT,
     Abort = posix::SIGABRT,
     Interrupt = posix::SIGINT,
     TerminalQuit = posix::SIGQUIT,
