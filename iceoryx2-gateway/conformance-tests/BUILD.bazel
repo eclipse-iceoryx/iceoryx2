@@ -20,7 +20,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-gateway",
+    name = "iceoryx2-gateway-conformance-tests",
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [
@@ -30,10 +30,14 @@ rust_library(
     }),
     deps = [
         "//iceoryx2-services/common:iceoryx2-services-common",
-        "//iceoryx2-services/gateway-backend:iceoryx2-gateway-backend",
+        "//iceoryx2-gateway/gateway:iceoryx2-gateway",
+        "//iceoryx2-gateway/backend:iceoryx2-gateway-backend",
         "//iceoryx2-services/discovery:iceoryx2-services-discovery",
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+    ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],
 )

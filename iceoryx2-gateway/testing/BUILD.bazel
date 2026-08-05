@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -20,7 +20,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-gateway-conformance-tests",
+    name = "iceoryx2-gateway-testing",
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [
@@ -29,15 +29,14 @@ rust_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//iceoryx2-services/common:iceoryx2-services-common",
-        "//iceoryx2-services/gateway:iceoryx2-gateway",
-        "//iceoryx2-services/gateway-backend:iceoryx2-gateway-backend",
-        "//iceoryx2-services/discovery:iceoryx2-services-discovery",
         "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-services/common:iceoryx2-services-common",
+        "//iceoryx2-gateway/backend:iceoryx2-gateway-backend",
+        "@crate_index//:postcard",
+        "@crate_index//:serde",
     ],
 )

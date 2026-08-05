@@ -335,7 +335,7 @@ jobs:
       - name: Build test docker image
         run: |
           docker build \
-            -f iceoryx2-services/gateway-host-to-host-tests/Dockerfile \
+            -f iceoryx2-gateway/host-to-host-tests/Dockerfile \
             --build-arg ENTRYPOINT_BIN=target/release/iox2-gateway \
             --build-arg BACKEND_BIN=integrations/${{ matrix.gateway }}/target/release/iox2-gateway-${{ matrix.gateway }} \
             --build-arg PINGER_BIN=target/release/gateway-host-to-host-pinger \
@@ -348,12 +348,12 @@ jobs:
           export GATEWAY_BACKEND=${{ matrix.gateway }}
 
           export PAYLOAD_TYPE=primitive
-          docker compose -f iceoryx2-services/gateway-host-to-host-tests/docker-compose.yml up \
+          docker compose -f iceoryx2-gateway/host-to-host-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 
           export PAYLOAD_TYPE=complex
-          docker compose -f iceoryx2-services/gateway-host-to-host-tests/docker-compose.yml up \
+          docker compose -f iceoryx2-gateway/host-to-host-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 

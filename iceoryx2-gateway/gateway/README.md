@@ -23,8 +23,8 @@ A custom bridging mechanism can be provided by implementing the traits in the
 `iceoryx2-gateway-backend` crate and passing the implementation when
 initializing the gateway.
 
-Ready-to-use backend implementations are available in the `iceoryx2-services/gateway-**`
-crates.
+Ready-to-use backend implementations are available in the
+`integrations/*/gateway-backend` crates.
 
 ## Usage
 
