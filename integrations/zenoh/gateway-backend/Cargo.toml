@@ -1,0 +1,33 @@
+[package]
+name = "iceoryx2-integrations-zenoh-gateway-backend"
+description = "iceoryx2-integrations: gateway backend implemented with zenoh"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[[test]]
+name = "main"
+harness = false
+
+[dependencies]
+iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-log = { workspace = true, features = ["std"] }
+iceoryx2-bb-concurrency = { workspace = true, features = ["std"] }
+iceoryx2-services-common = { workspace = true, features = ["std"] }
+iceoryx2-gateway-backend = { workspace = true, features = ["std"] }
+
+flume = { workspace = true }
+serde_json = { workspace = true }
+zenoh = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-posix = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing-macros = { workspace = true, features = ["std"] }
+iceoryx2-gateway = { workspace = true, features = ["std"] }
+iceoryx2-gateway-conformance-tests = { workspace = true, features = ["std"] }

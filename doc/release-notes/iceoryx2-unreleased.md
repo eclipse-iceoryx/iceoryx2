@@ -13,15 +13,15 @@
     conflicts when merging.
 -->
 
-* [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the tunnel to a configurable allowlist of services via `Config::services` and the `--service`/`-s` flag on `iox2 tunnel zenoh`
+* [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the gateway to a configurable allowlist of services via `Config::services` and the `--service`/`-s` flag on `iox2 gateway zenoh`
 * [#925](https://github.com/eclipse-iceoryx/iceoryx2/issues/925) Adjust event API and guarantee that events can be always delivered.
 * [#1185](https://github.com/eclipse-iceoryx/iceoryx2/issues/1185) Make history configurable per subscriber
 * [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584) Introduce `Node::force_remove_service` to remove corrupted services manually.
-* [#1544](https://github.com/eclipse-iceoryx/iceoryx2/issues/1544) Announce service removal over the tunnel to remote hosts
-* [#1616](https://github.com/eclipse-iceoryx/iceoryx2/issues/1616) Add reactive execution mode to tunnel
+* [#1544](https://github.com/eclipse-iceoryx/iceoryx2/issues/1544) Announce service removal over the gateway to remote hosts
+* [#1616](https://github.com/eclipse-iceoryx/iceoryx2/issues/1616) Add reactive execution mode to gateway
 * [#1649](https://github.com/eclipse-iceoryx/iceoryx2/issues/1649) Add `IOX2_DEFINE_TYPE_NAME` to the C++ bindings to set the cross-language type name for types that cannot carry an `IOX2_TYPE_NAME` member
 * [#1707](https://github.com/eclipse-iceoryx/iceoryx2/issues/1707) Expose `CustomHeaderMarker` and `CustomPayloadMarker` in C++ bindings
-* [#1722](https://github.com/eclipse-iceoryx/iceoryx2/issues/1722) Remove allocations in tunnel hot path
+* [#1722](https://github.com/eclipse-iceoryx/iceoryx2/issues/1722) Remove allocations in gateway hot path
 * [#1773](https://github.com/eclipse-iceoryx/iceoryx2/issues/1773) Make ports identifiable by name
 * [#1798](https://github.com/eclipse-iceoryx/iceoryx2/issues/1798) Add support for musl 1.2.x
 * [#1813](https://github.com/eclipse-iceoryx/iceoryx2/issues/1813) Add API to deliver events to specific listener only
@@ -40,7 +40,7 @@
 * [#1548](https://github.com/eclipse-iceoryx/iceoryx2/issues/1548) Fix Payload data lifetime tracking in python ffi by anchoring views to their owning Sample.
 * [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) Thread-stack-size is the same as process-stack-size on all platforms.
 * [#1695](https://github.com/eclipse-iceoryx/iceoryx2/issues/1695) Remove port_tag when stale resources of port are removed.
-* [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from tunnel conformance test crate to fix a linker error on macOS.
+* [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from gateway conformance test crate to fix a linker error on macOS.
 * [#1718](https://github.com/eclipse-iceoryx/iceoryx2/issues/1718) Protect `ProcessState` from accidental file lock release.
 * [#1737](https://github.com/eclipse-iceoryx/iceoryx2/issues/1737) Fix error log output in Windows for languages with non UTF-8 characters.
 * [#1739](https://github.com/eclipse-iceoryx/iceoryx2/issues/1739) Make sure MSVC defines __cplusplus with accurate value
@@ -80,7 +80,7 @@
 -->
 
 * [#3](https://github.com/eclipse-iceoryx/iceoryx2/issues/3) Use clang 21 in the CI
-* [#1610](https://github.com/eclipse-iceoryx/iceoryx2/issues/1610) Add `no_std` tests for tunnel
+* [#1610](https://github.com/eclipse-iceoryx/iceoryx2/issues/1610) Add `no_std` tests for gateway
 * [#1712](https://github.com/eclipse-iceoryx/iceoryx2/issues/1712) Add iceoryx2 version to static service config
 * [#1714](https://github.com/eclipse-iceoryx/iceoryx2/issues/1714) Add locking for all file descriptor based constructs
 * [#1815](https://github.com/eclipse-iceoryx/iceoryx2/issues/1815) Set Rust minimum required version (MSRV) to version 1.89.0
@@ -159,7 +159,8 @@
    }, CYCLE_TIME)?;
    ```
 
-1. The tunnel conformance create name has been shortened.
+1. The tunnel has been renamed to gateway, and its conformance test crate
+   renamed accordingly.
 
     ```rust
     // old
@@ -174,7 +175,7 @@
     // new
     instantiate_conformance_tests_with_module!(
         ipc,
-        iceoryx2_tunnel_conformance_tests::publish_subscribe_discovery,
+        iceoryx2_gateway_conformance_tests::publish_subscribe_discovery,
         super::Ipc,
         super::TestBackend<super::Ipc>,
         super::Testing

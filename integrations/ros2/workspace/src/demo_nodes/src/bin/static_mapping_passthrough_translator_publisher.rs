@@ -12,13 +12,13 @@
 
 //! Publishes `std_msgs/msg/String` as CDR bytes on the service statically
 //! mapped to the ROS 2 topic `/chatter`. The application does its own
-//! (de)serialization; the tunnel's passthrough translator forwards the
+//! (de)serialization; the gateway's passthrough translator forwards the
 //! bytes unmodified.
 //!
 //! ```bash
 //! ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_publisher
 //! # in other shells:
-//! #   cargo run --bin iox2-tunnel-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
+//! #   cargo run --bin iox2-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
 //! #   ros2 topic echo /chatter
 //! ```
 

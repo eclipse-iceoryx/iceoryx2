@@ -4,7 +4,7 @@
 
 [package]
 name = "demo_nodes_iceoryx2"
-description = "Native iceoryx2 example nodes bridged to ROS 2 by the tunnel"
+description = "Native iceoryx2 example nodes bridged to ROS 2 by the gateway"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false

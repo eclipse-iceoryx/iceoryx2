@@ -12,13 +12,13 @@
 
 //! Publishes `geometry_msgs/msg/Twist` on the service prefix-mapped to the
 //! ROS 2 topic `/cmd_vel`. The application handles only the native
-//! [`Twist`] struct; the tunnel's plain-struct translator does the CDR
+//! [`Twist`] struct; the gateway's plain-struct translator does the CDR
 //! (de)serialization.
 //!
 //! ```bash
 //! ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_publisher
 //! # in other shells:
-//! #   cargo run --bin iox2-tunnel-ros2 -- --translator PlainStruct
+//! #   cargo run --bin iox2-gateway-ros2 -- --translator PlainStruct
 //! #   ros2 topic echo /cmd_vel
 //! ```
 

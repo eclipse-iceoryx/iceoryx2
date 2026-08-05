@@ -1558,7 +1558,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-integrations-zenoh-tunnel-backend"
+name = "iceoryx2-gateway"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-log",
+ "iceoryx2-services-common",
+ "iceoryx2-services-discovery",
+]
+
+[[package]]
+name = "iceoryx2-gateway-backend"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-gateway-conformance-tests"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-gateway",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-services-common",
+ "iceoryx2-services-discovery",
+]
+
+[[package]]
+name = "iceoryx2-integrations-zenoh-gateway-backend"
 version = "0.9.999"
 dependencies = [
  "flume 0.12.0",
@@ -1567,17 +1602,17 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
+ "iceoryx2-gateway",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-gateway-conformance-tests",
  "iceoryx2-log",
  "iceoryx2-services-common",
- "iceoryx2-services-tunnel",
- "iceoryx2-services-tunnel-backend",
- "iceoryx2-tunnel-conformance-tests",
  "serde_json",
  "zenoh",
 ]
 
 [[package]]
-name = "iceoryx2-integrations-zenoh-tunnel-cli"
+name = "iceoryx2-integrations-zenoh-gateway-cli"
 version = "0.9.999"
 dependencies = [
  "anyhow",
@@ -1586,9 +1621,9 @@ dependencies = [
  "human-panic",
  "iceoryx2",
  "iceoryx2-cli",
- "iceoryx2-integrations-zenoh-tunnel-backend",
+ "iceoryx2-gateway",
+ "iceoryx2-integrations-zenoh-gateway-backend",
  "iceoryx2-log",
- "iceoryx2-services-tunnel",
  "zenoh",
 ]
 
@@ -1669,41 +1704,6 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-services-common",
  "serde",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-log",
- "iceoryx2-services-common",
- "iceoryx2-services-discovery",
- "iceoryx2-services-tunnel-backend",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel-backend"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "serde",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-conformance-tests"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-services-common",
- "iceoryx2-services-discovery",
- "iceoryx2-services-tunnel",
- "iceoryx2-services-tunnel-backend",
 ]
 
 [[package]]

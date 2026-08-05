@@ -60,11 +60,11 @@ PACKAGE_LIST_SERVICES="
 iceoryx2-services-discovery
 "
 
-PACKAGE_LIST_TUNNEL="
-iceoryx2-services-tunnel
-iceoryx2-services-tunnel-backend
-iceoryx2-services-tunnel-host-to-host-tests
-iceoryx2-tunnel-conformance-tests
+PACKAGE_LIST_GATEWAY="
+iceoryx2-gateway
+iceoryx2-gateway-backend
+iceoryx2-gateway-host-to-host-tests
+iceoryx2-gateway-conformance-tests
 "
 
 PACKAGE_LIST_USERLAND="
@@ -103,7 +103,7 @@ print_help() {
     echo -e "    ${COLOR_BLUE}bindings${COLOR_OFF}          All bindings"
     echo -e "    ${COLOR_BLUE}binding-macros${COLOR_OFF}    The macros from bindings"
     echo -e "    ${COLOR_BLUE}services${COLOR_OFF}          All services"
-    echo -e "    ${COLOR_BLUE}tunnels${COLOR_OFF}           All tunnels"
+    echo -e "    ${COLOR_BLUE}gateways${COLOR_OFF}           All gateways"
     echo -e "    ${COLOR_BLUE}userland${COLOR_OFF}          All of userland"
     echo -e "    ${COLOR_BLUE}cli${COLOR_OFF}               All CLI tools"
     echo -e "    ${COLOR_BLUE}examples${COLOR_OFF}          All examples"
@@ -150,8 +150,8 @@ case "$1" in
         PACKAGE_LIST=${PACKAGE_LIST_SERVICES}
         shift 1
         ;;
-    tunnels)
-        PACKAGE_LIST=${PACKAGE_LIST_TUNNEL}
+    gateways)
+        PACKAGE_LIST=${PACKAGE_LIST_GATEWAY}
         shift 1
         ;;
     userland)
