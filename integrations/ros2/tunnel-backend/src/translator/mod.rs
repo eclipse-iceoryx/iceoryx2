@@ -10,6 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod introspection_translator;
+mod plain_struct_translator;
 
-pub use introspection_translator::*;
+pub use plain_struct_translator::*;

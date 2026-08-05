@@ -10,28 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Publishes `geometry_msgs/msg/Twist` on the service prefix-mapped to the
+//! Receives `geometry_msgs/msg/Twist` from the service prefix-mapped to the
 //! ROS 2 topic `/cmd_vel`. The application handles only the native
-//! [`Twist`] struct; the tunnel's introspection translator does the CDR
+//! [`Twist`] struct; the tunnel's plain-struct translator does the CDR
 //! (de)serialization.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 prefix_mapping_introspection_translator_publisher
+//! ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
 //! # in other shells:
-//! #   cargo run --bin iox2-tunnel-ros2 -- --translator introspection
-//! #   ros2 topic echo /cmd_vel
+//! #   cargo run --bin iox2-tunnel-ros2 -- \
+//! #       --topic /cmd_vel:geometry_msgs/msg/Twist \
+//! #       --translator PlainStruct
+//! #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 //! ```
 
 use core::time::Duration;
 
-use demo_nodes_iceoryx2::{RosHeader, Twist};
 use iceoryx2::prelude::*;
+use demo_nodes_iceoryx2::{RosHeader, Twist};
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
 /// `/cmd_vel`.
 const SERVICE_NAME: &str = "ros2://topics/cmd_vel";
 
-const CYCLE_TIME: Duration = Duration::from_secs(1);
+const CYCLE_TIME: Duration = Duration::from_millis(100);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
@@ -44,19 +46,21 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .user_header::<RosHeader>()
         .open_or_create()?;
 
-    let publisher = service.publisher_builder().create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
-    let mut counter = 1u64;
+    coutln!("waiting for messages on {SERVICE_NAME}");
     while node.wait(CYCLE_TIME).is_ok() {
-        let mut sample = publisher.loan()?;
+        while let Some(sample) = subscriber.receive()? {
+            let header = sample.user_header();
 
-        let twist = sample.payload_mut();
-        twist.0.linear.x = 0.5;
-        twist.0.angular.z = (counter % 10) as f64 * 0.1;
-
-        coutln!("send: {:?}", sample.payload());
-        sample.send()?;
-        counter += 1;
+            coutln!(
+                "received: {:?} (sequence: {}, timestamp: {} ns, gid: {:02x?})",
+                sample.payload(),
+                header.sequence_number,
+                header.source_timestamp_ns,
+                header.gid
+            );
+        }
     }
 
     coutln!("exit");

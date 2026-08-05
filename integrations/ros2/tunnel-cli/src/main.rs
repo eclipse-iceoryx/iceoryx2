@@ -32,8 +32,7 @@ use iceoryx2_log::warn;
 use iceoryx2_integrations_ros2_tunnel_backend::Config as BackendConfig;
 use iceoryx2_integrations_ros2_tunnel_backend::mapping::static_mapping;
 use iceoryx2_integrations_ros2_tunnel_backend::{
-    IntrospectionTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicConfig,
-    TopicDescription,
+    PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicConfig, TopicDescription,
 };
 use iceoryx2_services_tunnel::Config as TunnelConfig;
 use iceoryx2_services_tunnel::Tunnel;
@@ -132,11 +131,11 @@ fn create_tunnel(
                 backend_config,
             )
         }
-        (cli::Mapping::Prefix, cli::Translator::Introspection) => {
+        (cli::Mapping::Prefix, cli::Translator::PlainStruct) => {
             let backend_config = BackendConfig {
                 topics: parse_topics(&cli.topics)?,
             };
-            create_tunnel_impl::<PrefixMapping, IntrospectionTranslator>(
+            create_tunnel_impl::<PrefixMapping, PlainStructTranslator>(
                 cli.reactive_backend,
                 PrefixMapping,
                 tunnel_config,
@@ -155,12 +154,12 @@ fn create_tunnel(
                 backend_config,
             )
         }
-        (cli::Mapping::Static(path), cli::Translator::Introspection) => {
+        (cli::Mapping::Static(path), cli::Translator::PlainStruct) => {
             let mapping = load_static_mapping(&path)?;
             let backend_config = BackendConfig {
                 topics: mapping.topics(),
             };
-            create_tunnel_impl::<StaticMapping, IntrospectionTranslator>(
+            create_tunnel_impl::<StaticMapping, PlainStructTranslator>(
                 cli.reactive_backend,
                 mapping,
                 tunnel_config,

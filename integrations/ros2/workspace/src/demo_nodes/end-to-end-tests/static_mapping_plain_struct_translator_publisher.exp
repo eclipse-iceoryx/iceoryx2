@@ -20,6 +20,8 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
+set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_cmdvel.toml
+
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-tunnel-ros2 2>@1
 
@@ -27,15 +29,18 @@ exec cargo build --manifest-path integrations/ros2/Cargo.toml \
 
 set timeout 30
 
-# The example publishes on `ros2://topics/cmd_vel`, which the tunnel maps to
-# the ROS 2 topic `/cmd_vel` by the name prefix without further configuration.
+# The mapping pairs the example's service `CmdVel` with the ROS 2 topic
+# `/cmd_vel`, kept separate from the chatter mapping because the plain-struct
+# translator admits fixed-size types only.
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-tunnel-ros2 -- --translator introspection
+    --bin iox2-tunnel-ros2 -- \
+    --static-mapping ${MAPPING} \
+    --translator PlainStruct
 set id_tunnel $spawn_id
 expect_output_from $id_tunnel "Local Discovery via Tracker"
 
 spawn ros2 run demo_nodes_iceoryx2 \
-    prefix_mapping_introspection_translator_publisher
+    static_mapping_plain_struct_translator_publisher
 set id_publisher $spawn_id
 expect_output_from $id_publisher "send:"
 
