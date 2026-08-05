@@ -12,6 +12,5 @@ integrated into applications with minimal effort.
 | Crate                         | Offered Services             | Description                                                        |
 | ----------------------------- | ---------------------------- | ------------------------------------------------------------------ |
 | `iceoryx2-services-discovery` | `iox2://discovery/services/` | Receive notifications when services are created, changed or removed |
-| `iceoryx2-gateway`            | -                            | Extend  `iceoryx2` communication over a network connection          |
 
 <!-- markdownlint-enable MD060 -->

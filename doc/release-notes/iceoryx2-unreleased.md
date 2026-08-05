@@ -71,6 +71,7 @@
 * [#1776](https://github.com/eclipse-iceoryx/iceoryx2/issues/1776) Rename AtomicCopy::__for_each_field() to for_each_field()
 * [#1845](https://github.com/eclipse-iceoryx/iceoryx2/issues/1845) Reduce imports for usage of the `semantic_string` macro
 * [#1853](https://github.com/eclipse-iceoryx/iceoryx2/issues/1853) Improve error message in static asserts
+* [#1891](https://github.com/eclipse-iceoryx/iceoryx2/issues/1891) Rename the tunnel to gateway and move its crates from `iceoryx2-services/` to a top-level `iceoryx2-gateway/` directory
 
 ### Workflow
 
@@ -159,8 +160,31 @@
    }, CYCLE_TIME)?;
    ```
 
-1. The tunnel has been renamed to gateway, and its conformance test crate
-   renamed accordingly.
+1. The tunnel has been renamed to gateway. The crates were renamed and moved
+   from `iceoryx2-services/` to a top-level `iceoryx2-gateway/` directory.
+
+    | old                                          | new                                           |
+    | -------------------------------------------- | --------------------------------------------- |
+    | `iceoryx2-services-tunnel`                   | `iceoryx2-gateway`                            |
+    | `iceoryx2-services-tunnel-backend`           | `iceoryx2-gateway-backend`                    |
+    | `iceoryx2-services-tunnel-testing`           | `iceoryx2-gateway-testing`                    |
+    | `iceoryx2-services-tunnel-conformance-tests` | `iceoryx2-gateway-conformance-tests`          |
+    | `iceoryx2-integrations-zenoh-tunnel-backend` | `iceoryx2-integrations-zenoh-gateway-backend` |
+    | `iceoryx2-integrations-zenoh-tunnel-cli`     | `iceoryx2-integrations-zenoh-gateway-cli`     |
+
+    ```rust
+    // old
+    use iceoryx2_services_tunnel::{Tunnel, TunnelBuilder};
+
+    let mut tunnel = Tunnel::<Service, Backend>::new().polled().create()?;
+    let services = tunnel.tunneled_services();
+
+    // new
+    use iceoryx2_gateway::{Gateway, GatewayBuilder};
+
+    let mut gateway = Gateway::<Service, Backend>::new().polled().create()?;
+    let services = gateway.bridged_services();
+    ```
 
     ```rust
     // old
@@ -180,6 +204,18 @@
         super::TestBackend<super::Ipc>,
         super::Testing
     );
+    ```
+
+    The CLI was renamed accordingly. Backend binaries are discovered by the
+    `iox2-gateway-` prefix, so a backend installed under the old
+    `iox2-tunnel-` name is no longer found and must be reinstalled.
+
+    ```console
+    # old
+    $ iox2 tunnel zenoh
+
+    # new
+    $ iox2 gateway zenoh
     ```
 
 1. `AtomicCopy::__for_each_field()` was renamed to `for_each_field()`.
