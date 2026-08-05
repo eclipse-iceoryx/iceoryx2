@@ -63,7 +63,7 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-ffi-macros                             \
     iceoryx2-ffi-python                             \
     iceoryx2-services-tunnel-testing                \
-    iceoryx2-services-tunnel-end-to-end-tests       \
+    iceoryx2-services-tunnel-host-to-host-tests     \
     iceoryx2-tunnel-conformance-tests-common        \
     iceoryx2-tunnel-conformance-tests-nostd         \
     iceoryx2-bb-trait-tests                         \

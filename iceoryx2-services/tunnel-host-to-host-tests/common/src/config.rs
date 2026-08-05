@@ -15,5 +15,5 @@ use std::time::Duration;
 #[allow(dead_code)]
 pub const TIMEOUT_DURATION: Duration = Duration::from_secs(5);
 pub const HISTORY_SIZE: usize = 10;
-pub const PING_SERVICE_NAME: &str = "tunnel-end-to-end-test/ping";
-pub const PONG_SERVICE_NAME: &str = "tunnel-end-to-end-test/pong";
+pub const PING_SERVICE_NAME: &str = "tunnel-host-to-host-test/ping";
+pub const PONG_SERVICE_NAME: &str = "tunnel-host-to-host-test/pong";

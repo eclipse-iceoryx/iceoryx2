@@ -295,7 +295,7 @@ jobs:
         run: |
           internal/scripts/ci_build_and_run_end_to_end_tests.sh
 
-  end-to-end-tests-tunnel:
+  host-to-host-tests-tunnel:
     needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -330,30 +330,30 @@ jobs:
         run: just build iceoryx2-integrations-${{ matrix.tunnel }}-tunnel-cli --release
 
       - name: Build test binaries
-        run: just build iceoryx2-services-tunnel-end-to-end-tests --release
+        run: just build iceoryx2-services-tunnel-host-to-host-tests --release
 
       - name: Build test docker image
         run: |
           docker build \
-            -f iceoryx2-services/tunnel-end-to-end-tests/Dockerfile \
+            -f iceoryx2-services/tunnel-host-to-host-tests/Dockerfile \
             --build-arg ENTRYPOINT_BIN=target/release/iox2-tunnel \
             --build-arg BACKEND_BIN=integrations/${{ matrix.tunnel }}/target/release/iox2-tunnel-${{ matrix.tunnel }} \
-            --build-arg PINGER_BIN=target/release/iceoryx2-services-tunnel-end-to-end-tests-pinger \
-            --build-arg PONGER_BIN=target/release/iceoryx2-services-tunnel-end-to-end-tests-ponger \
-            -t end-to-end-tests:${{ github.sha }} .
+            --build-arg PINGER_BIN=target/release/tunnel-host-to-host-pinger \
+            --build-arg PONGER_BIN=target/release/tunnel-host-to-host-ponger \
+            -t host-to-host-tests:${{ github.sha }} .
 
-      - name: Run end-to-end tests
+      - name: Run host-to-host tests
         run: |
           export IMAGE_TAG=${{ github.sha }}
           export TUNNEL_BACKEND=${{ matrix.tunnel }}
 
           export PAYLOAD_TYPE=primitive
-          docker compose -f iceoryx2-services/tunnel-end-to-end-tests/docker-compose.yml up \
+          docker compose -f iceoryx2-services/tunnel-host-to-host-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 
           export PAYLOAD_TYPE=complex
-          docker compose -f iceoryx2-services/tunnel-end-to-end-tests/docker-compose.yml up \
+          docker compose -f iceoryx2-services/tunnel-host-to-host-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 

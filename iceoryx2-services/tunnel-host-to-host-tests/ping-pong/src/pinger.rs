@@ -28,11 +28,11 @@ use iceoryx2::prelude::{
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_log::info;
 
-use iceoryx2_services_tunnel_end_to_end_tests::cli::*;
-use iceoryx2_services_tunnel_end_to_end_tests::config::*;
-use iceoryx2_services_tunnel_end_to_end_tests::header::CustomHeader;
-use iceoryx2_services_tunnel_end_to_end_tests::payload::*;
-use iceoryx2_services_tunnel_end_to_end_tests::testing::*;
+use iceoryx2_services_tunnel_host_to_host_tests::cli::*;
+use iceoryx2_services_tunnel_host_to_host_tests::config::*;
+use iceoryx2_services_tunnel_host_to_host_tests::header::CustomHeader;
+use iceoryx2_services_tunnel_host_to_host_tests::payload::*;
+use iceoryx2_services_tunnel_host_to_host_tests::testing::*;
 
 use clap::Parser;
 

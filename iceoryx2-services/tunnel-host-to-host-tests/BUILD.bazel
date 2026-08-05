@@ -20,7 +20,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-services-tunnel-end-to-end-tests",
+    name = "iceoryx2-services-tunnel-host-to-host-tests",
     srcs = glob(["common/src/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [
@@ -37,7 +37,7 @@ rust_library(
 )
 
 rust_binary(
-    name = "iceoryx2-services-tunnel-end-to-end-tests-pinger",
+    name = "tunnel-host-to-host-pinger",
     srcs = [
         "ping-pong/src/pinger.rs",
     ],
@@ -45,13 +45,13 @@ rust_binary(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        ":iceoryx2-services-tunnel-end-to-end-tests",
+        ":iceoryx2-services-tunnel-host-to-host-tests",
         "@crate_index//:clap",
     ],
 )
 
 rust_binary(
-    name = "iceoryx2-services-tunnel-end-to-end-tests-ponger",
+    name = "tunnel-host-to-host-ponger",
     srcs = [
         "ping-pong/src/ponger.rs",
     ],
@@ -59,7 +59,7 @@ rust_binary(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        ":iceoryx2-services-tunnel-end-to-end-tests",
+        ":iceoryx2-services-tunnel-host-to-host-tests",
         "@crate_index//:clap",
     ],
 )
