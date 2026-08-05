@@ -93,6 +93,7 @@ pub(crate) struct SampleMutInnerSharedState<Service: crate::service::Service> {
 }
 
 unsafe impl<Service: crate::service::Service> Send for SampleMutInnerSharedState<Service> {}
+
 impl<Service: crate::service::Service> Abandonable for SampleMutInnerSharedState<Service> {
     unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
         let this = unsafe { this.as_mut() };

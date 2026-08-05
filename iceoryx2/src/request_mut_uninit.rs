@@ -85,7 +85,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod chunk;
-pub mod chunk_details;
-pub mod chunk_mut_shared_state;
-pub mod data_segment;
-pub mod port_shared_state;
-pub mod receiver;
-pub mod segment_state;
-pub mod sender;
+use core::fmt::Debug;
+
+use iceoryx2_bb_elementary_traits::allocator::Grow;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::PointerOffset;
+
+pub trait PortSharedState: Abandonable + Send + Debug + Grow<ShmPointer> {
+    fn return_loan(&self, offset: PointerOffset);
+}
