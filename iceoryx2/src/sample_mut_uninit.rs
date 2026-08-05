@@ -155,7 +155,7 @@ impl<
         let allocation_strategy = self.shared_state.allocation_strategy();
         let reserved_header_len = self.shared_state.header_len();
         self.shared_state
-            .__internal_override_slice_len(self.chunk.layout().size());
+            .__internal_override_slice_len(self.__internal_available_payload_memory());
 
         ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
@@ -478,14 +478,14 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
-        underyling_slice_len: usize,
+        slice_len: usize,
     ) -> Self {
         Self {
             flatbuffer_builder: None,
             shared_state: ChunkMutSharedState::new(
                 publisher_shared_state,
                 chunk.to_shm_pointer(),
-                underyling_slice_len,
+                slice_len,
             )
             .unwrap(),
             chunk,

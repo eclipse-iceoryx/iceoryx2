@@ -321,7 +321,7 @@ impl<
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
         self.shared_state.shared_state(|publisher_shared_state| {
-            publisher_shared_state.send_sample(self.chunk.offset, self.chunk.layout().size())
+            publisher_shared_state.send_sample(self.chunk.offset(), self.chunk.layout().size())
         })
     }
 }

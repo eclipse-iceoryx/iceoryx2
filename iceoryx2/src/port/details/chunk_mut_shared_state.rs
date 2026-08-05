@@ -90,13 +90,13 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
     pub fn new(
         port_shared_state: &Service::ArcThreadSafetyPolicy<T>,
         pointer_to_chunk: ShmPointer,
-        underlying_slice_len: usize,
+        slice_len: usize,
     ) -> Result<Self, ArcSyncPolicyCreationError> {
         let state = match Service::ArcThreadSafetyPolicy::new(ChunkMutInnerSharedState {
             port_shared_state: port_shared_state.clone(),
             offset_to_chunk: AtomicU64::new(pointer_to_chunk.offset.as_value()),
             shm_raw_ptr: AtomicUsize::new(pointer_to_chunk.data_ptr as usize),
-            slice_len: AtomicUsize::new(underlying_slice_len),
+            slice_len: AtomicUsize::new(slice_len),
         }) {
             Ok(v) => v,
             Err(e) => {
