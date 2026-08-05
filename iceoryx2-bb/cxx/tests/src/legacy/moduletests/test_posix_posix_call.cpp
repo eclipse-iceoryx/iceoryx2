@@ -11,8 +11,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/testing/testing_logger.hpp"
 #include "iox2/legacy/posix_call.hpp"
-#include "iox2/legacy/testing/testing_logger.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -60,7 +60,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValue_GoodCase) {
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -81,7 +81,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValue_BadCase) {
     // we expect an error message via stderr to the console, details are not
     // verified since it depends on the target and where the source code is
     // stored
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -99,7 +99,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValue_GoodCase) {
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -120,7 +120,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValue_BadCase) {
     // we expect an error message via stderr to the console, details are not
     // verified since it depends on the target and where the source code is
     // stored
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -141,7 +141,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValueAndIgnoredErrno_Good
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -165,7 +165,7 @@ TEST_F(PosixCall_test, CallingFunctionWithSuccessReturnValueAndIgnoredErrno_BadC
     // we expect an error message via stderr to the console, details are not
     // verified since it depends on the target and where the source code is
     // stored
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -186,7 +186,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValueAndIgnoredErrno_Good
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -210,7 +210,7 @@ TEST_F(PosixCall_test, CallingFunctionWithFailureReturnValueAndIgnoredErrno_BadC
     // we expect an error message via stderr to the console, details are not
     // verified since it depends on the target and where the source code is
     // stored
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -231,7 +231,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWorks) {
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -252,7 +252,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWhereOccurringErrnoIsNotListedFails
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -273,7 +273,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWhereOccurringErrnoIsFirstInListSuc
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -295,7 +295,7 @@ TEST_F(PosixCall_test, IgnoringMultipleErrnosWhereOccurringErrnoIsLastInListSucc
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -318,7 +318,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsWorksWhenErrnoIs
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -341,7 +341,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsWorksWhenErrnoIs
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -364,7 +364,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsWorksWhenErrnoIs
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -387,7 +387,7 @@ TEST_F(PosixCall_test, IgnoringErrnosByMultipleIgnoreErrnosCallsFails) {
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -408,7 +408,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingWithNonPresentErrnoPrintsErrorMessage
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -429,7 +429,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingWithPresentErrnoDoesNotPrintErrorMess
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -450,7 +450,7 @@ TEST_F(PosixCall_test, SuppressMultipleErrnoLoggingWithNoPresentErrnoPrintsError
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -471,7 +471,7 @@ TEST_F(PosixCall_test, SuppressMultipleErrnoLoggingWithPresentErrnoDoesNotPrintE
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -494,7 +494,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingByMultipleCallsWithNonPresentErrnoPri
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -517,7 +517,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingByMultipleCallsWithPresentErrnoDoesNo
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -539,7 +539,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingOfIgnoredErrnoDoesNotPrintErrorMessag
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -561,7 +561,7 @@ TEST_F(PosixCall_test, SuppressErrnoLoggingOfNotIgnoredErrnoDoesNotPrintErrorMes
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -578,7 +578,7 @@ TEST_F(PosixCall_test, RecallingFunctionWithEintrWorks) {
     }
 
     EXPECT_THAT(eintrRepetition, Eq(0));
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -596,7 +596,7 @@ TEST_F(PosixCall_test, FunctionReturnsEINTRTooOftenResultsInFailure) {
     }
 
     EXPECT_THAT(eintrRepetition, Eq(1));
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -616,7 +616,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -636,7 +636,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -656,7 +656,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -676,7 +676,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleSuccessReturnValuesWhereGoodVa
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -696,7 +696,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -716,7 +716,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -736,7 +736,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
         EXPECT_THAT(res.error().errnum, Eq(ERRNO_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }
 
@@ -756,7 +756,7 @@ TEST_F(PosixCall_test, CallingFunctionWithMultipleFailureReturnValuesWhereFailur
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -773,7 +773,7 @@ TEST_F(PosixCall_test, ErrnoIsSetFromReturnValueWhenFunctionHandlesErrnosInRetur
         GTEST_FAIL();
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_EQ(logMessages.size(), 0); });
 }
 
@@ -790,6 +790,6 @@ TEST_F(PosixCall_test, ErrnoIsSetFromReturnValueWhenFunctionHandlesErrnosInRetur
         EXPECT_THAT(res.error().errnum, Eq(RETURN_VALUE));
     }
 
-    iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+    iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
         iox2::legacy::log::LogLevel::Error, [](const auto& logMessages) { ASSERT_GT(logMessages.size(), 0); });
 }

@@ -38,6 +38,7 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/attributes_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/expected_err_free_function_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/expected_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/fatal_failure_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/into_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/layout_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
@@ -51,20 +52,9 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/std_chrono_support_tests.cpp
     PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/error_reporting/testing_error_handler.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/error_reporting/testing_support.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/mocks/logger_mock.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/barrier.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/fatal_failure.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/fatal_failure.inl
     ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/lifetime_and_assignment_tracker.hpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/include/iox2/legacy/testing/testing_logger.hpp
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/error_reporting/testing_error_handler.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/error_reporting/testing_support.cpp
-    ${PROJECT_SOURCE_DIR}/src/legacy/testing/testing_logger.cpp
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/legacy/mocktests/test_fatal_failure.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_a/errors.hpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/error_reporting/module_a/error_reporting.hpp

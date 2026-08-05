@@ -19,8 +19,8 @@
 
 #include <gtest/gtest.h>
 
+#include "iox2/bb/testing/testing_support.hpp"
 #include "iox2/legacy/error_reporting/custom/error_reporting.hpp"
-#include "iox2/legacy/testing/error_reporting/testing_support.hpp"
 
 #include "module_a/errors.hpp"
 
@@ -48,43 +48,31 @@ class ErrorReporting_test : public Test {
 TEST_F(ErrorReporting_test, panicWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "27f25cec-c815-4541-9f7d-fd2aa02474c1");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicWorks' test is disabled on Windows";
-#else
     auto f = []() { panic(); };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
-#endif
 }
 
 TEST_F(ErrorReporting_test, panicWithLocationWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "5aca0c31-1c1b-4004-bd41-b4b400258c12");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicWithLocationWorks' test is disabled on Windows";
-#else
     auto f = []() { panic(SourceLocation::current()); };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
-#endif
 }
 
 TEST_F(ErrorReporting_test, panicWithMessageWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "f0e44332-ea9b-4041-88f4-8155ccf7538d");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicWithMessageWorks' test is disabled on Windows";
-#else
     auto f = []() { panic(SourceLocation::current(), "message"); };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_PANIC();
-#endif
 }
 
 TEST_F(ErrorReporting_test, reportNonFatalErrorWorks) {
@@ -95,7 +83,7 @@ TEST_F(ErrorReporting_test, reportNonFatalErrorWorks) {
         report(SourceLocation::current(), RUNTIME_ERROR, ERROR_MODULE, STRINGIFIED_CONDITION);
     };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_NO_PANIC();
     IOX2_TESTING_EXPECT_ERROR(ERROR_CODE);
@@ -109,7 +97,7 @@ TEST_F(ErrorReporting_test, reportFatalErrorWorks) {
         report(SourceLocation::current(), FATAL, ERROR_MODULE, STRINGIFIED_CONDITION);
     };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     // panic is not required at this level as we cannot trust the custom API to enforce it
     // While we could also call panic in the custom API, there should only be one decison point
@@ -126,7 +114,7 @@ TEST_F(ErrorReporting_test, reportAssertViolatonWorks) {
         report(SourceLocation::current(), ASSERT_VIOLATION, v, STRINGIFIED_CONDITION);
     };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
 }
@@ -141,7 +129,7 @@ TEST_F(ErrorReporting_test, reportAssertViolatonWithMessageWorks) {
         report(SourceLocation::current(), ASSERT_VIOLATION, v, STRINGIFIED_CONDITION, "message");
     };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_ASSERT_VIOLATION();
 }
@@ -155,7 +143,7 @@ TEST_F(ErrorReporting_test, reportEnforceViolatonWorks) {
         report(SourceLocation::current(), ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION);
     };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
 }
@@ -170,7 +158,7 @@ TEST_F(ErrorReporting_test, reportEnforceViolatonWithMessageWorks) {
         report(SourceLocation::current(), ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION, "message");
     };
 
-    iox2::legacy::testing::runInTestThread(f);
+    iox2::bb::testing::run_in_test_thread(f);
 
     IOX2_TESTING_EXPECT_ENFORCE_VIOLATION();
 }

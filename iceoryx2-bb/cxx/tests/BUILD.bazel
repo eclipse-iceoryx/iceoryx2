@@ -22,7 +22,6 @@ cc_test(
     srcs = glob([
         "src/**/*.cpp",
         "src/**/*.hpp",
-        "src/**/*.inl",
         ]),
     includes = [
         "src",

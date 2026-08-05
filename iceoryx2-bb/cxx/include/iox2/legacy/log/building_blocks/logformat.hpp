@@ -127,6 +127,7 @@ static constexpr const char* LOG_FORMAT_OCT { internal::logFormatOct<T>() };
 } // namespace legacy
 } // namespace iox2
 
+//NOLINTNEXTLINE(misc-header-include-cycle) false positive; cycle broken by include guards
 #include "iox2/legacy/detail/log/building_blocks/logformat.inl"
 
 #endif // IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGFORMAT_HPP

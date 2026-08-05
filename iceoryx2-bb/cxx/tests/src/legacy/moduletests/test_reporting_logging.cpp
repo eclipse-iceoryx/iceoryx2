@@ -15,7 +15,7 @@
 #include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/logging.hpp"
 
-#include "iox2/legacy/testing/testing_logger.hpp"
+#include "iox2/bb/testing/testing_logger.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -43,22 +43,22 @@ void testLogLevelThreshold(const iox2::legacy::log::LogLevel loggerLogLevel,
     };
 
     for (const auto& logEntryLogLevel : logEntryLogLevels) {
-        if (!iox2::legacy::testing::TestingLogger::doesLoggerSupportLogLevel(logEntryLogLevel.value)) {
+        if (!iox2::bb::testing::TestingLogger::does_logger_support_log_level(logEntryLogLevel.value)) {
             continue;
         }
 
-        dynamic_cast<iox2::legacy::testing::TestingLogger&>(iox2::legacy::log::Logger::get()).clearLogBuffer();
+        dynamic_cast<iox2::bb::testing::TestingLogger&>(iox2::legacy::log::Logger::get()).clear_log_buffer();
         loggerCall(logEntryLogLevel.value);
 
         if (logEntryLogLevel.value <= loggerLogLevel) {
-            ASSERT_THAT(iox2::legacy::testing::TestingLogger::getNumberOfLogMessages(), Eq(1U));
-            iox2::legacy::testing::TestingLogger::checkLogMessageIfLogLevelIsSupported(
+            ASSERT_THAT(iox2::bb::testing::TestingLogger::get_number_of_log_messages(), Eq(1U));
+            iox2::bb::testing::TestingLogger::check_log_message_if_log_level_is_supported(
                 logEntryLogLevel.value, [&](const auto& logMessages) {
                     const auto& logMessage = logMessages.back();
                     EXPECT_THAT(logMessage.find(logEntryLogLevel.string), Ne(std::string::npos));
                 });
         } else {
-            ASSERT_THAT(iox2::legacy::testing::TestingLogger::getNumberOfLogMessages(), Eq(0U));
+            ASSERT_THAT(iox2::bb::testing::TestingLogger::get_number_of_log_messages(), Eq(0U));
         }
     }
 }

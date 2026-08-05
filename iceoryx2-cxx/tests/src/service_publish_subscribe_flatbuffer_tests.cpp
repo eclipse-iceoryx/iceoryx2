@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/iceoryx2_cxx_deployment.hpp"
+#include "iox2/legacy/error_reporting/error_kind.hpp"
 
 #if IOX2_FEATURE_FLATBUFFERS
 
@@ -18,6 +19,7 @@
 #include "iox2/bb/file_name.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/bb/static_string.hpp"
+#include "iox2/bb/testing/fatal_failure.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/testing.hpp"
@@ -533,7 +535,8 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, publisher_does_not_allocate_wh
     // This should fail because Static allocation strategy does not allow reallocations
     // and the initial_reserved_memory is set to 1, which is too small for a string.
     // flatbuffers handles out-of-memory from the allocator with an assertion.
-    EXPECT_DEATH(builder.CreateString("oh no more memory"), "");
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&]() -> auto { builder.CreateString("oh no more memory"); },
+                                      iox2::legacy::er::ASSERT_VIOLATION);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity) complexity created due to the expansion of the assert macros

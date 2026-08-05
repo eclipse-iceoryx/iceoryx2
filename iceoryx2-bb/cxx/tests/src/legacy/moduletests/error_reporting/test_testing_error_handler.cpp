@@ -17,7 +17,7 @@
 #include <gtest/gtest.h>
 
 #include "iox2/bb/detail/source_location.hpp"
-#include "iox2/legacy/testing/error_reporting/testing_error_handler.hpp"
+#include "iox2/bb/testing/testing_error_handler.hpp"
 
 // NOLINTNEXTLINE(hicpp-deprecated-headers) required to work on some platforms
 #include <setjmp.h>
@@ -27,7 +27,7 @@ namespace {
 using namespace ::testing;
 using namespace iox2::bb::detail;
 using namespace iox2::legacy::er;
-using namespace iox2::legacy::testing;
+using namespace iox2::bb::testing;
 using iox2::legacy::er::ErrorDescriptor;
 
 constexpr ErrorCode CODE1 { 73 };
@@ -47,24 +47,24 @@ class TestingErrorHandler_test : public Test {
 
     TestingErrorHandler sut;
 
-    bool hasPanicked() const {
-        return sut.hasPanicked();
+    bool has_panicked() const {
+        return sut.has_panicked();
     }
 
-    bool hasError() const {
-        return sut.hasError();
+    bool has_error() const {
+        return sut.has_error();
     }
 
-    bool hasError(ErrorCode code) const {
-        return sut.hasError(code);
+    bool has_error(ErrorCode code) const {
+        return sut.has_error(code);
     }
 
-    bool hasViolation() const {
-        return sut.hasViolation(ErrorCode(VIOLATION));
+    bool has_violation() const {
+        return sut.has_violation(ErrorCode(VIOLATION));
     }
 
     bool hasAnyError() const {
-        return hasPanicked() || hasError() || hasViolation();
+        return has_panicked() || has_error() || has_violation();
     }
 };
 
@@ -75,9 +75,9 @@ TEST_F(TestingErrorHandler_test, constructionAndDestructionWorks) {
 
 TEST_F(TestingErrorHandler_test, panicWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "e2c5e639-722f-4bab-85c7-98268345b033");
-    sut.onPanic();
-    EXPECT_TRUE(sut.hasPanicked());
-    EXPECT_FALSE(sut.hasError());
+    sut.on_panic();
+    EXPECT_TRUE(sut.has_panicked());
+    EXPECT_FALSE(sut.has_error());
 
     sut.reset();
     EXPECT_FALSE(hasAnyError());
@@ -85,21 +85,21 @@ TEST_F(TestingErrorHandler_test, panicWorks) {
 
 TEST_F(TestingErrorHandler_test, reportErrorWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "90bd13cf-ece2-4221-8cce-7b2a99568a6a");
-    sut.onReportError(ErrorDescriptor { SourceLocation::current(), CODE1, MODULE });
-    EXPECT_FALSE(sut.hasPanicked());
-    EXPECT_TRUE(sut.hasError());
-    EXPECT_TRUE(sut.hasError(CODE1, MODULE));
+    sut.on_report_error(ErrorDescriptor { SourceLocation::current(), CODE1, MODULE });
+    EXPECT_FALSE(sut.has_panicked());
+    EXPECT_TRUE(sut.has_error());
+    EXPECT_TRUE(sut.has_error(CODE1, MODULE));
 
     sut.reset();
     EXPECT_FALSE(hasAnyError());
-    EXPECT_FALSE(hasError(CODE1)); // checked for consistency
+    EXPECT_FALSE(has_error(CODE1)); // checked for consistency
 }
 
 TEST_F(TestingErrorHandler_test, reportViolationWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "5746886e-7309-4435-9e0a-2e6856a318f5");
-    sut.onReportViolation(ErrorDescriptor { SourceLocation::current(), VIOLATION, MODULE });
+    sut.on_report_violation(ErrorDescriptor { SourceLocation::current(), VIOLATION, MODULE });
 
-    EXPECT_TRUE(hasViolation());
+    EXPECT_TRUE(has_violation());
 
     sut.reset();
     EXPECT_FALSE(hasAnyError());
@@ -107,61 +107,58 @@ TEST_F(TestingErrorHandler_test, reportViolationWorks) {
 
 TEST_F(TestingErrorHandler_test, hasErrorDetectsOnlyreportErroredErrors) {
     ::testing::Test::RecordProperty("TEST_ID", "0ee52915-88b7-4041-9f63-93ec5c882e95");
-    sut.onReportError(ErrorDescriptor { SourceLocation::current(), CODE1, MODULE });
-    sut.onReportError(ErrorDescriptor { SourceLocation::current(), CODE2, MODULE });
+    sut.on_report_error(ErrorDescriptor { SourceLocation::current(), CODE1, MODULE });
+    sut.on_report_error(ErrorDescriptor { SourceLocation::current(), CODE2, MODULE });
 
-    EXPECT_FALSE(sut.hasPanicked());
-    EXPECT_TRUE(sut.hasError(CODE1, MODULE));
-    EXPECT_TRUE(sut.hasError(CODE2, MODULE));
-    EXPECT_FALSE(sut.hasError(CODE3, MODULE));
+    EXPECT_FALSE(sut.has_panicked());
+    EXPECT_TRUE(sut.has_error(CODE1, MODULE));
+    EXPECT_TRUE(sut.has_error(CODE2, MODULE));
+    EXPECT_FALSE(sut.has_error(CODE3, MODULE));
 
     sut.reset();
-    EXPECT_FALSE(sut.hasError(CODE1, MODULE));
-    EXPECT_FALSE(sut.hasError(CODE2, MODULE));
-    EXPECT_FALSE(sut.hasError(CODE3, MODULE));
+    EXPECT_FALSE(sut.has_error(CODE1, MODULE));
+    EXPECT_FALSE(sut.has_error(CODE2, MODULE));
+    EXPECT_FALSE(sut.has_error(CODE3, MODULE));
 }
 
 TEST_F(TestingErrorHandler_test, resettingMultipleErrorsWorks) {
     ::testing::Test::RecordProperty("TEST_ID", "9715c394-5576-4fd8-a0f6-24560f60c161");
-    sut.onReportError(ErrorDescriptor { SourceLocation::current(), CODE1, MODULE });
-    sut.onReportError(ErrorDescriptor { SourceLocation::current(), CODE2, MODULE });
-    sut.onReportViolation(ErrorDescriptor { SourceLocation::current(), VIOLATION, MODULE });
+    sut.on_report_error(ErrorDescriptor { SourceLocation::current(), CODE1, MODULE });
+    sut.on_report_error(ErrorDescriptor { SourceLocation::current(), CODE2, MODULE });
+    sut.on_report_violation(ErrorDescriptor { SourceLocation::current(), VIOLATION, MODULE });
 
-    sut.onPanic();
+    sut.on_panic();
 
     sut.reset();
     EXPECT_FALSE(hasAnyError());
 }
 
-TEST_F(TestingErrorHandler_test, fatalFailureTestContextWorksAndDoesNotPanic) {
+TEST_F(TestingErrorHandler_test, fatal_failure_test_contextWorksAndDoesNotPanic) {
     ::testing::Test::RecordProperty("TEST_ID", "df6356a6-9e9e-4ee3-8a7c-7eb68cfe2516");
-    EXPECT_TRUE(sut.fatalFailureTestContext([] { }));
-    EXPECT_FALSE(sut.hasPanicked());
+    EXPECT_TRUE(sut.fatal_failure_test_context([] { }));
+    EXPECT_FALSE(sut.has_panicked());
 }
 
-TEST_F(TestingErrorHandler_test, fatalFailureTestContextCanOnlyBeCalledOnce) {
+TEST_F(TestingErrorHandler_test, fatal_failure_test_contextCanOnlyBeCalledOnce) {
     ::testing::Test::RecordProperty("TEST_ID", "45ad9ab9-0f79-4b7c-8e36-76da3067c0fd");
-    EXPECT_TRUE(sut.fatalFailureTestContext([] { }));
-    EXPECT_FALSE(sut.fatalFailureTestContext([] { }));
+    EXPECT_TRUE(sut.fatal_failure_test_context([] { }));
+    EXPECT_FALSE(sut.fatal_failure_test_context([] { }));
 }
 
-TEST_F(TestingErrorHandler_test, fatalFailureTestContextWorksAfterReset) {
+TEST_F(TestingErrorHandler_test, fatal_failure_test_contextWorksAfterReset) {
     ::testing::Test::RecordProperty("TEST_ID", "1ff7942e-dd6a-4774-a162-0ec7050e4df1");
-    EXPECT_TRUE(sut.fatalFailureTestContext([] { }));
+    EXPECT_TRUE(sut.fatal_failure_test_context([] { }));
     sut.reset();
-    EXPECT_TRUE(sut.fatalFailureTestContext([] { }));
+    EXPECT_TRUE(sut.fatal_failure_test_context([] { }));
 }
 
 TEST_F(TestingErrorHandler_test, panicTriggersJump) {
     ::testing::Test::RecordProperty("TEST_ID", "2d99e382-ed43-4357-86f2-ef8d70c6acd8");
 
-#if defined _WIN32
-    GTEST_SKIP() << "The 'panicTriggersJump' test is disabled on Windows";
-#else
     std::thread t([&] {
         // regular control flow panics
-        sut.fatalFailureTestContext([&] {
-            sut.onPanic();
+        sut.fatal_failure_test_context([&] {
+            sut.on_panic();
             GTEST_FAIL() << "EXPECTED longjmp but control flow continued!";
         });
     });
@@ -172,8 +169,7 @@ TEST_F(TestingErrorHandler_test, panicTriggersJump) {
 
     t.join();
 
-    EXPECT_TRUE(sut.hasPanicked());
-#endif
+    EXPECT_TRUE(sut.has_panicked());
 }
 
 } // namespace

@@ -42,7 +42,7 @@ namespace er {
 // Custom panic
 [[noreturn]] inline void panic() {
     auto& h = ErrorHandler::get();
-    h.onPanic();
+    h.on_panic();
     abort();
 }
 
@@ -87,7 +87,7 @@ report(const bb::detail::SourceLocation& location, Kind, const Error& error, con
                               << errorName << " (code = " << code.value << ")] in module [" << moduleName
                               << " (id = " << module.value << ")]");
     auto& h = ErrorHandler::get();
-    h.onReportError(ErrorDescriptor(location, code, module));
+    h.on_report_error(ErrorDescriptor(location, code, module));
 }
 
 // Report any error, specialization for specific types overrides the general version.
@@ -112,7 +112,7 @@ inline void report(const bb::detail::SourceLocation& location,
                                     << kind.name << "] [" << errorName << " (code = " << code.value << ")] in module ["
                                     << moduleName << " (id = " << module.value << ")]");
     auto& h = ErrorHandler::get();
-    h.onReportError(ErrorDescriptor(location, code, module));
+    h.on_report_error(ErrorDescriptor(location, code, module));
 }
 
 namespace detail {
@@ -128,7 +128,7 @@ report(const bb::detail::SourceLocation& location, Kind kind, const Error& error
                                   } << "["
                                     << kind.name << "]");
     auto& h = ErrorHandler::get();
-    h.onReportViolation(ErrorDescriptor(location, code, module));
+    h.on_report_violation(ErrorDescriptor(location, code, module));
 }
 
 template <class Kind, class Error, class Message>
@@ -147,7 +147,7 @@ report(const bb::detail::SourceLocation& location,
                                   } << "["
                                     << kind.name << "] " << std::forward<Message>(msg));
     auto& h = ErrorHandler::get();
-    h.onReportViolation(ErrorDescriptor(location, code, module));
+    h.on_report_violation(ErrorDescriptor(location, code, module));
 }
 } // namespace detail
 
