@@ -28,7 +28,7 @@
 //! Names and types are required. The `settings` and `qos` tables are optional
 //! and fall back to the iceoryx2 and ROS 2 defaults when unset.
 //!
-//! ## `iceoryx2` — local service
+//! ## `iceoryx2` (local service)
 //!
 //! | Field          | Value                       |
 //! |----------------|-----------------------------|
@@ -36,7 +36,7 @@
 //! | `payload_type` | string (required)           |
 //! | `settings`     | table, see below (optional) |
 //!
-//! ## `iceoryx2.settings` — local service settings
+//! ## `iceoryx2.settings` (local service settings)
 //!
 //! | Field                             | Value   |
 //! |-----------------------------------|---------|
@@ -48,7 +48,7 @@
 //! | `subscriber_max_borrowed_samples` | integer |
 //! | `safe_overflow`                   | boolean |
 //!
-//! ## `ros2` — remote topic
+//! ## `ros2` (remote topic)
 //!
 //! | Field   | Value                       |
 //! |---------|-----------------------------|
@@ -56,7 +56,7 @@
 //! | `type`  | string (required)           |
 //! | `qos`   | table, see below (optional) |
 //!
-//! ## `ros2.qos` — endpoint QoS
+//! ## `ros2.qos` (endpoint QoS)
 //!
 //! | Policy                      | Value                                                |
 //! |-----------------------------|------------------------------------------------------|

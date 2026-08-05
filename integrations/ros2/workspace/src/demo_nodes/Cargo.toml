@@ -1,0 +1,17 @@
+# Built by colcon as an `ament_cargo` package (requires the colcon-cargo and
+# colcon-ros-cargo plugins).
+[workspace]
+
+[package]
+name = "demo_nodes_iceoryx2"
+description = "Native iceoryx2 example nodes bridged to ROS 2 by the tunnel"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[dependencies]
+cdr = { version = "0.2.4" }
+geometry_msgs = { version = "*" }
+iceoryx2 = { path = "../../../../../iceoryx2", features = ["std"] }
+rosidl_runtime_rs = { version = "0.6" }
+std_msgs = { version = "*", features = ["serde"] }

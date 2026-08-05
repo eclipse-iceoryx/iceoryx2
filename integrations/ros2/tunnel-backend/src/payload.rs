@@ -75,7 +75,7 @@ pub fn copy_into_uninit(payload: &mut [MaybeUninit<CustomPayloadMarker>], bytes:
 /// Writes `header` into an untyped user header location.
 ///
 /// The caller must ensure that the service's user-header type detail
-/// matches `T` — the location is only as large as that detail states.
+/// matches `T`. The location is only as large as that detail states.
 pub fn write_user_header<T>(location: &mut CustomHeaderMarker, header: T) {
     // SAFETY: size and alignment of the location are guaranteed by the
     // caller (see above).

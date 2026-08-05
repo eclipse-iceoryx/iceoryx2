@@ -1,16 +1,17 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-    <name>iceoryx2_cxx</name>
+    <name>demo_nodes_iceoryx2</name>
     <version>0.9.999</version>
-    <description>iceoryx2 with c/c++ bindings</description>
+    <description>Native iceoryx2 example nodes bridged to ROS 2 by the tunnel</description>
     <maintainer email="oss@ekxide.io">ekxide developers</maintainer>
     <license>Apache 2.0</license>
     <license>MIT</license>
     <url type="bugtracker">https://github.com/eclipse-iceoryx/iceoryx2/issues</url>
     <url type="repository">https://github.com/eclipse-iceoryx/iceoryx2</url>
-    <buildtool_depend>cmake</buildtool_depend>
+    <depend>std_msgs</depend>
+    <depend>geometry_msgs</depend>
     <export>
-        <build_type>cmake</build_type>
+        <build_type>ament_cargo</build_type>
     </export>
 </package>

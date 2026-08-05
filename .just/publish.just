@@ -14,10 +14,6 @@
 # Publish Recipes
 # =============================================================================
 
-INTEGRATIONS_DIR := justfile_directory() / "integrations"
-INTEGRATIONS_ZENOH_DIR := INTEGRATIONS_DIR / "zenoh"
-INTEGRATIONS_ROS2_DIR := INTEGRATIONS_DIR / "ros2"
-
 SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-pal-configuration          \
     iceoryx2-pal-concurrency-sync       \

@@ -25,7 +25,7 @@ const DDS_GUID_LEN: usize = 16;
 /// remote origin. Applications in other languages can rely on the layout:
 /// 32 bytes, alignment 8, field order as declared, little-endian on the
 /// usual platforms.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
 #[type_name("RosHeader")]
 #[repr(C)]
 pub struct RosHeader {

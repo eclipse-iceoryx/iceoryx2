@@ -10,6 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import '.just/paths.just'
 import '.just/common.just'
 import '.just/build.just'
 import '.just/test.just'

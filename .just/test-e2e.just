@@ -24,14 +24,18 @@ _test-e2e-dispatch what *flags:
             echo "Usage: just test-e2e <scope>"
             echo ""
             echo "Scope:"
-            echo "  integrations-ros2      run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
+            echo "  integrations-ros2           run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
+            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup ros2-workspace')"
             exit 1
             ;;
         integrations-ros2)
             just _test-e2e-integrations-ros2
             ;;
+        integrations-ros2-examples)
+            just _test-e2e-integrations-ros2-examples
+            ;;
         *)
-            echo "Error: unknown scope '{{what}}' (expected: integrations-ros2)" >&2
+            echo "Error: unknown scope '{{what}}' (expected: integrations-ros2, integrations-ros2-examples)" >&2
             exit 1
             ;;
     esac
@@ -50,16 +54,42 @@ _test-e2e-integrations-ros2:
     # Honor a caller-provided RMW (e.g. the CI matrix), defaulting to Fast DDS otherwise.
     export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
-    just _test-e2e-run-files "{{INTEGRATIONS_ROS2_DIR}}"
+    just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_DIR}}/tunnel-cli"
+
+[private]
+_test-e2e-integrations-ros2-examples:
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    if [ -z "${ROS_DISTRO:-}" ]; then
+        echo "Error: no sourced ROS 2 environment" >&2
+        echo "  Source your ROS 2 setup first, e.g.: source /opt/ros/jazzy/setup.bash" >&2
+        exit 1
+    fi
+
+    if [ ! -f "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash" ]; then
+        echo "Error: no built example workspace at {{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}" >&2
+        echo "  Build it first: just setup ros2-workspace" >&2
+        exit 1
+    fi
+
+    # Honor a caller-provided RMW (e.g. the CI matrix), defaulting to Fast DDS otherwise.
+    export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+
+    # Puts the example nodes on the path of `ros2 run`, so the tests themselves
+    # stay free of any workspace knowledge.
+    source "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash"
+
+    just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}"
 
 # Lists every `*.exp` under `root`
 [private]
-_test-e2e-find-files root:
+_test-e2e-find-tests root:
     @find "{{root}}" -type f -name '*.exp' -not -path '*/target/*' | sort
 
 # Discovers every `*.exp` under `root` and runs each with `expect`.
 [private]
-_test-e2e-run-files root:
+_test-e2e-run-tests root:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -73,7 +103,7 @@ _test-e2e-run-files root:
         exit 1
     fi
 
-    mapfile -t FILES < <(just _test-e2e-find-files "{{root}}")
+    mapfile -t FILES < <(just _test-e2e-find-tests "{{root}}")
 
     if [ "${#FILES[@]}" -eq 0 ]; then
         echo -e "${C_YELLOW}No end-to-end tests found under {{root}}${C_OFF}"

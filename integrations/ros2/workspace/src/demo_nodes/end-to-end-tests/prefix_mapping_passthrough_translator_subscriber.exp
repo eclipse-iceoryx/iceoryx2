@@ -1,0 +1,66 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    --bin iox2-tunnel-ros2 2>@1
+
+#### Test
+
+set timeout 30
+
+# The topic is allowlisted for wire-side discovery, as the tunnel only bridges
+# ROS 2 topics it is explicitly told about.
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    --bin iox2-tunnel-ros2 -- \
+    --topic /chatter:std_msgs/msg/String
+set id_tunnel $spawn_id
+expect_output_from $id_tunnel "Local Discovery via Tracker"
+
+spawn ros2 run demo_nodes_iceoryx2 \
+    prefix_mapping_passthrough_translator_subscriber
+set id_subscriber $spawn_id
+expect_output_from $id_subscriber "waiting for messages on ros2://topics/chatter"
+
+spawn ros2 topic pub -r 5 /chatter std_msgs/msg/String "{data: 'Hello from ROS 2'}"
+set id_publisher $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_tunnel "Opening bridge"
+expect_output_from $id_tunnel "Ingested PublishSubscribe"
+
+# The example deserializes the CDR the tunnel forwarded unmodified.
+expect_output_from $id_subscriber "received: \"Hello from ROS 2\""
+
+#### Shutdown
+
+send -i $id_publisher $SIGINT
+expect -i $id_publisher eof
+
+send -i $id_subscriber $SIGINT
+expect -i $id_subscriber eof
+
+send -i $id_tunnel $SIGINT
+expect_output_from $id_tunnel "Tunnel stopped"
+expect -i $id_tunnel eof
+
+show_test_passed
