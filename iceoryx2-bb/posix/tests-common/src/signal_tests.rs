@@ -90,8 +90,7 @@ pub fn register_continue_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let test = TestFixture::new();
-    let _guard =
-        SignalHandler::register(FetchableSignal::Continue, &TestFixture::signal_callback);
+    let _guard = SignalHandler::register(FetchableSignal::Continue, &TestFixture::signal_callback);
 
     Process::from_self().send_signal(Signal::Continue).ok();
     test.verify(NonFatalFetchableSignal::Continue, 1)
