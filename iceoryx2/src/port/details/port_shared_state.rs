@@ -14,9 +14,15 @@ use core::fmt::Debug;
 
 use iceoryx2_bb_elementary_traits::allocator::Grow;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_flatbuffers::AllocationStrategy;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
+use crate::service::static_config::message_type_details::MessageTypeDetails;
+
 pub trait PortSharedState: Abandonable + Send + Debug + Grow<ShmPointer> {
     fn return_loan(&self, offset: PointerOffset);
+    fn header_len(&self) -> usize;
+    fn message_type_details(&self) -> MessageTypeDetails;
+    fn allocation_strategy(&self) -> AllocationStrategy;
 }

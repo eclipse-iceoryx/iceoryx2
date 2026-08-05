@@ -183,8 +183,9 @@ struct OffsetAndSize {
     size: usize,
 }
 
+#[doc(hidden)]
 #[derive(Debug)]
-pub(crate) struct PublisherSharedState<Service: service::Service> {
+pub struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
     pub(crate) sender: Sender<Service, PublishSubscribeResources<Service>>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
@@ -202,6 +203,20 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
 impl<Service: service::Service> PortSharedState for PublisherSharedState<Service> {
     fn return_loan(&self, offset: PointerOffset) {
         self.sender.return_loaned_sample(offset);
+    }
+
+    fn header_len(&self) -> usize {
+        self.sender.message_type_details.all_headers_len()
+    }
+
+    fn message_type_details(
+        &self,
+    ) -> service::static_config::message_type_details::MessageTypeDetails {
+        self.sender.message_type_details
+    }
+
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.sender.data_segment.allocation_strategy()
     }
 }
 

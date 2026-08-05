@@ -15,6 +15,7 @@ use core::alloc::Layout;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, Grow};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_flatbuffers::AllocationStrategy;
 use iceoryx2_bb_memory::pool_allocator::ContentPlacement;
 use iceoryx2_cal::{
     arc_sync_policy::{ArcSyncPolicy, ArcSyncPolicyCreationError},
@@ -24,13 +25,20 @@ use iceoryx2_cal::{
 use iceoryx2_log::fail;
 
 use crate::port::details::port_shared_state::PortSharedState;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
 
 #[derive(Debug)]
-pub(crate) struct ChunkMutInnerSharedState<Service: crate::service::Service, T: PortSharedState> {
-    pub(crate) port_shared_state: Service::ArcThreadSafetyPolicy<T>,
-    pub(crate) offset_to_chunk: AtomicU64,
-    pub(crate) shm_raw_ptr: AtomicUsize,
-    pub(crate) slice_len: AtomicUsize,
+pub struct ChunkMutInnerSharedState<Service: crate::service::Service, T: PortSharedState> {
+    port_shared_state: Service::ArcThreadSafetyPolicy<T>,
+    offset_to_chunk: AtomicU64,
+    shm_raw_ptr: AtomicUsize,
+    slice_len: AtomicUsize,
+}
+
+impl<Service: crate::service::Service, T: PortSharedState> ChunkMutInnerSharedState<Service, T> {
+    pub fn offset_to_chunk(&self) -> PointerOffset {
+        PointerOffset::from_value(self.offset_to_chunk.load(Ordering::Relaxed))
+    }
 }
 
 unsafe impl<Service: crate::service::Service, T: PortSharedState> Send
@@ -63,13 +71,23 @@ impl<Service: crate::service::Service, T: PortSharedState> Drop
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ChunkMutSharedState<Service: crate::service::Service, T: PortSharedState> {
     pub(crate) state: Service::ArcThreadSafetyPolicy<ChunkMutInnerSharedState<Service, T>>,
 }
 
+impl<Service: crate::service::Service, T: PortSharedState> Clone
+    for ChunkMutSharedState<Service, T>
+{
+    fn clone(&self) -> Self {
+        Self {
+            state: self.state.clone(),
+        }
+    }
+}
+
 impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<Service, T> {
-    pub(crate) fn new(
+    pub fn new(
         port_shared_state: &Service::ArcThreadSafetyPolicy<T>,
         pointer_to_chunk: ShmPointer,
         underlying_slice_len: usize,
@@ -88,6 +106,52 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         };
 
         Ok(Self { state })
+    }
+
+    pub fn ptr_to_chunk_start(&self) -> *mut u8 {
+        self.state.lock().shm_raw_ptr.load(Ordering::Relaxed) as *mut u8
+    }
+
+    pub fn shared_state<
+        SuccVal,
+        ErrVal,
+        F: FnOnce(&ChunkMutInnerSharedState<Service, T>, &T) -> Result<SuccVal, ErrVal>,
+    >(
+        &self,
+        callback: F,
+    ) -> Result<SuccVal, ErrVal> {
+        let inner_state = self.state.lock();
+        callback(&inner_state, &inner_state.port_shared_state.lock())
+    }
+
+    pub fn slice_len(&self) -> usize {
+        self.state.lock().slice_len.load(Ordering::Relaxed)
+    }
+
+    pub fn allocation_strategy(&self) -> AllocationStrategy {
+        self.state
+            .lock()
+            .port_shared_state
+            .lock()
+            .allocation_strategy()
+    }
+
+    pub fn header_len(&self) -> usize {
+        self.state.lock().port_shared_state.lock().header_len()
+    }
+
+    pub fn message_type_details(&self) -> MessageTypeDetails {
+        self.state
+            .lock()
+            .port_shared_state
+            .lock()
+            .message_type_details()
+    }
+
+    #[doc(hidden)]
+    /// Required for language bindings
+    pub fn __internal_override_slice_len(&self, value: usize) {
+        self.state.lock().slice_len.store(value, Ordering::Relaxed)
     }
 }
 
@@ -118,11 +182,5 @@ impl<Service: crate::service::Service, T: PortSharedState> Grow<ShmPointer>
         state.slice_len.store(new_layout.size(), Ordering::Relaxed);
 
         Ok(ptr)
-    }
-}
-
-impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<Service, T> {
-    pub(crate) fn slice_len(&self) -> usize {
-        self.state.lock().slice_len.load(Ordering::Relaxed)
     }
 }
