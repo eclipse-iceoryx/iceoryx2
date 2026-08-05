@@ -49,5 +49,5 @@ cargo build
 The tunnel is run via the CLI in [`../tunnel-cli`](../tunnel-cli):
 
 ```bash
-cargo run -p iceoryx2-integrations-ros2-tunnel-cli
+cargo run --bin iox2-tunnel-ros2
 ```
