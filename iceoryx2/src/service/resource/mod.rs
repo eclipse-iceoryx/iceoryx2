@@ -27,7 +27,10 @@ use crate::{
     service::{
         self,
         builder::{ServiceCreateError, ServiceOpenError},
-        resource::{blackboard::BlackboardResources, publish_subscribe::PublishSubscribeResources},
+        resource::{
+            blackboard::BlackboardResources, publish_subscribe::PublishSubscribeResources,
+            request_response::RequestResponseResources,
+        },
         static_config::{StaticConfig, messaging_pattern::MessagingPattern},
     },
 };
@@ -40,7 +43,9 @@ pub unsafe fn remove_stale_service_resources<ServiceType: service::Service>(
         MessagingPattern::Blackboard(_) => unsafe {
             BlackboardResources::<ServiceType>::remove_stale_resources(config, static_config)
         },
-        MessagingPattern::RequestResponse(_) => Ok(()),
+        MessagingPattern::RequestResponse(_) => unsafe {
+            RequestResponseResources::<ServiceType>::remove_stale_resources(config, static_config)
+        },
         MessagingPattern::Event(_) => Ok(()),
         MessagingPattern::PublishSubscribe(_) => unsafe {
             PublishSubscribeResources::<ServiceType>::remove_stale_resources(config, static_config)

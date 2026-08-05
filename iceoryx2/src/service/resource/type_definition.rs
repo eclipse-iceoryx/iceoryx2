@@ -18,6 +18,7 @@ use crate::service::{
 };
 use alloc::string::ToString;
 use alloc::vec;
+use alloc::vec::Vec;
 use core::time::Duration;
 use iceoryx2_bb_flatbuffers::{FindSchemaFileError, TypeName, find_best_fitting_schema_file};
 use iceoryx2_bb_posix::file::{AccessMode, FileBuilder, FileOpenError, FileReadError};

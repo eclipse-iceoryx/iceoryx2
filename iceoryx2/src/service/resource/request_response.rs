@@ -214,7 +214,7 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
             Err(e) => {
                 fail!(from "RequestResponseResources::open_type_storage()",
                     with e,
-                    "Unable to open request response resources since the type definition storage {name} could not be created. [{e:?}]");
+                    "Unable to open request response resources since the type definition storage {name} could not be opened. [{e:?}]");
             }
         }
     }

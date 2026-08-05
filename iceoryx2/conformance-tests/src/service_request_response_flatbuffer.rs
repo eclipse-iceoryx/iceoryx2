@@ -749,7 +749,7 @@ pub mod service_request_response_flatbuffer {
     }
 
     #[conformance_test]
-    pub fn open_fails_when_no_request_schema_file_is_not_the_same<Sut: Service>() {
+    pub fn open_fails_when_request_schema_file_is_not_the_same<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
@@ -774,7 +774,7 @@ pub mod service_request_response_flatbuffer {
     }
 
     #[conformance_test]
-    pub fn open_fails_when_no_response_schema_file_is_not_the_same<Sut: Service>() {
+    pub fn open_fails_when_response_schema_file_is_not_the_same<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);

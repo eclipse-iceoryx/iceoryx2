@@ -125,7 +125,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 has_ownership: AtomicBool::new(false),
             }),
             Err(e) => {
-                fail!(from "PublishSubscribeResources::create()",
+                fail!(from "PublishSubscribeResources::open()",
                      with e,
                      "Unable to open publish subscribe resources since the type definition storage could not be opened. [{e:?}]");
             }
