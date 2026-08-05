@@ -24,8 +24,8 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::fail;
 
+use crate::port::details::chunk::ChunkMut;
 use crate::port::details::port_shared_state::PortSharedState;
-use crate::service::static_config::message_type_details::MessageTypeDetails;
 
 #[derive(Debug)]
 pub struct ChunkMutInnerSharedState<Service: crate::service::Service, T: PortSharedState> {
@@ -108,20 +108,11 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         Ok(Self { state })
     }
 
-    pub fn ptr_to_chunk_start(&self) -> *mut u8 {
-        self.state.lock().shm_raw_ptr.load(Ordering::Relaxed) as *mut u8
-    }
-
-    pub fn shared_state<
-        SuccVal,
-        ErrVal,
-        F: FnOnce(&ChunkMutInnerSharedState<Service, T>, &T) -> Result<SuccVal, ErrVal>,
-    >(
+    pub fn shared_state<SuccVal, ErrVal, F: FnOnce(&T) -> Result<SuccVal, ErrVal>>(
         &self,
         callback: F,
     ) -> Result<SuccVal, ErrVal> {
-        let inner_state = self.state.lock();
-        callback(&inner_state, &inner_state.port_shared_state.lock())
+        callback(&self.state.lock().port_shared_state.lock())
     }
 
     pub fn slice_len(&self) -> usize {
@@ -140,12 +131,26 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         self.state.lock().port_shared_state.lock().header_len()
     }
 
-    pub fn message_type_details(&self) -> MessageTypeDetails {
-        self.state
-            .lock()
-            .port_shared_state
-            .lock()
-            .message_type_details()
+    pub fn update_chunk_pointers_to_reallocated_layout(&self, layout: Layout) -> ChunkMut {
+        let state = self.state.lock();
+        let port_state = state.port_shared_state.lock();
+
+        let message_type_details = port_state.message_type_details();
+        let header = state.shm_raw_ptr.load(Ordering::Relaxed) as *mut u8;
+        let user_header = message_type_details
+            .user_header_ptr_from_header(header)
+            .cast_mut();
+        let payload = message_type_details
+            .payload_ptr_from_header(header)
+            .cast_mut();
+
+        ChunkMut {
+            offset: PointerOffset::from_value(state.offset_to_chunk.load(Ordering::Relaxed)),
+            layout,
+            header,
+            user_header,
+            payload,
+        }
     }
 
     #[doc(hidden)]

@@ -166,15 +166,9 @@ impl<
 
     #[doc(hidden)]
     pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8) {
-        let message_type_details = self.shared_state.message_type_details();
-
-        self.chunk.header = self.shared_state.ptr_to_chunk_start();
-        self.chunk.user_header = message_type_details
-            .user_header_ptr_from_header(self.chunk.header)
-            .cast_mut();
-        self.chunk.payload = message_type_details
-            .payload_ptr_from_header(self.chunk.header)
-            .cast_mut();
+        self.chunk = self
+            .shared_state
+            .update_chunk_pointers_to_reallocated_layout(self.chunk.layout);
 
         let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
 
