@@ -225,8 +225,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
     fn deliver_offset_to_connection_impl(
         &self,
-        offset: PointerOffset,
-        sample_size: usize,
+        chunk: &ChunkMut,
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<usize, SendError> {
@@ -246,8 +245,8 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
                     &connection.sender,
-                    offset,
-                    sample_size,
+                    chunk.offset(),
+                    chunk.size(),
                     channel_id,
                     |retries, elapsed_time| {
                         handler
@@ -271,16 +270,16 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                     BackpressureStrategy::DiscardData => {
                         <Service::Connection as ZeroCopyConnection>::Sender::try_send(
                             &connection.sender,
-                            offset,
-                            sample_size,
+                            chunk.offset(),
+                            chunk.size(),
                             channel_id,
                         )
                     }
                     BackpressureStrategy::RetryUntilDelivered => {
                         <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
                             &connection.sender,
-                            offset,
-                            sample_size,
+                            chunk.offset(),
+                            chunk.size(),
                             channel_id,
                             |_, _| BackpressureToReceiverAction::FollowBackpressureyStrategy,
                             BackpressureToReceiverAction::Retry,
@@ -294,7 +293,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                     // can only happen with blocking send and the degradation handler triggered a failure
                     fail!(from self, with SendError::UnableToDeliver,
                           "{msg} {:?} could not be delivered to receiver {:?}.",
-                          offset, connection.receiver_port_id);
+                          chunk, connection.receiver_port_id);
                 }
                 Err(ZeroCopySendError::ReceiveBufferFull)
                 | Err(ZeroCopySendError::UsedChunkListFull) => {
@@ -312,7 +311,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                 }
                 Err(ZeroCopySendError::InternalError) => {
                     fail!(from self, with SendError::InternalError,
-                        "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", offset, connection.receiver_port_id);
+                        "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", chunk, connection.receiver_port_id);
                 }
                 Err(ZeroCopySendError::ConnectionCorrupted) => {
                     match self.degradation_handler.call(
@@ -331,17 +330,17 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                         DegradationAction::Warn => {
                             error!(from self,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
-                                        offset, connection.receiver_port_id);
+                                        chunk, connection.receiver_port_id);
                         }
                         DegradationAction::DegradeAndFail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
-                                        offset, connection.receiver_port_id);
+                                        chunk, connection.receiver_port_id);
                         }
                     }
                 }
                 Ok(overflow) => {
-                    self.borrow_sample(offset);
+                    self.borrow_sample(chunk.offset());
                     number_of_recipients += 1;
 
                     if let Some(old) = overflow {
@@ -392,19 +391,17 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
     pub(crate) fn deliver_offset_to_connection(
         &self,
-        offset: PointerOffset,
-        sample_size: usize,
+        chunk: &ChunkMut,
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<usize, SendError> {
         self.retrieve_returned_samples();
-        self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, connection_id)
+        self.deliver_offset_to_connection_impl(chunk, channel_id, connection_id)
     }
 
     pub(crate) fn deliver_offset(
         &self,
-        offset: PointerOffset,
-        sample_size: usize,
+        chunk: &ChunkMut,
         channel_id: ChannelId,
     ) -> Result<usize, SendError> {
         self.retrieve_returned_samples();
@@ -412,7 +409,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         let mut number_of_recipients = 0;
         let mut delivery_error = None;
         for i in 0..self.len() {
-            match self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, i) {
+            match self.deliver_offset_to_connection_impl(chunk, channel_id, i) {
                 Ok(n) => number_of_recipients += n,
                 Err(error) => match error {
                     SendError::ConnectionCorrupted => {

@@ -45,22 +45,21 @@ use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
+use iceoryx2_bb_elementary::static_assert_size_of;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::{
-    arc_sync_policy::ArcSyncPolicy, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
-};
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
+use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::ChannelId};
 use iceoryx2_log::fail;
 
 use crate::{
     port::{
         SendError,
+        details::chunk::ChunkMut,
         server::{INVALID_CONNECTION_ID, SharedServerState},
     },
-    raw_sample::RawSampleMut,
-    service,
+    service::{self, marker::CustomPayloadMarker},
 };
 
 /// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
@@ -77,15 +76,9 @@ pub struct ResponseMut<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) ptr: RawSampleMut<
-        service::header::request_response::ResponseHeader,
-        ResponseHeader,
-        ResponsePayload,
-    >,
     pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<AtomicUsize>,
-    pub(crate) offset_to_chunk: PointerOffset,
-    pub(crate) sample_size: usize,
+    pub(crate) chunk: ChunkMut,
     pub(crate) channel_id: ChannelId,
     pub(crate) connection_id: usize,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
@@ -111,13 +104,11 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "ResponseMut<{}, {}, {}> {{ ptr: {:?}, offset_to_chunk: {:?}, sample_size: {}, channel_id: {} }}",
+            "ResponseMut<{}, {}, {}> {{ chunk: {:?}, channel_id: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
-            self.ptr,
-            self.offset_to_chunk,
-            self.sample_size,
+            self.chunk,
             self.channel_id.value()
         )
     }
@@ -133,31 +124,64 @@ impl<
         self.shared_state
             .lock()
             .response_sender
-            .return_loaned_sample(self.offset_to_chunk);
+            .return_loaned_sample(self.chunk.offset());
         self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 }
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     type Target = ResponsePayload;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.payload_ptr().cast() }
     }
 }
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: IceoryxSend + Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for ResponseMut<Service, [ResponsePayload], ResponseHeader>
+{
+    type Target = [ResponsePayload];
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                self.number_of_elements(),
+            )
+        }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: IceoryxSend + Debug + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,
 > DerefMut for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.ptr.as_payload_mut()
+        unsafe { &mut *self.chunk.payload_mut_ptr().cast() }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: IceoryxSend + Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> DerefMut for ResponseMut<Service, [ResponsePayload], ResponseHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.payload_mut_ptr().cast(),
+                self.number_of_elements(),
+            )
+        }
     }
 }
 
@@ -192,7 +216,7 @@ impl<
     /// # }
     /// ```
     pub fn header(&self) -> &service::header::request_response::ResponseHeader {
-        self.ptr.as_header_ref()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns a reference to the user header of the response.
@@ -221,7 +245,7 @@ impl<
     /// # }
     /// ```
     pub fn user_header(&self) -> &ResponseHeader {
-        self.ptr.as_user_header_ref()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a mutable reference to the user header of the response.
@@ -248,61 +272,7 @@ impl<
     /// # }
     /// ```
     pub fn user_header_mut(&mut self) -> &mut ResponseHeader {
-        self.ptr.as_user_header_mut()
-    }
-
-    /// Returns a reference to the payload of the response.
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
-    /// #
-    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
-    /// #     .request_response::<u64, u64>()
-    /// #     .open_or_create()?;
-    /// #
-    /// # let client = service.client_builder().create()?;
-    /// # let server = service.server_builder().create()?;
-    /// # let pending_response = client.send_copy(0)?;
-    /// # let active_request = server.receive()?.unwrap();
-    ///
-    /// // initializes the payload with default, therefore it is okay to access
-    /// // it without assigning something first
-    /// let mut response = active_request.loan()?;
-    /// println!("default payload {}", *response.payload());
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn payload(&self) -> &ResponsePayload {
-        self.ptr.as_payload_ref()
-    }
-
-    /// Returns a mutable reference to the payload of the response.
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
-    /// #
-    /// # let service = node.service_builder(&"ResponseMutExample5".try_into()?)
-    /// #     .request_response::<u64, u64>()
-    /// #     .open_or_create()?;
-    /// #
-    /// # let client = service.client_builder().create()?;
-    /// # let server = service.server_builder().create()?;
-    /// # let pending_response = client.send_copy(0)?;
-    /// # let active_request = server.receive()?.unwrap();
-    ///
-    /// let mut response = active_request.loan()?;
-    /// *response.payload_mut() = 123;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn payload_mut(&mut self) -> &mut ResponsePayload {
-        self.ptr.as_payload_mut()
+        unsafe { &mut *self.chunk.user_header_mut_ptr().cast() }
     }
 
     /// Sends a [`ResponseMut`] to the corresponding
@@ -339,13 +309,149 @@ impl<
 
         if self.connection_id != INVALID_CONNECTION_ID {
             shared_state.response_sender.deliver_offset_to_connection(
-                self.offset_to_chunk,
-                self.sample_size,
+                &self.chunk,
                 self.channel_id,
                 self.connection_id,
             )?;
         }
 
         Ok(())
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMut<Service, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the payload of the response.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
+    /// #     .request_response::<u64, u64>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// // initializes the payload with default, therefore it is okay to access
+    /// // it without assigning something first
+    /// let mut response = active_request.loan()?;
+    /// println!("default payload {}", *response.payload());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload(&self) -> &ResponsePayload {
+        self.deref()
+    }
+
+    /// Returns a mutable reference to the payload of the response.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"ResponseMutExample5".try_into()?)
+    /// #     .request_response::<u64, u64>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let mut response = active_request.loan()?;
+    /// *response.payload_mut() = 123;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload_mut(&mut self) -> &mut ResponsePayload {
+        &mut *self
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMut<Service, [ResponsePayload], ResponseHeader>
+{
+    fn number_of_elements(&self) -> usize {
+        static_assert_size_of!(CustomPayloadMarker, 1);
+        // We need to handle the custom payload marker her, that has always a size of 1
+        // and the ability to set custom payload type size/alignment. Therefore, we need
+        // to calculate number of elements * payload_size divided again by the payload size.
+        // If the generic argument and payload size is equal it will return the actual
+        // number of elements.
+        //
+        // But in the special case of the CustomPayloadMarker, it will divide by 1 and
+        // return a slice of bytes with the correct size.
+        self.header().number_of_elements() as usize
+            * self.shared_state.lock().response_sender.payload_size()
+            / core::mem::size_of::<ResponsePayload>()
+    }
+
+    /// Returns a reference to the payload of the response.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
+    /// #     .request_response::<u64, [u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// // initializes the payload with default, therefore it is okay to access
+    /// // it without assigning something first
+    /// let mut response = active_request.loan_slice(12)?;
+    /// println!("default payload {}", *response.payload());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload(&self) -> &[ResponsePayload] {
+        self.deref()
+    }
+
+    /// Returns a mutable reference to the payload of the response.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"ResponseMutExample5".try_into()?)
+    /// #     .request_response::<u64, [u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let mut response = active_request.loan_slice(12)?;
+    /// response.payload_mut()[1] = 123;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload_mut(&mut self) -> &mut [ResponsePayload] {
+        &mut *self
     }
 }

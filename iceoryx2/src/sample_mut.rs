@@ -65,12 +65,13 @@
 
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
-use crate::service::marker::Flatbuffer;
+use crate::service::marker::{CustomPayloadMarker, Flatbuffer};
 use crate::{
     port::SendError, port::publisher::PublisherSharedState,
     service::header::publish_subscribe::Header,
 };
 use flatbuffers::InvalidFlatbuffer;
+use iceoryx2_bb_elementary::static_assert_size_of;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
@@ -130,7 +131,7 @@ impl<
         unsafe {
             &*core::ptr::slice_from_raw_parts(
                 self.chunk.payload_ptr().cast(),
-                self.header().number_of_elements() as usize,
+                self.number_of_elements(),
             )
         }
     }
@@ -157,7 +158,7 @@ impl<
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
-                self.header().number_of_elements() as usize,
+                self.number_of_elements(),
             )
         }
     }
@@ -320,9 +321,8 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
-        self.shared_state.shared_state(|publisher_shared_state| {
-            publisher_shared_state.send_sample(self.chunk.offset(), self.chunk.size())
-        })
+        self.shared_state
+            .shared_state(|publisher_shared_state| publisher_shared_state.send_sample(&self.chunk))
     }
 }
 
@@ -359,7 +359,7 @@ impl<
     /// # }
     /// ```
     pub fn payload(&self) -> &Payload {
-        unsafe { &*self.chunk.payload_ptr().cast() }
+        self.deref()
     }
 
     /// Returns a mutable reference to the payload of the sample.
@@ -389,7 +389,7 @@ impl<
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut Payload {
-        unsafe { &mut *self.chunk.payload_mut_ptr().cast() }
+        &mut *self
     }
 }
 
@@ -399,6 +399,26 @@ impl<
     UserHeader: ZeroCopySend,
 > SampleMut<Service, [Payload], UserHeader>
 {
+    fn number_of_elements(&self) -> usize {
+        static_assert_size_of!(CustomPayloadMarker, 1);
+        println!(
+            "number of elements: {}, recorded payload size: {}, actual payload size: {}",
+            self.header().number_of_elements(),
+            self.shared_state.payload_size(),
+            core::mem::size_of::<Payload>()
+        );
+        // We need to handle the custom payload marker her, that has always a size of 1
+        // and the ability to set custom payload type size/alignment. Therefore, we need
+        // to calculate number of elements * payload_size divided again by the payload size.
+        // If the generic argument and payload size is equal it will return the actual
+        // number of elements.
+        //
+        // But in the special case of the CustomPayloadMarker, it will divide by 1 and
+        // return a slice of bytes with the correct size.
+        self.header().number_of_elements() as usize * self.shared_state.payload_size()
+            / core::mem::size_of::<Payload>()
+    }
+
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
@@ -426,12 +446,7 @@ impl<
     /// # }
     /// ```
     pub fn payload(&self) -> &[Payload] {
-        unsafe {
-            &*core::ptr::slice_from_raw_parts(
-                self.chunk.payload_ptr().cast(),
-                self.shared_state.slice_len(),
-            )
-        }
+        self.deref()
     }
 
     /// Returns a mutable reference to the payload of the sample.
@@ -461,11 +476,6 @@ impl<
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut [Payload] {
-        unsafe {
-            &mut *core::ptr::slice_from_raw_parts_mut(
-                self.chunk.payload_mut_ptr().cast(),
-                self.shared_state.slice_len(),
-            )
-        }
+        &mut *self
     }
 }

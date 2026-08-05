@@ -40,18 +40,19 @@ use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary::static_assert_size_of;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_log::fatal_panic;
 
+use crate::port::details::chunk::ChunkMut;
+use crate::service::marker::CustomPayloadMarker;
 use crate::{
     pending_response::PendingResponse,
     port::client::{ClientSharedState, RequestSendError},
-    raw_sample::RawSampleMut,
     service,
 };
 
@@ -65,16 +66,12 @@ pub struct RequestMut<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) ptr: RawSampleMut<
-        service::header::request_response::RequestHeader,
-        RequestHeader,
-        RequestPayload,
-    >,
-    pub(crate) sample_size: usize,
-    pub(crate) offset_to_chunk: PointerOffset,
+    pub(crate) chunk: ChunkMut,
     pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     pub(crate) was_sample_sent: AtomicBool,
     pub(crate) channel_id: ChannelId,
+    pub(crate) _request_payload: PhantomData<RequestPayload>,
+    pub(crate) _request_header: PhantomData<RequestHeader>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -125,7 +122,7 @@ impl<
 
         client_shared_state
             .request_sender
-            .release_sample(self.offset_to_chunk);
+            .release_sample(self.chunk.offset());
         if !self.was_sample_sent.load(Ordering::Relaxed) {
             client_shared_state
                 .request_sender
@@ -146,15 +143,13 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "RequestMut<{}, {}, {}, {}, {}> {{ ptr: {:?}, sample_size: {}, offset_to_chunk: {:?}, was_sample_sent: {}, channel_id: {} }}",
+            "RequestMut<{}, {}, {}, {}, {}> {{ chunk: {:?}, was_sample_sent: {}, channel_id: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<RequestPayload>(),
             core::any::type_name::<RequestHeader>(),
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
-            self.ptr,
-            self.sample_size,
-            self.offset_to_chunk,
+            self.chunk,
             self.was_sample_sent.load(Ordering::Relaxed),
             self.channel_id.value()
         )
@@ -163,7 +158,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
@@ -171,20 +166,58 @@ impl<
 {
     type Target = RequestPayload;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.payload_ptr().cast() }
     }
 }
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = [RequestPayload];
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                self.number_of_elements(),
+            )
+        }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > DerefMut for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.ptr.as_payload_mut()
+        unsafe { &mut *self.chunk.payload_mut_ptr().cast() }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> DerefMut
+    for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.payload_mut_ptr().cast(),
+                self.number_of_elements(),
+            )
+        }
     }
 }
 
@@ -199,33 +232,17 @@ impl<
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        self.ptr.as_header_ref()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns a reference to the user defined request header.
     pub fn user_header(&self) -> &RequestHeader {
-        self.ptr.as_user_header_ref()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a mutable reference to the user defined request header.
     pub fn user_header_mut(&mut self) -> &mut RequestHeader {
-        self.ptr.as_user_header_mut()
-    }
-
-    /// Returns a reference to the user defined request payload.
-    pub fn payload(&self) -> &RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_ref()
-    }
-
-    /// Returns a mutable reference to the user defined request payload.
-    pub fn payload_mut(&mut self) -> &mut RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_mut()
+        unsafe { &mut *self.chunk.user_header_mut_ptr().cast() }
     }
 
     /// Sends the [`RequestMut`] to all connected
@@ -239,8 +256,7 @@ impl<
     > {
         let client_shared_state = self.client_shared_state.lock();
         match client_shared_state.send_request(
-            self.offset_to_chunk,
-            self.sample_size,
+            &self.chunk,
             self.channel_id,
             self.header().request_id,
         ) {
@@ -262,5 +278,62 @@ impl<
             }
             Err(e) => Err(e),
         }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the user defined request payload.
+    pub fn payload(&self) -> &RequestPayload {
+        self.deref()
+    }
+
+    /// Returns a mutable reference to the user defined request payload.
+    pub fn payload_mut(&mut self) -> &mut RequestPayload {
+        &mut *self
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn number_of_elements(&self) -> usize {
+        static_assert_size_of!(CustomPayloadMarker, 1);
+        // We need to handle the custom payload marker her, that has always a size of 1
+        // and the ability to set custom payload type size/alignment. Therefore, we need
+        // to calculate number of elements * payload_size divided again by the payload size.
+        // If the generic argument and payload size is equal it will return the actual
+        // number of elements.
+        //
+        // But in the special case of the CustomPayloadMarker, it will divide by 1 and
+        // return a slice of bytes with the correct size.
+        self.header().number_of_elements() as usize
+            * self
+                .client_shared_state
+                .lock()
+                .request_sender
+                .payload_size()
+            / core::mem::size_of::<RequestPayload>()
+    }
+
+    /// Returns a reference to the user defined request payload.
+    pub fn payload(&self) -> &[RequestPayload] {
+        self.deref()
+    }
+
+    /// Returns a mutable reference to the user defined request payload.
+    pub fn payload_mut(&mut self) -> &mut [RequestPayload] {
+        &mut *self
     }
 }

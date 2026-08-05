@@ -89,14 +89,13 @@ impl<Service: crate::service::Service, T: PortSharedState> Clone
 impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<Service, T> {
     pub fn new(
         port_shared_state: &Service::ArcThreadSafetyPolicy<T>,
-        pointer_to_chunk: ShmPointer,
-        slice_len: usize,
+        chunk: &ChunkMut,
     ) -> Result<Self, ArcSyncPolicyCreationError> {
         let state = match Service::ArcThreadSafetyPolicy::new(ChunkMutInnerSharedState {
             port_shared_state: port_shared_state.clone(),
-            offset_to_chunk: AtomicU64::new(pointer_to_chunk.offset.as_value()),
-            shm_raw_ptr: AtomicUsize::new(pointer_to_chunk.data_ptr as usize),
-            slice_len: AtomicUsize::new(slice_len),
+            offset_to_chunk: AtomicU64::new(chunk.offset().as_value()),
+            shm_raw_ptr: AtomicUsize::new(chunk.header_ptr() as usize),
+            slice_len: AtomicUsize::new(chunk.size()),
         }) {
             Ok(v) => v,
             Err(e) => {
@@ -129,6 +128,10 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
 
     pub fn header_len(&self) -> usize {
         self.state.lock().port_shared_state.lock().header_len()
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.state.lock().port_shared_state.lock().payload_size()
     }
 
     pub fn update_chunk_pointers_to_reallocated_layout(&self) -> ChunkMut {

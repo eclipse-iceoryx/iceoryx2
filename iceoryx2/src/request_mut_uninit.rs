@@ -106,20 +106,56 @@ impl<
     pub fn user_header_mut(&mut self) -> &mut RequestHeader {
         self.request.user_header_mut()
     }
+}
 
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
+    RequestMutUninit<
+        Service,
+        MaybeUninit<RequestPayload>,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
     /// Returns a reference to the user defined request payload.
-    pub fn payload(&self) -> &RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
+    pub fn payload(&self) -> &MaybeUninit<RequestPayload> {
         self.request.payload()
     }
 
     /// Returns a mutable reference to the user defined request payload.
-    pub fn payload_mut(&mut self) -> &mut RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
+    pub fn payload_mut(&mut self) -> &mut MaybeUninit<RequestPayload> {
+        self.request.payload_mut()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
+    RequestMutUninit<
+        Service,
+        [MaybeUninit<RequestPayload>],
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    /// Returns a reference to the user defined request payload.
+    pub fn payload(&self) -> &[MaybeUninit<RequestPayload>] {
+        self.request.payload()
+    }
+
+    /// Returns a mutable reference to the user defined request payload.
+    pub fn payload_mut(&mut self) -> &mut [MaybeUninit<RequestPayload>] {
         self.request.payload_mut()
     }
 }

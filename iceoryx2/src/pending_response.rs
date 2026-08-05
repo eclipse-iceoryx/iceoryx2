@@ -142,7 +142,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
@@ -150,6 +150,21 @@ impl<
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Target = RequestPayload;
+    fn deref(&self) -> &Self::Target {
+        self.request.payload()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref
+    for PendingResponse<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = [RequestPayload];
     fn deref(&self) -> &Self::Target {
         self.request.payload()
     }
@@ -235,15 +250,6 @@ impl<
         self.request.user_header()
     }
 
-    /// Returns a reference to the request payload of the corresponding
-    /// [`RequestMut`]
-    pub fn payload(&self) -> &RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.request.payload()
-    }
-
     /// Returns how many [`Server`](crate::port::server::Server)s received the corresponding
     /// [`RequestMut`] initially.
     pub fn number_of_server_connections(&self) -> usize {
@@ -269,6 +275,36 @@ impl<
         client_shared_state
             .response_receiver
             .receive(self.request.channel_id)
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the request payload of the corresponding
+    /// [`RequestMut`]
+    pub fn payload(&self) -> &RequestPayload {
+        self.request.payload()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PendingResponse<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the request payload of the corresponding
+    /// [`RequestMut`]
+    pub fn payload(&self) -> &[RequestPayload] {
+        self.request.payload()
     }
 }
 

@@ -88,12 +88,13 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
-    arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, shm_allocator::PointerOffset,
+    arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage,
     zero_copy_connection::ChannelId,
 };
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::active_request::RequestId;
+use crate::port::details::chunk::ChunkMut;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::resource::request_response::RequestResponseResources;
 use crate::{
@@ -104,7 +105,6 @@ use crate::{
         update_connections::UpdateConnections,
     },
     prelude::{BackpressureStrategy, PortFactory},
-    raw_sample::RawSampleMut,
     request_mut::RequestMut,
     request_mut_uninit::RequestMutUninit,
     service::{
@@ -215,8 +215,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
 
     pub(crate) fn send_request(
         &self,
-        offset: PointerOffset,
-        sample_size: usize,
+        chunk: &ChunkMut,
         channel_id: ChannelId,
         request_id: RequestId,
     ) -> Result<usize, RequestSendError> {
@@ -245,8 +244,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
 
         self.active_request_counter.fetch_add(1, Ordering::Relaxed);
         Ok(self.request_sender.deliver_offset(
-            offset,
-            sample_size,
+            chunk,
             // All requests are delivered on the same channel, therefore we can use
             // ChannelId::new(0).
             ChannelId::new(0),
@@ -783,23 +781,15 @@ impl<
         };
         unsafe { user_header_ptr.write(RequestHeader::default()) };
 
-        let ptr = unsafe {
-            RawSampleMut::<
-                service::header::request_response::RequestHeader,
-                RequestHeader,
-                MaybeUninit<RequestPayload>,
-            >::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
-        };
-
         Ok(RequestMutUninit {
             request: RequestMut {
-                ptr,
-                sample_size: chunk.size(),
+                chunk,
                 channel_id,
-                offset_to_chunk: chunk.offset,
                 client_shared_state: self.client_shared_state.clone(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
+                _request_payload: PhantomData,
+                _request_header: PhantomData,
                 was_sample_sent: AtomicBool::new(false),
             },
         })
@@ -1006,14 +996,13 @@ impl<
         LoanError,
     > {
         debug_assert!(TypeId::of::<RequestPayload>() != TypeId::of::<CustomPayloadMarker>());
-        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+        unsafe { self.loan_slice_uninit_impl(slice_len) }
     }
 
     #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     unsafe fn loan_slice_uninit_impl(
         &self,
         slice_len: usize,
-        underlying_number_of_slice_elements: usize,
     ) -> Result<
         RequestMutUninit<
             Service,
@@ -1062,30 +1051,15 @@ impl<
         };
         unsafe { user_header_ptr.write(RequestHeader::default()) };
 
-        let ptr = unsafe {
-            RawSampleMut::<
-                service::header::request_response::RequestHeader,
-                RequestHeader,
-                [MaybeUninit<RequestPayload>],
-            >::new_unchecked(
-                header_ptr,
-                user_header_ptr,
-                core::ptr::slice_from_raw_parts_mut(
-                    chunk.payload.cast(),
-                    underlying_number_of_slice_elements,
-                ),
-            )
-        };
-
         Ok(RequestMutUninit {
             request: RequestMut {
-                ptr,
-                sample_size: chunk.size(),
+                chunk,
                 channel_id,
-                offset_to_chunk: chunk.offset,
                 client_shared_state: self.client_shared_state.clone(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
+                _request_header: PhantomData,
+                _request_payload: PhantomData,
                 was_sample_sent: AtomicBool::new(false),
             },
         })
@@ -1117,18 +1091,15 @@ impl<Service: service::Service>
         LoanError,
     > {
         let client_shared_state = self.client_shared_state.lock();
+
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
         debug_assert!(
             slice_len == 1
                 || client_shared_state.request_sender.payload_type_variant()
                     == TypeVariant::Dynamic
         );
-        unsafe {
-            self.loan_slice_uninit_impl(
-                slice_len,
-                client_shared_state.request_sender.payload_size() * slice_len,
-            )
-        }
+
+        unsafe { self.loan_slice_uninit_impl(slice_len) }
     }
 }
 ////////////////////////

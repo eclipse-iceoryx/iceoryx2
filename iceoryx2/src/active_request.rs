@@ -62,7 +62,7 @@ use crate::{
         details::chunk_details::ChunkDetails,
         server::{INVALID_CONNECTION_ID, SharedServerState},
     },
-    raw_sample::{RawSample, RawSampleMut},
+    raw_sample::RawSample,
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
     service::{self, static_config::message_type_details::TypeVariant},
@@ -345,23 +345,13 @@ impl<
         };
         unsafe { user_header_ptr.write(ResponseHeader::default()) };
 
-        let ptr = unsafe {
-            RawSampleMut::<
-                service::header::request_response::ResponseHeader,
-                ResponseHeader,
-                MaybeUninit<ResponsePayload>,
-            >::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
-        };
-
         Ok(ResponseMutUninit {
             response: ResponseMut {
-                ptr,
+                chunk,
                 shared_loan_counter: self.shared_loan_counter.clone(),
                 shared_state: self.shared_state.clone(),
-                offset_to_chunk: chunk.offset,
                 channel_id: self.channel_id,
                 connection_id: self.connection_id,
-                sample_size: chunk.size(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
             },
@@ -540,13 +530,12 @@ impl<
     ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
     {
         debug_assert!(TypeId::of::<ResponsePayload>() != TypeId::of::<CustomPayloadMarker>());
-        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+        unsafe { self.loan_slice_uninit_impl(slice_len) }
     }
 
     unsafe fn loan_slice_uninit_impl(
         &self,
         slice_len: usize,
-        underlying_number_of_slice_elements: usize,
     ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
     {
         let shared_state = self.shared_state.lock();
@@ -580,30 +569,13 @@ impl<
         };
         unsafe { user_header_ptr.write(ResponseHeader::default()) };
 
-        let ptr = unsafe {
-            RawSampleMut::<
-                service::header::request_response::ResponseHeader,
-                ResponseHeader,
-                [MaybeUninit<ResponsePayload>],
-            >::new_unchecked(
-                header_ptr,
-                user_header_ptr,
-                core::ptr::slice_from_raw_parts_mut(
-                    chunk.payload.cast(),
-                    underlying_number_of_slice_elements,
-                ),
-            )
-        };
-
         Ok(ResponseMutUninit {
             response: ResponseMut {
-                ptr,
+                chunk,
                 shared_loan_counter: self.shared_loan_counter.clone(),
                 shared_state: self.shared_state.clone(),
-                offset_to_chunk: chunk.offset,
                 channel_id: self.channel_id,
                 connection_id: self.connection_id,
-                sample_size: chunk.size(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
             },
@@ -634,12 +606,7 @@ impl<Service: crate::service::Service>
             slice_len == 1
                 || shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
         );
-        unsafe {
-            self.loan_slice_uninit_impl(
-                slice_len,
-                shared_state.response_sender.payload_size() * slice_len,
-            )
-        }
+        unsafe { self.loan_slice_uninit_impl(slice_len) }
     }
 }
 ////////////////////////

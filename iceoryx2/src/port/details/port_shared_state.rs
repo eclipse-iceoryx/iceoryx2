@@ -25,4 +25,5 @@ pub trait PortSharedState: Abandonable + Send + Debug + Grow<ShmPointer> {
     fn header_len(&self) -> usize;
     fn message_type_details(&self) -> MessageTypeDetails;
     fn allocation_strategy(&self) -> AllocationStrategy;
+    fn payload_size(&self) -> usize;
 }

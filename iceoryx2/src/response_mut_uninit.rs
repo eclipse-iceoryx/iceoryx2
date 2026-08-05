@@ -175,7 +175,14 @@ impl<
     pub fn user_header_mut(&mut self) -> &mut ResponseHeader {
         self.response.user_header_mut()
     }
+}
 
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+{
     /// Returns a reference to the payload of the response.
     ///
     /// ```
@@ -226,6 +233,66 @@ impl<
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut ResponsePayload {
+        self.response.payload_mut()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMutUninit<Service, [ResponsePayload], ResponseHeader>
+{
+    /// Returns a reference to the payload of the response.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever3".try_into()?)
+    /// #     .request_response::<u64, [u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let mut response = active_request.loan_slice_uninit(1)?;
+    /// response.payload_mut()[0].write(123);
+    /// println!("payload: {:?}", *response.payload());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload(&self) -> &[ResponsePayload] {
+        self.response.payload()
+    }
+
+    /// Returns a mutable reference to the payload of the response.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever4".try_into()?)
+    /// #     .request_response::<u64, [u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let mut response = active_request.loan_slice_uninit(12)?;
+    /// response.payload_mut()[4].write(123);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload_mut(&mut self) -> &mut [ResponsePayload] {
         self.response.payload_mut()
     }
 }

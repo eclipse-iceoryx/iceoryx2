@@ -31,7 +31,7 @@ impl Chunk {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChunkMut {
     pub(crate) offset: PointerOffset,
     pub(crate) header: *mut u8,

@@ -130,6 +130,7 @@ use iceoryx2_cal::zero_copy_connection::{
 };
 use iceoryx2_log::{fail, warn};
 
+use crate::port::details::chunk::ChunkMut;
 use crate::port::details::port_shared_state::PortSharedState;
 use crate::port::details::sender::*;
 use crate::port::port_name::PortName;
@@ -183,6 +184,15 @@ struct OffsetAndSize {
     size: usize,
 }
 
+impl OffsetAndSize {
+    fn new(chunk: &ChunkMut) -> Self {
+        Self {
+            offset: chunk.offset.as_value(),
+            size: chunk.size(),
+        }
+    }
+}
+
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct PublisherSharedState<Service: service::Service> {
@@ -217,6 +227,10 @@ impl<Service: service::Service> PortSharedState for PublisherSharedState<Service
 
     fn allocation_strategy(&self) -> AllocationStrategy {
         self.sender.data_segment.allocation_strategy()
+    }
+
+    fn payload_size(&self) -> usize {
+        self.sender.payload_size()
     }
 }
 
@@ -254,16 +268,13 @@ impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
 }
 
 impl<Service: service::Service> PublisherSharedState<Service> {
-    fn add_sample_to_history(&self, offset: PointerOffset, sample_size: usize) {
+    fn add_sample_to_history(&self, chunk: &ChunkMut) {
         match &self.history {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                self.sender.borrow_sample(offset);
-                match history.push_with_overflow(OffsetAndSize {
-                    offset: offset.as_value(),
-                    size: sample_size,
-                }) {
+                self.sender.borrow_sample(chunk.offset());
+                match history.push_with_overflow(OffsetAndSize::new(chunk)) {
                     None => (),
                     Some(old) => self
                         .sender
@@ -355,11 +366,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         }
     }
 
-    pub(crate) fn send_sample(
-        &self,
-        offset: PointerOffset,
-        sample_size: usize,
-    ) -> Result<usize, SendError> {
+    pub(crate) fn send_sample(&self, chunk: &ChunkMut) -> Result<usize, SendError> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
             fail!(from self, with SendError::ConnectionBrokenSinceSenderNoLongerExists,
@@ -369,9 +376,8 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.add_sample_to_history(offset, sample_size);
-        self.sender
-            .deliver_offset(offset, sample_size, ChannelId::new(0))
+        self.add_sample_to_history(chunk);
+        self.sender.deliver_offset(chunk, ChannelId::new(0))
     }
 }
 
@@ -893,37 +899,35 @@ impl<
         // required since Rust does not support generic specializations or negative traits
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
-        self.loan_slice_uninit_impl(number_of_elements, number_of_elements)
+        self.loan_slice_uninit_impl(number_of_elements)
     }
 
     fn loan_slice_uninit_impl(
         &self,
-        number_of_elements: usize,
-        underlying_slice_len: usize,
+        slice_len: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
         let shared_state = self.publisher_shared_state.lock();
         let max_slice_len = shared_state.config.initial_max_slice_len;
         if shared_state.config.allocation_strategy == AllocationStrategy::Static
-            && max_slice_len < number_of_elements
+            && max_slice_len < slice_len
         {
             fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
-                number_of_elements, max_slice_len);
+                slice_len, max_slice_len);
         }
 
-        let sample_layout = shared_state.sender.sample_layout(number_of_elements);
+        let sample_layout = shared_state.sender.sample_layout(slice_len);
         let chunk = shared_state.sender.allocate(sample_layout)?;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         let header_ptr = chunk.header as *mut Header;
         let node_id = shared_state.sender.service_state.shared_node().id();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), number_of_elements as _)) };
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
         unsafe { user_header_ptr.write(UserHeader::default()) };
 
         Ok(
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.publisher_shared_state,
                 chunk,
-                underlying_slice_len,
             ),
         )
     }
@@ -952,7 +956,7 @@ impl<Service: service::Service> Publisher<Service, [CustomPayloadMarker], Custom
             slice_len == 1 || shared_state.sender.payload_type_variant() == TypeVariant::Dynamic
         );
 
-        self.loan_slice_uninit_impl(slice_len, shared_state.sender.payload_size() * slice_len)
+        self.loan_slice_uninit_impl(slice_len)
     }
 }
 ////////////////////////
