@@ -160,8 +160,6 @@ pub fn call_and_fetch_works() {
     assert_that!(result, eq Some(NonFatalFetchableSignal::Interrupt));
 }
 
-// TODO: #1458
-#[ignore]
 #[test]
 pub fn call_and_fetch_with_registered_handler_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
