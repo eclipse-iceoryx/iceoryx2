@@ -55,7 +55,6 @@ use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::service::SharedServiceState;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
-use crate::service::marker::CustomPayloadMarker;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::publish_subscribe::StaticConfig;

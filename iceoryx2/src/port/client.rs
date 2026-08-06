@@ -72,31 +72,12 @@
 //! # }
 //! ```
 
-use core::ptr::NonNull;
-use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit};
-use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
-
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
-use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
-use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
-use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
-use iceoryx2_cal::{
-    arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage,
-    zero_copy_connection::ChannelId,
-};
-use iceoryx2_log::{fail, fatal_panic, warn};
-
 use crate::active_request::RequestId;
 use crate::port::details::chunk::ChunkMut;
+use crate::port::details::port_shared_state::PortSharedState;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::resource::request_response::RequestResponseResources;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
@@ -116,6 +97,29 @@ use crate::{
         static_config::message_type_details::TypeVariant,
     },
 };
+use core::alloc::Layout;
+use core::ptr::NonNull;
+use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit};
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
+use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
+use iceoryx2_cal::{
+    arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage,
+    zero_copy_connection::ChannelId,
+};
+use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::{
     LoanError, SendError,
@@ -183,6 +187,49 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
     port_tag: Service::StaticStorage,
+}
+
+impl<Service: service::Service> PortSharedState for ClientSharedState<Service> {
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.request_sender.data_segment.allocation_strategy()
+    }
+
+    fn header_len(&self) -> usize {
+        self.request_sender.message_type_details.all_headers_len()
+    }
+
+    fn message_type_details(&self) -> MessageTypeDetails {
+        self.request_sender.message_type_details
+    }
+
+    fn payload_size(&self) -> usize {
+        self.request_sender.payload_size()
+    }
+
+    fn return_loan(&self, offset: PointerOffset) {
+        self.request_sender.return_loaned_sample(offset);
+    }
+}
+
+impl<Service: service::Service> Grow<ShmPointer> for ClientSharedState<Service> {
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: ContentPlacement,
+    ) -> Result<ShmPointer, AllocationGrowError> {
+        match unsafe {
+            self.request_sender
+                .grow(ptr, old_layout, new_layout, content_placement)
+        } {
+            Ok(ptr) => Ok(ptr),
+            Err(e) => {
+                fail!(from self, with e,
+                        "Failed to grow request from {old_layout:?} to {new_layout:?}. [{e:?}]");
+            }
+        }
+    }
 }
 
 impl<Service: service::Service> Abandonable for ClientSharedState<Service> {
