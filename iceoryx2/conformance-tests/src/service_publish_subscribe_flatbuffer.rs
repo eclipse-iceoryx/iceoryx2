@@ -19,7 +19,6 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod service_publish_subscribe_flatbuffer {
     use alloc::vec;
     use flatbuffers::{FlatBufferBuilder, WIPOffset};
-    use iceoryx2::prelude::{FileName, FilePath, SemanticString};
     use iceoryx2::sample_mut_uninit::FlatbufferMemory;
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
@@ -27,7 +26,6 @@ pub mod service_publish_subscribe_flatbuffer {
     use iceoryx2::service::{Service, marker::Flatbuffer};
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
-    use iceoryx2_bb_posix::file::{CreationMode, File, FileBuilder};
     use iceoryx2_bb_posix::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -414,32 +412,6 @@ pub mod service_publish_subscribe_flatbuffer {
         root_type BoundedData;
     ";
 
-    fn create_schema_file(schema: &str) -> File {
-        let schema_file = generate_file_path();
-        let mut file = FileBuilder::new(&schema_file)
-            .creation_mode(CreationMode::PurgeAndCreate)
-            .create()
-            .unwrap();
-        file.acquire_ownership();
-        file.write(schema.as_bytes()).unwrap();
-        file
-    }
-
-    fn create_schema_file_at(schema: &str, file_name: &str) -> File {
-        let schema_file = FilePath::from_path_and_file(
-            &TEST_DIRECTORY,
-            &FileName::new(file_name.as_bytes()).unwrap(),
-        )
-        .unwrap();
-        let mut file = FileBuilder::new(&schema_file)
-            .creation_mode(CreationMode::PurgeAndCreate)
-            .create()
-            .unwrap();
-        file.acquire_ownership();
-        file.write(schema.as_bytes()).unwrap();
-        file
-    }
-
     #[conformance_test]
     pub fn create_fails_when_no_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
@@ -457,7 +429,7 @@ pub mod service_publish_subscribe_flatbuffer {
     pub fn create_succeeds_with_schema_file<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let service_name = generate_service_name();
         let sut = node
@@ -474,7 +446,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -495,8 +467,8 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
-        let alt_schema_file = create_schema_file(ALT_SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
+        let alt_schema_file = create_file_with_content(ALT_SCHEMA);
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -518,8 +490,8 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
-        let alt_schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
+        let alt_schema_file = create_file_with_content(SCHEMA);
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -542,7 +514,7 @@ pub mod service_publish_subscribe_flatbuffer {
         test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
         let node = test.create_node();
         let service_name = generate_service_name();
-        let _schema_file = create_schema_file_at(SCHEMA, "unbounded_data.fbs");
+        let _schema_file = create_file_with_content_at(SCHEMA, "unbounded_data.fbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -558,7 +530,7 @@ pub mod service_publish_subscribe_flatbuffer {
         test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
         let node = test.create_node();
         let service_name = generate_service_name();
-        let _schema_file = create_schema_file_at(SCHEMA, "unbounded_data.fbs");
+        let _schema_file = create_file_with_content_at(SCHEMA, "unbounded_data.fbs");
 
         let _sut = node
             .service_builder(&service_name)
@@ -579,7 +551,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)
@@ -625,7 +597,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)
@@ -662,7 +634,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)
@@ -722,7 +694,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)
@@ -751,7 +723,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)
@@ -789,7 +761,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)
@@ -824,7 +796,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_schema_file(SCHEMA);
+        let schema_file = create_file_with_content(SCHEMA);
 
         let sut = node
             .service_builder(&service_name)

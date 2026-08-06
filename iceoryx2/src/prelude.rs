@@ -32,6 +32,7 @@ pub use iceoryx2_bb_derive_macros::ZeroCopySend;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
 pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+pub use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 pub use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 pub use iceoryx2_bb_flatbuffers::FlatbufferError;

@@ -45,7 +45,7 @@ use crate::{
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::{fail, warn};
 use tiny_fn::tiny_fn;
 
@@ -112,9 +112,9 @@ impl<'a> Debug for PreallocatedResponseOverride<'a> {
 pub struct PortFactoryServer<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<
@@ -134,9 +134,9 @@ pub struct PortFactoryServer<
 
 unsafe impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send
     for PortFactoryServer<
@@ -153,9 +153,9 @@ unsafe impl<
 impl<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 >
     PortFactoryServer<
@@ -318,7 +318,7 @@ impl<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,

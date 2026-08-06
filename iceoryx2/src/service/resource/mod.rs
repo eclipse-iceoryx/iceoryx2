@@ -14,22 +14,23 @@ extern crate alloc;
 
 pub mod blackboard;
 pub mod publish_subscribe;
+pub mod request_response;
+pub(crate) mod type_definition;
 
-use alloc::string::ToString;
 use core::fmt::Debug;
 use core::ptr::NonNull;
-use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::fatal_panic;
 
 use crate::{
     config,
     service::{
         self,
         builder::{ServiceCreateError, ServiceOpenError},
-        resource::{blackboard::BlackboardResources, publish_subscribe::PublishSubscribeResources},
+        resource::{
+            blackboard::BlackboardResources, publish_subscribe::PublishSubscribeResources,
+            request_response::RequestResponseResources,
+        },
         static_config::{StaticConfig, messaging_pattern::MessagingPattern},
     },
 };
@@ -42,7 +43,9 @@ pub unsafe fn remove_stale_service_resources<ServiceType: service::Service>(
         MessagingPattern::Blackboard(_) => unsafe {
             BlackboardResources::<ServiceType>::remove_stale_resources(config, static_config)
         },
-        MessagingPattern::RequestResponse(_) => Ok(()),
+        MessagingPattern::RequestResponse(_) => unsafe {
+            RequestResponseResources::<ServiceType>::remove_stale_resources(config, static_config)
+        },
         MessagingPattern::Event(_) => Ok(()),
         MessagingPattern::PublishSubscribe(_) => unsafe {
             PublishSubscribeResources::<ServiceType>::remove_stale_resources(config, static_config)
@@ -62,18 +65,6 @@ enum_gen! {
 /// are left
 pub trait ServiceResource: Abandonable + Debug + Send {
     type Config;
-
-    fn service_resource_directory(config: &config::Config, static_config: &StaticConfig) -> Path {
-        let origin = "ServiceResource::service_resource_directory()";
-        let mut root = config.global.service_dir();
-        let id = fatal_panic!(from origin,
-               when Path::new(static_config.unique_service_id().value().to_string().as_bytes()),
-               "This should never happen! The service id is always a valid path name.");
-        fatal_panic!(from origin,
-                when root.add_path_entry(&id),
-                "This should never happen! The full service directory is too long. A shorter iceoryx2 root path might solve the issue.");
-        root
-    }
 
     fn create(
         static_config: &StaticConfig,

@@ -17,6 +17,7 @@
 use core::marker::PhantomData;
 
 use crate::config::Config;
+use crate::service::resource::type_definition::TypeDefinition;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -737,10 +738,12 @@ impl<
                 PublishSubscribeResources::create(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        use_type_definition: self.has_flatbuffer_payload(),
-                        schema_path: self.flatbuffer_schema_path,
+                        type_definition: TypeDefinition {
+                            use_type_definition: self.has_flatbuffer_payload(),
+                            schema_path: self.flatbuffer_schema_path,
+                            type_name: self.type_definition_name_hint,
+                        },
                         shared_node: self.base.shared_node.clone(),
-                        type_name: self.type_definition_name_hint,
                     },
                 )
             },
@@ -769,10 +772,12 @@ impl<
                 PublishSubscribeResources::open(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        use_type_definition: self.has_flatbuffer_payload(),
-                        schema_path: self.flatbuffer_schema_path,
+                        type_definition: TypeDefinition {
+                            use_type_definition: self.has_flatbuffer_payload(),
+                            schema_path: self.flatbuffer_schema_path,
+                            type_name: self.type_definition_name_hint,
+                        },
                         shared_node: self.base.shared_node.clone(),
-                        type_name: self.type_definition_name_hint,
                     },
                 )
             },

@@ -75,8 +75,8 @@ pub fn wait_for_pred<F: Fn() -> bool>(
 
 pub fn await_response<
     ServiceType: iceoryx2::service::Service,
-    RequestType: core::fmt::Debug + iceoryx2::prelude::ZeroCopySend + ?Sized,
-    ResponseType: core::fmt::Debug + iceoryx2::prelude::ZeroCopySend,
+    RequestType: core::fmt::Debug + iceoryx2::prelude::IceoryxSend + ?Sized,
+    ResponseType: core::fmt::Debug + iceoryx2::prelude::IceoryxSend,
 >(
     node: &iceoryx2::prelude::Node<iceoryx2::prelude::ipc::Service>,
     pending_response: &iceoryx2::pending_response::PendingResponse<

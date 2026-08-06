@@ -46,17 +46,18 @@ use crate::{
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, ServiceState, SharedServiceState, dynamic_config, resource::NoResource,
-        service_hash::ServiceHash, service_name::ServiceName, static_config,
+        self, ServiceState, SharedServiceState, dynamic_config, marker::Flatbuffer,
+        resource::request_response::RequestResponseResources, service_hash::ServiceHash,
+        service_name::ServiceName, static_config,
     },
 };
 use alloc::sync::Arc;
 use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, testing::abandonable::Abandonable};
+use iceoryx2_cal::{dynamic_storage::DynamicStorage, static_storage::StaticStorage};
 
 /// The factory for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
@@ -66,12 +67,12 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: SharedServiceState<Service, NoResource>,
+    pub(crate) service: SharedServiceState<Service, RequestResponseResources<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -80,9 +81,9 @@ pub struct PortFactory<
 
 unsafe impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -90,9 +91,9 @@ unsafe impl<
 
 unsafe impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Sync for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -100,9 +101,9 @@ unsafe impl<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Abandonable
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -115,9 +116,9 @@ impl<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Clone for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -134,9 +135,9 @@ impl<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > crate::service::port_factory::PortFactory
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -183,13 +184,13 @@ impl<
 
 impl<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, RequestResponseResources<Service>>) -> Self {
         Self {
             service: SharedServiceState {
                 state: Arc::new(service),
@@ -267,5 +268,43 @@ impl<
         ResponseHeader,
     > {
         PortFactoryServer::new(self)
+    }
+}
+
+impl<
+    Service: service::Service,
+    RequestPayload: Debug,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PortFactory<Service, Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the request's type definition.
+    pub fn request_type_definition(
+        &self,
+    ) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
+        self.service
+            .additional_resource()
+            .request_type_definition()
+            .map(|v| v.view())
+    }
+}
+
+impl<
+    Service: service::Service,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug,
+    ResponseHeader: Debug + ZeroCopySend,
+> PortFactory<Service, RequestPayload, RequestHeader, Flatbuffer<ResponsePayload>, ResponseHeader>
+{
+    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the response's type definition.
+    pub fn response_type_definition(
+        &self,
+    ) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
+        self.service
+            .additional_resource()
+            .response_type_definition()
+            .map(|v| v.view())
     }
 }

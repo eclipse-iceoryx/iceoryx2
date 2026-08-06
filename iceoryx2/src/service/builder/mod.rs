@@ -204,8 +204,8 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse) [`Service`].
     pub fn request_response<
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        RequestPayload: Debug + IceoryxSend + ?Sized,
+        ResponsePayload: Debug + IceoryxSend + ?Sized,
     >(
         self,
     ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), S> {
@@ -297,8 +297,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     }
 
     fn request_response<
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        RequestPayload: Debug + IceoryxSend + ?Sized,
+        ResponsePayload: Debug + IceoryxSend + ?Sized,
     >(
         self,
     ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), ServiceType> {
