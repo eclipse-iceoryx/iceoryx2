@@ -57,6 +57,7 @@
 * [#1868](https://github.com/eclipse-iceoryx/iceoryx2/issues/1868) Automatically create windows platform directories
 * [#1872](https://github.com/eclipse-iceoryx/iceoryx2/issues/1872) Register FileDescriptor pyclass with the python module
 * [#1878](https://github.com/eclipse-iceoryx/iceoryx2/issues/1878) Fix race in `pthread_create` on macOS and Windows
+* [#1893](https://github.com/eclipse-iceoryx/iceoryx2/issues/1893) Fix C language `ipc` and `local` mapping for payload types
 
 ### Refactoring
 
