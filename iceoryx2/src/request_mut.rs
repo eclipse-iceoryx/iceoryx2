@@ -40,7 +40,6 @@ use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_elementary::static_assert_size_of;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -48,8 +47,8 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_log::fatal_panic;
 
+use crate::payload::number_of_elements;
 use crate::port::details::chunk::ChunkMut;
-use crate::service::marker::CustomPayloadMarker;
 use crate::{
     pending_response::PendingResponse,
     port::client::{ClientSharedState, RequestSendError},
@@ -180,10 +179,16 @@ impl<
 {
     type Target = [RequestPayload];
     fn deref(&self) -> &Self::Target {
+        let payload_size = self
+            .client_shared_state
+            .lock()
+            .request_sender
+            .payload_size();
+
         unsafe {
             &*core::ptr::slice_from_raw_parts(
                 self.chunk.payload_ptr().cast(),
-                self.number_of_elements(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
             )
         }
     }
@@ -212,10 +217,15 @@ impl<
     for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
+        let payload_size = self
+            .client_shared_state
+            .lock()
+            .request_sender
+            .payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
-                self.number_of_elements(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
             )
         }
     }
@@ -308,25 +318,6 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
-    fn number_of_elements(&self) -> usize {
-        static_assert_size_of!(CustomPayloadMarker, 1);
-        // We need to handle the custom payload marker her, that has always a size of 1
-        // and the ability to set custom payload type size/alignment. Therefore, we need
-        // to calculate number of elements * payload_size divided again by the payload size.
-        // If the generic argument and payload size is equal it will return the actual
-        // number of elements.
-        //
-        // But in the special case of the CustomPayloadMarker, it will divide by 1 and
-        // return a slice of bytes with the correct size.
-        self.header().number_of_elements() as usize
-            * self
-                .client_shared_state
-                .lock()
-                .request_sender
-                .payload_size()
-            / core::mem::size_of::<RequestPayload>()
-    }
-
     /// Returns a reference to the user defined request payload.
     pub fn payload(&self) -> &[RequestPayload] {
         self.deref()

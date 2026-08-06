@@ -17,6 +17,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod service_publish_subscribe {
     use alloc::{format, sync::Arc, vec, vec::Vec};
     use core::time::Duration;
+    use iceoryx2::service::header::payload_header::PayloadHeader;
 
     use iceoryx2::config::Config;
     use iceoryx2::port::publisher::PublisherCreateError;

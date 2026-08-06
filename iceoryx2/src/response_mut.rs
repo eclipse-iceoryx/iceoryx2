@@ -45,7 +45,6 @@ use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
-use iceoryx2_bb_elementary::static_assert_size_of;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -54,12 +53,13 @@ use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::Channel
 use iceoryx2_log::fail;
 
 use crate::{
+    payload::number_of_elements,
     port::{
         SendError,
         details::chunk::ChunkMut,
         server::{INVALID_CONNECTION_ID, SharedServerState},
     },
-    service::{self, marker::CustomPayloadMarker},
+    service,
 };
 
 /// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
@@ -149,10 +149,11 @@ impl<
 {
     type Target = [ResponsePayload];
     fn deref(&self) -> &Self::Target {
+        let payload_size = self.shared_state.lock().response_sender.payload_size();
         unsafe {
             &*core::ptr::slice_from_raw_parts(
                 self.chunk.payload_ptr().cast(),
-                self.number_of_elements(),
+                number_of_elements::<ResponsePayload, _>(self.header(), payload_size),
             )
         }
     }
@@ -176,10 +177,11 @@ impl<
 > DerefMut for ResponseMut<Service, [ResponsePayload], ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
+        let payload_size = self.shared_state.lock().response_sender.payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
-                self.number_of_elements(),
+                number_of_elements::<ResponsePayload, _>(self.header(), payload_size),
             )
         }
     }
@@ -386,21 +388,6 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > ResponseMut<Service, [ResponsePayload], ResponseHeader>
 {
-    fn number_of_elements(&self) -> usize {
-        static_assert_size_of!(CustomPayloadMarker, 1);
-        // We need to handle the custom payload marker her, that has always a size of 1
-        // and the ability to set custom payload type size/alignment. Therefore, we need
-        // to calculate number of elements * payload_size divided again by the payload size.
-        // If the generic argument and payload size is equal it will return the actual
-        // number of elements.
-        //
-        // But in the special case of the CustomPayloadMarker, it will divide by 1 and
-        // return a slice of bytes with the correct size.
-        self.header().number_of_elements() as usize
-            * self.shared_state.lock().response_sender.payload_size()
-            / core::mem::size_of::<ResponsePayload>()
-    }
-
     /// Returns a reference to the payload of the response.
     ///
     /// ```

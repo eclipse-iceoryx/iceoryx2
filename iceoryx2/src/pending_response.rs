@@ -69,6 +69,7 @@ use crate::port::client::ClientSharedState;
 use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::raw_sample::RawSample;
+use crate::service::header::payload_header::PayloadHeader;
 use crate::service::marker::CustomPayloadMarker;
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 

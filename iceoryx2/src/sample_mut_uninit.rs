@@ -90,9 +90,9 @@
 //! # }
 //! ```
 
+use crate::payload::number_of_elements;
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
-use crate::service::marker::CustomPayloadMarker;
 use crate::{
     port::publisher::PublisherSharedState,
     sample_mut::SampleMut,
@@ -102,7 +102,6 @@ use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::{fmt::Debug, mem::MaybeUninit};
 use flatbuffers::{FlatBufferBuilder, WIPOffset};
-use iceoryx2_bb_elementary::static_assert_size_of;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
 use iceoryx2_cal::shared_memory::ShmPointer;
@@ -479,26 +478,6 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
         }
     }
 
-    fn number_of_elements(&self) -> usize {
-        static_assert_size_of!(CustomPayloadMarker, 1);
-        println!(
-            "number of elements: {}, recorded payload size: {}, actual payload size: {}",
-            self.header().number_of_elements(),
-            self.shared_state.payload_size(),
-            core::mem::size_of::<Payload>()
-        );
-        // We need to handle the custom payload marker her, that has always a size of 1
-        // and the ability to set custom payload type size/alignment. Therefore, we need
-        // to calculate number of elements * payload_size divided again by the payload size.
-        // If the generic argument and payload size is equal it will return the actual
-        // number of elements.
-        //
-        // But in the special case of the CustomPayloadMarker, it will divide by 1 and
-        // return a slice of bytes with the correct size.
-        self.header().number_of_elements() as usize * self.shared_state.payload_size()
-            / core::mem::size_of::<Payload>()
-    }
-
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
@@ -526,10 +505,11 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// # }
     /// ```
     pub fn payload(&self) -> &[MaybeUninit<Payload>] {
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &*core::ptr::slice_from_raw_parts(
                 self.chunk.payload_ptr().cast(),
-                self.number_of_elements(),
+                number_of_elements::<Payload, _>(self.header(), payload_size),
             )
         }
     }
@@ -560,10 +540,11 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut [MaybeUninit<Payload>] {
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
-                self.number_of_elements(),
+                number_of_elements::<Payload, _>(self.header(), payload_size),
             )
         }
     }
