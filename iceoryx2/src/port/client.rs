@@ -870,7 +870,7 @@ impl<
             request: RequestMut {
                 chunk,
                 channel_id,
-                client_shared_state: self.client_shared_state.clone(),
+                shared_state: self.client_shared_state.clone(),
                 was_sample_sent: AtomicBool::new(false),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
@@ -1115,7 +1115,7 @@ impl<
             request: RequestMut {
                 chunk,
                 channel_id,
-                client_shared_state: self.client_shared_state.clone(),
+                shared_state: self.client_shared_state.clone(),
                 was_sample_sent: AtomicBool::new(false),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,

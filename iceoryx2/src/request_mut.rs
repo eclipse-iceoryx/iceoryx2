@@ -64,7 +64,7 @@ pub struct RequestMut<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) chunk: ChunkMut,
-    pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+    pub(crate) shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     pub(crate) was_sample_sent: AtomicBool,
     pub(crate) channel_id: ChannelId,
     pub(crate) _request_payload: PhantomData<RequestPayload>,
@@ -84,7 +84,7 @@ impl<
 {
     unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { core::ptr::drop_in_place(&mut this.client_shared_state) };
+        unsafe { core::ptr::drop_in_place(&mut this.shared_state) };
     }
 }
 
@@ -109,11 +109,11 @@ impl<
 > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        self.client_shared_state
+        self.shared_state
             .lock()
             .release_request(self.was_sample_sent.load(Ordering::Relaxed), self.header());
 
-        self.client_shared_state
+        self.shared_state
             .lock()
             .request_sender
             .return_loaned_sample(self.chunk.offset());
@@ -168,11 +168,7 @@ impl<
 {
     type Target = [RequestPayload];
     fn deref(&self) -> &Self::Target {
-        let payload_size = self
-            .client_shared_state
-            .lock()
-            .request_sender
-            .payload_size();
+        let payload_size = self.shared_state.lock().request_sender.payload_size();
 
         unsafe {
             &*core::ptr::slice_from_raw_parts(
@@ -206,11 +202,7 @@ impl<
     for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        let payload_size = self
-            .client_shared_state
-            .lock()
-            .request_sender
-            .payload_size();
+        let payload_size = self.shared_state.lock().request_sender.payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
@@ -253,7 +245,7 @@ impl<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
-        let client_shared_state = self.client_shared_state.lock();
+        let client_shared_state = self.shared_state.lock();
         match client_shared_state.send_request(
             &self.chunk,
             self.channel_id,

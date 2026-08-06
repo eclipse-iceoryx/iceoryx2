@@ -107,7 +107,11 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         Ok(Self { state })
     }
 
-    pub fn shared_state<SuccVal, ErrVal, F: FnOnce(&T) -> Result<SuccVal, ErrVal>>(
+    pub fn clone_shared_port_state(&self) -> Service::ArcThreadSafetyPolicy<T> {
+        self.state.lock().port_shared_state.clone()
+    }
+
+    pub fn call<SuccVal, ErrVal, F: FnOnce(&T) -> Result<SuccVal, ErrVal>>(
         &self,
         callback: F,
     ) -> Result<SuccVal, ErrVal> {

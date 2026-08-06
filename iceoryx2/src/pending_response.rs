@@ -133,7 +133,7 @@ impl<
 {
     fn drop(&mut self) {
         self.request
-            .client_shared_state
+            .shared_state
             .lock()
             .active_request_counter
             .fetch_sub(1, Ordering::Relaxed);
@@ -204,7 +204,7 @@ impl<
 {
     fn close(&self) {
         self.request
-            .client_shared_state
+            .shared_state
             .lock()
             .response_receiver
             .close_channel(self.request.channel_id, self.request.header().request_id);
@@ -217,7 +217,7 @@ impl<
     /// [`Client`](crate::port::client::Client) side.
     pub fn set_disconnect_hint(&self) {
         self.request
-            .client_shared_state
+            .shared_state
             .lock()
             .response_receiver
             .set_disconnect_hint(self.request.channel_id, self.request.header().request_id);
@@ -229,7 +229,7 @@ impl<
     /// It also returns [`false`] when there are no [`Server`](crate::port::server::Server)s.
     pub fn is_connected(&self) -> bool {
         self.request
-            .client_shared_state
+            .shared_state
             .lock()
             .response_receiver
             .at_least_one_channel_has_state(
@@ -261,14 +261,14 @@ impl<
     /// otherwise [`false`].
     pub fn has_response(&self) -> bool {
         self.request
-            .client_shared_state
+            .shared_state
             .lock()
             .response_receiver
             .has_samples(self.request.channel_id)
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
-        let client_shared_state = self.request.client_shared_state.lock();
+        let client_shared_state = self.request.shared_state.lock();
         let msg = "Unable to receive response";
         fail!(from self, when client_shared_state.update_connections(),
                 "{msg} since the connections could not be updated.");
@@ -356,7 +356,7 @@ impl<
                 Some((details, chunk)) => {
                     let response = Response {
                         details,
-                        client_shared_state: self.request.client_shared_state.clone(),
+                        client_shared_state: self.request.shared_state.clone(),
                         channel_id: self.request.channel_id,
                         ptr: unsafe {
                             RawSample::new_unchecked(
@@ -430,7 +430,7 @@ impl<
                     let response = Response {
                         details,
                         channel_id: self.request.channel_id,
-                        client_shared_state: self.request.client_shared_state.clone(),
+                        client_shared_state: self.request.shared_state.clone(),
                         ptr: unsafe {
                             RawSample::new_slice_unchecked(
                                 chunk.header.cast(),
@@ -484,7 +484,7 @@ impl<
                     let number_of_bytes = number_of_elements as usize
                         * self
                             .request
-                            .client_shared_state
+                            .shared_state
                             .lock()
                             .response_receiver
                             .payload_size();
@@ -492,7 +492,7 @@ impl<
                     let response = Response {
                         details,
                         channel_id: self.request.channel_id,
-                        client_shared_state: self.request.client_shared_state.clone(),
+                        client_shared_state: self.request.shared_state.clone(),
                         ptr: unsafe {
                             RawSample::new_slice_unchecked(
                                 chunk.header.cast(),
