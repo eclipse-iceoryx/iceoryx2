@@ -35,7 +35,8 @@ use iceoryx2_gateway_backend::traits::{Mapping, Passthrough, Translator};
 use iceoryx2_integrations_ros2_gateway_backend::Config as BackendConfig;
 use iceoryx2_integrations_ros2_gateway_backend::mapping::static_mapping;
 use iceoryx2_integrations_ros2_gateway_backend::{
-    PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicConfig, TopicDescription,
+    PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicConfig,
+    TopicDescription, TypeName,
 };
 
 const ORIGIN: &str = "iox2-gateway-ros2";
@@ -121,31 +122,33 @@ fn create_gateway(
 )> {
     match (cli.mapping(), cli.translator) {
         (cli::Mapping::Prefix, cli::Translator::Passthrough) => {
-            let backend_config = BackendConfig {
-                topics: parse_topics(&cli.topics)?,
-            };
             create_gateway_impl::<PrefixMapping, Passthrough<TopicDescription>>(
                 cli.reactive_backend,
                 PrefixMapping,
                 gateway_config,
-                backend_config,
+                BackendConfig {
+                    topics: parse_topics(&cli.topics)?,
+                    preload_types: parse_preload_types(&cli.preload_types)?,
+                },
             )
         }
         (cli::Mapping::Prefix, cli::Translator::PlainStruct) => {
-            let backend_config = BackendConfig {
-                topics: parse_topics(&cli.topics)?,
-            };
             create_gateway_impl::<PrefixMapping, PlainStructTranslator>(
                 cli.reactive_backend,
                 PrefixMapping,
                 gateway_config,
-                backend_config,
+                BackendConfig {
+                    topics: parse_topics(&cli.topics)?,
+                    preload_types: parse_preload_types(&cli.preload_types)?,
+                },
             )
         }
         (cli::Mapping::Static(path), cli::Translator::Passthrough) => {
             let mapping = load_static_mapping(&path)?;
+            let topics = mapping.topics();
             let backend_config = BackendConfig {
-                topics: mapping.topics(),
+                preload_types: topics.iter().map(|topic| topic.type_name.clone()).collect(),
+                topics,
             };
             create_gateway_impl::<StaticMapping, Passthrough<TopicDescription>>(
                 cli.reactive_backend,
@@ -156,8 +159,10 @@ fn create_gateway(
         }
         (cli::Mapping::Static(path), cli::Translator::PlainStruct) => {
             let mapping = load_static_mapping(&path)?;
+            let topics = mapping.topics();
             let backend_config = BackendConfig {
-                topics: mapping.topics(),
+                preload_types: topics.iter().map(|topic| topic.type_name.clone()).collect(),
+                topics,
             };
             create_gateway_impl::<StaticMapping, PlainStructTranslator>(
                 cli.reactive_backend,
@@ -268,6 +273,17 @@ fn parse_topics(topics: &[String]) -> anyhow::Result<Vec<TopicConfig>> {
             };
             TopicConfig::new(topic, type_name)
                 .map_err(|error| anyhow::anyhow!("invalid --topic {entry:?}: {error}"))
+        })
+        .collect()
+}
+
+/// Parses repeated `--preload-type` values.
+fn parse_preload_types(type_names: &[String]) -> anyhow::Result<Vec<TypeName>> {
+    type_names
+        .iter()
+        .map(|entry| {
+            TypeName::new(entry)
+                .map_err(|error| anyhow::anyhow!("invalid --preload-type {entry:?}: {error}"))
         })
         .collect()
 }

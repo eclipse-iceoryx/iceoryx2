@@ -197,6 +197,7 @@ fn maps_ros_topics_onto_iceoryx2_services() {
     .iceoryx_config(config.clone())
     .backend_config(Config {
         topics: vec![TopicConfig::new(&topic, "std_msgs/msg/String").expect("valid topic config")],
+        ..Default::default()
     })
     .polled()
     .create()

@@ -97,6 +97,7 @@ fn translates_inbound_messages_into_fixed_size_payloads() {
             .iceoryx_config(iceoryx_config.clone())
             .backend_config(BackendConfig {
                 topics: mapping.topics(),
+                ..Default::default()
             })
             .mapping(mapping)
             .polled()

@@ -167,14 +167,13 @@ impl<
             "Failed to create ROS 2 node"
         ));
 
-        // Load all typesupport libraries for configured topics during
-        // initialization.
-        for topic in &self.config.topics {
-            let type_name = topic.type_name.as_str();
+        // Resolve the requested typesupport libraries during initialization.
+        // Typesupport not loaded here will be lazily loaded.
+        for type_name in &self.config.preload_types {
             fail!(from origin,
-                when typesupport::load(type_name),
+                when typesupport::load(type_name.as_str()),
                 with CreationError::TypeSupport,
-                "Failed to load typesupport for configured topic '{}'", type_name
+                "Failed to preload typesupport for type '{}'", type_name.as_str()
             );
         }
 

@@ -55,6 +55,17 @@ pub struct Cli {
     static_mapping: Option<PathBuf>,
 
     #[clap(
+        long = "preload-type",
+        value_name = "TYPE",
+        action = clap::ArgAction::Append,
+        conflicts_with = "static_mapping",
+        help = "Resolve typesupport for the given ROS 2 message type at startup rather than on \
+                first use, failing fast when it cannot be resolved. Repeatable. Not relevant \
+                for static mappings which instead preload types specified in the mapping."
+    )]
+    pub preload_types: Vec<String>,
+
+    #[clap(
         long,
         value_enum,
         default_value_t = Translator::Passthrough,

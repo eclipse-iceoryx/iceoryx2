@@ -204,6 +204,7 @@ fn maps_ros_topics_onto_iceoryx_services() {
     .iceoryx_config(iceoryx_config.clone())
     .backend_config(BackendConfig {
         topics: mapping.topics(),
+        ..Default::default()
     })
     .mapping(mapping)
     .polled()
@@ -363,6 +364,7 @@ fn applies_specified_settings_to_iceoryx_services() {
     .iceoryx_config(iceoryx_config.clone())
     .backend_config(BackendConfig {
         topics: mapping.topics(),
+        ..Default::default()
     })
     .mapping(mapping)
     .polled()
