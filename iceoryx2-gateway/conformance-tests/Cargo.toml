@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-gateway-conformance-tests"
-description = "iceoryx2-services: conformance tests for the gateway service"
+description = "iceoryx2: conformance tests for gateway variants implementations"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

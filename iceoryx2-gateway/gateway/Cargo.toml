@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-gateway"
-description = "iceoryx2-services: gateway extending communication across hosts"
+description = "iceoryx2: gateway extending communication across hosts"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

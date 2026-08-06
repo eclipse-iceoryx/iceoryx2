@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-gateway-testing"
-description = "iceoryx2-services: testing infrastructure for the gateway service"
+description = "iceoryx2: [internal] testing utilities for the gateway"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
