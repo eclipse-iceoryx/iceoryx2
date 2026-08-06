@@ -75,6 +75,7 @@
 use crate::active_request::RequestId;
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::port_shared_state::PortSharedState;
+use crate::service::header::request_response::RequestHeader;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::resource::request_response::RequestResponseResources;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
@@ -256,6 +257,16 @@ impl<Service: service::Service> Drop for ClientSharedState<Service> {
 }
 
 impl<Service: service::Service> ClientSharedState<Service> {
+    pub(crate) fn release_request(&self, was_sample_sent: bool, header: &RequestHeader) {
+        if !unsafe { &mut *self.available_channel_ids.get() }.push(header.channel_id) {
+            fatal_panic!(from self,
+                      "This should never happen! The channel id could not be returned.");
+        }
+        if !was_sample_sent {
+            self.loan_counter.fetch_sub(1, Ordering::Relaxed);
+        }
+    }
+
     fn prepare_channel_to_receive_responses(&self, channel_id: ChannelId, request_id: RequestId) {
         self.response_receiver
             .set_channel_state(channel_id, request_id);

@@ -44,7 +44,6 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
-use iceoryx2_log::fatal_panic;
 
 use crate::payload::number_of_elements;
 use crate::port::details::chunk::ChunkMut;
@@ -110,20 +109,12 @@ impl<
 > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        let client_shared_state = self.client_shared_state.lock();
-        if !unsafe { &mut *client_shared_state.available_channel_ids.get() }
-            .push(self.header().channel_id)
-        {
-            fatal_panic!(from self,
-                    "This should never happen! The channel id could not be returned.");
-        }
-        if !self.was_sample_sent.load(Ordering::Relaxed) {
-            client_shared_state
-                .loan_counter
-                .fetch_sub(1, Ordering::Relaxed);
-        }
+        self.client_shared_state
+            .lock()
+            .release_request(self.was_sample_sent.load(Ordering::Relaxed), self.header());
 
-        client_shared_state
+        self.client_shared_state
+            .lock()
             .request_sender
             .return_loaned_sample(self.chunk.offset());
     }
