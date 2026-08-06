@@ -22,7 +22,7 @@ use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_gateway_backend::traits::{Mapping, PayloadLayout, Translation, Translator};
 use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, warn};
 
 use crate::config::{TopicConfig, TopicName, TypeName};
 use crate::mapping::TopicDescription;
@@ -54,6 +54,15 @@ impl core::fmt::Display for AnnouncementError {
 
 impl core::error::Error for AnnouncementError {}
 
+/// Outcome of bridging a configured topic found live in the ROS graph.
+#[derive(Debug, Clone, Copy)]
+enum TopicState {
+    /// Bridged under the given service hash.
+    Bridged(ServiceHash),
+    /// Could not be bridged. Not retried while the topic stays on the graph.
+    Failed,
+}
+
 /// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
 pub struct Discovery<
@@ -65,9 +74,8 @@ pub struct Discovery<
     allowlist: HashMap<TopicName, TypeName>,
     mapping: Rc<M>,
     translator: Rc<T>,
-    /// Configured topics detected as live in the ROS graph, with the service
-    /// hash they were reported under.
-    discovered: RefCell<HashMap<TopicName, ServiceHash>>,
+    /// Outcome for each configured topic seen live in the ROS graph.
+    state: RefCell<HashMap<TopicName, TopicState>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -93,7 +101,7 @@ impl<
                 .collect(),
             mapping,
             translator,
-            discovered: RefCell::new(HashMap::new()),
+            state: RefCell::new(HashMap::new()),
             _phantom: core::marker::PhantomData,
         }
     }
@@ -196,27 +204,48 @@ impl<
         );
 
         // Keep track of the discovered service for later discovery iterations.
-        self.discovered
+        self.state
             .borrow_mut()
-            .insert(topic.clone(), service_hash);
+            .insert(topic.clone(), TopicState::Bridged(service_hash));
 
         Ok(())
     }
 
-    /// Handles a previously discovered topic that is no longer live.
+    /// Bridges a configured topic that has become live.
+    ///
+    /// A topic that cannot be bridged is recorded as failed, so the reason is
+    /// reported once instead of on every discovery run, and the rest of the
+    /// configured topics are still processed.
+    fn try_discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        topic: &TopicName,
+        type_name: &TypeName,
+        process_discovery: &mut F,
+    ) {
+        let Err(error) = self.on_discovered(topic, type_name, process_discovery) else {
+            return;
+        };
+
+        warn!("Topic '{}' will not be bridged: {}", topic.as_str(), error);
+        self.state
+            .borrow_mut()
+            .insert(topic.clone(), TopicState::Failed);
+    }
+
+    /// Handles a previously bridged topic that is no longer live.
     ///
     /// Returns `Ok` when the removal was processed, or `Err` if
     /// `process_discovery` failed.
     fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         topic: &TopicName,
+        service_hash: ServiceHash,
         process_discovery: &mut F,
     ) -> Result<(), DiscoveryError> {
         let origin = "Discovery::discover_removed";
 
         // Run discovery logic provided by the caller for the service discovered
         // as removed.
-        let service_hash = self.discovered.borrow()[topic];
         fail!(from origin,
             when process_discovery(DiscoveryUpdate::Removed(service_hash)),
             with DiscoveryError::Processing,
@@ -225,7 +254,7 @@ impl<
         );
 
         // Stop tracking the service as discovered.
-        self.discovered.borrow_mut().remove(topic);
+        self.state.borrow_mut().remove(topic);
 
         Ok(())
     }
@@ -262,12 +291,18 @@ impl<
 
         for (topic, type_name) in &self.allowlist {
             let live = Self::is_present_on_graph(&graph, topic);
-            let discovered = self.discovered.borrow().contains_key(topic);
+            let state = self.state.borrow().get(topic).copied();
 
-            if live && !discovered {
-                self.on_discovered(topic, type_name, &mut process_discovery)?;
-            } else if !live && discovered {
-                self.on_removed(topic, &mut process_discovery)?;
+            match (live, state) {
+                (true, None) => self.try_discover(topic, type_name, &mut process_discovery),
+                (false, Some(TopicState::Bridged(service_hash))) => {
+                    self.on_removed(topic, service_hash, &mut process_discovery)?
+                }
+                // Forget the failure so the topic is retried should it return.
+                (false, Some(TopicState::Failed)) => {
+                    self.state.borrow_mut().remove(topic);
+                }
+                _ => {}
             }
         }
 

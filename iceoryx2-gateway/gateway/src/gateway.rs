@@ -26,7 +26,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_gateway_backend::traits::{Backend, Discovery, Mapping};
 use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
-use iceoryx2_log::{fail, info};
+use iceoryx2_log::{fail, info, warn};
 
 use crate::bridge::Bridge;
 use crate::discovery::LocalDiscoveryStrategy;
@@ -93,12 +93,36 @@ pub struct Config {
     pub services: Option<Vec<String>>,
 }
 
+/// Describes the outcome of opening up a bridge for a service.
+///
+/// Failed attempts are additionally tracked to prevent constantly retrying
+/// to create a bridge that causes an error.
+#[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
+enum BridgeState<S: Service, B: Backend<S>> {
+    /// The bridge is established and relaying between both sides.
+    Established(Bridge<S, B>),
+    /// The bridge could not be established. No reattemtps to reestablish
+    /// unless the service is reinstantiated.
+    Failed,
+}
+
+impl<S: Service, B: Backend<S>> BridgeState<S, B> {
+    // Returns the established bridge or None if there was a failure.
+    fn bridge(&self) -> Option<&Bridge<S, B>> {
+        match self {
+            BridgeState::Established(bridge) => Some(bridge),
+            BridgeState::Failed => None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Gateway<S: Service, B: for<'a> Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
     discovery_state: DiscoveryState,
-    bridges: BTreeMap<ServiceHash, Bridge<S, B>>,
+    bridges: BTreeMap<ServiceHash, BridgeState<S, B>>,
     discovery_strategy: LocalDiscoveryStrategy<S>,
     services_filter: Option<BTreeSet<String>>,
 }
@@ -136,30 +160,33 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
         self.iceoryx_discovery()?;
         self.backend_discovery()?;
-        self.reconcile()
+        self.reconcile();
+        Ok(())
     }
 
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
         self.iceoryx_discovery()?;
-        self.reconcile()
+        self.reconcile();
+        Ok(())
     }
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
         self.backend_discovery()?;
-        self.reconcile()
+        self.reconcile();
+        Ok(())
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
         self.debug_assert_synchronized();
 
-        // Propagate publish-subscribe payloads before events
+        // Propagate all publish-subscribe payloads before events.
         // TODO(#1103): Retain ordering across the wire
-        for bridge in self.bridges.values() {
+        for bridge in self.bridges.values().filter_map(BridgeState::bridge) {
             if matches!(bridge, Bridge::PublishSubscribe { .. }) {
                 bridge.propagate(self.node.id())?;
             }
         }
-        for bridge in self.bridges.values() {
+        for bridge in self.bridges.values().filter_map(BridgeState::bridge) {
             if matches!(bridge, Bridge::Event { .. }) {
                 bridge.propagate(self.node.id())?;
             }
@@ -170,7 +197,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
 
     pub fn bridged_services(&self) -> BTreeSet<ServiceHash> {
         self.debug_assert_synchronized();
-        self.bridges.keys().cloned().collect()
+        self.bridges
+            .iter()
+            .filter(|(_, state)| state.bridge().is_some())
+            .map(|(hash, _)| *hash)
+            .collect()
     }
 
     /// Updates the locally offered services.
@@ -265,15 +296,16 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
     }
 
     /// Reconciles the opened bridges with a snapshot of the discovery state.
-    fn reconcile(&mut self) -> Result<(), DiscoveryError> {
+    fn reconcile(&mut self) {
         let log_origin = format!("Gateway({})::reconcile", self.node.id());
 
         let snapshot = self.discovery_state.snapshot();
 
-        // Close bridges no longer offered by any side.
-        self.bridges.retain(|hash, _| {
+        // Drop services no longer offered by any side.
+        self.bridges.retain(|hash, state| {
             let keep = snapshot.contains(hash);
-            if !keep {
+            let established = state.bridge().is_some();
+            if !keep && established {
                 info!(from log_origin, "Closing bridge: {}", hash.as_str());
             }
             keep
@@ -290,26 +322,40 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
                 description.pattern,
                 description.name
             );
-            let bridge = Bridge::open(&self.node, &self.backend, description)?;
-            self.bridges.insert(*hash, bridge);
-        }
 
-        Ok(())
+            // Bridges that fail to be established are remembered so that subsequent
+            // discovery calls do not waste time retrying. If however the service
+            // disappears then reappears, a retry will occur.
+            let state = match Bridge::open(&self.node, &self.backend, description) {
+                Ok(bridge) => BridgeState::Established(bridge),
+                Err(error) => {
+                    warn!(
+                        from log_origin,
+                        "{}({}) will not be bridged: {}",
+                        description.pattern,
+                        description.name,
+                        error
+                    );
+                    BridgeState::Failed
+                }
+            };
+            self.bridges.insert(*hash, state);
+        }
     }
 
-    /// Sanity check that the open bridges match the discovery
-    /// state exactly. No-op in release builds.
+    /// Sanity check that the tracked services match the discovery state
+    /// exactly. No-op in release builds.
     fn debug_assert_synchronized(&self) {
         #[cfg(debug_assertions)]
         {
             let snapshot = self.discovery_state.snapshot();
             let same_count = self.bridges.len() == snapshot.iter().count();
-            let all_services_bridged = snapshot
+            let all_services_tracked = snapshot
                 .iter()
                 .all(|(hash, _)| self.bridges.contains_key(hash));
 
             debug_assert!(
-                same_count && all_services_bridged,
+                same_count && all_services_tracked,
                 "bridges out of sync with discovery state"
             );
         }
