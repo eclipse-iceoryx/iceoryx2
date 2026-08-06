@@ -91,7 +91,6 @@ use crate::{
     service::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
-        header,
         naming_scheme::data_segment_name,
         port_factory::client::{ClientCreateError, LocalClientConfig, PortFactoryClient},
         static_config::message_type_details::TypeVariant,
@@ -100,8 +99,8 @@ use crate::{
 use core::alloc::Layout;
 use core::ptr::NonNull;
 use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
@@ -177,9 +176,11 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     pub(crate) response_receiver: Receiver<Service, RequestResponseResources<Service>>,
     client_handle: UnsafeCell<Option<ContainerHandle>>,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
-    pub(crate) active_request_counter: AtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
+    pub(crate) active_request_counter: AtomicUsize,
     pub(crate) max_active_requests: usize,
+    pub(crate) loan_counter: AtomicUsize,
+    max_loans: usize,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -535,6 +536,12 @@ impl<
             client_name: client_factory.config.port_name,
         };
 
+        let sender_max_borrowed_samples = static_config.max_loaned_requests
+            // a client sent so many active requests to a server in parallel
+            + static_config.max_active_requests_per_client
+            // the server can still hold old requests that the client has already dropped. in this case
+            // the client can fill up the server's buffer with at most max_active_requests_per_client again
+            + static_config.max_active_requests_per_client;
         let request_sender = Sender {
             data_segment,
             segment_states: {
@@ -560,7 +567,7 @@ impl<
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
-            sender_max_borrowed_samples: static_config.max_loaned_requests,
+            sender_max_borrowed_samples,
             backpressure_strategy: client_factory.config.backpressure_strategy,
             message_type_details: static_config.request_message_type_details,
             // all requests are sent via one channel, only the responses require different
@@ -623,6 +630,8 @@ impl<
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
             active_request_counter: AtomicUsize::new(0),
             max_active_requests,
+            max_loans: static_config.max_loaned_requests,
+            loan_counter: AtomicUsize::new(0),
         });
 
         let client_shared_state = match client_shared_state {
@@ -703,6 +712,49 @@ impl<
     /// Returns the maximal active requests a [`Client`] can send.
     pub fn max_active_requests(&self) -> usize {
         self.client_shared_state.lock().max_active_requests
+    }
+
+    fn loan_impl(&self, slice_len: usize) -> Result<(ChunkMut, ChannelId), LoanError>
+    where
+        RequestHeader: Default,
+    {
+        let client_shared_state = self.client_shared_state.lock();
+        if client_shared_state.max_loans == client_shared_state.loan_counter.load(Ordering::Relaxed)
+        {
+            fail!(from self, with LoanError::ExceedsMaxLoans,
+                "Unable to loan request since it would exceed the max number of loaned requests ({}).", client_shared_state.max_loans);
+        }
+        client_shared_state
+            .loan_counter
+            .fetch_add(1, Ordering::Relaxed);
+
+        let chunk = client_shared_state
+            .request_sender
+            .allocate(client_shared_state.request_sender.sample_layout(slice_len))?;
+
+        let channel_id =
+            match unsafe { &mut *client_shared_state.available_channel_ids.get() }.pop() {
+                Some(channel_id) => channel_id,
+                None => {
+                    fatal_panic!(from self,
+                    "This should never happen! There are no more available response channels.");
+                }
+            };
+
+        let header_ptr: *mut service::header::request_response::RequestHeader = chunk.header.cast();
+        let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();
+        unsafe {
+            header_ptr.write(service::header::request_response::RequestHeader {
+                node_id: *client_shared_state.request_sender.shared_node.id(),
+                client_id: self.id(),
+                channel_id,
+                request_id: self.next_request_id(),
+                number_of_elements: slice_len as _,
+            })
+        };
+        unsafe { user_header_ptr.write(RequestHeader::default()) };
+
+        Ok((chunk, channel_id))
     }
 }
 
@@ -801,43 +853,18 @@ impl<
         >,
         LoanError,
     > {
-        let client_shared_state = self.client_shared_state.lock();
-        let chunk = client_shared_state
-            .request_sender
-            .allocate(client_shared_state.request_sender.sample_layout(1))?;
-
-        let channel_id =
-            match unsafe { &mut *client_shared_state.available_channel_ids.get() }.pop() {
-                Some(channel_id) => channel_id,
-                None => {
-                    fatal_panic!(from self,
-                    "This should never happen! There are no more available response channels.");
-                }
-            };
-
-        let header_ptr: *mut service::header::request_response::RequestHeader = chunk.header.cast();
-        let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();
-        unsafe {
-            header_ptr.write(service::header::request_response::RequestHeader {
-                node_id: *client_shared_state.request_sender.shared_node.id(),
-                client_id: self.id(),
-                channel_id,
-                request_id: self.next_request_id(),
-                number_of_elements: 1,
-            })
-        };
-        unsafe { user_header_ptr.write(RequestHeader::default()) };
+        let (chunk, channel_id) = self.loan_impl(1)?;
 
         Ok(RequestMutUninit {
             request: RequestMut {
                 chunk,
                 channel_id,
                 client_shared_state: self.client_shared_state.clone(),
+                was_sample_sent: AtomicBool::new(false),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
                 _request_payload: PhantomData,
                 _request_header: PhantomData,
-                was_sample_sent: AtomicBool::new(false),
             },
         })
     }
@@ -1062,7 +1089,6 @@ impl<
     > {
         let client_shared_state = self.client_shared_state.lock();
         let max_slice_len = client_shared_state.config.initial_max_slice_len;
-
         if client_shared_state.config.allocation_strategy == AllocationStrategy::Static
             && max_slice_len < slice_len
         {
@@ -1070,44 +1096,20 @@ impl<
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
         }
+        drop(client_shared_state);
 
-        let request_layout = client_shared_state.request_sender.sample_layout(slice_len);
-        let chunk = client_shared_state
-            .request_sender
-            .allocate(request_layout)?;
-
-        let channel_id =
-            match unsafe { &mut *client_shared_state.available_channel_ids.get() }.pop() {
-                Some(channel_id) => channel_id,
-                None => {
-                    fatal_panic!(from self,
-                    "This should never happen! There are no more available response channels.");
-                }
-            };
-
-        let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();
-        let header_ptr = chunk.header as *mut header::request_response::RequestHeader;
-        unsafe {
-            header_ptr.write(header::request_response::RequestHeader {
-                node_id: *client_shared_state.request_sender.shared_node.id(),
-                client_id: self.id(),
-                channel_id,
-                request_id: self.next_request_id(),
-                number_of_elements: slice_len as _,
-            })
-        };
-        unsafe { user_header_ptr.write(RequestHeader::default()) };
+        let (chunk, channel_id) = self.loan_impl(slice_len)?;
 
         Ok(RequestMutUninit {
             request: RequestMut {
                 chunk,
                 channel_id,
                 client_shared_state: self.client_shared_state.clone(),
+                was_sample_sent: AtomicBool::new(false),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
                 _request_header: PhantomData,
                 _request_payload: PhantomData,
-                was_sample_sent: AtomicBool::new(false),
             },
         })
     }

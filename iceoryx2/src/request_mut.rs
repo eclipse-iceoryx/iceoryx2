@@ -38,8 +38,7 @@
 use core::ops::{Deref, DerefMut};
 use core::{fmt::Debug, marker::PhantomData};
 
-use iceoryx2_bb_concurrency::atomic::AtomicBool;
-use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -118,16 +117,15 @@ impl<
             fatal_panic!(from self,
                     "This should never happen! The channel id could not be returned.");
         }
-
-        client_shared_state
-            .request_sender
-            .release_sample(self.chunk.offset());
         if !self.was_sample_sent.load(Ordering::Relaxed) {
             client_shared_state
-                .request_sender
                 .loan_counter
                 .fetch_sub(1, Ordering::Relaxed);
         }
+
+        client_shared_state
+            .request_sender
+            .return_loaned_sample(self.chunk.offset());
     }
 }
 
@@ -273,7 +271,6 @@ impl<
             Ok(number_of_server_connections) => {
                 self.was_sample_sent.store(true, Ordering::Relaxed);
                 client_shared_state
-                    .request_sender
                     .loan_counter
                     .fetch_sub(1, Ordering::Relaxed);
                 drop(client_shared_state);
