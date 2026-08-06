@@ -364,20 +364,28 @@ pub unsafe extern "C" fn iox2_request_mut_payload_mut(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let request = &mut *handle.as_type();
-        let payload = request.value.as_mut().ipc.payload_mut();
+        let number_of_elements_value;
 
         match request.service_type {
             iox2_service_type_e::IPC => {
-                *payload_ptr = payload.as_mut_ptr().cast();
+                *payload_ptr = request.value.as_mut().ipc.payload_mut().as_mut_ptr().cast();
+                number_of_elements_value = request.value.as_mut().ipc.header().number_of_elements();
             }
             iox2_service_type_e::LOCAL => {
-                *payload_ptr = payload.as_mut_ptr().cast();
+                *payload_ptr = request
+                    .value
+                    .as_mut()
+                    .local
+                    .payload_mut()
+                    .as_mut_ptr()
+                    .cast();
+                number_of_elements_value =
+                    request.value.as_mut().local.header().number_of_elements();
             }
         };
 
         if !number_of_elements.is_null() {
-            *number_of_elements =
-                request.value.as_mut().local.header().number_of_elements() as c_size_t;
+            *number_of_elements = number_of_elements_value as _;
         }
     }
 }
@@ -399,20 +407,22 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let request = &mut *handle.as_type();
-        let payload = request.value.as_mut().ipc.payload_mut();
+        let number_of_elements_value;
 
         match request.service_type {
             iox2_service_type_e::IPC => {
-                *payload_ptr = payload.as_mut_ptr().cast();
+                *payload_ptr = request.value.as_ref().ipc.payload().as_ptr().cast();
+                number_of_elements_value = request.value.as_ref().ipc.header().number_of_elements();
             }
             iox2_service_type_e::LOCAL => {
-                *payload_ptr = payload.as_mut_ptr().cast();
+                *payload_ptr = request.value.as_mut().local.payload().as_ptr().cast();
+                number_of_elements_value =
+                    request.value.as_ref().local.header().number_of_elements();
             }
         };
 
         if !number_of_elements.is_null() {
-            *number_of_elements =
-                request.value.as_mut().local.header().number_of_elements() as c_size_t;
+            *number_of_elements = number_of_elements_value as _;
         }
     }
 }

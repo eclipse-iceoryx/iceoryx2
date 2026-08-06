@@ -294,20 +294,28 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let sample = &mut *handle.as_type();
-        let payload = sample.value.as_mut().ipc.payload_mut();
+        let number_of_elements_value;
 
         match sample.service_type {
             iox2_service_type_e::IPC => {
-                *payload_ptr = payload.as_mut_ptr().cast();
+                *payload_ptr = sample.value.as_mut().ipc.payload_mut().as_mut_ptr().cast();
+                number_of_elements_value = sample.value.as_mut().ipc.header().number_of_elements();
             }
             iox2_service_type_e::LOCAL => {
-                *payload_ptr = payload.as_mut_ptr().cast();
+                *payload_ptr = sample
+                    .value
+                    .as_mut()
+                    .local
+                    .payload_mut()
+                    .as_mut_ptr()
+                    .cast();
+                number_of_elements_value =
+                    sample.value.as_mut().local.header().number_of_elements();
             }
         };
 
         if !number_of_elements.is_null() {
-            *number_of_elements =
-                sample.value.as_mut().local.header().number_of_elements() as c_size_t;
+            *number_of_elements = number_of_elements_value as _;
         }
     }
 }
