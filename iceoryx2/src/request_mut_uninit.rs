@@ -37,15 +37,25 @@
 //! # }
 //! ```
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
-use crate::{port::client::ClientSharedState, request_mut::RequestMut, service};
+use crate::{
+    payload::number_of_elements,
+    port::{
+        client::ClientSharedState,
+        details::{chunk::ChunkMut, chunk_mut_shared_state::ChunkMutSharedState},
+    },
+    request_mut::RequestMut,
+    service,
+};
+use core::marker::PhantomData;
 use core::{fmt::Debug, mem::MaybeUninit};
 
 /// A version of the [`RequestMut`] where the payload is not initialized which allows
 /// true zero copy usage. To send a [`RequestMutUninit`] it must be first initialized
 /// and converted into [`RequestMut`] with [`RequestMutUninit::assume_init()`].
-#[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
     RequestPayload: Debug + IceoryxSend + ?Sized,
@@ -53,8 +63,31 @@ pub struct RequestMutUninit<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) request:
-        RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+    pub(crate) chunk: ChunkMut,
+    pub(crate) shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
+    pub(crate) channel_id: ChannelId,
+    pub(crate) _request_payload: PhantomData<RequestPayload>,
+    pub(crate) _request_header: PhantomData<RequestHeader>,
+    pub(crate) _response_payload: PhantomData<ResponsePayload>,
+    pub(crate) _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Drop
+    for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn drop(&mut self) {
+        let _ = self.shared_state.call(|s| -> Result<(), ()> {
+            let header = unsafe { &*self.chunk.header_ptr().cast() };
+            s.release_request(false, header);
+            Ok(())
+        });
+    }
 }
 
 unsafe impl<
@@ -79,7 +112,11 @@ impl<
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "RequestMutUninit {{  request: {:?} }}", self.request)
+        write!(
+            f,
+            "RequestMutUninit {{  chunk: {:?}, channel_id: {:?} }}",
+            self.chunk, self.channel_id
+        )
     }
 }
 
@@ -94,17 +131,17 @@ impl<
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        self.request.header()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns a reference to the user defined request header.
     pub fn user_header(&self) -> &RequestHeader {
-        self.request.user_header()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a mutable reference to the user defined request header.
     pub fn user_header_mut(&mut self) -> &mut RequestHeader {
-        self.request.user_header_mut()
+        unsafe { &mut *self.chunk.user_header_mut_ptr().cast() }
     }
 }
 
@@ -125,12 +162,12 @@ impl<
 {
     /// Returns a reference to the user defined request payload.
     pub fn payload(&self) -> &MaybeUninit<RequestPayload> {
-        self.request.payload()
+        unsafe { &*self.chunk.payload_ptr().cast() }
     }
 
     /// Returns a mutable reference to the user defined request payload.
     pub fn payload_mut(&mut self) -> &mut MaybeUninit<RequestPayload> {
-        self.request.payload_mut()
+        unsafe { &mut *self.chunk.payload_mut_ptr().cast() }
     }
 }
 
@@ -151,12 +188,26 @@ impl<
 {
     /// Returns a reference to the user defined request payload.
     pub fn payload(&self) -> &[MaybeUninit<RequestPayload>] {
-        self.request.payload()
+        let payload_size = self.shared_state.payload_size();
+
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
+            )
+        }
     }
 
     /// Returns a mutable reference to the user defined request payload.
     pub fn payload_mut(&mut self) -> &mut [MaybeUninit<RequestPayload>] {
-        self.request.payload_mut()
+        let payload_size = self.shared_state.payload_size();
+
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.payload_mut_ptr().cast(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
+            )
+        }
     }
 }
 
@@ -222,10 +273,17 @@ impl<
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_request = unsafe { core::mem::transmute_copy(&self.request) };
-        core::mem::forget(self);
-        initialized_request
+        let this = core::mem::ManuallyDrop::new(self);
+        RequestMut {
+            chunk: this.chunk.clone(),
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            was_sample_sent: AtomicBool::new(false),
+            channel_id: this.channel_id,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_header: PhantomData,
+            _response_payload: PhantomData,
+        }
     }
 }
 
@@ -285,10 +343,17 @@ impl<
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
-        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_request = unsafe { core::mem::transmute_copy(&self.request) };
-        core::mem::forget(self);
-        initialized_request
+        let this = core::mem::ManuallyDrop::new(self);
+        RequestMut {
+            chunk: this.chunk.clone(),
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            was_sample_sent: AtomicBool::new(false),
+            channel_id: this.channel_id,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_header: PhantomData,
+            _response_payload: PhantomData,
+        }
     }
 
     /// Writes the payload to the [`RequestMutUninit`] and labels the [`RequestMutUninit`] as

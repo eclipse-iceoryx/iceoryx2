@@ -101,7 +101,7 @@ use crate::{
 use core::alloc::Layout;
 use core::ptr::NonNull;
 use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
@@ -868,16 +868,13 @@ impl<
         let (chunk, channel_id) = self.loan_impl(1)?;
 
         Ok(RequestMutUninit {
-            request: RequestMut {
-                shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
-                chunk,
-                channel_id,
-                was_sample_sent: AtomicBool::new(false),
-                _response_payload: PhantomData,
-                _response_header: PhantomData,
-                _request_payload: PhantomData,
-                _request_header: PhantomData,
-            },
+            shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
+            chunk,
+            channel_id,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
         })
     }
 
@@ -1113,16 +1110,13 @@ impl<
         let (chunk, channel_id) = self.loan_impl(slice_len)?;
 
         Ok(RequestMutUninit {
-            request: RequestMut {
-                shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
-                chunk,
-                channel_id,
-                was_sample_sent: AtomicBool::new(false),
-                _response_payload: PhantomData,
-                _response_header: PhantomData,
-                _request_header: PhantomData,
-                _request_payload: PhantomData,
-            },
+            shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
+            chunk,
+            channel_id,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+            _request_header: PhantomData,
+            _request_payload: PhantomData,
         })
     }
 }
