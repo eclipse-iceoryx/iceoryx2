@@ -18,6 +18,7 @@ use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::service::Service;
 use iceoryx2::service::builder::publish_subscribe;
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_gateway_backend::types::publish_subscribe::{

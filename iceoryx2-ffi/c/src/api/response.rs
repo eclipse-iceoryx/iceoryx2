@@ -15,7 +15,7 @@
 // BEGIN types definition
 
 use core::{ffi::c_void, mem::ManuallyDrop};
-use iceoryx2::response::Response;
+use iceoryx2::{response::Response, service::header::payload_header::PayloadHeader};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use super::{

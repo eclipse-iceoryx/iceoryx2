@@ -22,6 +22,7 @@ use iceoryx2::port::LoanError;
 use iceoryx2::port::SendError;
 use iceoryx2::port::client::RequestSendError;
 use iceoryx2::request_mut_uninit::RequestMutUninit;
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 

@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use iceoryx2::service::header::request_response::RequestHeader;
+use iceoryx2::service::header::{payload_header::PayloadHeader, request_response::RequestHeader};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::{

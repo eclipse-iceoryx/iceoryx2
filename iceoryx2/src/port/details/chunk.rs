@@ -29,6 +29,18 @@ impl Chunk {
             header: offset as *const u8,
         }
     }
+
+    pub fn header_ptr(&self) -> *const u8 {
+        self.header
+    }
+
+    pub fn user_header_ptr(&self) -> *const u8 {
+        self.user_header
+    }
+
+    pub fn payload_ptr(&self) -> *const u8 {
+        self.payload
+    }
 }
 
 #[derive(Debug, Clone)]

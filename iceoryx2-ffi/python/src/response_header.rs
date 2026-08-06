@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use pyo3::prelude::*;
 
 use crate::unique_server_id::UniqueServerId;

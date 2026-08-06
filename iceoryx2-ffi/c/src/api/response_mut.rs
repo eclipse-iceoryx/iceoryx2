@@ -14,7 +14,9 @@
 
 use core::{ffi::c_int, ffi::c_void, mem::ManuallyDrop};
 
-use iceoryx2::response_mut_uninit::ResponseMutUninit;
+use iceoryx2::{
+    response_mut_uninit::ResponseMutUninit, service::header::payload_header::PayloadHeader,
+};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::{IOX2_OK, api::IntoCInt};

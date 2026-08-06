@@ -16,7 +16,7 @@
 
 use core::{ffi::c_int, ffi::c_void, mem::ManuallyDrop};
 
-use iceoryx2::pending_response::PendingResponse;
+use iceoryx2::{pending_response::PendingResponse, service::header::payload_header::PayloadHeader};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::{

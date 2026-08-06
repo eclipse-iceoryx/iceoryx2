@@ -20,6 +20,7 @@ use crate::api::{
 use crate::{iox2_resizable_memory_publish_subscribe_h, iox2_resizable_memory_publish_subscribe_t};
 
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_int, c_void};

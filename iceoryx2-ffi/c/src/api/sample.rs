@@ -18,6 +18,7 @@ use crate::api::{
 };
 
 use iceoryx2::sample::Sample;
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_void;
