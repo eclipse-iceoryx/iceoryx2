@@ -29,8 +29,7 @@ pub mod event_discovery {
     use iceoryx2_gateway::Gateway;
     use iceoryx2_gateway_backend::traits::Backend;
     use iceoryx2_gateway_backend::traits::testing::Testing;
-    use iceoryx2_services_common::DiscoveryEvent;
-    use iceoryx2_services_discovery::service_discovery::Tracker;
+    use iceoryx2_services_discovery::service_discovery::{DiscoveryEvent, Tracker};
 
     // TODO: Move to iceoryx2::testing
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;

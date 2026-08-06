@@ -29,8 +29,7 @@ pub mod publish_subscribe_discovery {
     use iceoryx2_gateway::Gateway;
     use iceoryx2_gateway_backend::traits::Backend;
     use iceoryx2_gateway_backend::traits::testing::Testing;
-    use iceoryx2_services_common::DiscoveryEvent;
-    use iceoryx2_services_discovery::service_discovery::Tracker;
+    use iceoryx2_services_discovery::service_discovery::{DiscoveryEvent, Tracker};
 
     const DISCOVERY_TOPIC: &str = "iox2://discovery/services/";
 

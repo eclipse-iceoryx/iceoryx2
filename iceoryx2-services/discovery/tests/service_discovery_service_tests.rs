@@ -20,8 +20,9 @@ mod service_discovery_service {
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
-    use iceoryx2_services_common::DiscoveryEvent;
-    use iceoryx2_services_discovery::service_discovery::{Config, Payload, Service, service_name};
+    use iceoryx2_services_discovery::service_discovery::{
+        Config, DiscoveryEvent, Payload, Service, service_name,
+    };
 
     #[test]
     fn publishes_details_of_added_and_removed_services_when_configured() {

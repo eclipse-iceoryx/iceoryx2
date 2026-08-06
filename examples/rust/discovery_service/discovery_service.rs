@@ -17,7 +17,7 @@ use alloc::collections::BTreeMap;
 use iceoryx2::prelude::*;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2_services_common::DiscoveryEvent;
+use iceoryx2_services_discovery::service_discovery::DiscoveryEvent;
 use iceoryx2_services_discovery::*;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {

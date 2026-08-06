@@ -71,7 +71,6 @@ members = [
     "iceoryx2-pal/testing/",
     "iceoryx2-pal/os-api",
 
-    "iceoryx2-services/common",
     "iceoryx2-services/discovery",
 
     "iceoryx2-gateway/gateway",
@@ -148,7 +147,6 @@ iceoryx2-cli = { version = "0.9.999", path = "iceoryx2-cli/"}
 iceoryx2-ffi-c = { version = "0.9.999", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.9.999", path = "iceoryx2-ffi/python" }
 iceoryx2-ffi-macros = { version = "0.9.999", path = "iceoryx2-ffi/ffi-macros" }
-iceoryx2-services-common = { version = "0.9.999", path = "iceoryx2-services/common"}
 iceoryx2-services-discovery = { version = "0.9.999", path = "iceoryx2-services/discovery", default-features = false }
 iceoryx2-gateway = { version = "0.9.999", path = "iceoryx2-gateway/gateway", default-features = false }
 iceoryx2-gateway-backend = { version = "0.9.999", path = "iceoryx2-gateway/backend", default-features = false }

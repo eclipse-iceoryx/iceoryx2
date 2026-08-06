@@ -38,7 +38,6 @@ iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/"
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
 iceoryx2-integrations-ros2-gateway-backend = { version = "0.9.999", path = "gateway-backend" }
 iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/", features = ["std"] }
-iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common", features = ["std"] }
 iceoryx2-gateway = { version = "0.9.999", path = "../../iceoryx2-gateway/gateway", features = ["std"] }
 iceoryx2-gateway-backend = { version = "0.9.999", path = "../../iceoryx2-gateway/backend", features = ["std"] }
 

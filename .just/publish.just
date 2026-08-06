@@ -44,7 +44,6 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2                            \
     iceoryx2-testing                    \
     iceoryx2-conformance-tests          \
-    iceoryx2-services-common            \
     iceoryx2-services-discovery         \
     iceoryx2-gateway-backend            \
     iceoryx2-gateway                    \
@@ -113,7 +112,6 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-testing-macros              \
     iceoryx2-cli                            \
     iceoryx2-log                            \
-    iceoryx2-services-common                \
     iceoryx2-gateway                        \
     iceoryx2-gateway-backend                \
     iceoryx2-gateway-conformance-tests`
@@ -124,7 +122,6 @@ INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := `echo \
 INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
     iceoryx2                                \
     iceoryx2-log                            \
-    iceoryx2-services-common                \
     iceoryx2-gateway                        \
     iceoryx2-gateway-backend`
 
