@@ -72,7 +72,7 @@ pub(crate) fn hz(options: HzOptions, format: Format) -> Result<()> {
     while node.wait(cycle_time).is_ok() {
         let mut timeout_reached = reached_timeout(start, options.timeout);
 
-        while let Some(_sample) = unsafe { subscriber.receive_custom_payload()? } {
+        while let Some(_sample) = subscriber.receive()? {
             let now = Instant::now();
             if let Some(prev) = last_msg_time {
                 let interval_ns = now.duration_since(prev).as_nanos();

@@ -106,24 +106,22 @@ impl Subscriber {
     /// If a failure occurs `ReceiveError` is returned.
     pub fn receive(&self) -> PyResult<Option<Sample>> {
         match &*self.value.lock() {
-            SubscriberType::Ipc(Some(v)) => Ok(unsafe {
-                v.receive_custom_payload()
-                    .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
-                    .map(|s| Sample {
-                        value: Parc::new(SampleType::Ipc(Some(s))),
-                        payload_type_details: self.payload_type_details.clone(),
-                        user_header_type_details: self.user_header_type_details.clone(),
-                    })
-            }),
-            SubscriberType::Local(Some(v)) => Ok(unsafe {
-                v.receive_custom_payload()
-                    .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
-                    .map(|s| Sample {
-                        value: Parc::new(SampleType::Local(Some(s))),
-                        payload_type_details: self.payload_type_details.clone(),
-                        user_header_type_details: self.user_header_type_details.clone(),
-                    })
-            }),
+            SubscriberType::Ipc(Some(v)) => Ok(v
+                .receive()
+                .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
+                .map(|s| Sample {
+                    value: Parc::new(SampleType::Ipc(Some(s))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })),
+            SubscriberType::Local(Some(v)) => Ok(v
+                .receive()
+                .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
+                .map(|s| Sample {
+                    value: Parc::new(SampleType::Local(Some(s))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })),
             _ => fatal_panic!(from "Subscriber::receive()",
                     "Accessing a released Subscriber."),
         }

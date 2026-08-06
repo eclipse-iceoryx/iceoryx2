@@ -103,7 +103,7 @@ pub(crate) fn subscribe(options: SubscribeOptions, format: Format) -> Result<()>
     let start = Instant::now();
     let mut msg_counter = 0u64;
     'node_loop: while node.wait(cycle_time).is_ok() {
-        while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
+        while let Some(sample) = subscriber.receive()? {
             let (system_header, user_header, payload) =
                 extract_pubsub_payload(&sample, &service_types.user_header);
 

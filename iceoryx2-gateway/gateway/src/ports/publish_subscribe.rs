@@ -210,7 +210,7 @@ impl<S: Service> PublishSubscribePorts<S> {
         let mut propagated = false;
 
         loop {
-            let sample = unsafe { self.subscriber.receive_custom_payload() };
+            let sample = self.subscriber.receive();
             let sample = fail!(
                 from self,
                 when sample,

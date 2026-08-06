@@ -3503,7 +3503,7 @@ pub mod service_publish_subscribe {
 
         unsafe { sample.assume_init().send().unwrap() };
 
-        let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
+        let sample = subscriber.receive().unwrap().unwrap();
         assert_that!(sample.payload(), len type_details.size());
         assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
@@ -3542,7 +3542,7 @@ pub mod service_publish_subscribe {
 
         unsafe { sample.assume_init().send().unwrap() };
 
-        let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
+        let sample = subscriber.receive().unwrap().unwrap();
         assert_that!(sample.payload(), len type_details.size() * NUMBER_OF_ELEMENTS);
         assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);

@@ -102,35 +102,4 @@ pub mod subscriber {
 
         Ok(())
     }
-
-    #[conformance_test]
-    #[should_panic]
-    #[cfg(debug_assertions)]
-    pub fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
-        Sut: Service,
-    >() {
-        use iceoryx2::service::marker::CustomPayloadMarker;
-        #[cfg(debug_assertions)]
-        use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-
-        const TYPE_SIZE_OVERRIDE: usize = 128;
-        let test = Test::<Sut>::new();
-        let node = test.create_node();
-        let service_name = generate_service_name();
-        let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        type_detail_set_size(&mut type_detail, TYPE_SIZE_OVERRIDE);
-
-        let service = unsafe {
-            node.service_builder(&service_name)
-                .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&type_detail)
-                .create()
-                .unwrap()
-        };
-
-        let sut = service.subscriber_builder().create().unwrap();
-
-        // panics here
-        let _sample = sut.receive();
-    }
 }
