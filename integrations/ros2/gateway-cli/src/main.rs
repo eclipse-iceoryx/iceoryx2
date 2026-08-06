@@ -35,8 +35,8 @@ use iceoryx2_gateway_backend::traits::{Mapping, Passthrough, Translator};
 use iceoryx2_integrations_ros2_gateway_backend::Config as BackendConfig;
 use iceoryx2_integrations_ros2_gateway_backend::mapping::static_mapping;
 use iceoryx2_integrations_ros2_gateway_backend::{
-    PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicConfig,
-    TopicDescription, TypeName,
+    PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicDescription, TopicName,
+    TypeName,
 };
 
 const ORIGIN: &str = "iox2-gateway-ros2";
@@ -145,10 +145,10 @@ fn create_gateway(
         }
         (cli::Mapping::Static(path), cli::Translator::Passthrough) => {
             let mapping = load_static_mapping(&path)?;
-            let topics = mapping.topics();
+            let mapped = mapping.topics();
             let backend_config = BackendConfig {
-                preload_types: topics.iter().map(|topic| topic.type_name.clone()).collect(),
-                topics,
+                topics: mapped.iter().map(|topic| topic.topic.clone()).collect(),
+                preload_types: mapped.iter().map(|topic| topic.type_name.clone()).collect(),
             };
             create_gateway_impl::<StaticMapping, Passthrough<TopicDescription>>(
                 cli.reactive_backend,
@@ -159,10 +159,10 @@ fn create_gateway(
         }
         (cli::Mapping::Static(path), cli::Translator::PlainStruct) => {
             let mapping = load_static_mapping(&path)?;
-            let topics = mapping.topics();
+            let mapped = mapping.topics();
             let backend_config = BackendConfig {
-                preload_types: topics.iter().map(|topic| topic.type_name.clone()).collect(),
-                topics,
+                topics: mapped.iter().map(|topic| topic.topic.clone()).collect(),
+                preload_types: mapped.iter().map(|topic| topic.type_name.clone()).collect(),
             };
             create_gateway_impl::<StaticMapping, PlainStructTranslator>(
                 cli.reactive_backend,
@@ -263,15 +263,12 @@ fn open_user_listeners(
         .collect()
 }
 
-/// Parses repeated `--topic` values of the form `<topic>:<type>`.
-fn parse_topics(topics: &[String]) -> anyhow::Result<Vec<TopicConfig>> {
+/// Parses repeated `--topic` values.
+fn parse_topics(topics: &[String]) -> anyhow::Result<Vec<TopicName>> {
     topics
         .iter()
         .map(|entry| {
-            let Some((topic, type_name)) = entry.split_once(':') else {
-                anyhow::bail!("invalid --topic {entry:?}: expected '<topic>:<type>'");
-            };
-            TopicConfig::new(topic, type_name)
+            TopicName::new(entry)
                 .map_err(|error| anyhow::anyhow!("invalid --topic {entry:?}: {error}"))
         })
         .collect()

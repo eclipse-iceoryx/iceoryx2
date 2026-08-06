@@ -160,8 +160,9 @@ impl TopicConfig {
 /// Configuration for the `Ros2Backend`.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
-    /// The topics to bridge.
-    pub topics: Vec<TopicConfig>,
+    /// The topics to bridge. Each is bridged under the type the ROS graph
+    /// reports for it.
+    pub topics: Vec<TopicName>,
     /// Message types whose typesupport is resolved during backend creation,
     /// which fails if any cannot be resolved. Types left out are resolved on
     /// first use instead; listing a type is never a precondition for bridging

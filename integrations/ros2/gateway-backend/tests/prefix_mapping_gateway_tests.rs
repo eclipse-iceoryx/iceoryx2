@@ -26,7 +26,7 @@ use iceoryx2_gateway_backend::traits::testing::Testing as _;
 use iceoryx2_integrations_ros2_gateway_backend::ros_header::RosHeader;
 use iceoryx2_integrations_ros2_gateway_backend::testing::{TestPeer, Testing};
 use iceoryx2_integrations_ros2_gateway_backend::{
-    Config, PrefixMapping, Ros2Backend, TopicConfig, TopicDescription,
+    Config, PrefixMapping, Ros2Backend, TopicDescription, TopicName,
 };
 
 #[derive(Debug, ZeroCopySend)]
@@ -196,7 +196,7 @@ fn maps_ros_topics_onto_iceoryx2_services() {
     >::new()
     .iceoryx_config(config.clone())
     .backend_config(Config {
-        topics: vec![TopicConfig::new(&topic, "std_msgs/msg/String").expect("valid topic config")],
+        topics: vec![TopicName::new(&topic).expect("valid topic name")],
         ..Default::default()
     })
     .polled()

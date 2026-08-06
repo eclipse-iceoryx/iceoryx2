@@ -38,10 +38,12 @@ pub struct Cli {
     #[clap(
         long = "topic",
         short = 't',
-        value_name = "TOPIC:TYPE",
+        value_name = "TOPIC",
         action = clap::ArgAction::Append,
         conflicts_with = "static_mapping",
-        help = "Enable discovery of specified topics via ROS 2. When omitted, no ROS 2 discovery occurs. Only relevant for prefix mappings. Can be repeated."
+        help = "Enable discovery of specified topics via ROS 2. Each is bridged under the type \
+                the ROS graph reports for it. When omitted, no ROS 2 discovery occurs. Only \
+                relevant for prefix mappings. Can be repeated."
     )]
     pub topics: Vec<String>,
 

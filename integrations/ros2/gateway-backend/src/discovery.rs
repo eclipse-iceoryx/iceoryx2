@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use core::error::Error;
@@ -24,7 +24,7 @@ use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdat
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
 use iceoryx2_log::{fail, warn};
 
-use crate::config::{TopicConfig, TopicName, TypeName};
+use crate::config::{TopicName, TypeName};
 use crate::mapping::TopicDescription;
 use crate::rcl::RclNode;
 
@@ -71,7 +71,7 @@ pub struct Discovery<
     T: Translator<EndpointDescription = TopicDescription>,
 > {
     node: Rc<RclNode>,
-    allowlist: HashMap<TopicName, TypeName>,
+    allowlist: HashSet<TopicName>,
     mapping: Rc<M>,
     translator: Rc<T>,
     /// Outcome for each configured topic seen live in the ROS graph.
@@ -89,16 +89,13 @@ impl<
     /// via the provided `node`.
     pub(crate) fn new(
         node: Rc<RclNode>,
-        topics: &[TopicConfig],
+        topics: &[TopicName],
         mapping: Rc<M>,
         translator: Rc<T>,
     ) -> Self {
         Self {
             node,
-            allowlist: topics
-                .iter()
-                .map(|topic| (topic.topic.clone(), topic.type_name.clone()))
-                .collect(),
+            allowlist: topics.iter().cloned().collect(),
             mapping,
             translator,
             state: RefCell::new(HashMap::new()),
@@ -106,14 +103,27 @@ impl<
         }
     }
 
-    /// Returns true when `topic` currently appears in a ROS graph snapshot.
-    fn is_present_on_graph(
+    /// The allowed topics present in a ROS graph snapshot, paired with the
+    /// type each is published under.
+    ///
+    /// A topic carrying more than one type is taken under the first the graph
+    /// reports; the rest are ignored.
+    fn allowed_topics_on_graph(
+        &self,
         graph: &[(crate::rcl::TopicName, Vec<crate::rcl::TypeName>)],
-        topic: &TopicName,
-    ) -> bool {
+    ) -> HashMap<TopicName, TypeName> {
         graph
             .iter()
-            .any(|(name, _)| name.as_str() == topic.as_str())
+            .filter_map(|(name, types)| {
+                let topic = TopicName::new(name.as_str()).ok()?;
+                if !self.allowlist.contains(&topic) {
+                    return None;
+                }
+                let type_name = TypeName::new(types.first()?.as_str()).ok()?;
+
+                Some((topic, type_name))
+            })
+            .collect()
     }
 
     /// Builds the topic description for a live `topic`.
@@ -258,6 +268,35 @@ impl<
 
         Ok(())
     }
+
+    /// Withdraws tracked topics that no longer appear on the graph.
+    fn forget_absent<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        live: &HashMap<TopicName, TypeName>,
+        process_discovery: &mut F,
+    ) -> Result<(), DiscoveryError> {
+        let absent: Vec<(TopicName, TopicState)> = self
+            .state
+            .borrow()
+            .iter()
+            .filter(|(topic, _)| !live.contains_key(*topic))
+            .map(|(topic, state)| (topic.clone(), *state))
+            .collect();
+
+        for (topic, state) in absent {
+            match state {
+                TopicState::Bridged(service_hash) => {
+                    self.on_removed(&topic, service_hash, process_discovery)?
+                }
+                // Forget the failure so the topic is retried should it return.
+                TopicState::Failed => {
+                    self.state.borrow_mut().remove(&topic);
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl<
@@ -289,23 +328,15 @@ impl<
             "Failed to query the ROS 2 graph"
         );
 
-        for (topic, type_name) in &self.allowlist {
-            let live = Self::is_present_on_graph(&graph, topic);
-            let state = self.state.borrow().get(topic).copied();
+        let live = self.allowed_topics_on_graph(&graph);
 
-            match (live, state) {
-                (true, None) => self.try_discover(topic, type_name, &mut process_discovery),
-                (false, Some(TopicState::Bridged(service_hash))) => {
-                    self.on_removed(topic, service_hash, &mut process_discovery)?
-                }
-                // Forget the failure so the topic is retried should it return.
-                (false, Some(TopicState::Failed)) => {
-                    self.state.borrow_mut().remove(topic);
-                }
-                _ => {}
+        for (topic, type_name) in &live {
+            if self.state.borrow().contains_key(topic) {
+                continue;
             }
+            self.try_discover(topic, type_name, &mut process_discovery);
         }
 
-        Ok(())
+        self.forget_absent(&live, &mut process_discovery)
     }
 }
