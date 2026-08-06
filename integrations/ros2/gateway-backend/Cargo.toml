@@ -1,0 +1,28 @@
+[package]
+name = "iceoryx2-integrations-ros2-gateway-backend"
+description = "iceoryx2-integrations: ros2 gateway backend"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-log = { workspace = true }
+iceoryx2-services-common = { workspace = true }
+iceoryx2-gateway-backend = { workspace = true }
+
+libloading = { workspace = true }
+r2r_rcl = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-gateway = { workspace = true }
+
+toml = { workspace = true }

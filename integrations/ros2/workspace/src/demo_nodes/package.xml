@@ -3,7 +3,7 @@
 <package format="3">
     <name>demo_nodes_iceoryx2</name>
     <version>0.9.999</version>
-    <description>Native iceoryx2 example nodes bridged to ROS 2 by the tunnel</description>
+    <description>Native iceoryx2 example nodes bridged to ROS 2 by the gateway</description>
     <maintainer email="oss@ekxide.io">ekxide developers</maintainer>
     <license>Apache 2.0</license>
     <license>MIT</license>

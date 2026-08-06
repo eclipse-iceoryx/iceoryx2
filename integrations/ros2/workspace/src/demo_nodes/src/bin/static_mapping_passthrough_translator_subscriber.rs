@@ -18,7 +18,7 @@
 //! ```bash
 //! ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_subscriber
 //! # in other shells:
-//! #   cargo run --bin iox2-tunnel-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
+//! #   cargo run --bin iox2-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
 //! #   ros2 run demo_nodes_cpp talker
 //! ```
 

@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "tunnel-backend",
-    "tunnel-cli",
+    "gateway-backend",
+    "gateway-cli",
 ]
 
 [workspace.package]
@@ -23,8 +23,8 @@ rust-version = "1.89"
 version = "0.9.999"
 
 [workspace.dependencies]
-iceoryx2-integrations-zenoh-tunnel-cli = { version = "0.9.999", path = "tunnel-cli" }
-iceoryx2-integrations-zenoh-tunnel-backend = { version = "0.9.999", path = "tunnel-backend" }
+iceoryx2-integrations-zenoh-gateway-cli = { version = "0.9.999", path = "gateway-cli" }
+iceoryx2-integrations-zenoh-gateway-backend = { version = "0.9.999", path = "gateway-backend" }
 
 iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/" }
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
@@ -34,9 +34,9 @@ iceoryx2-bb-posix = { version = "0.9.999", path = "../../iceoryx2-bb/posix/" }
 iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/" }
 iceoryx2-bb-testing-macros = { version = "0.9.999", path = "../../iceoryx2-bb/testing-macros/" }
 iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common" }
-iceoryx2-services-tunnel = { version = "0.9.999", path = "../../iceoryx2-services/tunnel" }
-iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-backend" }
-iceoryx2-tunnel-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-conformance-tests" }
+iceoryx2-gateway = { version = "0.9.999", path = "../../iceoryx2-gateway/gateway" }
+iceoryx2-gateway-backend = { version = "0.9.999", path = "../../iceoryx2-gateway/backend" }
+iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-gateway/conformance-tests" }
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }

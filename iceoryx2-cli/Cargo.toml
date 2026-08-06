@@ -31,8 +31,8 @@ name = "iox2-config"
 path = "iox2-config/src/main.rs"
 
 [[bin]]
-name = "iox2-tunnel"
-path = "iox2-tunnel/src/main.rs"
+name = "iox2-gateway"
+path = "iox2-gateway/src/main.rs"
 
 [lib]
 name = "iceoryx2_cli"

@@ -48,7 +48,7 @@ unsafe impl ZeroCopySend for Twist {
 }
 
 // TODO: Move to common library.
-/// User header of bridged services, written by the tunnel when ingesting a
+/// User header of bridged services, written by the gateway when ingesting a
 /// ROS 2 message so subscribers can identify the remote origin.
 #[derive(Debug, Default, Clone, Copy, ZeroCopySend)]
 #[type_name("RosHeader")]

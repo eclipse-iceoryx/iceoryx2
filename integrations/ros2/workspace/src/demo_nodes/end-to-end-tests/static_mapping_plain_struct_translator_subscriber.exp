@@ -23,7 +23,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_cmdvel.toml
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-tunnel-ros2 2>@1
+    --bin iox2-gateway-ros2 2>@1
 
 #### Test
 
@@ -32,11 +32,11 @@ set timeout 30
 # The mapping pairs the example's service `CmdVel` with the ROS 2 topic
 # `/cmd_vel` and doubles as the wire-side discovery allowlist.
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-tunnel-ros2 -- \
+    --bin iox2-gateway-ros2 -- \
     --static-mapping ${MAPPING} \
     --translator PlainStruct
-set id_tunnel $spawn_id
-expect_output_from $id_tunnel "Local Discovery via Tracker"
+set id_gateway $spawn_id
+expect_output_from $id_gateway "Local Discovery via Tracker"
 
 spawn ros2 run demo_nodes_iceoryx2 \
     static_mapping_plain_struct_translator_subscriber
@@ -48,11 +48,11 @@ set id_publisher $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_tunnel "Opening bridge"
-expect_output_from $id_tunnel "Ingested PublishSubscribe"
+expect_output_from $id_gateway "Opening bridge"
+expect_output_from $id_gateway "Ingested PublishSubscribe"
 
 # The ROS 2 message arrives as the native struct, having been transcoded from
-# CDR by the tunnel.
+# CDR by the gateway.
 expect_output_from $id_subscriber "x: 0.5"
 
 #### Shutdown
@@ -63,8 +63,8 @@ expect -i $id_publisher eof
 send -i $id_subscriber $SIGINT
 expect -i $id_subscriber eof
 
-send -i $id_tunnel $SIGINT
-expect_output_from $id_tunnel "Tunnel stopped"
-expect -i $id_tunnel eof
+send -i $id_gateway $SIGINT
+expect_output_from $id_gateway "Gateway stopped"
+expect -i $id_gateway eof
 
 show_test_passed

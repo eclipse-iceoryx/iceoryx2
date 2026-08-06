@@ -46,9 +46,9 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-conformance-tests          \
     iceoryx2-services-common            \
     iceoryx2-services-discovery         \
-    iceoryx2-services-tunnel-backend    \
-    iceoryx2-services-tunnel            \
-    iceoryx2-tunnel-conformance-tests \
+    iceoryx2-gateway-backend            \
+    iceoryx2-gateway                    \
+    iceoryx2-gateway-conformance-tests  \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
 
@@ -62,10 +62,10 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-ffi-c                                  \
     iceoryx2-ffi-macros                             \
     iceoryx2-ffi-python                             \
-    iceoryx2-services-tunnel-testing                \
-    iceoryx2-services-tunnel-end-to-end-tests       \
-    iceoryx2-tunnel-conformance-tests-common        \
-    iceoryx2-tunnel-conformance-tests-nostd         \
+    iceoryx2-gateway-testing                        \
+    iceoryx2-gateway-host-to-host-tests             \
+    iceoryx2-gateway-conformance-tests-common       \
+    iceoryx2-gateway-conformance-tests-nostd        \
     iceoryx2-bb-trait-tests                         \
     iceoryx2-bb-elementary-tests-common             \
     iceoryx2-bb-elementary-tests-nostd              \
@@ -102,8 +102,8 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-tests-nostd`
 
 INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH := `echo \
-    iceoryx2-integrations-zenoh-tunnel-backend \
-    iceoryx2-integrations-zenoh-tunnel-cli`
+    iceoryx2-integrations-zenoh-gateway-backend \
+    iceoryx2-integrations-zenoh-gateway-cli`
 
 INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2                                \
@@ -114,19 +114,19 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2-cli                            \
     iceoryx2-log                            \
     iceoryx2-services-common                \
-    iceoryx2-services-tunnel                \
-    iceoryx2-services-tunnel-backend        \
-    iceoryx2-tunnel-conformance-tests`
+    iceoryx2-gateway                        \
+    iceoryx2-gateway-backend                \
+    iceoryx2-gateway-conformance-tests`
 
 INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := `echo \
-    iceoryx2-integrations-ros2-tunnel-backend`
+    iceoryx2-integrations-ros2-gateway-backend`
 
 INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
     iceoryx2                                \
     iceoryx2-log                            \
     iceoryx2-services-common                \
-    iceoryx2-services-tunnel                \
-    iceoryx2-services-tunnel-backend`
+    iceoryx2-gateway                        \
+    iceoryx2-gateway-backend`
 
 [private]
 _publish-dispatch workspace *flags:

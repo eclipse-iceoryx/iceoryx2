@@ -165,7 +165,7 @@ _release-update-cargo-tomls old new:
     # iceoryx2-* path-dep version pins. Matches lines such as:
     #   iceoryx2-bb-posix     = { version = "X", path = "iceoryx2-bb/posix/" }
     #   iceoryx2              = { version = "X", path = "../iceoryx2/" }
-    #   iceoryx2-integrations-zenoh-tunnel-cli = { version = "X", path = "zenoh/tunnel-cli" }
+    #   iceoryx2-integrations-zenoh-gateway-cli = { version = "X", path = "zenoh/gateway-cli" }
     sed -i -E 's/^(iceoryx2[a-zA-Z0-9_-]* *= *\{ *version = "){{old}}"/\1{{new}}"/g' \
         $(git ls-files '*Cargo.toml')
 

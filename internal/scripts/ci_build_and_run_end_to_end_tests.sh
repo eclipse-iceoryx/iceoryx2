@@ -73,7 +73,7 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
     cargo build --bin iox2-config
     cargo build --bin iox2-service
     cargo build --bin iox2-node
-    cargo build --bin iox2-tunnel
+    cargo build --bin iox2-gateway
 
     NUM_JOBS=1
     if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then

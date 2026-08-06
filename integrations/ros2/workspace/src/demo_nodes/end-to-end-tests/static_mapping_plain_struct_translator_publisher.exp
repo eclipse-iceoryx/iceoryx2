@@ -23,7 +23,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_cmdvel.toml
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-tunnel-ros2 2>@1
+    --bin iox2-gateway-ros2 2>@1
 
 #### Test
 
@@ -33,11 +33,11 @@ set timeout 30
 # `/cmd_vel`, kept separate from the chatter mapping because the plain-struct
 # translator admits fixed-size types only.
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-tunnel-ros2 -- \
+    --bin iox2-gateway-ros2 -- \
     --static-mapping ${MAPPING} \
     --translator PlainStruct
-set id_tunnel $spawn_id
-expect_output_from $id_tunnel "Local Discovery via Tracker"
+set id_gateway $spawn_id
+expect_output_from $id_gateway "Local Discovery via Tracker"
 
 spawn ros2 run demo_nodes_iceoryx2 \
     static_mapping_plain_struct_translator_publisher
@@ -49,11 +49,11 @@ set id_echo $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_tunnel "Opening bridge"
-expect_output_from $id_tunnel "Propagated PublishSubscribe"
+expect_output_from $id_gateway "Opening bridge"
+expect_output_from $id_gateway "Propagated PublishSubscribe"
 
 # The native struct the example published arrives as a ROS 2 message, having
-# been transcoded to CDR by the tunnel.
+# been transcoded to CDR by the gateway.
 expect_output_from $id_echo "x: 0.5"
 
 #### Shutdown
@@ -64,8 +64,8 @@ expect -i $id_echo eof
 send -i $id_publisher $SIGINT
 expect -i $id_publisher eof
 
-send -i $id_tunnel $SIGINT
-expect_output_from $id_tunnel "Tunnel stopped"
-expect -i $id_tunnel eof
+send -i $id_gateway $SIGINT
+expect_output_from $id_gateway "Gateway stopped"
+expect -i $id_gateway eof
 
 show_test_passed

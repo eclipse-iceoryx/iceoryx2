@@ -1,0 +1,42 @@
+[package]
+name = "iceoryx2-gateway-conformance-tests"
+description = "iceoryx2-services: conformance tests for the gateway service"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+
+std = [
+  "iceoryx2-bb-posix/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-services-common/std",
+  "iceoryx2-services-discovery/std",
+  "iceoryx2-gateway/std",
+  "iceoryx2-gateway-backend/std",
+  "iceoryx2/std",
+]
+
+[[test]]
+name = "tests"
+harness = false
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-services-common = { workspace = true }
+iceoryx2-services-discovery = { workspace = true }
+iceoryx2-gateway = { workspace = true }
+iceoryx2-gateway-backend = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-gateway-conformance-tests-common = { workspace = true, features = ["std"] }

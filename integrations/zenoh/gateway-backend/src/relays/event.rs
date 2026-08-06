@@ -1,0 +1,195 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use std::sync::Arc;
+
+use iceoryx2::prelude::EventId;
+use iceoryx2::service::Service;
+use iceoryx2::service::local_threadsafe;
+use iceoryx2_gateway_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
+use iceoryx2_gateway_backend::types::wake::WakeHandle;
+use iceoryx2_log::{fail, trace};
+
+use zenoh::pubsub::{Publisher, Subscriber};
+use zenoh::qos::Reliability;
+use zenoh::sample::{Locality, Sample};
+use zenoh::{Session, Wait};
+
+use crate::keys;
+use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum CreationError {
+    PublisherDeclaration,
+    SubscriberDeclaration,
+}
+
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreationError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum SendError {
+    EventPut,
+}
+
+impl core::fmt::Display for SendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SendError::{self:?}")
+    }
+}
+
+impl core::error::Error for SendError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum ReceiveError {
+    EventReceive,
+    EventIngestion,
+    InvalidEvent,
+}
+
+impl core::fmt::Display for ReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReceiveError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReceiveError {}
+
+#[derive(Debug)]
+pub struct Builder<'a, S: Service> {
+    session: &'a Session,
+    description: &'a ServiceDescription,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
+    _phantom: core::marker::PhantomData<S>,
+}
+
+impl<'a, S: Service> Builder<'a, S> {
+    pub fn new(
+        session: &'a Session,
+        description: &'a ServiceDescription,
+        wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
+    ) -> Builder<'a, S> {
+        Builder {
+            session,
+            description,
+            wake,
+            _phantom: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<S: Service> RelayBuilder for Builder<'_, S> {
+    type CreationError = CreationError;
+    type Relay = Relay<S>;
+
+    fn create(self) -> Result<Self::Relay, Self::CreationError> {
+        let origin = "event::Builder::create";
+        let key = keys::event(&self.description.service_hash);
+
+        let notifier = fail!(
+            from origin,
+            when self.session
+                .declare_publisher(key.clone())
+                .allowed_destination(Locality::Remote)
+                .reliability(Reliability::Reliable)
+                .wait(),
+            with CreationError::PublisherDeclaration,
+            "Failed to create zenoh publisher for notifications"
+        );
+
+        // TODO(correctness): Make handler buffer capacity configurable
+        let listener = fail!(
+            from origin,
+            when self.session
+                .declare_subscriber(key.clone())
+                .with(WakeAwareChannel::new(10, self.wake))
+                .allowed_origin(Locality::Remote)
+                .wait(),
+            with CreationError::SubscriberDeclaration,
+            "Failed to create zenoh subscriber for notifications"
+        );
+
+        Ok(Relay {
+            description: self.description.clone(),
+            notifier,
+            listener,
+            _phantom: core::marker::PhantomData,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct Relay<S: Service> {
+    description: ServiceDescription,
+    notifier: Publisher<'static>,
+    listener: Subscriber<WakeAwareReceiver<Sample>>,
+    _phantom: core::marker::PhantomData<S>,
+}
+
+impl<S: Service> EventRelay<S> for Relay<S> {
+    type SendError = SendError;
+    type ReceiveError = ReceiveError;
+
+    fn send(&self, event_id: EventId) -> Result<(), Self::SendError> {
+        trace!(
+            from self,
+            "Sending {}({})",
+            self.description.pattern,
+            self.description.name
+        );
+
+        fail!(
+            from self,
+            when self.notifier.put(event_id.as_value().to_ne_bytes()).wait(),
+            with SendError::EventPut,
+            "Failed to propagate notification to zenoh"
+        );
+
+        Ok(())
+    }
+
+    fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
+        let sample = fail!(
+            from self,
+            when self.listener.try_recv(),
+            with ReceiveError::EventReceive,
+            "Failed to receive event from zenoh"
+        );
+
+        match sample {
+            Some(sample) => {
+                trace!(
+                    from self,
+                    "Ingesting {}({})",
+                    self.description.pattern,
+                    self.description.name
+                );
+                let payload = sample.payload();
+                if payload.len() == std::mem::size_of::<usize>() {
+                    let id: usize =
+                        unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
+
+                    Ok(Some(EventId::new(id)))
+                } else {
+                    Err(ReceiveError::InvalidEvent)
+                }
+            }
+            None => Ok(None),
+        }
+    }
+}

@@ -1,0 +1,141 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use core::error::Error;
+
+use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+
+/// Service discovery interface for discoverying and announcing
+/// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
+/// communication mechanism.
+///
+/// [`Discovery`] enables mechansms to instrospect available iceoryx2
+/// [`Service`](iceoryx2::service::Service)s that are accessible via the
+/// [`Backend`](crate::traits::Backend) and announce local services
+/// so they can be discovered remotely. Implementations query the
+/// [`Backend`](crate::traits::Backend)'s communication layer to find active
+/// [`Service`](iceoryx2::service::Service)s and provide their
+/// [`ServiceDescription`](crate::types::service_description::ServiceDescription)s
+/// to be processed by the caller.
+///
+/// # Examples
+///
+/// Using [`Discovery`] to list available [`Service`](iceoryx2::service::Service)s:
+///
+/// ```no_run
+/// use iceoryx2_gateway_backend::traits::Discovery;
+///
+/// #[derive(Debug)]
+/// struct MyDiscoveryError;
+/// impl core::fmt::Display for MyDiscoveryError {
+///     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+///         write!(f, "discovery failed")
+///     }
+/// }
+/// impl core::error::Error for MyDiscoveryError {}
+///
+/// fn list_services<DiscoveryError, ProcessingError>(discovery: &impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
+///     discovery.discover(|event| -> Result<(), MyDiscoveryError> {
+///         println!("Discovery event: {:?}", event);
+///         Ok(())
+///     })?;
+///     Ok(())
+/// }
+/// ```
+///
+/// Implementing a custom [`Discovery`]:
+///
+/// ```no_run
+/// use iceoryx2_gateway_backend::traits::Discovery;
+/// use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+///
+/// struct MyDiscovery {
+///     // Discovery state
+/// }
+///
+/// #[derive(Debug)]
+/// struct MyDiscoveryError;
+/// impl core::fmt::Display for MyDiscoveryError {
+///     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+///         write!(f, "discovery failed")
+///     }
+/// }
+/// impl core::error::Error for MyDiscoveryError {}
+///
+/// #[derive(Debug)]
+/// struct MyAnnouncementError;
+/// impl core::fmt::Display for MyAnnouncementError {
+///     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+///         write!(f, "discovery failed")
+///     }
+/// }
+/// impl core::error::Error for MyAnnouncementError {}
+///
+/// impl Discovery for MyDiscovery {
+///     type DiscoveryError = MyDiscoveryError;
+///     type AnnouncementError = MyAnnouncementError;
+///
+///     fn announce(&self, update: DiscoveryUpdateRef<'_>)
+///         -> Result<(), Self::AnnouncementError> {
+///         // Make the described service discoverable over the backend
+///         Ok(())
+///     }
+///
+///     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+///         &self,
+///         process_discovery: F,
+///     ) -> Result<(), Self::DiscoveryError> {
+///         // Query backend for available services
+///         // For each service found, call process_discovery with the
+///         // corresponding discovery update
+///         Ok(())
+///     }
+/// }
+/// ```
+pub trait Discovery {
+    /// Error type that can occur during discovery operations.
+    type DiscoveryError: Error;
+
+    /// Error type that can occur during announcement operations.
+    type AnnouncementError: Error;
+
+    /// Announces a [`Service`](iceoryx2::service::Service) to make it
+    /// discoverable by other hosts.
+    ///
+    /// This method broadcasts a [`Service`](iceoryx2::service::Service) available
+    /// on the host over the [`Backend`](crate::traits::Backend)'s communication
+    /// mechanism, making it available for discovery remotely.
+    ///
+    /// # Parameters
+    ///
+    /// * `update` - The [`DiscoveryUpdateRef`] to announce over the
+    ///   [`crate::traits::Backend`].
+    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError>;
+
+    /// Discovers services available remotely and processes each one with the
+    /// provided callback.
+    ///
+    /// This method queries the backend's communication mechanism for all
+    /// available [`Service`](iceoryx2::service::Service)s, then invokes
+    /// `process_discovery` for [`DiscoveryUpdate`]s.
+    ///
+    /// Discovery continues until all services are processed or an error occurs.
+    ///
+    /// # Parameters
+    ///
+    /// * `process_discovery` - Callback provided by the caller to process
+    ///   [`DiscoveryUpdate`]s received over the [`crate::traits::Backend`].
+    fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        process_discovery: F,
+    ) -> Result<(), Self::DiscoveryError>;
+}

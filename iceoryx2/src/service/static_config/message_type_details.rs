@@ -90,7 +90,7 @@ impl TypeDetail {
     /// fixed-size [`TypeName`].
     ///
     /// Intended for infrastructure that describes services whose types it
-    /// cannot know at compile time, e.g. tunnels. Not part of the stable
+    /// cannot know at compile time, e.g. gateways. Not part of the stable
     /// public API.
     #[doc(hidden)]
     pub fn __internal_new_from_parts(

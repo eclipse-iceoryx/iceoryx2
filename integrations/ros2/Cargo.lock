@@ -798,16 +798,37 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-integrations-ros2-tunnel-backend"
+name = "iceoryx2-gateway"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-log",
+ "iceoryx2-services-common",
+ "iceoryx2-services-discovery",
+]
+
+[[package]]
+name = "iceoryx2-gateway-backend"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-integrations-ros2-gateway-backend"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-testing",
+ "iceoryx2-gateway",
+ "iceoryx2-gateway-backend",
  "iceoryx2-log",
  "iceoryx2-services-common",
- "iceoryx2-services-tunnel",
- "iceoryx2-services-tunnel-backend",
  "libloading",
  "r2r_rcl",
  "serde",
@@ -815,7 +836,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-integrations-ros2-tunnel-cli"
+name = "iceoryx2-integrations-ros2-gateway-cli"
 version = "0.9.999"
 dependencies = [
  "anyhow",
@@ -824,10 +845,10 @@ dependencies = [
  "human-panic",
  "iceoryx2",
  "iceoryx2-cli",
- "iceoryx2-integrations-ros2-tunnel-backend",
+ "iceoryx2-gateway",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-integrations-ros2-gateway-backend",
  "iceoryx2-log",
- "iceoryx2-services-tunnel",
- "iceoryx2-services-tunnel-backend",
  "toml 0.9.12+spec-1.1.0",
 ]
 
@@ -907,27 +928,6 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-services-common",
- "serde",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-log",
- "iceoryx2-services-common",
- "iceoryx2-services-discovery",
- "iceoryx2-services-tunnel-backend",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel-backend"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
  "serde",
 ]
 

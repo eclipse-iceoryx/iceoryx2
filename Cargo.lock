@@ -1459,6 +1459,95 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-gateway"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-log",
+ "iceoryx2-services-common",
+ "iceoryx2-services-discovery",
+]
+
+[[package]]
+name = "iceoryx2-gateway-backend"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-gateway-conformance-tests"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-gateway",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-gateway-conformance-tests-common",
+ "iceoryx2-services-common",
+ "iceoryx2-services-discovery",
+]
+
+[[package]]
+name = "iceoryx2-gateway-conformance-tests-common"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-gateway-conformance-tests",
+ "iceoryx2-gateway-testing",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-gateway-conformance-tests-nostd"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-gateway-conformance-tests",
+ "iceoryx2-gateway-conformance-tests-common",
+]
+
+[[package]]
+name = "iceoryx2-gateway-host-to-host-tests"
+version = "0.9.999"
+dependencies = [
+ "clap",
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-posix",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-gateway-testing"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-system-types",
+ "iceoryx2-gateway-backend",
+ "iceoryx2-services-common",
+ "postcard",
+ "serde",
+]
+
+[[package]]
 name = "iceoryx2-log"
 version = "0.9.999"
 dependencies = [
@@ -1545,54 +1634,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-services-tunnel"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-log",
- "iceoryx2-services-common",
- "iceoryx2-services-discovery",
- "iceoryx2-services-tunnel-backend",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel-backend"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "serde",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel-end-to-end-tests"
-version = "0.9.999"
-dependencies = [
- "clap",
- "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-bb-posix",
- "iceoryx2-log",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel-testing"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-concurrency",
- "iceoryx2-bb-elementary",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-system-types",
- "iceoryx2-services-common",
- "iceoryx2-services-tunnel-backend",
- "postcard",
- "serde",
-]
-
-[[package]]
 name = "iceoryx2-testing"
 version = "0.9.999"
 dependencies = [
@@ -1628,47 +1669,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
  "iceoryx2-tests-common",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-conformance-tests"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-services-common",
- "iceoryx2-services-discovery",
- "iceoryx2-services-tunnel",
- "iceoryx2-services-tunnel-backend",
- "iceoryx2-tunnel-conformance-tests-common",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-conformance-tests-common"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-loggers",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-pal-print",
- "iceoryx2-services-tunnel-testing",
- "iceoryx2-tunnel-conformance-tests",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-conformance-tests-nostd"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-elementary-traits",
- "iceoryx2-bb-loggers",
- "iceoryx2-bb-memory",
- "iceoryx2-bb-testing",
- "iceoryx2-tunnel-conformance-tests",
- "iceoryx2-tunnel-conformance-tests-common",
 ]
 
 [[package]]
