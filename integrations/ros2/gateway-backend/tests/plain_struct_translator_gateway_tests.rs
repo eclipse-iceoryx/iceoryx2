@@ -95,10 +95,7 @@ fn translates_inbound_messages_into_fixed_size_payloads() {
     let mut gateway =
         Gateway::<Service, Ros2Backend<Service, StaticMapping, PlainStructTranslator>>::new()
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(BackendConfig {
-                topics: mapping.topics(),
-                ..Default::default()
-            })
+            .backend_config(BackendConfig::default())
             .mapping(mapping)
             .polled()
             .create()

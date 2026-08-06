@@ -27,25 +27,18 @@ use iceoryx2_cli::help_template;
 )]
 pub struct Cli {
     #[clap(
-        long = "service",
-        short = 's',
-        value_name = "NAME",
-        action = clap::ArgAction::Append,
-        help = "Restrict bridging to the listed service names. May be repeated. When omitted, all discovered services are bridged."
-    )]
-    pub services: Vec<String>,
-
-    #[clap(
-        long = "topic",
-        short = 't',
+        long = "allow",
+        short = 'a',
         value_name = "TOPIC",
         action = clap::ArgAction::Append,
         conflicts_with = "static_mapping",
-        help = "Enable discovery of specified topics via ROS 2. Each is bridged under the type \
-                the ROS graph reports for it. When omitted, no ROS 2 discovery occurs. Only \
-                relevant for prefix mappings. Can be repeated."
+        help = "Restrict bridging to the given ROS 2 topics, either named exactly or as a \
+                <prefix>/** pattern. May be repeated. Each topic is bridged under the type the \
+                ROS graph reports for it. When omitted, every service named under the \
+                ros2://topics prefix is bridged outbound and no topic is taken from the ROS \
+                graph. Only relevant for prefix mappings."
     )]
-    pub topics: Vec<String>,
+    pub allow: Vec<String>,
 
     #[clap(
         long,

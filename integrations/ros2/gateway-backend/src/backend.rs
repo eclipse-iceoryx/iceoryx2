@@ -181,7 +181,6 @@ impl<
         let translator = Rc::new(self.translator);
         let discovery = Discovery::new(
             Rc::clone(&node),
-            &self.config.topics,
             Rc::clone(&mapping),
             Rc::clone(&translator),
         );

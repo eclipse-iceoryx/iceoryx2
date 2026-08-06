@@ -214,12 +214,12 @@ fn entries_without_settings_apply_defaults() {
 }
 
 #[test]
-fn mapped_topics_can_be_listed() {
+fn mapped_type_names_can_be_listed() {
     let sut = mapping(vec![entry("A", "/a"), entry("B", "/b")]);
 
-    let topics = sut.topics();
+    let type_names = sut.type_names();
 
-    assert_that!(topics, len 2);
-    assert_that!(topics[0].topic.as_str(), eq "/a");
-    assert_that!(topics[1].topic.as_str(), eq "/b");
+    assert_that!(type_names, len 2);
+    assert_that!(type_names[0].as_str(), eq "sensor_msgs/msg/PointCloud2");
+    assert_that!(type_names[1].as_str(), eq "sensor_msgs/msg/PointCloud2");
 }

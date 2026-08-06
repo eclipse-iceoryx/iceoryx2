@@ -33,6 +33,14 @@
 //!
 //! Any other form is not bridged.
 //!
+//! # Scope
+//!
+//! An [`AllowList`] narrows which topics are bridged. The two directions
+//! read an empty list differently. Outbound, naming a service under the
+//! prefix is already an opt-in, so an empty list bridges every prefixed
+//! service. Inbound, the ROS graph carries topics nobody opted in to, so an
+//! empty list takes none of them.
+//!
 //! # QoS mapping
 //!
 //! Service settings and QoS profiles overlap only partially. Settings that
@@ -73,6 +81,7 @@ use iceoryx2_gateway_backend::types::service_description::{
 use iceoryx2_log::warn;
 
 use crate::config::{TopicName, TypeName};
+use crate::mapping::AllowList;
 use crate::mapping::TopicDescription;
 use crate::qos::QosProfile;
 use crate::ros_header::RosHeader;
@@ -82,8 +91,30 @@ const TOPIC_PREFIX: &str = "ros2://topics";
 /// Accepts publish-subscribe services named `ros2://topics{topic}` whose
 /// payload type name is the ROS 2 type name, and attempts to derive each
 /// side's QoS/settings.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct PrefixMapping;
+#[derive(Debug, Default, Clone)]
+pub struct PrefixMapping {
+    allowlist: AllowList,
+}
+
+impl PrefixMapping {
+    /// Creates a mapping bridging the topics `allowlist` admits.
+    pub fn new(allowlist: AllowList) -> Self {
+        Self { allowlist }
+    }
+
+    /// Whether a local service offering `topic` is bridged. Naming a service
+    /// under the prefix is itself an opt-in, so an empty allow list does not
+    /// narrow it further.
+    fn bridges_outbound(&self, topic: &TopicName) -> bool {
+        self.allowlist.is_empty() || self.allowlist.admits(topic)
+    }
+
+    /// Whether `topic` is taken from the ROS graph. The graph carries topics
+    /// nobody opted in to, so an empty allow list takes none of them.
+    fn bridges_inbound(&self, topic: &TopicName) -> bool {
+        self.allowlist.admits(topic)
+    }
+}
 
 impl Mapping for PrefixMapping {
     type EndpointDescription = TopicDescription;
@@ -95,6 +126,9 @@ impl Mapping for PrefixMapping {
         let payload = &pattern.payload;
 
         let topic = topic(description.name.as_str())?;
+        if !self.bridges_outbound(&topic) {
+            return None;
+        }
         let type_name = TypeName::new(&payload.type_name).ok()?;
 
         Some(TopicDescription {
@@ -108,6 +142,10 @@ impl Mapping for PrefixMapping {
     }
 
     fn local<S: Service>(&self, remote: &TopicDescription) -> Option<ServiceDescription> {
+        if !self.bridges_inbound(&remote.topic) {
+            return None;
+        }
+
         let name = match service_name(remote.topic.as_str()) {
             Ok(name) => name,
             Err(error) => {

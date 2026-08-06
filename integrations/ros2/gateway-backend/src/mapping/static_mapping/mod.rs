@@ -37,7 +37,7 @@ use iceoryx2_gateway_backend::types::service_description::{
 };
 use iceoryx2_log::{fail, warn};
 
-use crate::config::{TopicConfig, TopicName};
+use crate::config::{TopicName, TypeName};
 use crate::mapping::TopicDescription;
 use crate::ros_header::RosHeader;
 
@@ -98,14 +98,11 @@ impl StaticMapping {
         })
     }
 
-    /// The topics mapped by this instance.
-    pub fn topics(&self) -> Vec<TopicConfig> {
+    /// The message types of the topics mapped by this instance.
+    pub fn type_names(&self) -> Vec<TypeName> {
         self.entries
             .iter()
-            .map(|entry| TopicConfig {
-                topic: entry.ros2.topic.clone(),
-                type_name: entry.ros2.type_name.clone(),
-            })
+            .map(|entry| entry.ros2.type_name.clone())
             .collect()
     }
 

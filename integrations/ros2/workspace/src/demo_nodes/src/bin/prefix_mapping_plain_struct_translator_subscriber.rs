@@ -19,15 +19,15 @@
 //! ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
 //! # in other shells:
 //! #   cargo run --bin iox2-gateway-ros2 -- \
-//! #       --topic /cmd_vel \
+//! #       --allow /cmd_vel \
 //! #       --translator PlainStruct
 //! #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 //! ```
 
 use core::time::Duration;
 
-use iceoryx2::prelude::*;
 use demo_nodes_iceoryx2::{RosHeader, Twist};
+use iceoryx2::prelude::*;
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
 /// `/cmd_vel`.
