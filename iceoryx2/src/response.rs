@@ -38,20 +38,20 @@
 //! # }
 //! ```
 
+use crate::identifiers::UniqueServerId;
+use crate::payload::number_of_elements;
+use crate::port::client::ClientSharedState;
+use crate::port::details::chunk::Chunk;
+use crate::port::details::chunk_details::ChunkDetails;
+use crate::service;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::Deref;
-
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
-
-use crate::identifiers::UniqueServerId;
-use crate::port::client::ClientSharedState;
-use crate::port::details::chunk_details::ChunkDetails;
-use crate::raw_sample::RawSample;
-use crate::service;
 
 /// It stores the payload and can be received by the
 /// [`PendingResponse`](crate::pending_response::PendingResponse) after a
@@ -62,14 +62,12 @@ pub struct Response<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) ptr: RawSample<
-        crate::service::header::request_response::ResponseHeader,
-        ResponseHeader,
-        ResponsePayload,
-    >,
+    pub(crate) chunk: Chunk,
     pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     pub(crate) details: ChunkDetails,
     pub(crate) channel_id: ChannelId,
+    pub(crate) _response_payload: PhantomData<ResponsePayload>,
+    pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
 
 unsafe impl<
@@ -105,24 +103,46 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "Response<{}, {}, {}> {{ ptr: {:?} }}",
+            "Response<{}, {}, {}> {{ chunk: {:?} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
-            self.ptr
+            self.chunk
         )
     }
 }
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref for Response<Service, ResponsePayload, ResponseHeader>
 {
     type Target = ResponsePayload;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.payload_ptr().cast() }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for Response<Service, [ResponsePayload], ResponseHeader>
+{
+    type Target = [ResponsePayload];
+    fn deref(&self) -> &Self::Target {
+        let payload_size = self
+            .client_shared_state
+            .lock()
+            .response_receiver
+            .payload_size();
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                number_of_elements::<ResponsePayload, _>(self.header(), payload_size),
+            )
+        }
     }
 }
 
@@ -135,25 +155,41 @@ impl<
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
     pub fn header(&self) -> &service::header::request_response::ResponseHeader {
-        self.ptr.as_header_ref()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns a reference to the user header of the response.
     pub fn user_header(&self) -> &ResponseHeader {
-        self.ptr.as_user_header_ref()
-    }
-
-    /// Returns a reference to the payload of the response.
-    pub fn payload(&self) -> &ResponsePayload
-    where
-        ResponsePayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server) which sent
     /// the [`Response`].
     pub fn origin(&self) -> UniqueServerId {
         UniqueServerId(UniqueSystemId::from(self.details.origin))
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> Response<Service, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the payload of the response.
+    pub fn payload(&self) -> &ResponsePayload {
+        self.deref()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> Response<Service, [ResponsePayload], ResponseHeader>
+{
+    /// Returns a reference to the payload of the response.
+    pub fn payload(&self) -> &[ResponsePayload] {
+        self.deref()
     }
 }

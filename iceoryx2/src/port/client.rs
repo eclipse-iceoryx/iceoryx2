@@ -74,6 +74,7 @@
 
 use crate::active_request::RequestId;
 use crate::port::details::chunk::ChunkMut;
+use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::port::details::port_shared_state::PortSharedState;
 use crate::service::header::request_response::RequestHeader;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
@@ -868,9 +869,9 @@ impl<
 
         Ok(RequestMutUninit {
             request: RequestMut {
+                shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
                 chunk,
                 channel_id,
-                shared_state: self.client_shared_state.clone(),
                 was_sample_sent: AtomicBool::new(false),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
@@ -1113,9 +1114,9 @@ impl<
 
         Ok(RequestMutUninit {
             request: RequestMut {
+                shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
                 chunk,
                 channel_id,
-                shared_state: self.client_shared_state.clone(),
                 was_sample_sent: AtomicBool::new(false),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,

@@ -42,11 +42,11 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::payload::number_of_elements;
 use crate::port::details::chunk::ChunkMut;
+use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::{
     pending_response::PendingResponse,
     port::client::{ClientSharedState, RequestSendError},
@@ -64,7 +64,7 @@ pub struct RequestMut<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) chunk: ChunkMut,
-    pub(crate) shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+    pub(crate) shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
     pub(crate) was_sample_sent: AtomicBool,
     pub(crate) channel_id: ChannelId,
     pub(crate) _request_payload: PhantomData<RequestPayload>,
@@ -109,14 +109,10 @@ impl<
 > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        self.shared_state
-            .lock()
-            .release_request(self.was_sample_sent.load(Ordering::Relaxed), self.header());
-
-        self.shared_state
-            .lock()
-            .request_sender
-            .return_loaned_sample(self.chunk.offset());
+        let _ = self.shared_state.call(|s| -> Result<(), ()> {
+            s.release_request(self.was_sample_sent.load(Ordering::Relaxed), self.header());
+            Ok(())
+        });
     }
 }
 
@@ -168,7 +164,7 @@ impl<
 {
     type Target = [RequestPayload];
     fn deref(&self) -> &Self::Target {
-        let payload_size = self.shared_state.lock().request_sender.payload_size();
+        let payload_size = self.shared_state.payload_size();
 
         unsafe {
             &*core::ptr::slice_from_raw_parts(
@@ -202,7 +198,7 @@ impl<
     for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        let payload_size = self.shared_state.lock().request_sender.payload_size();
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
@@ -245,29 +241,24 @@ impl<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
-        let client_shared_state = self.shared_state.lock();
-        match client_shared_state.send_request(
-            &self.chunk,
-            self.channel_id,
-            self.header().request_id,
-        ) {
-            Ok(number_of_server_connections) => {
-                self.was_sample_sent.store(true, Ordering::Relaxed);
-                client_shared_state
-                    .loan_counter
-                    .fetch_sub(1, Ordering::Relaxed);
-                drop(client_shared_state);
-                let active_request = PendingResponse {
-                    number_of_server_connections,
-                    request: self,
-                    _service: PhantomData,
-                    _response_payload: PhantomData,
-                    _response_header: PhantomData,
-                };
-                Ok(active_request)
+        let shared_state = self.shared_state.clone();
+        shared_state.call(|s| {
+            match s.send_request(&self.chunk, self.channel_id, self.header().request_id) {
+                Ok(number_of_server_connections) => {
+                    self.was_sample_sent.store(true, Ordering::Relaxed);
+                    s.loan_counter.fetch_sub(1, Ordering::Relaxed);
+                    let active_request = PendingResponse {
+                        number_of_server_connections,
+                        request: self,
+                        _service: PhantomData,
+                        _response_payload: PhantomData,
+                        _response_header: PhantomData,
+                    };
+                    Ok(active_request)
+                }
+                Err(e) => Err(e),
             }
-            Err(e) => Err(e),
-        }
+        })
     }
 }
 
