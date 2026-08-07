@@ -75,10 +75,6 @@ impl AllowList {
             .any(|entry| entry.admits(topic.as_str()))
     }
 
-    /// Whether no topic was named at all.
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
 }
 
 #[cfg(test)]
@@ -128,7 +124,6 @@ mod tests {
     fn empty_list_admits_nothing() {
         let sut = AllowList::default();
 
-        assert!(sut.is_empty());
         assert!(!sut.admits(&topic("/chatter")));
     }
 }

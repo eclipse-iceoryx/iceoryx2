@@ -368,15 +368,5 @@ where
         }
     };
 
-    let services_filter = gateway_config
-        .services
-        .as_ref()
-        .map(|names| names.iter().cloned().collect());
-
-    Ok(Gateway::create(
-        gateway_node,
-        backend,
-        local_discovery,
-        services_filter,
-    ))
+    Ok(Gateway::create(gateway_node, backend, local_discovery))
 }

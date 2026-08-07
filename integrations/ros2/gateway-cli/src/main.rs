@@ -57,11 +57,8 @@ fn main() -> anyhow::Result<()> {
     if let Some(name) = &cli.discovery_service {
         info!(from ORIGIN, "Discovery service: {:?}", name);
     }
-    // Scope is decided by the mapping alone, so the gateway's own service
-    // filter is left unset.
     let gateway_config = GatewayConfig {
         discovery_service: cli.discovery_service.clone(),
-        services: None,
     };
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
@@ -122,7 +119,7 @@ fn create_gateway(
         (cli::Mapping::Prefix, cli::Translator::Passthrough) => {
             create_gateway_impl::<PrefixMapping, Passthrough<TopicDescription>>(
                 cli.reactive_backend,
-                PrefixMapping::new(AllowList::new(&cli.allow)),
+                PrefixMapping::new(allowlist(cli)),
                 gateway_config,
                 BackendConfig {
                     preload_types: parse_preload_types(&cli.preload_types)?,
@@ -132,7 +129,7 @@ fn create_gateway(
         (cli::Mapping::Prefix, cli::Translator::PlainStruct) => {
             create_gateway_impl::<PrefixMapping, PlainStructTranslator>(
                 cli.reactive_backend,
-                PrefixMapping::new(AllowList::new(&cli.allow)),
+                PrefixMapping::new(allowlist(cli)),
                 gateway_config,
                 BackendConfig {
                     preload_types: parse_preload_types(&cli.preload_types)?,
@@ -163,6 +160,15 @@ fn create_gateway(
                 backend_config,
             )
         }
+    }
+}
+
+/// Allow list parsed from CLI arguments.
+fn allowlist(cli: &Cli) -> AllowList {
+    if cli.allow.is_empty() {
+        AllowList::all()
+    } else {
+        AllowList::new(&cli.allow)
     }
 }
 

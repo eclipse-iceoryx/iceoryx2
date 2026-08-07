@@ -32,11 +32,10 @@ pub struct Cli {
         value_name = "TOPIC",
         action = clap::ArgAction::Append,
         conflicts_with = "static_mapping",
-        help = "Restrict bridging to the given ROS 2 topics, either named exactly or as a \
+        help = "Allow bridging of the given ROS 2 topics, either named exactly or as a \
                 <prefix>/** pattern. May be repeated. Each topic is bridged under the type the \
-                ROS graph reports for it. When omitted, every service named under the \
-                ros2://topics prefix is bridged outbound and no topic is taken from the ROS \
-                graph. Only relevant for prefix mappings."
+                ROS graph reports for it. When omitted, no topics are bridged. Use /** to bridge \
+                every topic. Only relevant for prefix mappings."
     )]
     pub allow: Vec<String>,
 

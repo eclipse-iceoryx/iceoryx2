@@ -57,6 +57,7 @@ fn maps_iceoryx_services_onto_ros_topics() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config)
+    .mapping(PrefixMapping::new(AllowList::new(&[topic.as_str()])))
     .polled()
     .create()
     .unwrap();
@@ -106,6 +107,9 @@ fn does_not_map_unprefixed_services() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config)
+    .mapping(PrefixMapping::new(AllowList::new(&[
+        publish_subscribe_topic.as_str(),
+    ])))
     .polled()
     .create()
     .unwrap();
@@ -157,6 +161,10 @@ fn does_not_map_event_services() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config)
+    .mapping(PrefixMapping::new(AllowList::new(&[
+        publish_subscribe_topic.as_str(),
+        event_topic.as_str(),
+    ])))
     .polled()
     .create()
     .unwrap();

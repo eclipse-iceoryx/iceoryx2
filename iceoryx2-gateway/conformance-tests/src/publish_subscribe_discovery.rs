@@ -16,8 +16,6 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[conformance_tests]
 pub mod publish_subscribe_discovery {
 
-    use alloc::string::ToString;
-    use alloc::vec;
     use core::fmt::Debug;
     use core::time::Duration;
 
@@ -77,7 +75,6 @@ pub mod publish_subscribe_discovery {
         // Create the gateway.
         let gateway_config = GatewayConfig {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
-            ..Default::default()
         };
         let mut gateway = Gateway::<S, B>::new()
             .gateway_config(gateway_config.clone())
@@ -620,7 +617,6 @@ pub mod publish_subscribe_discovery {
 
         let gateway_config = GatewayConfig {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
-            ..Default::default()
         };
         let mut gateway = Gateway::<S, B>::new()
             .gateway_config(gateway_config.clone())
@@ -854,54 +850,6 @@ pub mod publish_subscribe_discovery {
     }
 
     #[conformance_test]
-    pub fn allowlist_filters_out_non_listed_services<
-        S: Service,
-        B: Backend<S> + Debug,
-        T: Testing,
-    >() {
-        // === SETUP ===
-        let iceoryx_config = generate_isolated_config();
-        let allowed_name = generate_service_name();
-        let blocked_name = generate_service_name();
-        let node = NodeBuilder::new()
-            .config(&iceoryx_config)
-            .create::<S>()
-            .unwrap();
-        let allowed_service = node
-            .service_builder(&allowed_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
-            .open_or_create()
-            .unwrap();
-        let blocked_service = node
-            .service_builder(&blocked_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
-            .open_or_create()
-            .unwrap();
-
-        let gateway_config = GatewayConfig {
-            services: Some(vec![allowed_name.as_str().to_string()]),
-            ..Default::default()
-        };
-        let mut gateway = Gateway::<S, B>::new()
-            .gateway_config(gateway_config.clone())
-            .iceoryx_config(iceoryx_config.clone())
-            .polled()
-            .create()
-            .unwrap();
-
-        // === TEST ===
-        gateway.discover_over_iceoryx().unwrap();
-
-        assert_that!(gateway.bridged_services().len(), eq 1);
-        assert_that!(gateway.bridged_services().contains(allowed_service.service_hash()), eq true);
-        assert_that!(gateway.bridged_services().contains(blocked_service.service_hash()), eq false);
-    }
-
-    #[conformance_test]
     pub fn no_allowlist_forwards_all_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
@@ -938,39 +886,5 @@ pub mod publish_subscribe_discovery {
         assert_that!(gateway.bridged_services().len(), eq 2);
         assert_that!(gateway.bridged_services().contains(service_a.service_hash()), eq true);
         assert_that!(gateway.bridged_services().contains(service_b.service_hash()), eq true);
-    }
-
-    #[conformance_test]
-    pub fn empty_allowlist_forwards_no_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        // === SETUP ===
-        let iceoryx_config = generate_isolated_config();
-        let service_name = generate_service_name();
-        let node = NodeBuilder::new()
-            .config(&iceoryx_config)
-            .create::<S>()
-            .unwrap();
-        let _service = node
-            .service_builder(&service_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
-            .open_or_create()
-            .unwrap();
-
-        let gateway_config = GatewayConfig {
-            services: Some(vec![]),
-            ..Default::default()
-        };
-        let mut gateway = Gateway::<S, B>::new()
-            .gateway_config(gateway_config.clone())
-            .iceoryx_config(iceoryx_config.clone())
-            .polled()
-            .create()
-            .unwrap();
-
-        // === TEST ===
-        gateway.discover_over_iceoryx().unwrap();
-
-        assert_that!(gateway.bridged_services().len(), eq 0);
     }
 }

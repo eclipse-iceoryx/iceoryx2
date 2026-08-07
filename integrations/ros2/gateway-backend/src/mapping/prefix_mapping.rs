@@ -16,9 +16,9 @@
 //! This mapping strategy is intended to get communication
 //! up-and-running quickly with minimal configuration. Since many QoS
 //! can only be approximated with iceoryx2 service settings, this mapping
-//! should only used during development / prototyping.
+//! should only be used during development / prototyping.
 //!
-//! For finer control over the settings and QoS, the the
+//! For finer control over the settings and QoS, use the
 //! [`StaticMapping`](crate::mapping::StaticMapping) strategy.
 //!
 //! # Name mapping
@@ -32,14 +32,6 @@
 //! ```
 //!
 //! Any other form is not bridged.
-//!
-//! # Scope
-//!
-//! An [`AllowList`] narrows which topics are bridged. The two directions
-//! read an empty list differently. Outbound, naming a service under the
-//! prefix is already an opt-in, so an empty list bridges every prefixed
-//! service. Inbound, the ROS graph carries topics nobody opted in to, so an
-//! empty list takes none of them.
 //!
 //! # QoS mapping
 //!
@@ -91,6 +83,9 @@ const TOPIC_PREFIX: &str = "ros2://topics";
 /// Accepts publish-subscribe services named `ros2://topics{topic}` whose
 /// payload type name is the ROS 2 type name, and attempts to derive each
 /// side's QoS/settings.
+///
+/// An [`AllowList`] narrows which topics are bridged in both directions by
+/// topic name.
 #[derive(Debug, Default, Clone)]
 pub struct PrefixMapping {
     allowlist: AllowList,
@@ -100,19 +95,6 @@ impl PrefixMapping {
     /// Creates a mapping bridging the topics `allowlist` admits.
     pub fn new(allowlist: AllowList) -> Self {
         Self { allowlist }
-    }
-
-    /// Whether a local service offering `topic` is bridged. Naming a service
-    /// under the prefix is itself an opt-in, so an empty allow list does not
-    /// narrow it further.
-    fn bridges_outbound(&self, topic: &TopicName) -> bool {
-        self.allowlist.is_empty() || self.allowlist.admits(topic)
-    }
-
-    /// Whether `topic` is taken from the ROS graph. The graph carries topics
-    /// nobody opted in to, so an empty allow list takes none of them.
-    fn bridges_inbound(&self, topic: &TopicName) -> bool {
-        self.allowlist.admits(topic)
     }
 }
 
@@ -126,7 +108,7 @@ impl Mapping for PrefixMapping {
         let payload = &pattern.payload;
 
         let topic = topic(description.name.as_str())?;
-        if !self.bridges_outbound(&topic) {
+        if !self.allowlist.admits(&topic) {
             return None;
         }
         let type_name = TypeName::new(&payload.type_name).ok()?;
@@ -142,7 +124,7 @@ impl Mapping for PrefixMapping {
     }
 
     fn local<S: Service>(&self, remote: &TopicDescription) -> Option<ServiceDescription> {
-        if !self.bridges_inbound(&remote.topic) {
+        if !self.allowlist.admits(&remote.topic) {
             return None;
         }
 

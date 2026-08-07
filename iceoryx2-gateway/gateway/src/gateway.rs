@@ -16,7 +16,6 @@ use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::format;
 use alloc::string::String;
-use alloc::vec::Vec;
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeState, NodeView};
@@ -90,7 +89,6 @@ impl core::error::Error for PropagateError {}
 #[derive(Debug, Default, Clone)]
 pub struct Config {
     pub discovery_service: Option<String>,
-    pub services: Option<Vec<String>>,
 }
 
 /// Describes the outcome of opening up a bridge for a service.
@@ -124,7 +122,6 @@ pub struct Gateway<S: Service, B: for<'a> Backend<S> + Debug> {
     discovery_state: DiscoveryState,
     bridges: BTreeMap<ServiceHash, BridgeState<S, B>>,
     discovery_strategy: LocalDiscoveryStrategy<S>,
-    services_filter: Option<BTreeSet<String>>,
 }
 
 impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
@@ -145,7 +142,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
         node: Node<S>,
         backend: B,
         discovery_strategy: LocalDiscoveryStrategy<S>,
-        services_filter: Option<BTreeSet<String>>,
     ) -> Self {
         Self {
             node,
@@ -153,7 +149,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
             discovery_state: DiscoveryState::default(),
             bridges: BTreeMap::new(),
             discovery_strategy,
-            services_filter,
         }
     }
 
@@ -218,13 +213,12 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
 
         let node = &self.node;
         let backend = &self.backend;
-        let services_filter = &self.services_filter;
         let mut update = self.discovery_state.delta_update(Origin::Remote);
 
         fail!(
             from origin,
             when backend.discovery().discover(|event| {
-                on_discovery_update::<S, B>(node, backend, &mut update, services_filter, event)
+                on_discovery_update::<S, B>(node, backend, &mut update, event)
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
@@ -243,13 +237,18 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
 
         let node = &self.node;
         let backend = &self.backend;
-        let services_filter = &self.services_filter;
         let mut update = self.discovery_state.delta_update(Origin::Local);
 
         fail!(
             from origin,
             when subscriber.discover(|event| {
-                on_discovery_update::<S, B>(node, backend, &mut update, services_filter, event)
+                // Skip local services outside the mapping's scope.
+                if let DiscoveryUpdate::Added(description) = &event
+                    && backend.mapping().remote(description).is_none()
+                {
+                    return Ok(());
+                }
+                on_discovery_update::<S, B>(node, backend, &mut update, event)
             }),
             with DiscoveryError::DiscoveryOverService,
             "Failed to discover services via subscriber to discovery service"
@@ -277,7 +276,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
 
         let node = &self.node;
         let backend = &self.backend;
-        let services_filter = &self.services_filter;
         let mapping = backend.mapping();
         let discovery_state = &mut self.discovery_state;
 
@@ -288,7 +286,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
                 .iter()
                 .filter(|details| is_locally_offered(details, node.id()))
                 .filter_map(|details| ServiceDescription::try_from(&details.static_details).ok())
-                .filter(|description| allowed(description, services_filter))
                 .filter(|description| mapping.remote(description).is_some()),
             |description| announce_added::<S, B>(node, backend, description),
             |description| announce_removed::<S, B>(node, backend, description),
@@ -368,18 +365,10 @@ fn on_discovery_update<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &B,
     state: &mut DeltaUpdate<'_>,
-    allowlist: &Option<BTreeSet<String>>,
     update: DiscoveryUpdate,
 ) -> Result<(), DiscoveryError> {
     match update {
         DiscoveryUpdate::Added(description) => {
-            if !allowed(&description, allowlist) {
-                return Ok(());
-            }
-            if backend.mapping().remote(&description).is_none() {
-                return Ok(());
-            }
-
             // Announce on local 0 → 1 transitions, then record as offered.
             let hash = description.service_hash;
             let newly_offered_locally = state.origin() == Origin::Local && !state.is_offered(&hash);
@@ -400,15 +389,6 @@ fn on_discovery_update<S: Service, B: Backend<S>>(
     }
 
     Ok(())
-}
-
-/// Whether the gateway should offer `description` i.e. passes the optional
-/// services allowlist.
-fn allowed(description: &ServiceDescription, allowlist: &Option<BTreeSet<String>>) -> bool {
-    match allowlist {
-        Some(allowlist) => allowlist.contains(description.name.as_str()),
-        None => true,
-    }
 }
 
 /// Broadcasts a service's availability to remote peers over the backend.
