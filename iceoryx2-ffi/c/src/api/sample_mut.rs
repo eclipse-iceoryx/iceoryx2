@@ -451,7 +451,7 @@ pub unsafe extern "C" fn iox2_sample_mut_finish_serialized(
 ///   will be initialized by this function call.
 ///
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
+pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory(
     handle: iox2_sample_mut_h_ref,
     struct_ptr: *mut iox2_resizable_memory_publish_subscribe_t,
     handle_ptr: *mut iox2_resizable_memory_publish_subscribe_h,
@@ -480,7 +480,7 @@ pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
                         .value
                         .as_mut()
                         .ipc
-                        .__internal_create_resizable_memory_builder(),
+                        .__internal_create_resizable_memory(),
                 ),
                 deleter,
             ),
@@ -491,7 +491,7 @@ pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
                         .value
                         .as_mut()
                         .local
-                        .__internal_create_resizable_memory_builder(),
+                        .__internal_create_resizable_memory(),
                 ),
                 deleter,
             ),

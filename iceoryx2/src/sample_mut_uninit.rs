@@ -145,27 +145,18 @@ impl<
 > SampleMutUninit<Service, Payload, UserHeader>
 {
     #[doc(hidden)]
-    pub fn __internal_available_payload_memory(&self) -> usize {
-        self.shared_state.available_payload_memory()
-    }
-
-    #[doc(hidden)]
-    pub fn __internal_create_resizable_memory_builder(&self) -> FlatbufferMemory<Service> {
-        self.shared_state
-            .create_resizable_memory_builder(&self.chunk)
+    pub fn __internal_create_resizable_memory(&self) -> FlatbufferMemory<Service> {
+        self.shared_state.create_resizable_memory(&self.chunk)
     }
 
     #[doc(hidden)]
     pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8) {
-        self.chunk = self
-            .shared_state
-            .update_chunk_pointers_to_reallocated_layout();
-
-        let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
+        let memory_structure = self.shared_state.memory_structure(payload_ptr);
+        self.chunk = memory_structure.chunk;
 
         let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
-        header.number_of_elements = self.shared_state.slice_len() as u64;
-        header.payload_offset = payload_offset as u64;
+        header.number_of_elements = memory_structure.number_of_elements;
+        header.payload_offset = memory_structure.payload_offset;
     }
 }
 
@@ -185,7 +176,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         };
 
         new_self.flatbuffer_builder = Some(FlatBufferBuilder::new_in(
-            new_self.__internal_create_resizable_memory_builder(),
+            new_self.__internal_create_resizable_memory(),
         ));
 
         new_self
