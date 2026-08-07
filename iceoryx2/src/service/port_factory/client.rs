@@ -36,7 +36,7 @@ use crate::{
         client::Client, port_name::PortName,
     },
     prelude::BackpressureStrategy,
-    service,
+    service::{self, marker::Flatbuffer},
 };
 use alloc::format;
 use core::fmt::Debug;
@@ -328,6 +328,37 @@ impl<
     /// [`PortFactoryClient::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires more than max slice len in [`Client::loan_slice()`] or
     /// [`Client::loan_slice_uninit()`].
+    pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
+        self.config.allocation_strategy = value;
+        self
+    }
+}
+
+impl<
+    Service: service::Service,
+    RequestPayload,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
+    PortFactoryClient<
+        '_,
+        Service,
+        Flatbuffer<RequestPayload>,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    /// Sets the maximum initial reserved memory that the underlying allocator reserves
+    /// for the flatbuffer builder.
+    pub fn initial_reserved_memory(mut self, value: usize) -> Self {
+        self.config.initial_max_slice_len = value;
+        self
+    }
+
+    /// Defines the [`AllocationStrategy`] that is used when the underlying flatbuffer builder
+    /// requires more memory and reallocates.
     pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
         self.config.allocation_strategy = value;
         self
