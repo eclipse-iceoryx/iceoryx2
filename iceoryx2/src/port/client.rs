@@ -74,7 +74,6 @@
 
 use crate::active_request::RequestId;
 use crate::port::details::chunk::ChunkMut;
-use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::port::details::port_shared_state::PortSharedState;
 use crate::service::header::request_response::RequestHeader;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
@@ -867,15 +866,11 @@ impl<
     > {
         let (chunk, channel_id) = self.loan_impl(1)?;
 
-        Ok(RequestMutUninit {
-            shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
+        Ok(RequestMutUninit::new(
+            &self.client_shared_state,
             chunk,
             channel_id,
-            _response_payload: PhantomData,
-            _response_header: PhantomData,
-            _request_payload: PhantomData,
-            _request_header: PhantomData,
-        })
+        ))
     }
 
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
@@ -1109,15 +1104,11 @@ impl<
 
         let (chunk, channel_id) = self.loan_impl(slice_len)?;
 
-        Ok(RequestMutUninit {
-            shared_state: ChunkMutSharedState::new(&self.client_shared_state, &chunk).unwrap(),
+        Ok(RequestMutUninit::new(
+            &self.client_shared_state,
             chunk,
             channel_id,
-            _response_payload: PhantomData,
-            _response_header: PhantomData,
-            _request_header: PhantomData,
-            _request_payload: PhantomData,
-        })
+        ))
     }
 }
 

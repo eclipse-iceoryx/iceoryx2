@@ -63,13 +63,13 @@ pub struct RequestMutUninit<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) chunk: ChunkMut,
-    pub(crate) shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
-    pub(crate) channel_id: ChannelId,
-    pub(crate) _request_payload: PhantomData<RequestPayload>,
-    pub(crate) _request_header: PhantomData<RequestHeader>,
-    pub(crate) _response_payload: PhantomData<ResponsePayload>,
-    pub(crate) _response_header: PhantomData<ResponseHeader>,
+    chunk: ChunkMut,
+    shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
+    channel_id: ChannelId,
+    _request_payload: PhantomData<RequestPayload>,
+    _request_header: PhantomData<RequestHeader>,
+    _response_payload: PhantomData<ResponsePayload>,
+    _response_header: PhantomData<ResponseHeader>,
 }
 
 impl<
@@ -117,6 +117,31 @@ impl<
             "RequestMutUninit {{  chunk: {:?}, channel_id: {:?} }}",
             self.chunk, self.channel_id
         )
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub(crate) fn new(
+        shared_state: &Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+        chunk: ChunkMut,
+        channel_id: ChannelId,
+    ) -> Self {
+        Self {
+            shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
+            chunk,
+            channel_id,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
     }
 }
 

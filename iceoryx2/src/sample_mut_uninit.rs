@@ -297,9 +297,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    Payload: IceoryxSend + ZeroCopySend + Debug,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
-> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
+> SampleMutUninit<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
@@ -313,7 +313,14 @@ impl<
             _user_header: PhantomData,
         }
     }
+}
 
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + ZeroCopySend + Debug,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
+{
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
@@ -447,19 +454,6 @@ impl<
 impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
-    pub(crate) fn new(
-        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-        chunk: ChunkMut,
-    ) -> Self {
-        Self {
-            flatbuffer_builder: None,
-            shared_state: ChunkMutSharedState::new(publisher_shared_state, &chunk).unwrap(),
-            chunk,
-            _payload: PhantomData,
-            _user_header: PhantomData,
-        }
-    }
-
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
