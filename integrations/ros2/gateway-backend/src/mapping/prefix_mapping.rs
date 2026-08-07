@@ -108,7 +108,7 @@ impl Mapping for PrefixMapping {
         let payload = &pattern.payload;
 
         let topic = topic(description.name.as_str())?;
-        if !self.allowlist.admits(&topic) {
+        if !self.allowlist.admits(topic.as_str()) {
             return None;
         }
         let type_name = TypeName::new(&payload.type_name).ok()?;
@@ -124,7 +124,7 @@ impl Mapping for PrefixMapping {
     }
 
     fn local<S: Service>(&self, remote: &TopicDescription) -> Option<ServiceDescription> {
-        if !self.allowlist.admits(&remote.topic) {
+        if !self.allowlist.admits(remote.topic.as_str()) {
             return None;
         }
 

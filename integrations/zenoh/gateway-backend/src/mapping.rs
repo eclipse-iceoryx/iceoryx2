@@ -10,36 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::BTreeSet;
-
 use iceoryx2::service::Service;
 use iceoryx2_gateway_backend::traits::Mapping;
+pub use iceoryx2_gateway_backend::types::allow_list::AllowList;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
-/// Identity mapping scoped to an optional allow list of exact service names.
+/// Identity mapping scoped to an allow list of service names.
 #[derive(Debug, Default)]
 pub struct AllowListMapping {
-    allowlist: Option<BTreeSet<String>>,
+    allowlist: AllowList,
 }
 
 impl AllowListMapping {
-    /// Creates a mapping admitting only `services`. An empty iterator leaves
-    /// the identity mapping unrestricted.
-    pub fn new<I, N>(services: I) -> Self
-    where
-        I: IntoIterator<Item = N>,
-        N: Into<String>,
-    {
-        let services: BTreeSet<String> = services.into_iter().map(Into::into).collect();
-        Self {
-            allowlist: (!services.is_empty()).then_some(services),
-        }
+    /// Creates a mapping scoped to `allowlist`.
+    pub fn new(allowlist: AllowList) -> Self {
+        Self { allowlist }
     }
 
     fn admits(&self, description: &ServiceDescription) -> bool {
-        self.allowlist
-            .as_ref()
-            .is_none_or(|services| services.contains(description.name.as_str()))
+        self.allowlist.admits(description.name.as_str())
     }
 }
 
@@ -73,8 +62,8 @@ mod tests {
     }
 
     #[test]
-    fn omitted_allow_list_admits_every_service_in_both_directions() {
-        let sut = AllowListMapping::default();
+    fn allow_all_list_admits_every_service_in_both_directions() {
+        let sut = AllowListMapping::new(AllowList::all());
         let service = service_description("service");
 
         assert!(sut.remote(&service).is_some());
@@ -82,8 +71,17 @@ mod tests {
     }
 
     #[test]
+    fn empty_allow_list_admits_no_service_in_both_directions() {
+        let sut = AllowListMapping::default();
+        let service = service_description("service");
+
+        assert!(sut.remote(&service).is_none());
+        assert!(sut.local::<ipc::Service>(&service).is_none());
+    }
+
+    #[test]
     fn allow_list_is_applied_in_both_directions() {
-        let sut = AllowListMapping::new(["allowed"]);
+        let sut = AllowListMapping::new(AllowList::new(&["allowed"]));
         let allowed = service_description("allowed");
         let blocked = service_description("blocked");
 

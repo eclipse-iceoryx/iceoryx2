@@ -12,11 +12,10 @@
 
 //! Mapping between iceoryx2 services and their ROS 2 representation.
 
-pub mod allow_list;
 pub mod prefix_mapping;
 pub mod static_mapping;
 
-pub use allow_list::AllowList;
+pub use iceoryx2_gateway_backend::types::allow_list::AllowList;
 pub use prefix_mapping::PrefixMapping;
 pub use static_mapping::StaticMapping;
 

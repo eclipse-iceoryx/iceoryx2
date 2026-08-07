@@ -29,7 +29,7 @@ use iceoryx2_log::warn;
 
 use iceoryx2_gateway::Config as GatewayConfig;
 use iceoryx2_gateway::Gateway;
-use iceoryx2_integrations_zenoh_gateway_backend::{AllowListMapping, ZenohBackend};
+use iceoryx2_integrations_zenoh_gateway_backend::{AllowList, AllowListMapping, ZenohBackend};
 
 const ORIGIN: &str = "iox2-gateway-zenoh";
 
@@ -51,7 +51,12 @@ fn main() -> anyhow::Result<()> {
     let gateway_config = GatewayConfig {
         discovery_service: cli.discovery_service,
     };
-    let mapping = AllowListMapping::new(cli.allow);
+    let allowlist = if cli.allow.is_empty() {
+        AllowList::all()
+    } else {
+        AllowList::new(&cli.allow)
+    };
+    let mapping = AllowListMapping::new(allowlist);
     let iceoryx_config = iceoryx2::config::Config::default();
     let zenoh_config = parse_zenoh_config(cli.zenoh_config.as_deref())?;
 
