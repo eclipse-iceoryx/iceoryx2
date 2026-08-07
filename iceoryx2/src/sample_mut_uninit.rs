@@ -98,12 +98,11 @@ use crate::{
     sample_mut::SampleMut,
     service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
-use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::{fmt::Debug, mem::MaybeUninit};
 use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
+use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::shared_memory::ShmPointer;
 
 /// The memory used inside the [`FlatBufferBuilder`].
@@ -147,21 +146,13 @@ impl<
 {
     #[doc(hidden)]
     pub fn __internal_available_payload_memory(&self) -> usize {
-        self.chunk.size() - self.shared_state.header_len()
+        self.shared_state.available_payload_memory()
     }
 
     #[doc(hidden)]
     pub fn __internal_create_resizable_memory_builder(&self) -> FlatbufferMemory<Service> {
-        let allocation_strategy = self.shared_state.allocation_strategy();
-        let reserved_header_len = self.shared_state.header_len();
         self.shared_state
-            .__internal_override_slice_len(self.__internal_available_payload_memory());
-
-        ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
-            .allocation_strategy(allocation_strategy)
-            .initial_layout(unsafe { Layout::from_size_align_unchecked(self.chunk.size(), 1) })
-            .reserved_header_len(reserved_header_len)
-            .create(self.shared_state.clone())
+            .create_resizable_memory_builder(&self.chunk)
     }
 
     #[doc(hidden)]

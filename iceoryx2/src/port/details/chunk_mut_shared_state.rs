@@ -15,7 +15,7 @@ use core::alloc::Layout;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, Grow};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_flatbuffers::AllocationStrategy;
+use iceoryx2_bb_flatbuffers::{AllocationStrategy, ResizableMemory, ResizableMemoryBuilder};
 use iceoryx2_bb_memory::pool_allocator::ContentPlacement;
 use iceoryx2_cal::{
     arc_sync_policy::{ArcSyncPolicy, ArcSyncPolicyCreationError},
@@ -122,26 +122,52 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
         self.state.lock().slice_len.load(Ordering::Relaxed)
     }
 
-    pub fn allocation_strategy(&self) -> AllocationStrategy {
-        self.state
-            .lock()
-            .port_shared_state
-            .lock()
-            .allocation_strategy()
-    }
-
-    pub fn header_len(&self) -> usize {
-        self.state.lock().port_shared_state.lock().header_len()
-    }
-
     pub fn payload_size(&self) -> usize {
         self.state.lock().port_shared_state.lock().payload_size()
+    }
+
+    pub fn create_resizable_memory_builder(
+        &self,
+        chunk: &ChunkMut,
+    ) -> ResizableMemory<ShmPointer, ChunkMutSharedState<Service, T>> {
+        let state = self.state.lock();
+        let port_state = state.port_shared_state.lock();
+        let allocation_strategy = port_state.allocation_strategy();
+        let reserved_header_len = port_state.header_len();
+        let available_payload_memory = chunk.size() - port_state.header_len();
+
+        state
+            .slice_len
+            .store(available_payload_memory, Ordering::Relaxed);
+
+        ResizableMemoryBuilder::new(chunk.to_shm_pointer())
+            .allocation_strategy(allocation_strategy)
+            .initial_layout(unsafe { Layout::from_size_align_unchecked(chunk.size(), 1) })
+            .reserved_header_len(reserved_header_len)
+            .create(self.clone())
+    }
+
+    pub fn available_payload_memory(&self) -> usize {
+        let state = self.state.lock();
+        let port_state = state.port_shared_state.lock();
+
+        let chunk = self.update_chunk_pointers_to_reallocated_layout_impl(&state, &port_state);
+        chunk.size() - port_state.header_len()
     }
 
     pub fn update_chunk_pointers_to_reallocated_layout(&self) -> ChunkMut {
         let state = self.state.lock();
         let port_state = state.port_shared_state.lock();
+        self.update_chunk_pointers_to_reallocated_layout_impl(&state, &port_state)
+    }
 
+    pub fn update_chunk_pointers_to_reallocated_layout_impl<'a, 'b>(
+        &self,
+        state: &<Service::ArcThreadSafetyPolicy<ChunkMutInnerSharedState<Service, T>> as ArcSyncPolicy<
+            ChunkMutInnerSharedState<Service, T>,
+        >>::LockGuard<'a>,
+        port_state: &<Service::ArcThreadSafetyPolicy<T> as ArcSyncPolicy<T>>::LockGuard<'b>,
+    ) -> ChunkMut {
         let message_type_details = port_state.message_type_details();
         let header = state.shm_raw_ptr.load(Ordering::Relaxed) as *mut u8;
         let user_header = message_type_details
@@ -159,12 +185,6 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
             user_header,
             payload,
         }
-    }
-
-    #[doc(hidden)]
-    /// Required for language bindings
-    pub fn __internal_override_slice_len(&self, value: usize) {
-        self.state.lock().slice_len.store(value, Ordering::Relaxed)
     }
 }
 
