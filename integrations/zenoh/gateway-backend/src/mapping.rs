@@ -16,14 +16,14 @@ use iceoryx2::service::Service;
 use iceoryx2_gateway_backend::traits::Mapping;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
-/// Identity mapping optionally restricted to an exact set of service names.
+/// Identity mapping scoped to an optional allow list of exact service names.
 #[derive(Debug, Default)]
-pub struct ServiceNameFilter {
-    services: Option<BTreeSet<String>>,
+pub struct AllowListMapping {
+    allowlist: Option<BTreeSet<String>>,
 }
 
-impl ServiceNameFilter {
-    /// Creates a filter admitting only `services`. An empty iterator leaves
+impl AllowListMapping {
+    /// Creates a mapping admitting only `services`. An empty iterator leaves
     /// the identity mapping unrestricted.
     pub fn new<I, N>(services: I) -> Self
     where
@@ -32,18 +32,18 @@ impl ServiceNameFilter {
     {
         let services: BTreeSet<String> = services.into_iter().map(Into::into).collect();
         Self {
-            services: (!services.is_empty()).then_some(services),
+            allowlist: (!services.is_empty()).then_some(services),
         }
     }
 
     fn admits(&self, description: &ServiceDescription) -> bool {
-        self.services
+        self.allowlist
             .as_ref()
             .is_none_or(|services| services.contains(description.name.as_str()))
     }
 }
 
-impl Mapping for ServiceNameFilter {
+impl Mapping for AllowListMapping {
     type EndpointDescription = ServiceDescription;
 
     fn remote(&self, description: &ServiceDescription) -> Option<ServiceDescription> {
@@ -73,8 +73,8 @@ mod tests {
     }
 
     #[test]
-    fn empty_filter_admits_every_service_in_both_directions() {
-        let sut = ServiceNameFilter::default();
+    fn omitted_allow_list_admits_every_service_in_both_directions() {
+        let sut = AllowListMapping::default();
         let service = service_description("service");
 
         assert!(sut.remote(&service).is_some());
@@ -82,8 +82,8 @@ mod tests {
     }
 
     #[test]
-    fn named_filter_is_applied_in_both_directions() {
-        let sut = ServiceNameFilter::new(["allowed"]);
+    fn allow_list_is_applied_in_both_directions() {
+        let sut = AllowListMapping::new(["allowed"]);
         let allowed = service_description("allowed");
         let blocked = service_description("blocked");
 

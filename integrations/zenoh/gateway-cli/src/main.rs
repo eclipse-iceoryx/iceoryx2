@@ -29,11 +29,11 @@ use iceoryx2_log::warn;
 
 use iceoryx2_gateway::Config as GatewayConfig;
 use iceoryx2_gateway::Gateway;
-use iceoryx2_integrations_zenoh_gateway_backend::{ServiceNameFilter, ZenohBackend};
+use iceoryx2_integrations_zenoh_gateway_backend::{AllowListMapping, ZenohBackend};
 
 const ORIGIN: &str = "iox2-gateway-zenoh";
 
-type IpcGateway = Gateway<ipc::Service, ZenohBackend<ipc::Service, ServiceNameFilter>>;
+type IpcGateway = Gateway<ipc::Service, ZenohBackend<ipc::Service, AllowListMapping>>;
 
 fn main() -> anyhow::Result<()> {
     install_panic_handlers!();
@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
     let gateway_config = GatewayConfig {
         discovery_service: cli.discovery_service,
     };
-    let mapping = ServiceNameFilter::new(cli.services);
+    let mapping = AllowListMapping::new(cli.allow);
     let iceoryx_config = iceoryx2::config::Config::default();
     let zenoh_config = parse_zenoh_config(cli.zenoh_config.as_deref())?;
 
@@ -148,12 +148,9 @@ fn create_gateway(
     gateway_config: GatewayConfig,
     iceoryx_config: iceoryx2::config::Config,
     zenoh_config: zenoh::Config,
-    mapping: ServiceNameFilter,
+    mapping: AllowListMapping,
 ) -> anyhow::Result<(IpcGateway, Option<Listener<local_threadsafe::Service>>)> {
-    let builder = Gateway::<
-        ipc::Service,
-        ZenohBackend<ipc::Service, ServiceNameFilter>,
-    >::new()
+    let builder = Gateway::<ipc::Service, ZenohBackend<ipc::Service, AllowListMapping>>::new()
         .gateway_config(gateway_config)
         .iceoryx_config(iceoryx_config)
         .backend_config(zenoh_config)
