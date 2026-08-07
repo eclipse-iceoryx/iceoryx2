@@ -44,8 +44,9 @@ pub struct Cli {
         short = 'a',
         value_name = "NAME",
         action = clap::ArgAction::Append,
-        help = "Allow bridging of service names, either named exactly or as a <prefix>** pattern. \
-                May be repeated. When omitted, all discovered services are bridged."
+        help = "Allow bridging of service names matching the given wildcard pattern. '*' matches \
+                zero or more characters and '?' matches one character. May be repeated. When \
+                omitted, all discovered services are bridged."
     )]
     pub allow: Vec<String>,
 

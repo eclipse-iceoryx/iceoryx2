@@ -70,7 +70,7 @@ fn maps_prefixed_publish_subscribe_services() {
 
 #[test]
 fn ignores_unprefixed_names_and_invalid_type_names() {
-    let sut = PrefixMapping::new(AllowList::new(&["/**"]));
+    let sut = PrefixMapping::new(AllowList::new(&["*"]));
 
     for (name, type_name) in [
         ("My/Funk/ServiceName", "std_msgs/msg/String"),
@@ -345,8 +345,8 @@ fn allow_list_restricts_both_directions() {
 }
 
 #[test]
-fn pattern_allow_list_admits_every_topic_below_the_prefix() {
-    let sut = PrefixMapping::new(AllowList::new(&["/camera/**"]));
+fn wildcard_allow_list_admits_every_matching_topic() {
+    let sut = PrefixMapping::new(AllowList::new(&["/camera/*"]));
 
     assert_that!(
         sut.remote(&service_description_with_default_settings(

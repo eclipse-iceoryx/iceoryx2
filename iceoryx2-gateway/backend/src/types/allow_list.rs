@@ -12,62 +12,54 @@
 
 //! A reusable allow list for scoping gateway mappings.
 
-use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-/// Trailing marker of a pattern admitting every name under a prefix.
-const WILDCARD: &str = "**";
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-enum Entry {
-    Exact(String),
-    Prefixed(String),
-}
-
-impl Entry {
-    fn parse(pattern: &str) -> Self {
-        match pattern.strip_suffix(WILDCARD) {
-            Some(prefix) => Self::Prefixed(prefix.to_string()),
-            None => Self::Exact(pattern.to_string()),
-        }
-    }
-
-    fn admits(&self, name: &str) -> bool {
-        match self {
-            Self::Exact(entry) => entry == name,
-            Self::Prefixed(prefix) => name.starts_with(prefix),
-        }
-    }
-}
-
-/// Names admitted by a mapping, written as exact names or `<prefix>**`
-/// patterns.
+/// An allow list defined using case-sensitive wildcard patterns.
+///
+/// `*` matches zero or more characters and `?` matches one character.
 ///
 /// An empty list admits nothing. Use [`AllowList::all`] to admit every name.
 #[derive(Debug, Default, Clone)]
 pub struct AllowList {
-    entries: Vec<Entry>,
+    patterns: Vec<Vec<char>>,
 }
 
 impl AllowList {
-    /// Builds an allow list from exact names and prefix patterns.
+    /// Builds an allow list from wildcard patterns.
     pub fn new<S: AsRef<str>>(patterns: &[S]) -> Self {
         Self {
-            entries: patterns
+            patterns: patterns
                 .iter()
-                .map(|pattern| Entry::parse(pattern.as_ref()))
+                .map(|pattern| pattern.as_ref().chars().collect())
                 .collect(),
         }
     }
 
     /// Builds an allow list admitting every name.
     pub fn all() -> Self {
-        Self::new(&[WILDCARD])
+        Self::new(&["*"])
     }
 
-    /// Whether any entry admits `name`.
+    /// Whether the allowlist includes a pattern that permits the provided
+    /// name.
     pub fn admits(&self, name: &str) -> bool {
-        self.entries.iter().any(|entry| entry.admits(name))
+        let name: Vec<char> = name.chars().collect();
+        self.patterns.iter().any(|pattern| matches(pattern, &name))
+    }
+}
+
+/// Whether the wildcard pattern matches the entire name.
+///
+/// The matcher is deliberately naive for simplicity and to avoid pulling in
+/// additional dependencies. Matching cost grows with the number of
+/// wildcards and the length of the name, which is accepted as names are
+/// expected to be provided manually by users and short.
+fn matches(pattern: &[char], name: &[char]) -> bool {
+    match pattern {
+        [] => name.is_empty(),
+        ['*', rest @ ..] => (0..=name.len()).any(|skipped| matches(rest, &name[skipped..])),
+        ['?', rest @ ..] => !name.is_empty() && matches(rest, &name[1..]),
+        [literal, rest @ ..] => name.first() == Some(literal) && matches(rest, &name[1..]),
     }
 }
 
@@ -76,7 +68,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn exact_entry_admits_only_its_name() {
+    fn literal_pattern_admits_only_its_name() {
         let sut = AllowList::new(&["service"]);
 
         assert!(sut.admits("service"));
@@ -85,12 +77,38 @@ mod tests {
     }
 
     #[test]
-    fn prefixed_entry_admits_every_name_below_it() {
-        let sut = AllowList::new(&["/camera/**"]);
+    fn wildcard_matches_any_number_of_characters_including_slashes() {
+        let sut = AllowList::new(&["/camera/*"]);
 
         assert!(sut.admits("/camera/front"));
         assert!(sut.admits("/camera/rear/depth"));
         assert!(!sut.admits("/lidar/front"));
+    }
+
+    #[test]
+    fn wildcard_can_match_in_any_pattern_position() {
+        let sut = AllowList::new(&["robot*/cmd_*"]);
+
+        assert!(sut.admits("robot/cmd_vel"));
+        assert!(sut.admits("robot42/cmd_speed/limit"));
+        assert!(!sut.admits("other42/cmd_vel"));
+    }
+
+    #[test]
+    fn question_mark_matches_exactly_one_character() {
+        let sut = AllowList::new(&["robot?/cmd"]);
+
+        assert!(sut.admits("robot1/cmd"));
+        assert!(sut.admits("robot//cmd"));
+        assert!(!sut.admits("robot/cmd"));
+        assert!(!sut.admits("robot12/cmd"));
+    }
+
+    #[test]
+    fn adjacent_wildcards_are_equivalent_to_one() {
+        let sut = AllowList::new(&["/camera/**"]);
+
+        assert!(sut.admits("/camera/front/depth"));
     }
 
     #[test]
@@ -103,7 +121,7 @@ mod tests {
 
     #[test]
     fn entries_accumulate() {
-        let sut = AllowList::new(&["service", "/camera/**"]);
+        let sut = AllowList::new(&["service", "/camera/*"]);
 
         assert!(sut.admits("service"));
         assert!(sut.admits("/camera/front"));
