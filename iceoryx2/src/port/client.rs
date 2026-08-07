@@ -76,7 +76,7 @@ use crate::active_request::RequestId;
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::port_shared_state::PortSharedState;
 use crate::service::header::request_response::RequestHeader;
-use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::resource::request_response::RequestResponseResources;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::{
@@ -170,8 +170,9 @@ impl core::fmt::Display for RequestSendError {
 
 impl core::error::Error for RequestSendError {}
 
+#[doc(hidden)]
 #[derive(Debug)]
-pub(crate) struct ClientSharedState<Service: service::Service> {
+pub struct ClientSharedState<Service: service::Service> {
     pub(crate) config: LocalClientConfig,
     pub(crate) request_sender: Sender<Service, RequestResponseResources<Service>>,
     pub(crate) response_receiver: Receiver<Service, RequestResponseResources<Service>>,
@@ -761,11 +762,43 @@ impl<
                 channel_id,
                 request_id: self.next_request_id(),
                 number_of_elements: slice_len as _,
+                payload_offset: 0,
             })
         };
         unsafe { user_header_ptr.write(RequestHeader::default()) };
 
         Ok((chunk, channel_id))
+    }
+}
+
+impl<
+    Service: service::Service,
+    RequestPayload,
+    RequestHeader: Default + Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Client<Service, Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Acquires a [`SampleMutUninit`] with an integrated flatbuffer builder.
+    pub fn loan_flatbuffer(
+        &self,
+    ) -> Result<
+        RequestMutUninit<
+            Service,
+            Flatbuffer<RequestPayload>,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        let (chunk, channel_id) = self.loan_impl(1)?;
+
+        Ok(RequestMutUninit::new_flatbuffer(
+            &self.client_shared_state,
+            chunk,
+            channel_id,
+        ))
     }
 }
 

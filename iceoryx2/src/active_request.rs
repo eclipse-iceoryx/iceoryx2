@@ -341,6 +341,7 @@ impl<
                 )),
                 request_id: self.request_id,
                 number_of_elements: 1,
+                payload_offset: 0,
             })
         };
         unsafe { user_header_ptr.write(ResponseHeader::default()) };
@@ -565,6 +566,7 @@ impl<
                 )),
                 request_id: self.request_id,
                 number_of_elements: slice_len as _,
+                payload_offset: 0,
             })
         };
         unsafe { user_header_ptr.write(ResponseHeader::default()) };

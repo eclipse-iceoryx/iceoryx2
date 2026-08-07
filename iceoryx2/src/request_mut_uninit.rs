@@ -37,9 +37,11 @@
 //! # }
 //! ```
 
+use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::zero_copy_connection::ChannelId;
+use iceoryx2_bb_flatbuffers::ResizableMemory;
+use iceoryx2_cal::{shared_memory::ShmPointer, zero_copy_connection::ChannelId};
 
 use crate::{
     payload::number_of_elements,
@@ -48,10 +50,14 @@ use crate::{
         details::{chunk::ChunkMut, chunk_mut_shared_state::ChunkMutSharedState},
     },
     request_mut::RequestMut,
-    service,
+    service::{self, marker::Flatbuffer},
 };
 use core::marker::PhantomData;
 use core::{fmt::Debug, mem::MaybeUninit};
+
+/// The memory used inside the [`FlatBufferBuilder`].
+pub type FlatbufferMemory<Service> =
+    ResizableMemory<ShmPointer, ChunkMutSharedState<Service, ClientSharedState<Service>>>;
 
 /// A version of the [`RequestMut`] where the payload is not initialized which allows
 /// true zero copy usage. To send a [`RequestMutUninit`] it must be first initialized
@@ -66,6 +72,7 @@ pub struct RequestMutUninit<
     chunk: ChunkMut,
     shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
     channel_id: ChannelId,
+    flatbuffer_builder: Option<FlatBufferBuilder<'static, FlatbufferMemory<Service>>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -122,6 +129,82 @@ impl<
 
 impl<
     Service: crate::service::Service,
+    RequestPayload,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
+    RequestMutUninit<
+        Service,
+        Flatbuffer<RequestPayload>,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    pub(crate) fn new_flatbuffer(
+        shared_state: &Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+        chunk: ChunkMut,
+        channel_id: ChannelId,
+    ) -> Self {
+        let mut new_self = Self {
+            flatbuffer_builder: None,
+            shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
+            chunk,
+            channel_id,
+            _request_header: PhantomData,
+            _request_payload: PhantomData,
+            _response_header: PhantomData,
+            _response_payload: PhantomData,
+        };
+
+        new_self.flatbuffer_builder = Some(FlatBufferBuilder::new_in(
+            new_self.__internal_create_resizable_memory(),
+        ));
+
+        new_self
+    }
+
+    /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
+    /// allocator to enable true zero-copy data transfer.
+    pub fn flatbuffer_builder(
+        &mut self,
+    ) -> &mut FlatBufferBuilder<'static, FlatbufferMemory<Service>> {
+        self.flatbuffer_builder.as_mut().unwrap()
+    }
+
+    /// Finalize the Flatbuffer and initialize the sample. After that call the content can no longer be
+    /// modified.
+    pub fn assume_init(
+        mut self,
+        root: WIPOffset<RequestPayload>,
+    ) -> RequestMut<
+        Service,
+        Flatbuffer<RequestPayload>,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    > {
+        self.flatbuffer_builder().finish(root, None);
+        let payload_ptr = self.flatbuffer_builder().finished_data().as_ptr();
+        self.__internal_finish_serialized(payload_ptr);
+        let this = core::mem::ManuallyDrop::new(self);
+
+        RequestMut {
+            chunk: this.chunk.clone(),
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            was_sample_sent: AtomicBool::new(false),
+            channel_id: this.channel_id,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_header: PhantomData,
+            _response_payload: PhantomData,
+        }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
     RequestPayload: Debug + IceoryxSend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
@@ -134,6 +217,7 @@ impl<
         channel_id: ChannelId,
     ) -> Self {
         Self {
+            flatbuffer_builder: None,
             shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
             chunk,
             channel_id,
@@ -142,6 +226,26 @@ impl<
             _response_payload: PhantomData,
             _response_header: PhantomData,
         }
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_create_resizable_memory(&self) -> FlatbufferMemory<Service> {
+        self.shared_state.create_resizable_memory(&self.chunk)
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8) {
+        let memory_structure = self.shared_state.memory_structure(payload_ptr);
+        self.chunk = memory_structure.chunk;
+
+        let header = unsafe {
+            &mut *self
+                .chunk
+                .header_mut_ptr()
+                .cast::<crate::service::header::request_response::RequestHeader>()
+        };
+        header.number_of_elements = memory_structure.number_of_elements;
+        header.payload_offset = memory_structure.payload_offset;
     }
 }
 

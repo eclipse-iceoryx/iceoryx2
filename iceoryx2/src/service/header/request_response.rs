@@ -30,6 +30,7 @@ pub struct RequestHeader {
     pub(crate) channel_id: ChannelId,
     pub(crate) request_id: RequestId,
     pub(crate) number_of_elements: u64,
+    pub(crate) payload_offset: u64,
 }
 
 impl RequestHeader {
@@ -59,6 +60,7 @@ pub struct ResponseHeader {
     pub(crate) server_id: UniqueServerId,
     pub(crate) request_id: RequestId,
     pub(crate) number_of_elements: u64,
+    pub(crate) payload_offset: u64,
 }
 
 impl ResponseHeader {
