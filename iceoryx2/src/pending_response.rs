@@ -58,16 +58,18 @@
 use core::ops::Deref;
 use core::{fmt::Debug, marker::PhantomData};
 
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_log::fail;
 
 use crate::port::client::ClientSharedState;
 use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
-use crate::service::marker::CustomPayloadMarker;
+use crate::service::marker::{CustomPayloadMarker, Flatbuffer};
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
 /// Represents an active connection to all [`Server`](crate::port::server::Server)
@@ -306,6 +308,37 @@ impl<
     /// [`RequestMut`]
     pub fn payload(&self) -> &[RequestPayload] {
         self.request.payload()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
+    PendingResponse<
+        Service,
+        Flatbuffer<RequestPayload>,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
+        self.request.payload_bytes()
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(
+        &'a self,
+    ) -> Result<RequestPayload::Inner, FlatbufferError<InvalidFlatbuffer>>
+    where
+        RequestPayload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        self.request.payload_root()
     }
 }
 

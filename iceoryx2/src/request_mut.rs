@@ -38,15 +38,18 @@
 use core::ops::{Deref, DerefMut};
 use core::{fmt::Debug, marker::PhantomData};
 
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::payload::number_of_elements;
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
+use crate::service::marker::Flatbuffer;
 use crate::{
     pending_response::PendingResponse,
     port::client::{ClientSharedState, RequestSendError},
@@ -259,6 +262,39 @@ impl<
                 Err(e) => Err(e),
             }
         })
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
+        let payload_offset = self.header().payload_offset as usize;
+        let payload_ptr = self.chunk.payload_ptr();
+        let payload_len = self.header().number_of_elements as usize;
+
+        unsafe {
+            core::slice::from_raw_parts(
+                payload_ptr.add(payload_offset),
+                payload_len - payload_offset,
+            )
+        }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(
+        &'a self,
+    ) -> Result<RequestPayload::Inner, FlatbufferError<InvalidFlatbuffer>>
+    where
+        RequestPayload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        Ok(flatbuffers::root::<RequestPayload>(self.payload_bytes())?)
     }
 }
 
