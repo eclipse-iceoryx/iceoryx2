@@ -295,7 +295,7 @@ pub unsafe extern "C" fn iox2_server_receive(
         let server = &mut *server_handle.as_type();
 
         match server.service_type {
-            iox2_service_type_e::IPC => match server.value.as_ref().ipc.receive_custom_payload() {
+            iox2_service_type_e::IPC => match server.value.as_ref().ipc.receive() {
                 Ok(Some(active_request)) => {
                     let (active_request_struct_ptr, deleter) =
                         init_active_request_struct_ptr(active_request_struct_ptr);
@@ -309,22 +309,20 @@ pub unsafe extern "C" fn iox2_server_receive(
                 Ok(None) => (),
                 Err(error) => return error.into_c_int(),
             },
-            iox2_service_type_e::LOCAL => {
-                match server.value.as_ref().local.receive_custom_payload() {
-                    Ok(Some(active_request)) => {
-                        let (active_request_struct_ptr, deleter) =
-                            init_active_request_struct_ptr(active_request_struct_ptr);
-                        (*active_request_struct_ptr).init(
-                            server.service_type,
-                            ActiveRequestUnion::new_local(active_request),
-                            deleter,
-                        );
-                        *active_request_handle_ptr = (*active_request_struct_ptr).as_handle();
-                    }
-                    Ok(None) => (),
-                    Err(error) => return error.into_c_int(),
+            iox2_service_type_e::LOCAL => match server.value.as_ref().local.receive() {
+                Ok(Some(active_request)) => {
+                    let (active_request_struct_ptr, deleter) =
+                        init_active_request_struct_ptr(active_request_struct_ptr);
+                    (*active_request_struct_ptr).init(
+                        server.service_type,
+                        ActiveRequestUnion::new_local(active_request),
+                        deleter,
+                    );
+                    *active_request_handle_ptr = (*active_request_struct_ptr).as_handle();
                 }
-            }
+                Ok(None) => (),
+                Err(error) => return error.into_c_int(),
+            },
         }
     }
     IOX2_OK

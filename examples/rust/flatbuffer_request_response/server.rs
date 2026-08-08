@@ -48,13 +48,36 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"Flatbuffer/Request/Response".try_into()?)
         .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
+        // This method allows us to use a custom schema file path when no schema lookup path was
+        // defined or when a custom file is required (maybe outside of the lookup path).
+        //
+        // .request_flatbuffer_schema_path(&"unbounded_data.fbs".try_into()?)
+        .request_user_header::<u64>()
         .open_or_create()?;
 
-    let _server = service.server_builder().create()?;
+    let server = service.server_builder().create()?;
 
     coutln!("Server ready to receive requests!");
 
-    while node.wait(CYCLE_TIME).is_ok() {}
+    while node.wait(CYCLE_TIME).is_ok() {
+        while let Some(active_request) = server.receive()? {
+            let data = active_request.payload_root()?;
+
+            coutln!("title: {}", data.title().unwrap_or_default());
+            coutln!("user header: {}", active_request.user_header());
+
+            if let Some(entries) = data.entries() {
+                for (index, entry) in entries.iter().enumerate() {
+                    coutln!(
+                        "Entry {index}: data_1={}, data_2{}",
+                        entry.data_1(),
+                        entry.data_2()
+                    )
+                }
+            }
+            coutln!("");
+        }
+    }
 
     coutln!("exit");
 

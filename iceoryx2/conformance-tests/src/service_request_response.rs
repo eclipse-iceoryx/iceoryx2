@@ -1031,7 +1031,7 @@ pub mod service_request_response {
 
         let _pending_response = unsafe { request.assume_init().send().unwrap() };
 
-        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+        let active_request = server.receive().unwrap().unwrap();
         assert_that!(active_request.payload(), len type_details.size());
         assert_that!((active_request.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(active_request.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
@@ -1075,7 +1075,7 @@ pub mod service_request_response {
 
         let request = unsafe { client.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
         let pending_response = unsafe { request.assume_init().send().unwrap() };
-        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+        let active_request = server.receive().unwrap().unwrap();
 
         let mut response = unsafe {
             active_request
@@ -1140,7 +1140,7 @@ pub mod service_request_response {
         }
         let _pending_response = unsafe { request.assume_init().send().unwrap() };
 
-        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+        let active_request = server.receive().unwrap().unwrap();
         let header_ptr = (active_request.user_header() as *const CustomHeaderMarker) as *const u8;
         for n in 0..type_details.size() {
             assert_that!(unsafe { *header_ptr.add(n) }, eq(n % 231) as u8);
@@ -1180,7 +1180,7 @@ pub mod service_request_response {
 
         let request = unsafe { client.loan_custom_payload(1).unwrap() };
         let pending_response = unsafe { request.assume_init().send().unwrap() };
-        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+        let active_request = server.receive().unwrap().unwrap();
 
         let mut response = unsafe { active_request.loan_custom_payload(1).unwrap() };
         let header_ptr = (response.user_header_mut() as *mut CustomHeaderMarker) as *mut u8;

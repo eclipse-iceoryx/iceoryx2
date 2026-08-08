@@ -77,7 +77,6 @@ use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
 use crate::service::SharedServiceState;
-use crate::service::marker::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
 use crate::service::resource::request_response::RequestResponseResources;
@@ -796,55 +795,5 @@ impl<
     /// Returns the maximum initial slice length configured for this [`Server`].
     pub fn initial_max_slice_len(&self) -> usize {
         self.shared_state.lock().config.initial_max_slice_len
-    }
-}
-
-impl<
-    Service: service::Service,
-    RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + IceoryxSend + ?Sized,
-    ResponseHeader: Debug + ZeroCopySend,
-> Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
-{
-    #[doc(hidden)]
-    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
-    pub unsafe fn receive_custom_payload(
-        &self,
-    ) -> Result<
-        Option<
-            ActiveRequest<
-                Service,
-                [CustomPayloadMarker],
-                RequestHeader,
-                ResponsePayload,
-                ResponseHeader,
-            >,
-        >,
-        ReceiveError,
-    > {
-        let shared_state = self.shared_state.lock();
-        loop {
-            match self.receive_impl()? {
-                Some((details, chunk)) => {
-                    let header = unsafe {
-                        &*(chunk.header as *const service::header::request_response::RequestHeader)
-                    };
-                    if let Some(connection_id) = shared_state
-                        .response_sender
-                        .get_connection_id_of(header.client_id.value())
-                    {
-                        let active_request =
-                            self.create_active_request(details, chunk, connection_id);
-
-                        if !self.enable_fire_and_forget && !active_request.is_connected() {
-                            continue;
-                        }
-
-                        return Ok(Some(active_request));
-                    }
-                }
-                None => return Ok(None),
-            }
-        }
     }
 }
