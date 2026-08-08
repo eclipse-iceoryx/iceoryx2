@@ -72,6 +72,7 @@ pub struct RequestMutUninit<
     shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
     channel_id: ChannelId,
     flatbuffer_builder: Option<FlatBufferBuilder<'static, FlatbufferMemory<Service>>>,
+    assume_init_was_called: bool,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -88,11 +89,13 @@ impl<
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        let _ = self.shared_state.call(|s| -> Result<(), ()> {
-            let header = unsafe { &*self.chunk.header_ptr().cast() };
-            s.release_request(false, header);
-            Ok(())
-        });
+        if !self.assume_init_was_called {
+            let _ = self.shared_state.call(|s| -> Result<(), ()> {
+                let header = unsafe { &*self.chunk.header_ptr().cast() };
+                s.release_request(false, header);
+                Ok(())
+            });
+        }
     }
 }
 
@@ -151,6 +154,7 @@ impl<
             shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
             chunk,
             channel_id,
+            assume_init_was_called: false,
             _request_header: PhantomData,
             _request_payload: PhantomData,
             _response_header: PhantomData,
@@ -187,13 +191,13 @@ impl<
         self.flatbuffer_builder().finish(root, None);
         let payload_ptr = self.flatbuffer_builder().finished_data().as_ptr();
         self.__internal_finish_serialized(payload_ptr);
-        let this = core::mem::ManuallyDrop::new(self);
+        self.assume_init_was_called = true;
 
         RequestMut {
-            chunk: this.chunk.clone(),
-            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            chunk: self.chunk.clone(),
+            shared_state: self.shared_state.clone(),
             was_sample_sent: false,
-            channel_id: this.channel_id,
+            channel_id: self.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_header: PhantomData,
@@ -220,6 +224,7 @@ impl<
             shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
             chunk,
             channel_id,
+            assume_init_was_called: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -399,14 +404,14 @@ impl<
     /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
     /// Sending the content when it is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(
-        self,
+        mut self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        let this = core::mem::ManuallyDrop::new(self);
+        self.assume_init_was_called = true;
         RequestMut {
-            chunk: this.chunk.clone(),
-            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            chunk: self.chunk.clone(),
+            shared_state: self.shared_state.clone(),
             was_sample_sent: false,
-            channel_id: this.channel_id,
+            channel_id: self.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_header: PhantomData,
