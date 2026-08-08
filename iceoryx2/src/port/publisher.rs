@@ -646,6 +646,23 @@ impl<
             .sender
             .backpressure_strategy
     }
+
+    fn loan_chunk(&self, slice_len: usize) -> Result<ChunkMut, LoanError>
+    where
+        UserHeader: Default,
+    {
+        let shared_state = self.publisher_shared_state.lock();
+        let chunk = shared_state
+            .sender
+            .allocate(shared_state.sender.chunk_layout(slice_len))?;
+        let node_id = shared_state.sender.service_state.shared_node().id();
+        let header_ptr = chunk.header as *mut Header;
+        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
+        unsafe { user_header_ptr.write(UserHeader::default()) };
+
+        Ok(chunk)
+    }
 }
 
 ////////////////////////
@@ -717,20 +734,10 @@ impl<
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, LoanError> {
-        let shared_state = self.publisher_shared_state.lock();
-        let chunk = shared_state
-            .sender
-            .allocate(shared_state.sender.chunk_layout(1))?;
-        let node_id = shared_state.sender.service_state.shared_node().id();
-        let header_ptr = chunk.header as *mut Header;
-        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
-        unsafe { user_header_ptr.write(UserHeader::default()) };
-
         Ok(
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
                 &self.publisher_shared_state,
-                chunk,
+                self.loan_chunk(1)?,
             ),
         )
     }
@@ -780,19 +787,10 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
     pub fn loan_flatbuffer(
         &self,
     ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
-        let shared_state = self.publisher_shared_state.lock();
-        let initial_layout = shared_state.sender.chunk_layout(1);
-        let chunk = shared_state.sender.allocate(initial_layout)?;
-        let node_id = shared_state.sender.service_state.shared_node().id();
-        let header_ptr = chunk.header as *mut Header;
-        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
-        unsafe { user_header_ptr.write(UserHeader::default()) };
-
         Ok(
             SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
                 &self.publisher_shared_state,
-                chunk,
+                self.loan_chunk(1)?,
             ),
         )
     }
@@ -915,19 +913,12 @@ impl<
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
         }
-
-        let sample_layout = shared_state.sender.chunk_layout(slice_len);
-        let chunk = shared_state.sender.allocate(sample_layout)?;
-        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
-        let header_ptr = chunk.header as *mut Header;
-        let node_id = shared_state.sender.service_state.shared_node().id();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
-        unsafe { user_header_ptr.write(UserHeader::default()) };
+        drop(shared_state);
 
         Ok(
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.publisher_shared_state,
-                chunk,
+                self.loan_chunk(slice_len)?,
             ),
         )
     }
