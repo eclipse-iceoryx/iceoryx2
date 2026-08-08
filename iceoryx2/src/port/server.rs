@@ -198,7 +198,7 @@ impl<Service: service::Service> SharedServerState<Service> {
                     index,
                     SenderDetails {
                         port_id: details.client_id.value(),
-                        number_of_samples: details.number_of_requests,
+                        number_of_chunks: details.number_of_requests,
                         max_number_of_segments: details.max_number_of_segments,
                         data_segment_type: details.data_segment_type,
                     },
@@ -380,7 +380,7 @@ impl<
             receiver_port_id: server_id.value(),
             service_state: service.clone(),
             message_type_details: static_config.request_message_type_details,
-            receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
+            receiver_max_borrowed_chunks: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
@@ -403,7 +403,7 @@ impl<
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let sample_layout = static_config
             .response_message_type_details
-            .sample_layout(server_factory.config.initial_max_slice_len);
+            .chunk_layout(server_factory.config.initial_max_slice_len);
         let data_segment = match data_segment_type {
             DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
                 &segment_name,
@@ -441,13 +441,12 @@ impl<
             sender_port_id: server_id.value(),
             shared_node: service.shared_node().clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
-            receiver_max_borrowed_samples: static_config
-                .max_borrowed_responses_per_pending_response,
-            sender_max_borrowed_samples: server_factory.config.max_loaned_responses_per_request
+            receiver_max_borrowed_chunks: static_config.max_borrowed_responses_per_pending_response,
+            sender_max_borrowed_chunks: server_factory.config.max_loaned_responses_per_request
                 * static_config.max_active_requests_per_client
                 * static_config.max_clients,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
-            number_of_samples: number_of_responses,
+            number_of_chunks: number_of_responses,
             max_number_of_segments,
             degradation_handler: server_factory.response_degradation_handler,
             backpressure_handler: server_factory.backpressure_handler,
@@ -544,13 +543,11 @@ impl<
         fail!(from self, when shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
         if self.enable_fire_and_forget {
-            Ok(shared_state
-                .request_receiver
-                .has_samples(REQUEST_CHANNEL_ID))
+            Ok(shared_state.request_receiver.has_chunks(REQUEST_CHANNEL_ID))
         } else {
             Ok(shared_state
                 .request_receiver
-                .has_samples_in_active_connection(REQUEST_CHANNEL_ID))
+                .has_chunks_in_active_connection(REQUEST_CHANNEL_ID))
         }
     }
 

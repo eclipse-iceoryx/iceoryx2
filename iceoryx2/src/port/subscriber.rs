@@ -290,7 +290,7 @@ impl<
                 receiver_port_id: subscriber_id.value(),
                 service_state: service.clone(),
                 message_type_details: static_config.message_type_details,
-                receiver_max_borrowed_samples: subscriber_max_borrowed_samples,
+                receiver_max_borrowed_chunks: subscriber_max_borrowed_samples,
                 enable_safe_overflow: static_config.enable_safe_overflow,
                 buffer_size,
                 tagger: CyclicTagger::new(),
@@ -367,7 +367,7 @@ impl<
                     index,
                     SenderDetails {
                         port_id: details.publisher_id.value(),
-                        number_of_samples: details.number_of_samples,
+                        number_of_chunks: details.number_of_samples,
                         max_number_of_segments: details.max_number_of_segments,
                         data_segment_type: details.data_segment_type,
                     },
@@ -410,7 +410,7 @@ impl<
             .subscriber_shared_state
             .lock()
             .receiver
-            .has_samples(ChannelId::new(0)))
+            .has_chunks(ChannelId::new(0)))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {

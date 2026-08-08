@@ -41,8 +41,8 @@ fn waiting_for_initialization_works() {
     let start = Time::now().expect("failed to get current time");
     let sut = <Sut as ZeroCopyConnection>::Builder::new(&storage_name)
         .timeout(TIMEOUT)
-        .number_of_samples_per_segment(1)
-        .receiver_max_borrowed_samples_per_channel(1)
+        .number_of_chunks_per_segment(1)
+        .receiver_max_borrowed_chunks_per_channel(1)
         .create_sender();
 
     assert_that!(sut, is_err);

@@ -91,7 +91,7 @@ impl<Service: service::Service, Resource: ServiceResource> Connection<Service, R
         this: &Sender<Service, Resource>,
         receiver_port_id: u128,
         buffer_size: usize,
-        number_of_samples: usize,
+        number_of_chunks: usize,
         tag: Tag,
         initial_channel_state: ChannelState,
     ) -> Result<Self, ZeroCopyCreationError> {
@@ -109,9 +109,9 @@ impl<Service: service::Service, Resource: ServiceResource> Connection<Service, R
                         Builder::new( &connection_name(this.sender_port_id, receiver_port_id))
                                 .config(&connection_config::<Service>(this.shared_node.config()))
                                 .buffer_size(buffer_size)
-                                .receiver_max_borrowed_samples_per_channel(this.receiver_max_borrowed_samples)
+                                .receiver_max_borrowed_chunks_per_channel(this.receiver_max_borrowed_chunks)
                                 .enable_safe_overflow(this.enable_safe_overflow)
-                                .number_of_samples_per_segment(number_of_samples)
+                                .number_of_chunks_per_segment(number_of_chunks)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
                                 .initial_channel_state(initial_channel_state)
                                 .number_of_channels(this.number_of_channels)
@@ -136,10 +136,10 @@ pub(crate) struct Sender<Service: service::Service, Resource: ServiceResource> {
     pub(crate) sender_port_id: u128,
     pub(crate) shared_node: SharedNode<Service>,
     pub(crate) receiver_max_buffer_size: usize,
-    pub(crate) receiver_max_borrowed_samples: usize,
-    pub(crate) sender_max_borrowed_samples: usize,
+    pub(crate) receiver_max_borrowed_chunks: usize,
+    pub(crate) sender_max_borrowed_chunks: usize,
     pub(crate) enable_safe_overflow: bool,
-    pub(crate) number_of_samples: usize,
+    pub(crate) number_of_chunks: usize,
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) backpressure_handler: Option<BackpressureHandler<'static>>,
@@ -168,8 +168,8 @@ impl<Service: service::Service, Resource: ServiceResource> Grow<ShmPointer>
         }?;
 
         if ptr.offset != new_ptr.offset {
-            self.borrow_sample(new_ptr.offset);
-            self.untrack_sample(ptr.offset);
+            self.borrow_chunk(new_ptr.offset);
+            self.untrack_chunk(ptr.offset);
         }
 
         Ok(new_ptr)
@@ -229,7 +229,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<usize, SendError> {
-        let msg = "While delivering the sample:";
+        let msg = "While delivering the chunk:";
 
         let mut number_of_recipients = 0;
         if let Some(connection) = self.get(connection_id) {
@@ -340,11 +340,11 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                     }
                 }
                 Ok(overflow) => {
-                    self.borrow_sample(chunk.offset());
+                    self.borrow_chunk(chunk.offset());
                     number_of_recipients += 1;
 
                     if let Some(old) = overflow {
-                        self.release_sample(old)
+                        self.release_chunk(old)
                     }
                 }
             }
@@ -395,7 +395,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<usize, SendError> {
-        self.retrieve_returned_samples();
+        self.retrieve_returned_chunks();
         self.deliver_offset_to_connection_impl(chunk, channel_id, connection_id)
     }
 
@@ -404,7 +404,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         chunk: &ChunkMut,
         channel_id: ChannelId,
     ) -> Result<usize, SendError> {
-        self.retrieve_returned_samples();
+        self.retrieve_returned_chunks();
 
         let mut number_of_recipients = 0;
         let mut delivery_error = None;
@@ -443,8 +443,8 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         }
     }
 
-    pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
-        self.release_sample(distance_to_chunk);
+    pub(crate) fn return_loaned_chunk(&self, distance_to_chunk: PointerOffset) {
+        self.release_chunk(distance_to_chunk);
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
@@ -457,7 +457,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
             self,
             receiver_details.port_id,
             receiver_details.buffer_size,
-            self.number_of_samples,
+            self.number_of_chunks,
             self.tagger.create_tag(),
             self.initial_channel_state,
         )?);
@@ -470,13 +470,13 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
     }
 
     pub(crate) fn allocate(&self, layout: Layout) -> Result<ChunkMut, LoanError> {
-        self.retrieve_returned_samples();
+        self.retrieve_returned_chunks();
         let msg = "Unable to allocate data";
 
-        if self.loan_counter.load(Ordering::Relaxed) >= self.sender_max_borrowed_samples {
+        if self.loan_counter.load(Ordering::Relaxed) >= self.sender_max_borrowed_chunks {
             fail!(from self, with LoanError::ExceedsMaxLoans,
                 "{} {:?} since already {} chunks were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned chunks to loan another chunk.",
-                msg, layout, self.loan_counter.load(Ordering::Relaxed), self.sender_max_borrowed_samples);
+                msg, layout, self.loan_counter.load(Ordering::Relaxed), self.sender_max_borrowed_chunks);
         }
 
         let shm_pointer = match self.data_segment.allocate(layout) {
@@ -494,21 +494,21 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
             }
         };
 
-        let (ref_count, sample_size) = self.borrow_sample(shm_pointer.offset);
+        let (ref_count, chunk_size) = self.borrow_chunk(shm_pointer.offset);
         if ref_count != 0 {
             fatal_panic!(from self,
-                "{} since the allocated sample is already in use! This should never happen!", msg);
+                "{} since the allocated chunk is already in use! This should never happen!", msg);
         }
 
         self.loan_counter.fetch_add(1, Ordering::Relaxed);
         Ok(ChunkMut::new(
             &self.message_type_details,
             shm_pointer,
-            sample_size,
+            chunk_size,
         ))
     }
 
-    pub(crate) fn borrow_sample(&self, offset: PointerOffset) -> (u64, usize) {
+    pub(crate) fn borrow_chunk(&self, offset: PointerOffset) -> (u64, usize) {
         let segment_id = offset.segment_id();
         let segment_state = &self.segment_states[segment_id.value() as usize];
         let mut payload_size = segment_state.payload_size();
@@ -516,10 +516,10 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
             payload_size = self.data_segment.bucket_size(segment_id);
             segment_state.set_payload_size(payload_size);
         }
-        (segment_state.borrow_sample(offset.offset()), payload_size)
+        (segment_state.borrow_chunk(offset.offset()), payload_size)
     }
 
-    pub(crate) fn retrieve_returned_samples(&self) {
+    pub(crate) fn retrieve_returned_chunks(&self) {
         for i in 0..self.len() {
             if let Some(connection) = self.get(i) {
                 for channel_id in 0..self.number_of_channels {
@@ -527,11 +527,11 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                     loop {
                         match connection.sender.reclaim(id) {
                             Ok(Some(ptr_dist)) => {
-                                self.release_sample(ptr_dist);
+                                self.release_chunk(ptr_dist);
                             }
                             Ok(None) => break,
                             Err(e) => {
-                                warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
+                                warn!(from self, "Unable to reclaim chunks from connection {:?} due to {:?}. This may lead to a situation where no more chunks will be delivered to this connection.", connection, e)
                             }
                         }
                     }
@@ -540,12 +540,12 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         }
     }
 
-    pub(crate) fn untrack_sample(&self, offset: PointerOffset) -> u64 {
-        self.segment_states[offset.segment_id().value() as usize].release_sample(offset.offset())
+    pub(crate) fn untrack_chunk(&self, offset: PointerOffset) -> u64 {
+        self.segment_states[offset.segment_id().value() as usize].release_chunk(offset.offset())
     }
 
-    pub(crate) fn release_sample(&self, offset: PointerOffset) {
-        if self.untrack_sample(offset) == 1 {
+    pub(crate) fn release_chunk(&self, offset: PointerOffset) {
+        if self.untrack_chunk(offset) == 1 {
             unsafe {
                 self.data_segment.deallocate_bucket(offset);
             }
@@ -555,11 +555,11 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
     fn remove_connection(&self, i: usize) {
         if let Some(connection) = self.get(i) {
             // # SAFETY: the receiver no longer exist, therefore we can
-            //           reacquire all delivered samples
+            //           reacquire all delivered chunks
             unsafe {
                 connection
                     .sender
-                    .acquire_used_offsets(|offset| self.release_sample(offset))
+                    .acquire_used_offsets(|offset| self.release_chunk(offset))
             };
 
             *self.get_mut(i) = None;
@@ -641,8 +641,8 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         self.message_type_details.payload.size
     }
 
-    pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
-        self.message_type_details.sample_layout(number_of_elements)
+    pub(crate) fn chunk_layout(&self, number_of_elements: usize) -> Layout {
+        self.message_type_details.chunk_layout(number_of_elements)
     }
 
     pub(crate) fn payload_type_variant(&self) -> TypeVariant {

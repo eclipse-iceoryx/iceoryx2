@@ -176,7 +176,7 @@ impl MessageTypeDetails {
         user_header_start as *const u8
     }
 
-    pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
+    pub(crate) fn chunk_layout(&self, number_of_elements: usize) -> Layout {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
@@ -339,7 +339,7 @@ mod tests {
     // test_sample_layout tests the sample layout for combinations of different types.
     fn test_sample_layout() {
         let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(0);
+        let sut = details.chunk_layout(0);
         #[cfg(target_pointer_width = "32")]
         let expected = 24;
         #[cfg(target_pointer_width = "64")]
@@ -347,7 +347,7 @@ mod tests {
         assert_that!(sut.size(), eq expected);
 
         let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(2);
+        let sut = details.chunk_layout(2);
         #[cfg(target_pointer_width = "32")]
         let expected = 40;
         #[cfg(target_pointer_width = "64")]
@@ -355,7 +355,7 @@ mod tests {
         assert_that!(sut.size(), eq expected);
 
         let details = MessageTypeDetails::from::<i64, i64, bool>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(3);
+        let sut = details.chunk_layout(3);
         #[cfg(target_pointer_width = "32")]
         let expected = 24;
         #[cfg(target_pointer_width = "64")]
@@ -363,7 +363,7 @@ mod tests {
         assert_that!(sut.size(), eq expected);
 
         let details = MessageTypeDetails::from::<i64, i32, bool>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(11);
+        let sut = details.chunk_layout(11);
 
         #[cfg(target_pointer_width = "32")]
         let expected = 28;
@@ -380,7 +380,7 @@ mod tests {
         }
 
         let details = MessageTypeDetails::from::<i64, i64, Demo>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(2);
+        let sut = details.chunk_layout(2);
         #[cfg(target_pointer_width = "32")]
         let expected = 48;
         #[cfg(target_pointer_width = "64")]

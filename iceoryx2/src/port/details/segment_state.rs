@@ -18,19 +18,19 @@ use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
 
 #[derive(Debug)]
 pub(crate) struct SegmentState {
-    sample_reference_counter: Vec<AtomicU64>,
+    chunk_reference_counter: Vec<AtomicU64>,
     payload_size: AtomicUsize,
 }
 
 impl SegmentState {
-    pub(crate) fn new(number_of_samples: usize) -> Self {
-        let mut sample_reference_counter = Vec::with_capacity(number_of_samples);
-        for _ in 0..number_of_samples {
-            sample_reference_counter.push(AtomicU64::new(0));
+    pub(crate) fn new(number_of_chunks: usize) -> Self {
+        let mut chunk_reference_counter = Vec::with_capacity(number_of_chunks);
+        for _ in 0..number_of_chunks {
+            chunk_reference_counter.push(AtomicU64::new(0));
         }
 
         Self {
-            sample_reference_counter,
+            chunk_reference_counter,
             payload_size: AtomicUsize::new(0),
         }
     }
@@ -43,18 +43,18 @@ impl SegmentState {
         self.payload_size.load(Ordering::Relaxed)
     }
 
-    pub(crate) fn sample_index(&self, distance_to_chunk: usize) -> usize {
+    pub(crate) fn chunk_index(&self, distance_to_chunk: usize) -> usize {
         debug_assert!(distance_to_chunk.is_multiple_of(self.payload_size()));
         distance_to_chunk / self.payload_size()
     }
 
-    pub(crate) fn borrow_sample(&self, distance_to_chunk: usize) -> u64 {
-        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
+    pub(crate) fn borrow_chunk(&self, distance_to_chunk: usize) -> u64 {
+        self.chunk_reference_counter[self.chunk_index(distance_to_chunk)]
             .fetch_add(1, Ordering::Relaxed)
     }
 
-    pub(crate) fn release_sample(&self, distance_to_chunk: usize) -> u64 {
-        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
+    pub(crate) fn release_chunk(&self, distance_to_chunk: usize) -> u64 {
+        self.chunk_reference_counter[self.chunk_index(distance_to_chunk)]
             .fetch_sub(1, Ordering::Relaxed)
     }
 }

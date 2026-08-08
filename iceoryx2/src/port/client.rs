@@ -210,7 +210,7 @@ impl<Service: service::Service> PortSharedState for ClientSharedState<Service> {
     }
 
     fn return_loan(&self, offset: PointerOffset) {
-        self.request_sender.return_loaned_sample(offset);
+        self.request_sender.return_loaned_chunk(offset);
     }
 }
 
@@ -344,7 +344,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
                         port_id: port.server_id.value(),
                         max_number_of_segments: port.max_number_of_segments,
                         data_segment_type: port.data_segment_type,
-                        number_of_samples: port.number_of_responses,
+                        number_of_chunks: port.number_of_responses,
                     },
                 );
                 result = result.and(inner_result);
@@ -501,7 +501,7 @@ impl<
 
         let sample_layout = static_config
             .request_message_type_details
-            .sample_layout(client_factory.config.initial_max_slice_len);
+            .chunk_layout(client_factory.config.initial_max_slice_len);
 
         let data_segment = match data_segment_type {
             DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
@@ -570,16 +570,16 @@ impl<
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
             receiver_max_buffer_size: static_config.max_active_requests_per_client,
-            receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
+            receiver_max_borrowed_chunks: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             degradation_handler: client_factory.request_degradation_handler,
             backpressure_handler: client_factory.backpressure_handler,
-            number_of_samples: number_of_requests,
+            number_of_chunks: number_of_requests,
             max_number_of_segments,
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
-            sender_max_borrowed_samples,
+            sender_max_borrowed_chunks: sender_max_borrowed_samples,
             backpressure_strategy: client_factory.config.backpressure_strategy,
             message_type_details: static_config.request_message_type_details,
             // all requests are sent via one channel, only the responses require different
@@ -618,8 +618,7 @@ impl<
             ),
             degradation_handler: client_factory.response_degradation_handler,
             message_type_details: static_config.response_message_type_details,
-            receiver_max_borrowed_samples: static_config
-                .max_borrowed_responses_per_pending_response,
+            receiver_max_borrowed_chunks: static_config.max_borrowed_responses_per_pending_response,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
             number_of_channels: number_of_requests_with_max_service_setting,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
@@ -742,7 +741,7 @@ impl<
 
         let chunk = client_shared_state
             .request_sender
-            .allocate(client_shared_state.request_sender.sample_layout(slice_len))?;
+            .allocate(client_shared_state.request_sender.chunk_layout(slice_len))?;
 
         let channel_id =
             match unsafe { &mut *client_shared_state.available_channel_ids.get() }.pop() {

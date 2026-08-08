@@ -265,7 +265,7 @@ impl<
         self.request
             .shared_state
             .call(|s| -> Result<bool, ()> {
-                Ok(s.response_receiver.has_samples(self.request.channel_id))
+                Ok(s.response_receiver.has_chunks(self.request.channel_id))
             })
             .expect("Always returns ok")
     }

@@ -124,7 +124,7 @@ impl<
         self.shared_state
             .lock()
             .response_sender
-            .return_loaned_sample(self.chunk.offset());
+            .return_loaned_chunk(self.chunk.offset());
         self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 }

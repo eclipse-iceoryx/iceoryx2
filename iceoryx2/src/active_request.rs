@@ -413,7 +413,7 @@ impl<
 
         let chunk = shared_state
             .response_sender
-            .allocate(shared_state.response_sender.sample_layout(1))?;
+            .allocate(shared_state.response_sender.chunk_layout(1))?;
 
         let header_ptr: *mut service::header::request_response::ResponseHeader =
             chunk.header.cast();
@@ -637,7 +637,7 @@ impl<
 
         self.increment_loan_counter()?;
 
-        let response_layout = shared_state.response_sender.sample_layout(slice_len);
+        let response_layout = shared_state.response_sender.chunk_layout(slice_len);
         let chunk = shared_state.response_sender.allocate(response_layout)?;
 
         let header_ptr: *mut service::header::request_response::ResponseHeader =

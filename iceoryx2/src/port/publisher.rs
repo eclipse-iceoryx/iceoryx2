@@ -212,7 +212,7 @@ pub struct PublisherSharedState<Service: service::Service> {
 
 impl<Service: service::Service> PortSharedState for PublisherSharedState<Service> {
     fn return_loan(&self, offset: PointerOffset) {
-        self.sender.return_loaned_sample(offset);
+        self.sender.return_loaned_chunk(offset);
     }
 
     fn header_len(&self) -> usize {
@@ -273,12 +273,12 @@ impl<Service: service::Service> PublisherSharedState<Service> {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                self.sender.borrow_sample(chunk.offset());
+                self.sender.borrow_chunk(chunk.offset());
                 match history.push_with_overflow(OffsetAndSize::new(chunk)) {
                     None => (),
                     Some(old) => self
                         .sender
-                        .release_sample(PointerOffset::from_value(old.offset)),
+                        .release_chunk(PointerOffset::from_value(old.offset)),
                 }
             }
         }
@@ -343,7 +343,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
 
                 for i in history_start..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
-                    self.sender.retrieve_returned_samples();
+                    self.sender.retrieve_returned_chunks();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
                     match connection
@@ -351,10 +351,10 @@ impl<Service: service::Service> PublisherSharedState<Service> {
                         .try_send(offset, old_sample.size, ChannelId::new(0))
                     {
                         Ok(overflow) => {
-                            self.sender.borrow_sample(offset);
+                            self.sender.borrow_chunk(offset);
 
                             if let Some(old) = overflow {
-                                self.sender.release_sample(old);
+                                self.sender.release_chunk(old);
                             }
                         }
                         Err(e) => {
@@ -506,7 +506,7 @@ impl<
 
         let sample_layout = static_config
             .message_type_details
-            .sample_layout(config.initial_max_slice_len);
+            .chunk_layout(config.initial_max_slice_len);
 
         let max_slice_len = config.initial_max_slice_len;
         let max_number_of_segments =
@@ -564,16 +564,16 @@ impl<
                     sender_port_id: port_id.value(),
                     shared_node: service.shared_node().clone(),
                     receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
-                    receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+                    receiver_max_borrowed_chunks: static_config.subscriber_max_borrowed_samples,
                     enable_safe_overflow: static_config.enable_safe_overflow,
-                    number_of_samples,
+                    number_of_chunks: number_of_samples,
                     max_number_of_segments,
                     degradation_handler: publisher_factory.degradation_handler,
                     backpressure_handler: publisher_factory.backpressure_handler,
                     service_state: service.clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: AtomicUsize::new(0),
-                    sender_max_borrowed_samples: config.max_loaned_samples,
+                    sender_max_borrowed_chunks: config.max_loaned_samples,
                     backpressure_strategy: config.backpressure_strategy,
                     message_type_details: static_config.message_type_details,
                     number_of_channels: 1,
@@ -720,7 +720,7 @@ impl<
         let shared_state = self.publisher_shared_state.lock();
         let chunk = shared_state
             .sender
-            .allocate(shared_state.sender.sample_layout(1))?;
+            .allocate(shared_state.sender.chunk_layout(1))?;
         let node_id = shared_state.sender.service_state.shared_node().id();
         let header_ptr = chunk.header as *mut Header;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
@@ -781,7 +781,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
         &self,
     ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
         let shared_state = self.publisher_shared_state.lock();
-        let initial_layout = shared_state.sender.sample_layout(1);
+        let initial_layout = shared_state.sender.chunk_layout(1);
         let chunk = shared_state.sender.allocate(initial_layout)?;
         let node_id = shared_state.sender.service_state.shared_node().id();
         let header_ptr = chunk.header as *mut Header;
@@ -916,7 +916,7 @@ impl<
                 slice_len, max_slice_len);
         }
 
-        let sample_layout = shared_state.sender.sample_layout(slice_len);
+        let sample_layout = shared_state.sender.chunk_layout(slice_len);
         let chunk = shared_state.sender.allocate(sample_layout)?;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         let header_ptr = chunk.header as *mut Header;

@@ -215,9 +215,9 @@ const CHANNEL_STATE_DISCONNECT_HINT_BIT: u64 = 1u64 << 63;
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
     fn enable_safe_overflow(self, value: bool) -> Self;
-    fn receiver_max_borrowed_samples_per_channel(self, value: usize) -> Self;
+    fn receiver_max_borrowed_chunks_per_channel(self, value: usize) -> Self;
     fn max_supported_shared_memory_segments(self, value: u8) -> Self;
-    fn number_of_samples_per_segment(self, value: usize) -> Self;
+    fn number_of_chunks_per_segment(self, value: usize) -> Self;
     fn number_of_channels(self, value: usize) -> Self;
     fn initial_channel_state(self, value: ChannelState) -> Self;
     /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
@@ -235,7 +235,7 @@ pub trait ZeroCopyPortDetails {
     fn number_of_channels(&self) -> usize;
     fn buffer_size(&self) -> usize;
     fn has_enabled_safe_overflow(&self) -> bool;
-    fn max_borrowed_samples(&self) -> usize;
+    fn max_borrowed_chunks(&self) -> usize;
     fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
     #[doc(hidden)]
