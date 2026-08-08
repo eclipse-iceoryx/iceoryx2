@@ -20,7 +20,7 @@ use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 
-pub trait PortSharedState: Abandonable + Send + Debug + Grow<ShmPointer> {
+pub trait DataSegmentSharedState: Abandonable + Send + Debug + Grow<ShmPointer> {
     fn return_loan(&self, offset: PointerOffset);
     fn header_len(&self) -> usize;
     fn message_type_details(&self) -> MessageTypeDetails;

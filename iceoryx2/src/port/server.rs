@@ -73,7 +73,7 @@
 //! # }
 //! ```
 
-use crate::port::details::port_shared_state::PortSharedState;
+use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
@@ -151,7 +151,7 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     port_tag: Service::StaticStorage,
 }
 
-impl<Service: service::Service> PortSharedState for SharedServerState<Service> {
+impl<Service: service::Service> DataSegmentSharedState for SharedServerState<Service> {
     fn allocation_strategy(&self) -> AllocationStrategy {
         self.response_sender.data_segment.allocation_strategy()
     }

@@ -25,28 +25,30 @@ use iceoryx2_cal::{
 use iceoryx2_log::fail;
 
 use crate::port::details::chunk::ChunkMut;
-use crate::port::details::port_shared_state::PortSharedState;
+use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 
 #[derive(Debug)]
-pub struct ChunkMutInnerSharedState<Service: crate::service::Service, T: PortSharedState> {
+pub struct ChunkMutInnerSharedState<Service: crate::service::Service, T: DataSegmentSharedState> {
     port_shared_state: Service::ArcThreadSafetyPolicy<T>,
     offset_to_chunk: AtomicU64,
     shm_raw_ptr: AtomicUsize,
     slice_len: AtomicUsize,
 }
 
-impl<Service: crate::service::Service, T: PortSharedState> ChunkMutInnerSharedState<Service, T> {
+impl<Service: crate::service::Service, T: DataSegmentSharedState>
+    ChunkMutInnerSharedState<Service, T>
+{
     pub fn offset_to_chunk(&self) -> PointerOffset {
         PointerOffset::from_value(self.offset_to_chunk.load(Ordering::Relaxed))
     }
 }
 
-unsafe impl<Service: crate::service::Service, T: PortSharedState> Send
+unsafe impl<Service: crate::service::Service, T: DataSegmentSharedState> Send
     for ChunkMutInnerSharedState<Service, T>
 {
 }
 
-impl<Service: crate::service::Service, T: PortSharedState> Abandonable
+impl<Service: crate::service::Service, T: DataSegmentSharedState> Abandonable
     for ChunkMutInnerSharedState<Service, T>
 {
     unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
@@ -59,7 +61,7 @@ impl<Service: crate::service::Service, T: PortSharedState> Abandonable
     }
 }
 
-impl<Service: crate::service::Service, T: PortSharedState> Drop
+impl<Service: crate::service::Service, T: DataSegmentSharedState> Drop
     for ChunkMutInnerSharedState<Service, T>
 {
     fn drop(&mut self) {
@@ -78,11 +80,11 @@ pub struct MemoryStructure {
 }
 
 #[derive(Debug)]
-pub struct ChunkMutSharedState<Service: crate::service::Service, T: PortSharedState> {
+pub struct ChunkMutSharedState<Service: crate::service::Service, T: DataSegmentSharedState> {
     pub(crate) state: Service::ArcThreadSafetyPolicy<ChunkMutInnerSharedState<Service, T>>,
 }
 
-impl<Service: crate::service::Service, T: PortSharedState> Clone
+impl<Service: crate::service::Service, T: DataSegmentSharedState> Clone
     for ChunkMutSharedState<Service, T>
 {
     fn clone(&self) -> Self {
@@ -92,7 +94,7 @@ impl<Service: crate::service::Service, T: PortSharedState> Clone
     }
 }
 
-impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<Service, T> {
+impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutSharedState<Service, T> {
     pub fn new(
         port_shared_state: &Service::ArcThreadSafetyPolicy<T>,
         chunk: &ChunkMut,
@@ -187,7 +189,7 @@ impl<Service: crate::service::Service, T: PortSharedState> ChunkMutSharedState<S
     }
 }
 
-impl<Service: crate::service::Service, T: PortSharedState> Grow<ShmPointer>
+impl<Service: crate::service::Service, T: DataSegmentSharedState> Grow<ShmPointer>
     for ChunkMutSharedState<Service, T>
 {
     unsafe fn grow(

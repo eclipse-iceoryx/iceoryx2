@@ -131,7 +131,7 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_log::{fail, warn};
 
 use crate::port::details::chunk::ChunkMut;
-use crate::port::details::port_shared_state::PortSharedState;
+use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 use crate::port::details::sender::*;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
@@ -210,7 +210,7 @@ pub struct PublisherSharedState<Service: service::Service> {
     port_tag: Service::StaticStorage,
 }
 
-impl<Service: service::Service> PortSharedState for PublisherSharedState<Service> {
+impl<Service: service::Service> DataSegmentSharedState for PublisherSharedState<Service> {
     fn return_loan(&self, offset: PointerOffset) {
         self.sender.return_loaned_chunk(offset);
     }

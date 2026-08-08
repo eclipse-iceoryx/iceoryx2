@@ -74,7 +74,7 @@
 
 use crate::active_request::RequestId;
 use crate::port::details::chunk::ChunkMut;
-use crate::port::details::port_shared_state::PortSharedState;
+use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 use crate::service::header::request_response::RequestHeader;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::resource::request_response::RequestResponseResources;
@@ -192,7 +192,7 @@ pub struct ClientSharedState<Service: service::Service> {
     port_tag: Service::StaticStorage,
 }
 
-impl<Service: service::Service> PortSharedState for ClientSharedState<Service> {
+impl<Service: service::Service> DataSegmentSharedState for ClientSharedState<Service> {
     fn allocation_strategy(&self) -> AllocationStrategy {
         self.request_sender.data_segment.allocation_strategy()
     }
