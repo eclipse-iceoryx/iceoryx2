@@ -211,7 +211,7 @@ impl TypeDefinition {
                 &storage_config,
             )
         } {
-            Ok(_) => (),
+            Ok(_) => Ok(()),
             Err(NamedConceptRemoveError::Interrupt) => {
                 fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,
                     "{msg} {name} since it was interrupted by a signal.");
@@ -225,17 +225,25 @@ impl TypeDefinition {
                     "{msg} {name} due to an internal failure.");
             }
         }
+    }
+
+    pub fn remove_resource_directory<S: crate::service::Service>(
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<(), RemoveStaleResourcesError> {
+        let origin = "TypeDefinition::remove_resource_directory()";
+        let msg = "Unable to remove resource directory";
 
         let dir = Self::service_resource_directory(config, static_config);
         match <S::StaticStorage as NamedConceptMgmt>::remove_path_hint(&dir) {
             Ok(()) => Ok(()),
             Err(NamedConceptPathHintRemoveError::InsufficientPermissions) => {
                 fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
-                    "{msg} {name} since the resource directory could not be removed due to insufficient permissions.");
+                    "{msg} due to insufficient permissions.");
             }
             Err(NamedConceptPathHintRemoveError::InternalError) => {
                 fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
-                    "{msg} since the resource directory could not be removed due to an internal failure.");
+                    "{msg} due to an internal failure.");
             }
         }
     }

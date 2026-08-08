@@ -182,6 +182,14 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
                 "{msg} since the response type definition storage could not be removed. [{e:?}]");
         }
 
+        if let Err(e) =
+            TypeDefinition::remove_resource_directory::<ServiceType>(config, static_config)
+        {
+            fail!(from origin,
+                with e,
+                "{msg} since the resource directory could not be removed. [{e:?}]");
+        }
+
         Ok(())
     }
 }
