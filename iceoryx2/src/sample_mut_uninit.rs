@@ -155,7 +155,7 @@ impl<
         self.chunk = memory_structure.chunk;
 
         let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
-        header.number_of_elements = memory_structure.number_of_elements;
+        header.number_of_elements = self.chunk.size() as _;
         header.payload_offset = memory_structure.payload_offset;
     }
 }

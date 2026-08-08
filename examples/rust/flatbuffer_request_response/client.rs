@@ -123,7 +123,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     response.payload_root()?.received_entries_len()
                 );
             }
+            core::hint::spin_loop();
         }
+
+        coutln!("");
     }
 
     coutln!("exit");

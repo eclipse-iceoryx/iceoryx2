@@ -75,7 +75,6 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> Drop
 
 pub struct MemoryStructure {
     pub chunk: ChunkMut,
-    pub number_of_elements: u64,
     pub payload_offset: u64,
 }
 
@@ -176,14 +175,7 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutShared
         let payload_offset = payload_ptr as usize - chunk.payload_ptr() as usize;
 
         MemoryStructure {
-            chunk: ChunkMut {
-                offset: PointerOffset::from_value(state.offset_to_chunk.load(Ordering::Relaxed)),
-                size: state.slice_len.load(Ordering::Relaxed) + header_len,
-                header,
-                user_header,
-                payload,
-            },
-            number_of_elements: state.slice_len.load(Ordering::Relaxed) as u64,
+            chunk,
             payload_offset: payload_offset as u64,
         }
     }

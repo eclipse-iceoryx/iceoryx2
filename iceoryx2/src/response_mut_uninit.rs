@@ -214,9 +214,9 @@ impl<
             &mut *self
                 .chunk
                 .header_mut_ptr()
-                .cast::<crate::service::header::request_response::RequestHeader>()
+                .cast::<crate::service::header::request_response::ResponseHeader>()
         };
-        header.number_of_elements = memory_structure.number_of_elements;
+        header.number_of_elements = self.chunk.size() as _;
         header.payload_offset = memory_structure.payload_offset;
     }
 }
