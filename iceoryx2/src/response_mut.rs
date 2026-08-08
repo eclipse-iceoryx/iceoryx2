@@ -73,7 +73,7 @@ use crate::{
 /// scope.
 pub struct ResponseMut<
     Service: service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) shared_state: ChunkMutSharedState<Service, SharedServerState<Service>>,
@@ -87,7 +87,7 @@ pub struct ResponseMut<
 
 unsafe impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for ResponseMut<Service, ResponsePayload, ResponseHeader>
 where
@@ -97,7 +97,7 @@ where
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Debug for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
@@ -116,7 +116,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Drop for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
@@ -185,7 +185,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > ResponseMut<Service, ResponsePayload, ResponseHeader>
 {

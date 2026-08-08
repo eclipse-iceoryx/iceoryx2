@@ -134,8 +134,9 @@ use crate::identifiers::UniqueServerId;
 const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);
 pub(crate) const INVALID_CONNECTION_ID: usize = usize::MAX;
 
+#[doc(hidden)]
 #[derive(Debug)]
-pub(crate) struct SharedServerState<Service: service::Service> {
+pub struct SharedServerState<Service: service::Service> {
     pub(crate) config: LocalServerConfig,
     pub(crate) response_sender: Sender<Service, RequestResponseResources<Service>>,
     server_handle: UnsafeCell<Option<ContainerHandle>>,

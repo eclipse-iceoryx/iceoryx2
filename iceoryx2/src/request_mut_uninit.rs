@@ -214,24 +214,6 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new(
-        shared_state: &Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
-        chunk: ChunkMut,
-        channel_id: ChannelId,
-    ) -> Self {
-        Self {
-            flatbuffer_builder: None,
-            shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
-            chunk,
-            channel_id,
-            assume_init_was_called: false,
-            _request_payload: PhantomData,
-            _request_header: PhantomData,
-            _response_payload: PhantomData,
-            _response_header: PhantomData,
-        }
-    }
-
     #[doc(hidden)]
     pub fn __internal_create_resizable_memory(&self) -> FlatbufferMemory<Service> {
         self.shared_state.create_resizable_memory(&self.chunk)
@@ -261,6 +243,24 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    pub(crate) fn new(
+        shared_state: &Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+        chunk: ChunkMut,
+        channel_id: ChannelId,
+    ) -> Self {
+        Self {
+            flatbuffer_builder: None,
+            shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
+            chunk,
+            channel_id,
+            assume_init_was_called: false,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
     pub fn header(&self) -> &service::header::request_response::RequestHeader {

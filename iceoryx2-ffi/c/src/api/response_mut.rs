@@ -52,7 +52,7 @@ impl ResponseMutUninitUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ResponseMutUninitUnion>
 pub struct iox2_response_mut_storage_t {
-    internal: [u8; 88], // magic number obtained with size_of::<Option<ResponseMutUninitUnion>>()
+    internal: [u8; 240], // magic number obtained with size_of::<Option<ResponseMutUninitUnion>>()
 }
 
 #[repr(C)]
