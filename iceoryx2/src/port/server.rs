@@ -73,6 +73,7 @@
 //! # }
 //! ```
 
+use crate::port::details::port_shared_state::PortSharedState;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
@@ -80,6 +81,7 @@ use crate::service::SharedServiceState;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
 use crate::service::resource::request_response::RequestResponseResources;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -90,6 +92,7 @@ use crate::{
     },
 };
 use alloc::sync::Arc;
+use core::alloc::Layout;
 use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -98,13 +101,17 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
+use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::AllocationStrategy;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
@@ -142,6 +149,49 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
     port_tag: Service::StaticStorage,
+}
+
+impl<Service: service::Service> PortSharedState for SharedServerState<Service> {
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.response_sender.data_segment.allocation_strategy()
+    }
+
+    fn header_len(&self) -> usize {
+        self.response_sender.message_type_details.all_headers_len()
+    }
+
+    fn message_type_details(&self) -> MessageTypeDetails {
+        self.response_sender.message_type_details
+    }
+
+    fn payload_size(&self) -> usize {
+        self.response_sender.payload_size()
+    }
+
+    fn return_loan(&self, offset: PointerOffset) {
+        self.response_sender.return_loaned_chunk(offset);
+    }
+}
+
+impl<Service: service::Service> Grow<ShmPointer> for SharedServerState<Service> {
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: ContentPlacement,
+    ) -> Result<ShmPointer, AllocationGrowError> {
+        match unsafe {
+            self.response_sender
+                .grow(ptr, old_layout, new_layout, content_placement)
+        } {
+            Ok(ptr) => Ok(ptr),
+            Err(e) => {
+                fail!(from self, with e,
+                        "Failed to grow response from {old_layout:?} to {new_layout:?}. [{e:?}]");
+            }
+        }
+    }
 }
 
 impl<Service: service::Service> Abandonable for SharedServerState<Service> {
