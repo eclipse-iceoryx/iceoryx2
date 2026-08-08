@@ -521,8 +521,6 @@ pub mod node;
 /// The ports or communication endpoints of iceoryx2
 pub mod port;
 
-pub(crate) mod raw_sample;
-
 /// Represents a "connection" to a [`Client`](crate::port::client::Client) that corresponds to a
 /// previously received [`RequestMut`](crate::request_mut::RequestMut).
 pub mod active_request;
