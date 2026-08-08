@@ -53,6 +53,8 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::ChannelId};
 use iceoryx2_log::fail;
 
+use crate::payload::number_of_elements;
+use crate::port::details::chunk::Chunk;
 use crate::service::marker::CustomHeaderMarker;
 use crate::service::marker::CustomPayloadMarker;
 use crate::{
@@ -62,7 +64,6 @@ use crate::{
         details::chunk_details::ChunkDetails,
         server::{INVALID_CONNECTION_ID, SharedServerState},
     },
-    raw_sample::RawSample,
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
     service::{self, static_config::message_type_details::TypeVariant},
@@ -86,11 +87,7 @@ pub struct ActiveRequest<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) ptr: RawSample<
-        crate::service::header::request_response::RequestHeader,
-        RequestHeader,
-        RequestPayload,
-    >,
+    pub(crate) chunk: Chunk,
     pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<AtomicUsize>,
     pub(crate) max_loan_count: usize,
@@ -98,6 +95,8 @@ pub struct ActiveRequest<
     pub(crate) request_id: RequestId,
     pub(crate) channel_id: ChannelId,
     pub(crate) connection_id: usize,
+    pub(crate) _request_payload: PhantomData<RequestPayload>,
+    pub(crate) _request_header: PhantomData<RequestHeader>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -156,15 +155,37 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Target = RequestPayload;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.payload_ptr().cast() }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref
+    for ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = [RequestPayload];
+    fn deref(&self) -> &Self::Target {
+        let payload_size = self.shared_state.lock().request_receiver.payload_size();
+
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
+            )
+        }
     }
 }
 
@@ -182,6 +203,36 @@ impl<
             .request_receiver
             .release_offset(&self.details, ChannelId::new(0));
         self.finish();
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn payload(&self) -> &RequestPayload {
+        self.deref()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn payload(&self) -> &[RequestPayload] {
+        self.deref()
     }
 }
 
@@ -233,26 +284,17 @@ impl<
         }
     }
 
-    /// Returns a reference to the payload of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn payload(&self) -> &RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_ref()
-    }
-
     /// Returns a reference to the user_header of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn user_header(&self) -> &RequestHeader {
-        self.ptr.as_user_header_ref()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a reference to the
     /// [`crate::service::header::request_response::RequestHeader`] of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
-        self.ptr.as_header_ref()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)

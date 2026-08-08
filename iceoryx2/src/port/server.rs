@@ -77,7 +77,6 @@ use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
 use crate::service::SharedServiceState;
-use crate::service::header::payload_header::PayloadHeader;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
@@ -85,7 +84,6 @@ use crate::service::resource::request_response::RequestResponseResources;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
-    raw_sample::RawSample,
     service::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
@@ -605,14 +603,9 @@ impl<
             channel_id: header.channel_id,
             connection_id,
             shared_state: self.shared_state.clone(),
-            ptr: unsafe {
-                RawSample::new_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    chunk.payload.cast::<RequestPayload>(),
-                )
-            },
-
+            chunk,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         }
@@ -700,7 +693,6 @@ impl<
         details: ChunkDetails,
         chunk: Chunk,
         connection_id: usize,
-        number_of_elements: usize,
     ) -> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
     {
         let header =
@@ -714,16 +706,9 @@ impl<
             channel_id: header.channel_id,
             connection_id,
             shared_state: self.shared_state.clone(),
-            ptr: unsafe {
-                RawSample::new_slice_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    core::ptr::slice_from_raw_parts(
-                        chunk.payload.cast::<RequestPayload>(),
-                        number_of_elements as _,
-                    ),
-                )
-            },
+            chunk,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         }
@@ -784,12 +769,8 @@ impl<
                         .response_sender
                         .get_connection_id_of(header.client_id.value())
                     {
-                        let active_request = self.create_active_request(
-                            details,
-                            chunk,
-                            connection_id,
-                            header.number_of_elements() as _,
-                        );
+                        let active_request =
+                            self.create_active_request(details, chunk, connection_id);
 
                         if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;
@@ -848,20 +829,12 @@ impl<
                     let header = unsafe {
                         &*(chunk.header as *const service::header::request_response::RequestHeader)
                     };
-                    let number_of_elements = (*header).number_of_elements();
-                    let number_of_bytes =
-                        number_of_elements as usize * shared_state.request_receiver.payload_size();
-
                     if let Some(connection_id) = shared_state
                         .response_sender
                         .get_connection_id_of(header.client_id.value())
                     {
-                        let active_request = self.create_active_request(
-                            details,
-                            chunk,
-                            connection_id,
-                            number_of_bytes,
-                        );
+                        let active_request =
+                            self.create_active_request(details, chunk, connection_id);
 
                         if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;
