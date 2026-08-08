@@ -57,6 +57,7 @@ use iceoryx2_log::fail;
 
 use crate::payload::number_of_elements;
 use crate::port::details::chunk::Chunk;
+use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::service::marker::CustomHeaderMarker;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::marker::Flatbuffer;
@@ -433,9 +434,9 @@ impl<
 
         Ok(ResponseMutUninit {
             response: ResponseMut {
+                shared_state: ChunkMutSharedState::new(&self.shared_state, &chunk).unwrap(),
                 chunk,
                 shared_loan_counter: self.shared_loan_counter.clone(),
-                shared_state: self.shared_state.clone(),
                 channel_id: self.channel_id,
                 connection_id: self.connection_id,
                 _response_payload: PhantomData,
@@ -658,9 +659,9 @@ impl<
 
         Ok(ResponseMutUninit {
             response: ResponseMut {
+                shared_state: ChunkMutSharedState::new(&self.shared_state, &chunk).unwrap(),
                 chunk,
                 shared_loan_counter: self.shared_loan_counter.clone(),
-                shared_state: self.shared_state.clone(),
                 channel_id: self.channel_id,
                 connection_id: self.connection_id,
                 _response_payload: PhantomData,

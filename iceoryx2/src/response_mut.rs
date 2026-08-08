@@ -49,14 +49,14 @@ use core::{
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::ChannelId};
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_log::fail;
 
 use crate::{
     payload::number_of_elements,
     port::{
         SendError,
-        details::chunk::ChunkMut,
+        details::{chunk::ChunkMut, chunk_mut_shared_state::ChunkMutSharedState},
         server::{INVALID_CONNECTION_ID, SharedServerState},
     },
     service,
@@ -76,7 +76,7 @@ pub struct ResponseMut<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
+    pub(crate) shared_state: ChunkMutSharedState<Service, SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<AtomicUsize>,
     pub(crate) chunk: ChunkMut,
     pub(crate) channel_id: ChannelId,
@@ -121,10 +121,6 @@ impl<
 > Drop for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        self.shared_state
-            .lock()
-            .response_sender
-            .return_loaned_chunk(self.chunk.offset());
         self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 }
@@ -149,7 +145,7 @@ impl<
 {
     type Target = [ResponsePayload];
     fn deref(&self) -> &Self::Target {
-        let payload_size = self.shared_state.lock().response_sender.payload_size();
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &*core::ptr::slice_from_raw_parts(
                 self.chunk.payload_ptr().cast(),
@@ -177,7 +173,7 @@ impl<
 > DerefMut for ResponseMut<Service, [ResponsePayload], ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        let payload_size = self.shared_state.lock().response_sender.payload_size();
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
@@ -303,21 +299,21 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<(), SendError> {
-        let msg = "Unable to send response";
+        self.shared_state.call(|s| {
+            let msg = "Unable to send response";
+            fail!(from self, when s.update_connections(),
+                "{} since the connections could not be updated.", msg);
 
-        let shared_state = self.shared_state.lock();
-        fail!(from self, when shared_state.update_connections(),
-            "{} since the connections could not be updated.", msg);
+            if self.connection_id != INVALID_CONNECTION_ID {
+                s.response_sender.deliver_offset_to_connection(
+                    &self.chunk,
+                    self.channel_id,
+                    self.connection_id,
+                )?;
+            }
 
-        if self.connection_id != INVALID_CONNECTION_ID {
-            shared_state.response_sender.deliver_offset_to_connection(
-                &self.chunk,
-                self.channel_id,
-                self.connection_id,
-            )?;
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 }
 
