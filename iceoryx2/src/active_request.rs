@@ -57,6 +57,7 @@ use iceoryx2_log::fail;
 
 use crate::payload::number_of_elements;
 use crate::port::details::chunk::Chunk;
+use crate::port::details::chunk::ChunkMut;
 use crate::service::marker::CustomHeaderMarker;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::marker::Flatbuffer;
@@ -366,6 +367,36 @@ impl<
             }
         }
     }
+
+    fn loan_chunk(&self, slice_len: usize) -> Result<ChunkMut, LoanError>
+    where
+        ResponseHeader: Default,
+    {
+        self.increment_loan_counter()?;
+        let shared_state = self.shared_state.lock();
+
+        let chunk = shared_state
+            .response_sender
+            .allocate(shared_state.response_sender.chunk_layout(slice_len))?;
+
+        let header_ptr: *mut service::header::request_response::ResponseHeader =
+            chunk.header.cast();
+        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
+        unsafe {
+            header_ptr.write(service::header::request_response::ResponseHeader {
+                node_id: *shared_state.response_sender.shared_node.id(),
+                server_id: UniqueServerId(UniqueSystemId::from(
+                    shared_state.response_sender.sender_port_id,
+                )),
+                request_id: self.request_id,
+                number_of_elements: slice_len as _,
+                payload_offset: 0,
+            })
+        };
+        unsafe { user_header_ptr.write(ResponseHeader::default()) };
+
+        Ok(chunk)
+    }
 }
 
 ////////////////////////
@@ -408,32 +439,9 @@ impl<
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
     {
-        self.increment_loan_counter()?;
-        let shared_state = self.shared_state.lock();
-
-        let chunk = shared_state
-            .response_sender
-            .allocate(shared_state.response_sender.chunk_layout(1))?;
-
-        let header_ptr: *mut service::header::request_response::ResponseHeader =
-            chunk.header.cast();
-        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
-        unsafe {
-            header_ptr.write(service::header::request_response::ResponseHeader {
-                node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueSystemId::from(
-                    shared_state.response_sender.sender_port_id,
-                )),
-                request_id: self.request_id,
-                number_of_elements: 1,
-                payload_offset: 0,
-            })
-        };
-        unsafe { user_header_ptr.write(ResponseHeader::default()) };
-
         Ok(ResponseMutUninit::new(
             &self.shared_state,
-            &chunk,
+            &self.loan_chunk(1)?,
             &self.shared_loan_counter,
             self.channel_id,
             self.connection_id,
@@ -630,31 +638,11 @@ impl<
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
         }
-
-        self.increment_loan_counter()?;
-
-        let response_layout = shared_state.response_sender.chunk_layout(slice_len);
-        let chunk = shared_state.response_sender.allocate(response_layout)?;
-
-        let header_ptr: *mut service::header::request_response::ResponseHeader =
-            chunk.header.cast();
-        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
-        unsafe {
-            header_ptr.write(service::header::request_response::ResponseHeader {
-                node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueSystemId::from(
-                    shared_state.response_sender.sender_port_id,
-                )),
-                request_id: self.request_id,
-                number_of_elements: slice_len as _,
-                payload_offset: 0,
-            })
-        };
-        unsafe { user_header_ptr.write(ResponseHeader::default()) };
+        drop(shared_state);
 
         Ok(ResponseMutUninit::new(
             &self.shared_state,
-            &chunk,
+            &self.loan_chunk(slice_len)?,
             &self.shared_loan_counter,
             self.channel_id,
             self.connection_id,
