@@ -44,11 +44,14 @@ use crate::port::client::ClientSharedState;
 use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::service;
+use crate::service::marker::Flatbuffer;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::Deref;
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
@@ -191,5 +194,33 @@ impl<
     /// Returns a reference to the payload of the response.
     pub fn payload(&self) -> &[ResponsePayload] {
         self.deref()
+    }
+}
+
+impl<Service: crate::service::Service, ResponsePayload, ResponseHeader: Debug + ZeroCopySend>
+    Response<Service, Flatbuffer<ResponsePayload>, ResponseHeader>
+{
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
+        let payload_offset = self.header().payload_offset as usize;
+        let payload_ptr = self.chunk.payload_ptr();
+        let payload_len = self.header().number_of_elements as usize;
+
+        unsafe {
+            core::slice::from_raw_parts(
+                payload_ptr.add(payload_offset),
+                payload_len - payload_offset,
+            )
+        }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(
+        &'a self,
+    ) -> Result<ResponsePayload::Inner, FlatbufferError<InvalidFlatbuffer>>
+    where
+        ResponsePayload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        Ok(flatbuffers::root::<ResponsePayload>(self.payload_bytes())?)
     }
 }
