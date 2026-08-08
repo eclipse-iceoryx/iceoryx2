@@ -725,7 +725,7 @@ impl<
         self.client_shared_state.lock().max_active_requests
     }
 
-    fn loan_impl(&self, slice_len: usize) -> Result<(ChunkMut, ChannelId), LoanError>
+    fn loan_chunk(&self, slice_len: usize) -> Result<(ChunkMut, ChannelId), LoanError>
     where
         RequestHeader: Default,
     {
@@ -791,7 +791,7 @@ impl<
         >,
         LoanError,
     > {
-        let (chunk, channel_id) = self.loan_impl(1)?;
+        let (chunk, channel_id) = self.loan_chunk(1)?;
 
         Ok(RequestMutUninit::new_flatbuffer(
             &self.client_shared_state,
@@ -896,7 +896,7 @@ impl<
         >,
         LoanError,
     > {
-        let (chunk, channel_id) = self.loan_impl(1)?;
+        let (chunk, channel_id) = self.loan_chunk(1)?;
 
         Ok(RequestMutUninit::new(
             &self.client_shared_state,
@@ -1134,7 +1134,7 @@ impl<
         }
         drop(client_shared_state);
 
-        let (chunk, channel_id) = self.loan_impl(slice_len)?;
+        let (chunk, channel_id) = self.loan_chunk(slice_len)?;
 
         Ok(RequestMutUninit::new(
             &self.client_shared_state,
