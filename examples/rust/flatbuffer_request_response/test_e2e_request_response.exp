@@ -13,26 +13,25 @@
 
 #### Common Setup
 
-### set REPO_ROOT [exec git rev-parse --show-toplevel]
-### cd ${REPO_ROOT}
-###
-### source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
-###
-### #### Test Setup
-###
-### set timeout 10
-###
-### spawn cargo run --example request_response_server
-### set id_server $spawn_id
-###
-### spawn cargo run --example request_response_client
-###
-### #### Test Assertion
-###
-### expect_output_from $id_server "Server ready to receive requests!"
-### expect_output "send request 2"
-### expect_output "received response"
-### expect_output "send request 3"
-### expect_output "received response"
-###
-### show_test_passed
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/rust/flatbuffer_request_response
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 10
+
+spawn cargo run --example flatbuffer_server
+set id_server $spawn_id
+
+spawn cargo run --example flatbuffer_client
+
+#### Test Assertion
+
+expect_output_from $id_server "Server ready to receive requests!"
+expect_output "Received response: 12"
+
+show_test_passed
