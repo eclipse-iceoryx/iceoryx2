@@ -49,10 +49,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"Flatbuffer/Request/Response".try_into()?)
         .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
-        // This method allows us to use a custom schema file path when no schema lookup path was
+        // Those methods allows us to use a custom schema file path when no schema lookup path was
         // defined or when a custom file is required (maybe outside of the lookup path).
         //
         // .request_flatbuffer_schema_path(&"unbounded_data.fbs".try_into()?)
+        // .response_flatbuffer_schema_path(&"data_props.fbs".try_into()?)
         .request_user_header::<u64>()
         .response_user_header::<u64>()
         .open_or_create()?;
