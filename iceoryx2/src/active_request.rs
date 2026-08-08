@@ -679,3 +679,33 @@ impl<Service: crate::service::Service>
 ////////////////////////
 // END: sliced API
 ////////////////////////
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug,
+    ResponseHeader: Default + Debug + ZeroCopySend,
+>
+    ActiveRequest<
+        Service,
+        RequestPayload,
+        RequestHeader,
+        Flatbuffer<ResponsePayload>,
+        ResponseHeader,
+    >
+{
+    /// Acquires a [`ResponseMutUninit`] with an integrated flatbuffer builder.
+    pub fn loan_flatbuffer(
+        &self,
+    ) -> Result<ResponseMutUninit<Service, Flatbuffer<ResponsePayload>, ResponseHeader>, LoanError>
+    {
+        Ok(ResponseMutUninit::new_flatbuffer(
+            &self.shared_state,
+            self.loan_chunk(1)?,
+            &self.shared_loan_counter,
+            self.channel_id,
+            self.connection_id,
+        ))
+    }
+}

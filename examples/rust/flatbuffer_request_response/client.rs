@@ -54,13 +54,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         //
         // .request_flatbuffer_schema_path(&"unbounded_data.fbs".try_into()?)
         .request_user_header::<u64>()
+        .response_user_header::<u64>()
         .open_or_create()?;
 
     let client = service
         .client_builder()
         // We start with 1024 bytes. The more accurate the initial_reserved_memory
         // estimate is, the fewer reallocations will be required. Reallocations occur
-        // only at the beginning of communication. Once the publisher's data segment
+        // only at the beginning of communication. Once the client's data segment
         // has been resized appropriately, all subsequent samples will use that size.
         .initial_reserved_memory(1024)
         // By default, the allocation strategy is Static, which does not allow
@@ -111,6 +112,18 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         coutln!("send request {request_counter} ...");
         let pending_response = request.send()?;
+
+        // we want to receive all responses so we wait here until there are no
+        // more responses and the other side has dropped the active request object
+        // and therefore dropped the connection
+        while pending_response.has_response() || pending_response.is_connected() {
+            if let Some(response) = pending_response.receive()? {
+                coutln!(
+                    "  Received response: {}",
+                    response.payload_root()?.received_entries_len()
+                );
+            }
+        }
     }
 
     coutln!("exit");
