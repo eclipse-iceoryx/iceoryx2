@@ -41,9 +41,23 @@
 //! # }
 //! ```
 
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+extern crate alloc;
 
-use crate::{port::server::SharedServerState, response_mut::ResponseMut, service};
+use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
+use iceoryx2_cal::zero_copy_connection::ChannelId;
+
+use crate::{
+    payload::number_of_elements,
+    port::{
+        details::{chunk::ChunkMut, chunk_mut_shared_state::ChunkMutSharedState},
+        server::SharedServerState,
+    },
+    response_mut::ResponseMut,
+    service,
+};
+use alloc::sync::Arc;
+use core::marker::PhantomData;
 use core::{fmt::Debug, mem::MaybeUninit};
 
 /// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
@@ -59,15 +73,22 @@ use core::{fmt::Debug, mem::MaybeUninit};
 /// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 pub struct ResponseMutUninit<
     Service: service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) response: ResponseMut<Service, ResponsePayload, ResponseHeader>,
+    shared_state: ChunkMutSharedState<Service, SharedServerState<Service>>,
+    shared_loan_counter: Arc<AtomicUsize>,
+    chunk: ChunkMut,
+    channel_id: ChannelId,
+    connection_id: usize,
+    assume_init_was_called: bool,
+    _response_payload: PhantomData<ResponsePayload>,
+    _response_header: PhantomData<ResponseHeader>,
 }
 
 unsafe impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Send for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 where
@@ -77,21 +98,60 @@ where
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
-> Debug for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+> Drop for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ResponseMut {{ response: {:?} }}", self.response)
+    fn drop(&mut self) {
+        if !self.assume_init_was_called {
+            self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
+        }
     }
 }
 
 impl<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "ResponseMut {{ shared_loan_counter: {:?}, chunk: {:?}, channel_id: {:?}, connection_id: {} }}",
+            self.shared_loan_counter.load(Ordering::Relaxed),
+            self.chunk,
+            self.channel_id,
+            self.connection_id
+        )
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
+    pub(crate) fn new(
+        shared_state: &Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
+        chunk: &ChunkMut,
+        shared_loan_counter: &Arc<AtomicUsize>,
+        channel_id: ChannelId,
+        connection_id: usize,
+    ) -> Self {
+        Self {
+            shared_state: ChunkMutSharedState::new(shared_state, chunk).unwrap(),
+            shared_loan_counter: shared_loan_counter.clone(),
+            chunk: chunk.clone(),
+            channel_id,
+            connection_id,
+            assume_init_was_called: false,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
     ///
@@ -117,7 +177,7 @@ impl<
     /// # }
     /// ```
     pub fn header(&self) -> &service::header::request_response::ResponseHeader {
-        self.response.header()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns a reference to the user header of the response.
@@ -146,7 +206,7 @@ impl<
     /// # }
     /// ```
     pub fn user_header(&self) -> &ResponseHeader {
-        self.response.user_header()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a mutable reference to the user header of the response.
@@ -173,7 +233,7 @@ impl<
     /// # }
     /// ```
     pub fn user_header_mut(&mut self) -> &mut ResponseHeader {
-        self.response.user_header_mut()
+        unsafe { &mut *self.chunk.user_header_mut_ptr().cast() }
     }
 }
 
@@ -207,7 +267,7 @@ impl<
     /// # }
     /// ```
     pub fn payload(&self) -> &ResponsePayload {
-        self.response.payload()
+        unsafe { &*self.chunk.payload_ptr().cast() }
     }
 
     /// Returns a mutable reference to the payload of the response.
@@ -233,7 +293,7 @@ impl<
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut ResponsePayload {
-        self.response.payload_mut()
+        unsafe { &mut *self.chunk.payload_mut_ptr().cast() }
     }
 }
 
@@ -267,7 +327,13 @@ impl<
     /// # }
     /// ```
     pub fn payload(&self) -> &[ResponsePayload] {
-        self.response.payload()
+        let payload_size = self.shared_state.payload_size();
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                number_of_elements::<ResponsePayload, _>(self.header(), payload_size),
+            )
+        }
     }
 
     /// Returns a mutable reference to the payload of the response.
@@ -293,7 +359,13 @@ impl<
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut [ResponsePayload] {
-        self.response.payload_mut()
+        let payload_size = self.shared_state.payload_size();
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.payload_mut_ptr().cast(),
+                number_of_elements::<ResponsePayload, _>(self.header(), payload_size),
+            )
+        }
     }
 }
 
@@ -364,11 +436,17 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
-        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_response = unsafe { core::mem::transmute_copy(&self.response) };
-        core::mem::forget(self);
-        initialized_response
+    pub unsafe fn assume_init(mut self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
+        self.assume_init_was_called = true;
+        ResponseMut {
+            shared_state: self.shared_state.clone(),
+            shared_loan_counter: self.shared_loan_counter.clone(),
+            channel_id: self.channel_id,
+            chunk: self.chunk.clone(),
+            connection_id: self.connection_id,
+            _response_header: PhantomData,
+            _response_payload: PhantomData,
+        }
     }
 }
 
@@ -412,11 +490,17 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
-        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_response = unsafe { core::mem::transmute_copy(&self.response) };
-        core::mem::forget(self);
-        initialized_response
+    pub unsafe fn assume_init(mut self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
+        self.assume_init_was_called = true;
+        ResponseMut {
+            shared_state: self.shared_state.clone(),
+            shared_loan_counter: self.shared_loan_counter.clone(),
+            channel_id: self.channel_id,
+            chunk: self.chunk.clone(),
+            connection_id: self.connection_id,
+            _response_header: PhantomData,
+            _response_payload: PhantomData,
+        }
     }
 
     /// Writes the payload to the [`ResponseMutUninit`] and labels the [`ResponseMutUninit`] as
