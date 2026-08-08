@@ -38,7 +38,6 @@
 //! ```
 
 use flatbuffers::{FlatBufferBuilder, WIPOffset};
-use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::{shared_memory::ShmPointer, zero_copy_connection::ChannelId};
@@ -193,7 +192,7 @@ impl<
         RequestMut {
             chunk: this.chunk.clone(),
             shared_state: unsafe { core::ptr::read(&this.shared_state) },
-            was_sample_sent: AtomicBool::new(false),
+            was_sample_sent: false,
             channel_id: this.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -406,7 +405,7 @@ impl<
         RequestMut {
             chunk: this.chunk.clone(),
             shared_state: unsafe { core::ptr::read(&this.shared_state) },
-            was_sample_sent: AtomicBool::new(false),
+            was_sample_sent: false,
             channel_id: this.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -476,7 +475,7 @@ impl<
         RequestMut {
             chunk: this.chunk.clone(),
             shared_state: unsafe { core::ptr::read(&this.shared_state) },
-            was_sample_sent: AtomicBool::new(false),
+            was_sample_sent: false,
             channel_id: this.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,

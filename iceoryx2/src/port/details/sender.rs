@@ -475,7 +475,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
         if self.loan_counter.load(Ordering::Relaxed) >= self.sender_max_borrowed_samples {
             fail!(from self, with LoanError::ExceedsMaxLoans,
-                "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
+                "{} {:?} since already {} chunks were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned chunks to loan another chunk.",
                 msg, layout, self.loan_counter.load(Ordering::Relaxed), self.sender_max_borrowed_samples);
         }
 

@@ -39,7 +39,7 @@ use core::ops::{Deref, DerefMut};
 use core::{fmt::Debug, marker::PhantomData};
 
 use flatbuffers::InvalidFlatbuffer;
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -68,7 +68,7 @@ pub struct RequestMut<
 > {
     pub(crate) chunk: ChunkMut,
     pub(crate) shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
-    pub(crate) was_sample_sent: AtomicBool,
+    pub(crate) was_sample_sent: bool,
     pub(crate) channel_id: ChannelId,
     pub(crate) _request_payload: PhantomData<RequestPayload>,
     pub(crate) _request_header: PhantomData<RequestHeader>,
@@ -113,7 +113,7 @@ impl<
 {
     fn drop(&mut self) {
         let _ = self.shared_state.call(|s| -> Result<(), ()> {
-            s.release_request(self.was_sample_sent.load(Ordering::Relaxed), self.header());
+            s.release_request(self.was_sample_sent, self.header());
             Ok(())
         });
     }
@@ -137,7 +137,7 @@ impl<
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
             self.chunk,
-            self.was_sample_sent.load(Ordering::Relaxed),
+            self.was_sample_sent,
             self.channel_id.value()
         )
     }
@@ -239,17 +239,17 @@ impl<
     /// [`Server`](crate::port::server::Server)s of the
     /// [`Service`](crate::service::Service).
     pub fn send(
-        self,
+        mut self,
     ) -> Result<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
         let shared_state = self.shared_state.clone();
         shared_state.call(|s| {
+            s.loan_counter.fetch_sub(1, Ordering::Relaxed);
             match s.send_request(&self.chunk, self.channel_id, self.header().request_id) {
                 Ok(number_of_server_connections) => {
-                    self.was_sample_sent.store(true, Ordering::Relaxed);
-                    s.loan_counter.fetch_sub(1, Ordering::Relaxed);
+                    self.was_sample_sent = true;
                     let active_request = PendingResponse {
                         number_of_server_connections,
                         request: self,
