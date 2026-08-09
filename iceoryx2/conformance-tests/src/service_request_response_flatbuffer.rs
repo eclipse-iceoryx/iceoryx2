@@ -919,7 +919,7 @@ pub mod service_request_response_flatbuffer {
         assert_that!(DATA_PROPS_SCHEMA.as_bytes(), eq buffer.as_slice());
     }
 
-    fn produce_example_data<'a, Sut: Service + 'static>(
+    fn produce_request_data<'a, Sut: Service + 'static>(
         builder: &mut FlatBufferBuilder<
             'static,
             iceoryx2::request_mut_uninit::FlatbufferMemory<Sut>,
@@ -948,9 +948,38 @@ pub mod service_request_response_flatbuffer {
         )
     }
 
-    // ========================================
+    fn produce_response_data<'a, Sut: Service + 'static>(
+        builder: &mut FlatBufferBuilder<
+            'static,
+            iceoryx2::response_mut_uninit::FlatbufferMemory<Sut>,
+        >,
+        title: &str,
+        data_1: i32,
+        data_2: u64,
+        number_of_entries: usize,
+    ) -> WIPOffset<example::UnboundedData<'a>> {
+        let title = builder.create_string(title);
+        let mut entries = vec![];
+
+        for _ in 0..number_of_entries {
+            entries.push(example::Entry::create(
+                builder,
+                &example::EntryArgs { data_1, data_2 },
+            ));
+        }
+        let entries = builder.create_vector(&entries);
+        example::UnboundedData::create(
+            builder,
+            &example::UnboundedDataArgs {
+                title: Some(title),
+                entries: Some(entries),
+            },
+        )
+    }
+
+    ////////////////////////////////////////////
     // REQUEST TESTS
-    // ========================================
+    ////////////////////////////////////////////
 
     #[conformance_test]
     pub fn sending_request_works<Sut: Service + 'static>() {
@@ -978,7 +1007,7 @@ pub mod service_request_response_flatbuffer {
 
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
-        let unbounded_data = produce_example_data(
+        let unbounded_data = produce_request_data(
             builder,
             "The Hoff is looking for padding bytes.",
             551,
@@ -1027,7 +1056,7 @@ pub mod service_request_response_flatbuffer {
 
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
-        let unbounded_data = produce_example_data(
+        let unbounded_data = produce_request_data(
             builder,
             "Not another request, gimme cheese!",
             4712,
@@ -1124,7 +1153,7 @@ pub mod service_request_response_flatbuffer {
 
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
-        let unbounded_data = produce_example_data(builder, "Whoop dii doo", 1144, 1155, 11);
+        let unbounded_data = produce_request_data(builder, "Whoop dii doo", 1144, 1155, 11);
         let _pending_response = request.assume_init(unbounded_data).send().unwrap();
 
         let active_request = server.receive().unwrap().unwrap();
@@ -1165,7 +1194,7 @@ pub mod service_request_response_flatbuffer {
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
         let unbounded_data =
-            produce_example_data(builder, "dogs do not have a belly button", 980128, 5551, 10);
+            produce_request_data(builder, "dogs do not have a belly button", 980128, 5551, 10);
         let request = request.assume_init(unbounded_data);
 
         let verify = |unbounded_data: example::UnboundedData<'_>| {
@@ -1211,7 +1240,7 @@ pub mod service_request_response_flatbuffer {
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
         let unbounded_data =
-            produce_example_data(builder, "banana joe is the new sonnenscheiner", 892, 895, 1);
+            produce_request_data(builder, "banana joe is the new sonnenscheiner", 892, 895, 1);
         let mut request = request.assume_init(unbounded_data);
         *request.user_header_mut() = 891;
         let _pending_response = request.send().unwrap();
@@ -1255,7 +1284,7 @@ pub mod service_request_response_flatbuffer {
 
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
-        let unbounded_data = produce_example_data(
+        let unbounded_data = produce_request_data(
             builder,
             "Nala you have dirt on your snoot. What did you hide?",
             91,
@@ -1322,7 +1351,7 @@ pub mod service_request_response_flatbuffer {
         let mut request = client.loan_flatbuffer().unwrap();
         let builder = request.flatbuffer_builder();
         let unbounded_data =
-            produce_example_data(builder, "Where is the cheese?", 79102, 7641728, 50);
+            produce_request_data(builder, "Where is the cheese?", 79102, 7641728, 50);
         let request = request.assume_init(unbounded_data);
         let bytes = request.payload_bytes().to_vec();
         let pending_response = request.send().unwrap();
@@ -1330,5 +1359,156 @@ pub mod service_request_response_flatbuffer {
 
         let active_request = server.receive().unwrap().unwrap();
         assert_that!(active_request.payload_bytes(), eq & bytes);
+    }
+
+    ////////////////////////////////////////////
+    // RESPONSE TESTS
+    ////////////////////////////////////////////
+
+    #[conformance_test]
+    pub fn sending_response_works<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        let data = produce_response_data(
+            builder,
+            "Look, there the Hoff rides on Hypnotoad.",
+            4567,
+            98776,
+            25,
+        );
+        response.assume_init(data).send().unwrap();
+
+        let response = pending_response.receive().unwrap().unwrap();
+        let data = response.payload_root().unwrap();
+
+        assert_that!(data.title(), eq Some("Look, there the Hoff rides on Hypnotoad."));
+        assert_that!(data.entries().unwrap().len(), eq 25);
+        for i in 0..25 {
+            assert_that!(data.entries().unwrap().get(i).data_1(), eq 4567);
+            assert_that!(data.entries().unwrap().get(i).data_2(), eq 98776);
+        }
+    }
+
+    fn server_allocates_more_memory_when_initial_reserve_is_out<Sut: Service + 'static>(
+        allocation_strategy: AllocationStrategy,
+    ) {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(1)
+            .allocation_strategy(allocation_strategy)
+            .create()
+            .unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        let data = produce_response_data(
+            builder,
+            "Sleepy Nala dreams of the Big Hunt.",
+            9191,
+            1919,
+            50,
+        );
+        response.assume_init(data).send().unwrap();
+
+        let response = pending_response.receive().unwrap().unwrap();
+        let data = response.payload_root().unwrap();
+
+        assert_that!(data.title(), eq Some("Sleepy Nala dreams of the Big Hunt."));
+        assert_that!(data.entries().unwrap().len(), eq 50);
+        for i in 0..50 {
+            assert_that!(data.entries().unwrap().get(i).data_1(), eq 9191);
+            assert_that!(data.entries().unwrap().get(i).data_2(), eq 1919);
+        }
+    }
+
+    #[conformance_test]
+    pub fn server_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_power_of_two<
+        Sut: Service + 'static,
+    >() {
+        server_allocates_more_memory_when_initial_reserve_is_out::<Sut>(
+            AllocationStrategy::PowerOfTwo,
+        );
+    }
+
+    #[conformance_test]
+    pub fn server_allocates_more_memory_when_initial_reserve_is_out_with_allocation_strategy_best_fit<
+        Sut: Service + 'static,
+    >() {
+        server_allocates_more_memory_when_initial_reserve_is_out::<Sut>(
+            AllocationStrategy::BestFit,
+        );
+    }
+
+    #[should_panic]
+    #[conformance_test]
+    pub fn server_does_not_allocate_more_memory_when_allocation_strategy_is_static<
+        Sut: Service + 'static,
+    >() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(1)
+            .allocation_strategy(AllocationStrategy::Static)
+            .create()
+            .unwrap();
+
+        let _pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        // panics here. flatbuffer handles out-of-memory from the allocator always with a panic and
+        // does not support any clean error handling
+        let _title = builder.create_string("oh no more memory");
     }
 }
