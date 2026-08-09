@@ -1511,4 +1511,186 @@ pub mod service_request_response_flatbuffer {
         // does not support any clean error handling
         let _title = builder.create_string("oh no more memory");
     }
+
+    #[conformance_test]
+    pub fn response_data_can_be_reconstructed_from_payload_bytes<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        let data =
+            produce_response_data(builder, "Get ready for the hunt Miss Nala!", 1111, 2222, 30);
+        response.assume_init(data).send().unwrap();
+
+        let response = pending_response.receive().unwrap().unwrap();
+        let data = example::root_as_unbounded_data(response.payload_bytes()).unwrap();
+
+        assert_that!(data.title(), eq Some("Get ready for the hunt Miss Nala!"));
+        assert_that!(data.entries().unwrap().len(), eq 30);
+        for i in 0..30 {
+            assert_that!(data.entries().unwrap().get(i).data_1(), eq 1111);
+            assert_that!(data.entries().unwrap().get(i).data_2(), eq 2222);
+        }
+    }
+
+    #[conformance_test]
+    pub fn server_can_read_its_own_serialized_data<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+
+        let _pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        let data = produce_response_data(builder, "Sceptical hippo is sceptical", 33333, 44444, 44);
+        let response = response.assume_init(data);
+        let data = example::root_as_unbounded_data(response.payload_bytes()).unwrap();
+
+        assert_that!(data.title(), eq Some("Sceptical hippo is sceptical"));
+        assert_that!(data.entries().unwrap().len(), eq 44);
+        for i in 0..44 {
+            assert_that!(data.entries().unwrap().get(i).data_1(), eq 33333);
+            assert_that!(data.entries().unwrap().get(i).data_2(), eq 44444);
+        }
+    }
+
+    #[conformance_test]
+    pub fn response_with_user_header_works<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .response_user_header::<u128>()
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        let data =
+            produce_response_data(builder, "Where did the sceptical hippo go?", 555, 6666, 5);
+        let mut response = response.assume_init(data);
+        *response.user_header_mut() = 889911;
+        response.send().unwrap();
+
+        let response = pending_response.receive().unwrap().unwrap();
+        let data = example::root_as_unbounded_data(response.payload_bytes()).unwrap();
+
+        assert_that!(data.title(), eq Some("Where did the sceptical hippo go?"));
+        assert_that!(data.entries().unwrap().len(), eq 5);
+        for i in 0..5 {
+            assert_that!(data.entries().unwrap().get(i).data_1(), eq 555);
+            assert_that!(data.entries().unwrap().get(i).data_2(), eq 6666);
+        }
+    }
+
+    fn response_with_user_header_and_dynamic_reallocation<Sut: Service + 'static>(
+        allocation_strategy: AllocationStrategy,
+    ) {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<example::UnboundedData>>()
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .response_user_header::<u128>()
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut
+            .server_builder()
+            .initial_reserved_memory(1)
+            .allocation_strategy(allocation_strategy)
+            .create()
+            .unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let mut response = active_request.loan_flatbuffer().unwrap();
+        let builder = response.flatbuffer_builder();
+        let data = produce_response_data(builder, "Dyn dyn dyn - whoops - plumps", 5155, 61666, 50);
+        let mut response = response.assume_init(data);
+        *response.user_header_mut() = 981723;
+        response.send().unwrap();
+
+        let response = pending_response.receive().unwrap().unwrap();
+        let data = example::root_as_unbounded_data(response.payload_bytes()).unwrap();
+
+        assert_that!(data.title(), eq Some("Dyn dyn dyn - whoops - plumps"));
+        assert_that!(data.entries().unwrap().len(), eq 50);
+        for i in 0..5 {
+            assert_that!(data.entries().unwrap().get(i).data_1(), eq 5155);
+            assert_that!(data.entries().unwrap().get(i).data_2(), eq 61666);
+        }
+    }
+
+    #[conformance_test]
+    pub fn response_with_user_header_and_dynamic_reallocation_with_allocation_strategy_power_of_two_works<
+        Sut: Service + 'static,
+    >() {
+        response_with_user_header_and_dynamic_reallocation::<Sut>(AllocationStrategy::PowerOfTwo);
+    }
+
+    #[conformance_test]
+    pub fn response_with_user_header_and_dynamic_reallocation_with_allocation_strategy_best_fit<
+        Sut: Service + 'static,
+    >() {
+        response_with_user_header_and_dynamic_reallocation::<Sut>(AllocationStrategy::BestFit);
+    }
 }
