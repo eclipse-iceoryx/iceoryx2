@@ -1103,6 +1103,97 @@ pub mod service_request_response {
     }
 
     #[conformance_test]
+    pub fn sending_increasing_requests_with_custom_payload_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::Dynamic);
+        type_detail_set_size(&mut type_details, 1024);
+        type_detail_set_alignment(&mut type_details, 1024);
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_request_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let server = service.server_builder().create().unwrap();
+        let client = service
+            .client_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+
+        for number_of_elements in 1..100 {
+            let request = unsafe { client.loan_custom_payload(number_of_elements).unwrap() };
+            assert_that!(request.payload(), len type_details.size() * number_of_elements);
+            assert_that!((request.payload().as_ptr() as usize % type_details.alignment()), eq 0);
+            assert_that!(request.header().number_of_elements(), eq number_of_elements as u64);
+            let _pending_response = unsafe { request.assume_init().send().unwrap() };
+
+            let active_request = server.receive().unwrap().unwrap();
+            assert_that!(active_request.payload(), len type_details.size() * number_of_elements);
+            assert_that!((active_request.payload().as_ptr() as usize % type_details.alignment()), eq 0);
+            assert_that!(active_request.header().number_of_elements(), eq number_of_elements as u64);
+        }
+    }
+
+    #[conformance_test]
+    pub fn sending_increasing_responses_with_custom_payload_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::Dynamic);
+        type_detail_set_size(&mut type_details, 1024);
+        type_detail_set_alignment(&mut type_details, 1024);
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_response_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let server = service
+            .server_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+        let client = service.client_builder().create().unwrap();
+
+        for number_of_elements in 1..100 {
+            let request = unsafe { client.loan_custom_payload(1).unwrap() };
+            let pending_response = unsafe { request.assume_init().send().unwrap() };
+            let active_request = server.receive().unwrap().unwrap();
+
+            let response = unsafe {
+                active_request
+                    .loan_custom_payload(number_of_elements)
+                    .unwrap()
+            };
+            assert_that!(response.payload(), len type_details.size() * number_of_elements);
+            assert_that!((response.payload().as_ptr() as usize % type_details.alignment()), eq 0);
+            assert_that!(response.header().number_of_elements(), eq number_of_elements as u64);
+            unsafe { response.assume_init().send().unwrap() };
+
+            let received_response =
+                unsafe { pending_response.receive_custom_payload().unwrap().unwrap() };
+            assert_that!(received_response.payload(), len type_details.size() * number_of_elements);
+            assert_that!((received_response.payload().as_ptr() as usize % type_details.alignment()), eq 0);
+            assert_that!(received_response.header().number_of_elements(), eq number_of_elements as u64);
+        }
+    }
+
+    #[conformance_test]
     pub fn sending_requests_with_custom_header_works<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
