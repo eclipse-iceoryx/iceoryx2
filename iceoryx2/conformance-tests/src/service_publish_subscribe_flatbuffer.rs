@@ -829,4 +829,97 @@ pub mod service_publish_subscribe_flatbuffer {
         assert_that!(unbounded_data.entries().unwrap().get(0).data_1(), eq 123);
         assert_that!(unbounded_data.entries().unwrap().get(0).data_2(), eq 456);
     }
+
+    fn user_header_and_dynamic_reallocation_works<Sut: Service + 'static>(
+        allocation_strategy: AllocationStrategy,
+    ) {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_file_with_content(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .user_header::<u128>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(1)
+            .allocation_strategy(allocation_strategy)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data =
+            produce_example_data(builder, "zoom zoom goes the coyote", 321, 991, 50);
+        let mut sample = sample.assume_init(unbounded_data);
+        *sample.user_header_mut() = 9191919;
+        sample.send().unwrap();
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        let unbounded_data = sample.payload_root().unwrap();
+
+        assert_that!(*sample.user_header(), eq 9191919);
+        assert_that!(unbounded_data.title(), eq Some("zoom zoom goes the coyote"));
+        assert_that!(unbounded_data.entries().unwrap().len(), eq 50);
+        for i in 0..50 {
+            assert_that!(unbounded_data.entries().unwrap().get(i).data_1(), eq 321);
+            assert_that!(unbounded_data.entries().unwrap().get(i).data_2(), eq 991);
+        }
+    }
+
+    #[conformance_test]
+    pub fn user_header_and_dynamic_reallocation_works_with_allocation_strategy_power_of_two<
+        Sut: Service + 'static,
+    >() {
+        user_header_and_dynamic_reallocation_works::<Sut>(AllocationStrategy::PowerOfTwo);
+    }
+
+    #[conformance_test]
+    pub fn user_header_and_dynamic_reallocation_works_with_allocation_strategy_best_fit<
+        Sut: Service + 'static,
+    >() {
+        user_header_and_dynamic_reallocation_works::<Sut>(AllocationStrategy::BestFit);
+    }
+
+    #[conformance_test]
+    pub fn the_serialized_bytes_are_identical_on_publisher_and_subscriber_side<
+        Sut: Service + 'static,
+    >() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_file_with_content(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data = produce_example_data(builder, "dusty doggy", 9102, 641728, 50);
+        let sample = sample.assume_init(unbounded_data);
+        let bytes = sample.payload_bytes().to_vec();
+        sample.send().unwrap();
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(sample.payload_bytes(), eq & bytes);
+    }
 }
