@@ -80,6 +80,16 @@ impl SampleMutUninit {
         }
     }
 
+    #[getter]
+    pub fn __available_payload_memory(&self) -> usize {
+        match &*self.value.lock() {
+            SampleMutUninitType::Ipc(Some(v)) => v.__internal_available_payload_memory(),
+            SampleMutUninitType::Local(Some(v)) => v.__internal_available_payload_memory(),
+            _ => fatal_panic!(from "SampleMutUninit::__available_payload_memory()",
+                "Accessing a released sample."),
+        }
+    }
+
     pub fn __assume_init_flatbuffer(
         &self,
         buffer_ptr: usize,
