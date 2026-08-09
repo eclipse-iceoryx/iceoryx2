@@ -778,7 +778,7 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > Client<Service, Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    /// Acquires a [`SampleMutUninit`] with an integrated flatbuffer builder.
+    /// Acquires a [`RequestMutUninit`] with an integrated flatbuffer builder.
     pub fn loan_flatbuffer(
         &self,
     ) -> Result<
