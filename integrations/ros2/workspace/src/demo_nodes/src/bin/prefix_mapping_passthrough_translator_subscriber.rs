@@ -24,8 +24,9 @@
 
 use core::time::Duration;
 
-use demo_nodes_iceoryx2::{RosHeader, StdMsgStringByte, as_bytes};
+use demo_nodes_iceoryx2::{StdMsgStringByte, as_bytes};
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_interop::RosHeader;
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
 /// `/chatter`.

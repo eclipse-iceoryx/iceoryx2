@@ -46,21 +46,3 @@ unsafe impl ZeroCopySend for Twist {
         <<geometry_msgs::msg::Twist as Message>::RmwMsg as RmwMessage>::TYPE_NAME
     }
 }
-
-// TODO: Move to common library.
-/// User header of bridged services, written by the gateway when ingesting a
-/// ROS 2 message so subscribers can identify the remote origin.
-#[derive(Debug, Default, Clone, Copy, ZeroCopySend)]
-#[type_name("RosHeader")]
-#[repr(C)]
-pub struct RosHeader {
-    /// The originating DDS writer's GUID.
-    pub gid: [u8; 16],
-    /// Source timestamp in nanoseconds since the epoch.
-    pub source_timestamp_ns: i64,
-    /// Per-writer publication sequence number.
-    pub sequence_number: u64,
-}
-
-const _: () = assert!(core::mem::size_of::<RosHeader>() == 32);
-const _: () = assert!(core::mem::align_of::<RosHeader>() == 8);

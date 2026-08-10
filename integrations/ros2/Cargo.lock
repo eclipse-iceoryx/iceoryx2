@@ -825,6 +825,7 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-gateway",
  "iceoryx2-gateway-backend",
+ "iceoryx2-integrations-ros2-interop",
  "iceoryx2-log",
  "libloading",
  "r2r_rcl",
@@ -847,6 +848,13 @@ dependencies = [
  "iceoryx2-integrations-ros2-gateway-backend",
  "iceoryx2-log",
  "toml 0.9.12+spec-1.1.0",
+]
+
+[[package]]
+name = "iceoryx2-integrations-ros2-interop"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
 ]
 
 [[package]]

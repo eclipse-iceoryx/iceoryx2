@@ -13,5 +13,6 @@ publish = false
 cdr = { version = "0.2.4" }
 geometry_msgs = { version = "*" }
 iceoryx2 = { path = "../../../../../iceoryx2", features = ["std"] }
+iceoryx2-integrations-ros2-interop = { path = "../../../interop" }
 rosidl_runtime_rs = { version = "0.6" }
 std_msgs = { version = "*", features = ["serde"] }

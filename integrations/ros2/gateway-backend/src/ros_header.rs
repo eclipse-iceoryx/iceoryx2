@@ -10,43 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::*;
-use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+pub use iceoryx2_integrations_ros2_interop::ros_header::{DDS_GUID_LEN, RosHeader};
 
 use crate::rcl::MessageInfo;
-
-/// Length of the DDS writer GUID. rmw's GID buffer (`RMW_GID_STORAGE_SIZE`) can
-/// be larger on some distributions (24 on Humble), but only the leading GUID
-/// bytes are meaningful.
-const DDS_GUID_LEN: usize = 16;
-
-/// User header of bridged services, written by the gateway when ingesting a
-/// ROS 2 message into iceoryx2 so that local subscribers can identify the
-/// remote origin. Applications in other languages can rely on the layout:
-/// 32 bytes, alignment 8, field order as declared, little-endian on the
-/// usual platforms.
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
-#[type_name("RosHeader")]
-#[repr(C)]
-pub struct RosHeader {
-    /// The originating DDS writer's GUID.
-    pub gid: [u8; DDS_GUID_LEN],
-    /// Source timestamp in nanoseconds since the epoch.
-    pub source_timestamp_ns: i64,
-    /// Per-writer publication sequence number.
-    pub sequence_number: u64,
-}
-
-const _: () = assert!(core::mem::size_of::<RosHeader>() == 32);
-const _: () = assert!(core::mem::align_of::<RosHeader>() == 8);
-
-impl RosHeader {
-    /// The iceoryx2 [`TypeDetail`] describing this header. Bridged services
-    /// declare it as their user header so the gateway can recognize them.
-    pub(crate) fn type_detail() -> TypeDetail {
-        TypeDetail::new::<RosHeader>(TypeVariant::FixedSize)
-    }
-}
 
 impl From<MessageInfo> for RosHeader {
     fn from(info: MessageInfo) -> Self {

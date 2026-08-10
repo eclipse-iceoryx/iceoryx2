@@ -6,6 +6,7 @@ resolver = "2"
 members = [
     "gateway-backend",
     "gateway-cli",
+    "interop",
 ]
 # The examples are `ament_cargo` packages built individually by colcon, which
 # patches their dependencies in the install space; they are their own
@@ -37,6 +38,7 @@ iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concu
 iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/", features = ["std"] }
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
 iceoryx2-integrations-ros2-gateway-backend = { version = "0.9.999", path = "gateway-backend" }
+iceoryx2-integrations-ros2-interop = { version = "0.9.999", path = "interop" }
 iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/", features = ["std"] }
 iceoryx2-gateway = { version = "0.9.999", path = "../../iceoryx2-gateway/gateway", features = ["std"] }
 iceoryx2-gateway-backend = { version = "0.9.999", path = "../../iceoryx2-gateway/backend", features = ["std"] }
