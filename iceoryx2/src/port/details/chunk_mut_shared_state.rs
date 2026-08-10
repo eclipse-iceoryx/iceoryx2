@@ -75,6 +75,7 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> Drop
 
 pub struct MemoryStructure {
     pub chunk: ChunkMut,
+    pub payload_size: u64,
     pub payload_offset: u64,
 }
 
@@ -145,7 +146,12 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutShared
 
         ResizableMemoryBuilder::new(chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
-            .initial_layout(unsafe { Layout::from_size_align_unchecked(chunk.size(), 1) })
+            .initial_layout(unsafe {
+                Layout::from_size_align_unchecked(
+                    chunk.size(),
+                    port_state.message_type_details().header.alignment,
+                )
+            })
             .reserved_header_len(reserved_header_len)
             .create(self.clone())
     }
@@ -164,9 +170,10 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutShared
             .cast_mut();
         let header_len = message_type_details.all_headers_len();
 
+        let payload_size = state.slice_len.load(Ordering::Relaxed);
         let chunk = ChunkMut {
             offset: PointerOffset::from_value(state.offset_to_chunk.load(Ordering::Relaxed)),
-            size: state.slice_len.load(Ordering::Relaxed) + header_len,
+            size: payload_size + header_len,
             header,
             user_header,
             payload,
@@ -176,6 +183,7 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutShared
 
         MemoryStructure {
             chunk,
+            payload_size: payload_size as u64,
             payload_offset: payload_offset as u64,
         }
     }

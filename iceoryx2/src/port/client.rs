@@ -735,10 +735,6 @@ impl<
             fail!(from self, with LoanError::ExceedsMaxLoans,
                 "Unable to loan request since it would exceed the max number of loaned requests ({}).", client_shared_state.max_loans);
         }
-        client_shared_state
-            .loan_counter
-            .fetch_add(1, Ordering::Relaxed);
-
         let chunk = client_shared_state
             .request_sender
             .allocate(client_shared_state.request_sender.chunk_layout(slice_len))?;
@@ -751,6 +747,10 @@ impl<
                     "This should never happen! There are no more available response channels.");
                 }
             };
+
+        client_shared_state
+            .loan_counter
+            .fetch_add(1, Ordering::Relaxed);
 
         let header_ptr: *mut service::header::request_response::RequestHeader = chunk.header.cast();
         let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();

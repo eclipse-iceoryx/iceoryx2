@@ -398,14 +398,16 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
-    /// # let server = service.server_builder().create()?;
+    /// # let server = service.server_builder()
+    /// #                     .initial_max_slice_len(16)
+    /// #                     .create()?;
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
     /// // initializes the payload with default, therefore it is okay to access
     /// // it without assigning something first
     /// let mut response = active_request.loan_slice(12)?;
-    /// println!("default payload {}", *response.payload());
+    /// println!("default payload {}", response.payload()[0]);
     ///
     /// # Ok(())
     /// # }
@@ -426,7 +428,9 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
-    /// # let server = service.server_builder().create()?;
+    /// # let server = service.server_builder()
+    /// #                     .initial_max_slice_len(16)
+    /// #                     .create()?;
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///

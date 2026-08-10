@@ -1466,20 +1466,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()

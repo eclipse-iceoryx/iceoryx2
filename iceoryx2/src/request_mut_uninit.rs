@@ -230,7 +230,7 @@ impl<
                 .header_mut_ptr()
                 .cast::<crate::service::header::request_response::RequestHeader>()
         };
-        header.number_of_elements = self.chunk.size() as _;
+        header.number_of_elements = memory_structure.payload_size;
         header.payload_offset = memory_structure.payload_offset;
     }
 }

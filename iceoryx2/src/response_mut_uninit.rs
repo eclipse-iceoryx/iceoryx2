@@ -216,7 +216,7 @@ impl<
                 .header_mut_ptr()
                 .cast::<crate::service::header::request_response::ResponseHeader>()
         };
-        header.number_of_elements = self.chunk.size() as _;
+        header.number_of_elements = memory_structure.payload_size;
         header.payload_offset = memory_structure.payload_offset;
     }
 }
@@ -416,7 +416,7 @@ impl<
     ///
     /// let mut response = active_request.loan_slice_uninit(1)?;
     /// response.payload_mut()[0].write(123);
-    /// println!("payload: {:?}", *response.payload());
+    /// println!("payload: {:?}", response.payload()[0]);
     ///
     /// # Ok(())
     /// # }
@@ -443,7 +443,9 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
-    /// # let server = service.server_builder().create()?;
+    /// # let server = service.server_builder()
+    /// #                     .initial_max_slice_len(16)
+    /// #                     .create()?;
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
