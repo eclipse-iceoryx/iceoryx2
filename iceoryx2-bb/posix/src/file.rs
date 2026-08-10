@@ -498,18 +498,12 @@ impl Abandonable for File {
 impl Drop for File {
     fn drop(&mut self) {
         if self.has_ownership.load(Ordering::Relaxed) {
-            let set_permission_result = self.set_permission(Permission::ALL);
-
             match &self.path {
                 None => {
                     warn!(from self, "Files created from file descriptors cannot remove themselves.")
                 }
                 Some(p) => match File::remove(p) {
                     Ok(false) | Err(_) => {
-                        if let Err(e) = set_permission_result {
-                            warn!(from self,
-                                  "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
-                        }
                         warn!(from self, "Failed to remove owned file");
                     }
                     Ok(true) => (),
