@@ -105,3 +105,14 @@ These types are demonstrated in the complex data types example.
 | service attributes                           | [C](c/service_attributes) [C++](cxx/service_attributes) [Python](python/service_attributes) [Rust](rust/service_attributes)                                                                     | Creates a service with custom attributes that are available to every endpoint. If the attributes are not compatible the service will not open.                                                                  |
 | service types                                | [C](c/service_types) [C++](cxx/service_types) [Python](python/service_types) [Rust](rust/service_types)                                                                                         | Introduction in service variations, like `local::Service` optimized for intra-process communication or `ipc_threadsafe::Service` where all ports are threadsafe                                                 |
 | service variant customization                | [Rust](rust/service_variant_customization)                                                                                                                                                      | Customizing a service variant and overriding the operating system mechanisms used to implement iceoryx2.                                                                                                        |
+
+## Integrations
+
+> [!IMPORTANT]
+> The following are not cargo examples and cannot be run like the examples
+> above. They live in the standalone workspace of their integration and may
+> have additional requirements and dependencies (e.g. ROS 2).
+
+| Name       | Integration                                            | Description                                                                                                                                                      |
+| ---------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| demo nodes | [ROS 2](../integrations/ros2/workspace/src/demo_nodes) | Native iceoryx2 publish-subscribe services bridged to ROS 2 by the gateway, covering the available service-to-topic mappings and payload translation strategies. |
