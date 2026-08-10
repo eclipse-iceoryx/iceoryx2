@@ -43,14 +43,16 @@ use iceoryx2_log::{fail, trace};
 const RECEIVE_BUFFER_SIZE: u64 = 32;
 
 #[cfg(not(feature = "dev_permissions"))]
-const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+const SOCKET_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE;
 #[cfg(not(feature = "dev_permissions"))]
 const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
     .const_bitor(Permission::GROUP_READ)
     .const_bitor(Permission::GROUP_EXEC);
 
 #[cfg(feature = "dev_permissions")]
-const SOCKET_PERMISSIONS: Permission = Permission::ALL;
+const SOCKET_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE
+    .const_bitor(Permission::GROUP_READ_WRITE)
+    .const_bitor(Permission::OTHERS_READ_WRITE);
 #[cfg(feature = "dev_permissions")]
 const DIR_PERMISSIONS: Permission = Permission::ALL;
 

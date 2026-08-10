@@ -73,7 +73,7 @@ pub fn send_receive_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -98,7 +98,7 @@ pub fn adjust_buffer_size_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let mut sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -119,7 +119,7 @@ pub fn non_blocking_mode_returns_zero_when_nothing_was_received() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -149,7 +149,7 @@ fn blocking_receive_blocks() {
         s.thread_builder()
             .spawn(|| {
                 let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-                    .permission(Permission::OWNER_ALL)
+                    .permission(Permission::OWNER_READ_WRITE)
                     .creation_mode(CreationMode::PurgeAndCreate)
                     .create()
                     .unwrap();
@@ -197,7 +197,7 @@ fn timed_receive_blocks_at_least_for_timeout() {
         s.thread_builder()
             .spawn(|| {
                 let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-                    .permission(Permission::OWNER_ALL)
+                    .permission(Permission::OWNER_READ_WRITE)
                     .creation_mode(CreationMode::PurgeAndCreate)
                     .create()
                     .unwrap();
@@ -232,7 +232,7 @@ pub fn sending_receiving_with_single_fd_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -280,7 +280,7 @@ pub fn sending_receiving_credentials_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -312,7 +312,7 @@ pub fn sending_receiving_with_max_supported_fd_and_credentials_works() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -362,7 +362,7 @@ pub fn abandoning_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -386,7 +386,7 @@ pub fn abandoning_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_f
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();

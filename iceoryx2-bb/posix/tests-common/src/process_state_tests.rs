@@ -277,7 +277,7 @@ pub fn monitor_detects_initialized_state() {
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Starting);
-    file.set_permission(Permission::OWNER_ALL).unwrap();
+    file.set_permission(Permission::OWNER_READ_WRITE).unwrap();
     file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }

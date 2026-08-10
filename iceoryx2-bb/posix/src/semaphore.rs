@@ -271,7 +271,7 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
 ///     // the semaphore is created, if there already exists a semaphore it is deleted
 ///                     .creation_mode(CreationMode::PurgeAndCreate)
 ///                     .initial_value(5)
-///                     .permission(Permission::OWNER_ALL | Permission::GROUP_ALL)
+///                     .permission(Permission::OWNER_READ_WRITE | Permission::GROUP_READ_WRITE)
 ///                     .create()
 ///                     .expect("failed to create semaphore");
 /// ```
@@ -306,7 +306,7 @@ impl NamedSemaphoreBuilder {
             creation_mode: None,
             name: *name,
             initial_value: 0,
-            permission: Permission::OWNER_ALL,
+            permission: Permission::OWNER_READ_WRITE,
             clock_type: ClockType::default(),
         }
     }
@@ -378,7 +378,7 @@ impl NamedSemaphoreCreationBuilder {
 /// let name = FileName::new(b"mySemaphoreName").unwrap();
 /// let semaphore = NamedSemaphoreBuilder::new(&name)
 ///                     .creation_mode(CreationMode::PurgeAndCreate)
-///                     .permission(Permission::OWNER_ALL)
+///                     .permission(Permission::OWNER_READ_WRITE)
 ///                     .create()
 ///                     .expect("failed to create semaphore");
 ///

@@ -67,7 +67,7 @@
 //!         .gid("testgroup1".as_group().unwrap().gid()).create());
 //!
 //! // set new permissions
-//! file.set_permission(Permission::ALL);
+//! file.set_permission(Permission::OWNER_READ_WRITE);
 //! ```
 
 use core::fmt::Debug;

@@ -80,10 +80,14 @@ use self::dynamic_storage_configuration::DynamicStorageConfiguration;
 const INIT_PERMISSIONS: Permission = Permission::OWNER_WRITE;
 
 #[cfg(not(feature = "dev_permissions"))]
-const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
+const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE;
+
+const FINAL_PERMISSIONS_GLOBAL_ACCESS: Permission = Permission::OWNER_READ_WRITE
+    .const_bitor(Permission::GROUP_READ_WRITE)
+    .const_bitor(Permission::OTHERS_READ_WRITE);
 
 #[cfg(feature = "dev_permissions")]
-const FINAL_PERMISSIONS: Permission = Permission::ALL;
+const FINAL_PERMISSIONS: Permission = FINAL_PERMISSIONS_GLOBAL_ACCESS;
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
@@ -371,7 +375,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         unsafe { (*version_ptr).store(PackageVersion::get().to_u64(), Ordering::SeqCst) };
 
         let final_permission = if self.enable_global_access {
-            Permission::ALL
+            FINAL_PERMISSIONS_GLOBAL_ACCESS
         } else {
             FINAL_PERMISSIONS
         };

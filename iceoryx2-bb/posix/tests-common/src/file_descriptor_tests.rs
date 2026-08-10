@@ -100,12 +100,9 @@ pub mod generic {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
         let mut sut = Sut::sut();
 
-        let rw_all = Permission::OWNER_READ
-            | Permission::OWNER_WRITE
-            | Permission::GROUP_READ
-            | Permission::GROUP_WRITE
-            | Permission::OTHERS_READ
-            | Permission::OTHERS_WRITE;
+        let rw_all = Permission::OWNER_READ_WRITE
+            | Permission::GROUP_READ_WRITE
+            | Permission::OTHERS_READ_WRITE;
 
         assert_that!(sut.set_permission(rw_all), is_ok);
         let permission = sut.permission().unwrap();
@@ -125,25 +122,22 @@ pub mod generic {
             assert_that!(metadata.permission(), eq perms);
         };
 
-        test(Permission::OWNER_READ | Permission::OWNER_WRITE);
+        test(Permission::OWNER_READ_WRITE);
         test(Permission::OWNER_READ);
         test(Permission::OWNER_WRITE);
 
-        test(Permission::GROUP_READ | Permission::GROUP_WRITE);
+        test(Permission::GROUP_READ_WRITE);
         test(Permission::GROUP_READ);
         test(Permission::GROUP_WRITE);
 
-        test(Permission::OTHERS_READ | Permission::OTHERS_WRITE);
+        test(Permission::OTHERS_READ_WRITE);
         test(Permission::OTHERS_READ);
         test(Permission::OTHERS_WRITE);
 
         test(
-            Permission::OWNER_READ
-                | Permission::OWNER_WRITE
-                | Permission::GROUP_READ
-                | Permission::GROUP_WRITE
-                | Permission::OTHERS_READ
-                | Permission::OTHERS_WRITE,
+            Permission::OWNER_READ_WRITE
+                | Permission::GROUP_READ_WRITE
+                | Permission::OTHERS_READ_WRITE,
         );
     }
 

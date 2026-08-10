@@ -25,7 +25,7 @@ pub fn create_and_open_works() {
     let mut sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .create()
         .unwrap();
@@ -57,7 +57,7 @@ pub fn create_and_modify_open_works() {
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .create()
         .unwrap();
@@ -89,7 +89,7 @@ pub fn opening_with_non_fitting_size_fails() {
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .create()
         .unwrap();
@@ -97,14 +97,14 @@ pub fn opening_with_non_fitting_size_fails() {
     let sut_open1 = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::OpenOrCreate)
         .size(sut_create.size() + 1)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .create();
 
     let sut_open2 = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::OpenOrCreate)
         .size(sut_create.size() * 2)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .create();
 
@@ -129,7 +129,7 @@ pub fn release_ownership_works() {
     let mut sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .create()
         .unwrap();
@@ -173,7 +173,7 @@ pub fn create_without_ownership_works() {
     let mut sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .has_ownership(false)
         .create()
@@ -216,7 +216,7 @@ pub fn acquire_ownership_works() {
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .zero_memory(true)
         .has_ownership(false)
         .create()
@@ -240,7 +240,7 @@ pub fn existing_shm_can_be_listed() {
             SharedMemoryBuilder::new(&shm_name)
                 .creation_mode(CreationMode::PurgeAndCreate)
                 .size(1024)
-                .permission(Permission::OWNER_ALL)
+                .permission(Permission::OWNER_READ_WRITE)
                 .zero_memory(true)
                 .create()
                 .unwrap(),
@@ -277,7 +277,7 @@ pub fn abandoning_shared_memory_keeps_resources() {
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .has_ownership(true)
         .zero_memory(true)
         .create()

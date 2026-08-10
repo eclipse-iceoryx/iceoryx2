@@ -427,10 +427,8 @@ impl ProcessGuardBuilder {
     pub fn new() -> Self {
         Self {
             directory_permissions: Permission::OWNER_ALL
-                | Permission::GROUP_READ
-                | Permission::GROUP_EXEC
-                | Permission::OTHERS_READ
-                | Permission::OTHERS_EXEC,
+                | Permission::GROUP_READ_EXEC
+                | Permission::OTHERS_READ_EXEC,
             guard_permissions: Permission::OWNER_READ | Permission::OWNER_WRITE,
         }
     }
@@ -735,7 +733,7 @@ impl Drop for StateFiles {
                 let file_path = *file
                     .path()
                     .expect("created from path therefore it always contains a value");
-                if let Err(e) = file.set_permission(Permission::OWNER_ALL) {
+                if let Err(e) = file.set_permission(Permission::OWNER_READ_WRITE) {
                     warn!(from origin,
                         "{msg} since the access rights of the file \"{:?}\" could not be elevated to grant permissions to remove the file. [{e:?}]",
                         file_path);

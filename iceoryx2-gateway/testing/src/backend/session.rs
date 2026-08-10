@@ -230,7 +230,7 @@ impl Session {
             .map_err(CreationError::Path)?;
 
         let guard = ProcessGuardBuilder::new()
-            .guard_permissions(Permission::OWNER_ALL)
+            .guard_permissions(Permission::OWNER_READ_WRITE)
             .create(&lockfile_path)
             .map_err(CreationError::ProcessGuard)?;
 
@@ -247,7 +247,7 @@ impl Session {
             file_path_in_directory(SOCKET_NAME, &session_dir_path).map_err(CreationError::Path)?;
         let receiver = UnixDatagramReceiverBuilder::new(&sock_path)
             .creation_mode(CreationMode::PurgeAndCreate)
-            .permission(Permission::OWNER_ALL)
+            .permission(Permission::OWNER_READ_WRITE)
             .create()
             .map_err(CreationError::SocketBind)?;
 
@@ -289,7 +289,7 @@ impl Session {
 
         let mut file = FileBuilder::new(&path)
             .creation_mode(CreationMode::CreateExclusive)
-            .permission(Permission::OWNER_ALL)
+            .permission(Permission::OWNER_READ_WRITE)
             .create()
             .map_err(AnnounceError::FileCreate)?;
 

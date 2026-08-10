@@ -63,13 +63,13 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_log::{fail, trace, warn};
 
+const INIT_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE;
+
 #[cfg(not(feature = "dev_permissions"))]
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ;
 
 #[cfg(not(feature = "dev_permissions"))]
-const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
-    .const_bitor(Permission::GROUP_READ)
-    .const_bitor(Permission::GROUP_EXEC);
+const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL.const_bitor(Permission::GROUP_READ_EXEC);
 
 #[cfg(feature = "dev_permissions")]
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ
@@ -310,7 +310,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
             .iter()
             .filter(|entry| {
                 let metadata = entry.metadata();
-                metadata.file_type() == FileType::File && metadata.permission() == FINAL_PERMISSIONS
+                metadata.file_type() == FileType::File && metadata.permission() != INIT_PERMISSIONS
             })
             .filter_map(|entry| config.extract_name_from_file(entry.name()))
             .collect())
@@ -370,7 +370,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         }
         let metadata = metadata.unwrap();
 
-        if metadata.file_type() == FileType::File && metadata.permission() == FINAL_PERMISSIONS {
+        if metadata.file_type() == FileType::File && metadata.permission() != INIT_PERMISSIONS {
             return Ok(true);
         }
 
@@ -529,7 +529,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
         // create File
         let file = match FileBuilder::new(&self.config.path_for(&self.storage_name))
             .creation_mode(CreationMode::CreateExclusive)
-            .permission(Permission::OWNER_ALL)
+            .permission(INIT_PERMISSIONS)
             .create()
         {
             Ok(file) => file,
@@ -613,7 +613,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
                 }
             };
 
-            if metadata.permission() != FINAL_PERMISSIONS {
+            if metadata.permission() == INIT_PERMISSIONS {
                 if elapsed_time > timeout {
                     fail!(from origin,
                         with StaticStorageOpenError::InitializationNotYetFinalized,
