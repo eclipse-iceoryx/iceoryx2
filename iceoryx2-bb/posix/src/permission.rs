@@ -33,16 +33,25 @@ impl Permission {
     pub const OWNER_READ: Self = Self(0o0400);
     pub const OWNER_WRITE: Self = Self(0o0200);
     pub const OWNER_EXEC: Self = Self(0o0100);
+    pub const OWNER_READ_WRITE: Self = Self::OWNER_READ.const_bitor(Self::OWNER_WRITE);
+    pub const OWNER_READ_EXEC: Self = Self::OWNER_READ.const_bitor(Self::OWNER_EXEC);
+    pub const OWNER_WRITE_EXEC: Self = Self::OWNER_WRITE.const_bitor(Self::OWNER_EXEC);
     pub const OWNER_ALL: Self = Self(0o0700);
 
     pub const GROUP_READ: Self = Self(0o0040);
     pub const GROUP_WRITE: Self = Self(0o0020);
     pub const GROUP_EXEC: Self = Self(0o0010);
+    pub const GROUP_READ_WRITE: Self = Self::GROUP_READ.const_bitor(Self::GROUP_WRITE);
+    pub const GROUP_READ_EXEC: Self = Self::GROUP_READ.const_bitor(Self::GROUP_EXEC);
+    pub const GROUP_WRITE_EXEC: Self = Self::GROUP_WRITE.const_bitor(Self::GROUP_EXEC);
     pub const GROUP_ALL: Self = Self(0o0070);
 
     pub const OTHERS_READ: Self = Self(0o0004);
     pub const OTHERS_WRITE: Self = Self(0o0002);
     pub const OTHERS_EXEC: Self = Self(0o0001);
+    pub const OTHERS_READ_WRITE: Self = Self::OTHERS_READ.const_bitor(Self::OTHERS_WRITE);
+    pub const OTHERS_READ_EXEC: Self = Self::OTHERS_READ.const_bitor(Self::OTHERS_EXEC);
+    pub const OTHERS_WRITE_EXEC: Self = Self::OTHERS_WRITE.const_bitor(Self::OTHERS_EXEC);
     pub const OTHERS_ALL: Self = Self(0o0007);
 
     pub const ALL: Self = Self(0o0777);
@@ -77,7 +86,7 @@ impl BitOr for Permission {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        self.const_bitor(rhs)
     }
 }
 
