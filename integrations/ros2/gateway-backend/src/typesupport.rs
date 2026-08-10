@@ -175,24 +175,35 @@ fn load_handle(
 
     // Load the typesupport library, found via the sourced environment's
     // LD_LIBRARY_PATH.
-    let library = fail!(from origin,
-        when unsafe { Library::new(&library_name) },
-        with LoadError::LibraryNotFound { library: library_name },
-        "Failed to load typesupport library for type '{}'",
-        type_name
-    );
+    let library = match unsafe { Library::new(&library_name) } {
+        Ok(library) => library,
+        Err(error) => {
+            fail!(
+                from origin,
+                with LoadError::LibraryNotFound { library: library_name },
+                "Failed to load typesupport library for type '{}': {}",
+                type_name,
+                error
+            );
+        }
+    };
 
     // Get the typesupport handle from the loaded library.
     let handle = {
         let get_handle: libloading::Symbol<
             unsafe extern "C" fn() -> *const rosidl_message_type_support_t,
-        > = fail!(
-            from origin,
-            when unsafe { library.get(symbol_name.as_bytes()) },
-            with LoadError::SymbolNotFound { symbol: symbol_name },
-            "Failed to resolve typesupport symbol for type '{}'",
-            type_name
-        );
+        > = match unsafe { library.get(symbol_name.as_bytes()) } {
+            Ok(symbol) => symbol,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with LoadError::SymbolNotFound { symbol: symbol_name },
+                    "Failed to resolve typesupport symbol for type '{}': {}",
+                    type_name,
+                    error
+                );
+            }
+        };
         unsafe { get_handle() }
     };
     if handle.is_null() {
