@@ -176,25 +176,62 @@ pub fn call_and_fetch_works() {
     assert_that!(result, eq Some(NonFatalFetchableSignal::Interrupt));
 }
 
-// TODO: #1458
-#[ignore]
+// When calling `call_and_fetch` we must not get signals from unrelated threads
+// Currently fails due to contention on the singleton `LAST_SIGNAL` latch
+// TODO #1898
 #[test]
-pub fn call_and_fetch_with_registered_handler_works() {
+#[ignore]
+pub fn call_and_fetch_does_not_observe_unrelated_concurrent_signal() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let _watchdog = Watchdog::new();
+    let _test = TestFixture::new();
 
-    let test = TestFixture::new();
+    let probe_delivered = AtomicI32::new(0);
+    let window_open = AtomicI32::new(0);
+    thread_scope(|s| {
+        // send a signal to ourselves in a new thread
+        s.thread_builder()
+            .spawn(|| {
+                while window_open.load(Ordering::SeqCst) == 0 {
+                    nanosleep(Duration::from_micros(50)).ok();
+                }
+                let tid = unsafe { posix::pthread_self() };
+                unsafe { posix::pthread_kill(tid, posix::SIGUSR1) };
+                probe_delivered.store(1, Ordering::SeqCst);
+            })
+            .expect("failed to spawn thread");
 
-    let _guard =
-        SignalHandler::register(FetchableSignal::UserDefined1, &TestFixture::signal_callback);
+        let result = SignalHandler::call_and_fetch(|| {
+            // wait for the other thread to complete before we exit the closure
+            window_open.store(1, Ordering::SeqCst);
+            assert_that!(
+                || { probe_delivered.load(Ordering::SeqCst) },
+                eq 1,
+                before Watchdog::default()
+            );
+        });
+
+        // our `result` must not capture the signal the spawned thread sent to itself
+        assert_that!(result, eq None);
+
+        Ok(())
+    })
+    .expect("failed to execute thread scope");
+}
+
+// We can send signals to ourselves when uncontested
+#[test]
+pub fn call_and_fetch_observes_signal_directed_at_calling_thread() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
+    let _watchdog = Watchdog::new();
+    let _test = TestFixture::new();
 
     let result = SignalHandler::call_and_fetch(|| {
-        Process::from_self().send_signal(Signal::UserDefined1).ok();
-        nanosleep(TIMEOUT).ok();
+        let tid = unsafe { posix::pthread_self() };
+        unsafe { posix::pthread_kill(tid, posix::SIGUSR1) };
     });
 
     assert_that!(result, eq Some(NonFatalFetchableSignal::UserDefined1));
-    test.verify(NonFatalFetchableSignal::UserDefined1, 1);
 }
 
 #[test]
@@ -357,4 +394,55 @@ pub fn termination_requested_with_interrupt_works() {
         before Watchdog::default()
     );
     assert_that!(SignalHandler::termination_requested(), eq false);
+}
+
+#[cfg(feature = "std")]
+fn completes_within<T: Send + 'static>(
+    deadline: Duration,
+    op: impl FnOnce() -> T + Send + 'static,
+) -> Option<T> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(op());
+    });
+    rx.recv_timeout(deadline).ok()
+}
+
+#[cfg(feature = "std")]
+static CALLBACK_FED: AtomicI32 = AtomicI32::new(0);
+
+#[cfg(feature = "std")]
+fn mark_callback(_: FetchableSignal) {
+    CALLBACK_FED.store(1, Ordering::SeqCst);
+}
+
+// capturing an op that raises the same signal a callback is registered
+// for must not deadlock, and both consumers must observe it
+// TODO #1898
+#[cfg(feature = "std")]
+#[ignore]
+#[test]
+pub fn call_and_fetch_with_registered_callback_completes() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
+    let _watchdog = Watchdog::new();
+    let _test = TestFixture::new();
+
+    // register a callback for USR1
+    let callback_guard = SignalHandler::register(FetchableSignal::UserDefined1, &mark_callback);
+    std::mem::forget(callback_guard);
+
+    // contend with the above callback
+    let result = completes_within(Duration::from_secs(2), || {
+        SignalHandler::call_and_fetch(|| {
+            let tid = unsafe { posix::pthread_self() };
+            unsafe { posix::pthread_kill(tid, posix::SIGUSR1) };
+        })
+        .ok_or(())
+        .expect("Failed to retrieve signal after `call_and_fetch")
+    })
+    .ok_or(())
+    .expect("Failed to complete within given timeout");
+
+    assert_that!(result, eq NonFatalFetchableSignal::UserDefined1);
+    assert_that!(CALLBACK_FED.load(Ordering::SeqCst), eq 1);
 }
