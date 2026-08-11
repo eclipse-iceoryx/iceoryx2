@@ -548,12 +548,7 @@ impl<
             client_name: client_factory.config.port_name,
         };
 
-        let sender_max_borrowed_samples = static_config.max_loaned_requests
-            // a client sent so many active requests to a server in parallel
-            + static_config.max_active_requests_per_client
-            // the server can still hold old requests that the client has already dropped. in this case
-            // the client can fill up the server's buffer with at most max_active_requests_per_client again
-            + static_config.max_active_requests_per_client;
+        let sender_max_borrowed_chunks = static_config.required_max_borrowed_chunks_per_client();
         let request_sender = Sender {
             data_segment,
             segment_states: {
@@ -579,7 +574,7 @@ impl<
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
-            sender_max_borrowed_chunks: sender_max_borrowed_samples,
+            sender_max_borrowed_chunks,
             backpressure_strategy: client_factory.config.backpressure_strategy,
             message_type_details: static_config.request_message_type_details,
             // all requests are sent via one channel, only the responses require different
@@ -1123,16 +1118,17 @@ impl<
         >,
         LoanError,
     > {
-        let client_shared_state = self.client_shared_state.lock();
-        let max_slice_len = client_shared_state.config.initial_max_slice_len;
-        if client_shared_state.config.allocation_strategy == AllocationStrategy::Static
-            && max_slice_len < slice_len
         {
-            fail!(from self, with LoanError::ExceedsMaxLoanSize,
+            let client_shared_state = self.client_shared_state.lock();
+            let max_slice_len = client_shared_state.config.initial_max_slice_len;
+            if client_shared_state.config.allocation_strategy == AllocationStrategy::Static
+                && max_slice_len < slice_len
+            {
+                fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
+            }
         }
-        drop(client_shared_state);
 
         let (chunk, channel_id) = self.loan_chunk(slice_len)?;
 

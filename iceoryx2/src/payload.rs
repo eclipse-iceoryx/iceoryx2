@@ -19,7 +19,7 @@ pub fn number_of_elements<Payload: Sized, H: PayloadHeader>(
     payload_size: usize,
 ) -> usize {
     static_assert_size_of!(CustomPayloadMarker, 1);
-    // We need to handle the custom payload marker her, that has always a size of 1
+    // We need to handle the custom payload marker here, that has always a size of 1
     // and the ability to set custom payload type size/alignment. Therefore, we need
     // to calculate number of elements * payload_size divided again by the payload size.
     // If the generic argument and payload size is equal it will return the actual

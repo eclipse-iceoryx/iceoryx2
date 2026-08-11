@@ -168,7 +168,9 @@ impl<Service: crate::service::Service, ResponsePayload, ResponseHeader: Debug + 
     pub fn flatbuffer_builder(
         &mut self,
     ) -> &mut FlatBufferBuilder<'static, FlatbufferMemory<Service>> {
-        self.flatbuffer_builder.as_mut().unwrap()
+        self.flatbuffer_builder
+            .as_mut()
+            .expect("Flatbuffer builder is set when using Flatbuffer marker.")
     }
 
     /// Finalize the Flatbuffer and initialize the sample. After that call the content can no longer be

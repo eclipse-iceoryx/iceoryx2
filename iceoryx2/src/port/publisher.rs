@@ -904,16 +904,17 @@ impl<
         &self,
         slice_len: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
-        let shared_state = self.publisher_shared_state.lock();
-        let max_slice_len = shared_state.config.initial_max_slice_len;
-        if shared_state.config.allocation_strategy == AllocationStrategy::Static
-            && max_slice_len < slice_len
         {
-            fail!(from self, with LoanError::ExceedsMaxLoanSize,
+            let shared_state = self.publisher_shared_state.lock();
+            let max_slice_len = shared_state.config.initial_max_slice_len;
+            if shared_state.config.allocation_strategy == AllocationStrategy::Static
+                && max_slice_len < slice_len
+            {
+                fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
+            }
         }
-        drop(shared_state);
 
         Ok(
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
