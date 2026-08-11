@@ -49,7 +49,7 @@ impl NamedSemaphoreTest {
                 })
                 .creation_mode(CreationMode::PurgeAndCreate)
                 .initial_value(0)
-                .permission(Permission::OWNER_ALL)
+                .permission(Permission::OWNER_READ_WRITE)
                 .create()
                 .unwrap(),
             monotonic_named_sut2: NamedSemaphoreBuilder::new(&monotonic_name)
@@ -64,7 +64,7 @@ impl NamedSemaphoreTest {
                 .clock_type(ClockType::Realtime)
                 .creation_mode(CreationMode::PurgeAndCreate)
                 .initial_value(0)
-                .permission(Permission::OWNER_ALL)
+                .permission(Permission::OWNER_READ_WRITE)
                 .create()
                 .unwrap(),
             realtime_named_sut2: NamedSemaphoreBuilder::new(&realtime_name)
@@ -111,7 +111,7 @@ pub fn named_semaphore_initializes_correctly() {
         .clock_type(ClockType::Realtime)
         .creation_mode(CreationMode::PurgeAndCreate)
         .initial_value(initial_value)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .create()
         .unwrap();
 
@@ -133,7 +133,7 @@ pub fn named_semaphore_opens_correctly() {
     let _creator = NamedSemaphoreBuilder::new(&sem_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .initial_value(initial_value)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .create()
         .unwrap();
 
@@ -451,7 +451,7 @@ pub fn abandoning_named_semaphore_keeps_semaphore() {
     let creator = NamedSemaphoreBuilder::new(&sem_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .initial_value(initial_value)
-        .permission(Permission::OWNER_ALL)
+        .permission(Permission::OWNER_READ_WRITE)
         .create()
         .unwrap();
 

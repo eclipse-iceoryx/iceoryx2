@@ -27,7 +27,7 @@
 //!
 //! let socket_name = FilePath::new(b"mySocket").unwrap();
 //! let receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-//!                         .permission(Permission::OWNER_ALL)
+//!                         .permission(Permission::OWNER_READ_WRITE)
 //!                         .creation_mode(CreationMode::PurgeAndCreate)
 //!                         .create().unwrap();
 //!
@@ -744,7 +744,7 @@ impl UnixDatagramReceiverBuilder {
     pub fn new(name: &FilePath) -> Self {
         Self {
             name: *name,
-            permission: Permission::OWNER_ALL,
+            permission: Permission::OWNER_READ_WRITE,
             creation_mode: CreationMode::CreateExclusive,
         }
     }

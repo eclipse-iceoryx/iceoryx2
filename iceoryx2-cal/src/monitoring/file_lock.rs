@@ -45,17 +45,17 @@ use super::{
 };
 
 #[cfg(not(feature = "dev_permissions"))]
-const GUARD_PERMISSIONS: Permission = Permission::OWNER_ALL;
+const GUARD_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE;
 
 #[cfg(not(feature = "dev_permissions"))]
 const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
-    .const_bitor(Permission::GROUP_READ)
-    .const_bitor(Permission::GROUP_EXEC)
-    .const_bitor(Permission::OTHERS_READ)
-    .const_bitor(Permission::OTHERS_EXEC);
+    .const_bitor(Permission::GROUP_READ_EXEC)
+    .const_bitor(Permission::OTHERS_READ_EXEC);
 
 #[cfg(feature = "dev_permissions")]
-const GUARD_PERMISSIONS: Permission = Permission::ALL;
+const GUARD_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE
+    .const_bitor(Permission::GROUP_READ_WRITE)
+    .const_bitor(Permission::OTHERS_READ_WRITE);
 
 #[cfg(feature = "dev_permissions")]
 const DIR_PERMISSIONS: Permission = Permission::ALL;

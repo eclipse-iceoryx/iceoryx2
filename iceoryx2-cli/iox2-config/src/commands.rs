@@ -140,7 +140,7 @@ pub fn generate_local() -> Result<()> {
         None => {
             return Err(anyhow::anyhow!(
                 "User config directory not available on this platform!"
-            ))
+            ));
         }
     };
     user_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
@@ -169,10 +169,8 @@ fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
             Directory::create(
                 &config_dir,
                 file::Permission::OWNER_ALL
-                    | Permission::GROUP_READ
-                    | Permission::GROUP_EXEC
-                    | Permission::OTHERS_READ
-                    | Permission::OTHERS_EXEC,
+                    | Permission::GROUP_READ_EXEC
+                    | Permission::OTHERS_READ_EXEC,
             )
             .map_err(|e| anyhow::anyhow!("{:?}", e))?;
         }

@@ -24,7 +24,7 @@
 //! let file_name = FilePath::new(b"ooh_makes_the_file.md").unwrap();
 //! let mut file = FileBuilder::new(&file_name)
 //!                                  .creation_mode(CreationMode::CreateExclusive)
-//!                                  .permission(Permission::OWNER_ALL | Permission::GROUP_READ)
+//!                                  .permission(Permission::OWNER_READ_WRITE | Permission::GROUP_READ)
 //!                                  .truncate_size(1024)
 //!                                  .create().expect("Failed to create file");
 //!
@@ -307,7 +307,7 @@ pub enum FileReadLineState {
 /// let file = FileBuilder::new(&file_name)
 ///                              .creation_mode(CreationMode::CreateExclusive)
 ///                              // BEGIN: optional settings
-///                              .permission(Permission::OWNER_ALL | Permission::GROUP_READ)
+///                              .permission(Permission::OWNER_READ_WRITE | Permission::GROUP_READ)
 ///                              .owner("testuser1".as_user().unwrap().uid())
 ///                              .group("testgroup2".as_group().unwrap().gid())
 ///                              .truncate_size(1024)
@@ -332,7 +332,7 @@ impl FileBuilder {
         FileBuilder {
             file_path: *file_path,
             access_mode: AccessMode::Read,
-            permission: Permission::OWNER_ALL,
+            permission: Permission::OWNER_READ_WRITE,
             has_ownership: false,
             owner: None,
             group: None,
@@ -387,7 +387,7 @@ impl FileCreationBuilder {
     /// let file_name = FilePath::new(b"someFileName.txt").unwrap();
     /// let file = FileBuilder::new(&file_name)
     ///                              .creation_mode(CreationMode::CreateExclusive)
-    ///                              .permission(Permission::OWNER_ALL | Permission::GROUP_READ)
+    ///                              .permission(Permission::OWNER_READ_WRITE | Permission::GROUP_READ)
     ///                              .create().expect("failed to create file");
     /// ```
     pub fn permission(mut self, value: Permission) -> Self {
@@ -498,18 +498,12 @@ impl Abandonable for File {
 impl Drop for File {
     fn drop(&mut self) {
         if self.has_ownership.load(Ordering::Relaxed) {
-            let set_permission_result = self.set_permission(Permission::ALL);
-
             match &self.path {
                 None => {
                     warn!(from self, "Files created from file descriptors cannot remove themselves.")
                 }
                 Some(p) => match File::remove(p) {
                     Ok(false) | Err(_) => {
-                        if let Err(e) = set_permission_result {
-                            warn!(from self,
-                                  "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
-                        }
                         warn!(from self, "Failed to remove owned file");
                     }
                     Ok(true) => (),

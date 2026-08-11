@@ -35,7 +35,7 @@
 //!           // the SharedMemoryCreationBuilder is used from here on
 //!                     .creation_mode(CreationMode::PurgeAndCreate)
 //!                     .size(1024)
-//!                     .permission(Permission::OWNER_ALL)
+//!                     .permission(Permission::OWNER_READ_WRITE)
 //!                     .zero_memory(true)
 //!                     .create()
 //!                     .expect("failed to create shared memory");
@@ -149,7 +149,7 @@ impl SharedMemoryBuilder {
             name: *name,
             size: 0,
             is_memory_locked: false,
-            permission: Permission::OWNER_ALL,
+            permission: Permission::OWNER_READ_WRITE,
             access_mode: AccessMode::None,
             has_ownership: true,
             creation_mode: None,
@@ -434,7 +434,7 @@ impl Abandonable for SharedMemory {
 impl Drop for SharedMemory {
     fn drop(&mut self) {
         if self.has_ownership() {
-            let set_permission_result = self.set_permission(Permission::OWNER_ALL);
+            let set_permission_result = self.set_permission(Permission::OWNER_READ_WRITE);
 
             match Self::remove(&self.name) {
                 Ok(_) => {}
