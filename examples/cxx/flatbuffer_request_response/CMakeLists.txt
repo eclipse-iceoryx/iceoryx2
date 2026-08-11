@@ -1,4 +1,4 @@
-# Copyright (c) 2026 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -11,12 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(example_cxx_flatbuffer_publish_subscribe LANGUAGES CXX)
+project(example_cxx_flatbuffer_request_response LANGUAGES CXX)
 
 find_package(iceoryx2-cxx 0.9.999 REQUIRED)
 
-add_executable(example_cxx_flatbuffer_publish_subscribe_publisher src/publisher.cpp)
-target_link_libraries(example_cxx_flatbuffer_publish_subscribe_publisher iceoryx2-cxx::static-lib-cxx)
+add_executable(example_cxx_flatbuffer_request_response_client src/client.cpp)
+target_link_libraries(example_cxx_flatbuffer_request_response_client iceoryx2-cxx::static-lib-cxx)
 
-add_executable(example_cxx_flatbuffer_publish_subscribe_subscriber src/subscriber.cpp)
-target_link_libraries(example_cxx_flatbuffer_publish_subscribe_subscriber iceoryx2-cxx::static-lib-cxx)
+add_executable(example_cxx_flatbuffer_request_response_server src/server.cpp)
+target_link_libraries(example_cxx_flatbuffer_request_response_server iceoryx2-cxx::static-lib-cxx)
