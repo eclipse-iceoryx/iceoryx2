@@ -50,7 +50,7 @@ pub(crate) fn record(options: RecordOptions, _format: Format) -> Result<()> {
     let mut msg_counter = 0u64;
     let cycle_time = Duration::from_millis(options.cycle_time_in_ms);
     'node_loop: loop {
-        while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
+        while let Some(sample) = subscriber.receive()? {
             let (system_header, user_header, payload) =
                 extract_pubsub_payload(&sample, &service_types.user_header);
 

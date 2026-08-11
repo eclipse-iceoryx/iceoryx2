@@ -58,14 +58,14 @@ pub mod zero_copy_connection_trait {
         assert_that!(
             Sut::Builder::new(&name)
                 .config(&config)
-                .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
                 .create_receiver(),
             is_ok
         );
         assert_that!(
             Sut::Builder::new(&name)
                 .config(&config)
-                .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
                 .create_sender(),
             is_ok
         );
@@ -77,14 +77,14 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         assert_that!(!sut_sender.is_connected(), eq true);
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -106,7 +106,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
         assert_that!(sut_sender.buffer_size(), eq DEFAULT_BUFFER_SIZE);
         assert_that!(
-            sut_sender.max_borrowed_samples(), eq
+            sut_sender.max_borrowed_chunks(), eq
             DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL
         );
         assert_that!(
@@ -121,7 +121,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
         assert_that!(sut_receiver.buffer_size(), eq DEFAULT_BUFFER_SIZE);
         assert_that!(
-            sut_receiver.max_borrowed_samples(), eq
+            sut_receiver.max_borrowed_chunks(), eq
             DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL
         );
         assert_that!(
@@ -158,18 +158,18 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let _sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender();
         assert_that!(sut_sender, is_err);
@@ -179,7 +179,7 @@ pub mod zero_copy_connection_trait {
         );
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver();
         assert_that!(sut_receiver, is_err);
@@ -195,19 +195,19 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let _sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
 
         drop(_sut_sender);
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender();
         assert_that!(sut_sender, is_ok);
@@ -219,19 +219,19 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let _sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
 
         drop(_sut_receiver);
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver();
         assert_that!(sut_receiver, is_ok);
@@ -243,12 +243,12 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -266,14 +266,14 @@ pub mod zero_copy_connection_trait {
 
         let _sut_sender = Sut::Builder::new(&name)
             .buffer_size(12)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
             .buffer_size(16)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver();
 
@@ -286,15 +286,15 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let _sut_sender = Sut::Builder::new(&name)
-            .receiver_max_borrowed_samples_per_channel(2)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .receiver_max_borrowed_chunks_per_channel(2)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .receiver_max_borrowed_samples_per_channel(4)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .receiver_max_borrowed_chunks_per_channel(4)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver();
 
@@ -308,13 +308,13 @@ pub mod zero_copy_connection_trait {
 
         let _sut_sender = Sut::Builder::new(&name)
             .enable_safe_overflow(true)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver();
 
@@ -331,13 +331,13 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let _sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES * 2)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES * 2)
             .config(&config)
             .create_receiver();
 
@@ -398,12 +398,12 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -434,13 +434,13 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
             .create_receiver()
@@ -483,13 +483,13 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
             .create_receiver()
@@ -540,12 +540,12 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -568,13 +568,13 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
             .create_receiver()
@@ -634,7 +634,7 @@ pub mod zero_copy_connection_trait {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
@@ -661,7 +661,7 @@ pub mod zero_copy_connection_trait {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
@@ -693,8 +693,8 @@ pub mod zero_copy_connection_trait {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
@@ -709,8 +709,8 @@ pub mod zero_copy_connection_trait {
 
         let receiver = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -729,7 +729,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -748,17 +748,17 @@ pub mod zero_copy_connection_trait {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(MAX_BORROW)
+            .receiver_max_borrowed_chunks_per_channel(MAX_BORROW)
             .enable_safe_overflow(true)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(MAX_BORROW)
+            .receiver_max_borrowed_chunks_per_channel(MAX_BORROW)
             .enable_safe_overflow(true)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -808,7 +808,7 @@ pub mod zero_copy_connection_trait {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(1)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config.lock().unwrap())
             .create_sender()
             .unwrap();
@@ -823,7 +823,7 @@ pub mod zero_copy_connection_trait {
             s.thread_builder().spawn(|| {
                 let sut_receiver = Sut::Builder::new(&name)
                     .buffer_size(1)
-                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
                     .config(&config.lock().unwrap())
                     .create_receiver()
                     .unwrap();
@@ -891,14 +891,14 @@ pub mod zero_copy_connection_trait {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(1)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config.lock().unwrap())
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
             .buffer_size(1)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config.lock().unwrap())
             .create_receiver()
             .unwrap();
@@ -1029,7 +1029,7 @@ pub mod zero_copy_connection_trait {
 
         let sut_receiver = Sut::Builder::new(&name)
             .buffer_size(1)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config.lock().unwrap())
             .create_receiver()
             .unwrap();
@@ -1045,7 +1045,7 @@ pub mod zero_copy_connection_trait {
             s.thread_builder().spawn(|| {
                 let sut_sender = Sut::Builder::new(&name)
                     .buffer_size(1)
-                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
                     .config(&config.lock().unwrap())
                     .create_sender()
                     .unwrap();
@@ -1099,7 +1099,7 @@ pub mod zero_copy_connection_trait {
 
         let sut_receiver = Sut::Builder::new(&name)
             .buffer_size(1)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config.lock().unwrap())
             .create_receiver()
             .unwrap();
@@ -1115,7 +1115,7 @@ pub mod zero_copy_connection_trait {
             s.thread_builder().spawn(|| {
                 let sut_sender = Sut::Builder::new(&name)
                     .buffer_size(1)
-                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
                     .config(&config.lock().unwrap())
                     .create_sender()
                     .unwrap();
@@ -1162,14 +1162,14 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
             .create_sender()
             .unwrap();
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
@@ -1210,17 +1210,17 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1261,17 +1261,17 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1307,17 +1307,17 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1362,10 +1362,10 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let _sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
@@ -1373,10 +1373,10 @@ pub mod zero_copy_connection_trait {
 
         let create_receiver = |number_of_segments: u8| {
             Sut::Builder::new(&name)
-                .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
                 .buffer_size(BUFFER_SIZE)
                 .max_supported_shared_memory_segments(number_of_segments)
-                .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+                .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
                 .enable_safe_overflow(true)
                 .config(&config)
                 .create_receiver()
@@ -1403,10 +1403,10 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
@@ -1436,10 +1436,10 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1466,20 +1466,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1507,10 +1507,10 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .max_supported_shared_memory_segments(0)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
@@ -1530,20 +1530,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1588,10 +1588,10 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
@@ -1599,10 +1599,10 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .config(&config)
@@ -1649,20 +1649,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1710,20 +1710,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1759,20 +1759,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(BUFFER_SIZE)
+            .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1794,20 +1794,20 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(1)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(1)
+            .receiver_max_borrowed_chunks_per_channel(1)
             .enable_safe_overflow(true)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let _sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(1)
             .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples_per_channel(1)
+            .receiver_max_borrowed_chunks_per_channel(1)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
@@ -1838,12 +1838,12 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
@@ -1866,12 +1866,12 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
@@ -1894,7 +1894,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(1)
             .config(&config)
             .create_sender()
@@ -1912,7 +1912,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(1)
             .config(&config)
             .create_sender()
@@ -1936,7 +1936,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(1)
             .config(&config)
             .create_sender()
@@ -1954,7 +1954,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(1)
             .config(&config)
             .create_receiver()
@@ -1972,7 +1972,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(1)
             .config(&config)
             .create_receiver()
@@ -1990,7 +1990,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(1)
             .config(&config)
             .create_receiver()
@@ -2166,13 +2166,13 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -2193,13 +2193,13 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
             .create_receiver()
             .unwrap();
@@ -2223,7 +2223,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
             .create_sender()
@@ -2251,7 +2251,7 @@ pub mod zero_copy_connection_trait {
         assert_that!(result.err(), eq Some(ZeroCopySendError::NoConnectedReceiverAndBufferIsFull));
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
             .create_receiver()
@@ -2273,7 +2273,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
@@ -2281,7 +2281,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
@@ -2310,7 +2310,7 @@ pub mod zero_copy_connection_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
@@ -2318,7 +2318,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)

@@ -10,9 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub(crate) mod chunk;
-pub(crate) mod chunk_details;
-pub(crate) mod data_segment;
-pub(crate) mod receiver;
-pub(crate) mod segment_state;
-pub(crate) mod sender;
+pub mod chunk;
+pub mod chunk_details;
+pub mod chunk_mut_shared_state;
+pub mod data_segment;
+pub mod data_segment_shared_state;
+pub mod receiver;
+pub mod segment_state;
+pub mod sender;

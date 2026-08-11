@@ -160,7 +160,10 @@ impl MessageTypeDetails {
     }
 
     pub(crate) fn all_headers_len(&self) -> usize {
-        align(self.header.size, self.user_header.alignment) + self.user_header.size
+        align(
+            align(self.header.size, self.user_header.alignment) + self.user_header.size,
+            self.payload.alignment,
+        )
     }
 
     pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
@@ -176,17 +179,25 @@ impl MessageTypeDetails {
         user_header_start as *const u8
     }
 
-    pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
+    pub(crate) fn max_alignment(&self) -> usize {
+        self.header
+            .alignment()
+            .max(self.user_header.alignment())
+            .max(self.payload.alignment)
+    }
+
+    pub(crate) fn chunk_layout(&self, number_of_elements: usize) -> Layout {
+        let max_alignment = self.max_alignment();
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    self.header.size + self.user_header.size + self.user_header.alignment - 1
-                        + self.payload.size * number_of_elements
-                        + self.payload.alignment
-                        - 1,
-                    self.header.alignment,
+                    align(
+                        align(self.header.size, self.user_header.alignment) + self.user_header.size,
+                        self.payload.alignment,
+                    ) + align(self.payload.size, self.payload.alignment) * number_of_elements,
+                    max_alignment,
                 ),
-                self.header.alignment,
+                max_alignment,
             )
         }
     }
@@ -214,6 +225,52 @@ mod tests {
     const ALIGNMENT: usize = 4;
     #[cfg(target_pointer_width = "64")]
     const ALIGNMENT: usize = 8;
+
+    #[test]
+    fn chunk_layout_uses_largest_alignment() {
+        let align_4 = TypeDetail {
+            variant: TypeVariant::FixedSize,
+            type_name: "i32".try_into().unwrap(),
+            size: 4,
+            alignment: 4,
+        };
+        let align_8 = TypeDetail {
+            variant: TypeVariant::FixedSize,
+            type_name: "u64".try_into().unwrap(),
+            size: 8,
+            alignment: 8,
+        };
+        let align_16 = TypeDetail {
+            variant: TypeVariant::FixedSize,
+            type_name: "u128".try_into().unwrap(),
+            size: 16,
+            alignment: 16,
+        };
+
+        let sut = MessageTypeDetails {
+            header: align_4,
+            user_header: align_8,
+            payload: align_16,
+        };
+        let layout = sut.chunk_layout(1);
+        assert_that!(layout.align(), eq 16);
+
+        let sut = MessageTypeDetails {
+            header: align_4,
+            user_header: align_8,
+            payload: align_4,
+        };
+        let layout = sut.chunk_layout(1);
+        assert_that!(layout.align(), eq 8);
+
+        let sut = MessageTypeDetails {
+            header: align_4,
+            user_header: align_4,
+            payload: align_4,
+        };
+        let layout = sut.chunk_layout(1);
+        assert_that!(layout.align(), eq 4);
+    }
 
     #[test]
     fn test_from() {
@@ -339,37 +396,20 @@ mod tests {
     // test_sample_layout tests the sample layout for combinations of different types.
     fn test_sample_layout() {
         let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(0);
-        #[cfg(target_pointer_width = "32")]
-        let expected = 24;
-        #[cfg(target_pointer_width = "64")]
-        let expected = 32;
-        assert_that!(sut.size(), eq expected);
+        let sut = details.chunk_layout(0);
+        assert_that!(sut.size(), eq 16);
 
         let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(2);
-        #[cfg(target_pointer_width = "32")]
-        let expected = 40;
-        #[cfg(target_pointer_width = "64")]
-        let expected = 48;
-        assert_that!(sut.size(), eq expected);
+        let sut = details.chunk_layout(2);
+        assert_that!(sut.size(), eq 32);
 
         let details = MessageTypeDetails::from::<i64, i64, bool>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(3);
-        #[cfg(target_pointer_width = "32")]
-        let expected = 24;
-        #[cfg(target_pointer_width = "64")]
-        let expected = 32;
-        assert_that!(sut.size(), eq expected);
+        let sut = details.chunk_layout(3);
+        assert_that!(sut.size(), eq 24);
 
         let details = MessageTypeDetails::from::<i64, i32, bool>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(11);
-
-        #[cfg(target_pointer_width = "32")]
-        let expected = 28;
-        #[cfg(target_pointer_width = "64")]
-        let expected = 32;
-        assert_that!(sut.size(), eq expected);
+        let sut = details.chunk_layout(11);
+        assert_that!(sut.size(), eq 24);
 
         #[derive(ZeroCopySend)]
         #[repr(C)]
@@ -380,12 +420,12 @@ mod tests {
         }
 
         let details = MessageTypeDetails::from::<i64, i64, Demo>(TypeVariant::FixedSize);
-        let sut = details.sample_layout(2);
-        #[cfg(target_pointer_width = "32")]
-        let expected = 48;
-        #[cfg(target_pointer_width = "64")]
-        let expected = 64;
-        assert_that!(sut.size(), eq expected);
+        let sut = details.chunk_layout(2);
+        assert_that!(sut.size(), eq 48);
+
+        let details = MessageTypeDetails::from::<bool, bool, u128>(TypeVariant::FixedSize);
+        let sut = details.chunk_layout(2);
+        assert_that!(sut.size(), eq 48);
     }
 
     #[test]

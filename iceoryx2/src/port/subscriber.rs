@@ -31,7 +31,6 @@
 //! # }
 //! ```
 
-use core::any::TypeId;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
@@ -56,12 +55,10 @@ use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::service::SharedServiceState;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
-use crate::service::header::publish_subscribe::Header;
-use crate::service::marker::CustomPayloadMarker;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::publish_subscribe::StaticConfig;
-use crate::{raw_sample::RawSample, sample::Sample, service};
+use crate::{sample::Sample, service};
 
 use super::ReceiveError;
 use super::details::chunk::Chunk;
@@ -293,7 +290,7 @@ impl<
                 receiver_port_id: subscriber_id.value(),
                 service_state: service.clone(),
                 message_type_details: static_config.message_type_details,
-                receiver_max_borrowed_samples: subscriber_max_borrowed_samples,
+                receiver_max_borrowed_chunks: subscriber_max_borrowed_samples,
                 enable_safe_overflow: static_config.enable_safe_overflow,
                 buffer_size,
                 tagger: CyclicTagger::new(),
@@ -370,7 +367,7 @@ impl<
                     index,
                     SenderDetails {
                         port_id: details.publisher_id.value(),
-                        number_of_samples: details.number_of_samples,
+                        number_of_chunks: details.number_of_samples,
                         max_number_of_segments: details.max_number_of_segments,
                         data_segment_type: details.data_segment_type,
                     },
@@ -413,7 +410,7 @@ impl<
             .subscriber_shared_state
             .lock()
             .receiver
-            .has_samples(ChannelId::new(0)))
+            .has_chunks(ChannelId::new(0)))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
@@ -462,13 +459,9 @@ impl<Service: service::Service, Payload: IceoryxSend + Debug, UserHeader: Debug 
         Ok(self.receive_impl()?.map(|(details, chunk)| Sample {
             subscriber_shared_state: self.subscriber_shared_state.clone(),
             details,
-            ptr: unsafe {
-                RawSample::new_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    chunk.payload.cast(),
-                )
-            },
+            chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
         }))
     }
 }
@@ -479,63 +472,12 @@ impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
     pub fn receive(&self) -> Result<Option<Sample<Service, [Payload], UserHeader>>, ReceiveError> {
-        debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
-
-        Ok(self.receive_impl()?.map(|(details, chunk)| {
-            let header_ptr = chunk.header as *const Header;
-            let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-
-            Sample {
-                subscriber_shared_state: self.subscriber_shared_state.clone(),
-                details,
-                ptr: unsafe {
-                    RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
-                        header_ptr,
-                        chunk.user_header.cast(),
-                        core::ptr::slice_from_raw_parts(
-                            chunk.payload.cast(),
-                            number_of_elements as _,
-                        ),
-                    )
-                },
-            }
-        }))
-    }
-}
-
-impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
-    Subscriber<Service, [CustomPayloadMarker], UserHeader>
-{
-    /// # Safety
-    ///
-    ///  * The number_of_elements in the [`Header`](crate::service::header::publish_subscribe::Header)
-    ///     corresponds to the payload type details that where overridden in
-    ///     `MessageTypeDetails::payload.size`.
-    ///     If the `payload.size == 8` a value for number_of_elements of 5 means that there are
-    ///     5 elements of size 8 stored in the [`Sample`].
-    ///  *  When the payload.size == 8 and the number of elements if 5, it means that the sample
-    ///     will contain a slice of 8 * 5 = 40 [`CustomPayloadMarker`]s or 40 bytes.
-    #[doc(hidden)]
-    pub unsafe fn receive_custom_payload(
-        &self,
-    ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, ReceiveError> {
-        Ok(self.receive_impl()?.map(|(details, chunk)| {
-            let header_ptr = chunk.header as *const Header;
-            let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-            let number_of_bytes = number_of_elements as usize
-                * self.subscriber_shared_state.lock().receiver.payload_size();
-
-            Sample {
-                subscriber_shared_state: self.subscriber_shared_state.clone(),
-                details,
-                ptr: unsafe {
-                    RawSample::<Header, UserHeader, [CustomPayloadMarker]>::new_slice_unchecked(
-                        header_ptr,
-                        chunk.user_header.cast(),
-                        core::ptr::slice_from_raw_parts(chunk.payload.cast(), number_of_bytes),
-                    )
-                },
-            }
+        Ok(self.receive_impl()?.map(|(details, chunk)| Sample {
+            subscriber_shared_state: self.subscriber_shared_state.clone(),
+            details,
+            chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
         }))
     }
 }

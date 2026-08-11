@@ -565,12 +565,12 @@ pub mod details {
             self
         }
 
-        fn number_of_samples_per_segment(mut self, value: usize) -> Self {
+        fn number_of_chunks_per_segment(mut self, value: usize) -> Self {
             self.number_of_samples_per_segment = value.clamp(1, usize::MAX);
             self
         }
 
-        fn receiver_max_borrowed_samples_per_channel(mut self, value: usize) -> Self {
+        fn receiver_max_borrowed_chunks_per_channel(mut self, value: usize) -> Self {
             self.max_borrowed_samples_per_channel = value.clamp(1, usize::MAX);
             self
         }
@@ -650,7 +650,7 @@ pub mod details {
             self.storage.get().number_of_segments
         }
 
-        fn max_borrowed_samples(&self) -> usize {
+        fn max_borrowed_chunks(&self) -> usize {
             self.storage.get().max_borrowed_samples
         }
 
@@ -957,7 +957,7 @@ pub mod details {
             self.storage.get().number_of_segments
         }
 
-        fn max_borrowed_samples(&self) -> usize {
+        fn max_borrowed_chunks(&self) -> usize {
             self.storage.get().max_borrowed_samples
         }
 
@@ -996,7 +996,7 @@ pub mod details {
             if *self.borrow_counter(channel_id) >= self.storage.get().max_borrowed_samples {
                 fail!(from self, with ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue,
                 "Unable to receive another sample since already {} samples were borrowed and this would exceed the max borrow value of {}.",
-                    self.borrow_counter(channel_id), self.max_borrowed_samples());
+                    self.borrow_counter(channel_id), self.max_borrowed_chunks());
             }
 
             match unsafe {

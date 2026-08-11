@@ -101,6 +101,7 @@
 //! # }
 //! ```
 
+use core::alloc::Layout;
 use core::any::TypeId;
 use core::fmt::Debug;
 use core::ptr::NonNull;
@@ -115,18 +116,22 @@ use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
+use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{
     CHANNEL_STATE_OPEN, ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
 use iceoryx2_log::{fail, warn};
 
+use crate::port::details::chunk::ChunkMut;
+use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 use crate::port::details::sender::*;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
@@ -179,8 +184,18 @@ struct OffsetAndSize {
     size: usize,
 }
 
+impl OffsetAndSize {
+    fn new(chunk: &ChunkMut) -> Self {
+        Self {
+            offset: chunk.offset.as_value(),
+            size: chunk.size(),
+        }
+    }
+}
+
+#[doc(hidden)]
 #[derive(Debug)]
-pub(crate) struct PublisherSharedState<Service: service::Service> {
+pub struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
     pub(crate) sender: Sender<Service, PublishSubscribeResources<Service>>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
@@ -193,6 +208,51 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
     port_tag: Service::StaticStorage,
+}
+
+impl<Service: service::Service> DataSegmentSharedState for PublisherSharedState<Service> {
+    fn return_loan(&self, offset: PointerOffset) {
+        self.sender.return_loaned_chunk(offset);
+    }
+
+    fn header_len(&self) -> usize {
+        self.sender.message_type_details.all_headers_len()
+    }
+
+    fn message_type_details(
+        &self,
+    ) -> service::static_config::message_type_details::MessageTypeDetails {
+        self.sender.message_type_details
+    }
+
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.sender.data_segment.allocation_strategy()
+    }
+
+    fn payload_size(&self) -> usize {
+        self.sender.payload_size()
+    }
+}
+
+impl<Service: service::Service> Grow<ShmPointer> for PublisherSharedState<Service> {
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: ContentPlacement,
+    ) -> Result<ShmPointer, AllocationGrowError> {
+        match unsafe {
+            self.sender
+                .grow(ptr, old_layout, new_layout, content_placement)
+        } {
+            Ok(ptr) => Ok(ptr),
+            Err(e) => {
+                fail!(from self, with e,
+                    "Failed to grow sample from {old_layout:?} to {new_layout:?}. [{e:?}]");
+            }
+        }
+    }
 }
 
 impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
@@ -208,20 +268,17 @@ impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
 }
 
 impl<Service: service::Service> PublisherSharedState<Service> {
-    fn add_sample_to_history(&self, offset: PointerOffset, sample_size: usize) {
+    fn add_sample_to_history(&self, chunk: &ChunkMut) {
         match &self.history {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                self.sender.borrow_sample(offset);
-                match history.push_with_overflow(OffsetAndSize {
-                    offset: offset.as_value(),
-                    size: sample_size,
-                }) {
+                self.sender.borrow_chunk(chunk.offset());
+                match history.push_with_overflow(OffsetAndSize::new(chunk)) {
                     None => (),
                     Some(old) => self
                         .sender
-                        .release_sample(PointerOffset::from_value(old.offset)),
+                        .release_chunk(PointerOffset::from_value(old.offset)),
                 }
             }
         }
@@ -286,7 +343,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
 
                 for i in history_start..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
-                    self.sender.retrieve_returned_samples();
+                    self.sender.retrieve_returned_chunks();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
                     match connection
@@ -294,10 +351,10 @@ impl<Service: service::Service> PublisherSharedState<Service> {
                         .try_send(offset, old_sample.size, ChannelId::new(0))
                     {
                         Ok(overflow) => {
-                            self.sender.borrow_sample(offset);
+                            self.sender.borrow_chunk(offset);
 
                             if let Some(old) = overflow {
-                                self.sender.release_sample(old);
+                                self.sender.release_chunk(old);
                             }
                         }
                         Err(e) => {
@@ -309,11 +366,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         }
     }
 
-    pub(crate) fn send_sample(
-        &self,
-        offset: PointerOffset,
-        sample_size: usize,
-    ) -> Result<usize, SendError> {
+    pub(crate) fn send_sample(&self, chunk: &ChunkMut) -> Result<usize, SendError> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
             fail!(from self, with SendError::ConnectionBrokenSinceSenderNoLongerExists,
@@ -323,9 +376,8 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.add_sample_to_history(offset, sample_size);
-        self.sender
-            .deliver_offset(offset, sample_size, ChannelId::new(0))
+        self.add_sample_to_history(chunk);
+        self.sender.deliver_offset(chunk, ChannelId::new(0))
     }
 }
 
@@ -454,7 +506,7 @@ impl<
 
         let sample_layout = static_config
             .message_type_details
-            .sample_layout(config.initial_max_slice_len);
+            .chunk_layout(config.initial_max_slice_len);
 
         let max_slice_len = config.initial_max_slice_len;
         let max_number_of_segments =
@@ -512,16 +564,16 @@ impl<
                     sender_port_id: port_id.value(),
                     shared_node: service.shared_node().clone(),
                     receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
-                    receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+                    receiver_max_borrowed_chunks: static_config.subscriber_max_borrowed_samples,
                     enable_safe_overflow: static_config.enable_safe_overflow,
-                    number_of_samples,
+                    number_of_chunks: number_of_samples,
                     max_number_of_segments,
                     degradation_handler: publisher_factory.degradation_handler,
                     backpressure_handler: publisher_factory.backpressure_handler,
                     service_state: service.clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: AtomicUsize::new(0),
-                    sender_max_borrowed_samples: config.max_loaned_samples,
+                    sender_max_borrowed_chunks: config.max_loaned_samples,
                     backpressure_strategy: config.backpressure_strategy,
                     message_type_details: static_config.message_type_details,
                     number_of_channels: 1,
@@ -594,6 +646,23 @@ impl<
             .sender
             .backpressure_strategy
     }
+
+    fn loan_chunk(&self, slice_len: usize) -> Result<ChunkMut, LoanError>
+    where
+        UserHeader: Default,
+    {
+        let shared_state = self.publisher_shared_state.lock();
+        let chunk = shared_state
+            .sender
+            .allocate(shared_state.sender.chunk_layout(slice_len))?;
+        let node_id = shared_state.sender.service_state.shared_node().id();
+        let header_ptr = chunk.header as *mut Header;
+        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
+        unsafe { user_header_ptr.write(UserHeader::default()) };
+
+        Ok(chunk)
+    }
 }
 
 ////////////////////////
@@ -665,21 +734,9 @@ impl<
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, LoanError> {
-        let shared_state = self.publisher_shared_state.lock();
-        let chunk = shared_state
-            .sender
-            .allocate(shared_state.sender.sample_layout(1))?;
-        let node_id = shared_state.sender.service_state.shared_node().id();
-        let header_ptr = chunk.header as *mut Header;
-        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
-        unsafe { user_header_ptr.write(UserHeader::default()) };
-
-        Ok(
-            SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
-                &self.publisher_shared_state,
-                chunk,
-            ),
+        SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
+            &self.publisher_shared_state,
+            self.loan_chunk(1)?,
         )
     }
 
@@ -728,20 +785,9 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
     pub fn loan_flatbuffer(
         &self,
     ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
-        let shared_state = self.publisher_shared_state.lock();
-        let initial_layout = shared_state.sender.sample_layout(1);
-        let chunk = shared_state.sender.allocate(initial_layout)?;
-        let node_id = shared_state.sender.service_state.shared_node().id();
-        let header_ptr = chunk.header as *mut Header;
-        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
-        unsafe { user_header_ptr.write(UserHeader::default()) };
-
-        Ok(
-            SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
-                &self.publisher_shared_state,
-                chunk,
-            ),
+        SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
+            &self.publisher_shared_state,
+            self.loan_chunk(1)?,
         )
     }
 }
@@ -847,38 +893,28 @@ impl<
         // required since Rust does not support generic specializations or negative traits
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
-        self.loan_slice_uninit_impl(number_of_elements, number_of_elements)
+        self.loan_slice_uninit_impl(number_of_elements)
     }
 
     fn loan_slice_uninit_impl(
         &self,
-        number_of_elements: usize,
-        underlying_slice_len: usize,
+        slice_len: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
-        let shared_state = self.publisher_shared_state.lock();
-        let max_slice_len = shared_state.config.initial_max_slice_len;
-        if shared_state.config.allocation_strategy == AllocationStrategy::Static
-            && max_slice_len < number_of_elements
         {
-            fail!(from self, with LoanError::ExceedsMaxLoanSize,
+            let shared_state = self.publisher_shared_state.lock();
+            let max_slice_len = shared_state.config.initial_max_slice_len;
+            if shared_state.config.allocation_strategy == AllocationStrategy::Static
+                && max_slice_len < slice_len
+            {
+                fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
-                number_of_elements, max_slice_len);
+                slice_len, max_slice_len);
+            }
         }
 
-        let sample_layout = shared_state.sender.sample_layout(number_of_elements);
-        let chunk = shared_state.sender.allocate(sample_layout)?;
-        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
-        let header_ptr = chunk.header as *mut Header;
-        let node_id = shared_state.sender.service_state.shared_node().id();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), number_of_elements as _)) };
-        unsafe { user_header_ptr.write(UserHeader::default()) };
-
-        Ok(
-            SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
-                &self.publisher_shared_state,
-                chunk,
-                underlying_slice_len,
-            ),
+        SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
+            &self.publisher_shared_state,
+            self.loan_chunk(slice_len)?,
         )
     }
 }
@@ -906,7 +942,7 @@ impl<Service: service::Service> Publisher<Service, [CustomPayloadMarker], Custom
             slice_len == 1 || shared_state.sender.payload_type_variant() == TypeVariant::Dynamic
         );
 
-        self.loan_slice_uninit_impl(slice_len, shared_state.sender.payload_size() * slice_len)
+        self.loan_slice_uninit_impl(slice_len)
     }
 }
 ////////////////////////

@@ -38,20 +38,21 @@
 use core::ops::{Deref, DerefMut};
 use core::{fmt::Debug, marker::PhantomData};
 
-use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
-use iceoryx2_log::fatal_panic;
 
+use crate::payload::number_of_elements;
+use crate::port::details::chunk::ChunkMut;
+use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
+use crate::service::marker::Flatbuffer;
 use crate::{
     pending_response::PendingResponse,
     port::client::{ClientSharedState, RequestSendError},
-    raw_sample::RawSampleMut,
     service,
 };
 
@@ -65,16 +66,12 @@ pub struct RequestMut<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) ptr: RawSampleMut<
-        service::header::request_response::RequestHeader,
-        RequestHeader,
-        RequestPayload,
-    >,
-    pub(crate) sample_size: usize,
-    pub(crate) offset_to_chunk: PointerOffset,
-    pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
-    pub(crate) was_sample_sent: AtomicBool,
+    pub(crate) chunk: ChunkMut,
+    pub(crate) shared_state: ChunkMutSharedState<Service, ClientSharedState<Service>>,
+    pub(crate) was_sample_sent: bool,
     pub(crate) channel_id: ChannelId,
+    pub(crate) _request_payload: PhantomData<RequestPayload>,
+    pub(crate) _request_header: PhantomData<RequestHeader>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -90,7 +87,7 @@ impl<
 {
     unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { core::ptr::drop_in_place(&mut this.client_shared_state) };
+        unsafe { core::ptr::drop_in_place(&mut this.shared_state) };
     }
 }
 
@@ -115,23 +112,10 @@ impl<
 > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        let client_shared_state = self.client_shared_state.lock();
-        if !unsafe { &mut *client_shared_state.available_channel_ids.get() }
-            .push(self.header().channel_id)
-        {
-            fatal_panic!(from self,
-                    "This should never happen! The channel id could not be returned.");
-        }
-
-        client_shared_state
-            .request_sender
-            .release_sample(self.offset_to_chunk);
-        if !self.was_sample_sent.load(Ordering::Relaxed) {
-            client_shared_state
-                .request_sender
-                .loan_counter
-                .fetch_sub(1, Ordering::Relaxed);
-        }
+        let _ = self.shared_state.call(|s| -> Result<(), ()> {
+            s.release_request(self.was_sample_sent, self.header());
+            Ok(())
+        });
     }
 }
 
@@ -146,16 +130,14 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "RequestMut<{}, {}, {}, {}, {}> {{ ptr: {:?}, sample_size: {}, offset_to_chunk: {:?}, was_sample_sent: {}, channel_id: {} }}",
+            "RequestMut<{}, {}, {}, {}, {}> {{ chunk: {:?}, was_sample_sent: {}, channel_id: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<RequestPayload>(),
             core::any::type_name::<RequestHeader>(),
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
-            self.ptr,
-            self.sample_size,
-            self.offset_to_chunk,
-            self.was_sample_sent.load(Ordering::Relaxed),
+            self.chunk,
+            self.was_sample_sent,
             self.channel_id.value()
         )
     }
@@ -163,7 +145,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
@@ -171,20 +153,61 @@ impl<
 {
     type Target = RequestPayload;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.payload_ptr().cast() }
     }
 }
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = [RequestPayload];
+    fn deref(&self) -> &Self::Target {
+        let payload_size = self.shared_state.payload_size();
+
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
+            )
+        }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > DerefMut for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.ptr.as_payload_mut()
+        unsafe { &mut *self.chunk.payload_mut_ptr().cast() }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> DerefMut
+    for RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        let payload_size = self.shared_state.payload_size();
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.payload_mut_ptr().cast(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
+            )
+        }
     }
 }
 
@@ -199,68 +222,116 @@ impl<
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        self.ptr.as_header_ref()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns a reference to the user defined request header.
     pub fn user_header(&self) -> &RequestHeader {
-        self.ptr.as_user_header_ref()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a mutable reference to the user defined request header.
     pub fn user_header_mut(&mut self) -> &mut RequestHeader {
-        self.ptr.as_user_header_mut()
-    }
-
-    /// Returns a reference to the user defined request payload.
-    pub fn payload(&self) -> &RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_ref()
-    }
-
-    /// Returns a mutable reference to the user defined request payload.
-    pub fn payload_mut(&mut self) -> &mut RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_mut()
+        unsafe { &mut *self.chunk.user_header_mut_ptr().cast() }
     }
 
     /// Sends the [`RequestMut`] to all connected
     /// [`Server`](crate::port::server::Server)s of the
     /// [`Service`](crate::service::Service).
     pub fn send(
-        self,
+        mut self,
     ) -> Result<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
-        let client_shared_state = self.client_shared_state.lock();
-        match client_shared_state.send_request(
-            self.offset_to_chunk,
-            self.sample_size,
-            self.channel_id,
-            self.header().request_id,
-        ) {
-            Ok(number_of_server_connections) => {
-                self.was_sample_sent.store(true, Ordering::Relaxed);
-                client_shared_state
-                    .request_sender
-                    .loan_counter
-                    .fetch_sub(1, Ordering::Relaxed);
-                drop(client_shared_state);
-                let active_request = PendingResponse {
-                    number_of_server_connections,
-                    request: self,
-                    _service: PhantomData,
-                    _response_payload: PhantomData,
-                    _response_header: PhantomData,
-                };
-                Ok(active_request)
+        let shared_state = self.shared_state.clone();
+        shared_state.call(|s| {
+            match s.send_request(&self.chunk, self.channel_id, self.header().request_id) {
+                Ok(number_of_server_connections) => {
+                    s.loan_counter.fetch_sub(1, Ordering::Relaxed);
+                    self.was_sample_sent = true;
+                    let active_request = PendingResponse {
+                        number_of_server_connections,
+                        request: self,
+                        _service: PhantomData,
+                        _response_payload: PhantomData,
+                        _response_header: PhantomData,
+                    };
+                    Ok(active_request)
+                }
+                Err(e) => Err(e),
             }
-            Err(e) => Err(e),
+        })
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
+        let payload_offset = self.header().payload_offset as usize;
+        let payload_ptr = self.chunk.payload_ptr();
+        let payload_len = self.header().number_of_elements as usize;
+
+        unsafe {
+            core::slice::from_raw_parts(
+                payload_ptr.add(payload_offset),
+                payload_len - payload_offset,
+            )
         }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(
+        &'a self,
+    ) -> Result<RequestPayload::Inner, FlatbufferError<InvalidFlatbuffer>>
+    where
+        RequestPayload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        Ok(flatbuffers::root::<RequestPayload>(self.payload_bytes())?)
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the user defined request payload.
+    pub fn payload(&self) -> &RequestPayload {
+        self.deref()
+    }
+
+    /// Returns a mutable reference to the user defined request payload.
+    pub fn payload_mut(&mut self) -> &mut RequestPayload {
+        &mut *self
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the user defined request payload.
+    pub fn payload(&self) -> &[RequestPayload] {
+        self.deref()
+    }
+
+    /// Returns a mutable reference to the user defined request payload.
+    pub fn payload_mut(&mut self) -> &mut [RequestPayload] {
+        &mut *self
     }
 }

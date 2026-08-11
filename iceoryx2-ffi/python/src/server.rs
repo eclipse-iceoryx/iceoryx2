@@ -128,28 +128,26 @@ impl Server {
     /// which can be used to respond. If no `RequestMut`s were received it returns `None`.
     pub fn receive(&self) -> PyResult<Option<ActiveRequest>> {
         match &self.value {
-            ServerType::Ipc(Some(v)) => Ok(unsafe {
-                v.receive_custom_payload()
-                    .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
-                    .map(|v| ActiveRequest {
-                        value: Parc::new(ActiveRequestType::Ipc(Some(v))),
-                        request_header_type_details: self.request_header_type_details.clone(),
-                        request_payload_type_details: self.request_payload_type_details.clone(),
-                        response_header_type_details: self.response_header_type_details.clone(),
-                        response_payload_type_details: self.response_payload_type_details.clone(),
-                    })
-            }),
-            ServerType::Local(Some(v)) => Ok(unsafe {
-                v.receive_custom_payload()
-                    .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
-                    .map(|v| ActiveRequest {
-                        value: Parc::new(ActiveRequestType::Local(Some(v))),
-                        request_header_type_details: self.request_header_type_details.clone(),
-                        request_payload_type_details: self.request_payload_type_details.clone(),
-                        response_header_type_details: self.response_header_type_details.clone(),
-                        response_payload_type_details: self.response_payload_type_details.clone(),
-                    })
-            }),
+            ServerType::Ipc(Some(v)) => Ok(v
+                .receive()
+                .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
+                .map(|v| ActiveRequest {
+                    value: Parc::new(ActiveRequestType::Ipc(Some(v))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })),
+            ServerType::Local(Some(v)) => Ok(v
+                .receive()
+                .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
+                .map(|v| ActiveRequest {
+                    value: Parc::new(ActiveRequestType::Local(Some(v))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })),
             _ => fatal_panic!(from "Server::receive()",
                 "Accessing a released server."),
         }

@@ -43,7 +43,7 @@ use super::data_segment::{DataSegmentType, DataSegmentView};
 #[derive(Clone, Copy)]
 pub(crate) struct SenderDetails {
     pub(crate) port_id: u128,
-    pub(crate) number_of_samples: usize,
+    pub(crate) number_of_chunks: usize,
     pub(crate) max_number_of_segments: u8,
     pub(crate) data_segment_type: DataSegmentType,
 }
@@ -85,7 +85,7 @@ impl<Service: service::Service, Resource: ServiceResource> Connection<Service, R
         this: &Receiver<Service, Resource>,
         data_segment_type: DataSegmentType,
         sender_port_id: u128,
-        number_of_samples: usize,
+        number_of_chunks: usize,
         max_number_of_segments: u8,
         cyclic_tagger: &CyclicTagger,
         initial_channel_state: ChannelState,
@@ -101,9 +101,9 @@ impl<Service: service::Service, Resource: ServiceResource> Connection<Service, R
                             Builder::new( &connection_name(sender_port_id, this.receiver_port_id))
                                     .config(&connection_config::<Service>(global_config))
                                     .buffer_size(this.buffer_size)
-                                    .receiver_max_borrowed_samples_per_channel(this.receiver_max_borrowed_samples)
+                                    .receiver_max_borrowed_chunks_per_channel(this.receiver_max_borrowed_chunks)
                                     .enable_safe_overflow(this.enable_safe_overflow)
-                                    .number_of_samples_per_segment(number_of_samples)
+                                    .number_of_chunks_per_segment(number_of_chunks)
                                     .number_of_channels(this.number_of_channels)
                                     .initial_channel_state(initial_channel_state)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
@@ -146,7 +146,7 @@ pub(crate) struct Receiver<Service: service::Service, Resource: ServiceResource>
         UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>,
     pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) message_type_details: MessageTypeDetails,
-    pub(crate) receiver_max_borrowed_samples: usize,
+    pub(crate) receiver_max_borrowed_chunks: usize,
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_channels: usize,
     pub(crate) connection_storage: UnsafeCell<SlotMap<Connection<Service, Resource>>>,
@@ -175,7 +175,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
             match connection.receiver.release(chunk.offset, channel_id) {
                 Ok(()) => (),
                 Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                    error!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
+                    error!(from self, "This should never happen! The publishers retrieve channel is full and the chunk cannot be returned.");
                 }
             }
         }
@@ -240,7 +240,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
             self,
             sender_details.data_segment_type,
             sender_details.port_id,
-            sender_details.number_of_samples,
+            sender_details.number_of_chunks,
             sender_details.max_number_of_segments,
             &self.tagger,
             self.initial_channel_state,
@@ -394,7 +394,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
         unsafe { *self.connections[index].get() = None };
     }
 
-    pub(crate) fn has_samples(&self, channel_id: ChannelId) -> bool {
+    pub(crate) fn has_chunks(&self, channel_id: ChannelId) -> bool {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
             if connection.receiver.has_data(channel_id) {
@@ -405,7 +405,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
         false
     }
 
-    pub(crate) fn has_samples_in_active_connection(&self, channel_id: ChannelId) -> bool {
+    pub(crate) fn has_chunks_in_active_connection(&self, channel_id: ChannelId) -> bool {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for connection_key in self.connections.iter() {
             if let Some(connection_key) = unsafe { &*connection_key.get() }
@@ -424,7 +424,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
         connection_key: SlotMapKey,
         channel_id: ChannelId,
     ) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
-        let msg = "Unable to receive another sample";
+        let msg = "Unable to receive another chunk";
 
         match connection.receiver.receive(channel_id) {
             Ok(data) => match data {
@@ -464,8 +464,8 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
                 fail!(from self, with ReceiveError::ExceedsMaxBorrows,
-                    "{} since it would exceed the maximum {} of borrowed samples.",
-                    msg, connection.receiver.max_borrowed_samples());
+                    "{} since it would exceed the maximum {} of borrowed chunks.",
+                    msg, connection.receiver.max_borrowed_chunks());
             }
         }
     }
@@ -499,7 +499,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
                     };
                     let receiver = &connection.receiver;
 
-                    if receiver.borrow_count(channel_id) == receiver.max_borrowed_samples() {
+                    if receiver.borrow_count(channel_id) == receiver.max_borrowed_chunks() {
                         continue;
                     }
 
@@ -527,7 +527,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
                     continue;
                 }
 
-                // at this point we either were able to receive a sample or iterated through all connections
+                // at this point we either were able to receive a chunk or iterated through all connections
                 break;
             }
         }
@@ -554,7 +554,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
 
             active_channel_count += 1;
             if connection.receiver.borrow_count(channel_id)
-                >= connection.receiver.max_borrowed_samples()
+                >= connection.receiver.max_borrowed_chunks()
             {
                 continue;
             } else {

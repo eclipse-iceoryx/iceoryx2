@@ -41,9 +41,11 @@
 
 use alloc::sync::Arc;
 use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_cal::zero_copy_connection::ChannelState;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -53,8 +55,12 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::ChannelId};
 use iceoryx2_log::fail;
 
+use crate::payload::number_of_elements;
+use crate::port::details::chunk::Chunk;
+use crate::port::details::chunk::ChunkMut;
 use crate::service::marker::CustomHeaderMarker;
 use crate::service::marker::CustomPayloadMarker;
+use crate::service::marker::Flatbuffer;
 use crate::{
     identifiers::{UniqueClientId, UniqueServerId},
     port::{
@@ -62,7 +68,6 @@ use crate::{
         details::chunk_details::ChunkDetails,
         server::{INVALID_CONNECTION_ID, SharedServerState},
     },
-    raw_sample::{RawSample, RawSampleMut},
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
     service::{self, static_config::message_type_details::TypeVariant},
@@ -86,11 +91,7 @@ pub struct ActiveRequest<
     ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) ptr: RawSample<
-        crate::service::header::request_response::RequestHeader,
-        RequestHeader,
-        RequestPayload,
-    >,
+    pub(crate) chunk: Chunk,
     pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<AtomicUsize>,
     pub(crate) max_loan_count: usize,
@@ -98,6 +99,8 @@ pub struct ActiveRequest<
     pub(crate) request_id: RequestId,
     pub(crate) channel_id: ChannelId,
     pub(crate) connection_id: usize,
+    pub(crate) _request_payload: PhantomData<RequestPayload>,
+    pub(crate) _request_header: PhantomData<RequestHeader>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -156,15 +159,37 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + IceoryxSend + ZeroCopySend + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > Deref for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Target = RequestPayload;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
+        unsafe { &*self.chunk.payload_ptr().cast() }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref
+    for ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = [RequestPayload];
+    fn deref(&self) -> &Self::Target {
+        let payload_size = self.shared_state.lock().request_receiver.payload_size();
+
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                number_of_elements::<RequestPayload, _>(self.header(), payload_size),
+            )
+        }
     }
 }
 
@@ -182,6 +207,76 @@ impl<
             .request_receiver
             .release_offset(&self.details, ChannelId::new(0));
         self.finish();
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn payload(&self) -> &RequestPayload {
+        self.deref()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn payload(&self) -> &[RequestPayload] {
+        self.deref()
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
+    ActiveRequest<
+        Service,
+        Flatbuffer<RequestPayload>,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
+        let payload_offset = self.header().payload_offset as usize;
+        let payload_ptr = self.chunk.payload_ptr();
+        let payload_len = self.header().number_of_elements as usize;
+
+        unsafe {
+            core::slice::from_raw_parts(
+                payload_ptr.add(payload_offset),
+                payload_len - payload_offset,
+            )
+        }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(
+        &'a self,
+    ) -> Result<RequestPayload::Inner, FlatbufferError<InvalidFlatbuffer>>
+    where
+        RequestPayload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        Ok(flatbuffers::root::<RequestPayload>(self.payload_bytes())?)
     }
 }
 
@@ -233,26 +328,17 @@ impl<
         }
     }
 
-    /// Returns a reference to the payload of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn payload(&self) -> &RequestPayload
-    where
-        RequestPayload: ZeroCopySend,
-    {
-        self.ptr.as_payload_ref()
-    }
-
     /// Returns a reference to the user_header of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn user_header(&self) -> &RequestHeader {
-        self.ptr.as_user_header_ref()
+        unsafe { &*self.chunk.user_header_ptr().cast() }
     }
 
     /// Returns a reference to the
     /// [`crate::service::header::request_response::RequestHeader`] of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
-        self.ptr.as_header_ref()
+        unsafe { &*self.chunk.header_ptr().cast() }
     }
 
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
@@ -280,6 +366,36 @@ impl<
                 Err(v) => current_loan_count = v,
             }
         }
+    }
+
+    fn loan_chunk(&self, slice_len: usize) -> Result<ChunkMut, LoanError>
+    where
+        ResponseHeader: Default,
+    {
+        self.increment_loan_counter()?;
+        let shared_state = self.shared_state.lock();
+
+        let chunk = shared_state
+            .response_sender
+            .allocate(shared_state.response_sender.chunk_layout(slice_len))?;
+
+        let header_ptr: *mut service::header::request_response::ResponseHeader =
+            chunk.header.cast();
+        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
+        unsafe {
+            header_ptr.write(service::header::request_response::ResponseHeader {
+                node_id: *shared_state.response_sender.shared_node.id(),
+                server_id: UniqueServerId(UniqueSystemId::from(
+                    shared_state.response_sender.sender_port_id,
+                )),
+                request_id: self.request_id,
+                number_of_elements: slice_len as _,
+                payload_offset: 0,
+            })
+        };
+        unsafe { user_header_ptr.write(ResponseHeader::default()) };
+
+        Ok(chunk)
     }
 }
 
@@ -323,49 +439,13 @@ impl<
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
     {
-        self.increment_loan_counter()?;
-        let shared_state = self.shared_state.lock();
-
-        let chunk = shared_state
-            .response_sender
-            .allocate(shared_state.response_sender.sample_layout(1))?;
-
-        let header_ptr: *mut service::header::request_response::ResponseHeader =
-            chunk.header.cast();
-        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
-        unsafe {
-            header_ptr.write(service::header::request_response::ResponseHeader {
-                node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueSystemId::from(
-                    shared_state.response_sender.sender_port_id,
-                )),
-                request_id: self.request_id,
-                number_of_elements: 1,
-            })
-        };
-        unsafe { user_header_ptr.write(ResponseHeader::default()) };
-
-        let ptr = unsafe {
-            RawSampleMut::<
-                service::header::request_response::ResponseHeader,
-                ResponseHeader,
-                MaybeUninit<ResponsePayload>,
-            >::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
-        };
-
-        Ok(ResponseMutUninit {
-            response: ResponseMut {
-                ptr,
-                shared_loan_counter: self.shared_loan_counter.clone(),
-                shared_state: self.shared_state.clone(),
-                offset_to_chunk: chunk.offset,
-                channel_id: self.channel_id,
-                connection_id: self.connection_id,
-                sample_size: chunk.layout().size(),
-                _response_payload: PhantomData,
-                _response_header: PhantomData,
-            },
-        })
+        ResponseMutUninit::new(
+            &self.shared_state,
+            self.loan_chunk(1)?,
+            &self.shared_loan_counter,
+            self.channel_id,
+            self.connection_id,
+        )
     }
 
     /// Sends a copy of the provided data to the
@@ -540,74 +620,34 @@ impl<
     ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
     {
         debug_assert!(TypeId::of::<ResponsePayload>() != TypeId::of::<CustomPayloadMarker>());
-        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+        unsafe { self.loan_slice_uninit_impl(slice_len) }
     }
 
     unsafe fn loan_slice_uninit_impl(
         &self,
         slice_len: usize,
-        underlying_number_of_slice_elements: usize,
     ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
     {
-        let shared_state = self.shared_state.lock();
-        let max_slice_len = shared_state.config.initial_max_slice_len;
-
-        if shared_state.config.allocation_strategy == AllocationStrategy::Static
-            && max_slice_len < slice_len
         {
-            fail!(from self, with LoanError::ExceedsMaxLoanSize,
+            let shared_state = self.shared_state.lock();
+            let max_slice_len = shared_state.config.initial_max_slice_len;
+
+            if shared_state.config.allocation_strategy == AllocationStrategy::Static
+                && max_slice_len < slice_len
+            {
+                fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
+            }
         }
 
-        self.increment_loan_counter()?;
-
-        let response_layout = shared_state.response_sender.sample_layout(slice_len);
-        let chunk = shared_state.response_sender.allocate(response_layout)?;
-
-        let header_ptr: *mut service::header::request_response::ResponseHeader =
-            chunk.header.cast();
-        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
-        unsafe {
-            header_ptr.write(service::header::request_response::ResponseHeader {
-                node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueSystemId::from(
-                    shared_state.response_sender.sender_port_id,
-                )),
-                request_id: self.request_id,
-                number_of_elements: slice_len as _,
-            })
-        };
-        unsafe { user_header_ptr.write(ResponseHeader::default()) };
-
-        let ptr = unsafe {
-            RawSampleMut::<
-                service::header::request_response::ResponseHeader,
-                ResponseHeader,
-                [MaybeUninit<ResponsePayload>],
-            >::new_unchecked(
-                header_ptr,
-                user_header_ptr,
-                core::ptr::slice_from_raw_parts_mut(
-                    chunk.payload.cast(),
-                    underlying_number_of_slice_elements,
-                ),
-            )
-        };
-
-        Ok(ResponseMutUninit {
-            response: ResponseMut {
-                ptr,
-                shared_loan_counter: self.shared_loan_counter.clone(),
-                shared_state: self.shared_state.clone(),
-                offset_to_chunk: chunk.offset,
-                channel_id: self.channel_id,
-                connection_id: self.connection_id,
-                sample_size: chunk.layout().size(),
-                _response_payload: PhantomData,
-                _response_header: PhantomData,
-            },
-        })
+        ResponseMutUninit::new(
+            &self.shared_state,
+            self.loan_chunk(slice_len)?,
+            &self.shared_loan_counter,
+            self.channel_id,
+            self.connection_id,
+        )
     }
 }
 
@@ -634,14 +674,39 @@ impl<Service: crate::service::Service>
             slice_len == 1
                 || shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
         );
-        unsafe {
-            self.loan_slice_uninit_impl(
-                slice_len,
-                shared_state.response_sender.payload_size() * slice_len,
-            )
-        }
+        unsafe { self.loan_slice_uninit_impl(slice_len) }
     }
 }
 ////////////////////////
 // END: sliced API
 ////////////////////////
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + IceoryxSend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug,
+    ResponseHeader: Default + Debug + ZeroCopySend,
+>
+    ActiveRequest<
+        Service,
+        RequestPayload,
+        RequestHeader,
+        Flatbuffer<ResponsePayload>,
+        ResponseHeader,
+    >
+{
+    /// Acquires a [`ResponseMutUninit`] with an integrated flatbuffer builder.
+    pub fn loan_flatbuffer(
+        &self,
+    ) -> Result<ResponseMutUninit<Service, Flatbuffer<ResponsePayload>, ResponseHeader>, LoanError>
+    {
+        ResponseMutUninit::new_flatbuffer(
+            &self.shared_state,
+            self.loan_chunk(1)?,
+            &self.shared_loan_counter,
+            self.channel_id,
+            self.connection_id,
+        )
+    }
+}

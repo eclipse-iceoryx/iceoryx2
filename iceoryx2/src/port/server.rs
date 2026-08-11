@@ -73,18 +73,18 @@
 //! # }
 //! ```
 
+use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
 use crate::service::SharedServiceState;
-use crate::service::marker::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
 use crate::service::resource::request_response::RequestResponseResources;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
-    raw_sample::RawSample,
     service::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
@@ -92,6 +92,7 @@ use crate::{
     },
 };
 use alloc::sync::Arc;
+use core::alloc::Layout;
 use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -100,13 +101,17 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
+use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::AllocationStrategy;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
@@ -129,8 +134,9 @@ use crate::identifiers::UniqueServerId;
 const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);
 pub(crate) const INVALID_CONNECTION_ID: usize = usize::MAX;
 
+#[doc(hidden)]
 #[derive(Debug)]
-pub(crate) struct SharedServerState<Service: service::Service> {
+pub struct SharedServerState<Service: service::Service> {
     pub(crate) config: LocalServerConfig,
     pub(crate) response_sender: Sender<Service, RequestResponseResources<Service>>,
     server_handle: UnsafeCell<Option<ContainerHandle>>,
@@ -144,6 +150,49 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
     port_tag: Service::StaticStorage,
+}
+
+impl<Service: service::Service> DataSegmentSharedState for SharedServerState<Service> {
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.response_sender.data_segment.allocation_strategy()
+    }
+
+    fn header_len(&self) -> usize {
+        self.response_sender.message_type_details.all_headers_len()
+    }
+
+    fn message_type_details(&self) -> MessageTypeDetails {
+        self.response_sender.message_type_details
+    }
+
+    fn payload_size(&self) -> usize {
+        self.response_sender.payload_size()
+    }
+
+    fn return_loan(&self, offset: PointerOffset) {
+        self.response_sender.return_loaned_chunk(offset);
+    }
+}
+
+impl<Service: service::Service> Grow<ShmPointer> for SharedServerState<Service> {
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: ContentPlacement,
+    ) -> Result<ShmPointer, AllocationGrowError> {
+        match unsafe {
+            self.response_sender
+                .grow(ptr, old_layout, new_layout, content_placement)
+        } {
+            Ok(ptr) => Ok(ptr),
+            Err(e) => {
+                fail!(from self, with e,
+                        "Failed to grow response from {old_layout:?} to {new_layout:?}. [{e:?}]");
+            }
+        }
+    }
 }
 
 impl<Service: service::Service> Abandonable for SharedServerState<Service> {
@@ -200,7 +249,7 @@ impl<Service: service::Service> SharedServerState<Service> {
                     index,
                     SenderDetails {
                         port_id: details.client_id.value(),
-                        number_of_samples: details.number_of_requests,
+                        number_of_chunks: details.number_of_requests,
                         max_number_of_segments: details.max_number_of_segments,
                         data_segment_type: details.data_segment_type,
                     },
@@ -382,7 +431,7 @@ impl<
             receiver_port_id: server_id.value(),
             service_state: service.clone(),
             message_type_details: static_config.request_message_type_details,
-            receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
+            receiver_max_borrowed_chunks: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
@@ -405,7 +454,7 @@ impl<
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let sample_layout = static_config
             .response_message_type_details
-            .sample_layout(server_factory.config.initial_max_slice_len);
+            .chunk_layout(server_factory.config.initial_max_slice_len);
         let data_segment = match data_segment_type {
             DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
                 &segment_name,
@@ -443,13 +492,12 @@ impl<
             sender_port_id: server_id.value(),
             shared_node: service.shared_node().clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
-            receiver_max_borrowed_samples: static_config
-                .max_borrowed_responses_per_pending_response,
-            sender_max_borrowed_samples: server_factory.config.max_loaned_responses_per_request
+            receiver_max_borrowed_chunks: static_config.max_borrowed_responses_per_pending_response,
+            sender_max_borrowed_chunks: server_factory.config.max_loaned_responses_per_request
                 * static_config.max_active_requests_per_client
                 * static_config.max_clients,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
-            number_of_samples: number_of_responses,
+            number_of_chunks: number_of_responses,
             max_number_of_segments,
             degradation_handler: server_factory.response_degradation_handler,
             backpressure_handler: server_factory.backpressure_handler,
@@ -546,13 +594,11 @@ impl<
         fail!(from self, when shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
         if self.enable_fire_and_forget {
-            Ok(shared_state
-                .request_receiver
-                .has_samples(REQUEST_CHANNEL_ID))
+            Ok(shared_state.request_receiver.has_chunks(REQUEST_CHANNEL_ID))
         } else {
             Ok(shared_state
                 .request_receiver
-                .has_samples_in_active_connection(REQUEST_CHANNEL_ID))
+                .has_chunks_in_active_connection(REQUEST_CHANNEL_ID))
         }
     }
 
@@ -604,14 +650,9 @@ impl<
             channel_id: header.channel_id,
             connection_id,
             shared_state: self.shared_state.clone(),
-            ptr: unsafe {
-                RawSample::new_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    chunk.payload.cast::<RequestPayload>(),
-                )
-            },
-
+            chunk,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         }
@@ -699,7 +740,6 @@ impl<
         details: ChunkDetails,
         chunk: Chunk,
         connection_id: usize,
-        number_of_elements: usize,
     ) -> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
     {
         let header =
@@ -713,16 +753,9 @@ impl<
             channel_id: header.channel_id,
             connection_id,
             shared_state: self.shared_state.clone(),
-            ptr: unsafe {
-                RawSample::new_slice_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    core::ptr::slice_from_raw_parts(
-                        chunk.payload.cast::<RequestPayload>(),
-                        number_of_elements as _,
-                    ),
-                )
-            },
+            chunk,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         }
@@ -783,12 +816,8 @@ impl<
                         .response_sender
                         .get_connection_id_of(header.client_id.value())
                     {
-                        let active_request = self.create_active_request(
-                            details,
-                            chunk,
-                            connection_id,
-                            header.number_of_elements() as _,
-                        );
+                        let active_request =
+                            self.create_active_request(details, chunk, connection_id);
 
                         if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;
@@ -814,63 +843,5 @@ impl<
     /// Returns the maximum initial slice length configured for this [`Server`].
     pub fn initial_max_slice_len(&self) -> usize {
         self.shared_state.lock().config.initial_max_slice_len
-    }
-}
-
-impl<
-    Service: service::Service,
-    RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + IceoryxSend + ?Sized,
-    ResponseHeader: Debug + ZeroCopySend,
-> Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
-{
-    #[doc(hidden)]
-    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
-    pub unsafe fn receive_custom_payload(
-        &self,
-    ) -> Result<
-        Option<
-            ActiveRequest<
-                Service,
-                [CustomPayloadMarker],
-                RequestHeader,
-                ResponsePayload,
-                ResponseHeader,
-            >,
-        >,
-        ReceiveError,
-    > {
-        let shared_state = self.shared_state.lock();
-        loop {
-            match self.receive_impl()? {
-                Some((details, chunk)) => {
-                    let header = unsafe {
-                        &*(chunk.header as *const service::header::request_response::RequestHeader)
-                    };
-                    let number_of_elements = (*header).number_of_elements();
-                    let number_of_bytes =
-                        number_of_elements as usize * shared_state.request_receiver.payload_size();
-
-                    if let Some(connection_id) = shared_state
-                        .response_sender
-                        .get_connection_id_of(header.client_id.value())
-                    {
-                        let active_request = self.create_active_request(
-                            details,
-                            chunk,
-                            connection_id,
-                            number_of_bytes,
-                        );
-
-                        if !self.enable_fire_and_forget && !active_request.is_connected() {
-                            continue;
-                        }
-
-                        return Ok(Some(active_request));
-                    }
-                }
-                None => return Ok(None),
-            }
-        }
     }
 }

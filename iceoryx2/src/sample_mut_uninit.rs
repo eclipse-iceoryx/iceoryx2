@@ -90,25 +90,26 @@
 //! # }
 //! ```
 
-use core::marker::PhantomData;
-use core::{fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
-use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-
-use flatbuffers::{FlatBufferBuilder, WIPOffset};
-use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::shared_memory::ShmPointer;
-
+use crate::payload::number_of_elements;
+use crate::port::LoanError;
 use crate::port::details::chunk::ChunkMut;
+use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::{
     port::publisher::PublisherSharedState,
-    sample_mut::{SampleMut, SampleMutSharedState},
+    sample_mut::SampleMut,
     service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
+use core::marker::PhantomData;
+use core::{fmt::Debug, mem::MaybeUninit};
+use flatbuffers::{FlatBufferBuilder, WIPOffset};
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_flatbuffers::ResizableMemory;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_log::fail;
 
 /// The memory used inside the [`FlatBufferBuilder`].
-pub type FlatbufferMemory<Service> = ResizableMemory<ShmPointer, SampleMutSharedState<Service>>;
+pub type FlatbufferMemory<Service> =
+    ResizableMemory<ShmPointer, ChunkMutSharedState<Service, PublisherSharedState<Service>>>;
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan_uninit()`]
@@ -122,7 +123,7 @@ pub struct SampleMutUninit<
     Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
-    shared_state: SampleMutSharedState<Service>,
+    shared_state: ChunkMutSharedState<Service, PublisherSharedState<Service>>,
     chunk: ChunkMut,
     flatbuffer_builder: Option<FlatBufferBuilder<'static, FlatbufferMemory<Service>>>,
     _payload: PhantomData<Payload>,
@@ -147,62 +148,26 @@ impl<
 {
     #[doc(hidden)]
     pub fn __internal_available_payload_memory(&self) -> usize {
-        let shared_state_guard = self.shared_state.state.lock();
-        let guard = shared_state_guard.publisher_shared_state.lock();
-        let reserved_header_len = guard.sender.message_type_details.all_headers_len();
-        self.chunk.layout().size() - reserved_header_len
+        self.shared_state
+            .call(|s| -> Result<usize, ()> {
+                Ok(self.chunk.size - s.sender.message_type_details.all_headers_len())
+            })
+            .expect("Always returns ok.")
     }
 
     #[doc(hidden)]
-    pub fn __internal_create_resizable_memory_builder(
-        &self,
-    ) -> ResizableMemory<ShmPointer, SampleMutSharedState<Service>> {
-        let shared_state_guard = self.shared_state.state.lock();
-        let guard = shared_state_guard.publisher_shared_state.lock();
-        let allocation_strategy = guard.sender.data_segment.allocation_strategy();
-        let reserved_header_len = guard.sender.message_type_details.all_headers_len();
-        self.shared_state
-            .state
-            .lock()
-            .slice_len
-            .store(self.chunk.layout().size(), Ordering::Relaxed);
-
-        ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
-            .allocation_strategy(allocation_strategy)
-            .initial_layout(self.chunk.layout())
-            .reserved_header_len(reserved_header_len)
-            .create(self.shared_state.clone())
+    pub fn __internal_create_resizable_memory(&self) -> FlatbufferMemory<Service> {
+        self.shared_state.create_resizable_memory(&self.chunk)
     }
 
     #[doc(hidden)]
     pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8) {
-        let message_type_details = self
-            .shared_state
-            .state
-            .lock()
-            .publisher_shared_state
-            .lock()
-            .sender
-            .message_type_details;
-
-        self.chunk.header = self
-            .shared_state
-            .state
-            .lock()
-            .shm_raw_ptr
-            .load(Ordering::Relaxed) as *mut u8;
-        self.chunk.user_header = message_type_details
-            .user_header_ptr_from_header(self.chunk.header)
-            .cast_mut();
-        self.chunk.payload = message_type_details
-            .payload_ptr_from_header(self.chunk.header)
-            .cast_mut();
-
-        let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
+        let memory_structure = self.shared_state.memory_structure(payload_ptr);
+        self.chunk = memory_structure.chunk;
 
         let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
-        header.number_of_elements = self.shared_state.slice_len() as u64;
-        header.payload_offset = payload_offset as u64;
+        header.number_of_elements = memory_structure.payload_size;
+        header.payload_offset = memory_structure.payload_offset;
     }
 }
 
@@ -212,24 +177,25 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     pub(crate) fn new_flatbuffer(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
-    ) -> Self {
+    ) -> Result<Self, LoanError> {
+        let shared_state = fail!(from "SampleMutUninit::new_flatbuffer()",
+            when ChunkMutSharedState::new(publisher_shared_state, &chunk),
+            with LoanError::InternalFailure,
+            "Unable to create the sample since the underlying shared state could not be initialized.");
+
         let mut new_self = Self {
             flatbuffer_builder: None,
-            shared_state: SampleMutSharedState::new(
-                publisher_shared_state,
-                chunk.to_shm_pointer(),
-                chunk.layout().size(),
-            ),
+            shared_state,
             chunk,
             _payload: PhantomData,
             _user_header: PhantomData,
         };
 
         new_self.flatbuffer_builder = Some(FlatBufferBuilder::new_in(
-            new_self.__internal_create_resizable_memory_builder(),
+            new_self.__internal_create_resizable_memory(),
         ));
 
-        new_self
+        Ok(new_self)
     }
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
@@ -237,7 +203,9 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     pub fn flatbuffer_builder(
         &mut self,
     ) -> &mut FlatBufferBuilder<'static, FlatbufferMemory<Service>> {
-        self.flatbuffer_builder.as_mut().unwrap()
+        self.flatbuffer_builder
+            .as_mut()
+            .expect("Flatbuffer builder is set when using Flatbuffer marker.")
     }
 
     /// Finalize the Flatbuffer and initialize the sample. After that call the content can no longer be
@@ -347,27 +315,35 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    Payload: IceoryxSend + ZeroCopySend + Debug,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
-> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
+> SampleMutUninit<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, LoanError> {
+        let shared_state = fail!(from "SampleMutUninit::new()",
+            when ChunkMutSharedState::new(publisher_shared_state, &chunk),
+            with LoanError::InternalFailure,
+            "Unable to create the sample since the underlying shared state could not be initialized.");
+
+        Ok(Self {
             flatbuffer_builder: None,
-            shared_state: SampleMutSharedState::new(
-                publisher_shared_state,
-                chunk.to_shm_pointer(),
-                1,
-            ),
+            shared_state,
             chunk,
             _payload: PhantomData,
             _user_header: PhantomData,
-        }
+        })
     }
+}
 
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + ZeroCopySend + Debug,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
+{
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
@@ -501,24 +477,6 @@ impl<
 impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
-    pub(crate) fn new(
-        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-        chunk: ChunkMut,
-        underyling_slice_len: usize,
-    ) -> Self {
-        Self {
-            flatbuffer_builder: None,
-            shared_state: SampleMutSharedState::new(
-                publisher_shared_state,
-                chunk.to_shm_pointer(),
-                underyling_slice_len,
-            ),
-            chunk,
-            _payload: PhantomData,
-            _user_header: PhantomData,
-        }
-    }
-
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
@@ -546,10 +504,11 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// # }
     /// ```
     pub fn payload(&self) -> &[MaybeUninit<Payload>] {
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &*core::ptr::slice_from_raw_parts(
                 self.chunk.payload_ptr().cast(),
-                self.shared_state.slice_len(),
+                number_of_elements::<Payload, _>(self.header(), payload_size),
             )
         }
     }
@@ -580,10 +539,11 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut [MaybeUninit<Payload>] {
+        let payload_size = self.shared_state.payload_size();
         unsafe {
             &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.payload_mut_ptr().cast(),
-                self.shared_state.slice_len(),
+                number_of_elements::<Payload, _>(self.header(), payload_size),
             )
         }
     }

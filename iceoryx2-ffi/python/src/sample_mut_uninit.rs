@@ -101,7 +101,7 @@ impl SampleMutUninit {
         match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(v) => {
                 let mut sample = v.take().unwrap();
-                let mut memory_buffer = sample.__internal_create_resizable_memory_builder();
+                let mut memory_buffer = sample.__internal_create_resizable_memory();
                 if memory_buffer.len() < buffer_len {
                     memory_buffer
                         .grow_downwards_with_size(buffer_len, 0)
@@ -126,7 +126,7 @@ impl SampleMutUninit {
             }
             SampleMutUninitType::Local(v) => {
                 let mut sample = v.take().unwrap();
-                let mut memory_buffer = sample.__internal_create_resizable_memory_builder();
+                let mut memory_buffer = sample.__internal_create_resizable_memory();
                 if memory_buffer.len() < buffer_len {
                     memory_buffer
                         .grow_downwards_with_size(buffer_len, 0)

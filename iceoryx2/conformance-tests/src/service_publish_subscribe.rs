@@ -17,6 +17,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod service_publish_subscribe {
     use alloc::{format, sync::Arc, vec, vec::Vec};
     use core::time::Duration;
+    use iceoryx2::service::header::payload_header::PayloadHeader;
 
     use iceoryx2::config::Config;
     use iceoryx2::port::publisher::PublisherCreateError;
@@ -3502,10 +3503,50 @@ pub mod service_publish_subscribe {
 
         unsafe { sample.assume_init().send().unwrap() };
 
-        let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
+        let sample = subscriber.receive().unwrap().unwrap();
         assert_that!(sample.payload(), len type_details.size());
         assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+    }
+
+    #[conformance_test]
+    pub fn communication_with_custom_increasing_payload_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::Dynamic);
+        type_detail_set_size(&mut type_details, 1024);
+        type_detail_set_alignment(&mut type_details, 1024);
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
+                .__internal_set_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for number_of_elements in 1..100 {
+            let sample = unsafe { publisher.loan_custom_payload(number_of_elements).unwrap() };
+            assert_that!(sample.payload(), len type_details.size() * number_of_elements);
+            assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
+            assert_that!(sample.header().number_of_elements(), eq number_of_elements as u64);
+            unsafe { sample.assume_init().send().unwrap() };
+
+            let sample = subscriber.receive().unwrap().unwrap();
+            assert_that!(sample.payload(), len type_details.size() * number_of_elements);
+            assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
+            assert_that!(sample.header().number_of_elements(), eq number_of_elements as u64);
+        }
     }
 
     #[conformance_test]
@@ -3541,7 +3582,7 @@ pub mod service_publish_subscribe {
 
         unsafe { sample.assume_init().send().unwrap() };
 
-        let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
+        let sample = subscriber.receive().unwrap().unwrap();
         assert_that!(sample.payload(), len type_details.size() * NUMBER_OF_ELEMENTS);
         assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);

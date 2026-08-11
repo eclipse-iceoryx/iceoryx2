@@ -17,3 +17,6 @@ pub mod publish_subscribe;
 /// Payload headers used by
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 pub mod request_response;
+
+/// The header of every data-flow payload.
+pub mod payload_header;

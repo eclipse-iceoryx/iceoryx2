@@ -17,10 +17,9 @@ use crate::{
     api::{AssertNonNullHandle, HandleToType, IntoCInt, iox2_service_type_e},
 };
 use core::ffi::c_int;
-use iceoryx2::sample_mut::SampleMutSharedState;
+use iceoryx2::sample_mut_uninit::FlatbufferMemory;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_bb_flatbuffers::ResizableMemory;
-use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::AllocationGrowError};
+use iceoryx2_cal::shm_allocator::AllocationGrowError;
 use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 use core::mem::ManuallyDrop;
@@ -52,21 +51,17 @@ impl IntoCInt for AllocationGrowError {
 }
 
 pub(super) union ResizableMemoryPublishSubscribeUnion {
-    ipc: ManuallyDrop<ResizableMemory<ShmPointer, SampleMutSharedState<crate::IpcService>>>,
-    local: ManuallyDrop<ResizableMemory<ShmPointer, SampleMutSharedState<crate::LocalService>>>,
+    ipc: ManuallyDrop<FlatbufferMemory<crate::IpcService>>,
+    local: ManuallyDrop<FlatbufferMemory<crate::LocalService>>,
 }
 
 impl ResizableMemoryPublishSubscribeUnion {
-    pub(super) fn new_ipc(
-        value: ResizableMemory<ShmPointer, SampleMutSharedState<crate::IpcService>>,
-    ) -> Self {
+    pub(super) fn new_ipc(value: FlatbufferMemory<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(value),
         }
     }
-    pub(super) fn new_local(
-        value: ResizableMemory<ShmPointer, SampleMutSharedState<crate::LocalService>>,
-    ) -> Self {
+    pub(super) fn new_local(value: FlatbufferMemory<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(value),
         }

@@ -22,6 +22,7 @@ use iceoryx2::port::LoanError;
 use iceoryx2::port::SendError;
 use iceoryx2::port::client::RequestSendError;
 use iceoryx2::request_mut_uninit::RequestMutUninit;
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
@@ -138,7 +139,7 @@ impl RequestMutUninitUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<RequestMutUninitUnion>
 pub struct iox2_request_mut_storage_t {
-    internal: [u8; 80], // magic number obtained with size_of::<Option<RequestMutUninitUnion>>()
+    internal: [u8; 224], // magic number obtained with size_of::<Option<RequestMutUninitUnion>>()
 }
 
 #[repr(C)]

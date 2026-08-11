@@ -136,6 +136,8 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {
+        let origin = "PublishSubscribeResources::remove_stale_resources()";
+        let msg = "Failed to remove the stale publish subscribe resources";
         if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
             &PAYLOAD_TYPE_DEFINITION,
             config,
@@ -143,7 +145,15 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         ) {
             fail!(from "PublishSubscribeResources::remove_stale_resources()",
                 with e,
-                "Failed to remove the stale publish subscribe resources since the type definition storage could not be removed. [{e:?}]");
+                "{msg} since the type definition storage could not be removed. [{e:?}]");
+        }
+
+        if let Err(e) =
+            TypeDefinition::remove_resource_directory::<ServiceType>(config, static_config)
+        {
+            fail!(from origin,
+                with e,
+                "{msg} since the resource directory could not be removed. [{e:?}]");
         }
 
         Ok(())

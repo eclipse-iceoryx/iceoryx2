@@ -10,14 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::alloc::Layout;
-
+use crate::service::static_config::message_type_details::MessageTypeDetails;
 use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
 
-use crate::service::static_config::message_type_details::MessageTypeDetails;
-
 #[derive(Debug)]
-pub(crate) struct Chunk {
+pub struct Chunk {
     pub(crate) header: *const u8,
     pub(crate) user_header: *const u8,
     pub(crate) payload: *const u8,
@@ -32,19 +29,31 @@ impl Chunk {
             header: offset as *const u8,
         }
     }
+
+    pub fn header_ptr(&self) -> *const u8 {
+        self.header
+    }
+
+    pub fn user_header_ptr(&self) -> *const u8 {
+        self.user_header
+    }
+
+    pub fn payload_ptr(&self) -> *const u8 {
+        self.payload
+    }
 }
 
-#[derive(Debug)]
-pub(crate) struct ChunkMut {
+#[derive(Debug, Clone)]
+pub struct ChunkMut {
     pub(crate) offset: PointerOffset,
     pub(crate) header: *mut u8,
     pub(crate) user_header: *mut u8,
     pub(crate) payload: *mut u8,
-    layout: Layout,
+    pub(crate) size: usize,
 }
 
 impl ChunkMut {
-    pub(crate) fn new(
+    pub fn new(
         message_type_details: &MessageTypeDetails,
         shm_pointer: ShmPointer,
         size: usize,
@@ -58,47 +67,46 @@ impl ChunkMut {
                 .cast_mut(),
             header: shm_pointer.data_ptr,
             offset: shm_pointer.offset,
-            layout: unsafe {
-                Layout::from_size_align_unchecked(
-                    size,
-                    message_type_details.sample_layout(1).align(),
-                )
-            },
+            size,
         }
     }
 
-    pub(crate) fn header_ptr(&self) -> *const u8 {
+    pub fn offset(&self) -> PointerOffset {
+        self.offset
+    }
+
+    pub fn header_ptr(&self) -> *const u8 {
         self.header
     }
 
-    pub(crate) fn header_mut_ptr(&mut self) -> *mut u8 {
+    pub fn header_mut_ptr(&mut self) -> *mut u8 {
         self.header
     }
 
-    pub(crate) fn user_header_ptr(&self) -> *const u8 {
+    pub fn user_header_ptr(&self) -> *const u8 {
         self.user_header
     }
 
-    pub(crate) fn user_header_mut_ptr(&mut self) -> *mut u8 {
+    pub fn user_header_mut_ptr(&mut self) -> *mut u8 {
         self.user_header
     }
 
-    pub(crate) fn payload_ptr(&self) -> *const u8 {
+    pub fn payload_ptr(&self) -> *const u8 {
         self.payload
     }
 
-    pub(crate) fn payload_mut_ptr(&mut self) -> *mut u8 {
+    pub fn payload_mut_ptr(&mut self) -> *mut u8 {
         self.payload
     }
 
-    pub(crate) fn to_shm_pointer(&self) -> ShmPointer {
+    pub fn to_shm_pointer(&self) -> ShmPointer {
         ShmPointer {
             offset: self.offset,
             data_ptr: self.header,
         }
     }
 
-    pub(crate) fn layout(&self) -> Layout {
-        self.layout
+    pub fn size(&self) -> usize {
+        self.size
     }
 }

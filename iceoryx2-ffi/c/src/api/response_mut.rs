@@ -14,7 +14,9 @@
 
 use core::{ffi::c_int, ffi::c_void, mem::ManuallyDrop};
 
-use iceoryx2::response_mut_uninit::ResponseMutUninit;
+use iceoryx2::{
+    response_mut_uninit::ResponseMutUninit, service::header::payload_header::PayloadHeader,
+};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::{IOX2_OK, api::IntoCInt};
@@ -50,7 +52,7 @@ impl ResponseMutUninitUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ResponseMutUninitUnion>
 pub struct iox2_response_mut_storage_t {
-    internal: [u8; 88], // magic number obtained with size_of::<Option<ResponseMutUninitUnion>>()
+    internal: [u8; 240], // magic number obtained with size_of::<Option<ResponseMutUninitUnion>>()
 }
 
 #[repr(C)]

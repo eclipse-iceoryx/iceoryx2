@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use iceoryx2::service::header::request_response::ResponseHeader;
+use iceoryx2::service::header::{payload_header::PayloadHeader, request_response::ResponseHeader};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::{
@@ -25,7 +25,7 @@ use crate::{
 #[repr(C)]
 #[repr(align(8))] // core::mem::align_of::<Option<ResponseHeader>>()
 pub struct iox2_response_header_storage_t {
-    internal: [u8; 56], // core::mem::size_of::<Option<ResponseHeader>>()
+    internal: [u8; 64], // core::mem::size_of::<Option<ResponseHeader>>()
 }
 
 #[repr(C)]
