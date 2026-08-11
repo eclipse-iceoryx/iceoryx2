@@ -244,6 +244,22 @@ class ServiceBuilderRequestResponse {
                                                                     NewResponseUserHeader,
                                                                     S>&&;
 
+    /// Sets the path to the request flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    template <typename U = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
+    auto request_flatbuffer_schema_path(
+        const bb::FilePath&
+            value) && -> ServiceBuilderRequestResponse<U, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>&&;
+
+    /// Sets the path to the request flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    template <typename U = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
+    auto response_flatbuffer_schema_path(
+        const bb::FilePath&
+            value) && -> ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, U, ResponseUserHeader, S>&&;
+
     /// Returns the builder as an r-value so the fluent chain can be resumed after a free function,
     /// such as [`set_request_header_type_details()`] or [`set_request_payload_type_details()`], has
     /// been applied to the named builder.
@@ -310,6 +326,16 @@ class ServiceBuilderRequestResponse {
     friend auto set_response_payload_type_details(ServiceBuilderRequestResponse<ReqP, ReqH, ResP, ResH, St>& builder,
                                                   const TypeDetail& value)
         -> std::enable_if_t<std::is_same<ResP, bb::Slice<CustomPayloadMarker>>::value>;
+
+    template <typename U = RequestPayload>
+    auto set_request_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void>;
+    template <typename U = RequestPayload>
+    auto set_request_type_definition_name_hint() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void>;
+
+    template <typename U = ResponsePayload>
+    auto set_response_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void>;
+    template <typename U = ResponsePayload>
+    auto set_response_type_definition_name_hint() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void>;
 
     explicit ServiceBuilderRequestResponse(iox2_service_builder_h handle);
 
@@ -538,6 +564,82 @@ template <typename RequestPayload,
           typename ResponsePayload,
           typename ResponseUserHeader,
           ServiceType S>
+template <typename U, typename>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    request_flatbuffer_schema_path(
+        const bb::FilePath&
+            value) && -> ServiceBuilderRequestResponse<U, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>&& {
+    iox2_service_builder_request_response_set_request_flatbuffer_schema_path(
+        &m_handle, value.as_string().unchecked_access().c_str());
+    return std::move(*this);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+template <typename U, typename>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    response_flatbuffer_schema_path(
+        const bb::FilePath&
+            value) && -> ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, U, ResponseUserHeader, S>&& {
+    iox2_service_builder_request_response_set_response_flatbuffer_schema_path(
+        &m_handle, value.as_string().unchecked_access().c_str());
+    return std::move(*this);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+template <typename U>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    set_request_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void> {
+    auto type_name = iox2::internal::get_type_name<typename RequestPayload::ValueType>();
+    iox2_service_builder_request_response_request_type_definition_name_hint(
+        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), "", 0);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+template <typename U>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    set_response_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void> {
+    auto type_name = iox2::internal::get_type_name<typename RequestPayload::ValueType>();
+    iox2_service_builder_request_response_response_type_definition_name_hint(
+        &m_handle, type_name.unchecked_access().c_str(), type_name.size(), "", 0);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+template <typename U>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    set_request_type_definition_name_hint() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void> {
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+template <typename U>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    set_response_type_definition_name_hint() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void> {
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
 inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     // NOLINTNEXTLINE(readability-function-size) the size cannot easily be reduced due to the amount of builder parameter
     set_parameters() {
@@ -607,6 +709,9 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     } else {
         derive_response_payload_type_details();
     }
+
+    set_request_type_definition_name_hint();
+    set_response_type_definition_name_hint();
 }
 
 template <typename RequestPayload,
