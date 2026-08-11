@@ -439,13 +439,13 @@ impl<
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
     {
-        Ok(ResponseMutUninit::new(
+        ResponseMutUninit::new(
             &self.shared_state,
-            &self.loan_chunk(1)?,
+            self.loan_chunk(1)?,
             &self.shared_loan_counter,
             self.channel_id,
             self.connection_id,
-        ))
+        )
     }
 
     /// Sends a copy of the provided data to the
@@ -641,13 +641,13 @@ impl<
             }
         }
 
-        Ok(ResponseMutUninit::new(
+        ResponseMutUninit::new(
             &self.shared_state,
-            &self.loan_chunk(slice_len)?,
+            self.loan_chunk(slice_len)?,
             &self.shared_loan_counter,
             self.channel_id,
             self.connection_id,
-        ))
+        )
     }
 }
 
@@ -701,12 +701,12 @@ impl<
         &self,
     ) -> Result<ResponseMutUninit<Service, Flatbuffer<ResponsePayload>, ResponseHeader>, LoanError>
     {
-        Ok(ResponseMutUninit::new_flatbuffer(
+        ResponseMutUninit::new_flatbuffer(
             &self.shared_state,
             self.loan_chunk(1)?,
             &self.shared_loan_counter,
             self.channel_id,
             self.connection_id,
-        ))
+        )
     }
 }

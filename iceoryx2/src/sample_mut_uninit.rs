@@ -91,6 +91,7 @@
 //! ```
 
 use crate::payload::number_of_elements;
+use crate::port::LoanError;
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::chunk_mut_shared_state::ChunkMutSharedState;
 use crate::{
@@ -104,6 +105,7 @@ use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_log::fail;
 
 /// The memory used inside the [`FlatBufferBuilder`].
 pub type FlatbufferMemory<Service> =
@@ -175,10 +177,15 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     pub(crate) fn new_flatbuffer(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
-    ) -> Self {
+    ) -> Result<Self, LoanError> {
+        let shared_state = fail!(from "SampleMutUninit::new_flatbuffer()",
+            when ChunkMutSharedState::new(publisher_shared_state, &chunk),
+            with LoanError::InternalFailure,
+            "Unable to create the sample since the underlying shared state could not be initialized.");
+
         let mut new_self = Self {
             flatbuffer_builder: None,
-            shared_state: ChunkMutSharedState::new(publisher_shared_state, &chunk).unwrap(),
+            shared_state,
             chunk,
             _payload: PhantomData,
             _user_header: PhantomData,
@@ -188,7 +195,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
             new_self.__internal_create_resizable_memory(),
         ));
 
-        new_self
+        Ok(new_self)
     }
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
@@ -315,14 +322,19 @@ impl<
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, LoanError> {
+        let shared_state = fail!(from "SampleMutUninit::new()",
+            when ChunkMutSharedState::new(publisher_shared_state, &chunk),
+            with LoanError::InternalFailure,
+            "Unable to create the sample since the underlying shared state could not be initialized.");
+
+        Ok(Self {
             flatbuffer_builder: None,
-            shared_state: ChunkMutSharedState::new(publisher_shared_state, &chunk).unwrap(),
+            shared_state,
             chunk,
             _payload: PhantomData,
             _user_header: PhantomData,
-        }
+        })
     }
 }
 

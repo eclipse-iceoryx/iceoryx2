@@ -41,10 +41,12 @@ use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::{shared_memory::ShmPointer, zero_copy_connection::ChannelId};
+use iceoryx2_log::fail;
 
 use crate::{
     payload::number_of_elements,
     port::{
+        LoanError,
         client::ClientSharedState,
         details::{chunk::ChunkMut, chunk_mut_shared_state::ChunkMutSharedState},
     },
@@ -148,10 +150,15 @@ impl<
         shared_state: &Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
         chunk: ChunkMut,
         channel_id: ChannelId,
-    ) -> Self {
+    ) -> Result<Self, LoanError> {
+        let shared_state = fail!(from "RequestMutUninit::new_flatbuffer()",
+            when ChunkMutSharedState::new(shared_state, &chunk),
+            with LoanError::InternalFailure,
+            "Unable to create the request since the underlying shared state could not be initialized.");
+
         let mut new_self = Self {
             flatbuffer_builder: None,
-            shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
+            shared_state,
             chunk,
             channel_id,
             assume_init_was_called: false,
@@ -165,7 +172,7 @@ impl<
             new_self.__internal_create_resizable_memory(),
         ));
 
-        new_self
+        Ok(new_self)
     }
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
@@ -249,10 +256,14 @@ impl<
         shared_state: &Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
         chunk: ChunkMut,
         channel_id: ChannelId,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, LoanError> {
+        let shared_state = fail!(from "RequestMutUninit::new()",
+            when ChunkMutSharedState::new(shared_state, &chunk),
+            with LoanError::InternalFailure,
+            "Unable to create the request since the underlying shared state could not be initialized.");
+        Ok(Self {
             flatbuffer_builder: None,
-            shared_state: ChunkMutSharedState::new(shared_state, &chunk).unwrap(),
+            shared_state,
             chunk,
             channel_id,
             assume_init_was_called: false,
@@ -260,7 +271,7 @@ impl<
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
-        }
+        })
     }
 
     /// Returns a reference to the iceoryx2 internal

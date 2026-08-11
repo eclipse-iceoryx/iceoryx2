@@ -788,11 +788,7 @@ impl<
     > {
         let (chunk, channel_id) = self.loan_chunk(1)?;
 
-        Ok(RequestMutUninit::new_flatbuffer(
-            &self.client_shared_state,
-            chunk,
-            channel_id,
-        ))
+        RequestMutUninit::new_flatbuffer(&self.client_shared_state, chunk, channel_id)
     }
 }
 
@@ -893,11 +889,7 @@ impl<
     > {
         let (chunk, channel_id) = self.loan_chunk(1)?;
 
-        Ok(RequestMutUninit::new(
-            &self.client_shared_state,
-            chunk,
-            channel_id,
-        ))
+        RequestMutUninit::new(&self.client_shared_state, chunk, channel_id)
     }
 
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
@@ -1132,11 +1124,7 @@ impl<
 
         let (chunk, channel_id) = self.loan_chunk(slice_len)?;
 
-        Ok(RequestMutUninit::new(
-            &self.client_shared_state,
-            chunk,
-            channel_id,
-        ))
+        RequestMutUninit::new(&self.client_shared_state, chunk, channel_id)
     }
 }
 

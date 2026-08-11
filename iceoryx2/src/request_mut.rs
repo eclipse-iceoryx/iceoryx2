@@ -246,9 +246,9 @@ impl<
     > {
         let shared_state = self.shared_state.clone();
         shared_state.call(|s| {
-            s.loan_counter.fetch_sub(1, Ordering::Relaxed);
             match s.send_request(&self.chunk, self.channel_id, self.header().request_id) {
                 Ok(number_of_server_connections) => {
+                    s.loan_counter.fetch_sub(1, Ordering::Relaxed);
                     self.was_sample_sent = true;
                     let active_request = PendingResponse {
                         number_of_server_connections,

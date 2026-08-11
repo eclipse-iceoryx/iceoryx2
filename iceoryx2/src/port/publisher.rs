@@ -734,11 +734,9 @@ impl<
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, LoanError> {
-        Ok(
-            SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
-                &self.publisher_shared_state,
-                self.loan_chunk(1)?,
-            ),
+        SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
+            &self.publisher_shared_state,
+            self.loan_chunk(1)?,
         )
     }
 
@@ -787,11 +785,9 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
     pub fn loan_flatbuffer(
         &self,
     ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
-        Ok(
-            SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
-                &self.publisher_shared_state,
-                self.loan_chunk(1)?,
-            ),
+        SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
+            &self.publisher_shared_state,
+            self.loan_chunk(1)?,
         )
     }
 }
@@ -916,11 +912,9 @@ impl<
             }
         }
 
-        Ok(
-            SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
-                &self.publisher_shared_state,
-                self.loan_chunk(slice_len)?,
-            ),
+        SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
+            &self.publisher_shared_state,
+            self.loan_chunk(slice_len)?,
         )
     }
 }
