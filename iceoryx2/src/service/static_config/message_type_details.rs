@@ -191,10 +191,8 @@ impl MessageTypeDetails {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    align(
-                        align(self.header.size, self.user_header.alignment) + self.user_header.size,
-                        self.payload.alignment,
-                    ) + align(self.payload.size, self.payload.alignment) * number_of_elements,
+                    self.all_headers_len()
+                        + align(self.payload.size, self.payload.alignment) * number_of_elements,
                     max_alignment,
                 ),
                 max_alignment,
