@@ -31,6 +31,8 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # version: v0.0.11
+        with:
+          version: "v0.16.0" # upgrade once sccache is fixed: https://github.com/eclipse-iceoryx/iceoryx2/issues/809#issuecomment-5264837759
 
       - name: Set caching env vars on non-Windows
         run: |
