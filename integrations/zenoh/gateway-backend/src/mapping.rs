@@ -72,6 +72,15 @@ mod tests {
     }
 
     #[test]
+    fn admitted_services_are_mapped_unchanged() {
+        let sut = AllowListMapping::new(AllowList::all());
+        let service = service_description("service");
+
+        assert_that!(sut.remote(&service), eq Some(service.clone()));
+        assert_that!(sut.local::<ipc::Service>(&service), eq Some(service));
+    }
+
+    #[test]
     fn empty_allow_list_admits_no_service_in_both_directions() {
         let sut = AllowListMapping::default();
         let service = service_description("service");
