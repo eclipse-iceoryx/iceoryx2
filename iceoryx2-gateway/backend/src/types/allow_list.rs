@@ -66,70 +66,71 @@ fn matches(pattern: &[char], name: &[char]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use iceoryx2_bb_testing::assert_that;
 
     #[test]
     fn literal_pattern_admits_only_its_name() {
         let sut = AllowList::new(&["service"]);
 
-        assert!(sut.admits("service"));
-        assert!(!sut.admits("service/child"));
-        assert!(!sut.admits("other"));
+        assert_that!(sut.admits("service"), eq true);
+        assert_that!(sut.admits("service/child"), eq false);
+        assert_that!(sut.admits("other"), eq false);
     }
 
     #[test]
     fn wildcard_matches_any_number_of_characters_including_slashes() {
         let sut = AllowList::new(&["/camera/*"]);
 
-        assert!(sut.admits("/camera/front"));
-        assert!(sut.admits("/camera/rear/depth"));
-        assert!(!sut.admits("/lidar/front"));
+        assert_that!(sut.admits("/camera/front"), eq true);
+        assert_that!(sut.admits("/camera/rear/depth"), eq true);
+        assert_that!(sut.admits("/lidar/front"), eq false);
     }
 
     #[test]
     fn wildcard_can_match_in_any_pattern_position() {
         let sut = AllowList::new(&["robot*/cmd_*"]);
 
-        assert!(sut.admits("robot/cmd_vel"));
-        assert!(sut.admits("robot42/cmd_speed/limit"));
-        assert!(!sut.admits("other42/cmd_vel"));
+        assert_that!(sut.admits("robot/cmd_vel"), eq true);
+        assert_that!(sut.admits("robot42/cmd_speed/limit"), eq true);
+        assert_that!(sut.admits("other42/cmd_vel"), eq false);
     }
 
     #[test]
     fn question_mark_matches_exactly_one_character() {
         let sut = AllowList::new(&["robot?/cmd"]);
 
-        assert!(sut.admits("robot1/cmd"));
-        assert!(sut.admits("robot//cmd"));
-        assert!(!sut.admits("robot/cmd"));
-        assert!(!sut.admits("robot12/cmd"));
+        assert_that!(sut.admits("robot1/cmd"), eq true);
+        assert_that!(sut.admits("robot//cmd"), eq true);
+        assert_that!(sut.admits("robot/cmd"), eq false);
+        assert_that!(sut.admits("robot12/cmd"), eq false);
     }
 
     #[test]
     fn adjacent_wildcards_are_equivalent_to_one() {
         let sut = AllowList::new(&["/camera/**"]);
 
-        assert!(sut.admits("/camera/front/depth"));
+        assert_that!(sut.admits("/camera/front/depth"), eq true);
     }
 
     #[test]
     fn all_admits_every_name() {
         let sut = AllowList::all();
 
-        assert!(sut.admits("service"));
-        assert!(sut.admits("/camera/front"));
+        assert_that!(sut.admits("service"), eq true);
+        assert_that!(sut.admits("/camera/front"), eq true);
     }
 
     #[test]
     fn entries_accumulate() {
         let sut = AllowList::new(&["service", "/camera/*"]);
 
-        assert!(sut.admits("service"));
-        assert!(sut.admits("/camera/front"));
-        assert!(!sut.admits("other"));
+        assert_that!(sut.admits("service"), eq true);
+        assert_that!(sut.admits("/camera/front"), eq true);
+        assert_that!(sut.admits("other"), eq false);
     }
 
     #[test]
     fn empty_list_admits_nothing() {
-        assert!(!AllowList::default().admits("service"));
+        assert_that!(AllowList::default().admits("service"), eq false);
     }
 }

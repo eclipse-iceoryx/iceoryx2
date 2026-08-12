@@ -48,6 +48,7 @@ impl Mapping for AllowListMapping {
 mod tests {
     use super::*;
     use iceoryx2::service::ipc;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_gateway_backend::types::service_description::{
         EventDescription, PatternDescription, PortSettings,
     };
@@ -66,8 +67,8 @@ mod tests {
         let sut = AllowListMapping::new(AllowList::all());
         let service = service_description("service");
 
-        assert!(sut.remote(&service).is_some());
-        assert!(sut.local::<ipc::Service>(&service).is_some());
+        assert_that!(sut.remote(&service), is_some);
+        assert_that!(sut.local::<ipc::Service>(&service), is_some);
     }
 
     #[test]
@@ -75,8 +76,8 @@ mod tests {
         let sut = AllowListMapping::default();
         let service = service_description("service");
 
-        assert!(sut.remote(&service).is_none());
-        assert!(sut.local::<ipc::Service>(&service).is_none());
+        assert_that!(sut.remote(&service), is_none);
+        assert_that!(sut.local::<ipc::Service>(&service), is_none);
     }
 
     #[test]
@@ -85,9 +86,9 @@ mod tests {
         let allowed = service_description("allowed");
         let blocked = service_description("blocked");
 
-        assert!(sut.remote(&allowed).is_some());
-        assert!(sut.local::<ipc::Service>(&allowed).is_some());
-        assert!(sut.remote(&blocked).is_none());
-        assert!(sut.local::<ipc::Service>(&blocked).is_none());
+        assert_that!(sut.remote(&allowed), is_some);
+        assert_that!(sut.local::<ipc::Service>(&allowed), is_some);
+        assert_that!(sut.remote(&blocked), is_none);
+        assert_that!(sut.local::<ipc::Service>(&blocked), is_none);
     }
 }
