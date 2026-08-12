@@ -27,23 +27,16 @@ use iceoryx2_cli::help_template;
 )]
 pub struct Cli {
     #[clap(
-        long = "service",
-        short = 's',
-        value_name = "NAME",
-        action = clap::ArgAction::Append,
-        help = "Restrict bridging to the listed service names. May be repeated. When omitted, all discovered services are bridged."
-    )]
-    pub services: Vec<String>,
-
-    #[clap(
-        long = "topic",
-        short = 't',
-        value_name = "TOPIC:TYPE",
+        long = "allow",
+        short = 'a',
+        value_name = "TOPIC",
         action = clap::ArgAction::Append,
         conflicts_with = "static_mapping",
-        help = "Enable discovery of specified topics via ROS 2. When omitted, no ROS 2 discovery occurs. Only relevant for prefix mappings. Can be repeated."
+        help = "Bridge ROS 2 topics matching this wildcard pattern, where '*' matches zero or \
+                more characters and '?' matches one. Repeatable. When omitted, attempts to \
+                bridge all topics."
     )]
-    pub topics: Vec<String>,
+    pub allow: Vec<String>,
 
     #[clap(
         long,
@@ -53,6 +46,17 @@ pub struct Cli {
                 ros2://topics/{NAMESPACE}/{TOPIC} are mapped to topics /{NAMESPACE}/{TOPIC}."
     )]
     static_mapping: Option<PathBuf>,
+
+    #[clap(
+        long = "preload-type",
+        value_name = "TYPE",
+        action = clap::ArgAction::Append,
+        conflicts_with = "static_mapping",
+        help = "Resolve typesupport for the given ROS 2 message type at startup rather than on \
+                first use, failing fast when it cannot be resolved. Repeatable. Not relevant \
+                for static mappings which instead preload types specified in the mapping."
+    )]
+    pub preload_types: Vec<String>,
 
     #[clap(
         long,

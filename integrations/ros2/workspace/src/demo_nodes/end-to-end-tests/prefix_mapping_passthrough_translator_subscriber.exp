@@ -31,7 +31,7 @@ set timeout 30
 # ROS 2 topics it is explicitly told about.
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-gateway-ros2 -- \
-    --topic /chatter:std_msgs/msg/String
+    --allow /chatter
 set id_gateway $spawn_id
 expect_output_from $id_gateway "Local Discovery via Tracker"
 

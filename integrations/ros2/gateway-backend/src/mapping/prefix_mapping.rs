@@ -16,9 +16,9 @@
 //! This mapping strategy is intended to get communication
 //! up-and-running quickly with minimal configuration. Since many QoS
 //! can only be approximated with iceoryx2 service settings, this mapping
-//! should only used during development / prototyping.
+//! should only be used during development / prototyping.
 //!
-//! For finer control over the settings and QoS, the the
+//! For finer control over the settings and QoS, use the
 //! [`StaticMapping`](crate::mapping::StaticMapping) strategy.
 //!
 //! # Name mapping
@@ -73,6 +73,7 @@ use iceoryx2_gateway_backend::types::service_description::{
 use iceoryx2_log::warn;
 
 use crate::config::{TopicName, TypeName};
+use crate::mapping::AllowList;
 use crate::mapping::TopicDescription;
 use crate::qos::QosProfile;
 use crate::ros_header::RosHeader;
@@ -82,8 +83,20 @@ const TOPIC_PREFIX: &str = "ros2://topics";
 /// Accepts publish-subscribe services named `ros2://topics{topic}` whose
 /// payload type name is the ROS 2 type name, and attempts to derive each
 /// side's QoS/settings.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct PrefixMapping;
+///
+/// An [`AllowList`] narrows which topics are bridged in both directions by
+/// topic name.
+#[derive(Debug, Default, Clone)]
+pub struct PrefixMapping {
+    allowlist: AllowList,
+}
+
+impl PrefixMapping {
+    /// Creates a mapping bridging the topics `allowlist` admits.
+    pub fn new(allowlist: AllowList) -> Self {
+        Self { allowlist }
+    }
+}
 
 impl Mapping for PrefixMapping {
     type EndpointDescription = TopicDescription;
@@ -95,6 +108,9 @@ impl Mapping for PrefixMapping {
         let payload = &pattern.payload;
 
         let topic = topic(description.name.as_str())?;
+        if !self.allowlist.admits(topic.as_str()) {
+            return None;
+        }
         let type_name = TypeName::new(&payload.type_name).ok()?;
 
         Some(TopicDescription {
@@ -108,6 +124,10 @@ impl Mapping for PrefixMapping {
     }
 
     fn local<S: Service>(&self, remote: &TopicDescription) -> Option<ServiceDescription> {
+        if !self.allowlist.admits(remote.topic.as_str()) {
+            return None;
+        }
+
         let name = match service_name(remote.topic.as_str()) {
             Ok(name) => name,
             Err(error) => {

@@ -26,7 +26,7 @@ use iceoryx2_gateway_backend::traits::testing::Testing as _;
 use iceoryx2_integrations_ros2_gateway_backend::ros_header::RosHeader;
 use iceoryx2_integrations_ros2_gateway_backend::testing::{TestPeer, Testing};
 use iceoryx2_integrations_ros2_gateway_backend::{
-    Config, PrefixMapping, Ros2Backend, TopicConfig, TopicDescription,
+    AllowList, PrefixMapping, Ros2Backend, TopicDescription,
 };
 
 #[derive(Debug, ZeroCopySend)]
@@ -57,7 +57,7 @@ fn maps_iceoryx_services_onto_ros_topics() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config)
-    .backend_config(Config::default())
+    .mapping(PrefixMapping::new(AllowList::new(&[topic.as_str()])))
     .polled()
     .create()
     .unwrap();
@@ -107,7 +107,9 @@ fn does_not_map_unprefixed_services() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config)
-    .backend_config(Config::default())
+    .mapping(PrefixMapping::new(AllowList::new(&[
+        publish_subscribe_topic.as_str(),
+    ])))
     .polled()
     .create()
     .unwrap();
@@ -159,7 +161,10 @@ fn does_not_map_event_services() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config)
-    .backend_config(Config::default())
+    .mapping(PrefixMapping::new(AllowList::new(&[
+        publish_subscribe_topic.as_str(),
+        event_topic.as_str(),
+    ])))
     .polled()
     .create()
     .unwrap();
@@ -195,9 +200,7 @@ fn maps_ros_topics_onto_iceoryx2_services() {
         Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(config.clone())
-    .backend_config(Config {
-        topics: vec![TopicConfig::new(&topic, "std_msgs/msg/String").expect("valid topic config")],
-    })
+    .mapping(PrefixMapping::new(AllowList::new(&[topic.as_str()])))
     .polled()
     .create()
     .unwrap();

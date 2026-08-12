@@ -28,7 +28,6 @@ use iceoryx2_gateway_backend::traits::testing::Testing as _;
 use iceoryx2_gateway_backend::types::service_description::{
     PortSettings, PublishSubscribeSettings,
 };
-use iceoryx2_integrations_ros2_gateway_backend::Config as BackendConfig;
 use iceoryx2_integrations_ros2_gateway_backend::mapping::static_mapping::{
     Config, Entry, IceoryxSettings, RosSettings,
 };
@@ -83,7 +82,6 @@ fn maps_iceoryx_services_onto_ros_topics() {
         Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(iceoryx_config)
-    .backend_config(BackendConfig::default())
     .mapping(mapping)
     .polled()
     .create()
@@ -150,7 +148,6 @@ fn does_not_map_iceoryx_services_without_an_entry() {
         Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(iceoryx_config)
-    .backend_config(BackendConfig::default())
     .mapping(mapping)
     .polled()
     .create()
@@ -202,9 +199,6 @@ fn maps_ros_topics_onto_iceoryx_services() {
         Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(iceoryx_config.clone())
-    .backend_config(BackendConfig {
-        topics: mapping.topics(),
-    })
     .mapping(mapping)
     .polled()
     .create()
@@ -291,7 +285,6 @@ fn applies_specified_qos_to_ros_endpoints() {
         Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(iceoryx_config)
-    .backend_config(BackendConfig::default())
     .mapping(mapping)
     .polled()
     .create()
@@ -361,9 +354,6 @@ fn applies_specified_settings_to_iceoryx_services() {
         Ros2Backend<Service, StaticMapping, Passthrough<TopicDescription>>,
     >::new()
     .iceoryx_config(iceoryx_config.clone())
-    .backend_config(BackendConfig {
-        topics: mapping.topics(),
-    })
     .mapping(mapping)
     .polled()
     .create()

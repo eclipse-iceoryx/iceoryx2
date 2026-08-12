@@ -11,9 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
+use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_concurrency::cell::RefCell;
+use iceoryx2_gateway_backend::traits::Mapping;
 use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_log::{error, fail, warn};
@@ -82,8 +85,9 @@ impl core::fmt::Display for AnnouncementError {
 impl core::error::Error for AnnouncementError {}
 
 #[derive(Debug)]
-pub struct Discovery {
+pub struct Discovery<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> {
     session: Session,
+    mapping: Arc<M>,
     // Subscribes to liveliness changes for service announcements.
     subscriber: Subscriber<FifoChannelHandler<Sample>>,
     // Keeps track of services that have been announced locally.
@@ -92,10 +96,11 @@ pub struct Discovery {
     // Replies are filled asynchronously by Zenoh but only processed on
     // subsequent discover calls. Enables non-blocking implementation.
     pending: RefCell<BTreeMap<ServiceHash, FifoChannelHandler<Reply>>>,
+    _phantom: core::marker::PhantomData<S>,
 }
 
-impl Discovery {
-    pub fn create(session: &Session) -> Result<Self, CreationError> {
+impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery<S, M> {
+    pub fn create(session: &Session, mapping: Arc<M>) -> Result<Self, CreationError> {
         let origin = "Discovery::create()";
 
         let subscriber = fail!(
@@ -111,20 +116,29 @@ impl Discovery {
 
         Ok(Self {
             session: session.clone(),
+            mapping,
             subscriber,
             announced: RefCell::new(BTreeMap::new()),
             pending: RefCell::new(BTreeMap::new()),
+            _phantom: core::marker::PhantomData,
         })
     }
 }
 
-impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
+impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
+    iceoryx2_gateway_backend::traits::Discovery for Discovery<S, M>
+{
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
     fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
         match update {
-            DiscoveryUpdateRef::Added(description) => self.announce_added(description),
+            DiscoveryUpdateRef::Added(description) => {
+                if self.mapping.remote(description).is_none() {
+                    return Ok(());
+                }
+                self.announce_added(description)
+            }
             DiscoveryUpdateRef::Removed(service_hash) => self.announce_removed(service_hash),
         }
     }
@@ -158,6 +172,9 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
         // Adds a service to the gateway. Called once the reply with the
         // service details of a discovered remote service has been received.
         let on_service_details = |description: ServiceDescription| {
+            let Some(description) = self.mapping.local::<S>(&description) else {
+                return Ok(());
+            };
             let service_hash = description.service_hash;
             fail!(
                 from self,
@@ -174,7 +191,7 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
     }
 }
 
-impl Discovery {
+impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery<S, M> {
     /// Makes a service available to remote peers by declaring a queryable for
     /// its details and a liveliness token at its key.
     ///

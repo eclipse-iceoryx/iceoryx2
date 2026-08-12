@@ -75,53 +75,59 @@ impl TypeSupport {
 }
 
 thread_local! {
-    /// Cached typesupport handles resolved so far.
-    static TYPESUPPORT: RefCell<HashMap<String, Rc<TypeSupport>>> =
+    /// Cached typesupport resolution results, including failures.
+    static TYPESUPPORT: RefCell<HashMap<String, Result<Rc<TypeSupport>, LoadError>>> =
         RefCell::new(HashMap::new());
 
-    /// Cached introspection typesupport handles resolved so far.
-    static INTROSPECTION: RefCell<HashMap<String, Rc<TypeSupport>>> =
+    /// Cached introspection typesupport resolution results, including
+    /// failures.
+    static INTROSPECTION: RefCell<HashMap<String, Result<Rc<TypeSupport>, LoadError>>> =
         RefCell::new(HashMap::new());
 }
 
 /// Returns the typesupport handle of `type_name`, driving rcl endpoint
 /// creation and `rmw_serialize`/`rmw_deserialize`.
+///
+/// Failed resolutions are cached and not retried.
 pub(crate) fn load(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    let origin = "typesupport::load";
-
-    if let Some(type_support) = TYPESUPPORT.with(|cache| cache.borrow().get(type_name).cloned()) {
-        return Ok(type_support);
+    if let Some(result) = TYPESUPPORT.with(|cache| cache.borrow().get(type_name).cloned()) {
+        return result;
     }
 
-    let (package, message) = fail!(
-        from origin,
-        when split_type_name(type_name),
-        "Invalid ROS 2 type name '{}'",
-        type_name
-    );
-    let type_support = Rc::new(load_handle(
-        type_name,
-        format!("lib{package}__rosidl_typesupport_c.so"),
-        format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}"),
-    )?);
+    let result = resolve(type_name);
 
     TYPESUPPORT.with(|cache| {
         cache
             .borrow_mut()
-            .insert(type_name.to_string(), Rc::clone(&type_support));
+            .insert(type_name.to_string(), result.clone());
     });
 
-    Ok(type_support)
+    result
 }
 
 /// Returns the introspection typesupport handle of `type_name`, describing
 /// the members of the type's C struct.
+///
+/// Failed resolutions are cached and not retried.
 pub(crate) fn load_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    let origin = "typesupport::load_introspection";
-
-    if let Some(type_support) = INTROSPECTION.with(|cache| cache.borrow().get(type_name).cloned()) {
-        return Ok(type_support);
+    if let Some(result) = INTROSPECTION.with(|cache| cache.borrow().get(type_name).cloned()) {
+        return result;
     }
+
+    let result = resolve_introspection(type_name);
+
+    INTROSPECTION.with(|cache| {
+        cache
+            .borrow_mut()
+            .insert(type_name.to_string(), result.clone());
+    });
+
+    result
+}
+
+/// Resolves the typesupport handle of `type_name` from its shared library.
+fn resolve(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
+    let origin = "typesupport::resolve";
 
     let (package, message) = fail!(
         from origin,
@@ -129,21 +135,33 @@ pub(crate) fn load_introspection(type_name: &str) -> Result<Rc<TypeSupport>, Loa
         "Invalid ROS 2 type name '{}'",
         type_name
     );
-    let type_support = Rc::new(load_handle(
+
+    Ok(Rc::new(load_handle(
+        type_name,
+        format!("lib{package}__rosidl_typesupport_c.so"),
+        format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}"),
+    )?))
+}
+
+/// Resolves the introspection typesupport handle of `type_name` from its
+/// shared library.
+fn resolve_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
+    let origin = "typesupport::resolve_introspection";
+
+    let (package, message) = fail!(
+        from origin,
+        when split_type_name(type_name),
+        "Invalid ROS 2 type name '{}'",
+        type_name
+    );
+
+    Ok(Rc::new(load_handle(
         type_name,
         format!("lib{package}__rosidl_typesupport_introspection_c.so"),
         format!(
             "rosidl_typesupport_introspection_c__get_message_type_support_handle__{package}__msg__{message}"
         ),
-    )?);
-
-    INTROSPECTION.with(|cache| {
-        cache
-            .borrow_mut()
-            .insert(type_name.to_string(), Rc::clone(&type_support));
-    });
-
-    Ok(type_support)
+    )?))
 }
 
 /// Loads `library_name` and retrieves the handle pointer that `symbol_name`
@@ -157,24 +175,35 @@ fn load_handle(
 
     // Load the typesupport library, found via the sourced environment's
     // LD_LIBRARY_PATH.
-    let library = fail!(from origin,
-        when unsafe { Library::new(&library_name) },
-        with LoadError::LibraryNotFound { library: library_name },
-        "Failed to load typesupport library for type '{}'",
-        type_name
-    );
+    let library = match unsafe { Library::new(&library_name) } {
+        Ok(library) => library,
+        Err(error) => {
+            fail!(
+                from origin,
+                with LoadError::LibraryNotFound { library: library_name },
+                "Failed to load typesupport library for type '{}': {}",
+                type_name,
+                error
+            );
+        }
+    };
 
     // Get the typesupport handle from the loaded library.
     let handle = {
         let get_handle: libloading::Symbol<
             unsafe extern "C" fn() -> *const rosidl_message_type_support_t,
-        > = fail!(
-            from origin,
-            when unsafe { library.get(symbol_name.as_bytes()) },
-            with LoadError::SymbolNotFound { symbol: symbol_name },
-            "Failed to resolve typesupport symbol for type '{}'",
-            type_name
-        );
+        > = match unsafe { library.get(symbol_name.as_bytes()) } {
+            Ok(symbol) => symbol,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with LoadError::SymbolNotFound { symbol: symbol_name },
+                    "Failed to resolve typesupport symbol for type '{}': {}",
+                    type_name,
+                    error
+                );
+            }
+        };
         unsafe { get_handle() }
     };
     if handle.is_null() {

@@ -37,7 +37,7 @@ pub(crate) mod typesupport;
 
 pub use backend::*;
 pub use config::*;
-pub use mapping::{PrefixMapping, StaticMapping, TopicDescription};
+pub use mapping::{AllowList, PrefixMapping, StaticMapping, TopicDescription};
 pub use qos::*;
 pub use translator::*;
 

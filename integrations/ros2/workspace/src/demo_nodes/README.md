@@ -54,7 +54,7 @@ explicitly told about instead of mirroring the entire graph:
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_subscriber
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- --topic /chatter:std_msgs/msg/String
+#   cargo run --bin iox2-gateway-ros2 -- --allow /chatter
 #   ros2 run demo_nodes_cpp talker
 ```
 
@@ -77,7 +77,7 @@ source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
 # in other shells:
 #   cargo run --bin iox2-gateway-ros2 -- \
-#       --topic /cmd_vel:geometry_msgs/msg/Twist \
+#       --allow /cmd_vel \
 #       --translator PlainStruct
 #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 ```

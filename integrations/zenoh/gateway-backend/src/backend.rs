@@ -16,6 +16,7 @@ use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_gateway_backend::traits::{
     Backend, BackendBuilder, Identity, Mapping, Passthrough, ReactiveBackendBuilder, Translator,
 };
+use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_gateway_backend::types::wake::WakeHandle;
 use iceoryx2_log::{fail, trace};
 
@@ -43,24 +44,27 @@ impl core::error::Error for CreationError {}
 #[derive(Debug)]
 pub struct ZenohBackend<
     S: Service,
-    M: Mapping = Identity,
+    M: Mapping<EndpointDescription = ServiceDescription> = Identity,
     T: Translator<EndpointDescription = <M as Mapping>::EndpointDescription> = Passthrough<
         <M as Mapping>::EndpointDescription,
     >,
 > {
     session: Session,
-    discovery: Discovery,
+    discovery: Discovery<S, M>,
     /// `Some` when constructed in reactive mode. Cloned into each relay's
     /// subscriber callback so that incoming network data signals the wake.
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
-    mapping: M,
+    mapping: Arc<M>,
     #[allow(dead_code)]
     translator: T,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>> Backend<S>
-    for ZenohBackend<S, M, T>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = ServiceDescription>,
+    T: Translator<EndpointDescription = M::EndpointDescription>,
+> Backend<S> for ZenohBackend<S, M, T>
 {
     type Config = Config;
     type Mapping = M;
@@ -70,7 +74,7 @@ impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDesc
         = Builder<'config, S, M, T>
     where
         Self::Config: 'config;
-    type Discovery = Discovery;
+    type Discovery = Discovery<S, M>;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
@@ -102,7 +106,7 @@ impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDesc
 pub struct Builder<
     'config,
     S: Service,
-    M: Mapping = Identity,
+    M: Mapping<EndpointDescription = ServiceDescription> = Identity,
     T: Translator<EndpointDescription = <M as Mapping>::EndpointDescription> = Passthrough<
         <M as Mapping>::EndpointDescription,
     >,
@@ -114,8 +118,12 @@ pub struct Builder<
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'config, S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
-    Builder<'config, S, M, T>
+impl<
+    'config,
+    S: Service,
+    M: Mapping<EndpointDescription = ServiceDescription>,
+    T: Translator<EndpointDescription = M::EndpointDescription>,
+> Builder<'config, S, M, T>
 {
     pub fn new(config: &'config Config) -> Self {
         Self {
@@ -128,8 +136,11 @@ impl<'config, S: Service, M: Mapping, T: Translator<EndpointDescription = M::End
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
-    BackendBuilder<S> for Builder<'_, S, M, T>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = ServiceDescription>,
+    T: Translator<EndpointDescription = M::EndpointDescription>,
+> BackendBuilder<S> for Builder<'_, S, M, T>
 {
     type Backend = ZenohBackend<S, M, T>;
     type CreationError = CreationError;
@@ -160,7 +171,8 @@ impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDesc
             "Failed to create zenoh session"
         );
 
-        let discovery = Discovery::create(&session);
+        let mapping = Arc::new(self.mapping);
+        let discovery = Discovery::create(&session, Arc::clone(&mapping));
         let discovery = fail!(
             from origin,
             when discovery,
@@ -172,15 +184,18 @@ impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDesc
             session,
             discovery,
             wake: self.wake.map(Arc::new),
-            mapping: self.mapping,
+            mapping,
             translator: self.translator,
             _phantom: core::marker::PhantomData,
         })
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
-    ReactiveBackendBuilder<S> for Builder<'_, S, M, T>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = ServiceDescription>,
+    T: Translator<EndpointDescription = M::EndpointDescription>,
+> ReactiveBackendBuilder<S> for Builder<'_, S, M, T>
 {
     type WakeService = local_threadsafe::Service;
 

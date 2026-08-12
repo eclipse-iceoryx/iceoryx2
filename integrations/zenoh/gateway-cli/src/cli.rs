@@ -40,13 +40,15 @@ pub struct Cli {
     pub discovery_service: Option<String>,
 
     #[clap(
-        long = "service",
-        short = 's',
+        long = "allow",
+        short = 'a',
         value_name = "NAME",
         action = clap::ArgAction::Append,
-        help = "Restrict bridging to the listed service names. May be repeated. When omitted, all discovered services are bridged."
+        help = "Allow bridging of service names matching the given wildcard pattern. '*' matches \
+                zero or more characters and '?' matches one character. May be repeated. When \
+                omitted, all discovered services are bridged."
     )]
-    pub services: Vec<String>,
+    pub allow: Vec<String>,
 
     #[clap(
         long,

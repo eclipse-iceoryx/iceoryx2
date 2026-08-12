@@ -19,7 +19,8 @@ use iceoryx2_gateway_backend::types::service_description::{
     PublishSubscribeSettings, ServiceDescription, TypeDescription,
 };
 use iceoryx2_integrations_ros2_gateway_backend::{
-    Durability, History, PrefixMapping, QosProfile, TopicDescription, TopicName, TypeName,
+    AllowList, Durability, History, PrefixMapping, QosProfile, TopicDescription, TopicName,
+    TypeName,
 };
 
 fn service_description_with_default_settings(name: &str, type_name: &str) -> ServiceDescription {
@@ -60,7 +61,7 @@ fn service_description_with_settings(
 
 #[test]
 fn maps_prefixed_publish_subscribe_services() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let description =
         service_description_with_default_settings("ros2://topics/chatter", "std_msgs/msg/String");
 
@@ -69,7 +70,7 @@ fn maps_prefixed_publish_subscribe_services() {
 
 #[test]
 fn ignores_unprefixed_names_and_invalid_type_names() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["*"]));
 
     for (name, type_name) in [
         ("My/Funk/ServiceName", "std_msgs/msg/String"),
@@ -89,7 +90,7 @@ fn ignores_unprefixed_names_and_invalid_type_names() {
 
 #[test]
 fn ignores_event_services() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let description = ServiceDescription::new::<Service>(
         "ros2://topics/chatter".try_into().unwrap(),
         PatternDescription::Event(EventDescription {
@@ -102,7 +103,7 @@ fn ignores_event_services() {
 
 #[test]
 fn maps_service_description_to_topic_description() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/Camera/FrontRight"]));
     let service_description = service_description_with_default_settings(
         "ros2://topics/Camera/FrontRight",
         "sensor_msgs/msg/Image",
@@ -123,7 +124,7 @@ fn maps_history_setting_to_durability_qos() {
     const SUBSCRIBER_MAX_BUFFER_SIZE: usize = 4;
     const HISTORY_SIZE: usize = 2;
 
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let service_description = service_description_with_settings(
         "ros2://topics/chatter",
         "std_msgs/msg/String",
@@ -154,7 +155,7 @@ fn maps_history_setting_to_durability_qos() {
 
 #[test]
 fn maps_non_overflowing_setting_to_keep_all_qos() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let service_description = service_description_with_settings(
         "ros2://topics/chatter",
         "std_msgs/msg/String",
@@ -187,7 +188,7 @@ fn maps_non_overflowing_setting_to_keep_all_qos() {
 fn maps_durability_qos_to_history_setting() {
     const DEPTH: usize = 7;
 
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let topic_description = TopicDescription {
         topic: TopicName::new("/chatter").unwrap(),
         type_name: TypeName::new("std_msgs/msg/String").unwrap(),
@@ -216,7 +217,7 @@ fn maps_durability_qos_to_history_setting() {
 
 #[test]
 fn maps_keep_all_qos_to_non_overflowing_setting() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let topic_description = TopicDescription {
         topic: TopicName::new("/chatter").unwrap(),
         type_name: TypeName::new("std_msgs/msg/String").unwrap(),
@@ -243,7 +244,7 @@ fn maps_keep_all_qos_to_non_overflowing_setting() {
 
 #[test]
 fn roundtrip_default_qos() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
     let topic_description = TopicDescription {
         topic: TopicName::new("/chatter").unwrap(),
         type_name: TypeName::new("std_msgs/msg/String").unwrap(),
@@ -264,7 +265,7 @@ fn roundtrip_default_qos() {
 
 #[test]
 fn roundtrip_derived_qos() {
-    let sut = PrefixMapping;
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
 
     for qos in [
         QosProfile {
@@ -293,4 +294,72 @@ fn roundtrip_derived_qos() {
             eq topic_description
         );
     }
+}
+
+#[test]
+fn empty_allow_list_bridges_no_prefixed_service_outbound() {
+    let sut = PrefixMapping::default();
+    let description =
+        service_description_with_default_settings("ros2://topics/chatter", "std_msgs/msg/String");
+
+    assert_that!(sut.remote(&description), is_none);
+}
+
+#[test]
+fn empty_allow_list_takes_no_topic_inbound() {
+    let sut = PrefixMapping::default();
+    let topic_description = TopicDescription {
+        topic: TopicName::new("/chatter").expect("valid topic name"),
+        type_name: TypeName::new("std_msgs/msg/String").expect("valid type name"),
+        qos: QosProfile::default(),
+    };
+
+    assert_that!(sut.local::<Service>(&topic_description), is_none);
+}
+
+#[test]
+fn allow_list_restricts_both_directions() {
+    let sut = PrefixMapping::new(AllowList::new(&["/chatter"]));
+
+    let admitted_service =
+        service_description_with_default_settings("ros2://topics/chatter", "std_msgs/msg/String");
+    let rejected_service =
+        service_description_with_default_settings("ros2://topics/other", "std_msgs/msg/String");
+
+    assert_that!(sut.remote(&admitted_service), is_some);
+    assert_that!(sut.remote(&rejected_service), is_none);
+
+    let admitted_topic = TopicDescription {
+        topic: TopicName::new("/chatter").expect("valid topic name"),
+        type_name: TypeName::new("std_msgs/msg/String").expect("valid type name"),
+        qos: QosProfile::default(),
+    };
+    let rejected_topic = TopicDescription {
+        topic: TopicName::new("/other").expect("valid topic name"),
+        type_name: TypeName::new("std_msgs/msg/String").expect("valid type name"),
+        qos: QosProfile::default(),
+    };
+
+    assert_that!(sut.local::<Service>(&admitted_topic), is_some);
+    assert_that!(sut.local::<Service>(&rejected_topic), is_none);
+}
+
+#[test]
+fn wildcard_allow_list_admits_every_matching_topic() {
+    let sut = PrefixMapping::new(AllowList::new(&["/camera/*"]));
+
+    assert_that!(
+        sut.remote(&service_description_with_default_settings(
+            "ros2://topics/camera/front",
+            "sensor_msgs/msg/Image"
+        )),
+        is_some
+    );
+    assert_that!(
+        sut.remote(&service_description_with_default_settings(
+            "ros2://topics/lidar/front",
+            "sensor_msgs/msg/Image"
+        )),
+        is_none
+    );
 }

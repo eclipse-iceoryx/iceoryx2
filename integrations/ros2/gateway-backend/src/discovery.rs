@@ -22,9 +22,9 @@ use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_gateway_backend::traits::{Mapping, PayloadLayout, Translation, Translator};
 use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, warn};
 
-use crate::config::{TopicConfig, TopicName, TypeName};
+use crate::config::{TopicName, TypeName};
 use crate::mapping::TopicDescription;
 use crate::rcl::RclNode;
 
@@ -54,6 +54,17 @@ impl core::fmt::Display for AnnouncementError {
 
 impl core::error::Error for AnnouncementError {}
 
+/// Outcome of bridging a topic found live in the ROS graph.
+#[derive(Debug, Clone, Copy)]
+enum TopicState {
+    /// Bridged under the given service hash.
+    Bridged(ServiceHash),
+    /// Out of the mapping's scope.
+    Unmapped,
+    /// Could not be bridged. Not retried while the topic stays on the graph.
+    Failed,
+}
+
 /// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
 pub struct Discovery<
@@ -62,12 +73,9 @@ pub struct Discovery<
     T: Translator<EndpointDescription = TopicDescription>,
 > {
     node: Rc<RclNode>,
-    allowlist: HashMap<TopicName, TypeName>,
     mapping: Rc<M>,
     translator: Rc<T>,
-    /// Configured topics detected as live in the ROS graph, with the service
-    /// hash they were reported under.
-    discovered: RefCell<HashMap<TopicName, ServiceHash>>,
+    state: RefCell<HashMap<TopicName, TopicState>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -77,35 +85,16 @@ impl<
     T: Translator<EndpointDescription = TopicDescription>,
 > Discovery<S, M, T>
 {
-    /// Creates a `Discovery` instance to track `topics` on the ROS graph
-    /// via the provided `node`.
-    pub(crate) fn new(
-        node: Rc<RclNode>,
-        topics: &[TopicConfig],
-        mapping: Rc<M>,
-        translator: Rc<T>,
-    ) -> Self {
+    /// Creates a `Discovery` instance tracking the ROS graph via the provided
+    /// `node`. Only topics mappable by the provided mapper are considered.
+    pub(crate) fn new(node: Rc<RclNode>, mapping: Rc<M>, translator: Rc<T>) -> Self {
         Self {
             node,
-            allowlist: topics
-                .iter()
-                .map(|topic| (topic.topic.clone(), topic.type_name.clone()))
-                .collect(),
             mapping,
             translator,
-            discovered: RefCell::new(HashMap::new()),
+            state: RefCell::new(HashMap::new()),
             _phantom: core::marker::PhantomData,
         }
-    }
-
-    /// Returns true when `topic` currently appears in a ROS graph snapshot.
-    fn is_present_on_graph(
-        graph: &[(crate::rcl::TopicName, Vec<crate::rcl::TypeName>)],
-        topic: &TopicName,
-    ) -> bool {
-        graph
-            .iter()
-            .any(|(name, _)| name.as_str() == topic.as_str())
     }
 
     /// Builds the topic description for a live `topic`.
@@ -135,28 +124,23 @@ impl<
         })
     }
 
-    /// Handles a configured topic that has become live.
+    /// Handles a topic that has become live.
     ///
-    /// Topics the active mapping does not resolve to a local service are
-    /// skipped.
-    ///
-    /// Returns `Ok` when the topic was processed or skipped, or `Err` if
-    /// querying its QoS or running `process_discovery` failed.
+    /// Returns the state to track the topic under, or `Err` if querying its
+    /// QoS or running `process_discovery` failed.
     fn on_discovered<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         topic: &TopicName,
         type_name: &TypeName,
         process_discovery: &mut F,
-    ) -> Result<(), DiscoveryError> {
-        let origin = "Discovery::discover_added";
+    ) -> Result<TopicState, DiscoveryError> {
+        let origin = "Discovery::on_discovered";
 
-        // Skip topic descriptions that the mapping is unable to map
-        // to a local iceoryx2 service.
-        // These could be topics not following the conventions of the mapping (e.g. prefix)
-        // or those explicitly not configured (e.g. static).
+        // The mapping is the sole authority on what is in scope. Topics it
+        // does not resolve to a local iceoryx2 service are not considered.
         let topic_description = self.topic_description(topic, type_name)?;
         let Some(mut service_description) = self.mapping.local::<S>(&topic_description) else {
-            return Ok(());
+            return Ok(TopicState::Unmapped);
         };
 
         // Translated topics carry the payload layout, which only the
@@ -195,28 +179,23 @@ impl<
             topic.as_str()
         );
 
-        // Keep track of the discovered service for later discovery iterations.
-        self.discovered
-            .borrow_mut()
-            .insert(topic.clone(), service_hash);
-
-        Ok(())
+        Ok(TopicState::Bridged(service_hash))
     }
 
-    /// Handles a previously discovered topic that is no longer live.
+    /// Handles a previously bridged topic that is no longer live.
     ///
     /// Returns `Ok` when the removal was processed, or `Err` if
     /// `process_discovery` failed.
     fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         topic: &TopicName,
+        service_hash: ServiceHash,
         process_discovery: &mut F,
     ) -> Result<(), DiscoveryError> {
-        let origin = "Discovery::discover_removed";
+        let origin = "Discovery::on_removed";
 
         // Run discovery logic provided by the caller for the service discovered
         // as removed.
-        let service_hash = self.discovered.borrow()[topic];
         fail!(from origin,
             when process_discovery(DiscoveryUpdate::Removed(service_hash)),
             with DiscoveryError::Processing,
@@ -225,7 +204,69 @@ impl<
         );
 
         // Stop tracking the service as discovered.
-        self.discovered.borrow_mut().remove(topic);
+        self.state.borrow_mut().remove(topic);
+
+        Ok(())
+    }
+
+    /// Bridges the topics that have appeared on the graph since the last run.
+    ///
+    /// Topics that do not get processed successfully are remembered and not
+    /// retried in later runs until removed from the graph. After removal,
+    /// discovery logic is retried for the new instance of the topic.
+    fn discover_additions<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        live: &[(TopicName, TypeName)],
+        process_discovery: &mut F,
+    ) {
+        for (topic, type_name) in live {
+            if self.state.borrow().contains_key(topic) {
+                continue;
+            }
+
+            let state = match self.on_discovered(topic, type_name, process_discovery) {
+                Ok(state) => state,
+                Err(error) => {
+                    warn!("Topic '{}' will not be bridged: {}", topic.as_str(), error);
+                    TopicState::Failed
+                }
+            };
+
+            self.state.borrow_mut().insert(topic.clone(), state);
+        }
+    }
+
+    /// Withdraws the topics that have left the graph since the last run.
+    ///
+    /// The departed set is taken before the loop so that no borrow of the
+    /// tracked state is held while `process_discovery` runs.
+    fn discover_removals<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        live: &[(TopicName, TypeName)],
+        process_discovery: &mut F,
+    ) -> Result<(), DiscoveryError> {
+        let is_live = |topic: &TopicName| live.iter().any(|(name, _)| name == topic);
+
+        let departed: Vec<(TopicName, TopicState)> = self
+            .state
+            .borrow()
+            .iter()
+            .filter(|(topic, _)| !is_live(topic))
+            .map(|(topic, state)| (topic.clone(), *state))
+            .collect();
+
+        for (topic, state) in departed {
+            match state {
+                TopicState::Bridged(service_hash) => {
+                    self.on_removed(&topic, service_hash, process_discovery)?
+                }
+                // Forget the verdict so the topic is judged again if it
+                // is discovered again.
+                TopicState::Unmapped | TopicState::Failed => {
+                    self.state.borrow_mut().remove(&topic);
+                }
+            }
+        }
 
         Ok(())
     }
@@ -260,17 +301,26 @@ impl<
             "Failed to query the ROS 2 graph"
         );
 
-        for (topic, type_name) in &self.allowlist {
-            let live = Self::is_present_on_graph(&graph, topic);
-            let discovered = self.discovered.borrow().contains_key(topic);
+        // Topics with multiple types cannot be bridged safely and are
+        // skipped.
+        let live: Vec<(TopicName, TypeName)> = graph
+            .into_iter()
+            .filter_map(|(name, mut types)| {
+                if types.len() > 1 {
+                    warn!(
+                        "Topic '{}' will not be bridged: multiple types found on the topic {:?}",
+                        name.as_str(),
+                        types
+                    );
+                    return None;
+                }
+                let type_name = types.pop()?;
 
-            if live && !discovered {
-                self.on_discovered(topic, type_name, &mut process_discovery)?;
-            } else if !live && discovered {
-                self.on_removed(topic, &mut process_discovery)?;
-            }
-        }
+                Some((TopicName::from(name), TypeName::from(type_name)))
+            })
+            .collect();
 
-        Ok(())
+        self.discover_additions(&live, &mut process_discovery);
+        self.discover_removals(&live, &mut process_discovery)
     }
 }

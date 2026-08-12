@@ -35,7 +35,8 @@ use iceoryx2_gateway_backend::traits::{Mapping, Passthrough, Translator};
 use iceoryx2_integrations_ros2_gateway_backend::Config as BackendConfig;
 use iceoryx2_integrations_ros2_gateway_backend::mapping::static_mapping;
 use iceoryx2_integrations_ros2_gateway_backend::{
-    PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicConfig, TopicDescription,
+    AllowList, PlainStructTranslator, PrefixMapping, Ros2Backend, StaticMapping, TopicDescription,
+    TypeName,
 };
 
 const ORIGIN: &str = "iox2-gateway-ros2";
@@ -58,11 +59,6 @@ fn main() -> anyhow::Result<()> {
     }
     let gateway_config = GatewayConfig {
         discovery_service: cli.discovery_service.clone(),
-        services: if cli.services.is_empty() {
-            None
-        } else {
-            Some(cli.services.clone())
-        },
     };
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
@@ -121,31 +117,29 @@ fn create_gateway(
 )> {
     match (cli.mapping(), cli.translator) {
         (cli::Mapping::Prefix, cli::Translator::Passthrough) => {
-            let backend_config = BackendConfig {
-                topics: parse_topics(&cli.topics)?,
-            };
             create_gateway_impl::<PrefixMapping, Passthrough<TopicDescription>>(
                 cli.reactive_backend,
-                PrefixMapping,
+                PrefixMapping::new(allowlist(cli)),
                 gateway_config,
-                backend_config,
+                BackendConfig {
+                    preload_types: parse_preload_types(&cli.preload_types)?,
+                },
             )
         }
         (cli::Mapping::Prefix, cli::Translator::PlainStruct) => {
-            let backend_config = BackendConfig {
-                topics: parse_topics(&cli.topics)?,
-            };
             create_gateway_impl::<PrefixMapping, PlainStructTranslator>(
                 cli.reactive_backend,
-                PrefixMapping,
+                PrefixMapping::new(allowlist(cli)),
                 gateway_config,
-                backend_config,
+                BackendConfig {
+                    preload_types: parse_preload_types(&cli.preload_types)?,
+                },
             )
         }
         (cli::Mapping::Static(path), cli::Translator::Passthrough) => {
             let mapping = load_static_mapping(&path)?;
             let backend_config = BackendConfig {
-                topics: mapping.topics(),
+                preload_types: mapping.type_names(),
             };
             create_gateway_impl::<StaticMapping, Passthrough<TopicDescription>>(
                 cli.reactive_backend,
@@ -157,7 +151,7 @@ fn create_gateway(
         (cli::Mapping::Static(path), cli::Translator::PlainStruct) => {
             let mapping = load_static_mapping(&path)?;
             let backend_config = BackendConfig {
-                topics: mapping.topics(),
+                preload_types: mapping.type_names(),
             };
             create_gateway_impl::<StaticMapping, PlainStructTranslator>(
                 cli.reactive_backend,
@@ -166,6 +160,15 @@ fn create_gateway(
                 backend_config,
             )
         }
+    }
+}
+
+/// Allow list parsed from CLI arguments.
+fn allowlist(cli: &Cli) -> AllowList {
+    if cli.allow.is_empty() {
+        AllowList::all()
+    } else {
+        AllowList::new(&cli.allow)
     }
 }
 
@@ -258,16 +261,13 @@ fn open_user_listeners(
         .collect()
 }
 
-/// Parses repeated `--topic` values of the form `<topic>:<type>`.
-fn parse_topics(topics: &[String]) -> anyhow::Result<Vec<TopicConfig>> {
-    topics
+/// Parses repeated `--preload-type` values.
+fn parse_preload_types(type_names: &[String]) -> anyhow::Result<Vec<TypeName>> {
+    type_names
         .iter()
         .map(|entry| {
-            let Some((topic, type_name)) = entry.split_once(':') else {
-                anyhow::bail!("invalid --topic {entry:?}: expected '<topic>:<type>'");
-            };
-            TopicConfig::new(topic, type_name)
-                .map_err(|error| anyhow::anyhow!("invalid --topic {entry:?}: {error}"))
+            TypeName::new(entry)
+                .map_err(|error| anyhow::anyhow!("invalid --preload-type {entry:?}: {error}"))
         })
         .collect()
 }

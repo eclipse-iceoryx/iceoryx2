@@ -15,6 +15,7 @@
 pub mod prefix_mapping;
 pub mod static_mapping;
 
+pub use iceoryx2_gateway_backend::types::allow_list::AllowList;
 pub use prefix_mapping::PrefixMapping;
 pub use static_mapping::StaticMapping;
 

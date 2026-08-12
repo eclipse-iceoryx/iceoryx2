@@ -14,8 +14,6 @@
 
 use serde::{Deserialize, Serialize};
 
-use iceoryx2_log::fail;
-
 use crate::rcl;
 
 pub use crate::NameError;
@@ -58,6 +56,12 @@ impl From<&TopicName> for rcl::TopicName {
     }
 }
 
+impl From<rcl::TopicName> for TopicName {
+    fn from(topic: rcl::TopicName) -> Self {
+        Self(topic)
+    }
+}
+
 /// A ROS 2 message type name of the form `package/msg/Message`, e.g.
 /// `geometry_msgs/msg/Twist`.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -65,7 +69,6 @@ impl From<&TopicName> for rcl::TopicName {
 pub struct TypeName(rcl::TypeName);
 
 impl TypeName {
-    /// Creates a type name, validating it against the ROS 2 type naming rules.
     pub fn new(type_name: &str) -> Result<Self, NameError> {
         Ok(Self(rcl::TypeName::new(type_name)?))
     }
@@ -96,71 +99,21 @@ impl From<&TypeName> for rcl::TypeName {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum TopicConfigError {
-    /// The topic is not a valid ROS 2 topic name.
-    InvalidTopic,
-    /// The type name is not of the form `package/msg/Message`.
-    InvalidTypeName,
-}
-
-impl core::fmt::Display for TopicConfigError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "TopicConfigError::{self:?}")
-    }
-}
-
-impl core::error::Error for TopicConfigError {}
-
-/// A ROS 2 topic to bridge.
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TopicConfig {
-    /// Fully-qualified ROS 2 topic name, e.g. `/Camera/FrontRight`.
-    pub topic: TopicName,
-    /// ROS 2 type name, e.g. `geometry_msgs/msg/Twist`.
-    pub type_name: TypeName,
-}
-
-impl TopicConfig {
-    /// Creates a config entry, validating the ROS 2 topic name and message
-    /// type name.
-    ///
-    /// - The topic must be a valid ROS 2 topic name
-    /// - The type name must have the form `package/msg/Message`
-    pub fn new(topic: &str, type_name: &str) -> Result<Self, TopicConfigError> {
-        let origin = "TopicConfig::new";
-
-        let topic = match TopicName::new(topic) {
-            Ok(topic) => topic,
-            Err(error) => {
-                fail!(from origin,
-                    with TopicConfigError::InvalidTopic,
-                    "Failed to create topic config from invalid topic name '{}': {}",
-                    topic,
-                    error
-                );
-            }
-        };
-        let type_name = match TypeName::new(type_name) {
-            Ok(type_name) => type_name,
-            Err(error) => {
-                fail!(from origin,
-                    with TopicConfigError::InvalidTypeName,
-                    "Failed to create topic config from invalid type name '{}': {}",
-                    type_name,
-                    error
-                );
-            }
-        };
-
-        Ok(Self { topic, type_name })
+impl From<rcl::TypeName> for TypeName {
+    /// Adopts an rcl type name, which already upholds the naming rules.
+    fn from(type_name: rcl::TypeName) -> Self {
+        Self(type_name)
     }
 }
 
 /// Configuration for the `Ros2Backend`.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
-    /// The topics to bridge. Typesupport for every entry is resolved during
-    /// backend creation, which fails if any cannot be resolved.
-    pub topics: Vec<TopicConfig>,
+    /// Message types whose typesupport is resolved during backend creation.
+    /// Types left out are resolved on first use instead.
+    ///
+    /// Types listed here which cannot be resolved cause an error on creation
+    /// and thus fails quickly on misconfiguration.
+    #[serde(default)]
+    pub preload_types: Vec<TypeName>,
 }
