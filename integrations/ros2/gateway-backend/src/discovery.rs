@@ -301,12 +301,20 @@ impl<
             "Failed to query the ROS 2 graph"
         );
 
-        // TODO: Handle topics that support multiple types. Only the first is
-        // taken, the rest are discarded.
+        // Topics with multiple types cannot be bridged safely and are
+        // skipped.
         let live: Vec<(TopicName, TypeName)> = graph
             .into_iter()
-            .filter_map(|(name, types)| {
-                let type_name = types.into_iter().next()?;
+            .filter_map(|(name, mut types)| {
+                if types.len() > 1 {
+                    warn!(
+                        "Topic '{}' will not be bridged: multiple types found on the topic {:?}",
+                        name.as_str(),
+                        types
+                    );
+                    return None;
+                }
+                let type_name = types.pop()?;
 
                 Some((TopicName::from(name), TypeName::from(type_name)))
             })
