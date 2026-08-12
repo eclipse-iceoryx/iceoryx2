@@ -40,20 +40,26 @@ class RequestMutUninit {
     auto operator=(const RequestMutUninit&) -> RequestMutUninit& = delete;
 
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`]
+    template <typename T = RequestPayload, typename = std::enable_if_t<!has_flatbuffer_marker<T>(), void>>
     auto header() const -> RequestHeader;
 
     /// Returns a reference to the user defined request header.
-    template <typename T = RequestUserHeader,
-              typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
+    template <
+        typename T = RequestUserHeader,
+        typename U = RequestPayload,
+        typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value && !has_flatbuffer_marker<U>(), void>>
     auto user_header() const -> const T&;
 
     /// Returns a mutable reference to the user defined request header.
-    template <typename T = RequestUserHeader,
-              typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
+    template <
+        typename T = RequestUserHeader,
+        typename U = RequestPayload,
+        typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value && !has_flatbuffer_marker<U>(), void>>
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const RequestPayload&;
 
     /// Returns a reference to the user defined request payload.
@@ -61,7 +67,8 @@ class RequestMutUninit {
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> RequestPayload&;
 
     /// Returns a mutable reference to the user defined request payload.
@@ -70,7 +77,8 @@ class RequestMutUninit {
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, T>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), T>>
     auto write_payload(RequestPayload&& payload)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
@@ -109,6 +117,7 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
+template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::header() const
     -> RequestHeader {
@@ -120,7 +129,7 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-template <typename T, typename>
+template <typename T, typename U, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header() const
     -> const T& {
@@ -132,7 +141,7 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-template <typename T, typename>
+template <typename T, typename U, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header_mut()
     -> T& {

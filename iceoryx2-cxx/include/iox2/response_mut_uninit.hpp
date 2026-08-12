@@ -15,6 +15,7 @@
 
 #include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"
@@ -42,20 +43,26 @@ class ResponseMutUninit {
     auto operator=(const ResponseMutUninit&) -> ResponseMutUninit& = delete;
 
     /// Returns a reference to the [`ResponseHeader`].
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!has_flatbuffer_marker<T>(), void>>
     auto header() const -> ResponseHeader;
 
     /// Returns a reference to the user header of the response.
     template <typename T = ResponseUserHeader,
-              typename = std::enable_if_t<!std::is_same<void, ResponseUserHeader>::value, T>>
+              typename U = ResponsePayload,
+              typename =
+                  std::enable_if_t<!std::is_same<void, ResponseUserHeader>::value && !has_flatbuffer_marker<U>(), void>>
     auto user_header() const -> const T&;
 
     /// Returns a mutable reference to the user header of the response.
     template <typename T = ResponseUserHeader,
-              typename = std::enable_if_t<!std::is_same<void, ResponseUserHeader>::value, T>>
+              typename U = ResponsePayload,
+              typename =
+                  std::enable_if_t<!std::is_same<void, ResponseUserHeader>::value && !has_flatbuffer_marker<T>(), void>>
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const T&;
 
     /// Returns a reference to the payload of the response.
@@ -63,7 +70,8 @@ class ResponseMutUninit {
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> T&;
 
     /// Returns a mutable reference to the payload of the response.
@@ -72,7 +80,8 @@ class ResponseMutUninit {
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, T>>
+    template <typename T = ResponsePayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), T>>
     auto write_payload(ResponsePayload&& payload) -> ResponseMut<Service, T, ResponseUserHeader>;
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
@@ -100,18 +109,19 @@ class ResponseMutUninit {
 };
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::header() const -> ResponseHeader {
     return m_response.header();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-template <typename T, typename>
+template <typename T, typename U, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::user_header() const -> const T& {
     return m_response.template user_header<T>();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
-template <typename T, typename>
+template <typename T, typename U, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::user_header_mut() -> T& {
     return m_response.template user_header_mut<T>();
 }
