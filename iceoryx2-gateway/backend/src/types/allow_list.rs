@@ -75,6 +75,8 @@ mod tests {
         assert_that!(sut.admits("service"), eq true);
         assert_that!(sut.admits("service/child"), eq false);
         assert_that!(sut.admits("other"), eq false);
+        assert_that!(sut.admits("parent/service"), eq false);
+        assert_that!(sut.admits("parent/service/child"), eq false);
     }
 
     #[test]
@@ -83,6 +85,9 @@ mod tests {
 
         assert_that!(sut.admits("/camera/front"), eq true);
         assert_that!(sut.admits("/camera/rear/depth"), eq true);
+        assert_that!(sut.admits("/camera/"), eq true);
+        assert_that!(sut.admits("secondary/camera/"), eq false);
+        assert_that!(sut.admits("secondary/camera/front"), eq false);
         assert_that!(sut.admits("/lidar/front"), eq false);
     }
 
@@ -103,6 +108,26 @@ mod tests {
         assert_that!(sut.admits("robot//cmd"), eq true);
         assert_that!(sut.admits("robot/cmd"), eq false);
         assert_that!(sut.admits("robot12/cmd"), eq false);
+    }
+
+    #[test]
+    fn trailing_question_mark_requires_one_more_character() {
+        let sut = AllowList::new(&["robot?"]);
+
+        assert_that!(sut.admits("robot1"), eq true);
+        assert_that!(sut.admits("robots"), eq true);
+        assert_that!(sut.admits("robot"), eq false);
+        assert_that!(sut.admits("robot12"), eq false);
+    }
+
+    #[test]
+    fn leading_question_mark_requires_one_preceding_character() {
+        let sut = AllowList::new(&["?robot"]);
+
+        assert_that!(sut.admits("1robot"), eq true);
+        assert_that!(sut.admits("/robot"), eq true);
+        assert_that!(sut.admits("robot"), eq false);
+        assert_that!(sut.admits("12robot"), eq false);
     }
 
     #[test]
