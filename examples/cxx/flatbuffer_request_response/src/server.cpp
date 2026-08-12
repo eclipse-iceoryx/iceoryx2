@@ -76,36 +76,28 @@ auto main() -> int {
 
     std::cout << "Server ready to receive requests!" << std::endl;
 
-    auto counter = 0;
+    auto response_counter = 0;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        //    while (true) {
-        //        auto active_request = server.receive().value();
-        //        if (active_request.has_value()) {
-        //            std::cout << "received request: " << active_request->payload() << std::endl;
+        auto active_request = server.receive().value();
+        if (active_request.has_value()) {
+            const auto* data = active_request->payload_root();
 
-        //            auto response = TransmissionData { 5 + counter, 6 * counter, 7.77 }; // NOLINT
-        //            std::cout << "send response: " << response << std::endl;
-        //            // send first response by using the slower, non-zero-copy API
-        //            active_request->send_copy(response).value();
+            std::cout << "title: " << data->title()->c_str() << std::endl;
+            std::cout << "user header: " << active_request->user_header() << std::endl;
 
-        //            // use zero copy API, send out some responses to demonstrate the streaming API
-        //            for (auto iter = 0; iter < static_cast<int32_t>(active_request->payload()) % 2; iter++) {
-        //                auto response = active_request->loan_uninit().value();
-        //                auto initialized_response = response.write_payload(
-        //                    TransmissionData { counter * (iter + 1), counter + iter, counter * 0.1234 }); // NOLINT
-        //                std::cout << "send response: " << initialized_response.payload() << std::endl;
-        //                send(std::move(initialized_response)).value();
-        //            }
-        //        } else {
-        //            break;
-        //        }
-        //        // when an active_request goes out of scope it marks the connection so
-        //        // that the corresponding pending response sees that no more
-        //        // responses are arriving
-        //    }
+            const auto* entries = data->entries();
+            for (uint32_t i = 0; i < entries->size(); ++i) {
+                response_counter += 1;
+                auto data1 = entries->Get(i)->data_1();
+                auto data2 = entries->Get(i)->data_2();
+                auto sum = data1 + data2;
 
-        counter += 1;
+                std::cout << "  Send response: " << data1 << "+" << data2 << " = " << sum << " to Entry " << i
+                          << ": data_1=" << data1 << ", data_2=" << data2 << std::endl;
+            }
+            std::cout << std::endl;
+        }
     }
 
     std::cout << "exit" << std::endl;

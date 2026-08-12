@@ -178,4 +178,26 @@ pub unsafe extern "C" fn iox2_response_header_number_of_elements(
         header.value.as_ref().number_of_elements()
     }
 }
+
+/// Returns the payload offset.
+///
+/// # Arguments
+///
+/// * `header_handle` is valid, non-null and was initialized with
+///   [`iox2_response_header()`](crate::iox2_response_header)
+///
+/// # Safety
+///
+/// * `header_handle` is valid and non-null
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_response_header_payload_offset(
+    header_handle: iox2_response_header_h_ref,
+) -> u64 {
+    header_handle.assert_non_null();
+    unsafe {
+        let header = &mut *header_handle.as_type();
+
+        header.value.as_ref().payload_offset()
+    }
+}
 // END C API

@@ -39,6 +39,11 @@ impl RequestHeader {
     pub fn client_id(&self) -> UniqueClientId {
         self.client_id
     }
+
+    /// Returns the payload offset.
+    pub fn payload_offset(&self) -> u64 {
+        self.payload_offset
+    }
 }
 
 impl PayloadHeader for RequestHeader {
@@ -68,6 +73,11 @@ impl ResponseHeader {
     /// which sent the [`Response`](crate::response::Response)
     pub fn server_id(&self) -> UniqueServerId {
         self.server_id
+    }
+
+    /// Returns the payload offset.
+    pub fn payload_offset(&self) -> u64 {
+        self.payload_offset
     }
 }
 

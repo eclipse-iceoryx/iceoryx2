@@ -93,11 +93,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     let mut response = active_request.loan_flatbuffer()?;
                     let builder = response.flatbuffer_builder();
 
-                    let received_entries_len = entry.data_1().max(0) as u64 + entry.data_2();
+                    let sum = entry.data_1().max(0) as u64 + entry.data_2();
                     let data_props = DataProps::create(
                         builder,
                         &DataPropsArgs {
-                            received_entries_len,
+                            received_entries_len: sum,
                         },
                     );
 
@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     *response.user_header_mut() = response_counter;
 
                     coutln!(
-                        "  Send response: {}+{} = {received_entries_len} to: Entry {index}: data_1={}, data_2={}",
+                        "  Send response: {}+{} = {sum} to: Entry {index}: data_1={}, data_2={}",
                         entry.data_1(),
                         entry.data_2(),
                         entry.data_1(),

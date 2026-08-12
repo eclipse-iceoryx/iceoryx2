@@ -28,6 +28,12 @@ class RequestHeader {
     /// Returns the [`UniqueClientId`] of the source [`Client`].
     auto client_port_id() -> UniqueClientId;
 
+    /// Returns the number of [`Payload`] elements in the received [`Request`].
+    auto number_of_elements() const -> uint64_t;
+
+    /// Returns the payload offset.
+    auto payload_offset() const -> uint64_t;
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class ActiveRequest;
@@ -53,6 +59,12 @@ class ResponseHeader {
 
     /// Returns the [`UniqueServerId`] of the source [`Server`].
     auto server_port_id() -> UniqueServerId;
+
+    /// Returns the number of [`Payload`] elements in the received [`Response`].
+    auto number_of_elements() const -> uint64_t;
+
+    /// Returns the payload offset.
+    auto payload_offset() const -> uint64_t;
 
   private:
     template <ServiceType, typename, typename>

@@ -21,6 +21,7 @@
 #include "iox2/response_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
 
+#include <flatbuffers/flatbuffers.h>
 #include <type_traits>
 
 namespace iox2 {
@@ -103,6 +104,14 @@ class ActiveRequest {
     auto loan_slice(uint64_t number_of_elements)
         -> bb::Expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Server;
@@ -148,6 +157,37 @@ template <ServiceType Service,
 inline ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~ActiveRequest() noexcept {
     drop();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_bytes() const
+    -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_active_request_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len - payload_offset);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_root() const
+    -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
 }
 
 template <ServiceType Service,
