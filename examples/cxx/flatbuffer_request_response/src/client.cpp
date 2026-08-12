@@ -73,30 +73,28 @@ auto main() -> int {
                       .value();
 
     auto request_counter = 0U;
-    auto response_counter = 0U;
-
-    // sending first request by using slower, inefficient copy API
-    std::cout << "send request " << request_counter << " ..." << std::endl;
-    // auto pending_response = client.send_copy(request_counter).value();
-
     while (node.wait(CYCLE_TIME).has_value()) {
-        //// acquire all responses to our request from our buffer that were sent by the servers
-        // while (true) {
-        //     auto response = pending_response.receive().value();
-        //     if (response.has_value()) {
-        //         std::cout << "received response " << response_counter << ": " << response->payload() << std::endl;
-        //         response_counter += 1;
-        //     } else {
-        //         break;
-        //     }
-        // }
+        request_counter += 1;
+        auto request = client.loan_flatbuffer().value();
+        auto& builder = request.flatbuffer_builder();
 
-        // request_counter += 1;
-        //// send all other requests by using zero copy API
-        // auto request = client.loan_uninit().value();
-        // auto initialized_request = request.write_payload(request_counter);
+        // BEGIN: standard flatbuffer API
+        auto title = builder.CreateString("Hello World!");
 
-        // pending_response = send(std::move(initialized_request)).value();
+        std::vector<flatbuffers::Offset<Entry>> entries;
+        for (uint64_t i = 0; i < (request_counter % 15); ++i) {                                     // NOLINT
+            entries.emplace_back(CreateEntry(builder, static_cast<int32_t>(6 * i + 5), 6 * i + 7)); // NOLINT
+        }
+
+        auto entry_vec = builder.CreateVector(entries);
+        auto unbounded_data = CreateUnboundedData(builder, title, entry_vec);
+        // END: standard flatbuffer API
+
+        // calls builder.Finish(root, nullptr) and sets the payload offset
+        auto initialized_request = assume_init(std::move(request), unbounded_data);
+        initialized_request.user_header_mut() = request_counter;
+
+        auto pending_response = send(std::move(initialized_request)).has_value();
 
         std::cout << "send request " << request_counter << " ..." << std::endl;
     }

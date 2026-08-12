@@ -18,6 +18,11 @@
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
 
+#include "iox2/internal/resizable_memory_request.hpp"
+
+#include <flatbuffers/buffer.h>
+#include <flatbuffers/flatbuffer_builder.h>
+
 namespace iox2 {
 
 /// A version of the [`RequestMut`] where the payload is not initialized which allows
@@ -94,11 +99,18 @@ class RequestMutUninit {
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
+    /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
+    /// allocator to enable true zero-copy data transfer.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
+    auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Client;
 
     explicit RequestMutUninit() = default;
+
+    auto get_handle() -> iox2_request_mut_h;
 
     template <ServiceType S,
               typename RequestPayloadT,
@@ -109,6 +121,24 @@ class RequestMutUninit {
     assume_init(RequestMutUninit<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&& self)
         -> RequestMut<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>;
 
+#if IOX2_FEATURE_FLATBUFFERS
+    template <ServiceType S,
+              typename RequestPayloadT,
+              typename RequestUserHeaderT,
+              typename ResponsePayloadT,
+              typename ResponseUserHeaderT>
+    friend auto assume_init(
+        RequestMutUninit<S, Flatbuffer<RequestPayloadT>, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&&
+            self,
+        flatbuffers::Offset<RequestPayloadT>)
+        -> RequestMut<S, Flatbuffer<RequestPayloadT>, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>;
+#endif // IOX2_FEATURE_FLATBUFFERS
+
+
+#if IOX2_FEATURE_FLATBUFFERS
+    internal::ResizableMemoryRequest<Service>* m_memory = nullptr;
+    bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
+#endif // IOX2_FEATURE_FLATBUFFERS
     RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> m_request;
 };
 
@@ -255,6 +285,50 @@ assume_init(RequestMutUninit<Service, RequestPayload, RequestUserHeader, Respons
     return std::move(self.m_request);
 }
 
+#if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+auto RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    flatbuffer_builder() -> flatbuffers::FlatBufferBuilder& {
+    return m_flatbuffer_builder.value();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto assume_init(
+    RequestMutUninit<Service, Flatbuffer<RequestPayload>, RequestUserHeader, ResponsePayload, ResponseUserHeader>&&
+        self,
+    flatbuffers::Offset<RequestPayload> root)
+    -> RequestMut<Service, Flatbuffer<RequestPayload>, RequestUserHeader, ResponsePayload, ResponseUserHeader> {
+    self.flatbuffer_builder().Finish(root, nullptr);
+    const auto* payload_ptr = self.flatbuffer_builder().GetBufferPointer();
+    auto handle = self.get_handle();
+    iox2_request_mut_finish_serialized(&handle, payload_ptr);
+    // must be the last statement since `iox2_request_mut_finish_serialized` updates the
+    // header and user header ptrs when the flatbuffer builder has resized the memory
+    internal::PlacementDefault<RequestUserHeader>::placement_default(self.m_request);
+
+    return std::move(self.m_request);
+}
+#endif // IOX2_FEATURE_FLATBUFFERS
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto
+RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::get_handle()
+    -> iox2_request_mut_h {
+    return m_request.m_handle;
+}
 } // namespace iox2
 
 #endif

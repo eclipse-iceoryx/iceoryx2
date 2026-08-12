@@ -610,7 +610,7 @@ template <typename RequestPayload,
 template <typename U>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     set_response_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void> {
-    auto type_name = iox2::internal::get_type_name<typename RequestPayload::ValueType>();
+    auto type_name = iox2::internal::get_type_name<typename ResponsePayload::ValueType>();
     iox2_service_builder_request_response_response_type_definition_name_hint(
         &m_handle, type_name.unchecked_access().c_str(), type_name.size(), "", 0);
 }

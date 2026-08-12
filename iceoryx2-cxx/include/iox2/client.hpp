@@ -101,6 +101,14 @@ class Client {
     auto loan_slice(uint64_t number_of_elements)
         -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError>;
 
+    // #if IOX2_FEATURE_FLATBUFFERS
+    /// Acquires a [`RequestMutUninit`] with an integrated flatbuffer builder.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto loan_flatbuffer() -> bb::Expected<
+        RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        LoanError>;
+    // #endif // IOX2_FEATURE_FLATBUFFERS
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryClient;
@@ -357,6 +365,40 @@ inline void Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
         m_handle = nullptr;
     }
 }
+
+// #if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_flatbuffer()
+    -> bb::Expected<RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+                    LoanError> {
+    RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> request;
+
+    auto result =
+        iox2_client_loan_slice_uninit(&m_handle, &request.m_request.m_request, &request.m_request.m_handle, 1);
+
+    if (result != IOX2_OK) {
+        return bb::err(iox2::bb::into<LoanError>(result));
+    }
+
+    iox2_resizable_memory_request_h resizable_memory_handle {};
+    iox2_request_mut_create_resizable_memory(&request.m_request.m_handle, nullptr, &resizable_memory_handle);
+
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) The FlatBufferBuilder takes the ownership and the external interface requires a raw pointer.
+    request.m_memory = new internal::ResizableMemoryRequest<Service>(resizable_memory_handle);
+
+    auto initial_size = request.m_memory->len();
+    request.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, request.m_memory, true);
+
+    return std::move(request);
+}
+// #endif // IOX2_FEATURE_FLATBUFFERS
+
+
 } // namespace iox2
 
 #endif

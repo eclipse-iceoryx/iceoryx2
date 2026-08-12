@@ -20,6 +20,13 @@
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"
 
+#if IOX2_FEATURE_FLATBUFFERS
+#include "iox2/internal/resizable_memory_request.hpp"
+
+#include <flatbuffers/buffer.h>
+#include <flatbuffers/flatbuffer_builder.h>
+#endif
+
 namespace iox2 {
 
 /// Acquired by a [`ActiveRequest`] with

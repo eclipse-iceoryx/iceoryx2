@@ -70,6 +70,8 @@ mod reader_details;
 mod request_header;
 mod request_mut;
 mod resizable_memory_publish_subscribe;
+mod resizable_memory_request;
+mod resizable_memory_response;
 mod response;
 mod response_header;
 mod response_mut;

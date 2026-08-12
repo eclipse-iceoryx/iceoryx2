@@ -19,7 +19,16 @@ use iceoryx2::{
 };
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use crate::{IOX2_OK, api::IntoCInt};
+use crate::{
+    IOX2_OK,
+    api::{
+        IntoCInt,
+        resizable_memory_response::{
+            ResizableMemoryResponseUnion, iox2_resizable_memory_response_h,
+            iox2_resizable_memory_response_t,
+        },
+    },
+};
 
 use super::{
     AssertNonNullHandle, HandleToType, UninitPayloadFfi, UserHeaderFfi, c_size_t,
@@ -413,6 +422,101 @@ pub unsafe extern "C" fn iox2_response_mut_drop(response_handle: iox2_response_m
             }
         }
         (response.deleter)(response);
+    }
+}
+
+/// Finalizes a response that was populated through serialization. Based on the
+/// provided `payload_ptr` and `allocation_size` the offset to the start of the
+/// payload is calculated.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `payload_ptr` is a valid pointer into the managed payload of this sample.
+/// * `allocation_size` is the size that was allocated through the resizable memory.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_response_mut_finish_serialized(
+    handle: iox2_response_mut_h_ref,
+    payload_ptr: *const u8,
+) {
+    handle.assert_non_null();
+    unsafe {
+        let request = &mut *handle.as_type();
+        match request.service_type {
+            iox2_service_type_e::IPC => request
+                .value
+                .as_mut()
+                .ipc
+                .__internal_finish_serialized(payload_ptr),
+            iox2_service_type_e::LOCAL => request
+                .value
+                .as_mut()
+                .local
+                .__internal_finish_serialized(payload_ptr),
+        };
+    }
+}
+
+/// Returns a resizable memory builder required for dynamic allocation within the request.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_resizable_memory_response_t`]. If it is a NULL pointer, the
+///   storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_resizable_memory_response_h`] handle which
+///   will be initialized by this function call.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_response_mut_create_resizable_memory(
+    handle: iox2_response_mut_h_ref,
+    struct_ptr: *mut iox2_resizable_memory_response_t,
+    handle_ptr: *mut iox2_resizable_memory_response_h,
+) {
+    handle.assert_non_null();
+    debug_assert!(!handle_ptr.is_null());
+
+    let mut struct_ptr = struct_ptr;
+    fn no_op(_: *mut iox2_resizable_memory_response_t) {}
+    let mut deleter: fn(*mut iox2_resizable_memory_response_t) = no_op;
+    if struct_ptr.is_null() {
+        struct_ptr = iox2_resizable_memory_response_t::alloc();
+        deleter = iox2_resizable_memory_response_t::dealloc;
+    }
+    debug_assert!(!struct_ptr.is_null());
+
+    unsafe {
+        let sample = &mut *handle.as_type();
+        let service_type = sample.service_type;
+
+        match service_type {
+            iox2_service_type_e::IPC => (*struct_ptr).init(
+                service_type,
+                ResizableMemoryResponseUnion::new_ipc(
+                    sample
+                        .value
+                        .as_mut()
+                        .ipc
+                        .__internal_create_resizable_memory(),
+                ),
+                deleter,
+            ),
+            iox2_service_type_e::LOCAL => (*struct_ptr).init(
+                service_type,
+                ResizableMemoryResponseUnion::new_local(
+                    sample
+                        .value
+                        .as_mut()
+                        .local
+                        .__internal_create_resizable_memory(),
+                ),
+                deleter,
+            ),
+        }
+
+        *handle_ptr = (*struct_ptr).as_handle();
     }
 }
 // END C API
