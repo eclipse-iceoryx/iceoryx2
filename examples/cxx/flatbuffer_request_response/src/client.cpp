@@ -105,7 +105,7 @@ auto main() -> int {
         while (pending_response.has_response() || pending_response.is_connected()) {
             auto response = pending_response.receive().value();
             if (response.has_value()) {
-                std::cout << "  Receive response: " << response->payload_root()->received_entries_len() << std::endl;
+                std::cout << "  Received response: " << response->payload_root()->received_entries_len() << std::endl;
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(25)); // NOLINT
             }
