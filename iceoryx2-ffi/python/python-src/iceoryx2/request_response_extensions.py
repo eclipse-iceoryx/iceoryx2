@@ -407,14 +407,14 @@ def flatbuffer_builder_response(self: ResponseMutUninit) -> flatbuffers.Builder:
 @overload
 def assume_init_request(self: RequestMutUninit) -> RequestMut: ...  # noqa: E704
 @overload
-def assume_init_request(
+def assume_init_request(  # noqa: E704
     self: RequestMutUninit, root: int
-) -> RequestMut: ...  # noqa: E704
+) -> RequestMut: ...
 
 
 def assume_init_request(self: RequestMutUninit, root=None) -> RequestMut:
     """
-    Extracts the value of the uninitialized payload and labels the `RequestMutUninit` as initialized `RequestMut`
+    Extracts the value of the uninitialized payload and labels the `RequestMutUninit` as initialized `RequestMut`.
 
     After this call the `RequestMutUninit` is no longer usable!
     """
@@ -444,14 +444,14 @@ def assume_init_request(self: RequestMutUninit, root=None) -> RequestMut:
 @overload
 def assume_init_response(self: ResponseMutUninit) -> ResponseMut: ...  # noqa: E704
 @overload
-def assume_init_response(
+def assume_init_response(  # noqa: E704
     self: ResponseMutUninit, root: int
-) -> ResponseMut: ...  # noqa: E704
+) -> ResponseMut: ...
 
 
 def assume_init_response(self: ResponseMutUninit, root=None) -> ResponseMut:
     """
-    Extracts the value of the uninitialized payload and labels the `ResponseMutUninit` as initialized `ResponseMut`
+    Extracts the value of the uninitialized payload and labels the `ResponseMutUninit` as initialized `ResponseMut`.
 
     After this call the `ResponseMutUninit` is no longer usable!
     """
