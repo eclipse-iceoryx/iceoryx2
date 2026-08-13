@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2_bb_container::string::StaticString;
+use iceoryx2_bb_flatbuffers::TypeName;
 use pyo3::prelude::*;
 
 use crate::alignment::Alignment;
@@ -19,6 +21,7 @@ use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{
     RequestResponseCreateError, RequestResponseOpenError, RequestResponseOpenOrCreateError,
 };
+use crate::file_path::FilePath;
 use crate::parc::Parc;
 use crate::port_factory_request_response::{
     PortFactoryRequestResponse, PortFactoryRequestResponseType,
@@ -386,6 +389,92 @@ impl ServiceBuilderRequestResponse {
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_borrowed_responses_per_pending_response(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn __internal_request_type_definition_name_hint(
+        &self,
+        name: &str,
+        namespace: &str,
+    ) -> Self {
+        let type_name = TypeName {
+            name: StaticString::from_str_truncated(name)
+                .expect("Typenames contain only valid UTF-8 characters."),
+            namespace: StaticString::from_str_truncated(namespace)
+                .expect("Namespace names contain only valid UTF-8 characters."),
+        };
+        match &self.value {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.__internal_request_type_definition_name_hint(&type_name);
+                self.clone_ipc(this)
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.__internal_request_type_definition_name_hint(&type_name);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    pub fn __internal_response_type_definition_name_hint(
+        &self,
+        name: &str,
+        namespace: &str,
+    ) -> Self {
+        let type_name = TypeName {
+            name: StaticString::from_str_truncated(name)
+                .expect("Typenames contain only valid UTF-8 characters."),
+            namespace: StaticString::from_str_truncated(namespace)
+                .expect("Namespace names contain only valid UTF-8 characters."),
+        };
+        match &self.value {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.__internal_response_type_definition_name_hint(&type_name);
+                self.clone_ipc(this)
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.__internal_response_type_definition_name_hint(&type_name);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    /// Sets the path to the flatbuffer schema file for the Request. If this is not explicitly
+    /// defined, iceoryx2 will try to find the best fitting schema file in the configured
+    /// filebuffer schema paths defined in the config.
+    pub fn __internal_request_flatbuffer_schema_path(&self, path: &FilePath) -> Self {
+        match &self.value {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_request_flatbuffer_schema_path(&path.0) };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_request_flatbuffer_schema_path(&path.0) };
+                self.clone_local(this)
+            }
+        }
+    }
+
+    /// Sets the path to the flatbuffer schema file for the Response. If this is not explicitly
+    /// defined, iceoryx2 will try to find the best fitting schema file in the configured
+    /// filebuffer schema paths defined in the config.
+    pub fn __internal_response_flatbuffer_schema_path(&self, path: &FilePath) -> Self {
+        match &self.value {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_response_flatbuffer_schema_path(&path.0) };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_response_flatbuffer_schema_path(&path.0) };
                 self.clone_local(this)
             }
         }

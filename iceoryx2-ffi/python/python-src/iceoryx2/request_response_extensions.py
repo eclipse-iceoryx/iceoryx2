@@ -16,6 +16,7 @@ import ctypes
 from typing import Any, Type, TypeVar, get_args, get_origin
 
 from ._iceoryx2 import *
+from .flatbuffer import Flatbuffer
 from .slice import Slice
 from .type_name import get_type_name
 
@@ -31,26 +32,22 @@ def request_response(
 
     The request/response payload ctype must be provided as argument.
     """
-    if hasattr(request, "__name__"):
-        request_type_name = getattr(request, "__name__")
-    else:
-        origin_type = get_origin(request)
-        assert origin_type is not None
-        request_type_name = getattr(origin_type, "__name__")
+    request_type_name = ""
     request_type_size = 0
     request_type_align = 0
     request_type_variant = TypeVariant.FixedSize
-    if hasattr(response, "__name__"):
-        response_type_name = getattr(response, "__name__")
-    else:
-        origin_type = get_origin(response)
-        assert origin_type is not None
-        response_type_name = getattr(origin_type, "__name__")
+    response_type_name = ""
     response_type_size = 0
     response_type_align = 0
     response_type_variant = TypeVariant.FixedSize
 
-    if get_origin(request) is Slice:
+    if get_origin(request) is Flatbuffer:
+        (contained_type,) = get_args(request)
+        request_type_name = "iox2::Flatbuffer"
+        request_type_variant = TypeVariant.FixedSize
+        request_type_size = 1
+        request_type_align = 1
+    elif get_origin(request) is Slice:
         (contained_type,) = get_args(request)
         request_type_name = get_type_name(contained_type)
         request_type_variant = TypeVariant.Dynamic
@@ -62,7 +59,13 @@ def request_response(
         request_type_align = ctypes.alignment(request)
         request_type_variant = TypeVariant.FixedSize
 
-    if get_origin(response) is Slice:
+    if get_origin(response) is Flatbuffer:
+        (contained_type,) = get_args(response)
+        response_type_name = "iox2::Flatbuffer"
+        response_type_variant = TypeVariant.FixedSize
+        response_type_size = 1
+        response_type_align = 1
+    elif get_origin(response) is Slice:
         (contained_type,) = get_args(response)
         response_type_name = get_type_name(contained_type)
         response_type_variant = TypeVariant.Dynamic
@@ -77,6 +80,18 @@ def request_response(
     result = self.__request_response()
     result.__set_request_payload_type(request)
     result.__set_response_payload_type(response)
+
+    if get_origin(request) is Flatbuffer:
+        (PayloadType,) = get_args(request)
+        result = result.__internal_request_type_definition_name_hint(
+            get_type_name(PayloadType), ""
+        )
+
+    if get_origin(response) is Flatbuffer:
+        (PayloadType,) = get_args(response)
+        result = result.__internal_response_type_definition_name_hint(
+            get_type_name(PayloadType), ""
+        )
 
     return (
         result.__request_payload_type_details(
@@ -287,7 +302,10 @@ def allocation_strategy_request(
     self: PortFactoryClient, value: AllocationStrategy
 ) -> PortFactoryClient:
     """Defines the allocation strategy that is used when the memory is exhausted."""
-    assert get_origin(self.__request_payload_type_details) is Slice
+    assert (
+        get_origin(self.__request_payload_type_details) is Slice
+        or get_origin(self.__request_payload_type_details) is Flatbuffer
+    )
 
     return self.__allocation_strategy(value)
 
@@ -296,7 +314,10 @@ def allocation_strategy_response(
     self: PortFactoryServer, value: AllocationStrategy
 ) -> PortFactoryServer:
     """Defines the allocation strategy that is used when the memory is exhausted."""
-    assert get_origin(self.__response_payload_type_details) is Slice
+    assert (
+        get_origin(self.__response_payload_type_details) is Slice
+        or get_origin(self.__response_payload_type_details) is Flatbuffer
+    )
 
     return self.__allocation_strategy(value)
 
@@ -335,9 +356,57 @@ def send_response_copy(self: ActiveRequest, t: Type[ResT]) -> Any:
     return response.send()
 
 
+def request_flatbuffer_schema_path(
+    self: PortFactoryClient, value: FilePath
+) -> PortFactoryClient:
+    """
+    Sets the path to the flatbuffer schema file.
+
+    If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
+    in the configured filebuffer schema paths defined in the config.
+    """
+    assert get_origin(self.__request_payload_type_details) is Flatbuffer
+
+    return self.__internal_request_flatbuffer_schema_path(value)
+
+
+def response_flatbuffer_schema_path(
+    self: PortFactoryServer, value: FilePath
+) -> PortFactoryServer:
+    """
+    Sets the path to the flatbuffer schema file.
+
+    If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
+    in the configured filebuffer schema paths defined in the config.
+    """
+    assert get_origin(self.__response_payload_type_details) is Flatbuffer
+
+    return self.__internal_response_flatbuffer_schema_path(value)
+
+
+def initial_reserved_memory_request(
+    self: PortFactoryClient, value: int
+) -> PortFactoryClient:
+    """Sets the maximum initial reserved memory that the underlying allocator reserves for the flatbuffer builder."""
+    assert get_origin(self.__request_payload_type_details) is Flatbuffer
+
+    return self.__initial_max_slice_len(value)
+
+
+def initial_reserved_memory_response(
+    self: PortFactoryServer, value: int
+) -> PortFactoryServer:
+    """Sets the maximum initial reserved memory that the underlying allocator reserves for the flatbuffer builder."""
+    assert get_origin(self.__response_payload_type_details) is Flatbuffer
+
+    return self.__initial_max_slice_len(value)
+
+
 ServiceBuilder.request_response = request_response
 ServiceBuilderRequestResponse.request_header = set_request_header
 ServiceBuilderRequestResponse.response_header = set_response_header
+ServiceBuilderRequestResponse.request_flatbuffer_schema_path = request_flatbuffer_schema_path
+ServiceBuilderRequestResponse.response_flatbuffer_schema_path = response_flatbuffer_schema_path
 
 ActiveRequest.send_copy = send_response_copy
 ActiveRequest.payload = request_payload
@@ -347,8 +416,10 @@ ActiveRequest.loan_slice_uninit = loan_slice_uninit_response
 
 PortFactoryClient.initial_max_slice_len = initial_max_slice_len_request
 PortFactoryClient.allocation_strategy = allocation_strategy_request
+PortFactoryClient.initial_reserved_memory = initial_reserved_memory_request
 PortFactoryServer.initial_max_slice_len = initial_max_slice_len_response
 PortFactoryServer.allocation_strategy = allocation_strategy_response
+PortFactoryServer.initial_reserved_memory = initial_reserved_memory_response
 
 PendingResponse.payload = request_payload
 PendingResponse.user_header = request_header
