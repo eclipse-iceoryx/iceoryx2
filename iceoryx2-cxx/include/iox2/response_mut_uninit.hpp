@@ -20,12 +20,10 @@
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"
 
-#if IOX2_FEATURE_FLATBUFFERS
-#include "iox2/internal/resizable_memory_request.hpp"
+#include "iox2/internal/resizable_memory_response.hpp"
 
 #include <flatbuffers/buffer.h>
 #include <flatbuffers/flatbuffer_builder.h>
-#endif
 
 namespace iox2 {
 
@@ -102,6 +100,11 @@ class ResponseMutUninit {
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> ResponseMut<Service, T, ResponseUserHeader>;
 
+    /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
+    /// allocator to enable true zero-copy data transfer.
+    template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
+    auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class ActiveRequest;
@@ -110,9 +113,21 @@ class ResponseMutUninit {
     friend auto assume_init(ResponseMutUninit<S, ResponsePayloadT, ResponseUserHeaderT>&& self)
         -> ResponseMut<S, ResponsePayloadT, ResponseUserHeaderT>;
 
+    template <ServiceType S, typename ResponsePayloadT, typename ResponseUserHeaderT>
+    friend auto assume_init(ResponseMutUninit<S, Flatbuffer<ResponsePayloadT>, ResponseUserHeaderT>&& self,
+                            flatbuffers::Offset<ResponsePayloadT>)
+        -> ResponseMut<S, Flatbuffer<ResponsePayloadT>, ResponseUserHeaderT>;
+
     explicit ResponseMutUninit() = default;
 
+    auto get_handle() -> iox2_response_mut_h;
+
     ResponseMut<Service, ResponsePayload, ResponseUserHeader> m_response;
+
+#if IOX2_FEATURE_FLATBUFFERS
+    internal::ResizableMemoryResponse<Service>* m_memory = nullptr;
+    bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
+#endif // IOX2_FEATURE_FLATBUFFERS
 };
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
@@ -190,6 +205,35 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::wri
     }
     return std::move(m_response);
 }
+
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::get_handle() -> iox2_response_mut_h {
+    return m_response.m_handle;
+}
+
+#if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+template <typename T, typename>
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::flatbuffer_builder()
+    -> flatbuffers::FlatBufferBuilder& {
+    return m_flatbuffer_builder.value();
+}
+
+template <ServiceType S, typename ResponsePayload, typename ResponseUserHeader>
+inline auto assume_init(ResponseMutUninit<S, Flatbuffer<ResponsePayload>, ResponseUserHeader>&& self,
+                        flatbuffers::Offset<ResponsePayload> root)
+    -> ResponseMut<S, Flatbuffer<ResponsePayload>, ResponseUserHeader> {
+    self.flatbuffer_builder().Finish(root, nullptr);
+    const auto* payload_ptr = self.flatbuffer_builder().GetBufferPointer();
+    auto handle = self.get_handle();
+    iox2_response_mut_finish_serialized(&handle, payload_ptr);
+    // must be the last statement since `iox2_request_mut_finish_serialized` updates the
+    // header and user header ptrs when the flatbuffer builder has resized the memory
+    internal::PlacementDefault<ResponseUserHeader>::placement_default(self.m_response);
+
+    return std::move(self.m_response);
+}
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 inline auto assume_init(ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>&& self)

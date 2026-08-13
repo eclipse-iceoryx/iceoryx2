@@ -76,7 +76,7 @@ auto main() -> int {
 
     std::cout << "Server ready to receive requests!" << std::endl;
 
-    auto response_counter = 0;
+    uint64_t response_counter = 0;
 
     while (node.wait(CYCLE_TIME).has_value()) {
         auto active_request = server.receive().value();
@@ -88,13 +88,23 @@ auto main() -> int {
 
             const auto* entries = data->entries();
             for (uint32_t i = 0; i < entries->size(); ++i) {
+                // send a response for every entry we have received
                 response_counter += 1;
                 auto data1 = entries->Get(i)->data_1();
                 auto data2 = entries->Get(i)->data_2();
-                auto sum = data1 + data2;
+
+                auto response = active_request->loan_flatbuffer().value();
+                auto& builder = response.flatbuffer_builder();
+
+                auto sum = static_cast<uint64_t>(std::max(data1, 0)) + data2;
+                auto data_props = CreateDataProps(builder, sum);
+
+                auto initialized_response = assume_init(std::move(response), data_props);
+                initialized_response.user_header_mut() = response_counter;
 
                 std::cout << "  Send response: " << data1 << "+" << data2 << " = " << sum << " to Entry " << i
                           << ": data_1=" << data1 << ", data_2=" << data2 << std::endl;
+                send(std::move(initialized_response)).value();
             }
             std::cout << std::endl;
         }

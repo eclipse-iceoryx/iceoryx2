@@ -112,6 +112,9 @@ class ActiveRequest {
     template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto payload_root() const -> const typename T::ValueType*;
 
+    template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto loan_flatbuffer() -> bb::Expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Server;
@@ -426,6 +429,36 @@ inline void ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePa
         iox2_active_request_drop(m_handle);
         m_handle = nullptr;
     }
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_flatbuffer()
+    -> bb::Expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
+    ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
+
+    auto result = iox2_active_request_loan_slice_uninit(
+        &m_handle, &response.m_response.m_response, &response.m_response.m_handle, 1);
+
+    if (result != IOX2_OK) {
+        return bb::err(iox2::bb::into<LoanError>(result));
+    }
+
+    iox2_resizable_memory_response_h resizable_memory_handle {};
+    iox2_response_mut_create_resizable_memory(&response.m_response.m_handle, nullptr, &resizable_memory_handle);
+
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) The FlatBufferBuilder takes the ownership and the external interface requires a raw pointer.
+    response.m_memory = new internal::ResizableMemoryResponse<Service>(resizable_memory_handle);
+
+    auto initial_size = response.m_memory->len();
+    response.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, response.m_memory, true);
+
+    return std::move(response);
 }
 } // namespace iox2
 
