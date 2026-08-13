@@ -101,13 +101,13 @@ class Client {
     auto loan_slice(uint64_t number_of_elements)
         -> bb::Expected<RequestMut<Service, T, RequestUserHeader, ResponsePayload, ResponseUserHeader>, LoanError>;
 
-    // #if IOX2_FEATURE_FLATBUFFERS
+#if IOX2_FEATURE_FLATBUFFERS
     /// Acquires a [`RequestMutUninit`] with an integrated flatbuffer builder.
     template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto loan_flatbuffer() -> bb::Expected<
         RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         LoanError>;
-    // #endif // IOX2_FEATURE_FLATBUFFERS
+#endif // IOX2_FEATURE_FLATBUFFERS
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -366,7 +366,7 @@ inline void Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     }
 }
 
-// #if IOX2_FEATURE_FLATBUFFERS
+#if IOX2_FEATURE_FLATBUFFERS
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -396,7 +396,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
 
     return std::move(request);
 }
-// #endif // IOX2_FEATURE_FLATBUFFERS
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 
 } // namespace iox2

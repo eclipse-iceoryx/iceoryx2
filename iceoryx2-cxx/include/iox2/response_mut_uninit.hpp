@@ -20,10 +20,12 @@
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"
 
+#if IOX2_FEATURE_FLATBUFFERS
 #include "iox2/internal/resizable_memory_response.hpp"
 
 #include <flatbuffers/buffer.h>
 #include <flatbuffers/flatbuffer_builder.h>
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 namespace iox2 {
 
@@ -100,10 +102,12 @@ class ResponseMutUninit {
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> ResponseMut<Service, T, ResponseUserHeader>;
 
+#if IOX2_FEATURE_FLATBUFFERS
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
     /// allocator to enable true zero-copy data transfer.
     template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
     auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -113,10 +117,12 @@ class ResponseMutUninit {
     friend auto assume_init(ResponseMutUninit<S, ResponsePayloadT, ResponseUserHeaderT>&& self)
         -> ResponseMut<S, ResponsePayloadT, ResponseUserHeaderT>;
 
+#if IOX2_FEATURE_FLATBUFFERS
     template <ServiceType S, typename ResponsePayloadT, typename ResponseUserHeaderT>
     friend auto assume_init(ResponseMutUninit<S, Flatbuffer<ResponsePayloadT>, ResponseUserHeaderT>&& self,
                             flatbuffers::Offset<ResponsePayloadT>)
         -> ResponseMut<S, Flatbuffer<ResponsePayloadT>, ResponseUserHeaderT>;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
     explicit ResponseMutUninit() = default;
 

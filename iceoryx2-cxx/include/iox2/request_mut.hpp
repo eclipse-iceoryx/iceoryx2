@@ -23,7 +23,10 @@
 #include "iox2/port_error.hpp"
 #include "iox2/service_type.hpp"
 
+#if IOX2_FEATURE_FLATBUFFERS
 #include <flatbuffers/flatbuffers.h>
+#endif // IOX2_FEATURE_FLATBUFFERS
+
 #include <type_traits>
 
 namespace iox2 {
@@ -78,6 +81,7 @@ class RequestMut {
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
+#if IOX2_FEATURE_FLATBUFFERS
     /// Returns the serialized flatbuffer data as bytes.
     template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
@@ -85,6 +89,7 @@ class RequestMut {
     /// Returns the root of the flatbuffer.
     template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto payload_root() const -> const typename T::ValueType*;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -155,6 +160,7 @@ inline RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, R
     drop();
 }
 
+#if IOX2_FEATURE_FLATBUFFERS
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -185,6 +191,7 @@ RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, Response
     -> const typename T::ValueType* {
     return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
 }
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType Service,
           typename RequestPayload,

@@ -18,10 +18,12 @@
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
 
+#if IOX2_FEATURE_FLATBUFFERS
 #include "iox2/internal/resizable_memory_request.hpp"
 
 #include <flatbuffers/buffer.h>
 #include <flatbuffers/flatbuffer_builder.h>
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 namespace iox2 {
 
@@ -99,10 +101,12 @@ class RequestMutUninit {
     auto write_from_fn(const iox2::bb::StaticFunction<typename T::ValueType(uint64_t)>& initializer)
         -> RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
+#if IOX2_FEATURE_FLATBUFFERS
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
     /// allocator to enable true zero-copy data transfer.
     template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
     auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
   private:
     template <ServiceType, typename, typename, typename, typename>
