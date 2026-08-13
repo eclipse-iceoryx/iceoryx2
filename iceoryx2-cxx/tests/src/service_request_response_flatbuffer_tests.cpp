@@ -700,6 +700,39 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_data_can_be_r
     }
 }
 
+TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_can_read_its_own_payload) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<Flatbuffer<Example::UnboundedData>, Flatbuffer<Example::UnboundedData>>()
+                   .create()
+                   .value();
+
+    auto client = sut.client_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+    auto server = sut.server_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+
+    auto request = client.loan_flatbuffer().value();
+    auto& request_builder = request.flatbuffer_builder();
+    auto unbounded_data = produce_example_data(request_builder, "run nala run", 1119, 1991, 2); // NOLINT
+    auto initialized_request = assume_init(std::move(request), unbounded_data);
+    auto pending_response = send(std::move(initialized_request)).value();
+
+    const auto* request_data = pending_response.payload_root();
+
+    ASSERT_STREQ(request_data->title()->c_str(), "run nala run");
+    ASSERT_EQ(request_data->entries()->size(), 2);
+
+    for (auto i = 0; i < 2; ++i) { // NOLINT
+        ASSERT_EQ(request_data->entries()->Get(i)->data_1(), 1119);
+        ASSERT_EQ(request_data->entries()->Get(i)->data_2(), 1991);
+    }
+}
+
 } // namespace
 
 #endif // IOX2_FEATURE_FLATBUFFERS
