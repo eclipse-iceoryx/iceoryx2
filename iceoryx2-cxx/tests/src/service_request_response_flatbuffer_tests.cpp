@@ -733,6 +733,49 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_can_read_its_own_payload
     }
 }
 
+TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_can_read_its_own_payload) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<Flatbuffer<Example::UnboundedData>, Flatbuffer<Example::UnboundedData>>()
+                   .create()
+                   .value();
+
+    auto client = sut.client_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+    auto server = sut.server_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+
+    auto request = client.loan_flatbuffer().value();
+    auto& request_builder = request.flatbuffer_builder();
+    auto unbounded_data = produce_example_data(request_builder, "", 0, 0, 1); // NOLINT
+    auto initialized_request = assume_init(std::move(request), unbounded_data);
+    auto pending_response = send(std::move(initialized_request)).value();
+
+    // receive request
+    auto active_request = server.receive().value();
+    ASSERT_THAT(active_request.has_value(), Eq(true));
+
+    // send response
+    auto response = active_request->loan_flatbuffer().value();
+    auto& response_builder = response.flatbuffer_builder();
+    unbounded_data = produce_example_data(response_builder, "Snooze the sniffles", 2114, 2441, 2); // NOLINT
+    auto initialized_response = assume_init(std::move(response), unbounded_data);
+
+    const auto* response_data = initialized_response.payload_root();
+
+    ASSERT_STREQ(response_data->title()->c_str(), "Snooze the sniffles");
+
+    ASSERT_EQ(response_data->entries()->size(), 2);
+
+    for (auto i = 0; i < 2; ++i) { // NOLINT
+        ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 2114);
+        ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 2441);
+    }
+}
 } // namespace
 
 #endif // IOX2_FEATURE_FLATBUFFERS
