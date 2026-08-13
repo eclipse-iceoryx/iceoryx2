@@ -97,8 +97,11 @@ auto main() -> int {
         initialized_request.user_header_mut() = request_counter;
 
         std::cout << "send request " << request_counter << " ..." << std::endl;
-
         auto pending_response = send(std::move(initialized_request)).value();
+
+        // we want to receive all responses so we wait here until there are no
+        // more responses and the other side has dropped the active request object
+        // and therefore dropped the connection
         while (pending_response.has_response() || pending_response.is_connected()) {
             auto response = pending_response.receive().value();
             if (response.has_value()) {
