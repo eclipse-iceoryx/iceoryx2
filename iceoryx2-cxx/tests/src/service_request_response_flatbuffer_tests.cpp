@@ -290,6 +290,19 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, create_succeeds_with_request_sc
     ASSERT_THAT(sut.has_value(), Eq(true));
 }
 
+TYPED_TEST(ServiceRequestResponseFlatbufferTest, create_succeeds_with_response_schema_file) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto schema_file = this->create_schema_file(SCHEMA);
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, Flatbuffer<uint64_t>>()
+                   .response_flatbuffer_schema_path(schema_file)
+                   .create();
+
+    ASSERT_THAT(sut.has_value(), Eq(true));
+}
+
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, open_fails_when_no_request_schema_file_is_available) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     auto schema_file_1 = this->create_schema_file(SCHEMA);
@@ -779,6 +792,74 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_can_read_its_own_payload
         ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 2114);
         ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 2441);
     }
+}
+
+TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_does_not_allocate_when_allocation_strategy_is_static) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<Flatbuffer<Example::UnboundedData>, Flatbuffer<Example::UnboundedData>>()
+                   .create()
+                   .value();
+
+    auto client = sut.client_builder()
+                      .initial_reserved_memory(1)
+                      .allocation_strategy(AllocationStrategy::Static)
+                      .create()
+                      .value();
+
+    auto request = client.loan_flatbuffer().value();
+    auto& request_builder = request.flatbuffer_builder();
+
+    // This should fail because Static allocation strategy does not allow reallocations
+    // and the initial_reserved_memory is set to 1, which is too small for a string.
+    // flatbuffers handles out-of-memory from the allocator with an assertion.
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&]() -> auto { request_builder.CreateString("oh no more memory"); },
+                                      iox2::legacy::er::ASSERT_VIOLATION);
+}
+
+TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_does_not_allocate_when_allocation_strategy_is_static) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
+    auto service_name = iox2::testing::generate_service_name();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<Flatbuffer<Example::UnboundedData>, Flatbuffer<Example::UnboundedData>>()
+                   .create()
+                   .value();
+
+    auto client = sut.client_builder().initial_reserved_memory(INITIAL_RESERVED_MEMORY).create().value();
+    auto server = sut.server_builder()
+                      .initial_reserved_memory(1)
+                      .allocation_strategy(AllocationStrategy::Static)
+                      .create()
+                      .value();
+
+    auto request = client.loan_flatbuffer().value();
+    auto& request_builder = request.flatbuffer_builder();
+    auto unbounded_data = produce_example_data(request_builder, "", 0, 0, 0); // NOLINT
+    auto initialized_request = assume_init(std::move(request), unbounded_data);
+    auto pending_response = send(std::move(initialized_request)).value();
+
+    // receive request
+    auto active_request = server.receive().value();
+    ASSERT_THAT(active_request.has_value(), Eq(true));
+    auto response = active_request->loan_flatbuffer().value();
+    auto& response_builder = response.flatbuffer_builder();
+
+    // This should fail because Static allocation strategy does not allow reallocations
+    // and the initial_reserved_memory is set to 1, which is too small for a string.
+    // flatbuffers handles out-of-memory from the allocator with an assertion.
+    IOX2_TESTING_EXPECT_FATAL_FAILURE([&]() -> auto { response_builder.CreateString("oh no more memory"); },
+                                      iox2::legacy::er::ASSERT_VIOLATION);
 }
 } // namespace
 
