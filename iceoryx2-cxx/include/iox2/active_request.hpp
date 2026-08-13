@@ -15,6 +15,7 @@
 
 #include "internal/helper.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/iceoryx2_cxx_deployment.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
