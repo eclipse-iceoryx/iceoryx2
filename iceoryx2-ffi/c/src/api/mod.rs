@@ -161,6 +161,8 @@ pub use reader_details::*;
 pub use request_header::*;
 pub use request_mut::*;
 pub use resizable_memory_publish_subscribe::*;
+pub use resizable_memory_request::*;
+pub use resizable_memory_response::*;
 pub use response::*;
 pub use response_header::*;
 pub use response_mut::*;
