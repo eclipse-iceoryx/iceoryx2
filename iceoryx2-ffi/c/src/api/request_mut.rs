@@ -567,7 +567,6 @@ pub unsafe extern "C" fn iox2_request_mut_drop(handle: iox2_request_mut_h) {
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `payload_ptr` is a valid pointer into the managed payload of this sample.
-/// * `allocation_size` is the size that was allocated through the resizable memory.
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_finish_serialized(

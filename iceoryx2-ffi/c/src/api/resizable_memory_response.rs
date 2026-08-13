@@ -43,9 +43,9 @@ impl ResizableMemoryResponseUnion {
 }
 
 #[repr(C)]
-#[repr(align(8))] // alignment of Option<ResizableMemoryPublishSubscribeUnion>
+#[repr(align(8))] // alignment of Option<ResizableMemoryResponseUnion>
 pub struct iox2_resizable_memory_response_storage_t {
-    internal: [u8; 64], // magic number obtained with size_of::<Option<ResizableMemoryPublishSubscribeUnion>>()
+    internal: [u8; 64], // magic number obtained with size_of::<Option<ResizableMemoryResponseUnion>>()
 }
 
 #[repr(C)]
@@ -70,9 +70,9 @@ impl iox2_resizable_memory_response_t {
 }
 
 pub struct iox2_resizable_memory_response_h_t;
-/// The owning handle for `iox2_resizable_memory_publish_subscribe_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_resizable_memory_response_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_resizable_memory_response_h = *mut iox2_resizable_memory_response_h_t;
-/// The non-owning handle for `iox2_resizable_memory_publish_subscribe_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_resizable_memory_response_t`. Passing the handle to an function does not transfers the ownership.
 pub type iox2_resizable_memory_response_h_ref = *const iox2_resizable_memory_response_h;
 
 impl AssertNonNullHandle for iox2_resizable_memory_response_h {

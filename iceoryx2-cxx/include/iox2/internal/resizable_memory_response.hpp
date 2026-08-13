@@ -65,4 +65,4 @@ class ResizableMemoryResponse : public flatbuffers::Allocator {
 
 #endif // IOX2_FEATURE_FLATBUFFERS
 
-#endif // IOX2_RESIZABLE_MEMORY_PUBLISH_SUBSCRIBE_HPP
+#endif // IOX2_RESIZABLE_MEMORY_RESPONSE_HPP

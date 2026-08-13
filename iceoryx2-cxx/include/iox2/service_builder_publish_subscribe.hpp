@@ -141,7 +141,7 @@ class ServiceBuilderPublishSubscribe {
 
   public:
     /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     template <typename U = Payload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
     auto flatbuffer_schema_path(const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&&;

@@ -61,7 +61,7 @@ apt install libflatbuffers-dev
 
 ## Usage
 
-The generated Rust code is already included in this example. For completeness,
+The generated C++ code is already included in this example. For completeness,
 the command used to generate it is documented below:
 
 ```sh

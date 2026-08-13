@@ -1489,7 +1489,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_response_type_def
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
 /// * `path_str` - Null-terminated string of the flatbuffer path.
 ///
 /// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
@@ -1542,7 +1542,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_flatb
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
 /// * `path_str` - Null-terminated string of the flatbuffer path.
 ///
 /// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.

@@ -245,15 +245,15 @@ class ServiceBuilderRequestResponse {
                                                                     S>&&;
 
     /// Sets the path to the request flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     template <typename U = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
     auto request_flatbuffer_schema_path(
         const bb::FilePath&
             value) && -> ServiceBuilderRequestResponse<U, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>&&;
 
-    /// Sets the path to the request flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// Sets the path to the response flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     template <typename U = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
     auto response_flatbuffer_schema_path(

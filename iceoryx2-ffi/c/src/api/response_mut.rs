@@ -433,7 +433,6 @@ pub unsafe extern "C" fn iox2_response_mut_drop(response_handle: iox2_response_m
 ///
 /// * `handle` obtained by [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `payload_ptr` is a valid pointer into the managed payload of this sample.
-/// * `allocation_size` is the size that was allocated through the resizable memory.
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_finish_serialized(
@@ -458,7 +457,7 @@ pub unsafe extern "C" fn iox2_response_mut_finish_serialized(
     }
 }
 
-/// Returns a resizable memory builder required for dynamic allocation within the request.
+/// Returns a resizable memory builder required for dynamic allocation within the response.
 ///
 /// # Safety
 ///
