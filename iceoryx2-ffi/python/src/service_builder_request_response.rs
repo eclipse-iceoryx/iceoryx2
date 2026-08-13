@@ -111,6 +111,16 @@ impl ServiceBuilderRequestResponse {
         self.response_header_type_details.value = Some(value)
     }
 
+    #[getter]
+    pub fn __get_request_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.request_payload_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __get_responset_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.response_payload_type_details.clone().value
+    }
+
     /// Defines the payload type for requests. To be able to connect to a `Service` the
     /// `TypeDetail` must be identical in all participants since the communication is always
     /// strongly typed.

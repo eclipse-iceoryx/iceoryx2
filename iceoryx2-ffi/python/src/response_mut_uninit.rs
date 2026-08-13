@@ -17,6 +17,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
+    error::AllocationGrowError,
     parc::Parc,
     response_header::ResponseHeader,
     response_mut::{ResponseMut, ResponseMutType},
@@ -72,7 +73,108 @@ impl ResponseMutUninit {
             ResponseMutUninitType::Ipc(Some(v)) => v.payload().len(),
             ResponseMutUninitType::Local(Some(v)) => v.payload().len(),
             _ => fatal_panic!(from "ResponseMutUninit::__slice_len()",
-                "Accessing a released request."),
+                "Accessing a released response."),
+        }
+    }
+
+    #[getter]
+    pub fn __available_payload_memory(&self) -> usize {
+        match &*self.value.lock() {
+            ResponseMutUninitType::Ipc(Some(v)) => v.__internal_available_payload_memory(),
+            ResponseMutUninitType::Local(Some(v)) => v.__internal_available_payload_memory(),
+            _ => fatal_panic!(from "ResponseMutUninit::__available_payload_memory()",
+                              "Accessing a released response."),
+        }
+    }
+
+    pub fn __assume_init_flatbuffer(
+        &self,
+        buffer_ptr: usize,
+        buffer_len: usize,
+        payload_offset: usize,
+    ) -> PyResult<ResponseMut> {
+        let payload_ptr = (buffer_ptr + payload_offset) as *const u8;
+        let payload_len = buffer_len - payload_offset;
+        match &mut *self.value.lock() {
+            ResponseMutUninitType::Ipc(v) => {
+                let mut response = v.take().unwrap();
+                let mut memory_buffer = response.__internal_create_resizable_memory();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                response.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(ResponseMut {
+                    value: Parc::new(ResponseMutType::Ipc(Some(unsafe {
+                        response.assume_init()
+                    }))),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
+            }
+            ResponseMutUninitType::Local(v) => {
+                let mut response = v.take().unwrap();
+                let mut memory_buffer = response.__internal_create_resizable_memory();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                response.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(ResponseMut {
+                    value: Parc::new(ResponseMutType::Local(Some(unsafe {
+                        response.assume_init()
+                    }))),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
+            }
+        }
+    }
+
+    pub fn __assume_init(&self) -> ResponseMut {
+        match &mut *self.value.lock() {
+            ResponseMutUninitType::Ipc(v) => {
+                let response = v.take().unwrap();
+                ResponseMut {
+                    value: Parc::new(ResponseMutType::Ipc(Some(unsafe {
+                        response.assume_init()
+                    }))),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                }
+            }
+            ResponseMutUninitType::Local(v) => {
+                let response = v.take().unwrap();
+                ResponseMut {
+                    value: Parc::new(ResponseMutType::Local(Some(unsafe {
+                        response.assume_init()
+                    }))),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                }
+            }
         }
     }
 
@@ -123,33 +225,6 @@ impl ResponseMutUninit {
             }
             ResponseMutUninitType::Local(v) => {
                 v.take();
-            }
-        }
-    }
-
-    /// Converts the `ResponseMutUninit` into `ResponseMut`. This shall be done after the
-    /// payload was written into the `ResponseMutUninit`.
-    pub fn assume_init(&self) -> ResponseMut {
-        match &mut *self.value.lock() {
-            ResponseMutUninitType::Ipc(v) => {
-                let response = v.take().unwrap();
-                ResponseMut {
-                    value: Parc::new(ResponseMutType::Ipc(Some(unsafe {
-                        response.assume_init()
-                    }))),
-                    response_header_type_details: self.response_header_type_details.clone(),
-                    response_payload_type_details: self.response_payload_type_details.clone(),
-                }
-            }
-            ResponseMutUninitType::Local(v) => {
-                let response = v.take().unwrap();
-                ResponseMut {
-                    value: Parc::new(ResponseMutType::Local(Some(unsafe {
-                        response.assume_init()
-                    }))),
-                    response_header_type_details: self.response_header_type_details.clone(),
-                    response_payload_type_details: self.response_payload_type_details.clone(),
-                }
             }
         }
     }

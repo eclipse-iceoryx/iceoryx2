@@ -32,4 +32,10 @@ impl RequestHeader {
     pub fn number_of_elements(&self) -> u64 {
         self.0.number_of_elements()
     }
+
+    #[getter]
+    /// Returns the payload offset.
+    pub fn payload_offset(&self) -> u64 {
+        self.0.payload_offset()
+    }
 }

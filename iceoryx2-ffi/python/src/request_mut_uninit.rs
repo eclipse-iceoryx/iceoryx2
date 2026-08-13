@@ -17,6 +17,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
+    error::AllocationGrowError,
     parc::Parc,
     request_header::RequestHeader,
     request_mut::{RequestMut, RequestMutType},
@@ -88,6 +89,111 @@ impl RequestMutUninit {
     }
 
     #[getter]
+    pub fn __available_payload_memory(&self) -> usize {
+        match &*self.value.lock() {
+            RequestMutUninitType::Ipc(Some(v)) => v.__internal_available_payload_memory(),
+            RequestMutUninitType::Local(Some(v)) => v.__internal_available_payload_memory(),
+            _ => fatal_panic!(from "RequestMutUninit::__available_payload_memory()",
+                              "Accessing a released request."),
+        }
+    }
+
+    pub fn __assume_init_flatbuffer(
+        &self,
+        buffer_ptr: usize,
+        buffer_len: usize,
+        payload_offset: usize,
+    ) -> PyResult<RequestMut> {
+        let payload_ptr = (buffer_ptr + payload_offset) as *const u8;
+        let payload_len = buffer_len - payload_offset;
+        match &mut *self.value.lock() {
+            RequestMutUninitType::Ipc(v) => {
+                let mut request = v.take().unwrap();
+                let mut memory_buffer = request.__internal_create_resizable_memory();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                request.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(RequestMut {
+                    value: Parc::new(RequestMutType::Ipc(Some(unsafe { request.assume_init() }))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
+            }
+            RequestMutUninitType::Local(v) => {
+                let mut request = v.take().unwrap();
+                let mut memory_buffer = request.__internal_create_resizable_memory();
+                if memory_buffer.len() < buffer_len {
+                    memory_buffer
+                        .grow_downwards_with_size(buffer_len, 0)
+                        .map_err(|e| AllocationGrowError::new_err(format!("{e:?}")))?
+                }
+                unsafe {
+                    core::ptr::copy(
+                        payload_ptr,
+                        memory_buffer.as_mut_ptr().add(payload_offset),
+                        payload_len,
+                    )
+                };
+
+                request.__internal_finish_serialized(unsafe {
+                    memory_buffer.as_ptr().add(payload_offset)
+                });
+                Ok(RequestMut {
+                    value: Parc::new(RequestMutType::Local(Some(unsafe {
+                        request.assume_init()
+                    }))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
+            }
+        }
+    }
+
+    pub fn __assume_init(&self) -> RequestMut {
+        match &mut *self.value.lock() {
+            RequestMutUninitType::Ipc(v) => {
+                let request = v.take().unwrap();
+                RequestMut {
+                    value: Parc::new(RequestMutType::Ipc(Some(unsafe { request.assume_init() }))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                }
+            }
+            RequestMutUninitType::Local(v) => {
+                let request = v.take().unwrap();
+                RequestMut {
+                    value: Parc::new(RequestMutType::Local(Some(unsafe {
+                        request.assume_init()
+                    }))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                }
+            }
+        }
+    }
+
+    #[getter]
     /// Returns the iceoryx2 internal `RequestHeader`
     pub fn header(&self) -> RequestHeader {
         match &*self.value.lock() {
@@ -134,36 +240,6 @@ impl RequestMutUninit {
             }
             RequestMutUninitType::Local(v) => {
                 v.take();
-            }
-        }
-    }
-
-    /// When the payload is manually populated by using
-    /// `RequestMutUninit::payload_ptr()`, then this function can be used
-    /// to convert it into the initialized `RequestMut` version.
-    pub fn assume_init(&self) -> RequestMut {
-        match &mut *self.value.lock() {
-            RequestMutUninitType::Ipc(v) => {
-                let request = v.take().unwrap();
-                RequestMut {
-                    value: Parc::new(RequestMutType::Ipc(Some(unsafe { request.assume_init() }))),
-                    request_header_type_details: self.request_header_type_details.clone(),
-                    request_payload_type_details: self.request_payload_type_details.clone(),
-                    response_header_type_details: self.response_header_type_details.clone(),
-                    response_payload_type_details: self.response_payload_type_details.clone(),
-                }
-            }
-            RequestMutUninitType::Local(v) => {
-                let request = v.take().unwrap();
-                RequestMut {
-                    value: Parc::new(RequestMutType::Local(Some(unsafe {
-                        request.assume_init()
-                    }))),
-                    request_header_type_details: self.request_header_type_details.clone(),
-                    request_payload_type_details: self.request_payload_type_details.clone(),
-                    response_header_type_details: self.response_header_type_details.clone(),
-                    response_payload_type_details: self.response_payload_type_details.clone(),
-                }
             }
         }
     }
