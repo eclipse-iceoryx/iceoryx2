@@ -1,23 +1,14 @@
 [package]
-name = "iceoryx2-services-common"
-description = "iceoryx2-services: common types and utilities"
+name = "iceoryx2-integrations-ros2-interop"
+description = "iceoryx2-integrations: interfaces for interoperation with ros 2"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
-readme = "README.md"
 repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[features]
-default = []
-std = [
-  "iceoryx2/std",
-]
-
 [dependencies]
 iceoryx2 = { workspace = true }
-
-serde = { workspace = true }

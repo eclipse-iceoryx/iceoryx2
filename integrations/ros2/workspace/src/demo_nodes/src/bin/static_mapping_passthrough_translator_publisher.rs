@@ -25,8 +25,9 @@
 use core::time::Duration;
 
 use cdr::{CdrLe, Infinite};
-use demo_nodes_iceoryx2::{RosHeader, StdMsgStringByte};
+use demo_nodes_iceoryx2::StdMsgStringByte;
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_interop::RosHeader;
 
 /// The iceoryx2 service paired with the ROS 2 topic `/chatter` in
 /// `static_mapping_chatter.toml`.

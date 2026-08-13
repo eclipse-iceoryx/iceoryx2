@@ -20,7 +20,7 @@ use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdat
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_log::debug;
 use iceoryx2_log::fail;
-use iceoryx2_services_common::DiscoveryEvent;
+use iceoryx2_services_discovery::service_discovery::DiscoveryEvent;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

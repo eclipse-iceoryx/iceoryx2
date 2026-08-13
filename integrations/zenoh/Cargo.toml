@@ -33,7 +33,6 @@ iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concu
 iceoryx2-bb-posix = { version = "0.9.999", path = "../../iceoryx2-bb/posix/" }
 iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/" }
 iceoryx2-bb-testing-macros = { version = "0.9.999", path = "../../iceoryx2-bb/testing-macros/" }
-iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common" }
 iceoryx2-gateway = { version = "0.9.999", path = "../../iceoryx2-gateway/gateway" }
 iceoryx2-gateway-backend = { version = "0.9.999", path = "../../iceoryx2-gateway/backend" }
 iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-gateway/conformance-tests" }

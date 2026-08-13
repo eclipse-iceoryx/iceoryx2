@@ -70,8 +70,6 @@
 //!
 //! Durations are strings of the form `"<value><unit>"` (units `ns`, `us`,
 //! `ms`, `s`), e.g. `"500ms"`; unset means no bound.
-//!
-//! See `examples/mapping.toml` for a complete entry.
 
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_gateway_backend::types::service_description::{

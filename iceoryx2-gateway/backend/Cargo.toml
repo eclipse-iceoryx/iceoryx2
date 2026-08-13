@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-gateway-backend"
-description = "iceoryx2-services: traits and types for gateway backends"
+description = "iceoryx2: traits and types for implementing gateway backends"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

@@ -14,8 +14,8 @@ version = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-log = { workspace = true }
-iceoryx2-services-common = { workspace = true }
 iceoryx2-gateway-backend = { workspace = true }
+iceoryx2-integrations-ros2-interop = { workspace = true }
 
 libloading = { workspace = true }
 r2r_rcl = { workspace = true }

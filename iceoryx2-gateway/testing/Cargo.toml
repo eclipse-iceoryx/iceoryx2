@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-gateway-testing"
-description = "iceoryx2-services: testing infrastructure for the gateway service"
+description = "iceoryx2: [internal] testing utilities for the gateway"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -20,13 +20,11 @@ std = [
   "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-system-types/std",
-  "iceoryx2-services-common/std",
   "iceoryx2-gateway-backend/std",
   "iceoryx2/std",
 ]
 
 [dependencies]
-iceoryx2-services-common = { workspace = true }
 iceoryx2-gateway-backend = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }

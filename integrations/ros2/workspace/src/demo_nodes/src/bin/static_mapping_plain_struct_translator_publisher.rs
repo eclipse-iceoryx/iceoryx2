@@ -26,8 +26,9 @@
 
 use core::time::Duration;
 
-use demo_nodes_iceoryx2::{RosHeader, Twist};
+use demo_nodes_iceoryx2::Twist;
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_interop::RosHeader;
 
 /// The iceoryx2 service paired with the ROS 2 topic `/cmd_vel` in
 /// `static_mapping_cmdvel.toml`.

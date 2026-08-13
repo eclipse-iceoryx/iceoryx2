@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 
 use iceoryx2::port::ReceiveError;
 use iceoryx2::prelude::AllocationStrategy;
+use iceoryx2::prelude::ZeroCopySend;
 use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder, NodeCreationFailure},
@@ -30,15 +31,56 @@ use iceoryx2::{
             event::EventOpenOrCreateError, publish_subscribe::PublishSubscribeOpenOrCreateError,
         },
         port_factory::request_response::PortFactory,
+        service_hash::ServiceHash,
         static_config::StaticConfig,
     },
 };
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-use iceoryx2_services_common::DiscoveryEvent;
 
 use crate::service_discovery::{SyncError, Tracker, TrackerEvent};
 
 const SERVICE_NAME: &str = "discovery/services/";
+
+/// Communicates discovered changes to services in the system.
+///
+/// Owning variant. Can be used as shared memory payload.
+#[derive(Clone, Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
+// Largest variant dictates the size required for ZeroCopySend payload.
+#[allow(clippy::large_enum_variant)]
+#[repr(C)]
+pub enum DiscoveryEvent {
+    /// A service has been added to the system.
+    ///
+    /// Contains the static configuration of the newly added service.
+    Added(StaticConfig),
+
+    /// A service has been removed from the system.
+    ///
+    /// Contains the hash identifying the removed service.
+    Removed(ServiceHash),
+}
+
+/// Communicates discovered changes to services in the system.
+///
+/// Non-owning variant. Used to propagate through API layers without
+/// copy.
+#[derive(Debug)]
+pub enum DiscoveryEventRef<'a> {
+    /// A service has been added to the system.
+    Added(&'a StaticConfig),
+
+    /// A service has been removed from the system.
+    Removed(&'a ServiceHash),
+}
+
+impl<'a> From<&'a DiscoveryEvent> for DiscoveryEventRef<'a> {
+    fn from(event: &'a DiscoveryEvent) -> Self {
+        match event {
+            DiscoveryEvent::Added(sc) => DiscoveryEventRef::Added(sc),
+            DiscoveryEvent::Removed(h) => DiscoveryEventRef::Removed(h),
+        }
+    }
+}
 
 /// The payload type used for publishing discovery changes
 pub type Payload = DiscoveryEvent;
