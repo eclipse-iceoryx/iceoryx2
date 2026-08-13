@@ -480,7 +480,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, request_response_works) {
     ASSERT_STREQ(request_data->title()->c_str(), "nala sleeps tonight");
     ASSERT_EQ(request_data->entries()->size(), 19);
 
-    for (auto i = 0; i < 19; ++i) { // NOLINT
+    for (auto i = 0U; i < 19U; ++i) { // NOLINT
         ASSERT_EQ(request_data->entries()->Get(i)->data_1(), 91);
         ASSERT_EQ(request_data->entries()->Get(i)->data_2(), 19);
     }
@@ -502,12 +502,13 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, request_response_works) {
 
     ASSERT_EQ(response_data->entries()->size(), 14);
 
-    for (auto i = 0; i < 14; ++i) { // NOLINT
+    for (auto i = 0U; i < 14U; ++i) { // NOLINT
         ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 14);
         ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 41);
     }
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_allocate_more_memory_when_reserve_is_out) {
     for (auto allocation_strategy : { AllocationStrategy::PowerOfTwo, AllocationStrategy::BestFit }) {
         constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -543,7 +544,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_allocate_more
         ASSERT_STREQ(request_data->title()->c_str(), "put your nose up in the air");
         ASSERT_EQ(request_data->entries()->size(), 49);
 
-        for (auto i = 0; i < 49; ++i) { // NOLINT
+        for (auto i = 0U; i < 49U; ++i) { // NOLINT
             ASSERT_EQ(request_data->entries()->Get(i)->data_1(), 119);
             ASSERT_EQ(request_data->entries()->Get(i)->data_2(), 991);
         }
@@ -565,13 +566,15 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_allocate_more
 
         ASSERT_EQ(response_data->entries()->size(), 42);
 
-        for (auto i = 0; i < 42; ++i) { // NOLINT
+        for (auto i = 0U; i < 42U; ++i) { // NOLINT
             ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 114);
             ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 441);
         }
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
+// NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseFlatbufferTest,
            server_and_client_with_user_header_allocate_more_memory_when_reserve_is_out) {
     for (auto allocation_strategy : { AllocationStrategy::PowerOfTwo, AllocationStrategy::BestFit }) {
@@ -612,7 +615,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest,
         ASSERT_STREQ(request_data->title()->c_str(), "put your nose up in the air");
         ASSERT_EQ(request_data->entries()->size(), 49);
 
-        for (auto i = 0; i < 49; ++i) { // NOLINT
+        for (auto i = 0U; i < 49U; ++i) { // NOLINT
             ASSERT_EQ(request_data->entries()->Get(i)->data_1(), 119);
             ASSERT_EQ(request_data->entries()->Get(i)->data_2(), 991);
         }
@@ -636,12 +639,13 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest,
 
         ASSERT_EQ(response_data->entries()->size(), 42);
 
-        for (auto i = 0; i < 42; ++i) { // NOLINT
+        for (auto i = 0U; i < 42U; ++i) { // NOLINT
             ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 114);
             ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 441);
         }
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_data_can_be_reconstructed_from_payload_bytes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -673,7 +677,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_data_can_be_r
     ASSERT_STREQ(request_data->title()->c_str(), "put your nose up in the air");
     ASSERT_EQ(request_data->entries()->size(), 3);
 
-    for (auto i = 0; i < 3; ++i) { // NOLINT
+    for (auto i = 0U; i < 3U; ++i) { // NOLINT
         ASSERT_EQ(request_data->entries()->Get(i)->data_1(), 119);
         ASSERT_EQ(request_data->entries()->Get(i)->data_2(), 991);
     }
@@ -694,7 +698,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_data_can_be_r
 
     ASSERT_EQ(response_data->entries()->size(), 2);
 
-    for (auto i = 0; i < 2; ++i) { // NOLINT
+    for (auto i = 0U; i < 2U; ++i) { // NOLINT
         ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 114);
         ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 441);
     }
@@ -727,7 +731,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_can_read_its_own_payload
     ASSERT_STREQ(request_data->title()->c_str(), "run nala run");
     ASSERT_EQ(request_data->entries()->size(), 2);
 
-    for (auto i = 0; i < 2; ++i) { // NOLINT
+    for (auto i = 0U; i < 2U; ++i) { // NOLINT
         ASSERT_EQ(request_data->entries()->Get(i)->data_1(), 1119);
         ASSERT_EQ(request_data->entries()->Get(i)->data_2(), 1991);
     }
@@ -771,7 +775,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_can_read_its_own_payload
 
     ASSERT_EQ(response_data->entries()->size(), 2);
 
-    for (auto i = 0; i < 2; ++i) { // NOLINT
+    for (auto i = 0U; i < 2U; ++i) { // NOLINT
         ASSERT_EQ(response_data->entries()->Get(i)->data_1(), 2114);
         ASSERT_EQ(response_data->entries()->Get(i)->data_2(), 2441);
     }

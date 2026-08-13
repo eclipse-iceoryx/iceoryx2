@@ -50,7 +50,7 @@ class ResizableMemoryResponse : public flatbuffers::Allocator {
     auto as_ptr() const -> const uint8_t*;
 
   private:
-    template <ServiceType, typename, typename>
+    template <ServiceType, typename, typename, typename, typename>
     friend class iox2::ActiveRequest;
 
     explicit ResizableMemoryResponse(iox2_resizable_memory_response_h handle);

@@ -15,6 +15,7 @@
 
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_request_response.hpp"
+#include "iox2/internal/helper.hpp"
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
 
