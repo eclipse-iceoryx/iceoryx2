@@ -14,6 +14,7 @@
 #define IOX2_REQUEST_MUT_UNINIT_HPP
 
 #include "iox2/bb/static_function.hpp"
+#include "iox2/deployment/iceoryx2_cxx_feature_flags.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/request_mut.hpp"

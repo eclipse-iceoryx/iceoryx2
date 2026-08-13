@@ -15,6 +15,7 @@
 
 #include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
+#include "iox2/deployment/iceoryx2_cxx_feature_flags.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"

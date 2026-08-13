@@ -15,6 +15,7 @@
 
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/slice.hpp"
+#include "iox2/deployment/iceoryx2_cxx_feature_flags.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/marker.hpp"

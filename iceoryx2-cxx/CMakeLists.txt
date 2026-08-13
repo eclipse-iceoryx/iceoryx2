@@ -37,8 +37,8 @@ if(${IOX2_FEATURE_FLATBUFFERS})
 endif()
 
 set(ICEORYX2_CXX_GEN_DIR ${CMAKE_BINARY_DIR}/generated/iceoryx2-cxx)
-configure_file(cmake/iceoryx2_cxx_deployment.hpp.in
-               ${ICEORYX2_CXX_GEN_DIR}/include/iox2/iceoryx2_cxx_deployment.hpp @ONLY)
+configure_file(cmake/iceoryx2_cxx_feature_flags.hpp.in
+               ${ICEORYX2_CXX_GEN_DIR}/include/iox2/deployment/iceoryx2_cxx_feature_flags.hpp @ONLY)
 
 # include only lib -> includes are installed only once despite being used in static lib as well as shared lib
 
