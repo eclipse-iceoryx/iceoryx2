@@ -71,6 +71,14 @@ flatc -o examples/cxx/flatbuffer_request_response/src --cpp \
     examples/cxx/flatbuffer_request_response/src/data_props.fbs
 ```
 
+By default, FlatBuffers support is disabled in iceoryx2. It can be enabled by
+setting `IOX2_FEATURE_FLATBUFFERS` in cmake with:
+
+```sh
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DIOX2_FEATURE_FLATBUFFERS=ON
+cmake --build target/ff/cc/build
+```
+
 To observe the communication in action, open two terminals and run the following
 commands.
 
