@@ -27,22 +27,34 @@ cc_binary(
     name = "example_cxx_flatbuffer_request_response_client",
     srcs = [
         "src/client.cpp",
-        "src/transmission_data.hpp",
+        "src/data_props_generated.h",
+        "src/unbounded_data_generated.h",
     ],
     deps = [
         "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
+    target_compatible_with = select({
+        "//:cfg_feature_flatbuffers": [],
+        # NOTE: '@platforms//:incompatible' would also be an option but does not give the user a hint why it does not build
+        "//conditions:default": [":requires_feature_flatbuffers_on"],
+    }),
 )
 
 cc_binary(
     name = "example_cxx_flatbuffer_request_response_server",
     srcs = [
         "src/server.cpp",
-        "src/transmission_data.hpp",
+        "src/data_props_generated.h",
+        "src/unbounded_data_generated.h",
     ],
     deps = [
         "//:iceoryx2-bb-cxx",
         "//:iceoryx2-cxx-static",
     ],
+    target_compatible_with = select({
+        "//:cfg_feature_flatbuffers": [],
+        # NOTE: '@platforms//:incompatible' would also be an option but does not give the user a hint why it does not build
+        "//conditions:default": [":requires_feature_flatbuffers_on"],
+    }),
 )
