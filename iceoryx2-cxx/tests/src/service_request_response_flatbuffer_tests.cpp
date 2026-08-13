@@ -21,7 +21,6 @@
 #include "iox2/bb/static_string.hpp"
 #include "iox2/bb/testing/fatal_failure.hpp"
 #include "iox2/node.hpp"
-#include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/testing.hpp"
 #include "iox2/type_name.hpp"
 
