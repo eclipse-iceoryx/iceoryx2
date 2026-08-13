@@ -23,6 +23,7 @@
 #include "iox2/port_error.hpp"
 #include "iox2/service_type.hpp"
 
+#include <flatbuffers/flatbuffers.h>
 #include <type_traits>
 
 namespace iox2 {
@@ -60,7 +61,8 @@ class RequestMut {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const RequestPayload&;
 
     /// Returns a reference to the user defined request payload.
@@ -68,12 +70,21 @@ class RequestMut {
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the user defined request payload.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> RequestPayload&;
 
     /// Returns a mutable reference to the user defined request payload.
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
+
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -142,6 +153,37 @@ template <ServiceType Service,
 inline RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~RequestMut() noexcept {
     drop();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_bytes() const
+    -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_request_mut_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len - payload_offset);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_root() const
+    -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
 }
 
 template <ServiceType Service,

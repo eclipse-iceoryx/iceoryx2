@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <chrono>
 #include <cstdint>
 #include <flatbuffers/flatbuffers.h>
+#include <thread>
 
 #include "data_props_generated.h"
 #include "iox2/iceoryx2.hpp"
@@ -82,7 +84,7 @@ auto main() -> int {
         auto title = builder.CreateString("Hello World!");
 
         std::vector<flatbuffers::Offset<Entry>> entries;
-        for (uint64_t i = 0; i < (request_counter % 15); ++i) {                                     // NOLINT
+        for (uint64_t i = 0; i < (request_counter % 3); ++i) {                                      // NOLINT
             entries.emplace_back(CreateEntry(builder, static_cast<int32_t>(6 * i + 5), 6 * i + 7)); // NOLINT
         }
 
@@ -94,9 +96,17 @@ auto main() -> int {
         auto initialized_request = assume_init(std::move(request), unbounded_data);
         initialized_request.user_header_mut() = request_counter;
 
-        auto pending_response = send(std::move(initialized_request)).has_value();
-
         std::cout << "send request " << request_counter << " ..." << std::endl;
+
+        auto pending_response = send(std::move(initialized_request)).value();
+        while (pending_response.has_response() || pending_response.is_connected()) {
+            auto response = pending_response.receive().value();
+            if (response.has_value()) {
+                std::cout << "  Receive response: " << response->payload_root()->received_entries_len() << std::endl;
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(25)); // NOLINT
+            }
+        }
     }
 
     std::cout << "exit" << std::endl;
