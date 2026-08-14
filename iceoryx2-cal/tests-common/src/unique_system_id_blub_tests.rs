@@ -9,18 +9,3 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-
-#![cfg_attr(not(feature = "std"), no_std)]
-
-extern crate alloc;
-extern crate iceoryx2_bb_loggers;
-
-pub mod dynamic_storage_posix_shared_memory_tests;
-pub mod pointer_offset_tests;
-pub mod shared_memory_posix_shared_memory_tests;
-pub mod shm_allocator_bump_allocator_tests;
-pub mod shm_allocator_pool_allocator_tests;
-pub mod static_storage_file_tests;
-pub mod unique_system_id_blub_tests;
-pub mod used_chunk_list_tests;
-pub mod zero_copy_connection_posix_shared_memory_tests;
