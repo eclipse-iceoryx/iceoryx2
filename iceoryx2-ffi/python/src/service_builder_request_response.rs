@@ -117,7 +117,7 @@ impl ServiceBuilderRequestResponse {
     }
 
     #[getter]
-    pub fn __get_responset_payload_type_details(&self) -> Option<Py<PyAny>> {
+    pub fn __get_response_payload_type_details(&self) -> Option<Py<PyAny>> {
         self.response_payload_type_details.clone().value
     }
 
