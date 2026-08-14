@@ -135,7 +135,7 @@ struct Connection<Service: service::Service> {
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
-    service_state: SharedServiceState<Service, NoResource>,
+    service_state: SharedServiceState<Service, NoResource<Service>>,
     list_state: UnsafeCell<<Service::Bag as BagFamily>::BagState<ListenerDetails>>,
 }
 
@@ -149,7 +149,7 @@ impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
 impl<Service: service::Service> ListenerConnections<Service> {
     fn new(
         size: usize,
-        service_state: SharedServiceState<Service, NoResource>,
+        service_state: SharedServiceState<Service, NoResource<Service>>,
         list_state: UnsafeCell<<Service::Bag as BagFamily>::BagState<ListenerDetails>>,
     ) -> Self {
         let mut new_self = Self {
@@ -381,7 +381,7 @@ impl<Service: service::Service> UpdateConnections for Notifier<Service> {
 
 impl<Service: service::Service> Notifier<Service> {
     pub(crate) fn new(
-        service: SharedServiceState<Service, NoResource>,
+        service: SharedServiceState<Service, NoResource<Service>>,
         config: NotifierConfig,
     ) -> Result<Self, NotifierCreateError> {
         let mut new_self = Self::new_without_auto_event_emission(service.clone(), config)?;
@@ -411,7 +411,7 @@ impl<Service: service::Service> Notifier<Service> {
     }
 
     pub(crate) fn new_without_auto_event_emission(
-        service: SharedServiceState<Service, NoResource>,
+        service: SharedServiceState<Service, NoResource<Service>>,
         config: NotifierConfig,
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
