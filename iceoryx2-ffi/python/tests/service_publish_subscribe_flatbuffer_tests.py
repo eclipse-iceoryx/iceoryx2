@@ -13,48 +13,17 @@
 import ctypes
 import os
 
+# fmt: off
 import iceoryx2 as iox2
 import pytest
-from unbounded_data_generated import UnboundedData, create_unbounded_data
+from flatbuffer_types.Helper import (create_schema_file, create_schema_file_at,
+                                     create_unbounded_data,
+                                     schema_incompatible, schema_unbounded)
+from flatbuffer_types.UnboundedData import UnboundedData
+
+# fmt: on
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
-
-
-schema = """
-table UnboundedData {
-    data_1: int32;
-}
-
-root_type UnboundedData;
-"""
-
-alt_schema = """
-table BoundedData {
-    data_1: int32;
-}
-
-root_type BoundedData;
-"""
-
-
-def create_schema_file(content) -> iox2.FilePath:
-    iox2.testing.create_test_directory()
-    file_path = iox2.testing.generate_file_path()
-    with open(file_path.to_string(), "w", encoding="utf-8") as file:
-        file.write(content)
-
-    return file_path
-
-
-def create_schema_file_at(content: str, file_name: str) -> iox2.FilePath:
-    iox2.testing.create_test_directory()
-    lookup_path = iox2.testing.test_directory()
-    dir_path = lookup_path.to_string()
-    full_path = os.path.join(dir_path, file_name)
-    with open(full_path, "w", encoding="utf-8") as file:
-        file.write(content)
-
-    return iox2.FilePath.new(full_path)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -77,7 +46,7 @@ def test_create_fails_when_no_schema_file_is_available(
 def test_create_succeeds_with_schema_file(
     service_type: iox2.ServiceType,
 ) -> None:
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
@@ -96,7 +65,7 @@ def test_create_succeeds_with_schema_file(
 def test_open_fails_when_no_schema_file_is_available(
     service_type: iox2.ServiceType,
 ) -> None:
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
@@ -125,8 +94,8 @@ def test_open_fails_when_no_schema_file_is_available(
 def test_open_fails_schema_is_not_the_same(
     service_type: iox2.ServiceType,
 ) -> None:
-    schema_file_path = create_schema_file(schema)
-    alt_schema_file_path = create_schema_file(alt_schema)
+    schema_file_path = create_schema_file(schema_unbounded)
+    alt_schema_file_path = create_schema_file(schema_incompatible)
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
@@ -156,7 +125,7 @@ def test_open_fails_schema_is_not_the_same(
 def test_open_succeeds_when_schema_content_is_identical(
     service_type: iox2.ServiceType,
 ) -> None:
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
@@ -190,7 +159,7 @@ def test_schema_path_lookup_works_when_creating_a_service(
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file_at(schema, "UnboundedData.fbs")
+    schema_file_path = create_schema_file_at(schema_unbounded, "UnboundedData.fbs")
 
     try:
         node.service_builder(service_name).publish_subscribe(
@@ -211,7 +180,7 @@ def test_schema_path_lookup_works_when_opening_a_service(
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file_at(schema, "UnboundedData.fbs")
+    schema_file_path = create_schema_file_at(schema_unbounded, "UnboundedData.fbs")
 
     try:
         _sut = (
@@ -240,7 +209,7 @@ def test_publish_subscribe_works(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -261,7 +230,7 @@ def test_publish_subscribe_works(
     received = subscriber.receive()
     assert received is not None
     data = received.payload_root()
-    assert data.Data1() == 123
+    assert data.Data() == 123
 
     os.remove(schema_file_path.to_string())
 
@@ -273,7 +242,7 @@ def test_publisher_allocates_more_memory_when_initial_reserve_is_out_with_alloca
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -299,7 +268,7 @@ def test_publisher_allocates_more_memory_when_initial_reserve_is_out_with_alloca
     received = subscriber.receive()
     assert received is not None
     data = received.payload_root()
-    assert data.Data1() == 78
+    assert data.Data() == 78
 
     os.remove(schema_file_path.to_string())
 
@@ -311,7 +280,7 @@ def test_publisher_allocates_more_memory_when_initial_reserve_is_out_with_alloca
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -337,7 +306,7 @@ def test_publisher_allocates_more_memory_when_initial_reserve_is_out_with_alloca
     received = subscriber.receive()
     assert received is not None
     data = received.payload_root()
-    assert data.Data1() == 991
+    assert data.Data() == 991
 
     os.remove(schema_file_path.to_string())
 
@@ -349,7 +318,7 @@ def test_publisher_does_not_allocate_when_allocation_strategy_is_static(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -382,7 +351,7 @@ def test_data_can_be_reconstructed_from_payload_bytes(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -403,7 +372,7 @@ def test_data_can_be_reconstructed_from_payload_bytes(
     received = subscriber.receive()
     assert received is not None
     data = UnboundedData.GetRootAs(received.payload_bytes().as_memory_view(), 0)
-    assert data.Data1() == 44
+    assert data.Data() == 44
 
     os.remove(schema_file_path.to_string())
 
@@ -415,7 +384,7 @@ def test_publisher_can_read_its_own_serialized_data(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -432,7 +401,7 @@ def test_publisher_can_read_its_own_serialized_data(
     sample = sample.assume_init(unbounded_data)
 
     data = UnboundedData.GetRootAs(sample.payload_bytes().as_memory_view(), 0)
-    assert data.Data1() == 123
+    assert data.Data() == 123
 
     os.remove(schema_file_path.to_string())
 
@@ -444,7 +413,7 @@ def test_publish_subscribe_with_user_header_works(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
@@ -469,7 +438,7 @@ def test_publish_subscribe_with_user_header_works(
     assert received.user_header().contents.value == 4456411
 
     data = received.payload_root()
-    assert data.Data1() == 91912
+    assert data.Data() == 91912
 
     os.remove(schema_file_path.to_string())
 
@@ -481,7 +450,7 @@ def test_builder_is_cleaned_up_when_sample_is_initialized(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    schema_file_path = create_schema_file(schema)
+    schema_file_path = create_schema_file(schema_unbounded)
 
     sut = (
         node.service_builder(service_name)
