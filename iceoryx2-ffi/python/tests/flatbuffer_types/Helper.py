@@ -11,6 +11,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import os
+from pathlib import Path
 
 # fmt: off
 import iceoryx2 as iox2
@@ -22,32 +23,6 @@ from .UnboundedData import (UnboundedData, UnboundedDataAddData,
                             UnboundedDataStart)
 
 # fmt: on
-
-schema_bounded = """
-table BoundedData {
-    data: int32;
-}
-
-root_type BoundedData;
-"""
-
-schema_unbounded = """
-table UnboundedData {
-    text: string;
-    data: int32;
-}
-
-root_type UnboundedData;
-"""
-
-schema_incompatible = """
-table IncompatibleData {
-    data_1: int32;
-    data_2: int32;
-}
-
-root_type UnboundedData;
-"""
 
 
 def create_bounded_data(builder, data):
@@ -64,21 +39,14 @@ def create_unbounded_data(builder, data):
     return UnboundedDataEnd(builder)
 
 
-def create_schema_file(content) -> iox2.FilePath:
-    iox2.testing.create_test_directory()
-    file_path = iox2.testing.generate_file_path()
-    with open(file_path.to_string(), "w", encoding="utf-8") as file:
-        file.write(content)
+def flatbuffer_tests_schema_path() -> iox2.Path:
+    dir_path = Path(__file__).resolve().parent
 
-    return file_path
+    return iox2.Path.new(str(dir_path))
 
 
-def create_schema_file_at(content: str, file_name: str) -> iox2.FilePath:
-    iox2.testing.create_test_directory()
-    lookup_path = iox2.testing.test_directory()
-    dir_path = lookup_path.to_string()
+def get_schema_file(file_name: str) -> iox2.FilePath:
+    dir_path = Path(__file__).resolve().parent
     full_path = os.path.join(dir_path, file_name)
-    with open(full_path, "w", encoding="utf-8") as file:
-        file.write(content)
 
     return iox2.FilePath.new(full_path)
