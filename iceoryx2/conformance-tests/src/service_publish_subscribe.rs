@@ -3650,6 +3650,7 @@ pub mod service_publish_subscribe {
 
         for n in 0..ITERATIONS {
             let sample_size = (n + 1) * 32;
+            println!("iteration: {}", n);
             let mut sample = publisher.loan_slice(sample_size).unwrap();
             for byte in sample.payload_mut() {
                 *byte = n as u8;
