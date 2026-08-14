@@ -113,6 +113,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
@@ -125,6 +126,7 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_cal::unique_system_id_generator::Entity;
 use iceoryx2_cal::zero_copy_connection::{
     CHANNEL_STATE_OPEN, ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
@@ -462,14 +464,19 @@ impl<
     ) -> Result<Self, PublisherCreateError> {
         let msg = "Unable to create Publisher port";
         let origin = "Publisher::new()";
-        let port_id = UniquePublisherId::new();
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
+        let port_id = UniquePublisherId::new::<Service>(&Entity {
+            // name: unsafe { StaticString::from_bytes_unchecked(config.port_name.as_bytes()) },
+            // id: service.static_config().unique_service_id().value(), // parent id
+            name: StaticString::try_from("").unwrap(),
+            id: 1,
+        });
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service
             .shared_node()
-            .create_port_tag(origin, msg, port_id.0.value())
+            .create_port_tag(origin, msg, port_id.value())
         {
             Ok(port_tag) => port_tag,
             Err(e) => {
