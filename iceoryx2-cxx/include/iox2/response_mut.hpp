@@ -21,6 +21,10 @@
 #include "iox2/port_error.hpp"
 #include "iox2/service_type.hpp"
 
+#if IOX2_FEATURE_FLATBUFFERS
+#include <flatbuffers/flatbuffers.h>
+#endif // IOX2_FEATURE_FLATBUFFERS
+
 #include <type_traits>
 
 namespace iox2 {
@@ -60,7 +64,8 @@ class ResponseMut {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const ResponsePayload&;
 
     /// Returns a reference to the payload of the response.
@@ -68,12 +73,23 @@ class ResponseMut {
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
     /// Returns a mutable reference to the payload of the response.
-    template <typename T = ResponsePayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> ResponsePayload&;
 
     /// Returns a mutable reference to the payload of the response.
     template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
+
+#if IOX2_FEATURE_FLATBUFFERS
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+#endif // IOX2_FEATURE_FLATBUFFERS
 
   private:
     template <ServiceType, typename, typename>
@@ -122,6 +138,29 @@ template <ServiceType Service, typename ResponsePayload, typename ResponseUserHe
 inline ResponseMut<Service, ResponsePayload, ResponseUserHeader>::~ResponseMut() noexcept {
     drop();
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+template <typename T, typename>
+inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_bytes() const
+    -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_response_mut_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len - payload_offset);
+}
+
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+template <typename T, typename>
+inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_root() const -> const
+    typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
+}
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::header() const -> ResponseHeader {

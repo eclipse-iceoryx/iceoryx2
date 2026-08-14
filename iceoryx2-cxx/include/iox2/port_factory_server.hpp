@@ -20,6 +20,7 @@
 #include "iox2/bb/optional.hpp"
 #include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/port_name.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
@@ -87,11 +88,17 @@ class PortFactoryServer {
     template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryServer&&;
 
+    /// Sets the maximum initial reserved memory that the underlying allocator reserves
+    /// for the flatbuffer builder.
+    template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto initial_reserved_memory(uint64_t value) && -> PortFactoryServer&&;
+
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryServer::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires more than max slice len in [`ActiveRequest::loan_slice()`] or
     /// [`ActiveRequest::loan_slice_uninit()`].
-    template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload,
+              typename = std::enable_if_t<bb::IsSlice<T>::VALUE || has_flatbuffer_marker<T>(), void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Sets the [`DegradationHandler`] for receiving [`ActiveRequest`]s from a [`Client`]. Whenever a request
@@ -148,6 +155,18 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     initial_max_slice_len(uint64_t value) && -> PortFactoryServer&& {
+    m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    initial_reserved_memory(uint64_t value) && -> PortFactoryServer&& {
     m_max_slice_len.emplace(value);
     return std::move(*this);
 }

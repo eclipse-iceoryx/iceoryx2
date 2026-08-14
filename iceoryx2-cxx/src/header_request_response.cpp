@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/header_request_response.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 RequestHeader::RequestHeader(RequestHeader&& rhs) noexcept {
@@ -49,6 +50,14 @@ void RequestHeader::drop() {
     }
 }
 
+auto RequestHeader::number_of_elements() const -> uint64_t {
+    return iox2_request_header_number_of_elements(&m_handle);
+}
+
+auto RequestHeader::payload_offset() const -> uint64_t {
+    return iox2_request_header_payload_offset(&m_handle);
+}
+
 ResponseHeader::ResponseHeader(ResponseHeader&& rhs) noexcept {
     *this = std::move(rhs);
 }
@@ -85,4 +94,11 @@ void ResponseHeader::drop() {
     }
 }
 
+auto ResponseHeader::payload_offset() const -> uint64_t {
+    return iox2_response_header_payload_offset(&m_handle);
+}
+
+auto ResponseHeader::number_of_elements() const -> uint64_t {
+    return iox2_response_header_number_of_elements(&m_handle);
+}
 } // namespace iox2

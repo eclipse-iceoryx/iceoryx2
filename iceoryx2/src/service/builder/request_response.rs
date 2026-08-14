@@ -1579,6 +1579,30 @@ impl<ServiceType: Service>
     >
 {
     #[doc(hidden)]
+    pub fn __internal_request_type_definition_name_hint(mut self, value: &TypeName) -> Self {
+        self.request_type_definition_name_hint = *value;
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.request_flatbuffer_schema_path = Some(*path);
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_response_type_definition_name_hint(mut self, value: &TypeName) -> Self {
+        self.response_type_definition_name_hint = *value;
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.response_flatbuffer_schema_path = Some(*path);
+        self
+    }
+
+    #[doc(hidden)]
     pub unsafe fn __internal_set_request_payload_type_details(
         mut self,
         value: &TypeDetail,
@@ -1621,7 +1645,7 @@ impl<
 > Builder<Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     /// Sets the path to the request type flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
         self.request_flatbuffer_schema_path = Some(*path);
@@ -1638,7 +1662,7 @@ impl<
 > Builder<RequestPayload, RequestHeader, Flatbuffer<ResponsePayload>, ResponseHeader, ServiceType>
 {
     /// Sets the path to the response type flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
         self.response_flatbuffer_schema_path = Some(*path);

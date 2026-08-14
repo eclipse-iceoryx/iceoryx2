@@ -226,7 +226,7 @@ def flatbuffer_schema_path(
     Sets the path to the flatbuffer schema file.
 
     If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
-    in the configured filebuffer schema paths defined in the config.
+    in the configured flatbuffer schema paths defined in the config.
     """
     assert get_origin(self.__get_payload_type_details) is Flatbuffer
 

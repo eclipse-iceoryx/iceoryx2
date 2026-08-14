@@ -1,0 +1,60 @@
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+constraint_setting(
+    name = "requires_feature_flatbuffers",
+    visibility = ["//visibility:private"],
+)
+
+constraint_value(
+    name = "requires_feature_flatbuffers_on",
+    constraint_setting = ":requires_feature_flatbuffers",
+    visibility = ["//visibility:private"],
+)
+
+cc_binary(
+    name = "example_cxx_flatbuffer_request_response_client",
+    srcs = [
+        "src/client.cpp",
+        "src/data_props_generated.h",
+        "src/unbounded_data_generated.h",
+    ],
+    deps = [
+        "//:iceoryx2-bb-cxx",
+        "//:iceoryx2-cxx-static",
+    ],
+    target_compatible_with = select({
+        "//:cfg_feature_flatbuffers": [],
+        # NOTE: '@platforms//:incompatible' would also be an option but does not give the user a hint why it does not build
+        "//conditions:default": [":requires_feature_flatbuffers_on"],
+    }),
+)
+
+cc_binary(
+    name = "example_cxx_flatbuffer_request_response_server",
+    srcs = [
+        "src/server.cpp",
+        "src/data_props_generated.h",
+        "src/unbounded_data_generated.h",
+    ],
+    deps = [
+        "//:iceoryx2-bb-cxx",
+        "//:iceoryx2-cxx-static",
+    ],
+    target_compatible_with = select({
+        "//:cfg_feature_flatbuffers": [],
+        # NOTE: '@platforms//:incompatible' would also be an option but does not give the user a hint why it does not build
+        "//conditions:default": [":requires_feature_flatbuffers_on"],
+    }),
+)

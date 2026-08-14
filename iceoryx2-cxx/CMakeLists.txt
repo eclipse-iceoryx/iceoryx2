@@ -31,9 +31,9 @@ include(Iceoryx2PlatformSettings)
 
 set(IOX2_FEATURE_FLATBUFFERS_ENABLED 0)
 if(${IOX2_FEATURE_FLATBUFFERS})
-    include(Iceoryx2Flatbuffers)
-    set(IOX2_FLATBUFFERS_DEPENDENCY_CONFIG_CMAKE_IN "find_dependency(flatbuffers REQUIRED)")
-    set(IOX2_FEATURE_FLATBUFFERS_ENABLED 1)
+  include(Iceoryx2Flatbuffers)
+  set(IOX2_FLATBUFFERS_DEPENDENCY_CONFIG_CMAKE_IN "find_dependency(flatbuffers REQUIRED)")
+  set(IOX2_FEATURE_FLATBUFFERS_ENABLED 1)
 endif()
 
 set(ICEORYX2_CXX_GEN_DIR ${CMAKE_BINARY_DIR}/generated/iceoryx2-cxx)
@@ -86,6 +86,8 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/publisher_details.cpp
     src/reader_details.cpp
     src/resizable_memory_publish_subscribe.cpp
+    src/resizable_memory_request.cpp
+    src/resizable_memory_response.cpp
     src/server_details.cpp
     src/service.cpp
     src/service_builder_event.cpp
@@ -130,7 +132,7 @@ target_link_libraries(iceoryx2-cxx-object-lib
 )
 
 if(${IOX2_FEATURE_FLATBUFFERS})
-    target_link_libraries(iceoryx2-cxx-object-lib PUBLIC flatbuffers::flatbuffers)
+  target_link_libraries(iceoryx2-cxx-object-lib PUBLIC flatbuffers::flatbuffers)
 endif()
 
 # static lib
@@ -153,7 +155,7 @@ target_link_libraries(static-lib-cxx
 )
 
 if(${IOX2_FEATURE_FLATBUFFERS})
-    target_link_libraries(static-lib-cxx PUBLIC flatbuffers::flatbuffers)
+  target_link_libraries(static-lib-cxx PUBLIC flatbuffers::flatbuffers)
 endif()
 
 # shared lib
@@ -176,7 +178,7 @@ target_link_libraries(shared-lib-cxx
 )
 
 if(${IOX2_FEATURE_FLATBUFFERS})
-    target_link_libraries(shared-lib-cxx PUBLIC flatbuffers::flatbuffers)
+  target_link_libraries(shared-lib-cxx PUBLIC flatbuffers::flatbuffers)
 endif()
 
 # include install setup

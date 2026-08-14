@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let title = builder.create_string("Hello World!");
 
         let mut entries = vec![];
-        for i in 0..(request_counter % 15) {
+        for i in 0..(request_counter % 3) {
             entries.push(Entry::create(
                 builder,
                 &EntryArgs {
@@ -123,8 +123,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     "  Received response: {}",
                     response.payload_root()?.received_entries_len()
                 );
+            } else {
+                std::thread::sleep(Duration::from_millis(25));
             }
-            core::hint::spin_loop();
         }
 
         coutln!("");

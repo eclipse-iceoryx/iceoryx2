@@ -17,6 +17,7 @@
 #include "iox2/bb/optional.hpp"
 #include "iox2/bb/slice.hpp"
 #include "iox2/header_request_response.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response.hpp"
 #include "iox2/service_type.hpp"
@@ -53,23 +54,35 @@ class PendingResponse {
 
     /// Returns a reference to the iceoryx2 internal [`RequestHeader`] of
     /// the corresponding [`RequestMut`]
-    auto header() -> RequestHeader;
+    auto header() const -> RequestHeader;
 
     /// Returns a reference to the user defined request header of the corresponding
     /// [`RequestMut`]
     template <typename T = RequestUserHeader,
               typename = std::enable_if_t<!std::is_same<void, RequestUserHeader>::value, T>>
-    auto user_header() -> const T&;
+    auto user_header() const -> const T&;
 
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
-    template <typename T = RequestPayload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const T&;
 
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
+
+#if IOX2_FEATURE_FLATBUFFERS
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+#endif // IOX2_FEATURE_FLATBUFFERS
+
 
     /// Returns how many [`Server`]s received the corresponding
     /// [`RequestMut`] initially.
@@ -172,7 +185,8 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::header()
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::header() const
     -> RequestHeader {
     iox2_request_header_h header_handle = nullptr;
     iox2_pending_response_header(&m_handle, nullptr, &header_handle);
@@ -186,7 +200,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 template <typename T, typename>
 inline auto
-PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header()
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header() const
     -> const T& {
     const void* ptr = nullptr;
     iox2_pending_response_user_header(&m_handle, &ptr);
@@ -223,6 +237,39 @@ PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, Res
 
     return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_bytes() const
+    -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_pending_response_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len - payload_offset);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_root() const
+    -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
+}
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType Service,
           typename RequestPayload,

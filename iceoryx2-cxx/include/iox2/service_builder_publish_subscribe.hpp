@@ -141,7 +141,7 @@ class ServiceBuilderPublishSubscribe {
 
   public:
     /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     template <typename U = Payload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
     auto flatbuffer_schema_path(const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&&;
@@ -208,7 +208,6 @@ class ServiceBuilderPublishSubscribe {
     void override_user_header_type_details(const TypeDetail& value);
 
     iox2_service_builder_pub_sub_h m_handle = nullptr;
-    bool m_has_flatbuffer_schema_defined = false;
     bb::Optional<TypeDetail> m_user_header_type_details_override;
     bb::Optional<TypeDetail> m_payload_type_details_override;
 };
@@ -364,7 +363,6 @@ template <typename U, typename>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::flatbuffer_schema_path(
     const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&& {
     iox2_service_builder_pub_sub_set_flatbuffer_schema_path(&m_handle, value.as_string().unchecked_access().c_str());
-    m_has_flatbuffer_schema_defined = true;
     return std::move(*this);
 }
 

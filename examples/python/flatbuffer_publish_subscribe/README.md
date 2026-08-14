@@ -11,6 +11,13 @@ backwards.
 All surrounding memory management is handled by iceoryx2, allowing users to
 focus entirely on generating dynamically sized data with the FlatBuffers API.
 
+Currently, the Python FlatBuffers implemenation does not support zero-copy
+communication since the official Python FlatBuffers API does not allow us to
+specify a custom allocator.
+
+The serialized data is stored on the heap and as soon as the payload is
+initialized, the serialized data is copied into the shared memory.
+
 In this example, we exchange the `UnboundedData` type, which is defined in the
 `unbounded_data.fbs` file as follows:
 

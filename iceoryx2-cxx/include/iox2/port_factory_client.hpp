@@ -23,6 +23,7 @@
 #include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 
@@ -72,11 +73,17 @@ class PortFactoryClient {
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryClient&&;
 
+    /// Sets the maximum initial reserved memory that the underlying allocator reserves
+    /// for the flatbuffer builder.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto initial_reserved_memory(uint64_t value) && -> PortFactoryClient&&;
+
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryClient::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires more than max slice len in [`Client::loan_slice()`] or
     /// [`Client::loan_slice_uninit()`].
-    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    template <typename T = RequestPayload,
+              typename = std::enable_if_t<bb::IsSlice<T>::VALUE || has_flatbuffer_marker<T>(), void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryClient&&;
 
     /// Defines a callback to reduce the number of preallocated [`RequestMut`]s.
@@ -145,6 +152,18 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     initial_max_slice_len(uint64_t value) && -> PortFactoryClient&& {
+    m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    initial_reserved_memory(uint64_t value) && -> PortFactoryClient&& {
     m_max_slice_len.emplace(value);
     return std::move(*this);
 }

@@ -51,7 +51,7 @@ add_option(
     DEFAULT_VALUE OFF
 )
 if(${IOX2_FEATURE_FLATBUFFERS})
-    include(Iceoryx2Flatbuffers)
+  include(Iceoryx2Flatbuffers)
 endif()
 
 add_subdirectory(blackboard)
@@ -66,7 +66,8 @@ add_subdirectory(event)
 add_subdirectory(event_multiplexing)
 add_subdirectory(event_based_communication)
 if(${IOX2_FEATURE_FLATBUFFERS})
-    add_subdirectory(flatbuffer_publish_subscribe)
+  add_subdirectory(flatbuffer_publish_subscribe)
+  add_subdirectory(flatbuffer_request_response)
 endif()
 add_subdirectory(health_monitoring)
 add_subdirectory(publish_subscribe)

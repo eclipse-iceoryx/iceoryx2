@@ -32,8 +32,10 @@ use iceoryx2::service::{
     static_config::message_type_details::TypeName,
 };
 use iceoryx2::{prelude::*, service::builder::request_response::RequestResponseOpenError};
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_log::warn;
 
 use crate::{
     IOX2_OK,
@@ -1322,6 +1324,266 @@ unsafe fn iox2_service_builder_request_response_open_create_impl<E: IntoCInt>(
                         return error.into_c_int();
                     }
                 }
+            }
+        }
+    }
+    IOX2_OK
+}
+
+/// Sets the request type definition name hint. This enables the type definition auto-lookup.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
+///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
+/// * `name` - Pointer to a valid string literal
+/// * `name_len` - The length of the name
+/// * `namespace` - Pointer to a valid string literal
+/// * `namespace_len` - The length of the namespace
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_request_response_request_type_definition_name_hint(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    name: *const c_char,
+    name_len: c_size_t,
+    namespace: *const c_char,
+    namespace_len: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+    debug_assert!(!name.is_null());
+    debug_assert!(!namespace.is_null());
+
+    let name_bytes = unsafe { core::slice::from_raw_parts(name.cast(), name_len) };
+    let namespace_bytes = unsafe { core::slice::from_raw_parts(namespace.cast(), namespace_len) };
+
+    let type_name = iceoryx2_bb_flatbuffers::TypeName {
+        name: match StaticString::from_bytes(name_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "Unable to set type definition name hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
+                );
+                return;
+            }
+        },
+        namespace: match StaticString::from_bytes(namespace_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "Unable to set type definition namespace hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
+                );
+                return;
+            }
+        },
+    };
+
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                    service_builder.__internal_request_type_definition_name_hint(&type_name),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                    service_builder.__internal_request_type_definition_name_hint(&type_name),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the response type definition name hint. This enables the type definition auto-lookup.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
+///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
+/// * `name` - Pointer to a valid string literal
+/// * `name_len` - The length of the name
+/// * `namespace` - Pointer to a valid string literal
+/// * `namespace_len` - The length of the namespace
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_request_response_response_type_definition_name_hint(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    name: *const c_char,
+    name_len: c_size_t,
+    namespace: *const c_char,
+    namespace_len: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+    debug_assert!(!name.is_null());
+    debug_assert!(!namespace.is_null());
+
+    let name_bytes = unsafe { core::slice::from_raw_parts(name.cast(), name_len) };
+    let namespace_bytes = unsafe { core::slice::from_raw_parts(namespace.cast(), namespace_len) };
+
+    let type_name = iceoryx2_bb_flatbuffers::TypeName {
+        name: match StaticString::from_bytes(name_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "Unable to set type definition name hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
+                );
+                return;
+            }
+        },
+        namespace: match StaticString::from_bytes(namespace_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "Unable to set type definition namespace hint since it contains invalid UTF-8 characters or the type name exceeds 128 characters. [{e:?}]"
+                );
+                return;
+            }
+        },
+    };
+
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                    service_builder.__internal_response_type_definition_name_hint(&type_name),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                    service_builder.__internal_response_type_definition_name_hint(&type_name),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets flatbuffer request schema path for the builder. Only allowed when the payload is a flatbuffer.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
+///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
+/// * `path_str` - Null-terminated string of the flatbuffer path.
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `path_str` must be a valid pointer to an utf8 string
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_flatbuffer_schema_path(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    path_str: *const c_char,
+) -> c_int {
+    service_builder_handle.assert_non_null();
+
+    let path = match unsafe { FilePath::from_c_str(path_str) } {
+        Ok(p) => p,
+        Err(e) => return e as c_int,
+    };
+
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                    service_builder.__internal_request_flatbuffer_schema_path(&path),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                    service_builder.__internal_request_flatbuffer_schema_path(&path),
+                ));
+            }
+        }
+    }
+    IOX2_OK
+}
+
+/// Sets flatbuffer response schema path for the builder. Only allowed when the payload is a flatbuffer.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
+///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
+/// * `path_str` - Null-terminated string of the flatbuffer path.
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `path_str` must be a valid pointer to an utf8 string
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_request_response_set_response_flatbuffer_schema_path(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    path_str: *const c_char,
+) -> c_int {
+    service_builder_handle.assert_non_null();
+
+    let path = match unsafe { FilePath::from_c_str(path_str) } {
+        Ok(p) => p,
+        Err(e) => return e as c_int,
+    };
+
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                    service_builder.__internal_response_flatbuffer_schema_path(&path),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                    service_builder.__internal_response_flatbuffer_schema_path(&path),
+                ));
             }
         }
     }

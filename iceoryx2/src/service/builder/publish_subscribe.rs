@@ -951,7 +951,7 @@ impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Ser
     Builder<Flatbuffer<Payload>, UserHeader, ServiceType>
 {
     /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
-    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
         self.flatbuffer_schema_path = Some(*path);

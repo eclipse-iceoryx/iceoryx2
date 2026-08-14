@@ -15,11 +15,16 @@
 
 #include "internal/helper.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/iceoryx2_cxx_deployment.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
+
+#if IOX2_FEATURE_FLATBUFFERS
+#include <flatbuffers/flatbuffers.h>
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 #include <type_traits>
 
@@ -103,6 +108,19 @@ class ActiveRequest {
     auto loan_slice(uint64_t number_of_elements)
         -> bb::Expected<ResponseMut<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
+#if IOX2_FEATURE_FLATBUFFERS
+    /// Returns the serialized flatbuffer data as bytes.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    /// Returns the root of the flatbuffer.
+    template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
+
+    template <typename T = ResponsePayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto loan_flatbuffer() -> bb::Expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
+#endif // IOX2_FEATURE_FLATBUFFERS
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Server;
@@ -149,6 +167,39 @@ inline ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload
     ~ActiveRequest() noexcept {
     drop();
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_bytes() const
+    -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_active_request_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len - payload_offset);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_root() const
+    -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
+}
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 template <ServiceType Service,
           typename RequestPayload,
@@ -387,6 +438,38 @@ inline void ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePa
         m_handle = nullptr;
     }
 }
+
+#if IOX2_FEATURE_FLATBUFFERS
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::loan_flatbuffer()
+    -> bb::Expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError> {
+    ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
+
+    auto result = iox2_active_request_loan_slice_uninit(
+        &m_handle, &response.m_response.m_response, &response.m_response.m_handle, 1);
+
+    if (result != IOX2_OK) {
+        return bb::err(iox2::bb::into<LoanError>(result));
+    }
+
+    iox2_resizable_memory_response_h resizable_memory_handle {};
+    iox2_response_mut_create_resizable_memory(&response.m_response.m_handle, nullptr, &resizable_memory_handle);
+
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) The FlatBufferBuilder takes the ownership and the external interface requires a raw pointer.
+    response.m_memory = new internal::ResizableMemoryResponse<Service>(resizable_memory_handle);
+
+    auto initial_size = response.m_memory->len();
+    response.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, response.m_memory, true);
+
+    return std::move(response);
+}
+#endif // IOX2_FEATURE_FLATBUFFERS
 } // namespace iox2
 
 #endif

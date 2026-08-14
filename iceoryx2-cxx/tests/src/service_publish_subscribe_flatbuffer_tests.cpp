@@ -368,7 +368,6 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, schema_path_lookup_works_when_
     ASSERT_THAT(sut_open.has_value(), Eq(true));
 }
 
-// Helper function to produce example Flatbuffer data
 // NOLINTNEXTLINE(readability-function-size) fine for tests
 auto produce_example_data(flatbuffers::FlatBufferBuilder& builder,
                           const char* title,

@@ -13,9 +13,12 @@
 #ifndef IOX2_MARKER_HPP
 #define IOX2_MARKER_HPP
 
+#include "iox2/iceoryx2_cxx_deployment.hpp"
+
 #include <cstdint>
 
 namespace iox2 {
+#if IOX2_FEATURE_FLATBUFFERS
 /// Identifies payloads that are serialized via flatbuffer.
 template <typename T>
 struct Flatbuffer {
@@ -23,6 +26,7 @@ struct Flatbuffer {
     /// IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "iox2::Flatbuffer";
 };
+#endif // IOX2_FEATURE_FLATBUFFERS
 
 /// User header type for a service whose user header type details are set at runtime.
 struct CustomHeaderMarker { };
@@ -47,7 +51,11 @@ struct HasMarker<Required<T>, Required> {
 
 template <typename T>
 constexpr auto has_flatbuffer_marker() -> bool {
+#if IOX2_FEATURE_FLATBUFFERS
     return internal::HasMarker<T, Flatbuffer>::VALUE;
+#else
+    return false;
+#endif // IOX2_FEATURE_FLATBUFFERS
 }
 } // namespace iox2
 
