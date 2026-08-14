@@ -59,7 +59,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 /// or [`crate::port::listener::Listener`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service> {
-    pub(crate) service: SharedServiceState<Service, NoResource>,
+    pub(crate) service: SharedServiceState<Service, NoResource<Service>>,
 }
 
 unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
@@ -114,7 +114,7 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
 }
 
 impl<Service: service::Service> PortFactory<Service> {
-    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, NoResource<Service>>) -> Self {
         Self {
             service: SharedServiceState {
                 state: Arc::new(service),

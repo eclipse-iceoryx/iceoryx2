@@ -68,6 +68,7 @@ impl<ServiceType: service::Service> Drop for PublishSubscribeResources<ServiceTy
 
 impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResources<ServiceType> {
     type Config = PublishSubscribeResourceConfig<ServiceType>;
+    type ServiceType = ServiceType;
 
     fn acquire_ownership(&self) {
         self.has_ownership.store(true, Ordering::Relaxed);
@@ -77,7 +78,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
     }
 
     fn create(
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<ServiceType>,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceCreateError> {
         match resource_config
@@ -106,7 +107,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
     }
 
     fn open(
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<ServiceType>,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceOpenError> {
         match resource_config
@@ -136,7 +137,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
 
     unsafe fn remove_stale_resources(
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<ServiceType>,
     ) -> Result<(), RemoveStaleResourcesError> {
         let origin = "PublishSubscribeResources::remove_stale_resources()";
         let msg = "Failed to remove the stale publish subscribe resources";

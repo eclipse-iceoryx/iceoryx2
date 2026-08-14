@@ -360,7 +360,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>, ServiceState> {
         let blackboard_service_config = *self.config_details();
         match self.config.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
@@ -538,7 +538,7 @@ impl<
                 "{} without entries. At least one key-value pair is required.", msg);
         }
 
-        let generate_dynamic_config = |service_config: &StaticConfig| {
+        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
             let blackboard_config = service_config.blackboard();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_writers: blackboard_config.max_writers,
@@ -685,7 +685,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig,
+        existing_service_config: &StaticConfig<ServiceType>,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), BlackboardOpenError> {
         let required_service_config = &self.builder.config.base.service_config;

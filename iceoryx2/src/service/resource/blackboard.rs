@@ -196,6 +196,7 @@ impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceT
 
 impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
     type Config = builder::blackboard::BuilderConfig<ServiceType>;
+    type ServiceType = ServiceType;
 
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
@@ -204,7 +205,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
 
     unsafe fn remove_stale_resources(
         config: &config::Config,
-        static_config: &StaticConfig,
+        static_config: &StaticConfig<ServiceType>,
     ) -> Result<(), RemoveStaleResourcesError> {
         let origin = format!(
             "BlackboardResource<{}>::remove_stale_resources()",
@@ -279,7 +280,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
     }
 
     fn open(
-        static_config: &StaticConfig,
+        static_config: &StaticConfig<ServiceType>,
         resource_config: &Self::Config,
     ) -> Result<Self, builder::ServiceOpenError> {
         let origin = format!(
@@ -337,7 +338,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
     }
 
     fn create(
-        service_config: &StaticConfig,
+        service_config: &StaticConfig<ServiceType>,
         resource_config: &Self::Config,
     ) -> Result<BlackboardResources<ServiceType>, ServiceCreateError> {
         let origin = format!(

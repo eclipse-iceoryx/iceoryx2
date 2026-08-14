@@ -477,7 +477,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>, ServiceState> {
         let pubsub_service_config = self.config_details();
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
@@ -617,7 +617,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig,
+        existing_service_config: &StaticConfig<ServiceType>,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), PublishSubscribeOpenError> {
         let required_service_config = &self.base.service_config;
@@ -713,7 +713,7 @@ impl<
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
-        let generate_dynamic_config = |service_config: &StaticConfig| {
+        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
             let pubsub_config = service_config.publish_subscribe();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_publishers: pubsub_config.max_publishers,
