@@ -22,7 +22,7 @@ mod service_discovery_service {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_services_discovery::service_discovery::{
-        Config, DiscoveryEvent, Payload, Service, service_name,
+        Config, DiscoveryEvent, Service, service_name,
     };
 
     #[test]
@@ -53,7 +53,7 @@ mod service_discovery_service {
 
         let service = node
             .service_builder(service_name())
-            .publish_subscribe::<Payload>()
+            .publish_subscribe::<DiscoveryEvent<ipc::Service>>()
             .open_or_create()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -167,7 +167,7 @@ mod service_discovery_service {
 
         let service = node
             .service_builder(service_name())
-            .publish_subscribe::<Payload>()
+            .publish_subscribe::<DiscoveryEvent<ipc::Service>>()
             .open_or_create()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -229,7 +229,7 @@ mod service_discovery_service {
         // === Request current discovery state ===
         let service = node
             .service_builder(service_name())
-            .request_response::<(), [StaticConfig]>()
+            .request_response::<(), [StaticConfig<ipc::Service>]>()
             .open_or_create()
             .unwrap();
 
