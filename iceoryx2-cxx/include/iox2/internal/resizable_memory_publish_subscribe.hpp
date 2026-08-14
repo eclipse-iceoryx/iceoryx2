@@ -13,7 +13,7 @@
 #ifndef IOX2_RESIZABLE_MEMORY_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_RESIZABLE_MEMORY_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox2/iceoryx2_cxx_deployment.hpp"
+#include "iox2/deployment/iceoryx2_cxx_feature_flags.hpp"
 
 #if IOX2_FEATURE_FLATBUFFERS
 

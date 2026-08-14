@@ -13,7 +13,7 @@
 #ifndef IOX2_MARKER_HPP
 #define IOX2_MARKER_HPP
 
-#include "iox2/iceoryx2_cxx_deployment.hpp"
+#include "iox2/deployment/iceoryx2_cxx_feature_flags.hpp"
 
 #include <cstdint>
 

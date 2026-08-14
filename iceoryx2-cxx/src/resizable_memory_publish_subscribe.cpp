@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/iceoryx2_cxx_deployment.hpp"
+#include "iox2/deployment/iceoryx2_cxx_feature_flags.hpp"
 
 #if IOX2_FEATURE_FLATBUFFERS
 
