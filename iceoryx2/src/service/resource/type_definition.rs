@@ -35,6 +35,7 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::{fail, fatal_panic};
 
+#[derive(Debug)]
 enum SchemaPathError {
     NoFlatbufferSchemaSearchPathConfigured,
     NoFittingSchemaFileFound,

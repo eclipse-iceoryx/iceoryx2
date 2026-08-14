@@ -224,6 +224,15 @@ impl<
 > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     #[doc(hidden)]
+    pub fn __internal_available_payload_memory(&self) -> usize {
+        self.shared_state
+            .call(|s| -> Result<usize, ()> {
+                Ok(self.chunk.size - s.request_sender.message_type_details.all_headers_len())
+            })
+            .expect("Always returns ok.")
+    }
+
+    #[doc(hidden)]
     pub fn __internal_create_resizable_memory(&self) -> FlatbufferMemory<Service> {
         self.shared_state.create_resizable_memory(&self.chunk)
     }
