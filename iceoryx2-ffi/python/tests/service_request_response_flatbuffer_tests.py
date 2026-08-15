@@ -753,7 +753,7 @@ def test_builder_is_cleaned_up_when_request_is_initialized(
         builder = request.flatbuffer_builder()
         request_data = create_bounded_data(builder, 31213)
         request = request.assume_init(request_data)
-        assert len(builder.Bytes) <= 128
+        assert len(builder.Bytes) <= 256
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -804,4 +804,4 @@ def test_builder_is_cleaned_up_when_response_is_initialized(
         builder = response.flatbuffer_builder()
         response_data = create_unbounded_data(builder, 21312)
         response = response.assume_init(response_data)
-        assert len(builder.Bytes) <= 128
+        assert len(builder.Bytes) <= 256

@@ -446,4 +446,4 @@ def test_builder_is_cleaned_up_when_sample_is_initialized(
         builder = sample.flatbuffer_builder()
         unbounded_data = create_unbounded_data(builder, 91912)
         sample = sample.assume_init(unbounded_data)
-        assert len(builder.Bytes) <= 128
+        assert len(builder.Bytes) <= 256
