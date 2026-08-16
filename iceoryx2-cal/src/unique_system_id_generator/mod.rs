@@ -20,19 +20,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 pub mod blub;
 
 #[repr(C)]
-#[derive(
-    Debug,
-    Eq,
-    PartialEq,
-    Hash,
-    PartialOrd,
-    Ord,
-    Clone,
-    Copy,
-    ZeroCopySend,
-    serde::Serialize,
-    serde::Deserialize,
-)]
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Copy, ZeroCopySend)]
 pub struct UniqueId {
     id: u128,
 }
