@@ -217,7 +217,7 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceOpenError> {
-        match type_definition.open_storage::<ServiceType>(name, config, static_config) {
+        match type_definition.open_and_verify_storage::<ServiceType>(name, config, static_config) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::open_type_storage()",

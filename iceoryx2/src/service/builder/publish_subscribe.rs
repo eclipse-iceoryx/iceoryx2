@@ -386,6 +386,7 @@ pub struct Builder<
     override_user_header_type: Option<TypeDetail>,
     flatbuffer_schema_path: Option<FilePath>,
     type_definition_name_hint: TypeName,
+    skip_type_definition_verification: bool,
     verify: Verify,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -406,6 +407,7 @@ impl<
             flatbuffer_schema_path: self.flatbuffer_schema_path,
             type_definition_name_hint: self.type_definition_name_hint,
             verify: self.verify,
+            skip_type_definition_verification: self.skip_type_definition_verification,
             _data: PhantomData,
             _user_header: PhantomData,
         }
@@ -441,6 +443,7 @@ impl<
             override_user_header_type: None,
             flatbuffer_schema_path: None,
             type_definition_name_hint: TypeName::new::<Payload>(),
+            skip_type_definition_verification: false,
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -742,6 +745,7 @@ impl<
                             use_type_definition: self.has_flatbuffer_payload(),
                             schema_path: self.flatbuffer_schema_path,
                             type_name: self.type_definition_name_hint,
+                            skip_type_definition_verification: false,
                         },
                         shared_node: self.base.shared_node.clone(),
                     },
@@ -776,6 +780,8 @@ impl<
                             use_type_definition: self.has_flatbuffer_payload(),
                             schema_path: self.flatbuffer_schema_path,
                             type_name: self.type_definition_name_hint,
+                            skip_type_definition_verification: self
+                                .skip_type_definition_verification,
                         },
                         shared_node: self.base.shared_node.clone(),
                     },
@@ -839,6 +845,12 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     #[doc(hidden)]
     pub unsafe fn __internal_set_payload_type_details(mut self, value: &TypeDetail) -> Self {
         self.override_payload_type = Some(*value);
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
+        self.skip_type_definition_verification = true;
         self
     }
 }

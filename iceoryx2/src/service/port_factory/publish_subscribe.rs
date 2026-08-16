@@ -49,7 +49,6 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::marker::Flatbuffer;
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
@@ -214,12 +213,9 @@ impl<
     pub fn publisher_builder(&self) -> PortFactoryPublisher<'_, Service, Payload, UserHeader> {
         PortFactoryPublisher::new(self)
     }
-}
 
-impl<Service: service::Service, Payload, UserHeader: Debug + ZeroCopySend>
-    PortFactory<Service, Flatbuffer<Payload>, UserHeader>
-{
     /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the type definition.
+    /// If the [`Service`](crate::service::Service) has no type definition it return [`None`].
     pub fn type_definition(&self) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
         self.service
             .additional_resource()
