@@ -85,8 +85,6 @@ macro_rules! generate_id_2 {
             PartialOrd,
             Ord,
             ZeroCopySend,
-            serde::Serialize,
-            serde::Deserialize,
         )]
         pub struct $id_name(pub(crate) UniqueId);
 
@@ -156,9 +154,47 @@ generate_id! {
     UniqueWriterId
 }
 
-generate_id! {
+generate_id_2! {
     /// The system-wide unique id of a [`Service`](crate::service::Service).
     UniqueServiceId
+}
+
+// TODO: Remove String usage?
+struct UniqueServiceIdVisitor;
+impl serde::de::Visitor<'_> for UniqueServiceIdVisitor {
+    type Value = UniqueServiceId;
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        formatter.write_str("a string containing the unique id")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match v.to_string().parse::<u128>() {
+            Ok(value) => Ok(UniqueServiceId(unsafe { UniqueId::from_value(value) })),
+            Err(value) => Err(E::custom(format!("invalid service id provided {value:?}"))),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for UniqueServiceId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(UniqueServiceIdVisitor)
+    }
+}
+
+impl serde::Serialize for UniqueServiceId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // serializer.serialize_u128(self.value())
+        serializer.serialize_str(self.value().to_string().as_str())
+    }
 }
 
 /// Enum that contains the unique port id
