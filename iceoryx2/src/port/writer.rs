@@ -58,6 +58,7 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -68,6 +69,7 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
+use iceoryx2_cal::unique_system_id_generator::Entity;
 use iceoryx2_log::{fail, fatal_panic};
 
 #[derive(Debug)]
@@ -184,7 +186,10 @@ impl<
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
-        let writer_id = UniqueWriterId::new();
+        let writer_id = UniqueWriterId::new::<Service>(&Entity {
+            name: StaticString::try_from("").unwrap(),
+            id: 1,
+        });
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service

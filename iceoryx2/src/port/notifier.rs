@@ -43,10 +43,12 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
+use iceoryx2_cal::unique_system_id_generator::Entity;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -414,7 +416,10 @@ impl<Service: service::Service> Notifier<Service> {
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
-        let notifier_id = UniqueNotifierId::new();
+        let notifier_id = UniqueNotifierId::new::<Service>(&Entity {
+            name: StaticString::try_from("").unwrap(),
+            id: 1,
+        });
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

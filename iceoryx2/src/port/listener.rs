@@ -71,6 +71,7 @@ use alloc::format;
 use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
@@ -81,6 +82,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::event_state::EventActivation;
 use iceoryx2_cal::event::{EventId, ListenerBuilder, NamedConceptMgmt};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
+use iceoryx2_cal::unique_system_id_generator::Entity;
 use iceoryx2_log::fail;
 
 // re-export to be able to match to the error without having to depend on iceoryx2-cal
@@ -191,7 +193,10 @@ impl<Service: service::Service> Listener<Service> {
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
-        let listener_id = UniqueListenerId::new();
+        let listener_id = UniqueListenerId::new::<Service>(&Entity {
+            name: StaticString::try_from("").unwrap(),
+            id: 1,
+        });
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
