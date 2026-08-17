@@ -15,23 +15,31 @@ use core::{fmt::Debug, hash::Hash};
 use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use serde::{Deserialize, Serialize};
 
 // TODO: better name
 pub mod blub;
 
 #[repr(C)]
-#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Copy, ZeroCopySend)]
+#[derive(
+    Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Copy, Serialize, Deserialize, ZeroCopySend,
+)]
 pub struct UniqueId {
-    id: u128,
+    // TODO: better field names
+    a: u32,
+    b: u32,
+    c: u32,
+    d: u32,
 }
 
 impl UniqueId {
+    // TODO: unsafe?
     pub unsafe fn from_value(value: u128) -> Self {
-        Self { id: value }
+        unsafe { core::mem::transmute(value) }
     }
 
     pub fn value(&self) -> u128 {
-        self.id
+        unsafe { core::mem::transmute(*self) }
     }
 }
 
