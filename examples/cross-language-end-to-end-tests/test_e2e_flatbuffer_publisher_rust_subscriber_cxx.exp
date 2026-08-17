@@ -1,5 +1,5 @@
 #!/usr/bin/expect
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -16,7 +16,7 @@
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/rust/flatbuffer_request_response
+set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/rust/flatbuffer_publish_subscribe
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
@@ -24,15 +24,14 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-spawn cargo run --example flatbuffer_server
-set id_server $spawn_id
+spawn cargo run --example flatbuffer_publisher
+set id_publisher $spawn_id
 
-spawn cargo run --example flatbuffer_client
+spawn target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_subscriber
 
 #### Test Assertion
 
-expect_output_from $id_server "Server ready to receive requests!"
-expect_output "send request"
-expect_output "Received response: 12"
+expect_output_from $id_publisher "Send sample*"
+expect_output "Entry 0: data_1=5, data_2=7"
 
 show_test_passed

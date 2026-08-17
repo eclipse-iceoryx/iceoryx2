@@ -16,7 +16,7 @@ import ctypes
 
 import iceoryx2 as iox2
 
-cycle_time = iox2.Duration.from_secs(1)
+cycle_time = iox2.Duration.from_millis(100)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)

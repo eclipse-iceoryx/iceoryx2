@@ -579,29 +579,29 @@ def send_response_copy(self: ActiveRequest, t: Type[ResT]) -> Any:
 
 
 def request_flatbuffer_schema_path(
-    self: PortFactoryClient, value: FilePath
-) -> PortFactoryClient:
+    self: ServiceBuilderRequestResponse, value: FilePath
+) -> ServiceBuilderRequestResponse:
     """
     Sets the path to the flatbuffer schema file.
 
     If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
     in the configured filebuffer schema paths defined in the config.
     """
-    assert get_origin(self.__request_payload_type_details) is Flatbuffer
+    assert get_origin(self.__get_request_payload_type_details) is Flatbuffer
 
     return self.__internal_request_flatbuffer_schema_path(value)
 
 
 def response_flatbuffer_schema_path(
-    self: PortFactoryServer, value: FilePath
-) -> PortFactoryServer:
+    self: ServiceBuilderRequestResponse, value: FilePath
+) -> ServiceBuilderRequestResponse:
     """
     Sets the path to the flatbuffer schema file.
 
     If this is not explicitly defined, iceoryx2 will try to find the best fitting schema file
     in the configured filebuffer schema paths defined in the config.
     """
-    assert get_origin(self.__response_payload_type_details) is Flatbuffer
+    assert get_origin(self.__get_response_payload_type_details) is Flatbuffer
 
     return self.__internal_response_flatbuffer_schema_path(value)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/expect
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -27,7 +27,7 @@ set timeout 10
 spawn cargo run --example flatbuffer_server
 set id_server $spawn_id
 
-spawn cargo run --example flatbuffer_client
+spawn python examples/python/flatbuffer_request_response/client.py
 
 #### Test Assertion
 

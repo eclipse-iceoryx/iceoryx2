@@ -32,6 +32,7 @@ spawn target/ff/cc/build/examples/cxx/flatbuffer_request_response/example_cxx_fl
 #### Test Assertion
 
 expect_output_from $id_server "Server ready to receive requests!"
+expect_output "send request"
 expect_output "Received response: 12"
 
 show_test_passed

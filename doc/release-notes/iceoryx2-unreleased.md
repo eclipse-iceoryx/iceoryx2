@@ -23,6 +23,7 @@
 * [#1707](https://github.com/eclipse-iceoryx/iceoryx2/issues/1707) Expose `CustomHeaderMarker` and `CustomPayloadMarker` in C++ bindings
 * [#1722](https://github.com/eclipse-iceoryx/iceoryx2/issues/1722) Remove allocations in gateway hot path
 * [#1742](https://github.com/eclipse-iceoryx/iceoryx2/issues/1742) Add (work-in-progress) gateway implementation for ROS 2
+* [#1745](https://github.com/eclipse-iceoryx/iceoryx2/issues/1745) Add Flatbuffers support for publish-subscribe and request-response payloads
 * [#1773](https://github.com/eclipse-iceoryx/iceoryx2/issues/1773) Make ports identifiable by name
 * [#1798](https://github.com/eclipse-iceoryx/iceoryx2/issues/1798) Add support for musl 1.2.x
 * [#1813](https://github.com/eclipse-iceoryx/iceoryx2/issues/1813) Add API to deliver events to specific listener only
