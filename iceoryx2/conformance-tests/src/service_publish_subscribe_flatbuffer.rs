@@ -926,7 +926,7 @@ pub mod service_publish_subscribe_flatbuffer {
     }
 
     #[conformance_test]
-    pub fn open_service_without_specifying_type_definition<Sut: Service + 'static>() {
+    pub fn open_service_without_specifying_type_definition_works<Sut: Service + 'static>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();

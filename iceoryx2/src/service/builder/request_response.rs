@@ -1578,12 +1578,16 @@ impl<
     }
 }
 
-impl<ServiceType: Service>
+impl<
+    ServiceType: Service,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     Builder<
         [CustomPayloadMarker],
-        CustomHeaderMarker,
+        RequestHeader,
         [CustomPayloadMarker],
-        CustomHeaderMarker,
+        ResponseHeader,
         ServiceType,
     >
 {
@@ -1630,6 +1634,19 @@ impl<ServiceType: Service>
     }
 
     #[doc(hidden)]
+    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
+        self.skip_type_definition_verification = true;
+        self
+    }
+}
+
+impl<
+    RequestPayload: IceoryxSend + Debug + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ServiceType: Service,
+> Builder<RequestPayload, CustomHeaderMarker, ResponsePayload, CustomHeaderMarker, ServiceType>
+{
+    #[doc(hidden)]
     pub unsafe fn __internal_set_request_header_type_details(mut self, value: &TypeDetail) -> Self {
         self.override_request_header_type = Some(*value);
         self
@@ -1641,12 +1658,6 @@ impl<ServiceType: Service>
         value: &TypeDetail,
     ) -> Self {
         self.override_response_header_type = Some(*value);
-        self
-    }
-
-    #[doc(hidden)]
-    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
-        self.skip_type_definition_verification = true;
         self
     }
 }

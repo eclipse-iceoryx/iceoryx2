@@ -46,7 +46,7 @@ use crate::{
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, ServiceState, SharedServiceState, dynamic_config, marker::Flatbuffer,
+        self, ServiceState, SharedServiceState, dynamic_config,
         resource::request_response::RequestResponseResources, service_hash::ServiceHash,
         service_name::ServiceName, static_config,
     },
@@ -269,17 +269,8 @@ impl<
     > {
         PortFactoryServer::new(self)
     }
-}
 
-impl<
-    Service: service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + IceoryxSend + ?Sized,
-    ResponseHeader: Debug + ZeroCopySend,
-> PortFactory<Service, Flatbuffer<RequestPayload>, RequestHeader, ResponsePayload, ResponseHeader>
-{
-    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the request's type definition.
+    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the request's type definition. If the request type has no definition file stored, this function returns [`None`].
     pub fn request_type_definition(
         &self,
     ) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
@@ -288,17 +279,8 @@ impl<
             .request_type_definition()
             .map(|v| v.view())
     }
-}
 
-impl<
-    Service: service::Service,
-    RequestPayload: Debug + IceoryxSend + ?Sized,
-    RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug + ZeroCopySend,
-> PortFactory<Service, RequestPayload, RequestHeader, Flatbuffer<ResponsePayload>, ResponseHeader>
-{
-    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the response's type definition.
+    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the response's type definition. If the response type has no definition file stored, this function returns [`None`].
     pub fn response_type_definition(
         &self,
     ) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
