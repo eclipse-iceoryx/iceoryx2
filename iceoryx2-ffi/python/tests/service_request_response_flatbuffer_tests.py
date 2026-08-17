@@ -326,6 +326,68 @@ def test_schema_path_lookup_works_when_opening_a_service(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_open_succeeds_when_request_is_flatbuffer_and_response_is_pod(
+    service_type: iox2.ServiceType,
+) -> None:
+    request_schema_file_path = get_schema_file(schema_bounded)
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+
+    try:
+        _sut = (
+            node.service_builder(service_name)
+            .request_response(
+                iox2.Flatbuffer[BoundedData],
+                ctypes.c_uint64,
+            )
+            .request_flatbuffer_schema_path(request_schema_file_path)
+            .create()
+        )
+    except iox2.RequestResponseCreateError:
+        assert False
+
+    try:
+        node.service_builder(service_name).request_response(
+            iox2.Flatbuffer[BoundedData],
+            ctypes.c_uint64,
+        ).request_flatbuffer_schema_path(request_schema_file_path).open()
+    except iox2.RequestResponseOpenError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_open_succeeds_when_request_is_pod_and_response_is_flatbuffer(
+    service_type: iox2.ServiceType,
+) -> None:
+    response_schema_file_path = get_schema_file(schema_unbounded)
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+
+    try:
+        _sut = (
+            node.service_builder(service_name)
+            .request_response(
+                ctypes.c_uint64,
+                iox2.Flatbuffer[UnboundedData],
+            )
+            .response_flatbuffer_schema_path(response_schema_file_path)
+            .create()
+        )
+    except iox2.RequestResponseCreateError:
+        assert False
+
+    try:
+        node.service_builder(service_name).request_response(
+            ctypes.c_uint64,
+            iox2.Flatbuffer[UnboundedData],
+        ).response_flatbuffer_schema_path(response_schema_file_path).open()
+    except iox2.RequestResponseOpenError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_request_response_works(
     service_type: iox2.ServiceType,
 ) -> None:
