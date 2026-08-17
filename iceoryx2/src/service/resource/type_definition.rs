@@ -83,6 +83,7 @@ pub struct TypeDefinition {
     pub use_type_definition: bool,
     pub schema_path: Option<FilePath>,
     pub type_name: TypeName,
+    pub skip_type_definition_verification: bool,
 }
 
 impl TypeDefinition {
@@ -126,7 +127,7 @@ impl TypeDefinition {
         }))
     }
 
-    pub fn open_storage<S: crate::service::Service>(
+    fn open_storage<S: crate::service::Service>(
         &self,
         name: &FileName,
         config: &crate::config::Config,
@@ -134,6 +135,57 @@ impl TypeDefinition {
     ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceOpenError> {
         if !self.use_type_definition {
             return Ok(None);
+        }
+
+        let msg = "Unable to open type definition storage";
+        let static_storage_config =
+            Self::type_definition_static_storage_config::<S>(config, static_config);
+
+        let static_storage = match
+                <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
+                    Ok(static_storage) => static_storage,
+                    Err(StaticStorageOpenError::InsufficientPermissions) => {
+                        fail!(from self, with ServiceOpenError::InsufficientPermissions,
+                            "{msg} since the type definition could not be opened.");
+                    }
+                    Err(StaticStorageOpenError::Interrupt) => {
+                        fail!(from self, with ServiceOpenError::Interrupt,
+                            "{msg} since the operation was interrupted by a signal.");
+                    }
+                    Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
+                        fail!(from self, with ServiceOpenError::HangsInCreation,
+                            "{msg} since the type definition file is not yet initialized.");
+                    }
+                    Err(StaticStorageOpenError::DoesNotExist) => {
+                        fail!(from self, with ServiceOpenError::ServiceInCorruptedState,
+                            "{msg} since the type definition file does not exist but it should be available.");
+                    }
+                    Err(e) => {
+                        fail!(from self, with ServiceOpenError::InternalFailure,
+                            "{msg} due to an internal failure while opening the type definition storage. [{e:?}]");
+                    }
+                };
+
+        static_storage.release_ownership();
+
+        Ok(Some(TypeDefinitionStorage {
+            storage: static_storage,
+            path_hint: *static_storage_config.get_path_hint(),
+        }))
+    }
+
+    pub fn open_and_verify_storage<S: crate::service::Service>(
+        &self,
+        name: &FileName,
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceOpenError> {
+        if !self.use_type_definition {
+            return Ok(None);
+        }
+
+        if self.skip_type_definition_verification {
+            return self.open_storage(name, config, static_config);
         }
 
         let msg = "Unable to open type definition storage";

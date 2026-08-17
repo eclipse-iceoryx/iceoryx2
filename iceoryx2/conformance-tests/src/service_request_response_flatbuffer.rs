@@ -22,6 +22,8 @@ pub mod service_request_response_flatbuffer {
     use iceoryx2::service::builder::request_response::{
         RequestResponseCreateError, RequestResponseOpenError,
     };
+    use iceoryx2::service::marker::CustomPayloadMarker;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, marker::Flatbuffer};
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
@@ -1692,5 +1694,61 @@ pub mod service_request_response_flatbuffer {
         Sut: Service + 'static,
     >() {
         response_with_user_header_and_dynamic_reallocation::<Sut>(AllocationStrategy::BestFit);
+    }
+
+    #[conformance_test]
+    pub fn open_service_without_specifying_type_definition_works<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
+        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<example::UnboundedData>, Flatbuffer<example::DataProps>>(
+            )
+            .request_flatbuffer_schema_path(request_schema_file.path().unwrap())
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .__internal_set_request_payload_type_details(
+                    &TypeDetail::__internal_new_from_parts(
+                        TypeVariant::FixedSize,
+                        "iox2::Flatbuffer",
+                        1,
+                        1,
+                    )
+                    .unwrap(),
+                )
+                .__internal_set_response_payload_type_details(
+                    &TypeDetail::__internal_new_from_parts(
+                        TypeVariant::FixedSize,
+                        "iox2::Flatbuffer",
+                        1,
+                        1,
+                    )
+                    .unwrap(),
+                )
+                .__internal_skip_type_definition_verification()
+                .open()
+                .unwrap()
+        };
+
+        let request_type_definition = sut.request_type_definition().unwrap();
+        assert_that!(request_type_definition.len(), eq UNBOUND_DATA_SCHEMA.len() as u64);
+        let mut buffer = vec![0u8; request_type_definition.len() as usize];
+        request_type_definition.read(&mut buffer).unwrap();
+        assert_that!(UNBOUND_DATA_SCHEMA.as_bytes(), eq buffer.as_slice());
+
+        let response_type_definition = sut.response_type_definition().unwrap();
+        assert_that!(response_type_definition.len(), eq DATA_PROPS_SCHEMA.len() as u64);
+        let mut buffer = vec![0u8; response_type_definition.len() as usize];
+        response_type_definition.read(&mut buffer).unwrap();
+        assert_that!(DATA_PROPS_SCHEMA.as_bytes(), eq buffer.as_slice());
     }
 }

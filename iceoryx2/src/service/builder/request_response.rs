@@ -399,6 +399,7 @@ pub struct Builder<
     request_type_definition_name_hint: TypeName,
     response_flatbuffer_schema_path: Option<FilePath>,
     response_type_definition_name_hint: TypeName,
+    skip_type_definition_verification: bool,
     verify: Verify,
 
     _request_payload: PhantomData<RequestPayload>,
@@ -428,6 +429,7 @@ impl<
             response_flatbuffer_schema_path: self.response_flatbuffer_schema_path,
             request_type_definition_name_hint: self.request_type_definition_name_hint,
             response_type_definition_name_hint: self.response_type_definition_name_hint,
+            skip_type_definition_verification: self.skip_type_definition_verification,
             verify: self.verify,
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -458,6 +460,7 @@ impl<
             response_flatbuffer_schema_path: None,
             request_type_definition_name_hint: TypeName::new::<RequestPayload>(),
             response_type_definition_name_hint: TypeName::new::<ResponsePayload>(),
+            skip_type_definition_verification: false,
             verify: Verify::default(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -888,11 +891,13 @@ impl<
                             use_type_definition: self.request_has_flatbuffer_payload(),
                             schema_path: self.request_flatbuffer_schema_path,
                             type_name: self.request_type_definition_name_hint,
+                            skip_type_definition_verification: false,
                         },
                         response: TypeDefinition {
                             use_type_definition: self.response_has_flatbuffer_payload(),
                             schema_path: self.response_flatbuffer_schema_path,
                             type_name: self.response_type_definition_name_hint,
+                            skip_type_definition_verification: false,
                         },
                         shared_node: self.base.shared_node.clone(),
                     },
@@ -933,11 +938,15 @@ impl<
                             use_type_definition: self.request_has_flatbuffer_payload(),
                             schema_path: self.request_flatbuffer_schema_path,
                             type_name: self.request_type_definition_name_hint,
+                            skip_type_definition_verification: self
+                                .skip_type_definition_verification,
                         },
                         response: TypeDefinition {
                             use_type_definition: self.response_has_flatbuffer_payload(),
                             schema_path: self.response_flatbuffer_schema_path,
                             type_name: self.response_type_definition_name_hint,
+                            skip_type_definition_verification: self
+                                .skip_type_definition_verification,
                         },
                         shared_node: self.base.shared_node.clone(),
                     },
@@ -1569,12 +1578,16 @@ impl<
     }
 }
 
-impl<ServiceType: Service>
+impl<
+    ServiceType: Service,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     Builder<
         [CustomPayloadMarker],
-        CustomHeaderMarker,
+        RequestHeader,
         [CustomPayloadMarker],
-        CustomHeaderMarker,
+        ResponseHeader,
         ServiceType,
     >
 {
@@ -1620,6 +1633,19 @@ impl<ServiceType: Service>
         self
     }
 
+    #[doc(hidden)]
+    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
+        self.skip_type_definition_verification = true;
+        self
+    }
+}
+
+impl<
+    RequestPayload: IceoryxSend + Debug + ?Sized,
+    ResponsePayload: Debug + IceoryxSend + ?Sized,
+    ServiceType: Service,
+> Builder<RequestPayload, CustomHeaderMarker, ResponsePayload, CustomHeaderMarker, ServiceType>
+{
     #[doc(hidden)]
     pub unsafe fn __internal_set_request_header_type_details(mut self, value: &TypeDetail) -> Self {
         self.override_request_header_type = Some(*value);

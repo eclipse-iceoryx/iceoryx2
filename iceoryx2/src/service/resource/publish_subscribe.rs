@@ -109,11 +109,13 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         static_config: &crate::service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceOpenError> {
-        match resource_config.type_definition.open_storage::<ServiceType>(
-            &PAYLOAD_TYPE_DEFINITION,
-            resource_config.shared_node.config(),
-            static_config,
-        ) {
+        match resource_config
+            .type_definition
+            .open_and_verify_storage::<ServiceType>(
+                &PAYLOAD_TYPE_DEFINITION,
+                resource_config.shared_node.config(),
+                static_config,
+            ) {
             Ok(Some(v)) => Ok(Self {
                 type_definition_storage: Some(v.storage),
                 path_hint: Some(v.path_hint),
