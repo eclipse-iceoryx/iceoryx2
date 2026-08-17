@@ -23,7 +23,7 @@ pub mod unique_system_id_trait {
 
     #[test]
     fn unique_id_can_be_created_from_value() {
-        let value: u128 = 43209;
+        let value: u128 = 743243817103481069312485843209;
         let id = unsafe { UniqueId::from_value(value) };
         assert_that!(id.value(), eq value);
     }
