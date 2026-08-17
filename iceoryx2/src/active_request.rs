@@ -46,12 +46,12 @@ use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
+use iceoryx2_cal::unique_system_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelState;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::ChannelId};
 use iceoryx2_log::fail;
 
@@ -343,7 +343,7 @@ impl<
 
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     pub fn origin(&self) -> UniqueClientId {
-        UniqueClientId(UniqueSystemId::from(self.details.origin))
+        UniqueClientId(unsafe { UniqueId::from_value(self.details.origin) })
     }
 
     fn increment_loan_counter(&self) -> Result<(), LoanError> {
@@ -385,7 +385,7 @@ impl<
         unsafe {
             header_ptr.write(service::header::request_response::ResponseHeader {
                 node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueSystemId::from(
+                server_id: UniqueServerId(UniqueId::from_value(
                     shared_state.response_sender.sender_port_id,
                 )),
                 request_id: self.request_id,
