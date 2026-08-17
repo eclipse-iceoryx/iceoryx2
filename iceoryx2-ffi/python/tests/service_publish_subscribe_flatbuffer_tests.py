@@ -418,6 +418,46 @@ def test_publish_subscribe_with_user_header_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_publish_subscribe_with_user_header_and_payload_resize_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    schema_file_path = get_schema_file(schema_unbounded)
+
+    sut = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Flatbuffer[UnboundedData])
+        .user_header(ctypes.c_uint64)
+        .flatbuffer_schema_path(schema_file_path)
+        .create()
+    )
+
+    publisher = (
+        sut.publisher_builder()
+        .initial_reserved_memory(1)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
+    subscriber = sut.subscriber_builder().create()
+
+    sample = publisher.loan_flatbuffer()
+    sample.user_header().contents.value = 1146544
+    builder = sample.flatbuffer_builder()
+    unbounded_data = create_unbounded_data(builder, 21919)
+    sample = sample.assume_init(unbounded_data)
+    sample.send()
+
+    received = subscriber.receive()
+    assert received is not None
+    assert received.user_header().contents.value == 1146544
+
+    data = received.payload_root()
+    assert data.Data() == 21919
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_builder_is_cleaned_up_when_sample_is_initialized(
     service_type: iox2.ServiceType,
 ) -> None:

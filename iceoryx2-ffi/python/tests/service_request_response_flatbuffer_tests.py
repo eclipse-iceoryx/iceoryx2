@@ -721,6 +721,69 @@ def test_request_response_with_user_header_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_request_response_with_user_header_and_payload_resize_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    request_schema_file_path = get_schema_file(schema_bounded)
+    response_schema_file_path = get_schema_file(schema_unbounded)
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+
+    sut = (
+        node.service_builder(service_name)
+        .request_response(
+            iox2.Flatbuffer[BoundedData],
+            iox2.Flatbuffer[UnboundedData],
+        )
+        .request_flatbuffer_schema_path(request_schema_file_path)
+        .response_flatbuffer_schema_path(response_schema_file_path)
+        .request_header(ctypes.c_uint64)
+        .response_header(ctypes.c_uint64)
+        .create()
+    )
+
+    server = (
+        sut.server_builder()
+        .initial_reserved_memory(1)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
+    client = (
+        sut.client_builder()
+        .initial_reserved_memory(1)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
+
+    request = client.loan_flatbuffer()
+    request.user_header().contents.value = 656
+    builder = request.flatbuffer_builder()
+    request_data = create_bounded_data(builder, 31213)
+    request = request.assume_init(request_data)
+    pending_response = request.send()
+
+    active_request = server.receive()
+    assert active_request is not None
+    assert active_request.user_header().contents.value == 656
+    data = active_request.payload_root()
+    assert data.Data() == 31213
+
+    response = active_request.loan_flatbuffer()
+    response.user_header().contents.value = 565
+    builder = response.flatbuffer_builder()
+    response_data = create_unbounded_data(builder, 21312)
+    response = response.assume_init(response_data)
+    response.send()
+
+    response_received = pending_response.receive()
+    assert response_received is not None
+    assert response_received.user_header().contents.value == 565
+    data = response_received.payload_root()
+    assert data.Data() == 21312
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_builder_is_cleaned_up_when_request_is_initialized(
     service_type: iox2.ServiceType,
 ) -> None:
