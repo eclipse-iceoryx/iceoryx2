@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 
 // TODO: better name
 pub mod blub;
+pub mod recommended;
 
 #[repr(C)]
 #[derive(

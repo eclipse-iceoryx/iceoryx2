@@ -37,57 +37,6 @@ macro_rules! generate_id {
             serde::Serialize,
             serde::Deserialize,
         )]
-        pub struct $id_name(pub(crate) UniqueSystemId);
-
-        impl core::fmt::Display for $id_name {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{:x}", self.0.value())
-            }
-        }
-
-        impl $id_name {
-            pub(crate) fn new() -> Self {
-                Self(
-                    fatal_panic!(from format!("{}::new()", stringify!($id_name)), when UniqueSystemId::new(),
-                        "Unable to generate required {}!", stringify!($id_name)),
-                )
-            }
-
-            /// Returns the underlying raw value of the ID
-            pub fn value(&self) -> u128 {
-                self.0.value()
-            }
-
-            /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
-            pub fn pid(&self) -> iceoryx2_bb_posix::process::ProcessId {
-                self.0.pid()
-            }
-
-            /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) the id was created.
-            pub fn creation_time(&self) -> iceoryx2_bb_posix::clock::Time {
-                self.0.creation_time()
-            }
-        }
-    };
-}
-macro_rules! generate_id_2 {
-    { $(#[$documentation:meta])*
-        $id_name:ident } => {
-        $(#[$documentation])*
-        #[repr(C)]
-        #[derive(
-            Debug,
-            Eq,
-            Hash,
-            PartialEq,
-            Clone,
-            Copy,
-            PartialOrd,
-            Ord,
-            ZeroCopySend,
-            serde::Serialize,
-            serde::Deserialize,
-        )]
         pub struct $id_name(pub(crate) UniqueId);
 
         impl core::fmt::Display for $id_name {
@@ -109,25 +58,15 @@ macro_rules! generate_id_2 {
             pub fn value(&self) -> u128 {
                 self.0.value()
             }
-
-            // /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
-            // pub fn pid(&self) -> iceoryx2_bb_posix::process::ProcessId {
-            //     self.0.pid()
-            // }
-
-            // /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) the id was created.
-            // pub fn creation_time(&self) -> iceoryx2_bb_posix::clock::Time {
-            //     self.0.creation_time()
-            // }
         }
     };
 }
 
-generate_id_2! {
+generate_id! {
     /// The system-wide unique id of a [`Publisher`](crate::port::publisher::Publisher).
     UniquePublisherId
 }
-generate_id_2! {
+generate_id! {
     /// The system-wide unique id of a [`Subscriber`](crate::port::subscriber::Subscriber).
     UniqueSubscriberId
 }
@@ -156,7 +95,7 @@ generate_id! {
     UniqueWriterId
 }
 
-generate_id_2! {
+generate_id! {
     /// The system-wide unique id of a [`Service`](crate::service::Service).
     UniqueServiceId
 }

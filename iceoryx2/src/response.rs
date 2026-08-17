@@ -52,8 +52,8 @@ use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::unique_system_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 /// It stores the payload and can be received by the
@@ -169,7 +169,7 @@ impl<
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server) which sent
     /// the [`Response`].
     pub fn origin(&self) -> UniqueServerId {
-        UniqueServerId(UniqueSystemId::from(self.details.origin))
+        UniqueServerId(unsafe { UniqueId::from_value(self.details.origin) })
     }
 }
 
