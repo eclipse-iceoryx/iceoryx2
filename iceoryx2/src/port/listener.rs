@@ -229,13 +229,15 @@ impl<Service: service::Service> Listener<Service> {
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
-        let (details, handle) = match service.dynamic_storage().get().event().add_listener_id(
-            ListenerDetails {
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .event()
+            .register_listener_id(ListenerDetails {
                 listener_id,
                 listener_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            },
-        ) {
+            }) {
             Some(v) => v,
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,

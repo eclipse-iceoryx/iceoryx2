@@ -173,7 +173,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_reader_id(
+    pub(crate) fn register_reader_id(
         &self,
         details: ReaderDetails,
     ) -> Option<(*const ReaderDetails, BagHandle)> {
@@ -186,7 +186,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_writer_id(
+    pub(crate) fn register_writer_id(
         &self,
         details: WriterDetails,
     ) -> Option<(*const WriterDetails, BagHandle)> {

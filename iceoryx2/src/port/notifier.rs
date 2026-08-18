@@ -461,7 +461,7 @@ impl<Service: service::Service> Notifier<Service> {
             .dynamic_storage()
             .get()
             .event()
-            .add_notifier_id(NotifierDetails {
+            .register_notifier_id(NotifierDetails {
                 notifier_id,
                 node_id,
                 notifier_name: config.port_name,

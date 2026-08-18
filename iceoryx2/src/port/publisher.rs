@@ -610,7 +610,7 @@ impl<
             .dynamic_storage()
             .get()
             .publish_subscribe()
-            .add_publisher_id(publisher_details)
+            .register_publisher_id(publisher_details)
         {
             Some(v) => v,
             None => {

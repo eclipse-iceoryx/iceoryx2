@@ -202,7 +202,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         state.for_each(|_, details| callback(details));
     }
 
-    pub(crate) fn add_subscriber_id(
+    pub(crate) fn register_subscriber_id(
         &self,
         details: SubscriberDetails,
     ) -> Option<(*const SubscriberDetails, BagHandle)> {
@@ -219,7 +219,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_publisher_id(
+    pub(crate) fn register_publisher_id(
         &self,
         details: PublisherDetails,
     ) -> Option<(*const PublisherDetails, BagHandle)> {

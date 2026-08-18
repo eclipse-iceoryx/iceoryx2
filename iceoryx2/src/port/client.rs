@@ -662,7 +662,7 @@ impl<
             .dynamic_storage()
             .get()
             .request_response()
-            .add_client_id(client_details)
+            .register_client_id(client_details)
         {
             Some(v) => v,
             None => {

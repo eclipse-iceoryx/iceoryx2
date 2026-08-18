@@ -330,7 +330,7 @@ impl<
             .dynamic_storage()
             .get()
             .publish_subscribe()
-            .add_subscriber_id(SubscriberDetails {
+            .register_subscriber_id(SubscriberDetails {
                 subscriber_id,
                 buffer_size,
                 history_request,
