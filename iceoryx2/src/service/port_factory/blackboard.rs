@@ -91,7 +91,7 @@ impl<
 {
     type Service = Service;
     type StaticConfig = static_config::blackboard::StaticConfig;
-    type DynamicConfig = dynamic_config::blackboard::DynamicConfig;
+    type DynamicConfig = dynamic_config::blackboard::DynamicConfig<Service::Bag>;
 
     fn name(&self) -> &ServiceName {
         self.service.static_config().name()
@@ -113,7 +113,7 @@ impl<
         self.service.static_config().blackboard()
     }
 
-    fn dynamic_config(&self) -> &dynamic_config::blackboard::DynamicConfig {
+    fn dynamic_config(&self) -> &dynamic_config::blackboard::DynamicConfig<Service::Bag> {
         self.service.dynamic_storage().get().blackboard()
     }
 

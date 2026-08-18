@@ -45,8 +45,9 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
+use iceoryx2_cal::bag::Bag;
+use iceoryx2_cal::bag::{BagHandle, BagState};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -134,7 +135,7 @@ struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     service_state: SharedServiceState<Service, NoResource>,
-    list_state: UnsafeCell<ContainerState<ListenerDetails>>,
+    list_state: UnsafeCell<BagState<ListenerDetails>>,
 }
 
 impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
@@ -148,7 +149,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn new(
         size: usize,
         service_state: SharedServiceState<Service, NoResource>,
-        list_state: UnsafeCell<ContainerState<ListenerDetails>>,
+        list_state: UnsafeCell<BagState<ListenerDetails>>,
     ) -> Self {
         let mut new_self = Self {
             connections: vec![],
@@ -315,7 +316,7 @@ pub struct Notifier<Service: service::Service> {
     listener_connections: Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>,
     default_event_id: EventId,
     event_id_max_value: usize,
-    dynamic_notifier_handle: ContainerHandle,
+    dynamic_notifier_handle: BagHandle,
     notifier_details: &'static NotifierDetails,
     on_drop_notification: Option<EventId>,
     // IMPORTANT!

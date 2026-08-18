@@ -29,10 +29,13 @@
 
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
+use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, UniquePortId};
@@ -51,9 +54,9 @@ pub(crate) struct DynamicConfigSettings {
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
-pub struct DynamicConfig {
-    pub(crate) listeners: Container<ListenerDetails>,
-    pub(crate) notifiers: Container<NotifierDetails>,
+pub struct DynamicConfig<B: BagFamily> {
+    pub(crate) listeners: B::Bag<ListenerDetails>,
+    pub(crate) notifiers: B::Bag<NotifierDetails>,
     pub(crate) elapsed_time_since_last_notification: AtomicU64,
 }
 
@@ -85,11 +88,11 @@ pub struct NotifierDetails {
     pub node_id: UniqueNodeId,
 }
 
-impl DynamicConfig {
+impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn new(config: &DynamicConfigSettings) -> Self {
         Self {
-            listeners: unsafe { Container::new_uninit(config.number_of_listeners) },
-            notifiers: unsafe { Container::new_uninit(config.number_of_notifiers) },
+            listeners: unsafe { B::Bag::new_uninit(config.number_of_listeners) },
+            notifiers: unsafe { B::Bag::new_uninit(config.number_of_notifiers) },
             elapsed_time_since_last_notification: AtomicU64::new(0),
         }
     }
@@ -106,8 +109,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
-        Container::<ListenerDetails>::memory_size(config.number_of_listeners)
-            + Container::<NotifierDetails>::memory_size(config.number_of_notifiers)
+        B::Bag::<ListenerDetails>::memory_size(config.number_of_listeners)
+            + B::Bag::<NotifierDetails>::memory_size(config.number_of_notifiers)
     }
 
     /// Returns how many [`Listener`](crate::port::listener::Listener) ports are currently connected.
@@ -183,11 +186,11 @@ impl DynamicConfig {
     pub(crate) fn add_listener_id(
         &self,
         details: ListenerDetails,
-    ) -> Option<(*const ListenerDetails, ContainerHandle)> {
+    ) -> Option<(*const ListenerDetails, BagHandle)> {
         unsafe { self.listeners.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_listener_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_listener_handle(&self, handle: BagHandle) {
         if let Err(e) = unsafe { self.listeners.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister listener from service. This could indicate a corrupted system! [{e:?}]");
         }
@@ -196,11 +199,11 @@ impl DynamicConfig {
     pub(crate) fn add_notifier_id(
         &self,
         details: NotifierDetails,
-    ) -> Option<(*const NotifierDetails, ContainerHandle)> {
+    ) -> Option<(*const NotifierDetails, BagHandle)> {
         unsafe { self.notifiers.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_notifier_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_notifier_handle(&self, handle: BagHandle) {
         if let Err(e) = unsafe { self.notifiers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister notifier from service. This could indicate a corrupted system! [{e:?}]");
         }

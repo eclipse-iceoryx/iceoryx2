@@ -299,6 +299,7 @@ use builder::event::EventOpenError;
 use dynamic_config::PortCleanupAction;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::dynamic_storage::{
     DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
 };
@@ -450,7 +451,7 @@ pub struct ServiceDetails<S: Service> {
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
 pub struct ServiceState<S: Service, R: ServiceResource> {
-    pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
+    pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig<S::Bag>>,
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: SharedNode<S>,
@@ -502,7 +503,7 @@ impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
         &self.state.static_config
     }
 
-    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage<DynamicConfig> {
+    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage<DynamicConfig<S::Bag>> {
         &self.state.dynamic_storage
     }
 
@@ -519,7 +520,7 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: SharedNode<S>,
-        dynamic_storage: S::DynamicStorage<DynamicConfig>,
+        dynamic_storage: S::DynamicStorage<DynamicConfig<S::Bag>>,
         static_storage: S::StaticStorage,
         additional_resource: R,
     ) -> Self {
@@ -729,7 +730,7 @@ pub mod internal {
 
             let segment_name = dynamic_config_name(unique_service_id);
             match unsafe {
-                <S::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::remove_cfg(
+                <S::DynamicStorage<DynamicConfig<S::Bag>> as NamedConceptMgmt>::remove_cfg(
                     &segment_name,
                     &dynamic_config_storage_config::<S>(config),
                 )
@@ -950,6 +951,9 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static>: DynamicStorage<
         T,
     >;
+
+    /// Defines the construct containing unordered data at fixed positions use to track resource ownership
+    type Bag: BagFamily;
 
     /// Defines the construct used to store the [`Service`]s dynamic configuration. This
     /// contains for instance all endpoints and other dynamic details.
@@ -1213,10 +1217,11 @@ fn read_static_service_config<S: Service>(
     Ok(Some(service_config))
 }
 
+type DynanmicConfigStorage<S> = <S as Service>::DynamicStorage<DynamicConfig<<S as Service>::Bag>>;
 fn open_dynamic_config<S: Service>(
     config: &config::Config,
     service_id: UniqueServiceId,
-) -> Result<Option<S::DynamicStorage<DynamicConfig>>, ServiceDetailsError> {
+) -> Result<Option<DynanmicConfigStorage<S>>, ServiceDetailsError> {
     let origin = format!(
         "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
@@ -1225,10 +1230,10 @@ fn open_dynamic_config<S: Service>(
     let msg = "Unable to open the services dynamic config";
     let segment_name = dynamic_config_name(service_id);
     match
-            <<S::DynamicStorage<DynamicConfig> as DynamicStorage<
-                    DynamicConfig,
+            <<DynanmicConfigStorage<S> as DynamicStorage<
+                    DynamicConfig<S::Bag>,
                 >>::Builder<'_> as NamedConceptBuilder<
-                    S::DynamicStorage<DynamicConfig>,
+                    DynanmicConfigStorage<S>,
                 >>::new(&segment_name)
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)

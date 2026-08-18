@@ -61,11 +61,11 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
@@ -76,7 +76,7 @@ struct WriterSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     service_state: SharedServiceState<Service, BlackboardResources<Service>>,
-    dynamic_writer_handle: UnsafeCell<Option<ContainerHandle>>,
+    dynamic_writer_handle: UnsafeCell<Option<BagHandle>>,
     _key: PhantomData<KeyType>,
 }
 
