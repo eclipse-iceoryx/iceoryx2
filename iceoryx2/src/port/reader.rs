@@ -240,13 +240,15 @@ impl<
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let (details, handle) = match service.dynamic_storage().get().blackboard().add_reader_id(
-            ReaderDetails {
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .register_reader_id(ReaderDetails {
                 reader_id,
                 reader_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            },
-        ) {
+            }) {
             Some(v) => v,
             None => {
                 fail!(from origin, with ReaderCreateError::ExceedsMaxSupportedReaders,

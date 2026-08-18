@@ -216,13 +216,15 @@ impl<
 
         // !MUST! be the last task otherwise a writer is added to the dynamic config without the
         // creation of all required resources
-        let (details, handle) = match service.dynamic_storage().get().blackboard().add_writer_id(
-            WriterDetails {
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .register_writer_id(WriterDetails {
                 writer_id,
                 writer_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            },
-        ) {
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with WriterCreateError::ExceedsMaxSupportedWriters,

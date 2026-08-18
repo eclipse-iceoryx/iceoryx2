@@ -170,7 +170,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_client_id(
+    pub(crate) fn register_client_id(
         &self,
         details: ClientDetails,
     ) -> Option<(*const ClientDetails, BagHandle)> {
@@ -183,7 +183,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_server_id(
+    pub(crate) fn register_server_id(
         &self,
         details: ServerDetails,
     ) -> Option<(*const ServerDetails, BagHandle)> {

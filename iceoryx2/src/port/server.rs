@@ -541,7 +541,7 @@ impl<
             .dynamic_storage()
             .get()
             .request_response()
-            .add_server_id(ServerDetails {
+            .register_server_id(ServerDetails {
                 server_id,
                 node_id: *service.shared_node().id(),
                 request_buffer_size: static_config.max_active_requests_per_client,

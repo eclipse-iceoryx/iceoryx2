@@ -183,7 +183,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_listener_id(
+    pub(crate) fn register_listener_id(
         &self,
         details: ListenerDetails,
     ) -> Option<(*const ListenerDetails, BagHandle)> {
@@ -196,7 +196,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn add_notifier_id(
+    pub(crate) fn register_notifier_id(
         &self,
         details: NotifierDetails,
     ) -> Option<(*const NotifierDetails, BagHandle)> {
