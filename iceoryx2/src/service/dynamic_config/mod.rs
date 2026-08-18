@@ -35,11 +35,10 @@ use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::{
-    container::{Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError},
-    unique_index_set_enums::{ReleaseMode, ReleaseState},
-};
+use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_cal::bag::{Bag, BagFamily};
+use iceoryx2_cal::bag::{BagAddFailure, BagHandle, BagRemoveError};
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::identifiers::{UniqueNodeId, UniquePortId};
@@ -71,14 +70,14 @@ pub(crate) enum MessagingPatternSettings {
 
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
-pub(crate) enum MessagingPattern {
-    RequestResponse(request_response::DynamicConfig),
-    PublishSubscribe(publish_subscribe::DynamicConfig),
-    Event(event::DynamicConfig),
-    Blackboard(blackboard::DynamicConfig),
+pub(crate) enum MessagingPattern<B: BagFamily> {
+    RequestResponse(request_response::DynamicConfig<B>),
+    PublishSubscribe(publish_subscribe::DynamicConfig<B>),
+    Event(event::DynamicConfig<B>),
+    Blackboard(blackboard::DynamicConfig<B>),
 }
 
-impl MessagingPattern {
+impl<B: BagFamily> MessagingPattern<B> {
     pub(crate) fn new(settings: &MessagingPatternSettings) -> Self {
         match settings {
             MessagingPatternSettings::RequestResponse(v) => {
@@ -100,12 +99,12 @@ impl MessagingPattern {
 #[doc(hidden)]
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
-pub struct DynamicConfig {
-    messaging_pattern: MessagingPattern,
-    nodes: Container<UniqueNodeId>,
+pub struct DynamicConfig<B: BagFamily> {
+    messaging_pattern: MessagingPattern<B>,
+    nodes: B::Bag<UniqueNodeId>,
 }
 
-impl Display for DynamicConfig {
+impl<B: BagFamily> Display for DynamicConfig<B> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -115,19 +114,19 @@ impl Display for DynamicConfig {
     }
 }
 
-impl DynamicConfig {
+impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn new_uninit(
-        messaging_pattern: MessagingPattern,
+        messaging_pattern: MessagingPattern<B>,
         max_number_of_nodes: usize,
     ) -> Self {
         Self {
             messaging_pattern,
-            nodes: unsafe { Container::new_uninit(max_number_of_nodes) },
+            nodes: unsafe { B::Bag::new_uninit(max_number_of_nodes) },
         }
     }
 
     pub(crate) fn memory_size(max_number_of_nodes: usize) -> usize {
-        Container::<UniqueNodeId>::memory_size(max_number_of_nodes)
+        B::Bag::<UniqueNodeId>::memory_size(max_number_of_nodes)
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
@@ -183,15 +182,15 @@ impl DynamicConfig {
     pub(crate) fn register_node_id(
         &self,
         node_id: UniqueNodeId,
-    ) -> Result<ContainerHandle, RegisterNodeResult> {
+    ) -> Result<BagHandle, RegisterNodeResult> {
         let msg = "Unable to register NodeId in service";
         match unsafe { self.nodes.add(node_id, node_id.owner_id()) } {
             Ok(handle) => Ok(handle.1),
-            Err(ContainerAddFailure::IsLocked) => {
+            Err(BagAddFailure::IsLocked) => {
                 fail!(from self, with RegisterNodeResult::MarkedForDestruction,
                     "{msg} since the service is already marked for destruction.");
             }
-            Err(ContainerAddFailure::OutOfSpace) => {
+            Err(BagAddFailure::OutOfSpace) => {
                 fail!(from self, with RegisterNodeResult::ExceedsMaxNumberOfNodes,
                     "{msg} since it would exceed the maximum supported nodes of {}.", self.nodes.capacity());
             }
@@ -208,19 +207,19 @@ impl DynamicConfig {
 
     pub(crate) fn deregister_node_id(
         &self,
-        handle: ContainerHandle,
-    ) -> Result<DeregisterNodeState, ContainerRemoveError> {
+        handle: BagHandle,
+    ) -> Result<DeregisterNodeState, BagRemoveError> {
         match unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) } {
             Ok(ReleaseState::Locked) => Ok(DeregisterNodeState::NoMoreOwners),
             Ok(ReleaseState::Unlocked) => Ok(DeregisterNodeState::HasOwners),
-            Err(ContainerRemoveError::ContainerHandleNotOwnedByContainer) => {
-                fail!(from self, with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
+            Err(BagRemoveError::ContainerHandleNotOwnedByContainer) => {
+                fail!(from self, with BagRemoveError::ContainerHandleNotOwnedByContainer,
                     "Unable to deregister the node since it was not registered.");
             }
         }
     }
 
-    pub(crate) fn request_response(&self) -> &request_response::DynamicConfig {
+    pub(crate) fn request_response(&self) -> &request_response::DynamicConfig<B> {
         match &self.messaging_pattern {
             MessagingPattern::RequestResponse(v) => v,
             m => {
@@ -229,7 +228,7 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::DynamicConfig {
+    pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::DynamicConfig<B> {
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(v) => v,
             m => {
@@ -238,7 +237,7 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn event(&self) -> &event::DynamicConfig {
+    pub(crate) fn event(&self) -> &event::DynamicConfig<B> {
         match &self.messaging_pattern {
             MessagingPattern::Event(v) => v,
             m => {
@@ -247,7 +246,7 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn blackboard(&self) -> &blackboard::DynamicConfig {
+    pub(crate) fn blackboard(&self) -> &blackboard::DynamicConfig<B> {
         match &self.messaging_pattern {
             MessagingPattern::Blackboard(v) => v,
             m => {

@@ -14,11 +14,10 @@ use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::{
-    container::{Container, ContainerHandle},
-    unique_index_set_enums::ReleaseMode,
-};
+use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
 use crate::{
@@ -100,16 +99,16 @@ pub(crate) struct DynamicConfigSettings {
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
-pub struct DynamicConfig {
-    pub(crate) servers: Container<ServerDetails>,
-    pub(crate) clients: Container<ClientDetails>,
+pub struct DynamicConfig<B: BagFamily> {
+    pub(crate) servers: B::Bag<ServerDetails>,
+    pub(crate) clients: B::Bag<ClientDetails>,
 }
 
-impl DynamicConfig {
+impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn new(config: &DynamicConfigSettings) -> Self {
         Self {
-            servers: unsafe { Container::new_uninit(config.number_of_servers) },
-            clients: unsafe { Container::new_uninit(config.number_of_clients) },
+            servers: unsafe { B::Bag::new_uninit(config.number_of_servers) },
+            clients: unsafe { B::Bag::new_uninit(config.number_of_clients) },
         }
     }
 
@@ -125,8 +124,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
-        Container::<ServerDetails>::memory_size(config.number_of_servers)
-            + Container::<ClientDetails>::memory_size(config.number_of_clients)
+        B::Bag::<ServerDetails>::memory_size(config.number_of_servers)
+            + B::Bag::<ClientDetails>::memory_size(config.number_of_clients)
     }
 
     /// Returns how many [`crate::port::client::Client`] ports are currently connected.
@@ -174,11 +173,11 @@ impl DynamicConfig {
     pub(crate) fn add_client_id(
         &self,
         details: ClientDetails,
-    ) -> Option<(*const ClientDetails, ContainerHandle)> {
+    ) -> Option<(*const ClientDetails, BagHandle)> {
         unsafe { self.clients.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_client_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_client_handle(&self, handle: BagHandle) {
         if let Err(e) = unsafe { self.clients.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister client from service. This could indicate a corrupted system! [{e:?}]");
         }
@@ -187,11 +186,11 @@ impl DynamicConfig {
     pub(crate) fn add_server_id(
         &self,
         details: ServerDetails,
-    ) -> Option<(*const ServerDetails, ContainerHandle)> {
+    ) -> Option<(*const ServerDetails, BagHandle)> {
         unsafe { self.servers.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_server_handle(&self, handle: BagHandle) {
         if let Err(e) = unsafe { self.servers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister server from service. This could indicate a corrupted system! [{e:?}]");
         }
