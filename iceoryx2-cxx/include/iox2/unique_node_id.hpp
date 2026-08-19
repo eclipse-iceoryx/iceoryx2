@@ -13,6 +13,8 @@
 #ifndef IOX2_UNIQUE_NODE_ID_HPP
 #define IOX2_UNIQUE_NODE_ID_HPP
 
+#include "iox2/bb/into.hpp"
+#include "iox2/enum_translation.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/service_type.hpp"
 
@@ -44,9 +46,11 @@ class UniqueNodeId {
     auto value_low() const -> uint64_t;
 
     /// Returns the [`ProcessId`] of the process that owns the [`Node`].
+    template <ServiceType T>
     auto pid() const -> int32_t;
 
     /// Returns the time the [`Node`] was created.
+    template <ServiceType T>
     auto creation_time() const -> timespec;
 
   private:
@@ -75,6 +79,20 @@ class UniqueNodeId {
 
     iox2_unique_node_id_h m_handle = nullptr;
 };
+
+template <ServiceType T>
+auto UniqueNodeId::pid() const -> int32_t {
+    return iox2_unique_node_id_pid(&m_handle, iox2::bb::into<iox2_service_type_e>(T));
+}
+
+template <ServiceType T>
+auto UniqueNodeId::creation_time() const -> timespec {
+    uint64_t seconds = 0;
+    uint32_t nanoseconds = 0;
+    iox2_unique_node_id_creation_time(&m_handle, iox2::bb::into<iox2_service_type_e>(T), &seconds, &nanoseconds);
+
+    return { static_cast<decltype(timespec::tv_sec)>(seconds), static_cast<decltype(timespec::tv_nsec)>(nanoseconds) };
+}
 
 auto operator<<(std::ostream& stream, const UniqueNodeId& node) -> std::ostream&;
 auto operator==(const UniqueNodeId& lhs, const UniqueNodeId& rhs) -> bool;

@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType};
+use crate::api::{AssertNonNullHandle, HandleToType, iox2_service_type_e};
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -177,11 +177,21 @@ pub unsafe extern "C" fn iox2_unique_node_id_value_low(
 ///
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_unique_node_id_pid(node_id_handle: iox2_unique_node_id_h_ref) -> i32 {
+pub unsafe extern "C" fn iox2_unique_node_id_pid(
+    node_id_handle: iox2_unique_node_id_h_ref,
+    service_type: iox2_service_type_e,
+) -> i32 {
     node_id_handle.assert_non_null();
     unsafe {
         let node_id = &mut *node_id_handle.as_type();
-        node_id.value.as_ref().pid().value() as _
+        match service_type {
+            iox2_service_type_e::IPC => {
+                node_id.value.as_ref().pid::<crate::IpcService>().value() as _
+            }
+            iox2_service_type_e::LOCAL => {
+                node_id.value.as_ref().pid::<crate::LocalService>().value() as _
+            }
+        }
     }
 }
 
@@ -195,6 +205,7 @@ pub unsafe extern "C" fn iox2_unique_node_id_pid(node_id_handle: iox2_unique_nod
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
     node_id_handle: iox2_unique_node_id_h_ref,
+    service_type: iox2_service_type_e,
     seconds: *mut u64,
     nanoseconds: *mut u32,
 ) {
@@ -203,8 +214,32 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
     debug_assert!(!nanoseconds.is_null());
     unsafe {
         let node_id = &mut *node_id_handle.as_type();
-        *seconds = node_id.value.as_ref().creation_time().seconds();
-        *nanoseconds = node_id.value.as_ref().creation_time().nanoseconds();
+        match service_type {
+            iox2_service_type_e::IPC => {
+                *seconds = node_id
+                    .value
+                    .as_ref()
+                    .creation_time::<crate::IpcService>()
+                    .seconds();
+                *nanoseconds = node_id
+                    .value
+                    .as_ref()
+                    .creation_time::<crate::IpcService>()
+                    .nanoseconds();
+            }
+            iox2_service_type_e::LOCAL => {
+                *seconds = node_id
+                    .value
+                    .as_ref()
+                    .creation_time::<crate::LocalService>()
+                    .seconds();
+                *nanoseconds = node_id
+                    .value
+                    .as_ref()
+                    .creation_time::<crate::LocalService>()
+                    .nanoseconds();
+            }
+        }
     }
 }
 
