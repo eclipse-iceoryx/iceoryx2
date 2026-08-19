@@ -179,6 +179,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
+use iceoryx2_cal::unique_id_generator::UniqueId;
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
@@ -204,7 +205,7 @@ use crate::{config::Config, service::config_scheme::node_details_config};
 
 impl UniqueNodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
-        fatal_panic!(from self, when FileName::new(self.0.to_string().as_bytes()),
+        fatal_panic!(from self, when FileName::new(self.0.value().to_string().as_bytes()),
                         "This should never happen! The NodeId shall be always a valid FileName.")
     }
 }
@@ -1198,7 +1199,7 @@ impl<Service: service::Service> Node<Service> {
                         continue;
                     };
                     let node_id = match node_id.parse::<u128>() {
-                        Ok(v) => UniqueNodeId(v.into()),
+                        Ok(v) => UniqueNodeId(unsafe { UniqueId::from_value(v) }),
                         Err(_) => continue,
                     };
 
@@ -1587,7 +1588,9 @@ impl NodeBuilder {
             }
         };
 
-        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new(node_counter)) }
+        unsafe {
+            self.__internal_create_with_custom_node_id(UniqueNodeId::new::<Service>(node_counter))
+        }
     }
 
     #[doc(hidden)]

@@ -10,6 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub type Ipc = crate::unique_system_id_generator::blub::UniqueSystemId;
+pub type Ipc = crate::unique_id_generator::blub::UniqueSystemId;
 
-pub type Local = crate::unique_system_id_generator::blub::UniqueSystemId;
+pub type Local = crate::unique_id_generator::blub::UniqueSystemId;

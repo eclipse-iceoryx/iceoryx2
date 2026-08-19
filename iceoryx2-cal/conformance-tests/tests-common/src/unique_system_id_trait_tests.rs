@@ -15,5 +15,5 @@ use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 instantiate_conformance_tests_with_module!(
     non_deterministic,
     iceoryx2_cal_conformance_tests::unique_system_id_trait,
-    iceoryx2_cal::unique_system_id_generator::blub::UniqueSystemId
+    iceoryx2_cal::unique_id_generator::blub::UniqueSystemId
 );

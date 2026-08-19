@@ -144,7 +144,7 @@ where
             IceoryxNodeState::Alive(view) => NodeDescriptor {
                 state: NodeState::Alive,
                 id: NodeIdString::from(view.id()),
-                pid: view.id().pid().value(),
+                pid: view.id().pid::<T>().value(),
                 executable: view
                     .details()
                     .as_ref()
@@ -157,7 +157,7 @@ where
             IceoryxNodeState::Dead(view) => NodeDescriptor {
                 state: NodeState::Dead,
                 id: NodeIdString::from(view.id()),
-                pid: view.id().pid().value(),
+                pid: view.id().pid::<T>().value(),
                 executable: view
                     .details()
                     .as_ref()
@@ -170,14 +170,14 @@ where
             IceoryxNodeState::Inaccessible(node_id) => NodeDescriptor {
                 state: NodeState::Inaccessible,
                 id: NodeIdString::from(node_id),
-                pid: node_id.pid().value(),
+                pid: node_id.pid::<T>().value(),
                 executable: None,
                 name: None,
             },
             IceoryxNodeState::Undefined(node_id) => NodeDescriptor {
                 state: NodeState::Undefined,
                 id: NodeIdString::from(node_id),
-                pid: node_id.pid().value(),
+                pid: node_id.pid::<T>().value(),
                 executable: None,
                 name: None,
             },
@@ -203,25 +203,25 @@ where
             IceoryxNodeState::Alive(view) => NodeDescription {
                 state: NodeState::Alive,
                 id: NodeIdString::from(view.id()),
-                pid: view.id().pid().value(),
+                pid: view.id().pid::<T>().value(),
                 details: view.details().clone(),
             },
             IceoryxNodeState::Dead(view) => NodeDescription {
                 state: NodeState::Dead,
                 id: NodeIdString::from(view.id()),
-                pid: view.id().pid().value(),
+                pid: view.id().pid::<T>().value(),
                 details: view.details().clone(),
             },
             IceoryxNodeState::Inaccessible(node_id) => NodeDescription {
                 state: NodeState::Inaccessible,
                 id: NodeIdString::from(node_id),
-                pid: node_id.pid().value(),
+                pid: node_id.pid::<T>().value(),
                 details: None,
             },
             IceoryxNodeState::Undefined(node_id) => NodeDescription {
                 state: NodeState::Undefined,
                 id: NodeIdString::from(node_id),
-                pid: node_id.pid().value(),
+                pid: node_id.pid::<T>().value(),
                 details: None,
             },
         }

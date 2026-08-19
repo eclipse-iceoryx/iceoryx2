@@ -19,7 +19,7 @@ pub mod unique_system_id_trait {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_bb_testing_macros::test;
-    use iceoryx2_cal::unique_system_id_generator::{Entity, UniqueId, UniqueSystemIdGenerator};
+    use iceoryx2_cal::unique_id_generator::{UniqueId, UniqueIdBuilder, UniqueIdGenerator};
 
     #[test]
     fn unique_id_can_be_created_from_value() {
@@ -29,30 +29,27 @@ pub mod unique_system_id_trait {
     }
 
     #[conformance_test]
-    pub fn generate_works_with_valid_arguments<Sut: UniqueSystemIdGenerator>() {
-        let sut = Sut::generate(&Entity {
-            name: StaticString::try_from("id").unwrap(),
-            id: 0,
-        });
+    pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator>() {
+        let sut = UniqueIdBuilder::new(&StaticString::try_from("id").unwrap()).create::<Sut>(0);
         assert_that!(sut, is_ok);
     }
 
     #[conformance_test]
-    pub fn generate_returns_unique_ids<Sut: UniqueSystemIdGenerator>() {
-        let sut1 = Sut::generate(&Entity {
-            name: StaticString::try_from("id").unwrap(),
-            id: 0,
-        });
-        let sut2 = Sut::generate(&Entity {
-            name: StaticString::try_from("id").unwrap(),
-            id: 1,
-        });
-        let sut3 = Sut::generate(&Entity {
-            name: StaticString::try_from("ID").unwrap(),
-            id: 0,
-        });
+    pub fn generate_returns_unique_ids<Sut: UniqueIdGenerator>() {
+        let sut1 = UniqueIdBuilder::new(&StaticString::try_from("id").unwrap())
+            .create::<Sut>(0)
+            .unwrap();
+        let sut2 = UniqueIdBuilder::new(&StaticString::try_from("id").unwrap())
+            .create::<Sut>(1)
+            .unwrap();
+        let sut3 = UniqueIdBuilder::new(&StaticString::try_from("ID").unwrap())
+            .create::<Sut>(0)
+            .unwrap();
+
         assert_that!(sut1, ne sut2);
         assert_that!(sut1, ne sut3);
         assert_that!(sut2, ne sut3);
     }
+
+    // TODO: add more tests
 }

@@ -49,7 +49,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_cal::bag::Bag;
 use iceoryx2_cal::bag::{BagFamily, BagStateFamily};
-use iceoryx2_cal::unique_system_id_generator::Entity;
+use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
