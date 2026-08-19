@@ -92,7 +92,7 @@ pub struct Config {
 }
 
 #[derive(Debug)]
-pub struct Gateway<S: Service, B: Backend<S> + Debug> {
+pub struct Gateway<S: Service + 'static, B: Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
     discovery_state: DiscoveryState,

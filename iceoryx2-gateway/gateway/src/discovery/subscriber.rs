@@ -62,7 +62,7 @@ impl core::fmt::Display for AnnouncementError {
 impl core::error::Error for AnnouncementError {}
 
 #[derive(Debug)]
-pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
+pub struct DiscoverySubscriber<S: Service + 'static>(pub Subscriber<S, DiscoveryEvent<S>, ()>);
 
 impl<S: Service> DiscoverySubscriber<S> {
     pub fn create(node: &Node<S>, service_name: ServiceName) -> Result<Self, CreationError> {
@@ -71,7 +71,7 @@ impl<S: Service> DiscoverySubscriber<S> {
         let service = fail!(
             from origin,
             when node.service_builder(&service_name)
-                    .publish_subscribe::<DiscoveryEvent>()
+                    .publish_subscribe::<DiscoveryEvent<S>>()
                     .open(),
             with CreationError::Service,
             "Failed to open discovery service with name {}", service_name
@@ -130,7 +130,7 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
 
 // TODO: Consider merging these structs
 /// Converts a discovery-service event into a gateway [`DiscoveryUpdate`].
-fn to_discovery_update(event: &DiscoveryEvent) -> Option<DiscoveryUpdate> {
+fn to_discovery_update<S: Service>(event: &DiscoveryEvent<S>) -> Option<DiscoveryUpdate> {
     match event {
         DiscoveryEvent::Added(static_config) => match ServiceDescription::try_from(static_config) {
             Ok(description) => Some(DiscoveryUpdate::Added(description)),
