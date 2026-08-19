@@ -34,7 +34,7 @@ pub mod serialize;
 pub mod shared_memory;
 pub mod shm_allocator;
 pub mod static_storage;
-pub mod unique_system_id_generator;
+pub mod unique_id_generator;
 pub mod zero_copy_connection;
 
 #[doc(hidden)]

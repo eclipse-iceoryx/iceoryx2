@@ -37,7 +37,7 @@ use alloc::format;
 use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::{hash::Hash, unique_system_id_generator::Entity};
+use iceoryx2_cal::{hash::Hash, unique_id_generator::Entity};
 use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};

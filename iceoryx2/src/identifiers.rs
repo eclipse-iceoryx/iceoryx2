@@ -12,11 +12,11 @@
 
 use alloc::format;
 
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::unique_system_id_generator::*;
+use iceoryx2_cal::unique_id_generator::*;
 use iceoryx2_log::fatal_panic;
 
 macro_rules! generate_id {
@@ -47,9 +47,10 @@ macro_rules! generate_id {
 
         impl $id_name {
             pub(crate) fn new<Service: crate::service::Service>(entity: &Entity) -> Self {
+                let builder = UniqueIdBuilder::new(&entity.name);
                 Self(
                     fatal_panic!(from format!("{}::new()", stringify!($id_name)),
-                        when Service::UniqueSystemId::generate(entity),
+                        when builder.create::<Service::UniqueSystemId>(entity.id),
                         "Unable to generate required {}!", stringify!($id_name)),
                 )
             }
@@ -152,8 +153,7 @@ impl UniquePortId {
     serde::Serialize,
     serde::Deserialize,
 )]
-pub struct UniqueNodeId(pub(crate) UniqueSystemId);
-// pub struct UniqueNodeId(pub(crate) UniqueId);
+pub struct UniqueNodeId(pub(crate) UniqueId);
 
 impl core::fmt::Display for UniqueNodeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -162,11 +162,11 @@ impl core::fmt::Display for UniqueNodeId {
 }
 
 impl UniqueNodeId {
-    pub(crate) fn new(counter: u32) -> Self {
+    pub(crate) fn new<Service: crate::service::Service>(counter_hint: u32) -> Self {
+        let builder = UniqueIdBuilder::new(&StaticString::new()).counter_hint(counter_hint);
         Self(fatal_panic!(from "UniqueNodeId::new",
-                when UniqueSystemId::from_counter(counter),
+                when builder.create::<Service::UniqueSystemId>(0),
                 "Unable to generate required UniqueNodeId!"))
-        // Self(unsafe { UniqueId::from_value(counter as _) })
     }
 
     /// Returns the underlying raw value of the ID
@@ -175,18 +175,23 @@ impl UniqueNodeId {
     }
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
-    pub fn pid(&self) -> iceoryx2_bb_posix::process::ProcessId {
-        // UniqueSystemId::from(self.0.value()).pid()
-        self.0.pid()
+    pub fn pid<Service: crate::service::Service>(&self) -> iceoryx2_bb_posix::process::ProcessId {
+        Service::UniqueSystemId::from(self.0)
+            .pid()
+            .expect("UniqueIdGenerator::pid() must be implemented.")
     }
 
     /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) the id was created.
-    pub fn creation_time(&self) -> iceoryx2_bb_posix::clock::Time {
-        self.0.creation_time()
+    pub fn creation_time<Service: crate::service::Service>(
+        &self,
+    ) -> iceoryx2_bb_posix::clock::Time {
+        Service::UniqueSystemId::from(self.0)
+            .creation_time()
+            .expect("UniqueIdGenerator::creation_time() must be implemented.")
     }
 
     pub(crate) fn owner_id(&self) -> OwnerId {
-        OwnerId::new((self.0.pid().value() as u64) << 32 | self.0.counter() as u64)
-            .expect("The unique node id is never 0")
+        // TODO: return unique low/high member
+        OwnerId::new(self.0.value() as u64).expect("The unique node id is never 0.")
     }
 }

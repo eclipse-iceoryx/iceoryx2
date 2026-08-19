@@ -38,7 +38,7 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::unique_system_id_generator::UniqueId;
+use iceoryx2_cal::unique_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::identifiers::UniquePublisherId;
