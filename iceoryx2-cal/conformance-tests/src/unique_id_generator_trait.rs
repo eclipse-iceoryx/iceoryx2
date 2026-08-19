@@ -14,12 +14,42 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
-pub mod unique_system_id_trait {
+pub mod unique_id_generator_trait {
+    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
     use iceoryx2_bb_container::string::StaticString;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_bb_testing_macros::test;
-    use iceoryx2_cal::unique_id_generator::{UniqueId, UniqueIdBuilder, UniqueIdGenerator};
+    use iceoryx2_cal::unique_id_generator::{
+        UniqueId, UniqueIdBuilder, UniqueIdGenerator, UniqueIdGeneratorError,
+    };
+
+    struct TestUniqueId {
+        id: u32,
+    }
+    impl TestUniqueId {
+        fn new() -> Self {
+            static COUNTER: AtomicU32 = AtomicU32::new(0);
+            Self {
+                id: COUNTER.fetch_add(1, Ordering::Relaxed),
+            }
+        }
+        fn value(&self) -> u32 {
+            self.id
+        }
+    }
+    impl From<UniqueId> for TestUniqueId {
+        fn from(value: UniqueId) -> Self {
+            Self {
+                id: value.value() as u32,
+            }
+        }
+    }
+    impl UniqueIdGenerator for TestUniqueId {
+        fn generate(_builder: UniqueIdBuilder) -> Result<UniqueId, UniqueIdGeneratorError> {
+            Ok(unsafe { UniqueId::from_value(TestUniqueId::new().value() as u128) })
+        }
+    }
 
     #[test]
     fn unique_id_can_be_created_from_value() {
@@ -28,9 +58,25 @@ pub mod unique_system_id_trait {
         assert_that!(id.value(), eq value);
     }
 
+    #[test]
+    fn pid_returns_error_when_not_implemented() {
+        let sut = TestUniqueId::new();
+        let pid = sut.pid();
+        assert_that!(pid, is_err);
+        assert_that!(pid.err().unwrap(), eq UniqueIdGeneratorError::NotImplemented);
+    }
+
+    #[test]
+    fn creation_time_returns_error_when_not_implemented() {
+        let sut = TestUniqueId::new();
+        let time = sut.creation_time();
+        assert_that!(time, is_err);
+        assert_that!(time.err().unwrap(), eq UniqueIdGeneratorError::NotImplemented);
+    }
+
     #[conformance_test]
     pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator>() {
-        let sut = UniqueIdBuilder::new(&StaticString::try_from("id").unwrap()).create::<Sut>(0);
+        let sut = UniqueIdBuilder::new(&StaticString::new()).create::<Sut>(0);
         assert_that!(sut, is_ok);
     }
 
@@ -50,6 +96,4 @@ pub mod unique_system_id_trait {
         assert_that!(sut1, ne sut3);
         assert_that!(sut2, ne sut3);
     }
-
-    // TODO: add more tests
 }
