@@ -47,7 +47,7 @@ impl core::fmt::Display for DiscoveryError {
 impl core::error::Error for DiscoveryError {}
 
 #[derive(Debug)]
-pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
+pub struct DiscoverySubscriber<S: Service + 'static>(pub Subscriber<S, DiscoveryEvent<S>, ()>);
 
 impl<S: Service> DiscoverySubscriber<S> {
     pub fn create(node: &Node<S>, service_name: ServiceName) -> Result<Self, CreationError> {
@@ -56,7 +56,7 @@ impl<S: Service> DiscoverySubscriber<S> {
         let service = fail!(
             from origin,
             when node.service_builder(&service_name)
-                    .publish_subscribe::<DiscoveryEvent>()
+                    .publish_subscribe::<DiscoveryEvent<S>>()
                     .open(),
             with CreationError::Service,
             "Failed to open discovery service with name {}", service_name
@@ -76,7 +76,7 @@ impl<S: Service> DiscoverySubscriber<S> {
 impl<S: Service> DiscoverySubscriber<S> {
     /// Drains the discovery service and passes each event to
     /// `process_discovery`.
-    pub(crate) fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
+    pub(crate) fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent<S>) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
