@@ -60,6 +60,7 @@ pub struct Entity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UniqueIdGeneratorError {
     GenerationError,
+    NotImplemented,
 }
 
 impl core::fmt::Display for UniqueIdGeneratorError {
@@ -102,13 +103,15 @@ impl UniqueIdBuilder {
 pub trait UniqueIdGenerator: From<UniqueId> {
     fn generate(builder: UniqueIdBuilder) -> Result<UniqueId, UniqueIdGeneratorError>;
 
-    // TODO: better error + handling
+    // TODO: better error handling
     fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
-        fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::GenerationError, "pid() is not implemented");
+        fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
+            "pid() is not implemented");
     }
 
-    // TODO: better error + handling
+    // TODO: better error handling
     fn creation_time(&self) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
-        fail!(from "UniqueIdGenerator::creation_time()", with UniqueIdGeneratorError::GenerationError, "creation_time() not implemented");
+        fail!(from "UniqueIdGenerator::creation_time()",
+            with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
     }
 }
