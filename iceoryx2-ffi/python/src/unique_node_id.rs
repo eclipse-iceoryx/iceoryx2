@@ -12,6 +12,8 @@
 
 use pyo3::prelude::*;
 
+use crate::service_type::ServiceType;
+
 #[pyclass(str = "{0:?}", from_py_object)]
 #[derive(Clone, PartialEq)]
 /// The system-wide unique id of a `Node`
@@ -29,9 +31,11 @@ impl UniqueNodeId {
         self.0.value()
     }
 
-    #[getter]
     /// Returns the process id of the process that owns the `Node`.
-    pub fn pid(&self) -> u32 {
-        self.0.pid().value() as _
+    pub fn pid(&self, service_type: &ServiceType) -> u32 {
+        match service_type {
+            ServiceType::Ipc => self.0.pid::<crate::IpcService>().value() as _,
+            ServiceType::Local => self.0.pid::<crate::LocalService>().value() as _,
+        }
     }
 }

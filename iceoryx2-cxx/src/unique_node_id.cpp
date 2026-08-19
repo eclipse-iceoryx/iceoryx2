@@ -71,22 +71,8 @@ auto UniqueNodeId::value_low() const -> uint64_t {
     return iox2_unique_node_id_value_low(&m_handle);
 }
 
-auto UniqueNodeId::pid() const -> int32_t {
-    return iox2_unique_node_id_pid(&m_handle);
-}
-
-auto UniqueNodeId::creation_time() const -> timespec {
-    uint64_t seconds = 0;
-    uint32_t nanoseconds = 0;
-    iox2_unique_node_id_creation_time(&m_handle, &seconds, &nanoseconds);
-
-    return { static_cast<decltype(timespec::tv_sec)>(seconds), static_cast<decltype(timespec::tv_nsec)>(nanoseconds) };
-}
-
 auto operator<<(std::ostream& stream, const UniqueNodeId& node) -> std::ostream& {
-    stream << "NodeId { value_high: " << node.value_high() << ", value_low: " << node.value_low()
-           << ", pid: " << node.pid() << ", creation time: " << node.creation_time().tv_sec << "."
-           << node.creation_time().tv_nsec << "s }";
+    stream << "NodeId { value_high: " << node.value_high() << ", value_low: " << node.value_low();
     return stream;
 }
 
