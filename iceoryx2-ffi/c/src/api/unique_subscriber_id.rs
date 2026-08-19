@@ -21,9 +21,9 @@ use crate::api::{AssertNonNullHandle, HandleToType};
 
 /// The system-wide unique id of a `iox2_subscriber_t`.
 #[repr(C)]
-#[repr(align(4))] // core::mem::align_of::<UniqueSubscriberId>()
+#[repr(align(8))] // core::mem::align_of::<UniqueSubscriberId>()
 pub struct iox2_unique_subscriber_id_storage_t {
-    internal: [u8; 20], // core::mem::size_of::<Option<UniqueSubscriberId>>()
+    internal: [u8; 24], // core::mem::size_of::<Option<UniqueSubscriberId>>()
 }
 
 #[repr(C)]

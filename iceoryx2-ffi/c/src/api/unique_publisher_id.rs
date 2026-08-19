@@ -21,9 +21,9 @@ use crate::api::{AssertNonNullHandle, HandleToType};
 
 /// The system-wide unique id of a `iox2_publisher_t`.
 #[repr(C)]
-#[repr(align(4))] // core::mem::align_of::<UniquePublisherId>()
+#[repr(align(8))] // core::mem::align_of::<UniquePublisherId>()
 pub struct iox2_unique_publisher_id_storage_t {
-    internal: [u8; 20], // core::mem::size_of::<Option<UniquePublisherId>>()
+    internal: [u8; 24], // core::mem::size_of::<Option<UniquePublisherId>>()
 }
 
 #[repr(C)]

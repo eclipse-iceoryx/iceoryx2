@@ -14,6 +14,7 @@
 
 use core::ffi::c_char;
 
+use iceoryx2::service::Service;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::fatal_panic;
@@ -45,8 +46,8 @@ pub struct iox2_static_config_t {
     pub attributes: iox2_attribute_set_h,
 }
 
-impl From<&StaticConfig> for iox2_static_config_t {
-    fn from(value: &StaticConfig) -> Self {
+impl<S: Service> From<&StaticConfig<S>> for iox2_static_config_t {
+    fn from(value: &StaticConfig<S>) -> Self {
         let mut attribute_handle_ptr: iox2_attribute_set_h = core::ptr::null_mut();
 
         unsafe {
