@@ -82,7 +82,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::event_state::EventActivation;
 use iceoryx2_cal::event::{EventId, ListenerBuilder, NamedConceptMgmt};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
-use iceoryx2_cal::unique_system_id_generator::Entity;
+use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_log::fail;
 
 // re-export to be able to match to the error without having to depend on iceoryx2-cal

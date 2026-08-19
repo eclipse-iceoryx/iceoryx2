@@ -63,7 +63,7 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
-use iceoryx2_cal::unique_system_id_generator::Entity;
+use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_log::{fail, fatal_panic};
 
 /// A wrapper for the value returned by [`EntryHandle::get()`].

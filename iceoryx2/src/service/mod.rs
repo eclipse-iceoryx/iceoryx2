@@ -313,7 +313,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
-use iceoryx2_cal::unique_system_id_generator::*;
+use iceoryx2_cal::unique_id_generator::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use iceoryx2_log::error;
 use iceoryx2_log::{debug, fail, trace, warn};
@@ -988,7 +988,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;
 
-    type UniqueSystemId: UniqueSystemIdGenerator;
+    type UniqueSystemId: UniqueIdGenerator;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

@@ -71,10 +71,11 @@ enum_gen! { UniqueSystemIdCreationError
     Eq, Hash, PartialEq, Clone, Copy, PartialOrd, Ord, Serialize, Deserialize, ZeroCopySend,
 )]
 #[repr(C)]
+#[repr(align(8))] // TODO: align to be compatible with UniqueId alignment?
 pub struct UniqueSystemId {
-    pid: u32,
     seconds: u32,
     nanoseconds: u32,
+    pid: u32,
     counter: u32,
 }
 

@@ -46,7 +46,7 @@ use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
-use iceoryx2_cal::unique_system_id_generator::UniqueId;
+use iceoryx2_cal::unique_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelState;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
