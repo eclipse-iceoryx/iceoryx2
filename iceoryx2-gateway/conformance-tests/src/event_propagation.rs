@@ -31,7 +31,7 @@ pub mod event_propagation {
     use iceoryx2_gateway_backend::traits::{Backend, testing::Testing};
 
     fn propagate_events<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >(
@@ -129,7 +129,7 @@ pub mod event_propagation {
 
     #[conformance_test]
     pub fn propagates_event<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -138,7 +138,7 @@ pub mod event_propagation {
 
     #[conformance_test]
     pub fn propagates_event_many<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -147,7 +147,7 @@ pub mod event_propagation {
 
     #[conformance_test]
     pub fn propagated_events_do_not_loop_back<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -263,7 +263,7 @@ pub mod event_propagation {
     // TODO: Fix flaky
     #[conformance_test]
     pub fn multiple_events_are_consolidated_by_id<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -393,7 +393,7 @@ pub mod event_propagation {
 
     #[conformance_test]
     pub fn events_are_routed_to_their_own_service<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
