@@ -269,18 +269,15 @@ pub unsafe extern "C" fn iox2_response_mut_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let response = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match response.service_type {
+        let number_of_elements_value = match response.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = response.value.as_ref().ipc.payload().as_ptr().cast();
-                number_of_elements_value =
-                    response.value.as_mut().ipc.header().number_of_elements();
+                response.value.as_mut().ipc.header().number_of_elements()
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = response.value.as_ref().local.payload().as_ptr().cast();
-                number_of_elements_value =
-                    response.value.as_mut().local.header().number_of_elements();
+                response.value.as_mut().local.header().number_of_elements()
             }
         };
 
@@ -307,9 +304,8 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let response = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match response.service_type {
+        let number_of_elements_value = match response.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = response
                     .value
@@ -318,8 +314,7 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
                     .payload_mut()
                     .as_mut_ptr()
                     .cast();
-                number_of_elements_value =
-                    response.value.as_mut().ipc.header().number_of_elements();
+                response.value.as_mut().ipc.header().number_of_elements()
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = response
@@ -329,8 +324,7 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
                     .payload_mut()
                     .as_mut_ptr()
                     .cast();
-                number_of_elements_value =
-                    response.value.as_mut().local.header().number_of_elements();
+                response.value.as_mut().local.header().number_of_elements()
             }
         };
 
