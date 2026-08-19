@@ -60,7 +60,7 @@ pub struct Reactive;
 pub struct GatewayBuilder<S, B, M = Unconfigured>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     gateway_config: Option<Config>,
     iceoryx_config: Option<iceoryx2::config::Config>,
@@ -73,7 +73,7 @@ where
 impl<S, B, M> GatewayBuilder<S, B, M>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     /// Sets the [`Config`] for the [`Gateway`].
     pub fn gateway_config(mut self, config: Config) -> Self {
@@ -112,7 +112,7 @@ where
 impl<S, B> GatewayBuilder<S, B, Unconfigured>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     /// Creates a new builder. All configurations default to
     /// [`Default::default()`] unless overridden via the chained setters.
@@ -144,7 +144,7 @@ where
 impl<S, B> GatewayBuilder<S, B, Unconfigured>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
     for<'b> B::Builder<'b>: ReactiveBackendBuilder<S>,
 {
     /// Selects reactive mode. Only available when the chosen [`Backend`]'s
@@ -164,7 +164,7 @@ where
 impl<S, B> Default for GatewayBuilder<S, B, Unconfigured>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     fn default() -> Self {
         Self::new()
@@ -174,7 +174,7 @@ where
 impl<S, B> GatewayBuilder<S, B, Polled>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     /// Builds the gateway in polled mode.
     pub fn create(self) -> Result<Gateway<S, B>, CreationError> {
@@ -191,7 +191,7 @@ where
 impl<S, B> GatewayBuilder<S, B, Reactive>
 where
     S: Service,
-    B: for<'b> Backend<S> + Debug,
+    B: Backend<S> + Debug,
     for<'b> B::Builder<'b>: ReactiveBackendBuilder<S>,
 {
     /// Builds the gateway in reactive mode.
@@ -220,7 +220,7 @@ fn create_polled<S, B>(
 ) -> Result<Gateway<S, B>, CreationError>
 where
     S: Service,
-    B: for<'a> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     let origin = "GatewayBuilder::<Polled>::create";
 
@@ -248,7 +248,7 @@ fn create_reactive<S, B, W>(
 where
     S: Service,
     W: Service,
-    B: for<'a> Backend<S> + Debug,
+    B: Backend<S> + Debug,
     for<'b> B::Builder<'b>: ReactiveBackendBuilder<S, WakeService = W>,
 {
     let origin = "GatewayBuilder::<Reactive>::create";
@@ -320,7 +320,7 @@ fn create<S, B>(
 ) -> Result<Gateway<S, B>, CreationError>
 where
     S: Service,
-    B: for<'a> Backend<S> + Debug,
+    B: Backend<S> + Debug,
 {
     let origin = format!(
         "GatewayBuilder<{}, {}>::create",

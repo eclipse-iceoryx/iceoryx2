@@ -116,7 +116,7 @@ impl<S: Service, B: Backend<S>> BridgeState<S, B> {
 }
 
 #[derive(Debug)]
-pub struct Gateway<S: Service, B: for<'a> Backend<S> + Debug> {
+pub struct Gateway<S: Service, B: Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
     discovery_state: DiscoveryState,
@@ -124,7 +124,7 @@ pub struct Gateway<S: Service, B: for<'a> Backend<S> + Debug> {
     discovery_strategy: LocalDiscoveryStrategy<S>,
 }
 
-impl<S: Service, B: for<'a> Backend<S> + Debug> Gateway<S, B> {
+impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     /// Returns a builder for configuring and constructing a [`Gateway`].
     #[allow(clippy::new_ret_no_self)] // entry point to the type-state builder
     pub fn new() -> crate::builder::GatewayBuilder<S, B, crate::builder::Unconfigured> {

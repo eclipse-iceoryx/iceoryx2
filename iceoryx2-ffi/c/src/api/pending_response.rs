@@ -332,9 +332,8 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let pending_response = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match pending_response.service_type {
+        let number_of_elements_value = match pending_response.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = pending_response
                     .value
@@ -343,12 +342,12 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
                     .payload()
                     .as_ptr()
                     .cast();
-                number_of_elements_value = pending_response
+                pending_response
                     .value
                     .as_mut()
                     .ipc
                     .header()
-                    .number_of_elements();
+                    .number_of_elements()
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = pending_response
@@ -358,12 +357,12 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
                     .payload()
                     .as_ptr()
                     .cast();
-                number_of_elements_value = pending_response
+                pending_response
                     .value
                     .as_mut()
                     .local
                     .header()
-                    .number_of_elements();
+                    .number_of_elements()
             }
         };
 

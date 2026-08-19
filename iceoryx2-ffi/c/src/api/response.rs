@@ -225,17 +225,15 @@ pub unsafe extern "C" fn iox2_response_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let sample = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match sample.service_type {
+        let number_of_elements_value = match sample.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = sample.value.as_ref().ipc.payload().as_ptr().cast();
-                number_of_elements_value = sample.value.as_ref().ipc.header().number_of_elements();
+                sample.value.as_ref().ipc.header().number_of_elements()
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = sample.value.as_ref().local.payload().as_ptr().cast();
-                number_of_elements_value =
-                    sample.value.as_ref().local.header().number_of_elements();
+                sample.value.as_ref().local.header().number_of_elements()
             }
         };
 

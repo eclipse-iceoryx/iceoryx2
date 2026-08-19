@@ -260,13 +260,11 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let sample = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match sample.service_type {
+        let number_of_elements_value = match sample.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = sample.value.as_mut().ipc.payload_mut().as_mut_ptr().cast();
-                number_of_elements_value =
-                    sample.value.as_mut().ipc.header().number_of_elements() as c_size_t;
+                sample.value.as_mut().ipc.header().number_of_elements() as c_size_t
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = sample
@@ -276,8 +274,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
                     .payload_mut()
                     .as_mut_ptr()
                     .cast();
-                number_of_elements_value =
-                    sample.value.as_mut().local.header().number_of_elements() as c_size_t;
+                sample.value.as_mut().local.header().number_of_elements() as c_size_t
             }
         };
 
@@ -304,12 +301,11 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let sample = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match sample.service_type {
+        let number_of_elements_value = match sample.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = sample.value.as_mut().ipc.payload_mut().as_mut_ptr().cast();
-                number_of_elements_value = sample.value.as_mut().ipc.header().number_of_elements();
+                sample.value.as_mut().ipc.header().number_of_elements()
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = sample
@@ -319,8 +315,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
                     .payload_mut()
                     .as_mut_ptr()
                     .cast();
-                number_of_elements_value =
-                    sample.value.as_mut().local.header().number_of_elements();
+                sample.value.as_mut().local.header().number_of_elements()
             }
         };
 

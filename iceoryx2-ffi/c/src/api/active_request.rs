@@ -268,17 +268,16 @@ pub unsafe extern "C" fn iox2_active_request_payload(
     debug_assert!(!payload_ptr.is_null());
     unsafe {
         let active_request = &mut *handle.as_type();
-        let number_of_elements_value;
 
-        match active_request.service_type {
+        let number_of_elements_value = match active_request.service_type {
             iox2_service_type_e::IPC => {
                 *payload_ptr = active_request.value.as_mut().ipc.payload().as_ptr().cast();
-                number_of_elements_value = active_request
+                active_request
                     .value
                     .as_mut()
                     .ipc
                     .header()
-                    .number_of_elements();
+                    .number_of_elements()
             }
             iox2_service_type_e::LOCAL => {
                 *payload_ptr = active_request
@@ -288,12 +287,12 @@ pub unsafe extern "C" fn iox2_active_request_payload(
                     .payload()
                     .as_ptr()
                     .cast();
-                number_of_elements_value = active_request
+                active_request
                     .value
                     .as_mut()
                     .local
                     .header()
-                    .number_of_elements();
+                    .number_of_elements()
             }
         };
 

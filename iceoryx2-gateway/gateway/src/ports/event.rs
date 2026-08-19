@@ -118,7 +118,7 @@ impl<S: Service> EventPorts<S> {
         mut ingest: IngestFn,
     ) -> Result<bool, SendError>
     where
-        IngestFn: for<'a> FnMut() -> Result<Option<EventId>, IngestError>,
+        IngestFn: FnMut() -> Result<Option<EventId>, IngestError>,
     {
         let mut ingested = false;
         loop {
