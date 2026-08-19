@@ -222,7 +222,7 @@ pub const S_ISGID: mode_t = crate::internal::S_ISGID as _;
 pub const S_ISVTX: mode_t = crate::internal::S_ISVTX as _;
 
 pub const CLOCK_REALTIME: clockid_t = 0;
-pub const CLOCK_MONOTONIC: clockid_t = 1;
+pub const CLOCK_MONOTONIC: clockid_t = 6;
 pub const CLOCK_TIMER_ABSTIME: int = 1;
 
 pub const F_OK: int = crate::internal::F_OK as _;

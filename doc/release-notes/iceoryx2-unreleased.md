@@ -61,6 +61,7 @@
 * [#1878](https://github.com/eclipse-iceoryx/iceoryx2/issues/1878) Fix race in `pthread_create` on macOS and Windows
 * [#1893](https://github.com/eclipse-iceoryx/iceoryx2/issues/1893) Fix C language `ipc` and `local` mapping for payload types
 * [#1906](https://github.com/eclipse-iceoryx/iceoryx2/issues/1906) Do not set the exec bit for created resources
+* [#1918](https://github.com/eclipse-iceoryx/iceoryx2/issues/1917) Fix wrong `CLOCK_MONOTONIC` constant on macOS (1 instead of 6) which broke `Time::now_with_clock(ClockType::Monotonic)`
 
 ### Refactoring
 
