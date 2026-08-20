@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::Result;
-use colored::Colorize;
+use iceoryx2_bb_print::*;
 
 use iceoryx2::config::Config;
 
@@ -604,19 +604,19 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
 pub fn explain() -> Result<()> {
     let schema = describe_schema(&Config::default());
     for section in schema {
-        println!("\n{}", format!("== {} ==", section.name).bright_green());
+        println!("\n{GREEN}== {} =={RESET}", section.name);
 
         for entry in section.fields {
             println!(
-                "-> {} [{}]",
-                entry.key.bright_blue(),
-                entry.value_type.bright_red()
+                "-> {BRIGHT_BLUE}{} {BRIGHT_WHITE}[{BRIGHT_RED}{}{BRIGHT_WHITE}]{RESET}",
+                entry.key, entry.value_type
             );
             println!(
-                "   {}",
-                format!("(Default value: {})", entry.default_value.bright_white()).bright_yellow()
+                "   {BRIGHT_YELLOW}(Default value: {BRIGHT_WHITE}{}{BRIGHT_YELLOW}){RESET}",
+                entry.default_value
             );
-            println!("   {}", entry.description.italic());
+
+            println!("   {ITALIC}{}{RESET}", entry.description);
         }
     }
 

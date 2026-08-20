@@ -12,7 +12,7 @@
 
 use anyhow::{Context, Result, anyhow};
 use cargo_metadata::MetadataCommand;
-use colored::*;
+use iceoryx2_bb_print::*;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -248,9 +248,9 @@ pub fn execute<E: Environment>(
 pub fn list<E: Environment>(prefix: &str) -> Result<()> {
     let commands = ExternalCommandFinder::<E>::commands_with_prefix(prefix)?;
 
-    println!("{}", "Discovered Commands:".bright_green().bold());
+    println!("{BRIGHT_GREEN}{BOLD}Discovered Commands:{RESET}");
     for command in commands {
-        println!("  {}", command.name.bold());
+        println!("{BOLD}  {}{RESET}", command.name);
     }
 
     Ok(())
@@ -261,16 +261,16 @@ pub fn paths<E: Environment>(prefix: &str) -> Result<()> {
         .context("Failed to list search paths")?;
 
     if !search_paths.build.is_empty() {
-        println!("{}", "Build Paths:".bright_green().bold());
+        println!("{BRIGHT_GREEN}{BOLD}Build Paths:{RESET}",);
         for dir in &search_paths.build {
-            println!("  {}", dir.display().to_string().bold());
+            println!("{BOLD}  {}{RESET}", dir.display().to_string());
         }
         println!();
     }
     if !search_paths.install.is_empty() {
-        println!("{}", "Install Paths:".bright_green().bold());
+        println!("{BRIGHT_GREEN}{BOLD}Install Paths:{RESET}");
         for dir in &search_paths.install {
-            println!("  {}", dir.display().to_string().bold());
+            println!("{BOLD}  {}{RESET}", dir.display().to_string(),);
         }
     }
 

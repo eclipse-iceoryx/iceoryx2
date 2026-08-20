@@ -18,30 +18,27 @@ pub(crate) use explain::*;
 pub(crate) use generate::*;
 pub(crate) use show::*;
 
-use colored::Colorize;
 use enum_iterator::all;
 use iceoryx2_bb_posix::system_configuration::*;
+use iceoryx2_bb_print::*;
 use std::panic::catch_unwind;
 
 /// Prints the whole system configuration with all limits, features and
 /// details to the console.
 pub(crate) fn print_system_configuration() {
-    println!(
-        "{}",
-        "posix system configuration".underline().bright_green()
-    );
+    println!("{UNDERLINE}{BRIGHT_GREEN}posix system configuration{RESET}");
     println!();
-    println!(" {}", "system info".underline().bright_green());
+    println!(" {UNDERLINE}{BRIGHT_GREEN}system info{RESET}");
     all::<SystemInfo>().for_each(|i| {
         println!(
-            "  {:<50} {}",
-            format!("{i:?}").white(),
-            format!("{}", i.value()).bright_blue(),
+            "  {:<50} {}{RESET}",
+            format!("{WHITE}{i:?}"),
+            format!("{BRIGHT_BLUE}{}", i.value()),
         );
     });
 
     println!();
-    println!(" {}", "limit".underline().bright_green());
+    println!(" {UNDERLINE}{BRIGHT_GREEN}limit{RESET}");
     for i in all::<Limit>().collect::<Vec<_>>() {
         let limit = i.value();
         let limit = if limit == 0 {
@@ -49,17 +46,21 @@ pub(crate) fn print_system_configuration() {
         } else {
             limit.to_string()
         };
-        println!("  {:<50} {}", format!("{i:?}").white(), limit.bright_blue(),);
+        println!(
+            "  {:<50} {BRIGHT_BLUE}{}{RESET}",
+            format!("{WHITE}{i:?}"),
+            limit,
+        );
     }
 
     println!();
-    println!(" {}", "options".underline().bright_green());
+    println!(" {UNDERLINE}{BRIGHT_GREEN}options{RESET}");
     for i in all::<SysOption>().collect::<Vec<_>>() {
         if i.is_available() {
             println!(
-                "  {:<50} {}",
-                format!("{i:?}").white(),
-                format!("{}", i.is_available()).bright_blue()
+                "  {:<50} {}{RESET}",
+                format!("{WHITE}{i:?}"),
+                format!("{BRIGHT_BLUE}{}", i.is_available())
             );
         } else {
             println!("  {:<50} {}", format!("{:?}", i), i.is_available(),);
@@ -67,13 +68,13 @@ pub(crate) fn print_system_configuration() {
     }
 
     println!();
-    println!(" {}", "features".underline().bright_green());
+    println!(" {UNDERLINE}{BRIGHT_GREEN}features{RESET}");
     for i in all::<Feature>().collect::<Vec<_>>() {
         if i.is_available() {
             println!(
-                "  {:<50} {}",
-                format!("{i:?}").white(),
-                format!("{}", i.is_available()).bright_blue(),
+                "  {:<50} {}{RESET}",
+                format!("{WHITE}{i:?}"),
+                format!("{BRIGHT_BLUE}{}", i.is_available()),
             );
         } else {
             println!("  {:<50} {}", format!("{:?}", i), i.is_available(),);
@@ -81,7 +82,7 @@ pub(crate) fn print_system_configuration() {
     }
 
     println!();
-    println!(" {}", "process resource limits".underline().bright_green());
+    println!(" {UNDERLINE}{BRIGHT_GREEN}process resource limits{RESET}");
     for i in all::<ProcessResourceLimit>().collect::<Vec<_>>() {
         let soft_limit_result = catch_unwind(|| i.soft_limit());
         let hard_limit_result = catch_unwind(|| i.hard_limit());
@@ -89,17 +90,17 @@ pub(crate) fn print_system_configuration() {
         match (soft_limit_result, hard_limit_result) {
             (Ok(soft), Ok(hard)) => {
                 println!(
-                    "  {:<43} soft:  {:<24} hard:  {}",
-                    format!("{i:?}").white(),
-                    format!("{soft}").bright_blue(),
-                    format!("{hard}").bright_blue()
+                    "  {:<43} soft:  {:<24} hard:  {}{RESET}",
+                    format!("{WHITE}{i:?}"),
+                    format!("{BRIGHT_BLUE}{soft}"),
+                    format!("{BRIGHT_BLUE}{hard}")
                 );
             }
             (Err(e), _) | (_, Err(e)) => {
                 println!(
-                    "  {:<43} Error: {}",
-                    format!("{i:?}").white(),
-                    format!("Unable to acquire limit due to: {e:?}").red()
+                    "  {:<43} Error: {}{RESET}",
+                    format!("{WHITE}{i:?}"),
+                    format!("{RED}Unable to acquire limit due to: {e:?}")
                 );
             }
         }

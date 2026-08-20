@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use colored::*;
+use iceoryx2_bb_print::*;
 
 #[derive(Default)]
 pub struct HelpTemplate {
@@ -43,8 +43,7 @@ impl HelpTemplate {
     pub fn build(self) -> String {
         let mut template = format!(
             "{{about}}\n\n\
-             {} {{usage}}\n\n",
-            "Usage:".bright_green().bold(),
+             {GREEN}{BOLD}Usage: {{usage}}{RESET}\n\n"
         );
 
         if self.has_positionals {
@@ -52,25 +51,22 @@ impl HelpTemplate {
         }
 
         template.push_str(&format!(
-            "{}\n\
-             {{options}}",
-            "Options:".bright_green().bold(),
+            "{BRIGHT_GREEN}{BOLD}Options:{RESET}\n\
+             {BOLD}{{options}}{RESET}",
         ));
 
         if self.has_subcommands {
             template.push_str(&format!(
                 "\n\n\
-                 {}\n\
-                 {{subcommands}}",
-                "Commands:".bright_green().bold(),
+                 {BRIGHT_GREEN}{BOLD}Commands:{RESET}\n\
+                 {BOLD}{{subcommands}}{RESET}"
             ));
 
             if self.show_external_command_hint {
                 template.push_str(&format!(
                     "\n\
-                     {}{}",
-                    "  ...            ".bold(),
-                    "See external installed commands with --list",
+                     {BOLD}{}{RESET}{}",
+                    "  ...            ", "See external installed commands with --list",
                 ));
             }
         }
