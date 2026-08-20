@@ -226,14 +226,14 @@ impl HandleTranslator {
             *self.free_fd_list_start.get() = next_free_fd;
         }
 
-        if let FdHandleEntry::UdsDatagramSocket(_) = entry {
-            if self.uds_datagram_counter.fetch_add(1, Ordering::Relaxed) == 0 {
-                unsafe {
-                    *self.port_to_uds_translator.get() = Some(
-                        PortToUds::new()
-                            .expect("Unable to create port to uds datagram name translator."),
-                    )
-                };
+        if let FdHandleEntry::UdsDatagramSocket(_) = entry
+            && self.uds_datagram_counter.fetch_add(1, Ordering::Relaxed) == 0
+        {
+            unsafe {
+                *self.port_to_uds_translator.get() = Some(
+                    PortToUds::new()
+                        .expect("Unable to create port to uds datagram name translator."),
+                );
             }
         }
 

@@ -411,10 +411,10 @@ fn parse_ace_string_rights(ace_rights: &[u8]) -> u8 {
 }
 
 fn ace_rights_to_bits(ace_rights: &[u8]) -> u8 {
-    if ace_rights.starts_with(b"0x") {
-        if let Ok(hex_str) = core::str::from_utf8(&ace_rights[2..]) {
-            return parse_hex_rights(hex_str);
-        }
+    if ace_rights.starts_with(b"0x")
+        && let Ok(hex_str) = core::str::from_utf8(&ace_rights[2..])
+    {
+        return parse_hex_rights(hex_str);
     }
     parse_ace_string_rights(ace_rights)
 }

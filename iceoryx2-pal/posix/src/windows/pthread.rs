@@ -132,10 +132,10 @@ impl ThreadStates {
 
     fn get_index_of(&self, id: u32) -> usize {
         for i in 0..MAX_NUMBER_OF_THREADS {
-            if let Some(ref state) = unsafe { *self.states[i].get() } {
-                if state.id == id {
-                    return i;
-                }
+            if let Some(ref state) = unsafe { *self.states[i].get() }
+                && state.id == id
+            {
+                return i;
             }
         }
 
