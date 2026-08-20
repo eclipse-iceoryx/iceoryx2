@@ -148,11 +148,11 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
             }
         };
 
-        if let Some(file_path) = handle_to_file_path(permission_handle) {
-            if let Some(mode) = acquire_mode_from_path(&file_path) {
-                file_stat.st_mode |= mode;
-            }
-        };
+        if let Some(file_path) = handle_to_file_path(permission_handle)
+            && let Some(mode) = acquire_mode_from_path(&file_path)
+        {
+            file_stat.st_mode |= mode;
+        }
 
         buf.write(file_stat);
 

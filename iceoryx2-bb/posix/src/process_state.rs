@@ -194,12 +194,10 @@ impl<'a> Drop for TrackerGuard<'a> {
     fn drop(&mut self) {
         if self.has_ownership.load(Ordering::Relaxed) {
             self.state.remove(self.path);
-        } else {
-            if let Some(entry) = self.state.get(self.path)
-                && !entry.owned_by_process
-            {
-                self.state.remove(self.path);
-            }
+        } else if let Some(entry) = self.state.get(self.path)
+            && !entry.owned_by_process
+        {
+            self.state.remove(self.path);
         }
     }
 }

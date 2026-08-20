@@ -44,10 +44,8 @@ fn main() -> anyhow::Result<()> {
         if let Err(e) = command::execute(command_name, command_args) {
             eprintln!("Failed to execute command: {e}");
         }
-    } else {
-        if let Err(e) = command::list() {
-            eprintln!("Failed to list commands: {e}");
-        }
+    } else if let Err(e) = command::list() {
+        eprintln!("Failed to list commands: {e}");
     }
 
     Ok(())
