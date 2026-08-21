@@ -30,11 +30,7 @@ pub(crate) fn print_system_configuration() {
     println!();
     println!(" {UNDERLINE}{BRIGHT_GREEN}system info{RESET}");
     all::<SystemInfo>().for_each(|i| {
-        println!(
-            "  {:<50} {}{RESET}",
-            format!("{WHITE}{i:?}"),
-            format!("{BRIGHT_BLUE}{}", i.value()),
-        );
+        println!("  {WHITE}{i:?} {BRIGHT_BLUE}{}{RESET}", i.value());
     });
 
     println!();
@@ -46,24 +42,16 @@ pub(crate) fn print_system_configuration() {
         } else {
             limit.to_string()
         };
-        println!(
-            "  {:<50} {BRIGHT_BLUE}{}{RESET}",
-            format!("{WHITE}{i:?}"),
-            limit,
-        );
+        println!("  {WHITE}{i:?} {BRIGHT_BLUE}{}{RESET}", limit,);
     }
 
     println!();
     println!(" {UNDERLINE}{BRIGHT_GREEN}options{RESET}");
     for i in all::<SysOption>().collect::<Vec<_>>() {
         if i.is_available() {
-            println!(
-                "  {:<50} {}{RESET}",
-                format!("{WHITE}{i:?}"),
-                format!("{BRIGHT_BLUE}{}", i.is_available())
-            );
+            println!("  {WHITE}{i:?} {BRIGHT_BLUE}{}{RESET}", i.is_available());
         } else {
-            println!("  {:<50} {}", format!("{:?}", i), i.is_available(),);
+            println!("  {WHITE}{i:?} {BRIGHT_RED}{}{RESET}", i.is_available(),);
         }
     }
 
@@ -71,13 +59,9 @@ pub(crate) fn print_system_configuration() {
     println!(" {UNDERLINE}{BRIGHT_GREEN}features{RESET}");
     for i in all::<Feature>().collect::<Vec<_>>() {
         if i.is_available() {
-            println!(
-                "  {:<50} {}{RESET}",
-                format!("{WHITE}{i:?}"),
-                format!("{BRIGHT_BLUE}{}", i.is_available()),
-            );
+            println!("  {WHITE}{i:?} {BRIGHT_BLUE}{}{RESET}", i.is_available());
         } else {
-            println!("  {:<50} {}", format!("{:?}", i), i.is_available(),);
+            println!("  {WHITE}{i:?} {BRIGHT_RED}{}{RESET}", i.is_available());
         }
     }
 
@@ -90,17 +74,16 @@ pub(crate) fn print_system_configuration() {
         match (soft_limit_result, hard_limit_result) {
             (Ok(soft), Ok(hard)) => {
                 println!(
-                    "  {:<43} soft:  {:<24} hard:  {}{RESET}",
-                    format!("{WHITE}{i:?}"),
-                    format!("{BRIGHT_BLUE}{soft}"),
-                    format!("{BRIGHT_BLUE}{hard}")
+                    "  {WHITE}{:<43} soft:  {BRIGHT_BLUE}{:<24} {WHITE}hard:  {BRIGHT_BLUE}{}{RESET}",
+                    format!("{i:?}"),
+                    soft,
+                    hard,
                 );
             }
             (Err(e), _) | (_, Err(e)) => {
                 println!(
-                    "  {:<43} Error: {}{RESET}",
-                    format!("{WHITE}{i:?}"),
-                    format!("{RED}Unable to acquire limit due to: {e:?}")
+                    "  {WHITE}{:<43} Error: {RED}Unable to acquire limit due to: {e:?}{RESET}",
+                    format!("{i:?}"),
                 );
             }
         }

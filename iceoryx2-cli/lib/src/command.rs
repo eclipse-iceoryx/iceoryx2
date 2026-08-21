@@ -263,14 +263,14 @@ pub fn paths<E: Environment>(prefix: &str) -> Result<()> {
     if !search_paths.build.is_empty() {
         println!("{BRIGHT_GREEN}{BOLD}Build Paths:{RESET}",);
         for dir in &search_paths.build {
-            println!("{BOLD}  {}{RESET}", dir.display().to_string());
+            println!("{BOLD}  {}{RESET}", dir.display());
         }
         println!();
     }
     if !search_paths.install.is_empty() {
         println!("{BRIGHT_GREEN}{BOLD}Install Paths:{RESET}");
         for dir in &search_paths.install {
-            println!("{BOLD}  {}{RESET}", dir.display().to_string(),);
+            println!("{BOLD}  {}{RESET}", dir.display(),);
         }
     }
 

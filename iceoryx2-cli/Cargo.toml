@@ -14,6 +14,12 @@ version = { workspace = true }
 [package.metadata]
 default-run = "iox2"
 
+[features]
+default = []
+std = [
+  "iceoryx2-bb-print/std",
+]
+
 [[bin]]
 name = "iox2"
 path = "iox2/src/main.rs"
