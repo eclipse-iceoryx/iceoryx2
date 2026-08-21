@@ -20,6 +20,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_gateway_backend::traits::{Mapping, PayloadLayout, Translation, Translator};
 use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
 use iceoryx2_log::{fail, warn};
 
@@ -128,7 +129,8 @@ impl<
     /// Returns the state to track the topic under, or `Err` if querying its
     /// QoS or running `process_discovery` failed.
     fn on_discovered<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &mut self,
+        &self,
+        own_id: GatewayId,
         topic: &TopicName,
         type_name: &TypeName,
         process_discovery: &mut F,
@@ -172,7 +174,7 @@ impl<
         // as added.
         let service_hash = service_description.service_hash;
         fail!(from origin,
-            when process_discovery(DiscoveryUpdate::Added(service_description)),
+            when process_discovery(DiscoveryUpdate::Added(own_id, service_description)),
             with DiscoveryError::Processing,
             "Failed to process discovery 'Added' event for topic '{}'",
             topic.as_str()
@@ -187,6 +189,7 @@ impl<
     /// `process_discovery` failed.
     fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         topic: &TopicName,
         service_hash: ServiceHash,
         process_discovery: &mut F,
@@ -196,7 +199,7 @@ impl<
         // Run discovery logic provided by the caller for the service discovered
         // as removed.
         fail!(from origin,
-            when process_discovery(DiscoveryUpdate::Removed(service_hash)),
+            when process_discovery(DiscoveryUpdate::Removed(own_id, service_hash)),
             with DiscoveryError::Processing,
             "Failed to process discovery 'Removed' event for topic '{}'",
             topic.as_str()
@@ -215,6 +218,7 @@ impl<
     /// discovery logic is retried for the new instance of the topic.
     fn discover_additions<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         live: &[(TopicName, TypeName)],
         process_discovery: &mut F,
     ) {
@@ -223,7 +227,7 @@ impl<
                 continue;
             }
 
-            let state = match self.on_discovered(topic, type_name, process_discovery) {
+            let state = match self.on_discovered(own_id, topic, type_name, process_discovery) {
                 Ok(state) => state,
                 Err(error) => {
                     warn!("Topic '{}' will not be bridged: {}", topic.as_str(), error);
@@ -241,6 +245,7 @@ impl<
     /// tracked state is held while `process_discovery` runs.
     fn discover_removals<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         live: &[(TopicName, TypeName)],
         process_discovery: &mut F,
     ) -> Result<(), DiscoveryError> {
@@ -256,7 +261,7 @@ impl<
         for (topic, state) in departed {
             match state {
                 TopicState::Bridged(service_hash) => {
-                    self.on_removed(&topic, service_hash, process_discovery)?
+                    self.on_removed(own_id, &topic, service_hash, process_discovery)?
                 }
                 // Forget the verdict so the topic is judged again if it
                 // is discovered again.
@@ -279,7 +284,11 @@ impl<
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&mut self, _announcement: Announcement<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(
+        &mut self,
+        _own_id: GatewayId,
+        _announcement: Announcement<'_>,
+    ) -> Result<(), Self::AnnouncementError> {
         // Nothing to announce explicitly. The gateway creates a relay for
         // every service it discovers on iceoryx2, and relay creation
         // registers the ROS 2 endpoints, which DDS discovery (SEDP) broadcasts
@@ -289,6 +298,7 @@ impl<
 
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let origin = "Discovery::discover";
@@ -318,7 +328,7 @@ impl<
             })
             .collect();
 
-        self.discover_additions(&live, &mut process_discovery);
-        self.discover_removals(&live, &mut process_discovery)
+        self.discover_additions(own_id, &live, &mut process_discovery);
+        self.discover_removals(own_id, &live, &mut process_discovery)
     }
 }

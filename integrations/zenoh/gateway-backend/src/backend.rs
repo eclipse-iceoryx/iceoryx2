@@ -51,7 +51,6 @@ pub struct ZenohBackend<
     >,
 > {
     session: Session,
-    id: BackendId,
     discovery: Discovery<S, M>,
     /// `Some` when constructed in reactive mode. Cloned into each relay's
     /// subscriber callback so that incoming network data signals the wake.
@@ -91,7 +90,7 @@ impl<
     }
 
     fn id(&self) -> BackendId {
-        self.id
+        BackendId::new(self.session.zid().to_le_bytes())
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
@@ -177,10 +176,8 @@ impl<
             "Failed to create zenoh session"
         );
 
-        let id = BackendId::new(session.zid().to_le_bytes());
-
         let mapping = Arc::new(self.mapping);
-        let discovery = Discovery::create(&session, id, Arc::clone(&mapping));
+        let discovery = Discovery::create(&session, Arc::clone(&mapping));
         let discovery = fail!(
             from origin,
             when discovery,
@@ -190,7 +187,6 @@ impl<
 
         Ok(ZenohBackend {
             session,
-            id,
             discovery,
             wake: self.wake.map(Arc::new),
             mapping,

@@ -82,6 +82,7 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        _gateway: GatewayId,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         self.session.discover();

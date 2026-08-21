@@ -172,11 +172,12 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         let origin = format!("Gateway({})::backend_discovery", self.node.id());
 
         let backend = &mut self.backend;
+        let gateway_id = self.gateway_id;
         let remote_discoveries = self.discovery_state.remote_mut();
 
         fail!(
             from origin,
-            when backend.discovery().discover(|update| {
+            when backend.discovery().discover(gateway_id, |update| {
                 match update {
                     DiscoveryUpdate::Added(gateway, description) => {
                         remote_discoveries.add(gateway, description);

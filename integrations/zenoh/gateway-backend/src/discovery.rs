@@ -17,7 +17,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_gateway_backend::traits::Mapping;
 use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
-use iceoryx2_gateway_backend::types::identity::{BackendId, GatewayId};
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_log::{error, fail, warn};
 
@@ -256,8 +256,6 @@ impl core::error::Error for AnnouncementError {}
 #[derive(Debug)]
 pub struct Discovery<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> {
     session: Session,
-    // Identity of the owning backend, used to ignore its own announcements.
-    backend_id: BackendId,
     mapping: Arc<M>,
     // Subscribes to liveliness changes for service announcements.
     subscriber: Subscriber<FifoChannelHandler<Sample>>,
@@ -268,11 +266,7 @@ pub struct Discovery<S: Service, M: Mapping<EndpointDescription = ServiceDescrip
 }
 
 impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery<S, M> {
-    pub fn create(
-        session: &Session,
-        backend_id: BackendId,
-        mapping: Arc<M>,
-    ) -> Result<Self, CreationError> {
+    pub fn create(session: &Session, mapping: Arc<M>) -> Result<Self, CreationError> {
         let origin = "Discovery::create()";
 
         let subscriber = fail!(
@@ -288,7 +282,6 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
 
         Ok(Self {
             session: session.clone(),
-            backend_id,
             mapping,
             subscriber,
             local_announcements: LocalAnnouncements::new(),
@@ -417,9 +410,10 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
 
     /// Discover remote services by observing liveliness token changes. Tokens
     /// are announced at keys encoding the service descriptor and the id of
-    /// the gateway offering it.
+    /// the gateway offering it. Tokens announced by `own_id` are ignored.
     fn discover_remote_services<E, F>(
         &mut self,
+        own_id: GatewayId,
         process_discovery: &mut F,
     ) -> Result<(), DiscoveryError>
     where
@@ -442,7 +436,7 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
                 warn!("Skipping liveliness sample with unparsable key: {}", key);
                 continue;
             };
-            if gateway_id.backend() == &self.backend_id {
+            if gateway_id == own_id {
                 continue;
             }
 
@@ -622,9 +616,10 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
-        self.discover_remote_services(&mut process_discovery)?;
+        self.discover_remote_services(own_id, &mut process_discovery)?;
         self.receive_service_descriptions(&mut process_discovery)?;
         Ok(())
     }
@@ -684,7 +679,7 @@ mod tests {
     use iceoryx2::service::ipc;
     use iceoryx2::service::service_name::ServiceName;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_gateway_backend::types::identity::BACKEND_ID_LENGTH;
+    use iceoryx2_gateway_backend::types::identity::{BACKEND_ID_LENGTH, BackendId};
     use iceoryx2_gateway_backend::types::service_description::{
         EventDescription, EventSettings, PatternDescription, PortSettings,
     };

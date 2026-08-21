@@ -34,6 +34,7 @@ use crate::types::identity::GatewayId;
 ///
 /// ```no_run
 /// use iceoryx2_gateway_backend::traits::Discovery;
+/// use iceoryx2_gateway_backend::types::identity::GatewayId;
 ///
 /// #[derive(Debug)]
 /// struct MyDiscoveryError;
@@ -44,8 +45,11 @@ use crate::types::identity::GatewayId;
 /// }
 /// impl core::error::Error for MyDiscoveryError {}
 ///
-/// fn list_services<DiscoveryError, ProcessingError>(discovery: &mut impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
-///     discovery.discover(|event| -> Result<(), MyDiscoveryError> {
+/// fn list_services<DiscoveryError, ProcessingError>(
+///     gateway_id: GatewayId,
+///     discovery: &mut impl Discovery<DiscoveryError = DiscoveryError>,
+/// ) -> Result<(), DiscoveryError> {
+///     discovery.discover(gateway_id, |event| -> Result<(), MyDiscoveryError> {
 ///         println!("Discovery event: {:?}", event);
 ///         Ok(())
 ///     })?;
@@ -95,6 +99,7 @@ use crate::types::identity::GatewayId;
 ///
 ///     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
 ///         &mut self,
+///         gateway_id: GatewayId,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
@@ -143,10 +148,12 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
+    /// * `gateway_id` - The [`GatewayId`] of the gateway
     /// * `process_discovery` - Callback provided by the caller to process
     ///   [`DiscoveryUpdate`]s received over the [`crate::traits::Backend`].
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        gateway_id: GatewayId,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;
 }
