@@ -88,11 +88,6 @@ pub(crate) mod internal {
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
     #![allow(unsafe_op_in_unsafe_fn)]
-    // the 'suspicious_runtime_symbol_definitions' warning was introduced with the Rust 1.98 update;
-    // the bindgen generated code did not change, so it seems the warning was newly introduced in clippy;
-    // the warning only occurs on macOS platforms;
-    // this suppression will be removed once and #1929 (port macOS from bindgen to libc crate) will be implemented
-    #![cfg_attr(target_os = "macos", allow(suspicious_runtime_symbol_definitions))]
     #![allow(clippy::all)]
     #[cfg(not(bazel_build))]
     include!(concat!(env!("OUT_DIR"), "/posix_generated.rs"));

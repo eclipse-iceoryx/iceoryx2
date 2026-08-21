@@ -52,7 +52,6 @@ pub fn run(target_os: &str) {
 pub fn configure_cargo(target_os: &str) {
     match target_os {
         "freebsd" => freebsd::configure_cargo(),
-        "macos" => macos::configure_cargo(),
         "nto" => qnx::configure_cargo(),
         _ => panic!("Unsupported target OS: {}", target_os),
     }
@@ -61,12 +60,10 @@ pub fn configure_cargo(target_os: &str) {
 pub fn configure_builder(target_os: &str, builder: bindgen::Builder) -> bindgen::Builder {
     match target_os {
         "freebsd" => freebsd::configure_builder(builder),
-        "macos" => macos::configure_builder(builder),
         "nto" => qnx::configure_builder(builder),
         _ => panic!("Unsupported target OS: {}", target_os),
     }
 }
 
 mod freebsd;
-mod macos;
 mod qnx;

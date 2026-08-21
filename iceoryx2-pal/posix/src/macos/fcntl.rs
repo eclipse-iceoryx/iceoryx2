@@ -19,12 +19,12 @@ use crate::posix::types::*;
 use super::macos_fd_translator::ShmFdTranslator;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
-    unsafe { crate::internal::open(pathname, flags, mode as core::ffi::c_uint) }
+    unsafe { libc::open(pathname, flags, mode as core::ffi::c_uint) }
 }
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
     let mut os_specific_buffer = native_stat_t::new_zeroed();
-    let ret = unsafe { crate::internal::fstat(fd, &mut os_specific_buffer) };
+    let ret = unsafe { libc::fstat(fd, &mut os_specific_buffer) };
     if ret != 0 {
         return ret;
     }
@@ -35,7 +35,7 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
         os_specific_buffer.st_mode = (os_specific_buffer.st_mode & !0o7777) | (user_mode & 0o7777);
 
         let mut state_buffer = native_stat_t::new_zeroed();
-        if unsafe { crate::internal::fstat(state_fd, &mut state_buffer) } == 0 {
+        if unsafe { libc::fstat(state_fd, &mut state_buffer) } == 0 {
             os_specific_buffer.st_uid = state_buffer.st_uid;
             os_specific_buffer.st_gid = state_buffer.st_gid;
         }
@@ -46,15 +46,15 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
 }
 
 pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
-    unsafe { crate::internal::fcntl(fd, cmd, arg) }
+    unsafe { libc::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
-    unsafe { crate::internal::fcntl(fd, cmd, arg) }
+    unsafe { libc::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
-    unsafe { crate::internal::fcntl(fd, cmd) }
+    unsafe { libc::fcntl(fd, cmd) }
 }
 
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
@@ -66,12 +66,12 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
             -1
         }
     } else {
-        unsafe { crate::internal::fchmod(fd, mode) }
+        unsafe { libc::fchmod(fd, mode) }
     }
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
-    unsafe { crate::internal::open(pathname, flags) }
+    unsafe { libc::open(pathname, flags) }
 }
 
 // iox2-156 regression: fchmod through the wrapper must be visible to fstat.

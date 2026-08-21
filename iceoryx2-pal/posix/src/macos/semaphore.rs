@@ -83,7 +83,7 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
             current_time.tv_sec = 0;
             current_time.tv_nsec = 1000000;
 
-            crate::internal::nanosleep(&current_time, &mut wait_time);
+            libc::nanosleep(&current_time, &mut wait_time);
         }
     }
 }
