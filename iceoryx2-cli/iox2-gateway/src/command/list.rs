@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::Result;
-use colored::*;
+use iceoryx2_bb_print::*;
 
 use iceoryx2_cli::command::ExternalCommandFinder;
 use iceoryx2_cli::command::HostEnvironment;
@@ -22,16 +22,16 @@ pub(crate) fn list() -> Result<()> {
     let commands = ExternalCommandFinder::<HostEnvironment>::commands_with_prefix(COMMAND_PREFIX)?;
 
     if commands.is_empty() {
-        println!("{}", "No gateway backends found.".yellow().bold());
+        println!("{YELLOW}{BOLD}No gateway backends found.{RESET}");
         println!();
         println!("Install a backend to get started, e.g.:");
         println!("  cargo install iceoryx2-integrations-zenoh-gateway-cli");
         return Ok(());
     }
 
-    println!("{}", "Discovered Commands:".bright_green().bold());
+    println!("{BRIGHT_GREEN}{BOLD}Discovered Commands:{RESET}");
     for command in commands {
-        println!("  {}", command.name.bold());
+        println!("  {BOLD}{}{RESET}", command.name);
     }
 
     Ok(())

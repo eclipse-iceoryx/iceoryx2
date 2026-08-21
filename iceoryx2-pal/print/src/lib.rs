@@ -19,6 +19,29 @@ pub mod writer;
 
 pub use writer::*;
 
+// keep this in sync with iceoryx2-bb/print/src/lib.rs
+pub const RESET: &str = "\x1b[0m";
+
+// Styles
+pub const BOLD: &str = "\x1b[1m";
+pub const DIM: &str = "\x1b[2m";
+pub const ITALIC: &str = "\x1b[3m";
+pub const UNDERLINE: &str = "\x1b[4m";
+
+// Standard colors
+pub const RED: &str = "\x1b[31m";
+pub const GREEN: &str = "\x1b[32m";
+pub const YELLOW: &str = "\x1b[33m";
+pub const BLUE: &str = "\x1b[34m";
+pub const WHITE: &str = "\x1b[37m";
+
+// Bright colors
+pub const BRIGHT_RED: &str = "\x1b[91m";
+pub const BRIGHT_GREEN: &str = "\x1b[92m";
+pub const BRIGHT_YELLOW: &str = "\x1b[93m";
+pub const BRIGHT_BLUE: &str = "\x1b[94m";
+pub const BRIGHT_WHITE: &str = "\x1b[97m";
+
 pub trait IsTerminal {
     fn is_terminal(&self) -> bool;
 }

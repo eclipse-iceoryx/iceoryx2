@@ -17,6 +17,29 @@
 
 pub use iceoryx2_pal_print::IsTerminal;
 
+// keep this in sync with iceoryx2-pal/print/lib.rs
+pub use iceoryx2_pal_print::RESET;
+
+// Styles
+pub use iceoryx2_pal_print::BOLD;
+pub use iceoryx2_pal_print::DIM;
+pub use iceoryx2_pal_print::ITALIC;
+pub use iceoryx2_pal_print::UNDERLINE;
+
+// Standard colors
+pub use iceoryx2_pal_print::BLUE;
+pub use iceoryx2_pal_print::GREEN;
+pub use iceoryx2_pal_print::RED;
+pub use iceoryx2_pal_print::WHITE;
+pub use iceoryx2_pal_print::YELLOW;
+
+// Bright colors
+pub use iceoryx2_pal_print::BRIGHT_BLUE;
+pub use iceoryx2_pal_print::BRIGHT_GREEN;
+pub use iceoryx2_pal_print::BRIGHT_RED;
+pub use iceoryx2_pal_print::BRIGHT_WHITE;
+pub use iceoryx2_pal_print::BRIGHT_YELLOW;
+
 pub use iceoryx2_pal_print::stderr;
 pub use iceoryx2_pal_print::stdout;
 
