@@ -61,11 +61,11 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
@@ -76,7 +76,7 @@ struct WriterSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     service_state: SharedServiceState<Service, BlackboardResources<Service>>,
-    dynamic_writer_handle: UnsafeCell<Option<ContainerHandle>>,
+    dynamic_writer_handle: UnsafeCell<Option<BagHandle>>,
     _key: PhantomData<KeyType>,
 }
 
@@ -216,13 +216,15 @@ impl<
 
         // !MUST! be the last task otherwise a writer is added to the dynamic config without the
         // creation of all required resources
-        let (details, handle) = match service.dynamic_storage().get().blackboard().add_writer_id(
-            WriterDetails {
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .register_writer_id(WriterDetails {
                 writer_id,
                 writer_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            },
-        ) {
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with WriterCreateError::ExceedsMaxSupportedWriters,

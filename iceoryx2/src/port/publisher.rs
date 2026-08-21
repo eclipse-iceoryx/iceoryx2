@@ -120,8 +120,9 @@ use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlace
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::Bag;
+use iceoryx2_cal::bag::{BagHandle, BagState};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -198,7 +199,7 @@ impl OffsetAndSize {
 pub struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
     pub(crate) sender: Sender<Service, PublishSubscribeResources<Service>>,
-    subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
+    subscriber_list_state: UnsafeCell<BagState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     is_active: AtomicBool,
     // IMPORTANT!
@@ -390,7 +391,7 @@ pub struct Publisher<
 > {
     pub(crate) publisher_shared_state:
         Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-    dynamic_publisher_handle: ContainerHandle,
+    dynamic_publisher_handle: BagHandle,
     publisher_details: &'static PublisherDetails,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -609,7 +610,7 @@ impl<
             .dynamic_storage()
             .get()
             .publish_subscribe()
-            .add_publisher_id(publisher_details)
+            .register_publisher_id(publisher_details)
         {
             Some(v) => v,
             None => {

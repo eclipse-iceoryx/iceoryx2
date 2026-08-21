@@ -533,9 +533,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
             DynamicConfigCreationArgs {
                 messaging_pattern_settings: MessagingPatternSettings::Event(dynamic_config_setting),
-                additional_size: dynamic_config::event::DynamicConfig::memory_size(
-                    &dynamic_config_setting,
-                ),
+                additional_size:
+                    dynamic_config::event::DynamicConfig::<ServiceType::Bag>::memory_size(
+                        &dynamic_config_setting,
+                    ),
                 max_number_of_nodes: event_config.max_nodes,
             }
         };

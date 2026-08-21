@@ -26,16 +26,20 @@
 //! # Ok(())
 //! # }
 //! ```
+
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniquePublisherId, UniqueSubscriberId},
     port::details::data_segment::DataSegmentType,
     port::port_name::PortName,
 };
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
+use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
 use super::PortCleanupAction;
@@ -96,16 +100,19 @@ pub struct SubscriberDetails {
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
-pub struct DynamicConfig {
-    pub(crate) subscribers: Container<SubscriberDetails>,
-    pub(crate) publishers: Container<PublisherDetails>,
+pub struct DynamicConfig<B>
+where
+    B: BagFamily,
+{
+    pub(crate) subscribers: B::Bag<SubscriberDetails>,
+    pub(crate) publishers: B::Bag<PublisherDetails>,
 }
 
-impl DynamicConfig {
+impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn new(config: &DynamicConfigSettings) -> Self {
         Self {
-            subscribers: unsafe { Container::new_uninit(config.number_of_subscribers) },
-            publishers: unsafe { Container::new_uninit(config.number_of_publishers) },
+            subscribers: unsafe { B::Bag::new_uninit(config.number_of_subscribers) },
+            publishers: unsafe { B::Bag::new_uninit(config.number_of_publishers) },
         }
     }
 
@@ -121,8 +128,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
-        Container::<SubscriberDetails>::memory_size(config.number_of_subscribers)
-            + Container::<PublisherDetails>::memory_size(config.number_of_publishers)
+        B::Bag::<SubscriberDetails>::memory_size(config.number_of_subscribers)
+            + B::Bag::<PublisherDetails>::memory_size(config.number_of_publishers)
     }
 
     pub(crate) unsafe fn remove_dead_node_id<
@@ -195,10 +202,10 @@ impl DynamicConfig {
         state.for_each(|_, details| callback(details));
     }
 
-    pub(crate) fn add_subscriber_id(
+    pub(crate) fn register_subscriber_id(
         &self,
         details: SubscriberDetails,
-    ) -> Option<(*const SubscriberDetails, ContainerHandle)> {
+    ) -> Option<(*const SubscriberDetails, BagHandle)> {
         unsafe {
             self.subscribers
                 .add(details, details.node_id.owner_id())
@@ -206,16 +213,16 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_subscriber_handle(&self, handle: BagHandle) {
         if let Err(e) = unsafe { self.subscribers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister subscriber from service. This could indicate a corrupted system! [{e:?}]");
         }
     }
 
-    pub(crate) fn add_publisher_id(
+    pub(crate) fn register_publisher_id(
         &self,
         details: PublisherDetails,
-    ) -> Option<(*const PublisherDetails, ContainerHandle)> {
+    ) -> Option<(*const PublisherDetails, BagHandle)> {
         unsafe {
             self.publishers
                 .add(details, details.node_id.owner_id())
@@ -223,7 +230,7 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_publisher_handle(&self, handle: BagHandle) {
         if let Err(e) = unsafe { self.publishers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister publisher from service. This could indicate a corrupted system! [{e:?}]");
         }

@@ -44,9 +44,10 @@ use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::Bag;
+use iceoryx2_cal::bag::{BagHandle, BagState};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
@@ -102,7 +103,7 @@ impl core::error::Error for SubscriberCreateError {}
 #[derive(Debug)]
 pub(crate) struct SubscriberSharedState<Service: service::Service> {
     pub(crate) receiver: Receiver<Service, PublishSubscribeResources<Service>>,
-    pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
+    pub(crate) publisher_list_state: UnsafeCell<BagState<PublisherDetails>>,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -127,7 +128,7 @@ pub struct Subscriber<
     Payload: IceoryxSend + Debug + ?Sized + 'static,
     UserHeader: ZeroCopySend + Debug,
 > {
-    dynamic_subscriber_handle: ContainerHandle,
+    dynamic_subscriber_handle: BagHandle,
     subscriber_details: &'static SubscriberDetails,
     subscriber_shared_state: Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
 
@@ -329,7 +330,7 @@ impl<
             .dynamic_storage()
             .get()
             .publish_subscribe()
-            .add_subscriber_id(SubscriberDetails {
+            .register_subscriber_id(SubscriberDetails {
                 subscriber_id,
                 buffer_size,
                 history_request,

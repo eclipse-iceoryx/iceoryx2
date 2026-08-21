@@ -72,11 +72,11 @@ use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::event_state::EventActivation;
 use iceoryx2_cal::event::{EventId, ListenerBuilder, NamedConceptMgmt};
@@ -115,7 +115,7 @@ impl core::error::Error for ListenerCreateError {}
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
-    dynamic_listener_handle: ContainerHandle,
+    dynamic_listener_handle: BagHandle,
     listener: Service::ArcThreadSafetyPolicy<
         <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
     >,
@@ -229,13 +229,15 @@ impl<Service: service::Service> Listener<Service> {
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
-        let (details, handle) = match service.dynamic_storage().get().event().add_listener_id(
-            ListenerDetails {
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .event()
+            .register_listener_id(ListenerDetails {
                 listener_id,
                 listener_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            },
-        ) {
+            }) {
             Some(v) => v,
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,

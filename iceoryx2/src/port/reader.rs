@@ -55,11 +55,11 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
@@ -161,7 +161,7 @@ pub struct Reader<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
-    dynamic_reader_handle: ContainerHandle,
+    dynamic_reader_handle: BagHandle,
     reader_details: &'static ReaderDetails,
 }
 
@@ -240,13 +240,15 @@ impl<
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let (details, handle) = match service.dynamic_storage().get().blackboard().add_reader_id(
-            ReaderDetails {
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .register_reader_id(ReaderDetails {
                 reader_id,
                 reader_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            },
-        ) {
+            }) {
             Some(v) => v,
             None => {
                 fail!(from origin, with ReaderCreateError::ExceedsMaxSupportedReaders,
