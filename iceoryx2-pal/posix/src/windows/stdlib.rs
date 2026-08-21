@@ -16,17 +16,17 @@
 use crate::posix::types::*;
 
 pub unsafe fn malloc(size: size_t) -> *mut void {
-    unsafe { crate::internal::malloc(size as _) }
+    unsafe { libc::malloc(size as _) }
 }
 
 pub unsafe fn calloc(nmemb: size_t, size: size_t) -> *mut void {
-    unsafe { crate::internal::calloc(nmemb as _, size as _) }
+    unsafe { libc::calloc(nmemb as _, size as _) }
 }
 
 pub unsafe fn realloc(ptr: *mut void, size: size_t) -> *mut void {
-    unsafe { crate::internal::realloc(ptr, size as _) }
+    unsafe { libc::realloc(ptr, size as _) }
 }
 
 pub unsafe fn free(ptr: *mut void) {
-    unsafe { crate::internal::free(ptr) }
+    unsafe { libc::free(ptr) }
 }
