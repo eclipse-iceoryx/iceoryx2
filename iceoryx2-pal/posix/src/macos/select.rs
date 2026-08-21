@@ -13,7 +13,6 @@
 #![allow(non_camel_case_types, non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::MemZeroedStruct;
 use crate::posix::types::*;
 
 pub unsafe fn select(
@@ -23,7 +22,7 @@ pub unsafe fn select(
     errorfds: *mut fd_set,
     timeout: *mut timeval,
 ) -> int {
-    unsafe { crate::internal::select(nfds, readfds, writefds, errorfds, timeout) }
+    unsafe { libc::select(nfds, readfds, writefds, errorfds, timeout) }
 }
 
 pub const fn CMSG_ALIGN(len: usize) -> usize {
@@ -80,29 +79,17 @@ pub unsafe fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut uchar {
 }
 
 pub unsafe fn FD_CLR(fd: int, set: *mut fd_set) {
-    let fd = fd as usize;
-    const BITS: usize = core::mem::size_of::<i32>() * 8;
-    unsafe {
-        (*set).fds_bits[fd / BITS] &= !(1i32 << (fd % BITS));
-    }
+    unsafe { libc::FD_CLR(fd, set) }
 }
 
 pub unsafe fn FD_ISSET(fd: int, set: *const fd_set) -> bool {
-    let fd = fd as usize;
-    const BITS: usize = core::mem::size_of::<i32>() * 8;
-    unsafe { (*set).fds_bits[fd / BITS] & (1i32 << (fd % BITS)) != 0 }
+    unsafe { libc::FD_ISSET(fd, set) }
 }
 
 pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
-    let fd = fd as usize;
-    const BITS: usize = core::mem::size_of::<i32>() * 8;
-    unsafe {
-        (*set).fds_bits[fd / BITS] |= 1i32 << (fd % BITS);
-    }
+    unsafe { libc::FD_SET(fd, set) }
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) {
-    unsafe {
-        (*set) = fd_set::new_zeroed();
-    }
+    unsafe { libc::FD_ZERO(set) }
 }

@@ -31,19 +31,19 @@ pub(crate) const SHM_STATE_MODE_OFFSET: i64 = SHM_MAX_NAME_LEN as i64;
 pub(crate) const SHM_STATE_MODE_LEN: usize = 4;
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
-    unsafe { crate::internal::mlock(addr, len) }
+    unsafe { libc::mlock(addr, len) }
 }
 
 pub unsafe fn munlock(addr: *const void, len: size_t) -> int {
-    unsafe { crate::internal::munlock(addr, len) }
+    unsafe { libc::munlock(addr, len) }
 }
 
 pub unsafe fn mlockall(flags: int) -> int {
-    unsafe { crate::internal::mlockall(flags) }
+    unsafe { libc::mlockall(flags) }
 }
 
 pub unsafe fn munlockall() -> int {
-    unsafe { crate::internal::munlockall() }
+    unsafe { libc::munlockall() }
 }
 
 unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
@@ -136,7 +136,7 @@ unsafe fn create_state_file(name: *const c_char, real_name: &[u8], mode: mode_t)
 pub(crate) unsafe fn write_state_mode(state_fd: int, mode: mode_t) -> bool {
     let bytes = (mode as u32).to_le_bytes();
     let written = unsafe {
-        crate::internal::pwrite(
+        libc::pwrite(
             state_fd,
             bytes.as_ptr().cast(),
             SHM_STATE_MODE_LEN,
@@ -149,7 +149,7 @@ pub(crate) unsafe fn write_state_mode(state_fd: int, mode: mode_t) -> bool {
 pub(crate) unsafe fn read_state_mode(state_fd: int) -> mode_t {
     let mut bytes = [0u8; SHM_STATE_MODE_LEN];
     let n = unsafe {
-        crate::internal::pread(
+        libc::pread(
             state_fd,
             bytes.as_mut_ptr().cast(),
             SHM_STATE_MODE_LEN,
@@ -212,8 +212,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     };
 
     // macOS ignores shm_open mode; iox2-156 user mode lives on the trampoline.
-    let shm_fd =
-        unsafe { crate::internal::shm_open(real_name.as_ptr().cast(), oflag, S_IRWXU as uint) };
+    let shm_fd = unsafe { libc::shm_open(real_name.as_ptr().cast(), oflag, S_IRWXU as uint) };
     if shm_fd == -1 {
         let err = Errno::get();
         unsafe { close(state_fd) };
@@ -226,7 +225,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
 
     if !ShmFdTranslator::get_instance().register(shm_fd, state_fd) {
         unsafe {
-            crate::internal::close(shm_fd);
+            libc::close(shm_fd);
             close(state_fd);
         }
         if created {
@@ -251,7 +250,7 @@ pub unsafe fn shm_unlink(name: *const c_char) -> int {
         }
     };
 
-    let ret_val = unsafe { crate::internal::shm_unlink(real_name.as_ptr().cast()) };
+    let ret_val = unsafe { libc::shm_unlink(real_name.as_ptr().cast()) };
     if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
         unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
     }
@@ -266,15 +265,15 @@ pub unsafe fn mmap(
     fd: int,
     off: off_t,
 ) -> *mut void {
-    unsafe { crate::internal::mmap(addr, len, prot, flags, fd, off) }
+    unsafe { libc::mmap(addr, len, prot, flags, fd, off) }
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    unsafe { crate::internal::munmap(addr, len) }
+    unsafe { libc::munmap(addr, len) }
 }
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
-    unsafe { crate::internal::mprotect(addr, len, prot) }
+    unsafe { libc::mprotect(addr, len, prot) }
 }
 
 unsafe fn trim_ascii(value: &[i8]) -> &[u8] {
@@ -298,12 +297,12 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
         }
 
         loop {
-            let entry = crate::internal::readdir(dir);
+            let entry = libc::readdir(dir);
             if entry.is_null() {
                 break;
             }
 
-            if (*entry).d_type == crate::internal::DT_REG as _ {
+            if (*entry).d_type == libc::DT_REG as _ {
                 let file_name = trim_ascii(&(*entry).d_name);
                 if file_name.ends_with(SHM_STATE_SUFFIX) {
                     let mut shm_name = [0i8; 256];
