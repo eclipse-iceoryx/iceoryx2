@@ -22,41 +22,49 @@ use serde::{Deserialize, Serialize};
 pub mod blub;
 pub mod recommended;
 
+// TODO: documentation, tests
+
+// contract: unique_value member is unique within on process
+// system-wide unique when UniqueIdGenerator implementation guarantees this, e.g. iceoryx2_bb_posix::UniqueSystemId
+// that increments a static atomic counter and the pid
 #[repr(C)]
-#[repr(align(8))]
 #[derive(
     Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Copy, Serialize, Deserialize, ZeroCopySend,
 )]
 pub struct UniqueId {
-    high_bits: u64,
-    low_bits: u64,
+    payload_value: u64,
+    unique_value: u64,
 }
 
 impl UniqueId {
-    // TODO: unsafe?
+    // safety: see contract
     pub unsafe fn from_value(value: u128) -> Self {
-        // TODO: UB? if so, then also wrong in bb posix unique system id
-        // value and Self have same size so it should be fine
-        // unsafe { core::mem::transmute(value) }
         Self {
-            high_bits: (value >> 64) as u64,
-            low_bits: value as u64,
+            payload_value: (value >> 64) as u64,
+            unique_value: value as u64,
         }
     }
 
     pub fn value(&self) -> u128 {
-        (self.high_bits as u128) << 64 | (self.low_bits as u128)
+        (self.payload_value as u128) << 64 | (self.unique_value as u128)
+    }
+
+    pub fn payload_value(&self) -> u64 {
+        self.payload_value
+    }
+
+    pub fn unique_value(&self) -> u64 {
+        self.unique_value
     }
 }
 
 #[repr(C)]
 #[derive(ZeroCopySend)]
 pub struct Entity {
-    pub name: StaticString<255>, // equivalent to MAX_SERVICE_NAME_LENGTH; own type?
-    pub id: u128,                // smaller?
+    pub name: StaticString<255>, // equivalent to MAX_SERVICE_NAME_LENGTH; TODO: own type?
+    pub id: u128,
 }
 
-// TODO: rename errors + better error handling
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UniqueIdGeneratorError {
     GenerationError,
@@ -103,13 +111,11 @@ impl UniqueIdBuilder {
 pub trait UniqueIdGenerator: From<UniqueId> {
     fn generate(builder: UniqueIdBuilder) -> Result<UniqueId, UniqueIdGeneratorError>;
 
-    // TODO: better error handling
     fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
             "pid() is not implemented");
     }
 
-    // TODO: better error handling
     fn creation_time(&self) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::creation_time()",
             with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
