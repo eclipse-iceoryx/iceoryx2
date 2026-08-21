@@ -191,7 +191,6 @@ impl UniqueNodeId {
     }
 
     pub(crate) fn owner_id(&self) -> OwnerId {
-        // TODO: return unique low/high member
-        OwnerId::new(self.0.value() as u64).expect("The unique node id is never 0.")
+        OwnerId::new(self.0.unique_value()).expect("The unique node id is never 0.")
     }
 }

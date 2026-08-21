@@ -14,7 +14,6 @@ pub use iceoryx2_bb_posix::unique_system_id::*;
 
 pub use crate::unique_id_generator::*;
 
-// TODO: better error handling
 impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorError {
     fn from(_: UniqueSystemIdCreationError) -> Self {
         UniqueIdGeneratorError::GenerationError

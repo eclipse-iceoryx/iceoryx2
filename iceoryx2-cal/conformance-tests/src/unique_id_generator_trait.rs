@@ -15,7 +15,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod unique_id_generator_trait {
-    use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_container::string::StaticString;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -25,23 +25,23 @@ pub mod unique_id_generator_trait {
     };
 
     struct TestUniqueId {
-        id: u32,
+        id: u64,
     }
     impl TestUniqueId {
         fn new() -> Self {
-            static COUNTER: AtomicU32 = AtomicU32::new(0);
+            static COUNTER: AtomicU64 = AtomicU64::new(0);
             Self {
                 id: COUNTER.fetch_add(1, Ordering::Relaxed),
             }
         }
-        fn value(&self) -> u32 {
+        fn value(&self) -> u64 {
             self.id
         }
     }
     impl From<UniqueId> for TestUniqueId {
         fn from(value: UniqueId) -> Self {
             Self {
-                id: value.value() as u32,
+                id: value.value() as u64,
             }
         }
     }
