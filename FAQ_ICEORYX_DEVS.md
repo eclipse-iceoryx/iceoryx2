@@ -139,6 +139,44 @@ poetry --project iceoryx2-ffi/python update urllib3
 poetry --project doc/api/python update urllib3
 ```
 
+## Troubleshooting CI failures
+
+iceoryx2 supports a lot of platforms. This can lead to CI failures on a platform
+the developer does not natively run, e.g. a failure on FreeBSD while developing
+on Linux.
+
+Most of the platforms can be cross compiled. This means that at least build
+issues can be fixed by adding the respective Rust targets and cross-compiling.
+
+These are the target triplets that can be used for cross-compiling.
+
+<!-- markdownlint-disable MD044 The target triplet and must not be capitalized -->
+* x86_64-apple-darwin
+* x86_64-linux-android
+* x86_64-linux-gnu
+* x86_64-linux-musl
+* x86_64-pc-windows-msvc
+* x86_64-unknown-freebsd
+<!-- markdownlint-enable MD044 -->
+
+The target can be installed with `rustup target add <target-triplet>`.
+
+In order to cross-compile iceoryx2 the target needs to be specified.
+
+```sh
+cargo build -p iceoryx2 --target <target-triplet>
+```
+
+Note: Without specifying a linker for the respective target, only library crates
+will build.
+
+With clippy, the `just` scripts can also be used to check the whole workspace
+without specifying a linker for the target.
+
+```sh
+just verify sdk clippy -- --target <target-triplet>
+```
+
 ## Crate names
 
 When adding a new crate to iceoryx2 it is recommended
