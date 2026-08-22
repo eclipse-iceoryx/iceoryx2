@@ -242,35 +242,35 @@ pub unsafe fn pthread_barrierattr_setpshared(
 pub unsafe fn pthread_attr_init(attr: *mut pthread_attr_t) -> int {
     unsafe {
         (*attr) = pthread_attr_t::new_zeroed();
-        crate::internal::pthread_attr_init(&mut (*attr).attr)
+        libc::pthread_attr_init(&mut (*attr).attr)
     }
 }
 
 pub unsafe fn pthread_attr_destroy(attr: *mut pthread_attr_t) -> int {
-    unsafe { crate::internal::pthread_attr_destroy(&mut (*attr).attr) }
+    unsafe { libc::pthread_attr_destroy(&mut (*attr).attr) }
 }
 
 pub unsafe fn pthread_attr_setguardsize(attr: *mut pthread_attr_t, guardsize: size_t) -> int {
-    unsafe { crate::internal::pthread_attr_setguardsize(&mut (*attr).attr, guardsize) }
+    unsafe { internal::pthread_attr_setguardsize(&raw mut (*attr).attr, guardsize) }
 }
 
 pub unsafe fn pthread_attr_setinheritsched(attr: *mut pthread_attr_t, inheritsched: int) -> int {
-    unsafe { crate::internal::pthread_attr_setinheritsched(&mut (*attr).attr, inheritsched) }
+    unsafe { libc::pthread_attr_setinheritsched(&mut (*attr).attr, inheritsched) }
 }
 
 pub unsafe fn pthread_attr_setschedpolicy(attr: *mut pthread_attr_t, policy: int) -> int {
-    unsafe { crate::internal::pthread_attr_setschedpolicy(&mut (*attr).attr, policy) }
+    unsafe { libc::pthread_attr_setschedpolicy(&mut (*attr).attr, policy) }
 }
 
 pub unsafe fn pthread_attr_setschedparam(
     attr: *mut pthread_attr_t,
     param: *const sched_param,
 ) -> int {
-    unsafe { crate::internal::pthread_attr_setschedparam(&mut (*attr).attr, param) }
+    unsafe { libc::pthread_attr_setschedparam(&mut (*attr).attr, param) }
 }
 
 pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: size_t) -> int {
-    unsafe { crate::internal::pthread_attr_setstacksize(&mut (*attr).attr, stacksize) }
+    unsafe { libc::pthread_attr_setstacksize(&mut (*attr).attr, stacksize) }
 }
 
 pub unsafe fn pthread_attr_setaffinity_np(
@@ -297,7 +297,7 @@ struct CallbackArguments {
 unsafe impl Send for CallbackArguments {}
 unsafe impl Sync for CallbackArguments {}
 
-unsafe extern "C" fn thread_callback(args: *mut void) -> *mut void {
+extern "C" fn thread_callback(args: *mut void) -> *mut void {
     unsafe {
         let thread_args = Arc::from_raw(args as *const CallbackArguments);
         let start_routine = thread_args.start_routine;
@@ -325,10 +325,10 @@ pub unsafe fn pthread_create(
     });
     unsafe {
         let thread_args_spawned = Arc::into_raw(thread_args.clone());
-        let result = crate::internal::pthread_create(
+        let result = libc::pthread_create(
             thread,
             &(*attr).attr,
-            Some(thread_callback),
+            thread_callback,
             (thread_args_spawned as *mut CallbackArguments).cast(),
         );
         if result == 0 {
@@ -345,7 +345,7 @@ pub unsafe fn pthread_create(
 
 pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
     unsafe {
-        let result = crate::internal::pthread_join(thread, retval);
+        let result = libc::pthread_join(thread, retval);
         if result == 0 {
             ThreadStates::get_instance().remove(thread);
         }
@@ -354,7 +354,7 @@ pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
 }
 
 pub unsafe fn pthread_self() -> pthread_t {
-    unsafe { crate::internal::pthread_self() }
+    unsafe { libc::pthread_self() }
 }
 
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
@@ -368,7 +368,7 @@ pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int 
             }
         }
 
-        crate::internal::pthread_setname_np(name)
+        libc::pthread_setname_np(name)
     }
 }
 
@@ -588,7 +588,7 @@ unsafe fn owner_and_ref_count(v: u64) -> (u32, u32) {
 unsafe fn get_thread_id() -> u32 {
     let mut id = 0u64;
     unsafe {
-        crate::internal::pthread_threadid_np(core::ptr::null_mut(), &mut id);
+        libc::pthread_threadid_np(0, &mut id);
     }
     id as _
 }
@@ -607,8 +607,7 @@ unsafe fn prepare_lock(mtx: *mut pthread_mutex_t) -> (int, u32) {
                 }
 
                 if owner != 0 {
-                    let is_still_active =
-                        crate::internal::pthread_kill((*mtx).thread_handle, 0) == 0;
+                    let is_still_active = libc::pthread_kill((*mtx).thread_handle, 0) == 0;
 
                     if !is_still_active {
                         (*mtx)
@@ -672,7 +671,7 @@ pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
             (*mtx)
                 .current_owner
                 .store((thread_id as u64) << 32, Ordering::Relaxed);
-            (*mtx).thread_handle = crate::internal::pthread_self();
+            (*mtx).thread_handle = libc::pthread_self();
         }
 
         0
@@ -706,7 +705,7 @@ pub unsafe fn pthread_mutex_timedlock(
             current_time.tv_sec = 0;
             current_time.tv_nsec = 1000000;
 
-            crate::internal::nanosleep(&current_time, &mut wait_time);
+            libc::nanosleep(&current_time, &mut wait_time);
         }
     }
 }
@@ -776,7 +775,7 @@ pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
 
         if unlock_thread {
             (*mtx).mtx.unlock(wake_one);
-            (*mtx).thread_handle = core::ptr::null_mut();
+            (*mtx).thread_handle = 0;
         }
 
         Errno::ESUCCES as _
@@ -835,5 +834,16 @@ pub unsafe fn pthread_mutexattr_settype(attr: *mut pthread_mutexattr_t, mtype: i
         Errno::set(Errno::ESUCCES);
         (*attr).mtype = mtype;
         0
+    }
+}
+
+mod internal {
+    use super::*;
+
+    unsafe extern "C" {
+        pub(super) fn pthread_attr_setguardsize(
+            attr: *mut libc::pthread_attr_t,
+            guardsize: size_t,
+        ) -> int;
     }
 }

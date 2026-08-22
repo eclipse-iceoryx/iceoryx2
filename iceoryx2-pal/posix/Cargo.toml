@@ -27,13 +27,6 @@ bindgen = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-libc = { workspace = true }
-
-[target.'cfg(target_os = "android")'.dependencies]
-libc = { workspace = true }
-
-[target.'cfg(target_os = "windows")'.dependencies]
 libc = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
