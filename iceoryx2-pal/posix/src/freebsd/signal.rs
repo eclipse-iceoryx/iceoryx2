@@ -17,18 +17,13 @@ use crate::posix::{MemZeroedStruct, sighandler_t};
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
-pub struct sigaction_t(crate::internal::sigaction);
+pub struct sigaction_t(libc::sigaction);
 
 impl MemZeroedStruct for sigaction_t {}
 
 impl sigaction_t {
     pub fn set_handler(&mut self, handler: sighandler_t) {
-        unsafe {
-            self.0.__sigaction_u.__sa_handler = core::mem::transmute::<
-                usize,
-                core::option::Option<unsafe extern "C" fn(i32)>,
-            >(handler);
-        }
+        self.0.sa_sigaction = handler;
     }
 
     pub fn flags(&self) -> int {
@@ -42,12 +37,8 @@ impl sigaction_t {
 
 impl core::fmt::Debug for sigaction_t {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let sa_handler = unsafe {
-            #[allow(clippy::missing_transmute_annotations)]
-            core::mem::transmute::<_, usize>(self.0.__sigaction_u)
-        };
         f.debug_struct("sigaction_t")
-            .field("__sigaction_u", &sa_handler)
+            .field("sa_sigaction", &self.0.sa_sigaction)
             .field("sa_mask", &self.0.sa_mask)
             .field("sa_flags", &self.0.sa_flags)
             .finish()
@@ -55,37 +46,37 @@ impl core::fmt::Debug for sigaction_t {
 }
 
 pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> int {
-    unsafe { crate::internal::sigaction(sig, &act.0, &mut oact.0) }
+    unsafe { libc::sigaction(sig, &act.0, &mut oact.0) }
 }
 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
-    unsafe { crate::internal::kill(pid, sig) }
+    unsafe { libc::kill(pid, sig) }
 }
 
 pub unsafe fn sigaddset(set: *mut sigset_t, signo: int) -> int {
-    unsafe { crate::internal::sigaddset(set, signo) }
+    unsafe { libc::sigaddset(set, signo) }
 }
 
 pub unsafe fn sigdelset(set: *mut sigset_t, signo: int) -> int {
-    unsafe { crate::internal::sigdelset(set, signo) }
+    unsafe { libc::sigdelset(set, signo) }
 }
 
 pub unsafe fn sigismember(set: *const sigset_t, signo: int) -> int {
-    unsafe { crate::internal::sigismember(set, signo) }
+    unsafe { libc::sigismember(set, signo) }
 }
 
 pub unsafe fn sigfillset(set: *mut sigset_t) -> int {
-    unsafe { crate::internal::sigfillset(set) }
+    unsafe { libc::sigfillset(set) }
 }
 
 pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
-    unsafe { crate::internal::sigemptyset(set) }
+    unsafe { libc::sigemptyset(set) }
 }
 
 pub unsafe fn sigpending(set: *mut sigset_t) -> int {
-    unsafe { crate::internal::sigpending(set) }
+    unsafe { libc::sigpending(set) }
 }
 
 pub unsafe fn abort() {
-    unsafe { crate::internal::abort() }
+    unsafe { libc::abort() }
 }

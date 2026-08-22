@@ -162,7 +162,7 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    unsafe { crate::internal::strerror(errnum) }
+    unsafe { libc::strerror(errnum) }
 }
 
 mod internal {
