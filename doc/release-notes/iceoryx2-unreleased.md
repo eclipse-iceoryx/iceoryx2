@@ -34,6 +34,7 @@
 -->
 
 * [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Update dependencies in zenoh: rustls-webpki from 0.103.13 to 0.103.16, webpki-roots and webpki-roots-certs from 1.0.7 to 1.0.10
+* [#1880](https://github.com/eclipse-iceoryx/iceoryx2/issues/1880) Avoid terminating processes when a node is found alive during stale resource cleanup.
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
