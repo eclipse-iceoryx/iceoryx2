@@ -23,19 +23,19 @@ use super::{
 };
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
-    unsafe { crate::internal::mlock(addr, len) }
+    unsafe { libc::mlock(addr, len) }
 }
 
 pub unsafe fn munlock(addr: *const void, len: size_t) -> int {
-    unsafe { crate::internal::munlock(addr, len) }
+    unsafe { libc::munlock(addr, len) }
 }
 
 pub unsafe fn mlockall(flags: int) -> int {
-    unsafe { crate::internal::mlockall(flags) }
+    unsafe { libc::mlockall(flags) }
 }
 
 pub unsafe fn munlockall() -> int {
-    unsafe { crate::internal::munlockall() }
+    unsafe { libc::munlockall() }
 }
 
 unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
@@ -117,13 +117,13 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
             return -1;
         }
     }
-    unsafe { crate::internal::shm_open(name.cast(), oflag, mode) }
+    unsafe { libc::shm_open(name.cast(), oflag, mode) }
 }
 
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
     unsafe {
         if does_shm_exist(name) {
-            let ret_val = crate::internal::shm_unlink(name.cast());
+            let ret_val = libc::shm_unlink(name.cast());
             if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
                 remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast());
             }
@@ -142,15 +142,15 @@ pub unsafe fn mmap(
     fd: int,
     off: off_t,
 ) -> *mut void {
-    unsafe { crate::internal::mmap(addr, len, prot, flags, fd, off) }
+    unsafe { libc::mmap(addr, len, prot, flags, fd, off) }
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    unsafe { crate::internal::munmap(addr, len) }
+    unsafe { libc::munmap(addr, len) }
 }
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
-    unsafe { crate::internal::mprotect(addr, len, prot) }
+    unsafe { libc::mprotect(addr, len, prot) }
 }
 
 unsafe fn trim_ascii(value: &[i8]) -> &[u8] {
@@ -172,12 +172,12 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
         }
 
         loop {
-            let entry = crate::internal::readdir(dir);
+            let entry = libc::readdir(dir);
             if entry.is_null() {
                 break;
             }
 
-            if (*entry).d_type == crate::internal::DT_REG as _ {
+            if (*entry).d_type == libc::DT_REG as _ {
                 let file_name = trim_ascii(&(*entry).d_name);
                 if file_name.ends_with(SHM_STATE_SUFFIX) {
                     let mut shm_name = [0i8; 256];

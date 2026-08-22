@@ -79,6 +79,7 @@
 * [#1891](https://github.com/eclipse-iceoryx/iceoryx2/issues/1891) Rename the tunnel to gateway and move its crates from `iceoryx2-services/` to a top-level `iceoryx2-gateway/` directory
 * [#1928](https://github.com/eclipse-iceoryx/iceoryx2/issues/1928) Make Windows platform abstraction use the `libc` crate instead of `bindgen`
 * [#1929](https://github.com/eclipse-iceoryx/iceoryx2/issues/1929) Make macOS platform abstraction use the `libc` crate instead of `bindgen`
+* [#1930](https://github.com/eclipse-iceoryx/iceoryx2/issues/1930) Make FreeBSD platform abstraction use the `libc` crate instead of `bindgen`
 * [#1931](https://github.com/eclipse-iceoryx/iceoryx2/issues/1931) Use ANSI escape sequences in iceoryx2-cli
 
 ### Workflow
