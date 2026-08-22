@@ -22,58 +22,41 @@ pub unsafe fn select(
     errorfds: *mut fd_set,
     timeout: *mut timeval,
 ) -> int {
-    unsafe { crate::internal::select(nfds, readfds, writefds, errorfds, timeout) }
+    unsafe { libc::select(nfds, readfds, writefds, errorfds, timeout) }
 }
 
 pub unsafe fn CMSG_SPACE(length: size_t) -> size_t {
-    unsafe { internal::iceoryx2_cmsg_space(length) }
+    unsafe { libc::CMSG_SPACE(length as _) as _ }
 }
 
 pub unsafe fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-    unsafe { internal::iceoryx2_cmsg_firsthdr(mhdr) }
+    unsafe { libc::CMSG_FIRSTHDR(mhdr) }
 }
 
 pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> *mut cmsghdr {
-    unsafe { internal::iceoryx2_cmsg_nxthdr(header as *mut msghdr, sub_header as *mut cmsghdr) }
+    unsafe { libc::CMSG_NXTHDR(header as *mut msghdr, sub_header as *mut cmsghdr) }
 }
 
 pub unsafe fn CMSG_LEN(length: size_t) -> size_t {
-    unsafe { internal::iceoryx2_cmsg_len(length) }
+    unsafe { libc::CMSG_LEN(length as _) as _ }
 }
 
 pub unsafe fn CMSG_DATA(cmsg: *mut cmsghdr) -> *mut uchar {
-    unsafe { internal::iceoryx2_cmsg_data(cmsg) }
+    unsafe { libc::CMSG_DATA(cmsg) }
 }
 
 pub unsafe fn FD_CLR(fd: int, set: *mut fd_set) {
-    unsafe { internal::iceoryx2_fd_clr(fd, set) }
+    unsafe { libc::FD_CLR(fd, set) }
 }
 
 pub unsafe fn FD_ISSET(fd: int, set: *const fd_set) -> bool {
-    unsafe { internal::iceoryx2_fd_isset(fd, set) != 0 }
+    unsafe { libc::FD_ISSET(fd, set) }
 }
 
 pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
-    unsafe { internal::iceoryx2_fd_set(fd, set) }
+    unsafe { libc::FD_SET(fd, set) }
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) {
-    unsafe { internal::iceoryx2_fd_zero(set) }
-}
-
-mod internal {
-    use super::*;
-
-    #[cfg_attr(target_os = "freebsd", link(name = "c"))]
-    unsafe extern "C" {
-        pub(super) fn iceoryx2_cmsg_space(len: size_t) -> size_t;
-        pub(super) fn iceoryx2_cmsg_firsthdr(hdr: *const msghdr) -> *mut cmsghdr;
-        pub(super) fn iceoryx2_cmsg_nxthdr(hdr: *mut msghdr, sub: *mut cmsghdr) -> *mut cmsghdr;
-        pub(super) fn iceoryx2_cmsg_len(len: size_t) -> size_t;
-        pub(super) fn iceoryx2_cmsg_data(cmsg: *mut cmsghdr) -> *mut uchar;
-        pub(super) fn iceoryx2_fd_clr(fd: int, set: *mut fd_set);
-        pub(super) fn iceoryx2_fd_isset(fd: int, set: *const fd_set) -> int;
-        pub(super) fn iceoryx2_fd_set(fd: int, set: *mut fd_set);
-        pub(super) fn iceoryx2_fd_zero(set: *mut fd_set);
-    }
+    unsafe { libc::FD_ZERO(set) }
 }

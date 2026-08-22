@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 const ENV_PLATFORM_PATH: &str = "IOX2_CUSTOM_POSIX_PLATFORM_PATH";
-const BINDGEN_PLATFORMS: &[&str] = &["freebsd", "nto"];
-const LIBC_PLATFORMS: &[&str] = &["android", "linux", "macos", "vxworks", "windows"];
+const BINDGEN_PLATFORMS: &[&str] = &["nto"];
+const LIBC_PLATFORMS: &[&str] = &["android", "freebsd", "linux", "macos", "vxworks", "windows"];
 
 fn main() {
     // when cross compiling, 'CARGO_CFG_TARGET_OS' is set to the compilation
@@ -34,7 +34,7 @@ fn main() {
     //
     // the target_os check refers for the target compilation which could be
     // a different platform
-    #[cfg(any(target_os = "freebsd", target_os = "nto"))]
+    #[cfg(target_os = "nto")]
     if BINDGEN_PLATFORMS.contains(&target_os.as_str()) {
         bindgen::run(target_os.as_str());
     }
@@ -74,5 +74,5 @@ fn configure_platform_binding(target_os: &str) {
 // the cfg guard below refers to native compilation of build.rs and prevents
 // bindgen from being pulled in as a dependency when a (cross-) compilation
 // host does not support it
-#[cfg(any(target_os = "freebsd", target_os = "nto"))]
+#[cfg(target_os = "nto")]
 mod bindgen;

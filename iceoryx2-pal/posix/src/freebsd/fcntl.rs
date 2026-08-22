@@ -17,13 +17,13 @@ use crate::posix::MemZeroedStruct;
 use crate::posix::types::*;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
-    unsafe { crate::internal::open(pathname, flags, mode as core::ffi::c_uint) }
+    unsafe { libc::open(pathname, flags, mode as core::ffi::c_uint) }
 }
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
     unsafe {
         let mut os_specific_buffer = native_stat_t::new_zeroed();
-        match crate::internal::fstat(fd, &mut os_specific_buffer) {
+        match libc::fstat(fd, &mut os_specific_buffer) {
             0 => {
                 *buf = os_specific_buffer.into();
                 0
@@ -34,21 +34,21 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
 }
 
 pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
-    unsafe { crate::internal::fcntl(fd, cmd, arg) }
+    unsafe { libc::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
-    unsafe { crate::internal::fcntl(fd, cmd, arg) }
+    unsafe { libc::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
-    unsafe { crate::internal::fcntl(fd, cmd) }
+    unsafe { libc::fcntl(fd, cmd) }
 }
 
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
-    unsafe { crate::internal::fchmod(fd, mode) }
+    unsafe { libc::fchmod(fd, mode) }
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
-    unsafe { crate::internal::open(pathname, flags) }
+    unsafe { libc::open(pathname, flags) }
 }
