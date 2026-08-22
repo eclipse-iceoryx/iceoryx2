@@ -81,18 +81,46 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
-      - name: Run workspaces
+      - name: Build sdk workspace
         shell: bash
         run: |
           rustc --version
           just build sdk +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
+
+      - name: Build integrations-zenoh workspace [beta]
+        if: inputs.toolchain != 'nightly'
+        shell: bash
+        run: |
+          rustc --version
           just build integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
 
-      - name: Test workspaces
+      - name: Build integrations-zenoh workspace [nightly]
+        if: inputs.toolchain == 'nightly'
+        shell: bash
+        run: |
+          rustc --version
+          export RUSTFLAGS=-Znext-solver=coherence # Zenoh has issues with the new trait solver
+          just build integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
+
+      - name: Test sdk workspace
         shell: bash
         run: |
           rustc --version
           just test sdk +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
+
+      - name: Test integrations-zenoh workspaces [beta]
+        if: inputs.toolchain != 'nightly'
+        shell: bash
+        run: |
+          rustc --version
+          just test integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
+
+      - name: Test integrations-zenoh workspaces [nightly]
+        if: inputs.toolchain == 'nightly'
+        shell: bash
+        run: |
+          rustc --version
+          export RUSTFLAGS=-Znext-solver=coherence # Zenoh has issues with the new trait solver
           just test integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
