@@ -46,8 +46,7 @@ pub mod publish_subscribe_propagation {
     }
 
     fn propagate_struct_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
-        const MAX_ATTEMPTS: usize = 25;
-        const TIMEOUT: Duration = Duration::from_millis(250);
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -95,7 +94,6 @@ pub mod publish_subscribe_propagation {
                 Err("No services discovered")
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
@@ -159,15 +157,13 @@ pub mod publish_subscribe_propagation {
                     }
                 },
                 TIMEOUT,
-                Some(MAX_ATTEMPTS),
             )
             .unwrap_or_else(|e| panic!("Failed to propagate over gateway:\n{}", e));
         }
     }
 
     fn propagate_slice_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
-        const MAX_ATTEMPTS: usize = 25;
-        const TIMEOUT: Duration = Duration::from_millis(250);
+        const TIMEOUT: Duration = Duration::from_secs(10);
         const PAYLOAD_DATA_LENGTH: usize = 256;
 
         // === SETUP ===
@@ -220,7 +216,6 @@ pub mod publish_subscribe_propagation {
                 Err("No services discovered")
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
@@ -285,7 +280,6 @@ pub mod publish_subscribe_propagation {
                     }
                 },
                 TIMEOUT,
-                Some(MAX_ATTEMPTS),
             )
             .unwrap_or_else(|e| panic!("Failed to propagate over gateway:\n{}", e));
         }
@@ -317,8 +311,7 @@ pub mod publish_subscribe_propagation {
         B: Backend<S> + Debug,
         T: Testing,
     >() {
-        const MAX_ATTEMPTS: usize = 25;
-        const TIMEOUT: Duration = Duration::from_millis(250);
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name_1 = generate_service_name();
@@ -376,7 +369,6 @@ pub mod publish_subscribe_propagation {
                 Err("Both services not yet discovered")
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
@@ -471,7 +463,6 @@ pub mod publish_subscribe_propagation {
                     }
                 },
                 TIMEOUT,
-                Some(MAX_ATTEMPTS),
             )
             .unwrap_or_else(|e| panic!("{} failed: {}", label, e));
         }

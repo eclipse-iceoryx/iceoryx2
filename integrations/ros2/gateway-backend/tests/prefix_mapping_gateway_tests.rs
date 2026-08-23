@@ -12,7 +12,7 @@
 
 mod common;
 
-use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, service_name};
+use common::{DISCOVERY_TIMEOUT, service_name};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service as _;
@@ -72,8 +72,7 @@ fn maps_iceoryx_services_onto_ros_topics() {
                 .then_some(())
                 .ok_or("mapped topic not yet on the ROS 2 graph")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("mapped topic did not appear on the ROS 2 graph");
 }
@@ -123,8 +122,7 @@ fn does_not_map_unprefixed_services() {
                 .then_some(())
                 .ok_or("publish_subscribe topic not yet on the ROS 2 graph")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("publish_subscribe topic did not appear");
 
@@ -178,8 +176,7 @@ fn does_not_map_event_services() {
                 .then_some(())
                 .ok_or("publish_subscribe topic not yet on the ROS 2 graph")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("publish_subscribe topic did not appear");
 
@@ -218,8 +215,7 @@ fn maps_ros_topics_onto_iceoryx2_services() {
                 .then_some(())
                 .ok_or("local service not yet created")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("local service for the ROS 2 topic did not appear");
 

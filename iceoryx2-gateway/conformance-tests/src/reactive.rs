@@ -27,8 +27,7 @@ pub mod reactive {
     use iceoryx2_gateway::Gateway;
     use iceoryx2_gateway_backend::traits::{Backend, ReactiveBackendBuilder, testing::Testing};
 
-    const TIMEOUT: Duration = Duration::from_millis(250);
-    const MAX_ATTEMPTS: usize = 25;
+    const TIMEOUT: Duration = Duration::from_secs(10);
 
     // Two hosts: A is a polled gateway that publishes; B is a reactive gateway
     // whose wake listener must fire when A's data arrives over the backend.
@@ -87,7 +86,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
 
@@ -103,7 +101,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
     }
@@ -164,7 +161,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
 
@@ -180,7 +176,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
     }

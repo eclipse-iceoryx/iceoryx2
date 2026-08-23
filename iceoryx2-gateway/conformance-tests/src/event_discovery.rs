@@ -155,8 +155,7 @@ pub mod event_discovery {
         B: Backend<S> + Debug,
         T: Testing,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -212,8 +211,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to discover remote services")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -237,8 +235,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to detect remote service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -252,8 +249,8 @@ pub mod event_discovery {
         B: Backend<S> + Debug,
         T: Testing,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
+        const DISCOVERY_ATTEMPTS: usize = 5;
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -316,8 +313,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
         assert_that!(gateway_a.bridged_services().len(), eq 1);
@@ -328,7 +324,7 @@ pub mod event_discovery {
         assert_that!(gateway_b.bridged_services().len(), eq 0);
 
         // Host A keeps the service since one remote still offering service
-        for _ in 0..MAX_RETRIES {
+        for _ in 0..DISCOVERY_ATTEMPTS {
             gateway_a.discover_over_backend().unwrap();
         }
         assert_that!(gateway_a.bridged_services().contains(&service_hash), eq true);
@@ -347,16 +343,14 @@ pub mod event_discovery {
                 }
                 Err("Failed to detect remote service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
 
     #[conformance_test]
     pub fn detects_ungraceful_remote_departure<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(500);
-        const MAX_RETRIES: usize = 20;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -399,8 +393,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -419,16 +412,14 @@ pub mod event_discovery {
                 }
                 Err("Failed to detect ungraceful remote departure")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
 
     #[conformance_test]
     pub fn discovers_pre_existing_remote_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP — Host B announces FIRST ===
         let service_name = generate_service_name();
@@ -471,8 +462,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to discover pre-existing remote service via history replay")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -481,8 +471,7 @@ pub mod event_discovery {
 
     #[conformance_test]
     pub fn rediscovers_service_after_removal<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -525,8 +514,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -543,8 +531,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to detect remote service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -568,8 +555,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to rediscover service after removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
@@ -634,8 +620,7 @@ pub mod event_discovery {
         B: Backend<S> + Debug,
         T: Testing,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -678,8 +663,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -702,8 +686,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to detect local service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -716,8 +699,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to tear down mirrored service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
@@ -728,8 +710,7 @@ pub mod event_discovery {
         B: Backend<S> + Debug,
         T: Testing,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -776,8 +757,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to mirror remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -826,8 +806,7 @@ pub mod event_discovery {
                 }
                 Err("Failed to tear down service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }

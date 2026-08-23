@@ -12,7 +12,7 @@
 
 mod common;
 
-use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, service_name};
+use common::{DISCOVERY_TIMEOUT, service_name};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service as _;
@@ -114,8 +114,7 @@ fn translates_inbound_messages_into_fixed_size_payloads() {
                 .then_some(())
                 .ok_or("local service not yet created")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("local service for the ROS 2 topic did not appear");
 
@@ -161,8 +160,7 @@ fn translates_inbound_messages_into_fixed_size_payloads() {
                 .then_some(())
                 .ok_or("translated twist not yet received")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("translated twist did not arrive natively");
 }
@@ -213,8 +211,7 @@ fn translates_outbound_fixed_size_payloads_onto_the_wire() {
                 .then_some(())
                 .ok_or("translated twist not yet on the wire")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("translated twist did not arrive on the wire");
 }
