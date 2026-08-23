@@ -125,7 +125,7 @@ impl HandleToType for iox2_port_factory_blackboard_h_ref {
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_reader_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_readers_callback =
     extern "C" fn(iox2_callback_context, iox2_reader_details_ptr) -> iox2_callback_progression_e;
 
@@ -136,7 +136,7 @@ pub type iox2_list_readers_callback =
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_writer_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_writers_callback =
     extern "C" fn(iox2_callback_context, iox2_writer_details_ptr) -> iox2_callback_progression_e;
 

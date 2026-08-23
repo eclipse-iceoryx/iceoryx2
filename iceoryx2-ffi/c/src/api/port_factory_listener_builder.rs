@@ -218,7 +218,7 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_set_name(
 /// # Safety
 ///
 /// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// * The corresponding [`iox2_port_factory_listener_builder_t`](crate::iox2_port_factory_listener_builder_t)
+/// * The corresponding [`iox2_port_factory_listener_builder_t`]
 ///   can be re-used with a call to  [`iox2_port_factory_event_listener_builder`](crate::iox2_port_factory_event_listener_builder)!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(

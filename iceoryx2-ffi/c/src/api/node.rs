@@ -243,11 +243,11 @@ pub enum iox2_node_state_e {
 ///
 /// * [`iox2_node_state_e`]
 /// * [`iox2_unique_node_id_ptr`]
-/// * [`iox2_node_name_ptr`](crate::iox2_node_name_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
-/// * [`iox2_config_ptr`](crate::iox2_config_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_node_name_ptr`] -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_config_ptr`] -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
 /// * [`iox2_callback_context`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_state_e,
     iox2_unique_node_id_ptr,
@@ -300,7 +300,7 @@ pub unsafe extern "C" fn iox2_node_wait_failure_string(
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
-/// Returns the [`iox2_node_name_ptr`](crate::iox2_node_name_ptr), an immutable pointer to the node name.
+/// Returns the [`iox2_node_name_ptr`], an immutable pointer to the node name.
 ///
 /// # Safety
 ///
@@ -348,7 +348,7 @@ pub unsafe extern "C" fn iox2_node_wait(
     }
 }
 
-/// Returns the [`iox2_config_ptr`](crate::iox2_config_ptr), an immutable pointer to the config.
+/// Returns the [`iox2_config_ptr`], an immutable pointer to the config.
 ///
 /// # Safety
 ///
@@ -386,7 +386,7 @@ pub unsafe extern "C" fn iox2_node_signal_handling_mode(
     }
 }
 
-/// Returns the [`iox2_unique_node_id_ptr`](crate::iox2_unique_node_id_ptr), an immutable pointer to the node id.
+/// Returns the [`iox2_unique_node_id_ptr`], an immutable pointer to the node id.
 ///
 /// # Safety
 ///
@@ -622,12 +622,12 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
 }
 
 /// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_unique_node_id_ptr`], [´iox2_node_name_ptr´] and [`iox2_config_ptr`] for
-/// all [`Node`](iceoryx2::node::Node)s in the system under a given [`Config`](iceoryx2::config::Config).
+/// all [`Node`]s in the system under a given [`Config`].
 ///
 /// # Arguments
 ///
 /// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
+/// * `config_ptr` - A valid [`iox2_config_ptr`]
 /// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///

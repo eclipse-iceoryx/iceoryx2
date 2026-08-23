@@ -67,7 +67,7 @@ fn backpressure_info_as_type<'a>(info: iox2_backpressure_info_h_ref) -> &'a Back
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_backpressure_info_h_ref`] provided as parameter by [`iox2_backpressure_handler`]
-/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`]
 ///
 /// # Safety
 ///
@@ -93,7 +93,7 @@ pub unsafe extern "C" fn iox2_backpressure_info_service_id(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_backpressure_info_h_ref`] provided as parameter by [`iox2_backpressure_handler`]
-/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`]
 ///
 /// # Safety
 ///
@@ -119,7 +119,7 @@ pub unsafe extern "C" fn iox2_backpressure_info_receiver_port_id(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_backpressure_info_h_ref`] provided as parameter by [`iox2_backpressure_handler`]
-/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`]
 ///
 /// # Safety
 ///
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn iox2_backpressure_info_elapsed_time(
 ///
 /// * [`iox2_backpressure_info_h_ref`] is a handle to obtain some information for the incident;
 ///   to be used with the `iox2_backpressure_info_*` functions
-/// * [`iox2_callback_context`](crate::iox2_callback_context) is a user defined callback context
+/// * [`iox2_callback_context`] is a user defined callback context
 ///   to provide additional information
 ///
 /// # Returns

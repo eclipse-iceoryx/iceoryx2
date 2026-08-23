@@ -138,7 +138,7 @@ impl HandleToType for iox2_port_factory_pub_sub_h_ref {
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_subscriber_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_subscribers_callback = extern "C" fn(
     iox2_callback_context,
     iox2_subscriber_details_ptr,
@@ -151,7 +151,7 @@ pub type iox2_list_subscribers_callback = extern "C" fn(
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_publisher_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_publishers_callback =
     extern "C" fn(iox2_callback_context, iox2_publisher_details_ptr) -> iox2_callback_progression_e;
 

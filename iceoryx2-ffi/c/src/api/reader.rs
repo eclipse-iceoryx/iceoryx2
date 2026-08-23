@@ -194,7 +194,7 @@ pub unsafe extern "C" fn iox2_reader_id(
     }
 }
 
-/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the port name.
 ///
 /// # Arguments
 ///

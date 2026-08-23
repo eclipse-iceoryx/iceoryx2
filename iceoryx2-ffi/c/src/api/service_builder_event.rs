@@ -856,10 +856,10 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`](crate::iox2_service_builder_event_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///   [`iox2_port_factory_event_t`](crate::iox2_port_factory_event_t). If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_port_factory_event_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.
