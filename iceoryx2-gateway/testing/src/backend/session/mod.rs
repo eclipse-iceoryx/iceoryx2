@@ -14,11 +14,11 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+pub mod wire;
+
 use alloc::collections::{BTreeMap, BTreeSet, VecDeque};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-
-use serde::{Deserialize, Serialize};
 
 use iceoryx2::prelude::SemanticStringError;
 use iceoryx2::service::service_hash::ServiceHash;
@@ -49,6 +49,8 @@ use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use crate::backend::settings::{
     LOCKFILE_NAME, MAX_DATAGRAM, ROOT_DIR, SERVICES_DIR_NAME, SESSIONS_DIR_NAME, SOCKET_NAME,
 };
+
+use wire::{Envelope, Kind, Sample, deserialize_envelope, serialize_envelope};
 
 #[derive(Debug)]
 pub enum CreationError {
@@ -120,31 +122,6 @@ type SessionId = String;
 struct PendingDiscovery {
     added: Vec<ServiceDescription>,
     removed: Vec<ServiceHash>,
-}
-
-#[derive(Debug)]
-pub struct Sample {
-    pub header: Vec<u8>,
-    pub payload: Vec<u8>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Envelope {
-    from: SessionId,
-    kind: Kind,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-enum Kind {
-    Event {
-        service_hash: ServiceHash,
-        id: u64,
-    },
-    Sample {
-        service_hash: ServiceHash,
-        header: Vec<u8>,
-        payload: Vec<u8>,
-    },
 }
 
 #[derive(Debug)]
@@ -402,16 +379,7 @@ impl Session {
         };
 
         let mut buf = self.send_buffer.borrow_mut();
-        let bytes = match postcard::to_slice(&envelope, &mut buf) {
-            Ok(bytes) => bytes,
-            Err(postcard::Error::SerializeBufferFull) => {
-                let size = postcard::to_allocvec(&envelope)
-                    .map(|v| v.len())
-                    .unwrap_or(0);
-                return Err(SendError::TooLarge(size));
-            }
-            Err(_) => return Err(SendError::Encode),
-        };
+        let bytes = serialize_envelope(&envelope, &mut buf)?;
 
         for peer in self.discovered_peers.borrow().values() {
             if let Err(UnixDatagramSendError::MessageTooLarge) = peer.sender.try_send(bytes) {
@@ -434,9 +402,8 @@ impl Session {
                 return Ok(());
             }
 
-            let envelope: Envelope = match postcard::from_bytes(&buf[..n]) {
-                Ok(e) => e,
-                Err(_) => continue, // skip malformed datagrams
+            let Some(envelope) = deserialize_envelope(&buf[..n]) else {
+                continue; // skip malformed datagrams
             };
             if envelope.from == self.id {
                 continue;
