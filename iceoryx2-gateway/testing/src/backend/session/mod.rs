@@ -14,10 +14,11 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+mod registry;
 pub mod wire;
 
 use alloc::collections::{BTreeMap, BTreeSet, VecDeque};
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use iceoryx2::prelude::SemanticStringError;
@@ -26,30 +27,22 @@ use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::directory::{
-    Directory, DirectoryAccessError, DirectoryCreateError, DirectoryOpenError,
+    DirectoryAccessError, DirectoryCreateError, DirectoryOpenError,
 };
 use iceoryx2_bb_posix::file::{
-    AccessMode, File, FileAccessError, FileBuilder, FileCreationError, FileRemoveError,
-    FileWriteError, Permission,
+    FileAccessError, FileCreationError, FileRemoveError, FileWriteError, Permission,
 };
-use iceoryx2_bb_posix::memory_mapping::SemanticString;
-use iceoryx2_bb_posix::process_state::{
-    ProcessGuard, ProcessGuardBuilder, ProcessGuardCreateError, ProcessMonitor, ProcessState,
-};
+use iceoryx2_bb_posix::process_state::ProcessGuardCreateError;
 use iceoryx2_bb_posix::unique_system_id::{UniqueSystemId, UniqueSystemIdCreationError};
 use iceoryx2_bb_posix::unix_datagram_socket::{
     UnixDatagramReceiver, UnixDatagramReceiverBuilder, UnixDatagramReceiverCreationError,
     UnixDatagramSendError, UnixDatagramSender, UnixDatagramSenderBuilder,
 };
-use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
-use crate::backend::settings::{
-    LOCKFILE_NAME, MAX_DATAGRAM, ROOT_DIR, SERVICES_DIR_NAME, SESSIONS_DIR_NAME, SOCKET_NAME,
-};
+use crate::backend::settings::MAX_DATAGRAM;
 
+use registry::{RegisteredSession, Registration, Registry};
 use wire::{Envelope, Kind, Sample, deserialize_envelope, serialize_envelope};
 
 #[derive(Debug)]
@@ -128,14 +121,12 @@ struct PendingDiscovery {
 pub struct Session {
     /// Unique session ID
     id: SessionId,
-    /// Path to directory containing all session files.
-    sessions_dir_path: Path,
-    /// Directory containing all session files.
-    sessions_dir: Directory,
-    /// Path to this session's own services directory.
-    services_dir_path: Path,
-    /// Live peer sessions keyed by id.
-    discovered_peers: RefCell<BTreeMap<SessionId, Peer>>,
+    /// The on-disk registry through which sessions discover each other.
+    registry: Registry,
+    /// This session's own entry in the registry, removed on drop.
+    registration: Registration,
+    /// Sending half of the connection to each live peer.
+    connections: RefCell<BTreeMap<SessionId, UnixDatagramSender>>,
     /// Hashes of services offered by any live peer at the last `discover()`.
     discovered_services: RefCell<BTreeSet<ServiceHash>>,
     /// Discovery events accumulated by `discover()` and drained by
@@ -149,22 +140,8 @@ pub struct Session {
     recv_buffer: RefCell<Vec<u8>>,
     /// Datagram serialize buffer.
     send_buffer: RefCell<Vec<u8>>,
-    /// Unix socket abstraction for payloads
+    /// Receiving half of a connection to this session.
     receiver: UnixDatagramReceiver,
-    _guard: ProcessGuard,
-    _cleanup: SessionCleanup,
-}
-
-#[derive(Debug)]
-struct Peer {
-    sender: UnixDatagramSender,
-}
-
-#[derive(Debug)]
-struct DiscoveredPeer {
-    session_id: SessionId,
-    services_dir: Path,
-    sock_path: FilePath,
 }
 
 impl Session {
@@ -177,68 +154,20 @@ impl Session {
             .to_b64()
             .to_lowercase();
 
-        // Create or open common sessions directory
-        let mut sessions_dir_path = Path::new(ROOT_DIR).unwrap();
-        add_to_path(&mut sessions_dir_path, SESSIONS_DIR_NAME).map_err(CreationError::Path)?;
-        let sessions_dir = if !Directory::does_exist(&sessions_dir_path)
-            .map_err(CreationError::DirectoryPermissions)?
-        {
-            Directory::create(&sessions_dir_path, Permission::OWNER_ALL)
-                .map_err(CreationError::DirectoryCreation)?
-        } else {
-            Directory::new(&sessions_dir_path).map_err(CreationError::DirectoryOpen)?
-        };
+        let registry = Registry::open()?;
+        let registration = registry.register(&id)?;
 
-        // Sweep dirs left behind by aborted prior runs before adding our own.
-        sweep_stale_sessions(&sessions_dir, &sessions_dir_path);
-
-        // Create the directory for this session.
-        let mut session_dir_path = sessions_dir_path;
-        add_to_path(&mut session_dir_path, id.as_bytes()).map_err(CreationError::Path)?;
-        match Directory::create(&session_dir_path, Permission::OWNER_ALL) {
-            Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
-            Err(e) => return Err(CreationError::DirectoryCreation(e)),
-        }
-
-        // Create the lockfile to indicate liveliness.
-        // Must be created first to ensure other sessions do not detect this
-        // session as dead.
-        let lockfile_path = file_path_in_directory(LOCKFILE_NAME, &session_dir_path)
-            .map_err(CreationError::Path)?;
-
-        let guard = ProcessGuardBuilder::new()
-            .guard_permissions(Permission::OWNER_READ_WRITE)
-            .create(&lockfile_path)
-            .map_err(CreationError::ProcessGuard)?;
-
-        // Create the directory holding this session's service files.
-        let mut services_dir_path = session_dir_path;
-        add_to_path(&mut services_dir_path, SERVICES_DIR_NAME).map_err(CreationError::Path)?;
-        match Directory::create(&services_dir_path, Permission::OWNER_ALL) {
-            Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
-            Err(e) => return Err(CreationError::DirectoryCreation(e)),
-        }
-
-        // Create a UDS receiver
-        let sock_path =
-            file_path_in_directory(SOCKET_NAME, &session_dir_path).map_err(CreationError::Path)?;
-        let receiver = UnixDatagramReceiverBuilder::new(&sock_path)
+        let receiver = UnixDatagramReceiverBuilder::new(registration.socket_path())
             .creation_mode(CreationMode::PurgeAndCreate)
             .permission(Permission::OWNER_READ_WRITE)
             .create()
             .map_err(CreationError::SocketBind)?;
 
-        let cleanup = SessionCleanup {
-            session_dir: session_dir_path,
-            sessions_dir: sessions_dir_path,
-        };
-
         Ok(Self {
             id,
-            sessions_dir_path,
-            sessions_dir,
-            services_dir_path,
-            discovered_peers: RefCell::new(BTreeMap::new()),
+            registry,
+            registration,
+            connections: RefCell::new(BTreeMap::new()),
             discovered_services: RefCell::new(BTreeSet::new()),
             pending_discoveries: RefCell::new(PendingDiscovery::default()),
             received_events: RefCell::new(BTreeMap::new()),
@@ -246,50 +175,23 @@ impl Session {
             recv_buffer: RefCell::new(alloc::vec![0u8; MAX_DATAGRAM]),
             send_buffer: RefCell::new(alloc::vec![0u8; MAX_DATAGRAM]),
             receiver,
-            _guard: guard,
-            _cleanup: cleanup,
         })
     }
 
     /// Make a service offered by this session discoverable to peers.
     pub fn announce_added(&self, description: &ServiceDescription) -> Result<(), AnnounceError> {
-        let path = file_path_in_directory(
-            description.service_hash.as_str().as_bytes(),
-            &self.services_dir_path,
-        )
-        .map_err(AnnounceError::Path)?;
-
-        if File::does_exist(&path).map_err(AnnounceError::FileExists)? {
-            // Already announced
-            return Ok(());
-        }
-
-        let mut file = FileBuilder::new(&path)
-            .creation_mode(CreationMode::CreateExclusive)
-            .permission(Permission::OWNER_READ_WRITE)
-            .create()
-            .map_err(AnnounceError::FileCreate)?;
-
-        let bytes = postcard::to_allocvec(description).map_err(|_| AnnounceError::Encode)?;
-        file.write(&bytes).map_err(AnnounceError::FileWrite)?;
-
-        Ok(())
+        self.registration.add_service(description)
     }
 
     /// Withdraw a previously-announced service so peers stop discovering it.
     pub fn announce_removed(&self, hash: &ServiceHash) -> Result<(), AnnounceError> {
-        let path = file_path_in_directory(hash.as_str().as_bytes(), &self.services_dir_path)
-            .map_err(AnnounceError::Path)?;
-
-        File::remove(&path).map_err(AnnounceError::FileRemove)?;
-
-        Ok(())
+        self.registration.remove_service(hash)
     }
 
     /// Refresh the known-service set; new and dropped hashes are queued for
     /// the next `pending_discoveries()` drain.
     pub fn discover(&self) {
-        let active_peers = self.discover_peers();
+        let sessions = self.refresh_connections();
         let mut pending = self.pending_discoveries.borrow_mut();
 
         let current = {
@@ -297,8 +199,8 @@ impl Session {
 
             // Mark newly-discovered hashes as added
             let mut current: BTreeSet<ServiceHash> = BTreeSet::new();
-            for peer in &active_peers {
-                for (hash, cfg) in Self::discover_peer_services(&peer.services_dir) {
+            for session in &sessions {
+                for (hash, cfg) in session.services() {
                     if current.insert(hash) && !prev.contains(&hash) {
                         pending.added.push(cfg);
                     }
@@ -329,7 +231,7 @@ impl Session {
 
     /// Send an event id for the given service to all live peers.
     pub fn send_event(&self, service_hash: &ServiceHash, id: u64) -> Result<(), SendError> {
-        self.discover_peers();
+        self.refresh_connections();
         self.broadcast(Kind::Event {
             service_hash: *service_hash,
             id,
@@ -343,7 +245,7 @@ impl Session {
         header: Vec<u8>,
         payload: Vec<u8>,
     ) -> Result<(), SendError> {
-        self.discover_peers();
+        self.refresh_connections();
         self.broadcast(Kind::Sample {
             service_hash: *service_hash,
             header,
@@ -381,8 +283,8 @@ impl Session {
         let mut buf = self.send_buffer.borrow_mut();
         let bytes = serialize_envelope(&envelope, &mut buf)?;
 
-        for peer in self.discovered_peers.borrow().values() {
-            if let Err(UnixDatagramSendError::MessageTooLarge) = peer.sender.try_send(bytes) {
+        for sender in self.connections.borrow().values() {
+            if let Err(UnixDatagramSendError::MessageTooLarge) = sender.try_send(bytes) {
                 return Err(SendError::TooLarge(bytes.len()));
             }
         }
@@ -431,190 +333,35 @@ impl Session {
         }
     }
 
-    /// Refresh the peer table to match what is currently live on disk.
-    fn discover_peers(&self) -> Vec<DiscoveredPeer> {
-        let active = self.discover_active_peers();
-        self.reconcile_peers(&active);
-        active
+    /// Refresh the connections to match the sessions currently alive in the
+    /// registry.
+    fn refresh_connections(&self) -> Vec<RegisteredSession> {
+        let mut sessions = self.registry.sessions();
+        sessions.retain(|session| session.id != self.id);
+        self.reconcile_connections(&sessions);
+        sessions
     }
 
-    /// Return the peers currently alive on disk.
-    fn discover_active_peers(&self) -> Vec<DiscoveredPeer> {
-        let entries = match self.sessions_dir.contents() {
-            Ok(e) => e,
-            Err(_) => return Vec::new(),
-        };
+    /// Align the tracked connections with the given live sessions.
+    fn reconcile_connections(&self, sessions: &[RegisteredSession]) {
+        let mut connections = self.connections.borrow_mut();
 
-        let mut active_peers: Vec<DiscoveredPeer> = Vec::new();
-        for entry in entries {
-            if entry.name().as_bytes() == self.id.as_bytes() {
-                continue;
-            }
-            let mut session_dir_path = self.sessions_dir_path;
-            if add_to_path(&mut session_dir_path, entry.name().as_bytes()).is_err() {
-                continue;
-            }
-
-            match classify_session(&session_dir_path) {
-                SessionState::Alive => {
-                    let mut services_path = session_dir_path;
-                    if add_to_path(&mut services_path, SERVICES_DIR_NAME).is_err() {
-                        continue;
-                    }
-                    let id_str = match core::str::from_utf8(entry.name().as_bytes()) {
-                        Ok(s) => s.to_string(),
-                        Err(_) => continue,
-                    };
-                    let sock_path = match file_path_in_directory(SOCKET_NAME, &session_dir_path) {
-                        Ok(p) => p,
-                        Err(_) => continue,
-                    };
-
-                    active_peers.push(DiscoveredPeer {
-                        session_id: id_str,
-                        services_dir: services_path,
-                        sock_path,
-                    });
-                }
-                SessionState::Stale => {
-                    let _ = Directory::remove(&session_dir_path);
-                }
-                SessionState::Indeterminate => continue,
-            }
-        }
-
-        active_peers
-    }
-
-    /// Align the tracked peer set with the given live peers.
-    fn reconcile_peers(&self, active_peers: &[DiscoveredPeer]) {
-        let mut peers = self.discovered_peers.borrow_mut();
-
-        // Drop peers no longer present.
-        peers.retain(|id, _| {
-            active_peers
+        // Drop connections to peers no longer present.
+        connections.retain(|id, _| {
+            sessions
                 .iter()
-                .any(|p| p.session_id.as_str() == id.as_str())
+                .any(|session| session.id.as_str() == id.as_str())
         });
 
-        // Track new peers.
-        for peer in active_peers {
-            if peers.contains_key(&peer.session_id) {
+        // Connect to new peers.
+        for session in sessions {
+            if connections.contains_key(&session.id) {
                 continue;
             }
-            let sender = match UnixDatagramSenderBuilder::new(&peer.sock_path).create() {
-                Ok(s) => s,
-                Err(_) => continue, // peer may have just exited
+            let Ok(sender) = UnixDatagramSenderBuilder::new(&session.sock_path).create() else {
+                continue; // peer may have just exited
             };
-            peers.insert(peer.session_id.clone(), Peer { sender });
-        }
-    }
-
-    /// Return the services a peer is currently announcing.
-    fn discover_peer_services(
-        services_dir_path: &Path,
-    ) -> BTreeMap<ServiceHash, ServiceDescription> {
-        let mut discovered_services = BTreeMap::new();
-
-        let services_dir = match Directory::new(services_dir_path) {
-            Ok(d) => d,
-            Err(_) => return discovered_services,
-        };
-
-        let entries = match services_dir.contents() {
-            Ok(e) => e,
-            Err(_) => return discovered_services,
-        };
-
-        for entry in entries {
-            let path = match FilePath::from_path_and_file(services_dir_path, entry.name()) {
-                Ok(p) => p,
-                Err(_) => continue,
-            };
-            let file = match FileBuilder::new(&path).open_existing(AccessMode::Read) {
-                Ok(f) => f,
-                Err(_) => continue,
-            };
-            let mut bytes = Vec::new();
-            if file.read_to_vector(&mut bytes).is_err() {
-                continue;
-            }
-            let description: ServiceDescription = match postcard::from_bytes(&bytes) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            discovered_services.insert(description.service_hash, description);
-        }
-
-        discovered_services
-    }
-}
-
-#[derive(Debug)]
-struct SessionCleanup {
-    sessions_dir: Path,
-    session_dir: Path,
-}
-
-impl Drop for SessionCleanup {
-    fn drop(&mut self) {
-        let _ = Directory::remove(&self.session_dir);
-        let _ = Directory::remove_empty(&self.sessions_dir);
-    }
-}
-
-/// Append a name component to a path.
-fn add_to_path(path: &mut Path, name: &[u8]) -> Result<(), SemanticStringError> {
-    let entry = Path::new(name)?;
-    path.add_path_entry(&entry)
-}
-
-/// Build the path of a file inside the given directory.
-fn file_path_in_directory(name: &[u8], dir: &Path) -> Result<FilePath, SemanticStringError> {
-    let file = FileName::new(name)?;
-    FilePath::from_path_and_file(dir, &file)
-}
-
-enum SessionState {
-    Alive,
-    Stale,
-    Indeterminate,
-}
-
-/// Determine whether a session directory belongs to a live process, a
-/// crashed/aborted one, or cannot be classified.
-fn classify_session(session_dir_path: &Path) -> SessionState {
-    let lockfile_path = match file_path_in_directory(LOCKFILE_NAME, session_dir_path) {
-        Ok(p) => p,
-        Err(_) => return SessionState::Indeterminate,
-    };
-    let monitor = match ProcessMonitor::new(&lockfile_path) {
-        Ok(m) => m,
-        Err(_) => return SessionState::Indeterminate,
-    };
-    match monitor.state() {
-        Ok(ProcessState::Alive) | Ok(ProcessState::Starting) => SessionState::Alive,
-        Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) => SessionState::Stale,
-        // If the directory exists without the lockfile, the session is being
-        // initialized.
-        Ok(ProcessState::DoesNotExist) => SessionState::Indeterminate,
-        Err(_) => SessionState::Indeterminate,
-    }
-}
-
-/// Remove every session directory whose owning process is no longer alive.
-fn sweep_stale_sessions(sessions_dir: &Directory, sessions_dir_path: &Path) {
-    let entries = match sessions_dir.contents() {
-        Ok(e) => e,
-        Err(_) => return,
-    };
-    for entry in entries {
-        let mut session_dir_path = *sessions_dir_path;
-        if add_to_path(&mut session_dir_path, entry.name().as_bytes()).is_err() {
-            continue;
-        }
-        if matches!(classify_session(&session_dir_path), SessionState::Stale) {
-            let _ = Directory::remove(&session_dir_path);
+            connections.insert(session.id.clone(), sender);
         }
     }
 }
