@@ -15,22 +15,31 @@ use core::time::Duration;
 use zenoh::Config;
 use zenoh::Wait;
 
+/// Poll interval while waiting for the probe publisher to match.
+const POLL_PERIOD: Duration = Duration::from_millis(10);
+
 pub struct Testing;
 
 impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {
+    /// Waits until the subscriber declarations made by gateways for the given
+    /// service have propagated through the zenoh mesh.
     fn sync(id: String, timeout: Duration) -> bool {
         let start_time = std::time::Instant::now();
 
-        let config = Config::default();
-        let session = zenoh::open(config.clone()).wait().unwrap();
-        let subscriber = session.declare_subscriber(id.clone()).wait().unwrap();
+        let session = zenoh::open(Config::default()).wait().unwrap();
+        let publisher = session
+            .declare_publisher(format!("iox2/*/{id}/**"))
+            .wait()
+            .unwrap();
 
-        while subscriber.sender_count() == 0 {
+        loop {
+            if publisher.matching_status().wait().unwrap().matching() {
+                return true;
+            }
             if start_time.elapsed() >= timeout {
                 return false;
             }
+            std::thread::sleep(POLL_PERIOD);
         }
-
-        true
     }
 }
