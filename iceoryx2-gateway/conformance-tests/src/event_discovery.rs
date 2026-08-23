@@ -48,7 +48,7 @@ pub mod event_discovery {
     pub fn discovers_added_and_removed_services_via_subscriber<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
@@ -85,6 +85,7 @@ pub mod event_discovery {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
         };
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .gateway_config(gateway_config.clone())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
@@ -114,12 +115,13 @@ pub mod event_discovery {
     pub fn discovers_added_and_removed_services_via_tracker<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
             .create()
@@ -153,7 +155,7 @@ pub mod event_discovery {
     pub fn discovers_added_and_removed_services_via_backend<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -163,6 +165,7 @@ pub mod event_discovery {
         // Host A
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -172,6 +175,7 @@ pub mod event_discovery {
         // Host B
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -247,7 +251,7 @@ pub mod event_discovery {
     pub fn aggregates_announcements_from_multiple_hosts<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
         const DISCOVERY_ATTEMPTS: usize = 5;
@@ -258,6 +262,7 @@ pub mod event_discovery {
         // Host A — observer, announces nothing locally.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -266,6 +271,7 @@ pub mod event_discovery {
         // Host B — announces the service.
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -285,6 +291,7 @@ pub mod event_discovery {
         // Host C — announces the same service (same name → same hash).
         let iceoryx_config_c = generate_isolated_config();
         let mut gateway_c = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_c.clone())
             .polled()
             .create()
@@ -349,7 +356,11 @@ pub mod event_discovery {
     }
 
     #[conformance_test]
-    pub fn detects_ungraceful_remote_departure<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn detects_ungraceful_remote_departure<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
@@ -358,6 +369,7 @@ pub mod event_discovery {
         // Host A
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -366,6 +378,7 @@ pub mod event_discovery {
         // Host B
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -418,7 +431,11 @@ pub mod event_discovery {
     }
 
     #[conformance_test]
-    pub fn discovers_pre_existing_remote_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn discovers_pre_existing_remote_services<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP — Host B announces FIRST ===
@@ -426,6 +443,7 @@ pub mod event_discovery {
 
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -449,6 +467,7 @@ pub mod event_discovery {
         // Host A is created after Host B has already announced.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -470,7 +489,11 @@ pub mod event_discovery {
     }
 
     #[conformance_test]
-    pub fn rediscovers_service_after_removal<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn rediscovers_service_after_removal<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
@@ -479,6 +502,7 @@ pub mod event_discovery {
         // Host A — observer.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -487,6 +511,7 @@ pub mod event_discovery {
         // Host B — announces, removes, re-announces the same service.
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -561,7 +586,11 @@ pub mod event_discovery {
     }
 
     #[conformance_test]
-    pub fn ignores_duplicate_added_events<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn ignores_duplicate_added_events<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -594,6 +623,7 @@ pub mod event_discovery {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
         };
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .gateway_config(gateway_config.clone())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
@@ -618,7 +648,7 @@ pub mod event_discovery {
     pub fn lifecycle_with_local_service_on_one_host<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -628,6 +658,7 @@ pub mod event_discovery {
         // Host A — no local user; mirrors Host B's service in via the backend.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -636,6 +667,7 @@ pub mod event_discovery {
         // Host B — will own the service.
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -708,7 +740,7 @@ pub mod event_discovery {
     pub fn lifecycle_with_local_service_on_two_hosts<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -718,6 +750,7 @@ pub mod event_discovery {
         // Host A — will own the service first.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -727,6 +760,7 @@ pub mod event_discovery {
         // offerer appears
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -812,7 +846,11 @@ pub mod event_discovery {
     }
 
     #[conformance_test]
-    pub fn no_allowlist_forwards_all_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn no_allowlist_forwards_all_services<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let name_a = generate_service_name();
@@ -833,6 +871,7 @@ pub mod event_discovery {
             .unwrap();
 
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
             .create()

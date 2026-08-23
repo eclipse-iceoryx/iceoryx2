@@ -21,12 +21,28 @@ const POLL_PERIOD: Duration = Duration::from_millis(10);
 pub struct Testing;
 
 impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {
+    type BackendConfig = Config;
+
+    /// Non-default config that disables waiting for scouted peers on
+    /// session initializaiton.
+    ///
+    /// The sync() method below takes care of waiting when required.
+    fn backend_config() -> Config {
+        let mut config = Config::default();
+        config
+            .open
+            .return_conditions
+            .set_connect_scouted(Some(false))
+            .expect("failed to set connect_scouted");
+        config
+    }
+
     /// Waits until the subscriber declarations made by gateways for the given
     /// service have propagated through the zenoh mesh.
     fn sync(id: String, timeout: Duration) -> bool {
         let start_time = std::time::Instant::now();
 
-        let session = zenoh::open(Config::default()).wait().unwrap();
+        let session = zenoh::open(Self::backend_config()).wait().unwrap();
         let publisher = session
             .declare_publisher(format!("iox2/*/{id}/**"))
             .wait()

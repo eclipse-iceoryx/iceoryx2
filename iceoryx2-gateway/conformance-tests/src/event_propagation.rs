@@ -30,7 +30,13 @@ pub mod event_propagation {
     use iceoryx2_gateway::Gateway;
     use iceoryx2_gateway_backend::traits::{Backend, testing::Testing};
 
-    fn propagate_events<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
+    fn propagate_events<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >(
+        num: usize,
+    ) {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
@@ -40,6 +46,7 @@ pub mod event_propagation {
         let iceoryx_config_a = generate_isolated_config();
 
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -64,6 +71,7 @@ pub mod event_propagation {
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -120,17 +128,29 @@ pub mod event_propagation {
     }
 
     #[conformance_test]
-    pub fn propagates_event<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagates_event<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         propagate_events::<S, B, T>(1);
     }
 
     #[conformance_test]
-    pub fn propagates_event_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagates_event_many<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         propagate_events::<S, B, T>(10);
     }
 
     #[conformance_test]
-    pub fn propagated_events_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagated_events_do_not_loop_back<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
@@ -140,6 +160,7 @@ pub mod event_propagation {
         let iceoryx_config_a = generate_isolated_config();
 
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -166,6 +187,7 @@ pub mod event_propagation {
         let iceoryx_config_b = generate_isolated_config();
 
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -240,7 +262,11 @@ pub mod event_propagation {
 
     // TODO: Fix flaky
     #[conformance_test]
-    pub fn multiple_events_are_consolidated_by_id<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn multiple_events_are_consolidated_by_id<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
@@ -250,6 +276,7 @@ pub mod event_propagation {
         let iceoryx_config_a = generate_isolated_config();
 
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -275,6 +302,7 @@ pub mod event_propagation {
         let iceoryx_config_b = generate_isolated_config();
 
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -364,7 +392,11 @@ pub mod event_propagation {
     }
 
     #[conformance_test]
-    pub fn events_are_routed_to_their_own_service<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn events_are_routed_to_their_own_service<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
@@ -374,6 +406,7 @@ pub mod event_propagation {
         // --- Host A: two services, one notifier each ---
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -406,6 +439,7 @@ pub mod event_propagation {
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()

@@ -19,6 +19,14 @@ use alloc::{format, string::String};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 
 pub trait Testing {
+    /// Configuration type of the backend under test.
+    type BackendConfig: Default;
+
+    /// Backend configuration the conformance tests create gateways with.
+    fn backend_config() -> Self::BackendConfig {
+        Self::BackendConfig::default()
+    }
+
     fn sync(_id: String, _timeout: Duration) -> bool {
         true
     }
