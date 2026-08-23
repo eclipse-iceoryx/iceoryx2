@@ -256,13 +256,10 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         let snapshot = self.discovery_state.snapshot();
 
         // Drop services no longer offered by any side.
-        self.bridges.retain(|hash, established| {
-            let keep = snapshot.contains(hash);
-            if !keep && established {
-                info!(from log_origin, "Closing bridge: {}", hash.as_str());
-            }
-            keep
-        });
+        self.bridges.retain(
+            |hash| snapshot.contains(hash),
+            |hash| info!(from log_origin, "Closing bridge: {}", hash.as_str()),
+        );
 
         // Open bridges for newly-offered services.
         for (hash, description) in snapshot.iter() {
@@ -289,7 +286,7 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         #[cfg(debug_assertions)]
         {
             let snapshot = self.discovery_state.snapshot();
-            let same_count = self.bridges.len() == snapshot.iter().count();
+            let same_count = self.bridges.number_of_tracked_services() == snapshot.iter().count();
             let all_services_tracked = snapshot.iter().all(|(hash, _)| self.bridges.contains(hash));
 
             debug_assert!(

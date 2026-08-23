@@ -30,40 +30,15 @@ use crate::gateway::{DiscoveryError, PropagateError};
 use crate::ports::event::EventPorts;
 use crate::ports::publish_subscribe::PublishSubscribePorts;
 
-/// Describes the outcome of opening up a bridge for a service.
-///
-/// Failed attempts are additionally tracked to prevent constantly retrying
-/// to create a bridge that causes an error.
-#[derive(Debug)]
-#[allow(clippy::large_enum_variant)]
-enum BridgeState<T> {
-    /// The bridge is established and relaying between both sides.
-    Established(T),
-    /// The bridge could not be established. No reattemtps to reestablish
-    /// unless the service is reinstantiated.
-    Failed,
-}
-
-impl<T> BridgeState<T> {
-    // Returns the established bridge or None if there was a failure.
-    fn established(&self) -> Option<&T> {
-        match self {
-            BridgeState::Established(bridge) => Some(bridge),
-            BridgeState::Failed => None,
-        }
-    }
-
-    fn is_established(&self) -> bool {
-        self.established().is_some()
-    }
-}
-
-/// All bridges opened by the gateway, stored per messaging pattern so that
-/// propagation can process each pattern's bridges without filtering.
+/// All bridges opened by the gateway.
 #[derive(Debug)]
 pub(crate) struct Bridges<S: Service, B: Backend<S>> {
-    publish_subscribe: BTreeMap<ServiceHash, BridgeState<PublishSubscribeBridge<S, B>>>,
-    event: BTreeMap<ServiceHash, BridgeState<EventBridge<S, B>>>,
+    publish_subscribe: BTreeMap<ServiceHash, PublishSubscribeBridge<S, B>>,
+    event: BTreeMap<ServiceHash, EventBridge<S, B>>,
+    /// Services whose bridge could not be established. Remembered so that
+    /// subsequent discovery calls do not retry until the service is
+    /// reinstantiated.
+    failed: BTreeSet<ServiceHash>,
 }
 
 impl<S: Service, B: Backend<S>> Default for Bridges<S, B> {
@@ -71,109 +46,109 @@ impl<S: Service, B: Backend<S>> Default for Bridges<S, B> {
         Self {
             publish_subscribe: BTreeMap::new(),
             event: BTreeMap::new(),
+            failed: BTreeSet::new(),
         }
     }
 }
 
 impl<S: Service, B: Backend<S>> Bridges<S, B> {
     /// Opens the ports and relay matching the messaging pattern of
-    /// `description` and records the outcome, including failures.
+    /// `description`.
     pub(crate) fn open(&mut self, node: &Node<S>, backend: &B, description: &ServiceDescription) {
         let hash = description.service_hash;
         match &description.pattern {
             PatternDescription::PublishSubscribe(pattern_description) => {
-                let state = into_state(
-                    PublishSubscribeBridge::open(node, backend, description, pattern_description),
-                    description,
-                );
-                self.publish_subscribe.insert(hash, state);
+                match PublishSubscribeBridge::open(node, backend, description, pattern_description)
+                {
+                    Ok(bridge) => {
+                        self.publish_subscribe.insert(hash, bridge);
+                    }
+                    Err(error) => self.record_failure(description, error),
+                }
             }
             PatternDescription::Event(pattern_description) => {
-                let state = into_state(
-                    EventBridge::open(node, backend, description, pattern_description),
-                    description,
-                );
-                self.event.insert(hash, state);
+                match EventBridge::open(node, backend, description, pattern_description) {
+                    Ok(bridge) => {
+                        self.event.insert(hash, bridge);
+                    }
+                    Err(error) => self.record_failure(description, error),
+                }
             }
         }
     }
 
-    /// Whether a bridge for the service is tracked, established or failed.
+    /// Whether a bridge for the service is tracked: established or failed.
     pub(crate) fn contains(&self, hash: &ServiceHash) -> bool {
-        self.publish_subscribe.contains_key(hash) || self.event.contains_key(hash)
+        self.publish_subscribe.contains_key(hash)
+            || self.event.contains_key(hash)
+            || self.failed.contains(hash)
     }
 
     /// Number of tracked bridges, established or failed.
-    pub(crate) fn len(&self) -> usize {
-        self.publish_subscribe.len() + self.event.len()
+    #[cfg(debug_assertions)]
+    pub(crate) fn number_of_tracked_services(&self) -> usize {
+        self.publish_subscribe.len() + self.event.len() + self.failed.len()
     }
 
-    /// Retains only the bridges for which `keep` returns true. The closure
-    /// additionally receives whether the bridge is established.
-    pub(crate) fn retain(&mut self, mut keep: impl FnMut(&ServiceHash, bool) -> bool) {
-        self.publish_subscribe
-            .retain(|hash, state| keep(hash, state.is_established()));
-        self.event
-            .retain(|hash, state| keep(hash, state.is_established()));
+    /// Retains only the bridges for which `keep` returns true. `on_close` is
+    /// invoked for every established bridge that is dropped.
+    pub(crate) fn retain(
+        &mut self,
+        mut keep: impl FnMut(&ServiceHash) -> bool,
+        mut on_close: impl FnMut(&ServiceHash),
+    ) {
+        let mut keep_or_close = |hash: &ServiceHash| {
+            let keep = keep(hash);
+            if !keep {
+                on_close(hash);
+            }
+            keep
+        };
+
+        self.publish_subscribe.retain(|hash, _| keep_or_close(hash));
+        self.event.retain(|hash, _| keep_or_close(hash));
+        self.failed.retain(|hash| keep(hash));
     }
 
     /// The hashes of all established bridges.
     pub(crate) fn established(&self) -> BTreeSet<ServiceHash> {
-        established_hashes(&self.publish_subscribe)
-            .chain(established_hashes(&self.event))
+        self.publish_subscribe
+            .keys()
+            .chain(self.event.keys())
+            .copied()
             .collect()
     }
 
     /// Propagates payloads/events in both directions for all established
     /// bridges. Payload-carrying patterns propagate before events.
     ///
-    /// The exhaustive destructuring forces a newly added messaging pattern to
-    /// be given a position in the propagation order.
     // TODO(#1103): Retain ordering across the wire
     pub(crate) fn propagate(&self, node_id: &UniqueNodeId) -> Result<(), PropagateError> {
         let Bridges {
             publish_subscribe,
             event,
+            failed: _,
         } = self;
 
-        for bridge in publish_subscribe
-            .values()
-            .filter_map(BridgeState::established)
-        {
+        for bridge in publish_subscribe.values() {
             bridge.propagate(node_id)?;
         }
-        for bridge in event.values().filter_map(BridgeState::established) {
+        for bridge in event.values() {
             bridge.propagate(node_id)?;
         }
 
         Ok(())
     }
-}
 
-fn established_hashes<T>(
-    map: &BTreeMap<ServiceHash, BridgeState<T>>,
-) -> impl Iterator<Item = ServiceHash> + '_ {
-    map.iter()
-        .filter(|(_, state)| state.is_established())
-        .map(|(hash, _)| *hash)
-}
-
-fn into_state<T>(
-    result: Result<T, DiscoveryError>,
-    description: &ServiceDescription,
-) -> BridgeState<T> {
-    match result {
-        Ok(bridge) => BridgeState::Established(bridge),
-        Err(error) => {
-            warn!(
-                from "Bridges::open",
-                "{}({}) will not be bridged: {}",
-                description.pattern,
-                description.name,
-                error
-            );
-            BridgeState::Failed
-        }
+    fn record_failure(&mut self, description: &ServiceDescription, error: DiscoveryError) {
+        warn!(
+            from "Bridges::open",
+            "{}({}) will not be bridged: {}",
+            description.pattern,
+            description.name,
+            error
+        );
+        self.failed.insert(description.service_hash);
     }
 }
 
