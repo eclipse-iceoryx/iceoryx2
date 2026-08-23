@@ -134,21 +134,10 @@ impl<'a> Snapshot<'a> {
 /// services within a single epoch.
 pub(crate) struct DeltaUpdate<'a> {
     offered_services: &'a mut OfferedServices,
-    origin: Origin,
     epoch: u64,
 }
 
 impl DeltaUpdate<'_> {
-    /// The side these updates apply to.
-    pub(crate) fn origin(&self) -> Origin {
-        self.origin
-    }
-
-    /// Whether the side currently offers `hash`.
-    pub(crate) fn is_offered(&self, hash: &ServiceHash) -> bool {
-        self.offered_services.contains(hash)
-    }
-
     /// Records `description` as offered, stamped with this handle's epoch.
     pub(crate) fn set_offered(&mut self, description: ServiceDescription) {
         self.offered_services.insert(description, self.epoch);
@@ -180,7 +169,6 @@ impl DiscoveryState {
 
         DeltaUpdate {
             offered_services,
-            origin,
             epoch,
         }
     }
@@ -197,6 +185,26 @@ impl DiscoveryState {
         match origin {
             Origin::Local => self.local.reconcile(target, on_added, on_removed),
             Origin::Remote => self.remote.reconcile(target, on_added, on_removed),
+        }
+    }
+
+    /// Whether `origin`'s side currently offers `hash`.
+    pub(crate) fn is_offered(&self, origin: Origin, hash: &ServiceHash) -> bool {
+        self.side(origin).contains(hash)
+    }
+
+    /// The services offered by `origin`'s side.
+    pub(crate) fn services(
+        &self,
+        origin: Origin,
+    ) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription)> {
+        self.side(origin).iter()
+    }
+
+    fn side(&self, origin: Origin) -> &OfferedServices {
+        match origin {
+            Origin::Local => &self.local,
+            Origin::Remote => &self.remote,
         }
     }
 

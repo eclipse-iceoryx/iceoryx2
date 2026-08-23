@@ -77,11 +77,20 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         }
     }
 
-    /// Whether a bridge for the service is tracked: established or failed.
+    /// Whether a bridge for the specified service is tracked, both established
+    /// or failed.
     pub(crate) fn contains(&self, hash: &ServiceHash) -> bool {
-        self.publish_subscribe.contains_key(hash)
-            || self.event.contains_key(hash)
-            || self.failed.contains(hash)
+        self.is_established(hash) || self.is_failed(hash)
+    }
+
+    /// Whether an established bridge for the service exists.
+    pub(crate) fn is_established(&self, hash: &ServiceHash) -> bool {
+        self.publish_subscribe.contains_key(hash) || self.event.contains_key(hash)
+    }
+
+    /// Whether the bridge has failed to be established for the service.
+    pub(crate) fn is_failed(&self, hash: &ServiceHash) -> bool {
+        self.failed.contains(hash)
     }
 
     /// Number of tracked bridges, established or failed.
