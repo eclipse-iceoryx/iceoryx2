@@ -91,6 +91,7 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-posix-tests-common                  \
     iceoryx2-bb-posix-tests-nostd                   \
     iceoryx2-bb-flatbuffers-tests-common            \
+    iceoryx2-bb-flatbuffers-tests-nostd             \
     iceoryx2-cal-conformance-tests-common           \
     iceoryx2-cal-conformance-tests-nostd            \
     iceoryx2-cal-tests-common                       \

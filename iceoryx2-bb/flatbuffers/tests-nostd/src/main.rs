@@ -21,7 +21,7 @@ use core::{
     ptr::NonNull,
 };
 
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, Deallocate};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 
 #[derive(Debug)]
@@ -36,7 +36,7 @@ impl GlobalHeapAllocator {
 unsafe impl GlobalAlloc for GlobalHeapAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         match self.0.allocate(layout) {
-            Ok(ptr) => ptr.as_ptr() as *mut u8,
+            Ok(ptr) => ptr.as_ptr(),
             Err(_) => core::ptr::null_mut(),
         }
     }
