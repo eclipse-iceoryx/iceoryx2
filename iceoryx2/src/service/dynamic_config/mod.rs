@@ -212,8 +212,8 @@ impl<B: BagFamily> DynamicConfig<B> {
         match unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) } {
             Ok(ReleaseState::Locked) => Ok(DeregisterNodeState::NoMoreOwners),
             Ok(ReleaseState::Unlocked) => Ok(DeregisterNodeState::HasOwners),
-            Err(BagRemoveError::ContainerHandleNotOwnedByContainer) => {
-                fail!(from self, with BagRemoveError::ContainerHandleNotOwnedByContainer,
+            Err(BagRemoveError::HandleNotOwnedByInstance) => {
+                fail!(from self, with BagRemoveError::HandleNotOwnedByInstance,
                     "Unable to deregister the node since it was not registered.");
             }
         }
