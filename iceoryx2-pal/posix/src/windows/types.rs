@@ -53,7 +53,7 @@ pub type size_t = usize;
 pub type socklen_t = u32;
 pub type ssize_t = isize;
 pub type suseconds_t = u64;
-pub type time_t = crate::internal::time_t;
+pub type time_t = libc::time_t;
 pub type uchar = core::ffi::c_uchar;
 pub type uid_t = u32;
 pub type uint = u32;
@@ -215,7 +215,7 @@ pub struct stat_t {
 }
 impl MemZeroedStruct for stat_t {}
 
-pub type timespec = crate::internal::timespec;
+pub type timespec = libc::timespec;
 impl MemZeroedStruct for timespec {}
 
 pub type timeval = TIMEVAL;

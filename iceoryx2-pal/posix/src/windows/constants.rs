@@ -100,9 +100,9 @@ pub const SCHED_OTHER: int = 1;
 pub const SCHED_FIFO: int = 2;
 pub const SCHED_RR: int = 4;
 
-pub const SEEK_SET: int = crate::internal::SEEK_SET as _;
-pub const SEEK_CUR: int = crate::internal::SEEK_CUR as _;
-pub const SEEK_END: int = crate::internal::SEEK_END as _;
+pub const SEEK_SET: int = libc::SEEK_SET as _;
+pub const SEEK_CUR: int = libc::SEEK_CUR as _;
+pub const SEEK_END: int = libc::SEEK_END as _;
 
 pub const SEM_FAILED: *mut sem_t = core::ptr::null_mut::<sem_t>();
 
