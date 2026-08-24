@@ -139,7 +139,7 @@ ErrnoEnumGenerator!(
 
 impl Errno {
     pub fn get() -> Errno {
-        unsafe { *crate::internal::__error() }.into()
+        unsafe { *libc::__error() }.into()
     }
 
     pub fn set(value: Errno) {
@@ -147,7 +147,7 @@ impl Errno {
     }
 
     pub fn reset() {
-        unsafe { *crate::internal::__error() = 0 };
+        unsafe { *libc::__error() = 0 };
     }
 }
 
@@ -174,7 +174,7 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    unsafe { crate::internal::strerror(errnum) }
+    unsafe { libc::strerror(errnum) }
 }
 
 mod internal {

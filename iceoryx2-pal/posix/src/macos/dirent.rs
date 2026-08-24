@@ -20,15 +20,15 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
 }
 
 pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
-    unsafe { crate::internal::mkdir(pathname, mode) }
+    unsafe { libc::mkdir(pathname, mode) }
 }
 
 pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
-    unsafe { crate::internal::opendir(dirname) }
+    unsafe { libc::opendir(dirname) }
 }
 
 pub unsafe fn closedir(dirp: *mut DIR) -> int {
-    unsafe { crate::internal::closedir(dirp) }
+    unsafe { libc::closedir(dirp) }
 }
 
 pub unsafe fn dirfd(dirp: *mut DIR) -> int {
@@ -36,7 +36,7 @@ pub unsafe fn dirfd(dirp: *mut DIR) -> int {
 }
 
 pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
-    unsafe { crate::internal::readdir_r(dirp, entry, result) }
+    unsafe { libc::readdir_r(dirp, entry, result) }
 }
 
 pub fn dirent_size() -> usize {

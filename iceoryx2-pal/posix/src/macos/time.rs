@@ -18,11 +18,11 @@ use crate::posix::MemZeroedStruct;
 use crate::posix::types::*;
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
-    unsafe { crate::internal::clock_gettime(clock_id, tp) }
+    unsafe { libc::clock_gettime(clock_id, tp) }
 }
 
 pub unsafe fn clock_settime(clock_id: clockid_t, tp: *const timespec) -> int {
-    unsafe { crate::internal::clock_settime(clock_id, tp) }
+    unsafe { libc::clock_settime(clock_id, tp) }
 }
 
 pub unsafe fn clock_nanosleep(
@@ -56,7 +56,7 @@ pub unsafe fn clock_nanosleep(
             }
         };
 
-        if crate::internal::nanosleep(&wait_time, rmtp) == 0 {
+        if libc::nanosleep(&wait_time, rmtp) == 0 {
             0
         } else {
             Errno::get() as _
