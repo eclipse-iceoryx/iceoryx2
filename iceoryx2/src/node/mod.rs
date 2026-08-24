@@ -945,6 +945,7 @@ struct SharedNodeState<Service: service::Service> {
     registered_services: RegisteredServices,
     signal_handling_mode: SignalHandlingMode,
     details_storage: Service::StaticStorage,
+    management_segment: GlobalManagementSegment<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
@@ -1549,34 +1550,23 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
+        let msg = "Unable to create node";
+
         let config = self
             .config
             .as_ref()
             .unwrap_or_else(|| Config::global_config());
-        let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config) {
-            Ok(mgmt) => mgmt.increment_node_counter(),
+
+        let mgmt = match GlobalManagementSegment::<Service>::open_or_create(config) {
+            Ok(mgmt) => mgmt,
             Err(e) => {
                 fail!(from "NodeBuilder::create()",
                     with NodeCreationFailure::InternalError,
-                    "Unable to create node since the global management segment could not be opened. [{e:?}]");
+                    "Unable to create node since the global management segment could not be opened. {e:?}");
             }
         };
+        let node_id = UniqueNodeId::new::<Service>(mgmt.increment_node_counter());
 
-        unsafe {
-            self.__internal_create_with_custom_node_id(UniqueNodeId::new::<Service>(node_counter))
-        }
-    }
-
-    #[doc(hidden)]
-    pub unsafe fn __internal_create_with_custom_node_id<Service: service::Service>(
-        self,
-        node_id: UniqueNodeId,
-    ) -> Result<Node<Service>, NodeCreationFailure> {
-        let config = self
-            .config
-            .as_ref()
-            .unwrap_or_else(|| Config::global_config());
-        let msg = "Unable to create node";
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let (details_storage, details) =
@@ -1590,6 +1580,7 @@ impl NodeBuilder {
             details_storage,
             signal_handling_mode: self.signal_handling_mode,
             details,
+            management_segment: mgmt,
         });
 
         if config.global.node.cleanup_dead_nodes_on_creation {
