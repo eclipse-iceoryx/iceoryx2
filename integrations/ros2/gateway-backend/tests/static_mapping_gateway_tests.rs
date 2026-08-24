@@ -14,7 +14,7 @@ mod common;
 
 use core::time::Duration;
 
-use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, service_name};
+use common::{DISCOVERY_TIMEOUT, service_name};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service as _;
@@ -97,8 +97,7 @@ fn maps_iceoryx_services_onto_ros_topics() {
                 .then_some(())
                 .ok_or("mapped topic not yet on the ROS 2 graph")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("mapped topic did not appear on the ROS 2 graph");
 }
@@ -161,8 +160,7 @@ fn does_not_map_iceoryx_services_without_an_entry() {
                 .then_some(())
                 .ok_or("chatter topic not yet on the ROS 2 graph")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("chatter topic did not appear");
 
@@ -217,8 +215,7 @@ fn maps_ros_topics_onto_iceoryx_services() {
                 .then_some(())
                 .ok_or("local service not yet created")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("local service for the ROS 2 topic did not appear");
 
@@ -299,8 +296,7 @@ fn applies_specified_qos_to_ros_endpoints() {
             .then_some(())
             .ok_or("gateway endpoints not yet on the ROS 2 graph")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("gateway endpoints did not appear on the ROS 2 graph");
 
@@ -372,8 +368,7 @@ fn applies_specified_settings_to_iceoryx_services() {
                 .then_some(())
                 .ok_or("local service not yet created")
         },
-        DISCOVERY_RETRY_PERIOD,
-        Some(DISCOVERY_RETRY_ATTEMPTS),
+        DISCOVERY_TIMEOUT,
     )
     .expect("local service for the ROS 2 topic did not appear");
 

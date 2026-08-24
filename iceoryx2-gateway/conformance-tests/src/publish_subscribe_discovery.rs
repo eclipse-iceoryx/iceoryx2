@@ -37,7 +37,7 @@ pub mod publish_subscribe_discovery {
     pub fn discovers_added_and_removed_services_via_subscriber<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
@@ -76,6 +76,7 @@ pub mod publish_subscribe_discovery {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
         };
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .gateway_config(gateway_config.clone())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
@@ -105,12 +106,13 @@ pub mod publish_subscribe_discovery {
     pub fn discovers_added_and_removed_services_via_tracker<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
             .create()
@@ -146,10 +148,9 @@ pub mod publish_subscribe_discovery {
     pub fn discovers_added_and_removed_services_via_backend<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -157,6 +158,7 @@ pub mod publish_subscribe_discovery {
         // Host A
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -166,6 +168,7 @@ pub mod publish_subscribe_discovery {
         // Host B
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -207,8 +210,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to discover remote services")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -232,8 +234,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to detect remote service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -245,10 +246,10 @@ pub mod publish_subscribe_discovery {
     pub fn aggregates_announcements_from_multiple_hosts<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
+        const DISCOVERY_ATTEMPTS: usize = 5;
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -256,6 +257,7 @@ pub mod publish_subscribe_discovery {
         // Host A — observer, announces nothing locally.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -264,6 +266,7 @@ pub mod publish_subscribe_discovery {
         // Host B — announces the service.
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -285,6 +288,7 @@ pub mod publish_subscribe_discovery {
         // Host C — announces the same service (same name → same hash).
         let iceoryx_config_c = generate_isolated_config();
         let mut gateway_c = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_c.clone())
             .polled()
             .create()
@@ -315,8 +319,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
         assert_that!(gateway_a.bridged_services().len(), eq 1);
@@ -327,7 +330,7 @@ pub mod publish_subscribe_discovery {
         assert_that!(gateway_b.bridged_services().len(), eq 0);
 
         // Host A keeps the service since one remote still offering service
-        for _ in 0..MAX_RETRIES {
+        for _ in 0..DISCOVERY_ATTEMPTS {
             gateway_a.discover_over_backend().unwrap();
         }
         assert_that!(gateway_a.bridged_services().contains(&service_hash), eq true);
@@ -346,16 +349,18 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to detect remote service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
 
     #[conformance_test]
-    pub fn detects_ungraceful_remote_departure<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(500);
-        const MAX_RETRIES: usize = 20;
+    pub fn detects_ungraceful_remote_departure<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -363,6 +368,7 @@ pub mod publish_subscribe_discovery {
         // Host A
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -371,6 +377,7 @@ pub mod publish_subscribe_discovery {
         // Host B
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -400,8 +407,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -420,22 +426,25 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to detect ungraceful remote departure")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
 
     #[conformance_test]
-    pub fn discovers_pre_existing_remote_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+    pub fn discovers_pre_existing_remote_services<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP — Host B announces FIRST ===
         let service_name = generate_service_name();
 
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -461,6 +470,7 @@ pub mod publish_subscribe_discovery {
         // Host A is created after Host B has already announced.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -474,8 +484,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to discover pre-existing remote service via history replay")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -483,9 +492,12 @@ pub mod publish_subscribe_discovery {
     }
 
     #[conformance_test]
-    pub fn rediscovers_service_after_removal<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+    pub fn rediscovers_service_after_removal<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -493,6 +505,7 @@ pub mod publish_subscribe_discovery {
         // Host A — observer.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -501,6 +514,7 @@ pub mod publish_subscribe_discovery {
         // Host B — announces, removes, re-announces the same service.
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -530,8 +544,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -548,8 +561,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to detect remote service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -575,14 +587,17 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to rediscover service after removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
 
     #[conformance_test]
-    pub fn ignores_duplicate_added_events<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn ignores_duplicate_added_events<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -618,6 +633,7 @@ pub mod publish_subscribe_discovery {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
         };
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .gateway_config(gateway_config.clone())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
@@ -642,10 +658,9 @@ pub mod publish_subscribe_discovery {
     pub fn lifecycle_with_local_service_on_one_host<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -653,6 +668,7 @@ pub mod publish_subscribe_discovery {
         // Host A — no local user; mirrors Host B's service in via the backend.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -661,6 +677,7 @@ pub mod publish_subscribe_discovery {
         // Host B — will own the service.
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -690,8 +707,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to discover remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -714,8 +730,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to detect local service removal")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -728,8 +743,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to tear down mirrored service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
@@ -738,10 +752,9 @@ pub mod publish_subscribe_discovery {
     pub fn lifecycle_with_local_service_on_two_hosts<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -749,6 +762,7 @@ pub mod publish_subscribe_discovery {
         // Host A — will own the service first.
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -758,6 +772,7 @@ pub mod publish_subscribe_discovery {
         // offerer appears
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -790,8 +805,7 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to mirror remote service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
 
@@ -842,14 +856,17 @@ pub mod publish_subscribe_discovery {
                 }
                 Err("Failed to tear down service")
             },
-            TIME_BETWEEN_RETRIES,
-            Some(MAX_RETRIES),
+            TIMEOUT,
         )
         .unwrap();
     }
 
     #[conformance_test]
-    pub fn no_allowlist_forwards_all_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn no_allowlist_forwards_all_services<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let name_a = generate_service_name();
@@ -874,6 +891,7 @@ pub mod publish_subscribe_discovery {
             .unwrap();
 
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
             .create()

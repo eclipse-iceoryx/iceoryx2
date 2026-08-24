@@ -14,8 +14,7 @@ use core::time::Duration;
 
 use iceoryx2::prelude::*;
 
-pub const DISCOVERY_RETRY_PERIOD: Duration = Duration::from_millis(50);
-pub const DISCOVERY_RETRY_ATTEMPTS: usize = 200;
+pub const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub fn service_name(name: &str) -> ServiceName {
     name.try_into().expect("valid service name")

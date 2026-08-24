@@ -45,9 +45,14 @@ pub mod publish_subscribe_propagation {
         active: bool,
     }
 
-    fn propagate_struct_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
-        const MAX_ATTEMPTS: usize = 25;
-        const TIMEOUT: Duration = Duration::from_millis(250);
+    fn propagate_struct_payloads<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >(
+        num: usize,
+    ) {
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name = generate_service_name();
@@ -55,6 +60,7 @@ pub mod publish_subscribe_propagation {
         // --- Host A ---
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -79,6 +85,7 @@ pub mod publish_subscribe_propagation {
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -95,7 +102,6 @@ pub mod publish_subscribe_propagation {
                 Err("No services discovered")
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
@@ -159,15 +165,19 @@ pub mod publish_subscribe_propagation {
                     }
                 },
                 TIMEOUT,
-                Some(MAX_ATTEMPTS),
             )
             .unwrap_or_else(|e| panic!("Failed to propagate over gateway:\n{}", e));
         }
     }
 
-    fn propagate_slice_payloads<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
-        const MAX_ATTEMPTS: usize = 25;
-        const TIMEOUT: Duration = Duration::from_millis(250);
+    fn propagate_slice_payloads<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >(
+        num: usize,
+    ) {
+        const TIMEOUT: Duration = Duration::from_secs(10);
         const PAYLOAD_DATA_LENGTH: usize = 256;
 
         // === SETUP ===
@@ -176,6 +186,7 @@ pub mod publish_subscribe_propagation {
         // --- Host A ---
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -204,6 +215,7 @@ pub mod publish_subscribe_propagation {
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -220,7 +232,6 @@ pub mod publish_subscribe_propagation {
                 Err("No services discovered")
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
@@ -285,29 +296,44 @@ pub mod publish_subscribe_propagation {
                     }
                 },
                 TIMEOUT,
-                Some(MAX_ATTEMPTS),
             )
             .unwrap_or_else(|e| panic!("Failed to propagate over gateway:\n{}", e));
         }
     }
 
     #[conformance_test]
-    pub fn propagates_struct_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagates_struct_payload<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         propagate_struct_payloads::<S, B, T>(1);
     }
 
     #[conformance_test]
-    pub fn propagates_struct_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagates_struct_payload_many<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         propagate_struct_payloads::<S, B, T>(10);
     }
 
     #[conformance_test]
-    pub fn propagates_slice_payload<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagates_slice_payload<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         propagate_slice_payloads::<S, B, T>(1);
     }
 
     #[conformance_test]
-    pub fn propagates_slice_payload_many<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagates_slice_payload_many<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         propagate_slice_payloads::<S, B, T>(10);
     }
 
@@ -315,10 +341,9 @@ pub mod publish_subscribe_propagation {
     pub fn samples_are_routed_to_their_own_service<
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
     >() {
-        const MAX_ATTEMPTS: usize = 25;
-        const TIMEOUT: Duration = Duration::from_millis(250);
+        const TIMEOUT: Duration = Duration::from_secs(10);
 
         // === SETUP ===
         let service_name_1 = generate_service_name();
@@ -327,6 +352,7 @@ pub mod publish_subscribe_propagation {
         // --- Host A: two services, one publisher each ---
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -361,6 +387,7 @@ pub mod publish_subscribe_propagation {
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
         let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .polled()
             .create()
@@ -376,7 +403,6 @@ pub mod publish_subscribe_propagation {
                 Err("Both services not yet discovered")
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
 
@@ -471,14 +497,17 @@ pub mod publish_subscribe_propagation {
                     }
                 },
                 TIMEOUT,
-                Some(MAX_ATTEMPTS),
             )
             .unwrap_or_else(|e| panic!("{} failed: {}", label, e));
         }
     }
 
     #[conformance_test]
-    pub fn propagated_payloads_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn propagated_payloads_do_not_loop_back<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // === SETUP ===
@@ -486,6 +515,7 @@ pub mod publish_subscribe_propagation {
 
         let iceoryx_config = generate_isolated_config();
         let mut gateway = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config.clone())
             .polled()
             .create()

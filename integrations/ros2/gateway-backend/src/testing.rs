@@ -92,7 +92,9 @@ impl TestPeer {
 /// use in conformance tests which have no information about the gateway implementation.
 pub struct Testing;
 
-impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {}
+impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {
+    type BackendConfig = crate::config::Config;
+}
 
 /// Takes the next message on `subscription` as its serialized bytes, or
 /// [`None`] when the queue is empty.

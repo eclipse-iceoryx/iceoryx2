@@ -27,8 +27,7 @@ pub mod reactive {
     use iceoryx2_gateway::Gateway;
     use iceoryx2_gateway_backend::traits::{Backend, ReactiveBackendBuilder, testing::Testing};
 
-    const TIMEOUT: Duration = Duration::from_millis(250);
-    const MAX_ATTEMPTS: usize = 25;
+    const TIMEOUT: Duration = Duration::from_secs(10);
 
     // Two hosts: A is a polled gateway that publishes; B is a reactive gateway
     // whose wake listener must fire when A's data arrives over the backend.
@@ -37,7 +36,7 @@ pub mod reactive {
     where
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
         W: Service,
         for<'b> B::Builder<'b>: ReactiveBackendBuilder<S, WakeService = W>,
     {
@@ -46,6 +45,7 @@ pub mod reactive {
         // === Host A: polled gateway + publisher ===
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -68,6 +68,7 @@ pub mod reactive {
         // === Host B: reactive gateway — wake listener is what we're testing ===
         let iceoryx_config_b = generate_isolated_config();
         let (mut gateway_b, wake_listener) = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .reactive()
             .create::<W>()
@@ -87,7 +88,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
 
@@ -103,7 +103,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
     }
@@ -115,7 +114,7 @@ pub mod reactive {
     where
         S: Service,
         B: Backend<S> + Debug,
-        T: Testing,
+        T: Testing<BackendConfig = B::Config>,
         W: Service,
         for<'b> B::Builder<'b>: ReactiveBackendBuilder<S, WakeService = W>,
     {
@@ -124,6 +123,7 @@ pub mod reactive {
         // === Host A: polled gateway + notifier ===
         let iceoryx_config_a = generate_isolated_config();
         let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_a.clone())
             .polled()
             .create()
@@ -146,6 +146,7 @@ pub mod reactive {
         // === Host B: reactive gateway ===
         let iceoryx_config_b = generate_isolated_config();
         let (mut gateway_b, wake_listener) = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
             .iceoryx_config(iceoryx_config_b.clone())
             .reactive()
             .create::<W>()
@@ -164,7 +165,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
 
@@ -180,7 +180,6 @@ pub mod reactive {
                 }
             },
             TIMEOUT,
-            Some(MAX_ATTEMPTS),
         )
         .unwrap();
     }

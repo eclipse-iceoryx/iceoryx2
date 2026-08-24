@@ -16,4 +16,6 @@
 
 pub struct Testing;
 
-impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {}
+impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {
+    type BackendConfig = crate::backend::Config;
+}
