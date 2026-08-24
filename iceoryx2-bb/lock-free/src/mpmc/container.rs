@@ -383,6 +383,36 @@ impl<T: Copy + Debug> Container<T> {
         }
     }
 
+    /// Searches for all elements corresponding to the given owner ID.
+    ///
+    /// The obtained information can be out of date right after the return of the
+    /// function when the item was concurrently removed.
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`Container::init()`] was called before calling this method
+    ///
+    pub unsafe fn find<F: FnMut(*const T, ContainerHandle) -> CallbackProgression>(
+        &self,
+        owner_id: OwnerId,
+        mut callback: F,
+    ) -> usize {
+        self.verify_init("find()");
+
+        unsafe {
+            self.index_set.find(owner_id, |index| {
+                callback(
+                    (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
+                    ContainerHandle {
+                        index,
+                        owner_id,
+                        container_id: self.container_id.value(),
+                    },
+                )
+            })
+        }
+    }
+
     /// Useful in IPC context when an application holding the UniqueIndex has died.
     ///
     /// # Safety
@@ -759,6 +789,18 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
         owner_id: OwnerId,
     ) -> Result<(*const T, ContainerHandle), ContainerAddFailure> {
         unsafe { self.container.add(value, owner_id) }
+    }
+
+    /// Searches for all elements corresponding to the given owner ID.
+    ///
+    /// The obtained information can be out of date right after the return of the
+    /// function when the item was concurrently removed.
+    pub fn find<F: FnMut(*const T, ContainerHandle) -> CallbackProgression>(
+        &self,
+        owner_id: OwnerId,
+        callback: F,
+    ) -> usize {
+        unsafe { self.container.find(owner_id, callback) }
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
