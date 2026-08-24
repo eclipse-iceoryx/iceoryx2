@@ -335,12 +335,13 @@ impl Default for Config {
 pub struct Service<S: ServiceType> {
     discovery_config: Config,
     iceoryx_config: IceoryxConfig,
-    _node: Node<S>,
     publisher: Option<Publisher<S, Payload, ()>>,
     request_response: Option<PortFactory<S, (), (), [StaticConfig], ()>>,
     server: Option<Server<S, (), (), [StaticConfig], ()>>,
     notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
+    // Must remain the last field so all port tags are removed before node cleanup.
+    _node: Node<S>,
 }
 
 impl<S: ServiceType> Service<S> {
@@ -420,12 +421,12 @@ impl<S: ServiceType> Service<S> {
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),
             iceoryx_config: iceoryx_config.clone(),
-            _node: node,
             publisher,
             request_response,
             server,
             notifier,
             tracker,
+            _node: node,
         })
     }
 
