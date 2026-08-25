@@ -8,12 +8,11 @@ This Eclipse Foundation Project adheres to the [Eclipse Foundation Vulnerability
 
 If you think you have found a vulnerability in this repository, please report it to us through coordinated disclosure.
 
-**Please do not report security vulnerabilities through public issues, discussions, or change requests.**
+**Please do not report security vulnerabilities through public issues, discussions, or pull requests.**
 
 Instead, report it using one of the following ways:
 
-* Contact the [Eclipse Foundation Security Team](mailto:security@eclipse-foundation.org) via email
-* Create a [confidential issue](https://gitlab.eclipse.org/security/vulnerability-reports/-/issues/new?issuable_template=new_vulnerability) in the Eclipse Foundation Vulnerability Reporting Tracker
+* Create a [confidential issue](https://gitlab.eclipse.org/security/vulnerability-reports/-/work_items/new?issue[confidential]=true) in the Eclipse Foundation Vulnerability Reporting Tracker
 * Report a [vulnerability](https://github.com/eclipse-iceoryx/iceoryx2/security/advisories/new) directly via private vulnerability reporting on GitHub
 
 You can find more information about reporting and disclosure at the [Eclipse Foundation Security page](https://www.eclipse.org/security/).
@@ -29,6 +28,8 @@ Please include as much of the information listed below as you can to help us bet
 * Configuration required to reproduce the issue
 * Log files that are related to this issue (if possible)
 * Proof-of-concept or exploit code (if possible)
+
+Before sending the report, please take a moment to proofread it carefully by yourself.
 
 This information will help us triage your report more quickly.
 
