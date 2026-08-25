@@ -85,7 +85,13 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
 
     /// Whether an established bridge for the service exists.
     pub(crate) fn is_established(&self, hash: &ServiceHash) -> bool {
-        self.publish_subscribe.contains_key(hash) || self.event.contains_key(hash)
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed: _,
+        } = self;
+
+        publish_subscribe.contains_key(hash) || event.contains_key(hash)
     }
 
     /// Whether the bridge has failed to be established for the service.
@@ -96,7 +102,13 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
     /// Number of tracked bridges, established or failed.
     #[cfg(debug_assertions)]
     pub(crate) fn number_of_tracked_services(&self) -> usize {
-        self.publish_subscribe.len() + self.event.len() + self.failed.len()
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed,
+        } = self;
+
+        publish_subscribe.len() + event.len() + failed.len()
     }
 
     /// Retains only the bridges for which `keep` returns true. `on_close` is
@@ -106,6 +118,12 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         mut keep: impl FnMut(&ServiceHash) -> bool,
         mut on_close: impl FnMut(&ServiceHash),
     ) {
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed,
+        } = self;
+
         let mut keep_or_close = |hash: &ServiceHash| {
             let keep = keep(hash);
             if !keep {
@@ -114,16 +132,22 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
             keep
         };
 
-        self.publish_subscribe.retain(|hash, _| keep_or_close(hash));
-        self.event.retain(|hash, _| keep_or_close(hash));
-        self.failed.retain(|hash| keep(hash));
+        publish_subscribe.retain(|hash, _| keep_or_close(hash));
+        event.retain(|hash, _| keep_or_close(hash));
+        failed.retain(|hash| keep(hash));
     }
 
     /// The hashes of all established bridges.
     pub(crate) fn established(&self) -> BTreeSet<ServiceHash> {
-        self.publish_subscribe
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed: _,
+        } = self;
+
+        publish_subscribe
             .keys()
-            .chain(self.event.keys())
+            .chain(event.keys())
             .copied()
             .collect()
     }
