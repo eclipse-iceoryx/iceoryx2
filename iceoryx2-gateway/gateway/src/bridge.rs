@@ -10,159 +10,306 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::format;
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::Service;
+use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_gateway_backend::traits::{
     Backend, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_gateway_backend::types::publish_subscribe::LoanFn;
 use iceoryx2_gateway_backend::types::service_description::{
-    PatternDescription, ServiceDescription,
+    EventDescription, PatternDescription, PublishSubscribeDescription, ServiceDescription,
 };
-use iceoryx2_log::{fail, info};
+use iceoryx2_log::{fail, info, warn};
 
 use crate::gateway::{DiscoveryError, PropagateError};
 use crate::ports::event::EventPorts;
 use crate::ports::publish_subscribe::PublishSubscribePorts;
 
-/// A bidirectional bridge for a single service: the local iceoryx2 ports on one
-/// side and the backend relay on the other.
-#[allow(clippy::large_enum_variant)]
+/// All bridges opened by the gateway.
 #[derive(Debug)]
-pub(crate) enum Bridge<S: Service, B: Backend<S>> {
-    PublishSubscribe {
-        ports: PublishSubscribePorts<S>,
-        relay: B::PublishSubscribeRelay,
-    },
-    Event {
-        ports: EventPorts<S>,
-        relay: B::EventRelay,
-    },
+pub(crate) struct Bridges<S: Service, B: Backend<S>> {
+    publish_subscribe: BTreeMap<ServiceHash, PublishSubscribeBridge<S, B>>,
+    event: BTreeMap<ServiceHash, EventBridge<S, B>>,
+    /// Services whose bridge could not be established. Remembered so that
+    /// subsequent discovery calls do not retry until the service is
+    /// reinstantiated.
+    failed: BTreeSet<ServiceHash>,
 }
 
-impl<S: Service, B: Backend<S>> Bridge<S, B> {
-    /// Creates the ports and relay matching the messaging pattern of
+impl<S: Service, B: Backend<S>> Default for Bridges<S, B> {
+    fn default() -> Self {
+        Self {
+            publish_subscribe: BTreeMap::new(),
+            event: BTreeMap::new(),
+            failed: BTreeSet::new(),
+        }
+    }
+}
+
+impl<S: Service, B: Backend<S>> Bridges<S, B> {
+    /// Opens the ports and relay matching the messaging pattern of
     /// `description`.
-    pub(crate) fn open(
+    pub(crate) fn open(&mut self, node: &Node<S>, backend: &B, description: &ServiceDescription) {
+        let hash = description.service_hash;
+        match &description.pattern {
+            PatternDescription::PublishSubscribe(pattern_description) => {
+                match PublishSubscribeBridge::open(node, backend, description, pattern_description)
+                {
+                    Ok(bridge) => {
+                        self.publish_subscribe.insert(hash, bridge);
+                    }
+                    Err(error) => self.record_failure(description, error),
+                }
+            }
+            PatternDescription::Event(pattern_description) => {
+                match EventBridge::open(node, backend, description, pattern_description) {
+                    Ok(bridge) => {
+                        self.event.insert(hash, bridge);
+                    }
+                    Err(error) => self.record_failure(description, error),
+                }
+            }
+        }
+    }
+
+    /// Whether a bridge for the specified service is tracked, both established
+    /// or failed.
+    pub(crate) fn contains(&self, hash: &ServiceHash) -> bool {
+        self.is_established(hash) || self.is_failed(hash)
+    }
+
+    /// Whether an established bridge for the service exists.
+    pub(crate) fn is_established(&self, hash: &ServiceHash) -> bool {
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed: _,
+        } = self;
+
+        publish_subscribe.contains_key(hash) || event.contains_key(hash)
+    }
+
+    /// Whether the bridge has failed to be established for the service.
+    pub(crate) fn is_failed(&self, hash: &ServiceHash) -> bool {
+        self.failed.contains(hash)
+    }
+
+    /// Number of tracked bridges, established or failed.
+    #[cfg(debug_assertions)]
+    pub(crate) fn number_of_tracked_services(&self) -> usize {
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed,
+        } = self;
+
+        publish_subscribe.len() + event.len() + failed.len()
+    }
+
+    /// Retains only the bridges for which `keep` returns true. `on_close` is
+    /// invoked for every established bridge that is dropped.
+    pub(crate) fn retain(
+        &mut self,
+        mut keep: impl FnMut(&ServiceHash) -> bool,
+        mut on_close: impl FnMut(&ServiceHash),
+    ) {
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed,
+        } = self;
+
+        let mut keep_or_close = |hash: &ServiceHash| {
+            let keep = keep(hash);
+            if !keep {
+                on_close(hash);
+            }
+            keep
+        };
+
+        publish_subscribe.retain(|hash, _| keep_or_close(hash));
+        event.retain(|hash, _| keep_or_close(hash));
+        failed.retain(|hash| keep(hash));
+    }
+
+    /// The hashes of all established bridges.
+    pub(crate) fn established(&self) -> BTreeSet<ServiceHash> {
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed: _,
+        } = self;
+
+        publish_subscribe
+            .keys()
+            .chain(event.keys())
+            .copied()
+            .collect()
+    }
+
+    /// Propagates payloads/events in both directions for all established
+    /// bridges. Payload-carrying patterns propagate before events.
+    ///
+    // TODO(#1103): Retain ordering across the wire
+    pub(crate) fn propagate(&self, node_id: &UniqueNodeId) -> Result<(), PropagateError> {
+        let Bridges {
+            publish_subscribe,
+            event,
+            failed: _,
+        } = self;
+
+        for bridge in publish_subscribe.values() {
+            bridge.propagate(node_id)?;
+        }
+        for bridge in event.values() {
+            bridge.propagate(node_id)?;
+        }
+
+        Ok(())
+    }
+
+    fn record_failure(&mut self, description: &ServiceDescription, error: DiscoveryError) {
+        warn!(
+            from "Bridges::open",
+            "{}({}) will not be bridged: {}",
+            description.pattern,
+            description.name,
+            error
+        );
+        self.failed.insert(description.service_hash);
+    }
+}
+
+/// A bidirectional bridge for a single publish-subscribe service.
+#[derive(Debug)]
+struct PublishSubscribeBridge<S: Service, B: Backend<S>> {
+    ports: PublishSubscribePorts<S>,
+    relay: B::PublishSubscribeRelay,
+}
+
+impl<S: Service, B: Backend<S>> PublishSubscribeBridge<S, B> {
+    fn open(
         node: &Node<S>,
         backend: &B,
         description: &ServiceDescription,
+        pattern_description: &PublishSubscribeDescription,
     ) -> Result<Self, DiscoveryError> {
-        let origin = "Bridge::open";
+        let origin = "PublishSubscribeBridge::open";
 
-        match &description.pattern {
-            PatternDescription::PublishSubscribe(pattern_description) => {
-                let ports = fail!(
-                    from origin,
-                    when PublishSubscribePorts::new(&description.name, pattern_description, node),
-                    with DiscoveryError::PublishSubscribePortCreation,
-                    "Failed to create publish-subscribe ports"
-                );
-                let relay = fail!(
-                    from origin,
-                    when backend.relay_builder().publish_subscribe(description).create(),
-                    with DiscoveryError::PublishSubscribeRelayCreation,
-                    "Failed to create publish-subscribe relay"
-                );
-                Ok(Bridge::PublishSubscribe { ports, relay })
-            }
-            PatternDescription::Event(pattern_description) => {
-                let ports = fail!(
-                    from origin,
-                    when EventPorts::new(&description.name, pattern_description, node),
-                    with DiscoveryError::EventPortsCreation,
-                    "Failed to create event ports"
-                );
-                let relay = fail!(
-                    from origin,
-                    when backend.relay_builder().event(description).create(),
-                    with DiscoveryError::EventRelayCreation,
-                    "Failed to create event relay"
-                );
-                Ok(Bridge::Event { ports, relay })
-            }
-        }
+        let ports = fail!(
+            from origin,
+            when PublishSubscribePorts::new(&description.name, pattern_description, node),
+            with DiscoveryError::PublishSubscribePortCreation,
+            "Failed to create publish-subscribe ports"
+        );
+        let relay = fail!(
+            from origin,
+            when backend.relay_builder().publish_subscribe(description).create(),
+            with DiscoveryError::PublishSubscribeRelayCreation,
+            "Failed to create publish-subscribe relay"
+        );
+        Ok(Self { ports, relay })
     }
 
-    /// Propagates payloads/events in both directions for this bridge.
-    pub(crate) fn propagate(&self, node_id: &UniqueNodeId) -> Result<(), PropagateError> {
-        match self {
-            Bridge::PublishSubscribe { ports, relay } => {
-                propagate_publish_subscribe_payloads::<S, B>(node_id, ports, relay)
-            }
-            Bridge::Event { ports, relay } => propagate_events::<S, B>(node_id, ports, relay),
+    fn propagate(&self, node_id: &UniqueNodeId) -> Result<(), PropagateError> {
+        let origin = format!("PublishSubscribeBridge({node_id})::propagate");
+        let port = &self.ports;
+        let relay = &self.relay;
+
+        let propagated = fail!(
+            from origin,
+            when port.receive(node_id, |sample| {
+                relay.send(sample)
+            }),
+            with PropagateError::PayloadPropagation,
+            "Failed to receive publish-subscribe payload for propagation"
+        );
+        if propagated {
+            info!(from origin, "Propagated PublishSubscribe({})", port.name);
         }
+
+        let ingested = fail!(
+            from origin,
+            when port.send(|loan: &mut LoanFn<_, _>| {
+                relay.receive::<_>(&mut |size| {
+                loan(size)})
+            }),
+            with PropagateError::PayloadIngestion,
+            "Failed to ingest publish-subscribe payload received from backend"
+        );
+        if ingested {
+            info!(from origin, "Ingested PublishSubscribe({})", port.name);
+        }
+
+        Ok(())
     }
 }
 
-fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
-    node_id: &UniqueNodeId,
-    port: &PublishSubscribePorts<S>,
-    relay: &B::PublishSubscribeRelay,
-) -> Result<(), PropagateError> {
-    let origin = format!("Bridge({node_id})::propagate_publish_subscribe_payloads");
-
-    let propagated = fail!(
-        from origin,
-        when port.receive(node_id, |sample| {
-            relay.send(sample)
-        }),
-        with PropagateError::PayloadPropagation,
-        "Failed to receive publish-subscribe payload for propagation"
-    );
-    if propagated {
-        info!(from origin, "Propagated PublishSubscribe({})", port.name);
-    }
-
-    let ingested = fail!(
-        from origin,
-        when port.send(|loan: &mut LoanFn<_, _>| {
-            relay.receive::<_>(&mut |size| {
-            loan(size)})
-        }),
-        with PropagateError::PayloadIngestion,
-        "Failed to ingest publish-subscribe payload received from backend"
-    );
-    if ingested {
-        info!(from origin, "Ingested PublishSubscribe({})", port.name);
-    }
-
-    Ok(())
+/// A bidirectional bridge for a single event service.
+#[derive(Debug)]
+struct EventBridge<S: Service, B: Backend<S>> {
+    ports: EventPorts<S>,
+    relay: B::EventRelay,
 }
 
-fn propagate_events<S: Service, B: Backend<S>>(
-    node_id: &UniqueNodeId,
-    port: &EventPorts<S>,
-    relay: &B::EventRelay,
-) -> Result<(), PropagateError> {
-    let origin = format!("Bridge({node_id})::propagate_events");
+impl<S: Service, B: Backend<S>> EventBridge<S, B> {
+    fn open(
+        node: &Node<S>,
+        backend: &B,
+        description: &ServiceDescription,
+        pattern_description: &EventDescription,
+    ) -> Result<Self, DiscoveryError> {
+        let origin = "EventBridge::open";
 
-    let propagated = fail!(
-        from origin,
-        when port.receive(|id| {
-            relay.send(id)
-        }),
-        with PropagateError::EventPropagation,
-        "Failed to receive events for propagation"
-    );
-    if propagated {
-        info!(from origin, "Propagated Event({})", port.name);
+        let ports = fail!(
+            from origin,
+            when EventPorts::new(&description.name, pattern_description, node),
+            with DiscoveryError::EventPortsCreation,
+            "Failed to create event ports"
+        );
+        let relay = fail!(
+            from origin,
+            when backend.relay_builder().event(description).create(),
+            with DiscoveryError::EventRelayCreation,
+            "Failed to create event relay"
+        );
+        Ok(Self { ports, relay })
     }
 
-    let ingested = fail!(
-        from origin,
-        when port.send(|| {
-            relay.receive()
-        }),
-        with PropagateError::EventIngestion,
-        "Failed to ingest event received from backend"
-    );
-    if ingested {
-        info!(from origin, "Ingested Event({})", port.name);
-    }
+    fn propagate(&self, node_id: &UniqueNodeId) -> Result<(), PropagateError> {
+        let origin = format!("EventBridge({node_id})::propagate");
+        let port = &self.ports;
+        let relay = &self.relay;
 
-    Ok(())
+        let propagated = fail!(
+            from origin,
+            when port.receive(|id| {
+                relay.send(id)
+            }),
+            with PropagateError::EventPropagation,
+            "Failed to receive events for propagation"
+        );
+        if propagated {
+            info!(from origin, "Propagated Event({})", port.name);
+        }
+
+        let ingested = fail!(
+            from origin,
+            when port.send(|| {
+                relay.receive()
+            }),
+            with PropagateError::EventIngestion,
+            "Failed to ingest event received from backend"
+        );
+        if ingested {
+            info!(from origin, "Ingested Event({})", port.name);
+        }
+
+        Ok(())
+    }
 }
