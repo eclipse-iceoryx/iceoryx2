@@ -23,10 +23,10 @@ use iceoryx2_gateway_backend::{
     types::wake::WakeHandle,
 };
 use iceoryx2_log::{fail, trace};
+use serde::{Deserialize, Serialize};
 
 use zenoh::{
     Session, Wait,
-    bytes::ZBytes,
     pubsub::{Publisher, Subscriber},
     qos::Reliability,
     sample::{Locality, Sample},
@@ -67,6 +67,7 @@ impl core::error::Error for SendError {}
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
     SampleReceive,
+    Decode,
     IceoryxLoan,
 }
 
@@ -77,6 +78,13 @@ impl core::fmt::Display for ReceiveError {
 }
 
 impl core::error::Error for ReceiveError {}
+
+/// Frame carried on the publish-subscribe key of a service.
+#[derive(Debug, Serialize, Deserialize)]
+struct SampleFrame<'a> {
+    user_header: &'a [u8],
+    payload: &'a [u8],
+}
 
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
@@ -149,6 +157,13 @@ pub struct Relay<S: Service> {
     _phantom: core::marker::PhantomData<S>,
 }
 
+impl<S: Service> Relay<S> {
+    fn put_sample_frame(&self, frame: &SampleFrame<'_>) -> Result<(), zenoh::Error> {
+        let bytes = postcard::to_allocvec(frame)?;
+        self.publisher.put(bytes).wait()
+    }
+}
+
 impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
     type SendError = SendError;
     type ReceiveError = ReceiveError;
@@ -164,15 +179,17 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             self.description.name
         );
 
-        let mut writer = ZBytes::writer();
-        writer.append(
-            user_header_bytes(sample.user_header(), user_header_size(&self.description)).into(),
-        );
-        writer.append(payload_bytes(sample.payload()).into());
+        let frame = SampleFrame {
+            user_header: user_header_bytes(
+                sample.user_header(),
+                user_header_size(&self.description),
+            ),
+            payload: payload_bytes(sample.payload()),
+        };
 
         fail!(
             from self,
-            when self.publisher.put(writer).wait(),
+            when self.put_sample_frame(&frame),
             with SendError::PayloadPut,
             "Failed to propagate publish-subscribe payload to zenoh"
         );
@@ -199,23 +216,25 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 self.description.name
             );
 
-            let bytes_received = zenoh_sample.payload().to_bytes();
-
-            let user_header_size = user_header_size(&self.description);
-            let user_header_received = &bytes_received[0..user_header_size];
-            let payload_received = &bytes_received[user_header_size..];
+            let bytes = zenoh_sample.payload().to_bytes();
+            let frame = fail!(
+                from self,
+                when postcard::from_bytes::<SampleFrame<'_>>(&bytes),
+                with ReceiveError::Decode,
+                "Failed to decode publish-subscribe frame received from zenoh"
+            );
 
             let mut iceoryx_sample = fail!(
                 from self,
-                when loan(payload_received.len()),
+                when loan(frame.payload.len()),
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"
             );
 
             unsafe {
                 write_message(
-                    user_header_received,
-                    payload_received,
+                    frame.user_header,
+                    frame.payload,
                     iceoryx_sample.user_header_mut(),
                     iceoryx_sample.payload_mut(),
                 )

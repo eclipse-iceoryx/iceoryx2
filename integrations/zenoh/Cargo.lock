@@ -1571,6 +1571,8 @@ dependencies = [
  "iceoryx2-gateway-backend",
  "iceoryx2-gateway-conformance-tests",
  "iceoryx2-log",
+ "postcard",
+ "serde",
  "serde_json",
  "zenoh",
 ]
