@@ -31,6 +31,7 @@ std = [
 iceoryx2-cal = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }

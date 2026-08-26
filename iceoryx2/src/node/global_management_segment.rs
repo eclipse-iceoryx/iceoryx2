@@ -23,6 +23,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
+use iceoryx2_cal::unique_id_generator::UniqueIdGenerator;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
@@ -30,13 +31,15 @@ const GLOBAL_MGMT_NAME: FileName = unsafe { FileName::new_unchecked_const(b"node
 
 #[derive(Debug, Default, ZeroCopySend)]
 #[repr(C)]
-struct State {
-    node_counter: AtomicU32,
+struct State<T: ZeroCopySend> {
+    id_storage: T,
 }
+
+type StateType<S> = <<S as Service>::UniqueSystemId as UniqueIdGenerator>::IdStorage;
 
 #[derive(Debug)]
 pub(crate) struct GlobalManagementSegment<S: Service> {
-    storage: S::PersistentDynamicStorage<State>,
+    storage: S::PersistentDynamicStorage<State<StateType<S>>>,
 }
 
 impl<S: Service> GlobalManagementSegment<S> {
@@ -44,24 +47,25 @@ impl<S: Service> GlobalManagementSegment<S> {
         let origin = "GlobalManagementSegment::open_or_create()";
         let msg = "Unable to open or create the management segment";
         let config = Self::dynamic_storage_config(global_config);
-        let storage = match <<S::PersistentDynamicStorage<State> as DynamicStorage<State>>::Builder<
-            '_,
-        > as NamedConceptBuilder<S::PersistentDynamicStorage<State>>>::new(
-            &GLOBAL_MGMT_NAME
-        )
-        .has_ownership(false)
-        .config(&config)
-        .timeout(global_config.global.creation_timeout)
-        .enable_global_access(true)
-        .initializer(|_, _| true)
-        .open_or_create()
-        {
-            Ok(storage) => storage,
-            Err(e) => {
-                fail!(from origin, with e,
+        let storage =
+            match <<S::PersistentDynamicStorage<State<StateType<S>>> as DynamicStorage<
+                State<StateType<S>>,
+            >>::Builder<'_> as NamedConceptBuilder<
+                S::PersistentDynamicStorage<State<StateType<S>>>,
+            >>::new(&GLOBAL_MGMT_NAME)
+            .has_ownership(false)
+            .config(&config)
+            .timeout(global_config.global.creation_timeout)
+            .enable_global_access(true)
+            .initializer(|_, _| true) // TODO: initialize with Foo::default()/passed data from a config?
+            .open_or_create()
+            {
+                Ok(storage) => storage,
+                Err(e) => {
+                    fail!(from origin, with e,
                     "{msg} since the underlying persistent dynamic storage could not be opened. [{e:?}]");
-            }
-        };
+                }
+            };
 
         Ok(Self { storage })
     }
@@ -76,7 +80,7 @@ impl<S: Service> GlobalManagementSegment<S> {
         let msg = "Unable to remove the global management segment";
         let config = Self::dynamic_storage_config(global_config);
         match unsafe {
-            <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::remove_cfg(
+            <S::PersistentDynamicStorage<State<StateType<S>>> as NamedConceptMgmt>::remove_cfg(
                 &GLOBAL_MGMT_NAME,
                 &config,
             )
@@ -88,16 +92,13 @@ impl<S: Service> GlobalManagementSegment<S> {
         }
     }
 
-    pub fn increment_node_counter(&self) -> u32 {
-        self.storage
-            .get()
-            .node_counter
-            .fetch_add(1, Ordering::Relaxed)
+    pub fn id_storage(&self) -> &StateType<S> {
+        &self.storage.get().id_storage
     }
 
     fn dynamic_storage_config(
         global_config: &Config,
-    ) -> <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration {
+    ) -> <S::PersistentDynamicStorage<State<StateType<S>>> as NamedConceptMgmt>::Configuration {
         let mut suffix = global_config.global.node.global_mgmt_suffix;
         let ver = PackageVersion::get();
         fatal_panic!(
@@ -105,7 +106,7 @@ impl<S: Service> GlobalManagementSegment<S> {
             when suffix.insert_bytes(0, format!(".{}_{}_{}", ver.major(), ver.minor(), ver.patch()).as_bytes()),
             "This should never happen! Failed to added package version suffix to global management segment.");
 
-        <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration::default()
+        <S::PersistentDynamicStorage<State<StateType<S>>> as NamedConceptMgmt>::Configuration::default()
             .prefix(&global_config.global.prefix)
             .suffix(&suffix)
             .path_hint(global_config.global.root_path())

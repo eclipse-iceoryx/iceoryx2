@@ -37,14 +37,14 @@ use alloc::format;
 use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::{hash::Hash, unique_id_generator::Entity};
+use iceoryx2_cal::{hash::Hash, unique_id_generator::*};
 use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config,
     identifiers::UniqueServiceId,
+    node::SharedNode,
     service::{self, service_hash::ServiceHash},
 };
 
@@ -71,20 +71,24 @@ unsafe impl<ServiceType: service::Service> ZeroCopySend for StaticConfig<Service
 impl<ServiceType: service::Service> StaticConfig<ServiceType> {
     pub(crate) fn new_request_response<Hasher: Hash>(
         service_name: &ServiceName,
-        config: &config::Config,
+        shared_node: SharedNode<ServiceType>,
     ) -> Self {
-        let messaging_pattern =
-            MessagingPattern::RequestResponse(request_response::StaticConfig::new(config));
+        let messaging_pattern = MessagingPattern::RequestResponse(
+            request_response::StaticConfig::new(shared_node.config()),
+        );
         Self {
             iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(&Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            }),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                &Entity {
+                    name: StaticString::try_from("").unwrap(),
+                    id: 1,
+                },
+                shared_node.mgmt().id_storage(),
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -94,19 +98,23 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
 
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,
-        config: &config::Config,
+        shared_node: SharedNode<ServiceType>,
     ) -> Self {
-        let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
+        let messaging_pattern =
+            MessagingPattern::Event(event::StaticConfig::new(shared_node.config()));
         Self {
             iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(&Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            }),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                &Entity {
+                    name: StaticString::try_from("").unwrap(),
+                    id: 1,
+                },
+                shared_node.mgmt().id_storage(),
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -116,20 +124,24 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
 
     pub(crate) fn new_publish_subscribe<Hasher: Hash>(
         service_name: &ServiceName,
-        config: &config::Config,
+        shared_node: SharedNode<ServiceType>,
     ) -> Self {
-        let messaging_pattern =
-            MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
+        let messaging_pattern = MessagingPattern::PublishSubscribe(
+            publish_subscribe::StaticConfig::new(shared_node.config()),
+        );
         Self {
             iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(&Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            }),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                &Entity {
+                    name: StaticString::try_from("").unwrap(),
+                    id: 1,
+                },
+                shared_node.mgmt().id_storage(),
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -139,19 +151,23 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
 
     pub(crate) fn new_blackboard<Hasher: Hash>(
         service_name: &ServiceName,
-        config: &config::Config,
+        shared_node: SharedNode<ServiceType>,
     ) -> Self {
-        let messaging_pattern = MessagingPattern::Blackboard(blackboard::StaticConfig::new(config));
+        let messaging_pattern =
+            MessagingPattern::Blackboard(blackboard::StaticConfig::new(shared_node.config()));
         Self {
             iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(&Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            }),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                &Entity {
+                    name: StaticString::try_from("").unwrap(),
+                    id: 1,
+                },
+                shared_node.mgmt().id_storage(),
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
