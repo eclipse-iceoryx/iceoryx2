@@ -108,8 +108,8 @@ pub trait Backend<S: Service>: Sized {
     /// Returns a [`BackendBuilder`] bound to the provided configuration.
     fn builder(config: &Self::Config) -> Self::Builder<'_>;
 
-    /// Returns a reference to the [`Discovery`] implementation.
-    fn discovery(&self) -> &impl Discovery;
+    /// Returns a mutable reference to the [`Discovery`] implementation.
+    fn discovery(&mut self) -> &mut impl Discovery;
 
     /// Returns a reference to the [`Mapping`] strategy.
     fn mapping(&self) -> &Self::Mapping;

@@ -168,7 +168,7 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     fn backend_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Gateway({})::backend_discovery", self.node.id());
 
-        let backend = &self.backend;
+        let backend = &mut self.backend;
         let mut update = self.discovery_state.delta_update(Origin::Remote);
 
         fail!(
@@ -187,11 +187,11 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     fn subscriber_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Gateway({})::subscriber_discovery", self.node.id());
 
-        let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.discovery_strategy else {
+        let LocalDiscoveryStrategy::Subscriber(subscriber) = &mut self.discovery_strategy else {
             panic!("Should never happen. Discovery strategy enforced in discover().");
         };
 
-        let backend = &self.backend;
+        let backend = &mut self.backend;
         let mut update = self.discovery_state.delta_update(Origin::Local);
 
         fail!(
@@ -230,7 +230,7 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         );
 
         let node = &self.node;
-        let backend = &self.backend;
+        let backend = &mut self.backend;
         let mapping = backend.mapping();
         let discovery_state = &mut self.discovery_state;
 
@@ -293,7 +293,7 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     /// that are not yet announced.
     fn announce_additions(&mut self) -> Result<(), DiscoveryError> {
         let node = &self.node;
-        let backend = &self.backend;
+        let backend = &mut self.backend;
         let bridges = &self.bridges;
         let announced = &mut self.announced;
 
@@ -316,7 +316,7 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     /// Announces removal of services no longer locally offered.
     fn announce_removals(&mut self) -> Result<(), DiscoveryError> {
         let node = &self.node;
-        let backend = &self.backend;
+        let backend = &mut self.backend;
         let discovery_state = &self.discovery_state;
 
         // Entries whose withdrawal fails are kept and retried on the next
@@ -374,7 +374,7 @@ fn on_discovery_update(
 /// Broadcasts a service's availability to remote peers over the backend.
 fn announce_added<S: Service, B: Backend<S>>(
     node: &Node<S>,
-    backend: &B,
+    backend: &mut B,
     description: &ServiceDescription,
 ) -> Result<(), DiscoveryError> {
     let origin = format!("Gateway({})::announce_added", node.id());
@@ -397,7 +397,7 @@ fn announce_added<S: Service, B: Backend<S>>(
 /// Announces a service's removal to remote peers over the backend.
 fn announce_removed<S: Service, B: Backend<S>>(
     node: &Node<S>,
-    backend: &B,
+    backend: &mut B,
     hash: &ServiceHash,
     name: &ServiceName,
 ) -> Result<(), DiscoveryError> {

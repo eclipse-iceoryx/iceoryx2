@@ -18,7 +18,6 @@ use core::error::Error;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_gateway_backend::traits::{Mapping, PayloadLayout, Translation, Translator};
 use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
@@ -75,7 +74,7 @@ pub struct Discovery<
     node: Rc<RclNode>,
     mapping: Rc<M>,
     translator: Rc<T>,
-    state: RefCell<HashMap<TopicName, TopicState>>,
+    state: HashMap<TopicName, TopicState>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -92,7 +91,7 @@ impl<
             node,
             mapping,
             translator,
-            state: RefCell::new(HashMap::new()),
+            state: HashMap::new(),
             _phantom: core::marker::PhantomData,
         }
     }
@@ -129,7 +128,7 @@ impl<
     /// Returns the state to track the topic under, or `Err` if querying its
     /// QoS or running `process_discovery` failed.
     fn on_discovered<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         topic: &TopicName,
         type_name: &TypeName,
         process_discovery: &mut F,
@@ -187,7 +186,7 @@ impl<
     /// Returns `Ok` when the removal was processed, or `Err` if
     /// `process_discovery` failed.
     fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         topic: &TopicName,
         service_hash: ServiceHash,
         process_discovery: &mut F,
@@ -204,7 +203,7 @@ impl<
         );
 
         // Stop tracking the service as discovered.
-        self.state.borrow_mut().remove(topic);
+        self.state.remove(topic);
 
         Ok(())
     }
@@ -215,12 +214,12 @@ impl<
     /// retried in later runs until removed from the graph. After removal,
     /// discovery logic is retried for the new instance of the topic.
     fn discover_additions<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         live: &[(TopicName, TypeName)],
         process_discovery: &mut F,
     ) {
         for (topic, type_name) in live {
-            if self.state.borrow().contains_key(topic) {
+            if self.state.contains_key(topic) {
                 continue;
             }
 
@@ -232,7 +231,7 @@ impl<
                 }
             };
 
-            self.state.borrow_mut().insert(topic.clone(), state);
+            self.state.insert(topic.clone(), state);
         }
     }
 
@@ -241,7 +240,7 @@ impl<
     /// The departed set is taken before the loop so that no borrow of the
     /// tracked state is held while `process_discovery` runs.
     fn discover_removals<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         live: &[(TopicName, TypeName)],
         process_discovery: &mut F,
     ) -> Result<(), DiscoveryError> {
@@ -249,7 +248,6 @@ impl<
 
         let departed: Vec<(TopicName, TopicState)> = self
             .state
-            .borrow()
             .iter()
             .filter(|(topic, _)| !is_live(topic))
             .map(|(topic, state)| (topic.clone(), *state))
@@ -263,7 +261,7 @@ impl<
                 // Forget the verdict so the topic is judged again if it
                 // is discovered again.
                 TopicState::Unmapped | TopicState::Failed => {
-                    self.state.borrow_mut().remove(&topic);
+                    self.state.remove(&topic);
                 }
             }
         }
@@ -281,7 +279,7 @@ impl<
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(&mut self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
         // Nothing to announce explicitly. The gateway creates a relay for
         // every service it discovers on iceoryx2, and relay creation
         // registers the ROS 2 endpoints, which DDS discovery (SEDP) broadcasts
@@ -290,7 +288,7 @@ impl<
     }
 
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let origin = "Discovery::discover";

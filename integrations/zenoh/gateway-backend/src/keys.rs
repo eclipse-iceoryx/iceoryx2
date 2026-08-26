@@ -14,12 +14,12 @@ use iceoryx2::service::service_hash::ServiceHash;
 
 /// The zenoh key for discovering available service details.
 pub fn service_discovery() -> String {
-    "iox2/service_details/*".into()
+    "iox2/service_description/*".into()
 }
 
 /// The zenoh key at which the service details for the given service id can be received.
-pub fn service_details(service_hash: &ServiceHash) -> String {
-    format!("iox2/service_details/{}", service_hash.as_str())
+pub fn service_description(service_hash: &ServiceHash) -> String {
+    format!("iox2/service_description/{}", service_hash.as_str())
 }
 
 /// The zenoh key at which payloads for a given publish-subscribe service id can be received.

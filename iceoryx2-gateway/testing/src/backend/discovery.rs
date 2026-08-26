@@ -62,7 +62,7 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
 
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(&mut self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
         match update {
             DiscoveryUpdateRef::Added(description) => self
                 .session
@@ -76,7 +76,7 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
     }
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         self.session.discover();

@@ -84,8 +84,8 @@ impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDesc
         Builder::new(config)
     }
 
-    fn discovery(&self) -> &impl iceoryx2_gateway_backend::traits::Discovery {
-        &self.discovery
+    fn discovery(&mut self) -> &mut impl iceoryx2_gateway_backend::traits::Discovery {
+        &mut self.discovery
     }
 
     fn mapping(&self) -> &Self::Mapping {
