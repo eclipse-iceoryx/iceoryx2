@@ -79,37 +79,44 @@ impl core::fmt::Display for UniqueIdGeneratorError {
 
 impl core::error::Error for UniqueIdGeneratorError {}
 
-pub struct UniqueIdBuilder {
+// TODO: separate types for entity_name and entity_id?
+pub struct UniqueIdBuilder<'a, T: UniqueIdGenerator> {
     entity_name: StaticString<255>,
     entity_id: u128,
-    counter_hint: Option<u32>,
+    id_storage: Option<&'a T::IdStorage>,
+    id_hint: Option<T::IdStorage>,
 }
 
-impl UniqueIdBuilder {
+impl<'a, T: UniqueIdGenerator> UniqueIdBuilder<'a, T> {
     pub fn new(name: &StaticString<255>) -> Self {
         Self {
             entity_name: *name,
             entity_id: 0,
-            counter_hint: None,
+            id_storage: None,
+            id_hint: None,
         }
     }
 
-    pub fn counter_hint(mut self, counter: u32) -> Self {
-        self.counter_hint = Some(counter);
+    pub fn id_storage(mut self, id_storage: &'a T::IdStorage) -> Self {
+        self.id_storage = Some(id_storage);
         self
     }
 
-    pub fn create<T: UniqueIdGenerator>(
-        mut self,
-        entity_id: u128,
-    ) -> Result<UniqueId, UniqueIdGeneratorError> {
+    pub fn id_hint(mut self, id_hint: T::IdStorage) -> Self {
+        self.id_hint = Some(id_hint);
+        self
+    }
+
+    pub fn create(mut self, entity_id: u128) -> Result<UniqueId, UniqueIdGeneratorError> {
         self.entity_id = entity_id;
         T::generate(self)
     }
 }
 
 pub trait UniqueIdGenerator: From<UniqueId> {
-    fn generate(builder: UniqueIdBuilder) -> Result<UniqueId, UniqueIdGeneratorError>;
+    type IdStorage: ZeroCopySend + Send + Sync + Debug + 'static; // TODO: better name
+
+    fn generate(builder: UniqueIdBuilder<Self>) -> Result<UniqueId, UniqueIdGeneratorError>;
 
     fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
@@ -119,5 +126,10 @@ pub trait UniqueIdGenerator: From<UniqueId> {
     fn creation_time(&self) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::creation_time()",
             with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
+    }
+
+    fn adapt_id_storage(_: &Self::IdStorage) -> Result<Self::IdStorage, UniqueIdGeneratorError> {
+        fail!(from "UniqueIdGenerator::adapt_id_storage()",
+            with UniqueIdGeneratorError::NotImplemented, "adapt_id_storage() not implemented");
     }
 }
