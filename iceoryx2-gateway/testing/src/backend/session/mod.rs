@@ -38,6 +38,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::{
     UnixDatagramReceiver, UnixDatagramReceiverBuilder, UnixDatagramReceiverCreationError,
     UnixDatagramSendError, UnixDatagramSender, UnixDatagramSenderBuilder,
 };
+use iceoryx2_gateway_backend::types::identity::BackendId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
 use crate::backend::settings::MAX_DATAGRAM;
@@ -121,6 +122,8 @@ struct PendingDiscovery {
 pub struct Session {
     /// Unique session ID
     id: SessionId,
+    /// The session id in the form peers address over the gateway.
+    backend_id: BackendId,
     /// The on-disk registry through which sessions discover each other.
     registry: Registry,
     /// This session's own entry in the registry, removed on drop.
@@ -148,11 +151,11 @@ impl Session {
     /// Create a new session that can announce services to and exchange
     /// samples/events with other live sessions on the same host.
     pub fn create() -> Result<Self, CreationError> {
-        let id = UniqueSystemId::new()
+        let unique_id = UniqueSystemId::new()
             .map_err(CreationError::UniqueIdCreation)?
-            .value()
-            .to_b64()
-            .to_lowercase();
+            .value();
+        let id = session_id(unique_id);
+        let backend_id = BackendId::new(unique_id.to_le_bytes());
 
         let registry = Registry::open()?;
         let registration = registry.register(&id)?;
@@ -165,6 +168,7 @@ impl Session {
 
         Ok(Self {
             id,
+            backend_id,
             registry,
             registration,
             connections: RefCell::new(BTreeMap::new()),
@@ -176,6 +180,10 @@ impl Session {
             send_buffer: RefCell::new(alloc::vec![0u8; MAX_DATAGRAM]),
             receiver,
         })
+    }
+
+    pub fn backend_id(&self) -> BackendId {
+        self.backend_id
     }
 
     /// Make a service offered by this session discoverable to peers.
@@ -364,4 +372,8 @@ impl Session {
             connections.insert(session.id.clone(), sender);
         }
     }
+}
+
+fn session_id(unique_id: u128) -> SessionId {
+    unique_id.to_b64().to_lowercase()
 }

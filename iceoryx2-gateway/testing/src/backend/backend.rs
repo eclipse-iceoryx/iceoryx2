@@ -19,6 +19,7 @@ use iceoryx2::service::Service;
 use iceoryx2_gateway_backend::traits::{
     Backend, BackendBuilder, Identity, Mapping, Passthrough, Translator,
 };
+use iceoryx2_gateway_backend::types::identity::BackendId;
 
 use crate::backend::{
     discovery::Discovery,
@@ -82,6 +83,10 @@ impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDesc
 
     fn builder(config: &Self::Config) -> Self::Builder<'_> {
         Builder::new(config)
+    }
+
+    fn id(&self) -> BackendId {
+        self.session.backend_id()
     }
 
     fn discovery(&mut self) -> &mut impl iceoryx2_gateway_backend::traits::Discovery {

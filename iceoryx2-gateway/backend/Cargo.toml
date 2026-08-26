@@ -21,6 +21,7 @@ std = [
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
+postcard = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]

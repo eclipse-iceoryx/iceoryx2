@@ -16,6 +16,7 @@ use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_gateway_backend::traits::{
     Backend, BackendBuilder, Identity, Mapping, Passthrough, ReactiveBackendBuilder, Translator,
 };
+use iceoryx2_gateway_backend::types::identity::BackendId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_gateway_backend::types::wake::WakeHandle;
 use iceoryx2_log::{fail, trace};
@@ -50,6 +51,7 @@ pub struct ZenohBackend<
     >,
 > {
     session: Session,
+    id: BackendId,
     discovery: Discovery<S, M>,
     /// `Some` when constructed in reactive mode. Cloned into each relay's
     /// subscriber callback so that incoming network data signals the wake.
@@ -86,6 +88,10 @@ impl<
 
     fn builder(config: &Self::Config) -> Self::Builder<'_> {
         Builder::new(config)
+    }
+
+    fn id(&self) -> BackendId {
+        self.id
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
@@ -171,6 +177,8 @@ impl<
             "Failed to create zenoh session"
         );
 
+        let id = BackendId::new(session.zid().to_le_bytes());
+
         let mapping = Arc::new(self.mapping);
         let discovery = Discovery::create(&session, Arc::clone(&mapping));
         let discovery = fail!(
@@ -182,6 +190,7 @@ impl<
 
         Ok(ZenohBackend {
             session,
+            id,
             discovery,
             wake: self.wake.map(Arc::new),
             mapping,

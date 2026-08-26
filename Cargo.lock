@@ -1443,6 +1443,7 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "postcard",
  "serde",
 ]
 

@@ -12,6 +12,7 @@
 
 pub mod allow_list;
 pub mod discovery;
+pub mod identity;
 pub mod publish_subscribe;
 pub mod service_description;
 pub mod wake;

@@ -18,6 +18,7 @@ use iceoryx2::service::Service;
 use crate::traits::{
     Discovery, EventRelay, Mapping, PublishSubscribeRelay, RelayFactory, Translator,
 };
+use crate::types::identity::BackendId;
 use crate::types::wake::WakeHandle;
 
 /// Core interface for gateway backends that extend iceoryx2 over another
@@ -107,6 +108,9 @@ pub trait Backend<S: Service>: Sized {
 
     /// Returns a [`BackendBuilder`] bound to the provided configuration.
     fn builder(config: &Self::Config) -> Self::Builder<'_>;
+
+    /// Returns the identity under which peers address this backend.
+    fn id(&self) -> BackendId;
 
     /// Returns a mutable reference to the [`Discovery`] implementation.
     fn discovery(&mut self) -> &mut impl Discovery;
