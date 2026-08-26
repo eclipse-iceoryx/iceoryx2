@@ -33,6 +33,7 @@ use zenoh::{
 };
 
 use crate::keys;
+use crate::relays::bytes::{payload_bytes, user_header_bytes, write_message};
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -163,20 +164,11 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             self.description.name
         );
 
-        let user_header = sample.user_header();
-        let payload = sample.payload();
-
         let mut writer = ZBytes::writer();
-        writer.append(unsafe {
-            core::slice::from_raw_parts(
-                user_header as *const CustomHeaderMarker as *const u8,
-                user_header_size(&self.description),
-            )
-            .into()
-        });
-        writer.append(unsafe {
-            core::slice::from_raw_parts(payload.as_ptr() as *mut u8, payload.len()).into()
-        });
+        writer.append(
+            user_header_bytes(sample.user_header(), user_header_size(&self.description)).into(),
+        );
+        writer.append(payload_bytes(sample.payload()).into());
 
         fail!(
             from self,
@@ -220,29 +212,14 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 "Failed to loan sample from iceoryx"
             );
 
-            let payload = iceoryx_sample.payload_mut();
-
-            debug_assert!(
-                payload.len() >= payload_received.len(),
-                "Loaned payload size ({}) is too small for received payload ({})",
-                payload.len(),
-                payload_received.len()
-            );
-
             unsafe {
-                core::ptr::copy_nonoverlapping(
-                    user_header_received.as_ptr(),
-                    iceoryx_sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
-                    user_header_size,
-                );
-            }
-            unsafe {
-                core::ptr::copy_nonoverlapping(
-                    payload_received.as_ptr(),
-                    iceoryx_sample.payload_mut().as_mut_ptr().cast::<u8>(),
-                    payload_received.len(),
-                );
-            }
+                write_message(
+                    user_header_received,
+                    payload_received,
+                    iceoryx_sample.user_header_mut(),
+                    iceoryx_sample.payload_mut(),
+                )
+            };
             let initialized_sample = unsafe { iceoryx_sample.assume_init() };
 
             return Ok(Some(initialized_sample));
