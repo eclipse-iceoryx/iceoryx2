@@ -466,12 +466,18 @@ impl<
         let origin = "Publisher::new()";
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
-        let port_id = UniquePublisherId::new::<Service>(&Entity {
-            // name: unsafe { StaticString::from_bytes_unchecked(config.port_name.as_bytes()) },
-            // id: service.static_config().unique_service_id().value(), // parent id
-            name: StaticString::try_from("").unwrap(),
-            id: 1,
-        });
+        let port_id = UniquePublisherId::new::<Service>(
+            &Entity {
+                name: StaticString::new(),
+                id: 1,
+            },
+            publisher_factory
+                .factory
+                .service
+                .shared_node()
+                .mgmt()
+                .id_storage(),
+        );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service

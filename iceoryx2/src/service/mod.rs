@@ -989,7 +989,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     type BlackboardPayload: SharedMemory<BumpAllocator>;
 
     // TODO: better name, remove "System"
-    type UniqueSystemId: UniqueIdGenerator;
+    type UniqueSystemId: UniqueIdGenerator + Debug;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

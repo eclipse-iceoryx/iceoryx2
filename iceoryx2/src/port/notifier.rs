@@ -416,10 +416,13 @@ impl<Service: service::Service> Notifier<Service> {
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
-        let notifier_id = UniqueNotifierId::new::<Service>(&Entity {
-            name: StaticString::try_from("").unwrap(),
-            id: 1,
-        });
+        let notifier_id = UniqueNotifierId::new::<Service>(
+            &Entity {
+                name: StaticString::try_from("").unwrap(),
+                id: 1,
+            },
+            service.shared_node().mgmt().id_storage(),
+        );
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

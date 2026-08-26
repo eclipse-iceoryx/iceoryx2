@@ -46,7 +46,11 @@ pub mod unique_id_generator_trait {
         }
     }
     impl UniqueIdGenerator for TestUniqueId {
-        fn generate(_builder: UniqueIdBuilder) -> Result<UniqueId, UniqueIdGeneratorError> {
+        type IdStorage = u64;
+
+        fn generate(
+            _builder: UniqueIdBuilder<TestUniqueId>,
+        ) -> Result<UniqueId, UniqueIdGeneratorError> {
             Ok(unsafe { UniqueId::from_value(TestUniqueId::new().value() as u128) })
         }
     }
@@ -76,20 +80,20 @@ pub mod unique_id_generator_trait {
 
     #[conformance_test]
     pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator>() {
-        let sut = UniqueIdBuilder::new(&StaticString::new()).create::<Sut>(0);
+        let sut = UniqueIdBuilder::<Sut>::new(&StaticString::new()).create(0);
         assert_that!(sut, is_ok);
     }
 
     #[conformance_test]
     pub fn generate_returns_unique_ids<Sut: UniqueIdGenerator>() {
-        let sut1 = UniqueIdBuilder::new(&StaticString::try_from("id").unwrap())
-            .create::<Sut>(0)
+        let sut1 = UniqueIdBuilder::<Sut>::new(&StaticString::try_from("id").unwrap())
+            .create(0)
             .unwrap();
-        let sut2 = UniqueIdBuilder::new(&StaticString::try_from("id").unwrap())
-            .create::<Sut>(1)
+        let sut2 = UniqueIdBuilder::<Sut>::new(&StaticString::try_from("id").unwrap())
+            .create(1)
             .unwrap();
-        let sut3 = UniqueIdBuilder::new(&StaticString::try_from("ID").unwrap())
-            .create::<Sut>(0)
+        let sut3 = UniqueIdBuilder::<Sut>::new(&StaticString::try_from("ID").unwrap())
+            .create(0)
             .unwrap();
 
         assert_that!(sut1, ne sut2);

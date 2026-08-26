@@ -46,11 +46,13 @@ macro_rules! generate_id {
         }
 
         impl $id_name {
-            pub(crate) fn new<Service: crate::service::Service>(entity: &Entity) -> Self {
-                let builder = UniqueIdBuilder::new(&entity.name);
+            pub(crate) fn new<Service: crate::service::Service>(
+                entity: &Entity, id_storage: &<Service::UniqueSystemId as UniqueIdGenerator>::IdStorage
+            ) -> Self {
+                let builder = UniqueIdBuilder::<Service::UniqueSystemId>::new(&entity.name).id_storage(id_storage);
                 Self(
                     fatal_panic!(from format!("{}::new()", stringify!($id_name)),
-                        when builder.create::<Service::UniqueSystemId>(entity.id),
+                        when builder.create(entity.id),
                         "Unable to generate required {}!", stringify!($id_name)),
                 )
             }
@@ -162,11 +164,23 @@ impl core::fmt::Display for UniqueNodeId {
 }
 
 impl UniqueNodeId {
-    pub(crate) fn new<Service: crate::service::Service>(counter_hint: u32) -> Self {
-        let builder = UniqueIdBuilder::new(&StaticString::new()).counter_hint(counter_hint);
-        Self(fatal_panic!(from "UniqueNodeId::new",
-                when builder.create::<Service::UniqueSystemId>(0),
-                "Unable to generate required UniqueNodeId!"))
+    pub(crate) fn new<Service: crate::service::Service>(
+        entity: &Entity,
+        id_storage: &<Service::UniqueSystemId as UniqueIdGenerator>::IdStorage,
+        id_hint: Option<<Service::UniqueSystemId as UniqueIdGenerator>::IdStorage>,
+    ) -> Self {
+        let builder = match id_hint {
+            Some(id) => UniqueIdBuilder::<Service::UniqueSystemId>::new(&entity.name)
+                .id_storage(id_storage)
+                .id_hint(id),
+            None => {
+                UniqueIdBuilder::<Service::UniqueSystemId>::new(&entity.name).id_storage(id_storage)
+            }
+        };
+        Self(
+            fatal_panic!(from "UniqueNodeId::new", when builder.create(entity.id),
+                "Unable to generate required UniqueNodeId!"),
+        )
     }
 
     /// Returns the underlying raw value of the ID

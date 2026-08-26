@@ -1272,6 +1272,7 @@ dependencies = [
 name = "iceoryx2-cal-tests-common"
 version = "0.9.999"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",

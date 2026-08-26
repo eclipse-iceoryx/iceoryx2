@@ -379,10 +379,18 @@ impl<
     ) -> Result<Self, ServerCreateError> {
         let msg = "Failed to create Server port";
         let origin = "Server::new()";
-        let server_id = UniqueServerId::new::<Service>(&Entity {
-            name: StaticString::try_from("").unwrap(),
-            id: 1,
-        });
+        let server_id = UniqueServerId::new::<Service>(
+            &Entity {
+                name: StaticString::try_from("").unwrap(),
+                id: 1,
+            },
+            server_factory
+                .factory
+                .service
+                .shared_node()
+                .mgmt()
+                .id_storage(),
+        );
         let service = &server_factory.factory.service;
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

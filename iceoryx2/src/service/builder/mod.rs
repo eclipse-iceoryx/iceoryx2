@@ -212,9 +212,9 @@ impl<S: Service> Builder<S> {
         BuilderWithServiceType::new(
             StaticConfig::new_request_response::<S::ServiceNameHasher>(
                 &self.name,
-                self.shared_node.config(),
+                self.shared_node.clone(),
             ),
-            self.shared_node,
+            self.shared_node.clone(),
         )
         .request_response::<RequestPayload, ResponsePayload>()
     }
@@ -227,9 +227,9 @@ impl<S: Service> Builder<S> {
         BuilderWithServiceType::new(
             StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
                 &self.name,
-                self.shared_node.config(),
+                self.shared_node.clone(),
             ),
-            self.shared_node,
+            self.shared_node.clone(),
         )
         .publish_subscribe()
     }
@@ -238,8 +238,8 @@ impl<S: Service> Builder<S> {
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     pub fn event(self) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, self.shared_node.config()),
-            self.shared_node,
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, self.shared_node.clone()),
+            self.shared_node.clone(),
         )
         .event()
     }
@@ -254,9 +254,9 @@ impl<S: Service> Builder<S> {
         BuilderWithServiceType::new(
             StaticConfig::new_blackboard::<S::ServiceNameHasher>(
                 &self.name,
-                self.shared_node.config(),
+                self.shared_node.clone(),
             ),
-            self.shared_node,
+            self.shared_node.clone(),
         )
         .blackboard_creator()
     }
@@ -271,9 +271,9 @@ impl<S: Service> Builder<S> {
         BuilderWithServiceType::new(
             StaticConfig::new_blackboard::<S::ServiceNameHasher>(
                 &self.name,
-                self.shared_node.config(),
+                self.shared_node.clone(),
             ),
-            self.shared_node,
+            self.shared_node.clone(),
         )
         .blackboard_opener()
     }

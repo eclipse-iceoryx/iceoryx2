@@ -160,6 +160,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
@@ -178,7 +179,7 @@ use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
-use iceoryx2_cal::unique_id_generator::UniqueId;
+use iceoryx2_cal::unique_id_generator::*;
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
@@ -1058,6 +1059,10 @@ impl<Service: service::Service> SharedNode<Service> {
         &self.state.details.name
     }
 
+    pub(crate) fn mgmt(&self) -> &GlobalManagementSegment<Service> {
+        &self.state.management_segment
+    }
+
     pub(crate) fn create_port_tag(
         &self,
         origin: &str,
@@ -1565,7 +1570,15 @@ impl NodeBuilder {
                     "Unable to create node since the global management segment could not be opened. {e:?}");
             }
         };
-        let node_id = UniqueNodeId::new::<Service>(mgmt.increment_node_counter());
+
+        let node_id = UniqueNodeId::new::<Service>(
+            &Entity {
+                name: StaticString::new(),
+                id: 0,
+            },
+            mgmt.id_storage(),
+            Service::UniqueSystemId::adapt_id_storage(mgmt.id_storage()).ok(),
+        );
 
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
