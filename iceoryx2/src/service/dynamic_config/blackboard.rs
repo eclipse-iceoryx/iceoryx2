@@ -52,7 +52,7 @@ pub(crate) struct DynamicConfigSettings {
 /// Contains the communication settings of the connected
 /// [`Reader`](crate::port::reader::Reader).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct ReaderDetails {
     /// The [`UniqueReaderId`] of the [`Reader`](crate::port::reader::Reader).
     pub reader_id: UniqueReaderId,
@@ -66,7 +66,7 @@ pub struct ReaderDetails {
 /// Contains the communication settings of the connected
 /// [`Writer`](crate::port::writer::Writer).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct WriterDetails {
     /// The [`UniqueWriterId`] of the [`Writer`](crate::port::writer::Writer).
     pub writer_id: UniqueWriterId,

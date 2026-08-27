@@ -54,7 +54,7 @@ pub(crate) struct DynamicConfigSettings {
 /// Contains the communication settings of the connected
 /// [`Publisher`](crate::port::publisher::Publisher).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct PublisherDetails {
     /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
@@ -80,7 +80,7 @@ pub struct PublisherDetails {
 /// Contains the communication settings of the connected
 /// [`Subscriber`](crate::port::subscriber::Subscriber).
 #[repr(C)]
-#[derive(Debug, Copy, Clone, ZeroCopySend)]
+#[derive(Debug, Copy, Clone, PartialEq, ZeroCopySend)]
 pub struct SubscriberDetails {
     /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,

@@ -42,7 +42,10 @@ impl<T: BagType> Bag<T> for Container<T> {
         &self,
         value: T,
         owner_id: OwnerId,
-    ) -> Result<(*const T, BagHandle), BagAddFailure> {
+    ) -> Result<(*const T, BagHandle), BagAddFailure>
+    where
+        T: PartialEq,
+    {
         unsafe { self.add(value, owner_id) }
     }
 

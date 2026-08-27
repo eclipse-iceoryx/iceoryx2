@@ -88,7 +88,9 @@ pub trait Bag<T: BagType>: Debug {
         &self,
         value: T,
         owner_id: OwnerId,
-    ) -> Result<(*const T, BagHandle), BagAddFailure>;
+    ) -> Result<(*const T, BagHandle), BagAddFailure>
+    where
+        T: PartialEq;
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
     ///

@@ -63,7 +63,7 @@ pub struct DynamicConfig<B: BagFamily> {
 /// Contains the communication settings of the connected
 /// [`Listener`](crate::port::listener::Listener).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct ListenerDetails {
     /// The [`UniqueListenerId`] of the [`Listener`](crate::port::listener::Listener).
     pub listener_id: UniqueListenerId,
@@ -77,7 +77,7 @@ pub struct ListenerDetails {
 /// Contains the communication settings of the connected
 /// [`Notifier`](crate::port::notifier::Notifier).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct NotifierDetails {
     /// The [`UniqueNotifierId`] of the [`Notifier`](crate::port::notifier::Notifier).
     pub notifier_id: UniqueNotifierId,

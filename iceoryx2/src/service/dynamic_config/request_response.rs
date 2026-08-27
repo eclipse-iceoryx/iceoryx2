@@ -31,7 +31,7 @@ use super::PortCleanupAction;
 /// Contains the communication settings of the connected
 /// [`Server`](crate::port::server::Server).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
@@ -59,7 +59,7 @@ pub struct ServerDetails {
 /// Contains the communication settings of the connected
 /// [`Client`](crate::port::client::Client).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,

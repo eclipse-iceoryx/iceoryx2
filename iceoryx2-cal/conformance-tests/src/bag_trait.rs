@@ -27,7 +27,7 @@ pub mod bag_trait {
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::bag::{Bag, BagAddFailure, BagFamily};
 
-    #[derive(Debug, Copy, Clone, ZeroCopySend)]
+    #[derive(Debug, Copy, Clone, PartialEq, ZeroCopySend)]
     #[repr(C)]
     pub struct Data {
         value: u64,
