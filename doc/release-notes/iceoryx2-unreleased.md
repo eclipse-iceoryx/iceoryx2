@@ -14,6 +14,7 @@
 -->
 
 * [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the gateway to a configurable allowlist of services
+* [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Associate remotely discovered services with the gateways that offer them
 * [#925](https://github.com/eclipse-iceoryx/iceoryx2/issues/925) Adjust event API and guarantee that events can be always delivered.
 * [#1185](https://github.com/eclipse-iceoryx/iceoryx2/issues/1185) Make history configurable per subscriber
 * [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584) Introduce `Node::force_remove_service` to remove corrupted services manually.
