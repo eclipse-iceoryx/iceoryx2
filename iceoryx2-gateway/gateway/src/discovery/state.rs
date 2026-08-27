@@ -72,14 +72,8 @@ impl LocalServices {
         DeltaUpdate { local: self, epoch }
     }
 
-    /// Forces the offered services to match an external target set, calling
-    /// the provided callbacks on addition or removal.
-    pub(crate) fn force_update<E>(
-        &mut self,
-        target: impl Iterator<Item = ServiceDescription>,
-        mut on_added: impl FnMut(&ServiceDescription) -> Result<(), E>,
-        mut on_removed: impl FnMut(&ServiceDescription) -> Result<(), E>,
-    ) -> Result<(), E> {
+    /// Forces the offered services to match an external target set.
+    pub(crate) fn force_update(&mut self, target: impl Iterator<Item = ServiceDescription>) {
         let epoch = self.next_epoch();
 
         for description in target {
@@ -87,23 +81,11 @@ impl LocalServices {
             if let Some(service) = self.offered.get_mut(&hash) {
                 service.last_seen = epoch;
             } else {
-                on_added(&description)?;
                 self.insert(description, epoch);
             }
         }
 
-        let mut result = Ok(());
-        self.offered.retain(|_, service| {
-            if service.last_seen == epoch {
-                true
-            } else {
-                if result.is_ok() {
-                    result = on_removed(&service.description);
-                }
-                false
-            }
-        });
-        result
+        self.offered.retain(|_, service| service.last_seen == epoch);
     }
 }
 

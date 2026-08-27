@@ -268,9 +268,9 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
                 .filter(|details| is_locally_offered(details, node.id()))
                 .filter_map(|details| ServiceDescription::try_from(&details.static_details).ok())
                 .filter(|description| mapping.remote(description).is_some()),
-            |_| Ok(()),
-            |_| Ok(()),
-        )
+        );
+
+        Ok(())
     }
 
     /// Reconciles the bridges and announcements with the discovery state.
