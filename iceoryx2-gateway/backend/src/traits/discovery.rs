@@ -43,7 +43,7 @@ use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 /// }
 /// impl core::error::Error for MyDiscoveryError {}
 ///
-/// fn list_services<DiscoveryError, ProcessingError>(discovery: &impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
+/// fn list_services<DiscoveryError, ProcessingError>(discovery: &mut impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
 ///     discovery.discover(|event| -> Result<(), MyDiscoveryError> {
 ///         println!("Discovery event: {:?}", event);
 ///         Ok(())
@@ -84,14 +84,14 @@ use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&self, update: DiscoveryUpdateRef<'_>)
+///     fn announce(&mut self, update: DiscoveryUpdateRef<'_>)
 ///         -> Result<(), Self::AnnouncementError> {
 ///         // Make the described service discoverable over the backend
 ///         Ok(())
 ///     }
 ///
 ///     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-///         &self,
+///         &mut self,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
@@ -119,7 +119,7 @@ pub trait Discovery {
     ///
     /// * `update` - The [`DiscoveryUpdateRef`] to announce over the
     ///   [`crate::traits::Backend`].
-    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError>;
+    fn announce(&mut self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers services available remotely and processes each one with the
     /// provided callback.
@@ -135,7 +135,7 @@ pub trait Discovery {
     /// * `process_discovery` - Callback provided by the caller to process
     ///   [`DiscoveryUpdate`]s received over the [`crate::traits::Backend`].
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;
 }

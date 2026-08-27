@@ -92,8 +92,8 @@ impl<
         Self::RelayFactory::new(&self.session, self.wake.clone())
     }
 
-    fn discovery(&self) -> &impl iceoryx2_gateway_backend::traits::Discovery {
-        &self.discovery
+    fn discovery(&mut self) -> &mut impl iceoryx2_gateway_backend::traits::Discovery {
+        &mut self.discovery
     }
 
     fn mapping(&self) -> &Self::Mapping {

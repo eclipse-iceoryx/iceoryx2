@@ -15,7 +15,6 @@ use std::sync::Arc;
 
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_gateway_backend::traits::Mapping;
 use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
@@ -91,11 +90,11 @@ pub struct Discovery<S: Service, M: Mapping<EndpointDescription = ServiceDescrip
     // Subscribes to liveliness changes for service announcements.
     subscriber: Subscriber<FifoChannelHandler<Sample>>,
     // Keeps track of services that have been announced locally.
-    announced: RefCell<BTreeMap<ServiceHash, AnnouncedService>>,
+    announced: BTreeMap<ServiceHash, AnnouncedService>,
     // Cache for replies to requests for remote service details.
     // Replies are filled asynchronously by Zenoh but only processed on
     // subsequent discover calls. Enables non-blocking implementation.
-    pending: RefCell<BTreeMap<ServiceHash, FifoChannelHandler<Reply>>>,
+    pending: BTreeMap<ServiceHash, FifoChannelHandler<Reply>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -118,8 +117,8 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             session: session.clone(),
             mapping,
             subscriber,
-            announced: RefCell::new(BTreeMap::new()),
-            pending: RefCell::new(BTreeMap::new()),
+            announced: BTreeMap::new(),
+            pending: BTreeMap::new(),
             _phantom: core::marker::PhantomData,
         })
     }
@@ -131,7 +130,7 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(&mut self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
         match update {
             DiscoveryUpdateRef::Added(description) => {
                 if self.mapping.remote(description).is_none() {
@@ -144,36 +143,42 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
     }
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
-        // Reaction to a new service being detected on the network: request
-        // its details. The reply will be handled by `process_service_details`.
-        // Subject to network latency.
-        let on_service_added =
-            |service_hash: &ServiceHash| self.request_service_details(service_hash);
+        for (service_hash, kind) in self.receive_liveliness_changes()? {
+            match kind {
+                // A new service was detected on the network. Request its
+                // details. The reply is picked up by a subsequent discover call.
+                // Subject to network latency.
+                SampleKind::Put => self.request_service_description(&service_hash)?,
+                // The service disappeared. Remove it from the gateway and
+                // cancel any in-flight details request.
+                SampleKind::Delete => {
+                    self.pending.remove(&service_hash);
 
-        // Removes a service from the gateway. Called on a liveliness Delete;
-        // also cancels any in-flight details request.
-        let on_service_removed = |service_hash: &ServiceHash| {
-            self.pending.borrow_mut().remove(service_hash);
+                    fail!(
+                        from self,
+                        when process_discovery(DiscoveryUpdate::Removed(service_hash)),
+                        with DiscoveryError::DiscoveryProcessing,
+                        "Failed to process Removed discovery event for {}", service_hash.as_str()
+                    );
+                }
+            }
+        }
 
-            fail!(
-                from self,
-                when process_discovery(DiscoveryUpdate::Removed(*service_hash)),
-                with DiscoveryError::DiscoveryProcessing,
-                "Failed to process Removed discovery event for {}", service_hash.as_str()
-            );
-            Ok(())
-        };
-
-        self.process_liveliness_changes(on_service_added, on_service_removed)?;
-
-        // Adds a service to the gateway. Called once the reply with the
-        // service details of a discovered remote service has been received.
-        let on_service_details = |description: ServiceDescription| {
+        // Poll the pending detail queries. A service is added to the
+        // gateway once the reply with its details has been received.
+        let (resolved, failed) = self.receive_service_descriptions();
+        for description in &resolved {
+            self.pending.remove(&description.service_hash);
+        }
+        for hash in failed {
+            self.request_service_description(&hash)?;
+        }
+        for description in resolved {
             let Some(description) = self.mapping.local::<S>(&description) else {
-                return Ok(());
+                continue;
             };
             let service_hash = description.service_hash;
             fail!(
@@ -182,10 +187,7 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
                 with DiscoveryError::DiscoveryProcessing,
                 "Failed to process Added discovery event for {}", service_hash.as_str()
             );
-            Ok(())
-        };
-
-        self.process_service_details(on_service_details)?;
+        }
 
         Ok(())
     }
@@ -196,14 +198,17 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
     /// its details and a liveliness token at its key.
     ///
     /// No-op if the service has already been announced.
-    fn announce_added(&self, description: &ServiceDescription) -> Result<(), AnnouncementError> {
+    fn announce_added(
+        &mut self,
+        description: &ServiceDescription,
+    ) -> Result<(), AnnouncementError> {
         let service_hash = description.service_hash;
 
-        if self.announced.borrow().contains_key(&service_hash) {
+        if self.announced.contains_key(&service_hash) {
             return Ok(());
         }
 
-        let key = keys::service_details(&service_hash);
+        let key = keys::service_description(&service_hash);
         let serialized = fail!(
             from self,
             when serde_json::to_string(description),
@@ -216,7 +221,7 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         let queryable = self.declare_queryable(&key, serialized)?;
         let token = self.declare_liveliness_token(&key)?;
 
-        self.announced.borrow_mut().insert(
+        self.announced.insert(
             service_hash,
             AnnouncedService {
                 _token: token,
@@ -228,8 +233,8 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
 
     /// Withdraws a service announcement by dropping its queryable and
     /// liveliness token, propagating a liveliness Delete to remote peers.
-    fn announce_removed(&self, service_hash: &ServiceHash) -> Result<(), AnnouncementError> {
-        self.announced.borrow_mut().remove(service_hash);
+    fn announce_removed(&mut self, service_hash: &ServiceHash) -> Result<(), AnnouncementError> {
+        self.announced.remove(service_hash);
         Ok(())
     }
 
@@ -276,19 +281,11 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         Ok(token)
     }
 
-    /// Drains the liveliness subscriber non-blocking and dispatches each
-    /// sample to one of the provided callbacks based on its kind. `Put`
-    /// samples (a service appeared on the network) go to `on_service_added`;
-    /// `Delete` samples (a service vanished) go to `on_service_removed`.
-    fn process_liveliness_changes<OnServiceAdded, OnServiceRemoved>(
-        &self,
-        mut on_service_added: OnServiceAdded,
-        mut on_service_removed: OnServiceRemoved,
-    ) -> Result<(), DiscoveryError>
-    where
-        OnServiceAdded: FnMut(&ServiceHash) -> Result<(), DiscoveryError>,
-        OnServiceRemoved: FnMut(&ServiceHash) -> Result<(), DiscoveryError>,
-    {
+    /// Drains the liveliness samples received since the last call and
+    /// returns the (service, change) pairs in order of arrival. Samples
+    /// with unparsable keys are skipped.
+    fn receive_liveliness_changes(&self) -> Result<Vec<(ServiceHash, SampleKind)>, DiscoveryError> {
+        let mut changes = Vec::new();
         loop {
             let sample = match fail!(
                 from self,
@@ -309,19 +306,20 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
                 }
             };
 
-            match sample.kind() {
-                SampleKind::Put => on_service_added(&service_hash)?,
-                SampleKind::Delete => on_service_removed(&service_hash)?,
-            }
+            changes.push((service_hash, sample.kind()));
         }
-        Ok(())
+        Ok(changes)
     }
 
-    /// Issues a Zenoh `get` for the service's ServiceDescription and queues the
-    /// reply handler under `pending`. Returns immediately; replies are
-    /// processed by [`Discovery::process_service_details`] on subsequent calls.
-    fn request_service_details(&self, service_hash: &ServiceHash) -> Result<(), DiscoveryError> {
-        let key = keys::service_details(service_hash);
+    /// Issues a Zenoh `get` for the service's [`ServiceDescription`] and stores the
+    /// reply handler.
+    /// Replies are picked up by [`Discovery::receive_service_descriptions`] on
+    /// subsequent iterations.
+    fn request_service_description(
+        &mut self,
+        service_hash: &ServiceHash,
+    ) -> Result<(), DiscoveryError> {
+        let key = keys::service_description(service_hash);
         let handler = fail!(
             from self,
             when self.session
@@ -331,55 +329,26 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             with DiscoveryError::DiscoveryQuery,
             "Failed to query for static config of {}", key
         );
-        self.pending.borrow_mut().insert(*service_hash, handler);
+        self.pending.insert(*service_hash, handler);
         Ok(())
     }
 
-    /// Drains the cached handlers for replies received over the network and
-    /// dispatches each resolved [`ServiceDescription`] to `on_service_details`.
-    /// Re-issues the query for any handler whose channel closed without a
-    /// usable reply.
-    fn process_service_details<OnServiceDetails>(
-        &self,
-        mut on_service_details: OnServiceDetails,
-    ) -> Result<(), DiscoveryError>
-    where
-        OnServiceDetails: FnMut(ServiceDescription) -> Result<(), DiscoveryError>,
-    {
+    /// Receives service descriptions from previously-issued queries.
+    /// Returns the resolved [`ServiceDescription`]s and the services whose
+    /// query channel closed without a usable reply.
+    fn receive_service_descriptions(&self) -> (Vec<ServiceDescription>, Vec<ServiceHash>) {
         let mut resolved: Vec<ServiceDescription> = Vec::new();
         let mut failed: Vec<ServiceHash> = Vec::new();
 
-        // Check status of pending queries.
-        {
-            let pending = self.pending.borrow();
-            for (hash, handler) in pending.iter() {
-                match check_pending(hash, handler) {
-                    Ok(Some(description)) => resolved.push(description),
-                    Ok(None) => {}
-                    Err(_) => failed.push(*hash),
-                }
+        for (hash, handler) in self.pending.iter() {
+            match check_pending(hash, handler) {
+                Ok(Some(description)) => resolved.push(description),
+                Ok(None) => {}
+                Err(_) => failed.push(*hash),
             }
         }
 
-        // Drop resolved entries from pending.
-        {
-            let mut pending = self.pending.borrow_mut();
-            for description in &resolved {
-                pending.remove(&description.service_hash);
-            }
-        }
-
-        // Re-issue queries for failed requests.
-        for hash in failed {
-            self.request_service_details(&hash)?;
-        }
-
-        // Processed received service details.
-        for description in resolved {
-            on_service_details(description)?;
-        }
-
-        Ok(())
+        (resolved, failed)
     }
 }
 

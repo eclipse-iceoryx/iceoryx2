@@ -83,6 +83,7 @@
 * [#1930](https://github.com/eclipse-iceoryx/iceoryx2/issues/1930) Make FreeBSD platform abstraction use the `libc` crate instead of `bindgen`
 * [#1931](https://github.com/eclipse-iceoryx/iceoryx2/issues/1931) Use ANSI escape sequences in iceoryx2-cli
 * [#1942](https://github.com/eclipse-iceoryx/iceoryx2/issues/1942) Split implementation of gateway testing backend into modules
+* [#1949](https://github.com/eclipse-iceoryx/iceoryx2/issues/1949) Take `&mut self` in gateway Discovery trait
 
 ### Workflow
 

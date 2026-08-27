@@ -92,14 +92,14 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(&mut self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
         // Nothing to do - local announcement handled by creating `iceoryx2`
         // [`Service`](iceoryx2::service::Service)s.
         Ok(())
     }
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &self,
+        &mut self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let subscriber = &self.0;
