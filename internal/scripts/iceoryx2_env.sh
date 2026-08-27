@@ -30,9 +30,9 @@ setup_docker_image() {
     # ubuntu/debian and derivatives
     if command -v apt &>/dev/null; then
         apt update
-        apt -y install sudo git fish curl expect vim lsb-release software-properties-common gcc libacl1-dev libclang-dev zlib1g-dev clang libpython3-all-dev
+        apt -y install sudo git fish curl expect vim lsb-release software-properties-common cmake gcc libclang-dev zlib1g-dev clang clang-format clang-tidy libpython3-all-dev
     elif command -v pacman &>/dev/null; then
-        pacman -Syu --noconfirm fish curl expect git vim clang python
+        pacman -Syu --noconfirm fish curl expect git vim cmake clang python
     else
         echo Please install the following packages to have a working iceoryx2 environment:
         echo fish curl clang python
@@ -48,7 +48,8 @@ setup_docker_image() {
     export PATH=$PATH:/root/.cargo/bin
     rustup toolchain install stable
     rustup toolchain install nightly
-    cargo install cargo-nextest
+    cargo install cargo-nextest --locked
+    cargo install just --locked
 
     mkdir -p /root/.config/fish
     echo "set -gx PATH /root/.cargo/bin \$PATH" >> /root/.config/fish/config.fish
