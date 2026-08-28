@@ -84,6 +84,7 @@
 * [#1931](https://github.com/eclipse-iceoryx/iceoryx2/issues/1931) Use ANSI escape sequences in iceoryx2-cli
 * [#1942](https://github.com/eclipse-iceoryx/iceoryx2/issues/1942) Split implementation of gateway testing backend into modules
 * [#1949](https://github.com/eclipse-iceoryx/iceoryx2/issues/1949) Take `&mut self` in gateway Discovery trait
+* [#1955](https://github.com/eclipse-iceoryx/iceoryx2/issues/1955) Remove `as_mut_bytes` and `deref_mut` from the `String` API in iceoryx2-bb-container
 
 ### Workflow
 
@@ -265,6 +266,19 @@
 
     // new
     iox2::CleanupState cleanup = node.try_cleanup_dead_nodes();
+    ```
+
+1. In iceoryx2-bb-container, methods `as_mut_bytes()` and `deref_mut()` are removed from the `String` API,
+   This applies equally to `PolymorphicString`, `RelocatableString` and `StaticString`.
+
+    ```rust
+    use iceoryx2_bb_container::string::*;
+    const CAPACITY: usize = 1234;
+    let my_str = StaticString::<CAPACITY>::new();
+    my_str.push_bytes(b"hello");
+    
+    let mut_str_slice = my_str.as_bytes(); // Compiler Error
+    my_str.deref_mut()[0] = b'b'; // Compiler Error
     ```
 
 <!-- markdownlint-enable MD013 -->

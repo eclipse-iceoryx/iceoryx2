@@ -40,7 +40,7 @@ use core::{
     fmt::{Debug, Display},
     hash::Hash,
     mem::MaybeUninit,
-    ops::{Deref, DerefMut},
+    ops::Deref,
 };
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 
@@ -150,12 +150,6 @@ impl<const CAPACITY: usize> Deref for StaticString<CAPACITY> {
 
     fn deref(&self) -> &Self::Target {
         self.as_bytes()
-    }
-}
-
-impl<const CAPACITY: usize> DerefMut for StaticString<CAPACITY> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut_bytes()
     }
 }
 

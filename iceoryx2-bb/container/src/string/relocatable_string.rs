@@ -80,7 +80,7 @@ use core::cmp::Ordering;
 use core::fmt::{Debug, Display};
 use core::hash::Hash;
 use core::mem::MaybeUninit;
-use core::ops::{Deref, DerefMut};
+use core::ops::Deref;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
@@ -151,12 +151,6 @@ impl Deref for RelocatableString {
 
     fn deref(&self) -> &Self::Target {
         self.as_bytes()
-    }
-}
-
-impl DerefMut for RelocatableString {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut_bytes()
     }
 }
 

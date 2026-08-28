@@ -11,12 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use core::{
-    fmt::Debug,
-    fmt::Display,
-    hash::Hash,
-    ops::{Deref, DerefMut},
-};
+use core::{fmt::Debug, fmt::Display, hash::Hash, ops::Deref};
 use iceoryx2_log::{fail, fatal_panic};
 
 /// Runtime fixed-capacity string where the user can provide a stateful allocator.
@@ -99,7 +94,6 @@ pub trait String:
     + Ord
     + Hash
     + Deref<Target = [u8]>
-    + DerefMut
     + PartialEq
     + Eq
 {
@@ -116,13 +110,6 @@ pub trait String:
     /// Returns a zero terminated slice of the underlying bytes
     fn as_c_str(&self) -> *const core::ffi::c_char {
         self.data().as_ptr() as *const core::ffi::c_char
-    }
-
-    /// Returns a mutable slice to the underlying bytes
-    fn as_mut_bytes(&mut self) -> &mut [u8] {
-        unsafe {
-            core::slice::from_raw_parts_mut(self.data_mut().as_mut_ptr() as *mut u8, self.len())
-        }
     }
 
     /// Returns the content as a string slice if the bytes are valid UTF-8
