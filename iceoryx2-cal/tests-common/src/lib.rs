@@ -21,6 +21,5 @@ pub mod shared_memory_posix_shared_memory_tests;
 pub mod shm_allocator_bump_allocator_tests;
 pub mod shm_allocator_pool_allocator_tests;
 pub mod static_storage_file_tests;
-pub mod unique_id_generator_blub_tests;
 pub mod used_chunk_list_tests;
 pub mod zero_copy_connection_posix_shared_memory_tests;

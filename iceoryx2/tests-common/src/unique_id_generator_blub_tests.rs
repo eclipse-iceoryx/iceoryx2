@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::unique_id_generator::UniqueIdBuilder;
+use iceoryx2::unique_id_generator::blub::UniqueSystemId;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_cal::unique_id_generator::UniqueIdBuilder;
-use iceoryx2_cal::unique_id_generator::blub::UniqueSystemId;
 
 #[test]
 fn generated_id_contains_counter_hint() {

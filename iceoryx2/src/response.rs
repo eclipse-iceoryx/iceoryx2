@@ -45,6 +45,7 @@ use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::service;
 use crate::service::marker::Flatbuffer;
+use crate::unique_id_generator::UniqueId;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ops::Deref;
@@ -53,7 +54,6 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::unique_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 /// It stores the payload and can be received by the

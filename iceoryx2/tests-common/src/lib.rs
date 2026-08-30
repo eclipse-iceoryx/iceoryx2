@@ -22,3 +22,4 @@ pub mod service_event_thread_safety_tests;
 pub mod service_publish_subscribe_thread_safety_tests;
 pub mod service_request_response_thread_safety_tests;
 pub mod service_static_config_tests;
+pub mod unique_id_generator_blub_tests;
