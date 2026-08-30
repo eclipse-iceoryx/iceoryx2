@@ -12,11 +12,17 @@
 
 use core::{fmt::Debug, hash::Hash};
 
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 use serde::{Deserialize, Serialize};
+
+use crate::{
+    config::Config,
+    node::node_name::NodeName,
+    port::port_name::PortName,
+    service::{self, service_name::ServiceName},
+};
 
 // TODO: better name
 pub mod blub;
@@ -58,13 +64,6 @@ impl UniqueId {
     }
 }
 
-#[repr(C)]
-#[derive(ZeroCopySend)]
-pub struct Entity {
-    pub name: StaticString<255>, // equivalent to MAX_SERVICE_NAME_LENGTH; TODO: own type?
-    pub id: u128,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UniqueIdGeneratorError {
     GenerationError,
@@ -79,45 +78,33 @@ impl core::fmt::Display for UniqueIdGeneratorError {
 
 impl core::error::Error for UniqueIdGeneratorError {}
 
-// TODO: separate types for entity_name and entity_id?
-pub struct UniqueIdBuilder<'a, T: UniqueIdGenerator> {
-    entity_name: StaticString<255>,
-    entity_id: u128,
-    id_storage: Option<&'a T::IdStorage>,
-    id_hint: Option<T::IdStorage>,
+pub struct UniqueIdBuilder {
+    entity: Entity,
+    config: Option<Config>,
 }
 
-impl<'a, T: UniqueIdGenerator> UniqueIdBuilder<'a, T> {
-    pub fn new(name: &StaticString<255>) -> Self {
+impl UniqueIdBuilder {
+    pub fn new(entity: Entity) -> Self {
         Self {
-            entity_name: *name,
-            entity_id: 0,
-            id_storage: None,
-            id_hint: None,
+            entity: entity,
+            config: None,
         }
     }
 
-    // If we keep this approach, we could have a second builder making id_storage required (usage cumbersome?)
-    pub fn id_storage(mut self, id_storage: &'a T::IdStorage) -> Self {
-        self.id_storage = Some(id_storage);
+    pub fn config(mut self, value: &Config) -> Self {
+        self.config = Some(value.clone());
         self
     }
 
-    pub fn id_hint(mut self, id_hint: T::IdStorage) -> Self {
-        self.id_hint = Some(id_hint);
-        self
-    }
-
-    pub fn create(mut self, entity_id: u128) -> Result<UniqueId, UniqueIdGeneratorError> {
-        self.entity_id = entity_id;
-        T::generate(self)
+    pub fn create<Service: service::Service>(mut self) -> Result<UniqueId, UniqueIdGeneratorError> {
+        Service::UniqueSystemId::generate::<Service>(self)
     }
 }
 
 pub trait UniqueIdGenerator: From<UniqueId> {
-    type IdStorage: ZeroCopySend + Send + Sync + Debug + 'static; // TODO: better name
-
-    fn generate(builder: UniqueIdBuilder<Self>) -> Result<UniqueId, UniqueIdGeneratorError>;
+    fn generate<Service: service::Service>(
+        builder: UniqueIdBuilder,
+    ) -> Result<UniqueId, UniqueIdGeneratorError>;
 
     fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
@@ -128,9 +115,20 @@ pub trait UniqueIdGenerator: From<UniqueId> {
         fail!(from "UniqueIdGenerator::creation_time()",
             with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
     }
+}
 
-    fn adapt_id_storage(_: &Self::IdStorage) -> Result<Self::IdStorage, UniqueIdGeneratorError> {
-        fail!(from "UniqueIdGenerator::adapt_id_storage()",
-            with UniqueIdGeneratorError::NotImplemented, "adapt_id_storage() not implemented");
-    }
+pub enum Entity {
+    Node(NodeName),
+    PubSubService(ServiceName),
+    ReqResService(ServiceName),
+    EventService(ServiceName),
+    BlackboardService(ServiceName),
+    Publisher(PortName),
+    Subscriber(PortName),
+    Client(PortName),
+    Server(PortName),
+    Notifier(PortName),
+    Listener(PortName),
+    Writer(PortName),
+    Reader(PortName),
 }

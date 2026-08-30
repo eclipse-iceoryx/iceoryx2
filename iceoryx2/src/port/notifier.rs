@@ -43,7 +43,6 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -57,7 +56,6 @@ use iceoryx2_log::{debug, fail, warn};
 use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::service::SharedServiceState;
 use crate::service::resource::NoResource;
-use crate::unique_id_generator::Entity;
 use crate::{
     identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
     port::port_name::PortName,
@@ -418,11 +416,8 @@ impl<Service: service::Service> Notifier<Service> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
         let notifier_id = UniqueNotifierId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            service.shared_node().mgmt().id_storage(),
+            crate::unique_id_generator::Entity::Notifier(config.port_name),
+            service.shared_node().config(),
         );
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
