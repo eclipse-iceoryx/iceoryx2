@@ -45,6 +45,7 @@ use crate::service::port_factory::reader::ReaderConfig;
 use crate::service::resource::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, SharedServiceState};
+use crate::unique_id_generator::Entity;
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
@@ -63,7 +64,6 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
-use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_log::{fail, fatal_panic};
 
 /// A wrapper for the value returned by [`EntryHandle::get()`].

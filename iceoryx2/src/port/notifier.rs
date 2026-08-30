@@ -48,7 +48,6 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
-use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -57,6 +56,7 @@ use iceoryx2_log::{debug, fail, warn};
 
 use crate::service::SharedServiceState;
 use crate::service::resource::NoResource;
+use crate::unique_id_generator::Entity;
 use crate::{
     identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
     port::port_name::PortName,

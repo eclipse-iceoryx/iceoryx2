@@ -46,7 +46,6 @@ use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
-use iceoryx2_cal::unique_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelState;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -61,6 +60,7 @@ use crate::port::details::chunk::ChunkMut;
 use crate::service::marker::CustomHeaderMarker;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::marker::Flatbuffer;
+use crate::unique_id_generator::UniqueId;
 use crate::{
     identifiers::{UniqueClientId, UniqueServerId},
     port::{

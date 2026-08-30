@@ -63,7 +63,7 @@ impl crate::service::Service for Service {
     type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
         dynamic_storage::recommended::Local<KeyType>;
     type BlackboardPayload = shared_memory::recommended::Local<BumpAllocator>;
-    type UniqueSystemId = unique_id_generator::blub::UniqueSystemId;
+    type UniqueSystemId = crate::unique_id_generator::blub::UniqueSystemId;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {}

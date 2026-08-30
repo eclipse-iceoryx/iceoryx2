@@ -66,6 +66,7 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::port_factory::listener::ListenerConfig;
 use crate::service::resource::NoResource;
+use crate::unique_id_generator::Entity;
 use crate::{identifiers::UniqueListenerId, service};
 use alloc::format;
 use core::ptr::NonNull;
@@ -82,7 +83,6 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::event_state::EventActivation;
 use iceoryx2_cal::event::{EventId, ListenerBuilder, NamedConceptMgmt};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
-use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_log::fail;
 
 // re-export to be able to match to the error without having to depend on iceoryx2-cal

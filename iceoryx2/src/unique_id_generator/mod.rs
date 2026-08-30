@@ -97,6 +97,7 @@ impl<'a, T: UniqueIdGenerator> UniqueIdBuilder<'a, T> {
         }
     }
 
+    // If we keep this approach, we could have a second builder making id_storage required (usage cumbersome?)
     pub fn id_storage(mut self, id_storage: &'a T::IdStorage) -> Self {
         self.id_storage = Some(id_storage);
         self

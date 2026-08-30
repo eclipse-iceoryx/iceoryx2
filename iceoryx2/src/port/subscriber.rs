@@ -49,7 +49,6 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
@@ -60,6 +59,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::publish_subscribe::StaticConfig;
+use crate::unique_id_generator::Entity;
 use crate::{sample::Sample, service};
 
 use super::ReceiveError;

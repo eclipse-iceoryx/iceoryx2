@@ -38,7 +38,6 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::unique_id_generator::UniqueId;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::identifiers::UniquePublisherId;
@@ -48,6 +47,7 @@ use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::subscriber::SubscriberSharedState;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::marker::Flatbuffer;
+use crate::unique_id_generator::UniqueId;
 
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via

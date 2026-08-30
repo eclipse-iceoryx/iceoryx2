@@ -275,25 +275,24 @@ use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
-use crate::identifiers::UniqueServiceId;
-use crate::node::{NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::ServiceResource;
-use crate::service::stale_resource_cleanup::{
-    remove_sender_and_receiver_connections_and_data_segment,
-    remove_sender_connection_and_data_segment,
-};
-use crate::service::stale_resource_cleanup::{remove_service_tag, remove_static_service_config};
 use crate::service::static_config::*;
 use crate::{
-    identifiers::{UniqueNodeId, UniquePortId},
-    node::NodeBuilder,
+    identifiers::{UniqueNodeId, UniquePortId, UniqueServiceId},
+    node::{NodeBuilder, NodeListFailure, NodeState, SharedNode},
     port::{listener::remove_connection_of_listener, notifier::Notifier},
     prelude::EventId,
-    service::stale_resource_cleanup::{remove_port_tag, remove_receiver_port_from_all_connections},
+    service::stale_resource_cleanup::{
+        remove_port_tag, remove_receiver_port_from_all_connections,
+        remove_sender_and_receiver_connections_and_data_segment,
+        remove_sender_connection_and_data_segment, remove_service_tag,
+        remove_static_service_config,
+    },
+    unique_id_generator::*,
 };
 use builder::event::EventOpenError;
 use dynamic_config::PortCleanupAction;
@@ -313,7 +312,6 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
-use iceoryx2_cal::unique_id_generator::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use iceoryx2_log::error;
 use iceoryx2_log::{debug, fail, trace, warn};

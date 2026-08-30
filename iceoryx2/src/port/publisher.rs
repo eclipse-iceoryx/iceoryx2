@@ -126,7 +126,6 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
-use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_cal::zero_copy_connection::{
     CHANNEL_STATE_OPEN, ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
@@ -148,6 +147,7 @@ use crate::service::port_factory::publisher::{LocalPublisherConfig, PortFactoryP
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::{self};
+use crate::unique_id_generator::Entity;
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;

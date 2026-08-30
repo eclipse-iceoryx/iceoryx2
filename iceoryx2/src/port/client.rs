@@ -79,6 +79,7 @@ use crate::service::header::request_response::RequestHeader;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::resource::request_response::RequestResponseResources;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
+use crate::unique_id_generator::Entity;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
@@ -115,7 +116,6 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
-use iceoryx2_cal::unique_id_generator::Entity;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage,
