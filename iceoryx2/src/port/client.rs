@@ -79,7 +79,6 @@ use crate::service::header::request_response::RequestHeader;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::resource::request_response::RequestResponseResources;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
-use crate::unique_id_generator::Entity;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
@@ -104,7 +103,6 @@ use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
@@ -457,11 +455,8 @@ impl<
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
         let client_id = UniqueClientId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            service.shared_node().mgmt().id_storage(),
+            crate::unique_id_generator::Entity::Client(client_factory.config.port_name),
+            service.shared_node().config(),
         );
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

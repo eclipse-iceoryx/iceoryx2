@@ -50,7 +50,6 @@ use crate::service::port_factory::writer::WriterConfig;
 use crate::service::resource::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, SharedServiceState};
-use crate::unique_id_generator::Entity;
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
@@ -59,7 +58,6 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -187,11 +185,8 @@ impl<
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
         let writer_id = UniqueWriterId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            service.shared_node().mgmt().id_storage(),
+            crate::unique_id_generator::Entity::Writer(config.port_name),
+            service.shared_node().config(),
         );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

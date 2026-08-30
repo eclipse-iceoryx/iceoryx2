@@ -82,7 +82,6 @@ use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
 use crate::service::resource::request_response::RequestResponseResources;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
-use crate::unique_id_generator::Entity;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -100,7 +99,6 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
@@ -379,19 +377,11 @@ impl<
     ) -> Result<Self, ServerCreateError> {
         let msg = "Failed to create Server port";
         let origin = "Server::new()";
-        let server_id = UniqueServerId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            server_factory
-                .factory
-                .service
-                .shared_node()
-                .mgmt()
-                .id_storage(),
-        );
         let service = &server_factory.factory.service;
+        let server_id = UniqueServerId::new::<Service>(
+            crate::unique_id_generator::Entity::Server(server_factory.config.port_name),
+            service.shared_node().config(),
+        );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service

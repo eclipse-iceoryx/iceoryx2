@@ -946,7 +946,6 @@ struct SharedNodeState<Service: service::Service> {
     registered_services: RegisteredServices,
     signal_handling_mode: SignalHandlingMode,
     details_storage: Service::StaticStorage,
-    management_segment: GlobalManagementSegment<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
@@ -1057,10 +1056,6 @@ impl<Service: service::Service> SharedNode<Service> {
 
     pub(crate) fn name(&self) -> &NodeName {
         &self.state.details.name
-    }
-
-    pub(crate) fn mgmt(&self) -> &GlobalManagementSegment<Service> {
-        &self.state.management_segment
     }
 
     pub(crate) fn create_port_tag(
@@ -1562,23 +1557,14 @@ impl NodeBuilder {
             .as_ref()
             .unwrap_or_else(|| Config::global_config());
 
-        let mgmt = match GlobalManagementSegment::<Service>::open_or_create(config) {
-            Ok(mgmt) => mgmt,
-            Err(e) => {
-                fail!(from "NodeBuilder::create()",
-                    with NodeCreationFailure::InternalError,
-                    "Unable to create node since the global management segment could not be opened. {e:?}");
+        let name = fatal_panic!(
+            from self,
+            when match &self.name {
+                Some(n) => NodeName::new(n.as_str()),
+                None => NodeName::new(""),
             }
-        };
-
-        let node_id = UniqueNodeId::new::<Service>(
-            &Entity {
-                name: StaticString::new(),
-                id: 0,
-            },
-            mgmt.id_storage(),
-            Service::UniqueSystemId::adapt_id_storage(mgmt.id_storage()).ok(),
-        );
+            , "This should never happen! {msg} since the name is not a valid node name.");
+        let node_id = UniqueNodeId::new::<Service>(Entity::Node(name), config);
 
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
@@ -1593,7 +1579,6 @@ impl NodeBuilder {
             details_storage,
             signal_handling_mode: self.signal_handling_mode,
             details,
-            management_segment: mgmt,
         });
 
         if config.global.node.cleanup_dead_nodes_on_creation {

@@ -15,8 +15,10 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod unique_id_generator_trait {
+    use iceoryx2::port::port_name::PortName;
+    use iceoryx2::service::{self, ipc};
     use iceoryx2::unique_id_generator::{
-        UniqueId, UniqueIdBuilder, UniqueIdGenerator, UniqueIdGeneratorError,
+        Entity, UniqueId, UniqueIdBuilder, UniqueIdGenerator, UniqueIdGeneratorError,
     };
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_container::string::StaticString;
@@ -46,10 +48,8 @@ pub mod unique_id_generator_trait {
         }
     }
     impl UniqueIdGenerator for TestUniqueId {
-        type IdStorage = u64;
-
-        fn generate(
-            _builder: UniqueIdBuilder<TestUniqueId>,
+        fn generate<Service: service::Service>(
+            _builder: UniqueIdBuilder,
         ) -> Result<UniqueId, UniqueIdGeneratorError> {
             Ok(unsafe { UniqueId::from_value(TestUniqueId::new().value() as u128) })
         }
@@ -80,20 +80,21 @@ pub mod unique_id_generator_trait {
 
     #[conformance_test]
     pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator>() {
-        let sut = UniqueIdBuilder::<Sut>::new(&StaticString::new()).create(0);
+        let sut =
+            UniqueIdBuilder::new(Entity::Client(PortName::new_empty())).create::<ipc::Service>();
         assert_that!(sut, is_ok);
     }
 
     #[conformance_test]
     pub fn generate_returns_unique_ids<Sut: UniqueIdGenerator>() {
-        let sut1 = UniqueIdBuilder::<Sut>::new(&StaticString::try_from("id").unwrap())
-            .create(0)
+        let sut1 = UniqueIdBuilder::new(Entity::Client(PortName::new_empty()))
+            .create::<ipc::Service>()
             .unwrap();
-        let sut2 = UniqueIdBuilder::<Sut>::new(&StaticString::try_from("id").unwrap())
-            .create(1)
+        let sut2 = UniqueIdBuilder::new(Entity::Client(PortName::new_empty()))
+            .create::<ipc::Service>()
             .unwrap();
-        let sut3 = UniqueIdBuilder::<Sut>::new(&StaticString::try_from("ID").unwrap())
-            .create(0)
+        let sut3 = UniqueIdBuilder::new(Entity::Client(PortName::new_empty()))
+            .create::<ipc::Service>()
             .unwrap();
 
         assert_that!(sut1, ne sut2);

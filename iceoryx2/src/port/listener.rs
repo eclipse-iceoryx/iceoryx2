@@ -66,13 +66,11 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::port_factory::listener::ListenerConfig;
 use crate::service::resource::NoResource;
-use crate::unique_id_generator::Entity;
 use crate::{identifiers::UniqueListenerId, service};
 use alloc::format;
 use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
@@ -194,11 +192,8 @@ impl<Service: service::Service> Listener<Service> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
         let listener_id = UniqueListenerId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            service.shared_node().mgmt().id_storage(),
+            crate::unique_id_generator::Entity::Listener(config.port_name),
+            service.shared_node().config(),
         );
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

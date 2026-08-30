@@ -45,7 +45,6 @@ use crate::service::port_factory::reader::ReaderConfig;
 use crate::service::resource::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, SharedServiceState};
-use crate::unique_id_generator::Entity;
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
@@ -53,7 +52,6 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -210,11 +208,8 @@ impl<
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
         let reader_id = UniqueReaderId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            service.shared_node().mgmt().id_storage(),
+            crate::unique_id_generator::Entity::Reader(config.port_name),
+            service.shared_node().config(),
         );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

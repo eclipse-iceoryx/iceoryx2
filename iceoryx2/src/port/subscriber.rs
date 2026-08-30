@@ -38,7 +38,6 @@ use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
@@ -59,7 +58,6 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::publish_subscribe::StaticConfig;
-use crate::unique_id_generator::Entity;
 use crate::{sample::Sample, service};
 
 use super::ReceiveError;
@@ -205,11 +203,8 @@ impl<
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
         let subscriber_id = UniqueSubscriberId::new::<Service>(
-            &Entity {
-                name: StaticString::try_from("").unwrap(),
-                id: 1,
-            },
-            service.shared_node().mgmt().id_storage(),
+            crate::unique_id_generator::Entity::Subscriber(config.port_name),
+            service.shared_node().config(),
         );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

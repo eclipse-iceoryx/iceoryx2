@@ -113,7 +113,6 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
@@ -147,7 +146,6 @@ use crate::service::port_factory::publisher::{LocalPublisherConfig, PortFactoryP
 use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::{self};
-use crate::unique_id_generator::Entity;
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;
@@ -467,16 +465,8 @@ impl<
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
         let port_id = UniquePublisherId::new::<Service>(
-            &Entity {
-                name: StaticString::new(),
-                id: 1,
-            },
-            publisher_factory
-                .factory
-                .service
-                .shared_node()
-                .mgmt()
-                .id_storage(),
+            crate::unique_id_generator::Entity::Publisher(config.port_name),
+            service.shared_node().config(),
         );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
