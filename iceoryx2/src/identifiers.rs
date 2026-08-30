@@ -12,11 +12,11 @@
 
 use alloc::format;
 
+use crate::unique_id_generator::*;
 use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
-use iceoryx2_cal::unique_id_generator::*;
 use iceoryx2_log::fatal_panic;
 
 macro_rules! generate_id {

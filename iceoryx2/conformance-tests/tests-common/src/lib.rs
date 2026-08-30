@@ -39,5 +39,6 @@ mod service_request_response_flatbuffer_tests;
 mod service_request_response_tests;
 mod service_tests;
 mod subscriber_tests;
+mod unique_id_generator_trait_tests;
 mod waitset_tests;
 mod writer_tests;

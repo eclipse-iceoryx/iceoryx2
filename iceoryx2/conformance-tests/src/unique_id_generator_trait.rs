@@ -15,14 +15,14 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod unique_id_generator_trait {
+    use iceoryx2::unique_id_generator::{
+        UniqueId, UniqueIdBuilder, UniqueIdGenerator, UniqueIdGeneratorError,
+    };
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
     use iceoryx2_bb_container::string::StaticString;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_bb_testing_macros::test;
-    use iceoryx2_cal::unique_id_generator::{
-        UniqueId, UniqueIdBuilder, UniqueIdGenerator, UniqueIdGeneratorError,
-    };
 
     struct TestUniqueId {
         id: u64,

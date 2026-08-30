@@ -582,3 +582,5 @@ pub mod testing;
 pub mod waitset;
 
 pub(crate) mod payload;
+
+pub mod unique_id_generator;

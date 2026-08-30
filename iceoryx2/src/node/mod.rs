@@ -180,7 +180,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
-use iceoryx2_cal::unique_id_generator::*;
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
@@ -202,6 +201,7 @@ use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
 use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
+use crate::unique_id_generator::*;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
 impl UniqueNodeId {

@@ -12,10 +12,10 @@
 
 extern crate alloc;
 
+use crate::unique_id_generator::UniqueIdGenerator;
 use crate::{config::Config, service::Service};
 use alloc::format;
-use iceoryx2_bb_concurrency::atomic::AtomicU32;
-use iceoryx2_bb_concurrency::atomic::Ordering;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
@@ -23,7 +23,6 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
-use iceoryx2_cal::unique_id_generator::UniqueIdGenerator;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
