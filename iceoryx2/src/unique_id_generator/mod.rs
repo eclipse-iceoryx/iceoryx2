@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// TODO: example?
-
 use core::{fmt::Debug, hash::Hash};
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;

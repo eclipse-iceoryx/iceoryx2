@@ -49,8 +49,8 @@ pub mod unique_id_generator_trait {
     }
     impl UniqueIdGenerator for TestUniqueId {
         fn generate<Service: service::Service>(
-            entity: Entity,
-            config: &Config,
+            _entity: Entity,
+            _config: &Config,
         ) -> Result<UniqueId, UniqueIdGeneratorError> {
             Ok(unsafe { UniqueId::from_raw_id(TestUniqueId::new().value() as u128) })
         }
@@ -79,27 +79,29 @@ pub mod unique_id_generator_trait {
         assert_that!(time.err().unwrap(), eq UniqueIdGeneratorError::NotImplemented);
     }
 
-    //     #[conformance_test]
-    //     pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator>() {
-    //         let sut =
-    //             UniqueIdBuilder::new(Entity::Client(PortName::new_empty())).create::<ipc::Service>();
-    //         assert_that!(sut, is_ok);
-    //     }
+    #[conformance_test]
+    pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator>() {
+        let sut = Sut::generate::<ipc::Service>(
+            Entity::Client(PortName::new_empty()),
+            iceoryx2::config::Config::global_config(),
+        );
+        assert_that!(sut, is_ok);
+    }
 
-    //     #[conformance_test]
-    //     pub fn generate_returns_unique_ids<Sut: UniqueIdGenerator>() {
-    //         let sut1 = UniqueIdBuilder::new(Entity::Client(PortName::new_empty()))
-    //             .create::<ipc::Service>()
-    //             .unwrap();
-    //         let sut2 = UniqueIdBuilder::new(Entity::Client(PortName::new_empty()))
-    //             .create::<ipc::Service>()
-    //             .unwrap();
-    //         let sut3 = UniqueIdBuilder::new(Entity::Client(PortName::new_empty()))
-    //             .create::<ipc::Service>()
-    //             .unwrap();
+    #[conformance_test]
+    pub fn generate_returns_unique_ids<Sut: UniqueIdGenerator>() {
+        let config = iceoryx2::config::Config::global_config();
+        let sut1 =
+            Sut::generate::<ipc::Service>(Entity::Client(PortName::new_empty()), config).unwrap();
+        let sut2 =
+            Sut::generate::<ipc::Service>(Entity::Client(PortName::new("Name").unwrap()), config)
+                .unwrap();
+        let sut3 =
+            Sut::generate::<ipc::Service>(Entity::Server(PortName::new("Name").unwrap()), config)
+                .unwrap();
 
-    //         assert_that!(sut1, ne sut2);
-    //         assert_that!(sut1, ne sut3);
-    //         assert_that!(sut2, ne sut3);
-    //     }
+        assert_that!(sut1, ne sut2);
+        assert_that!(sut1, ne sut3);
+        assert_that!(sut2, ne sut3);
+    }
 }
