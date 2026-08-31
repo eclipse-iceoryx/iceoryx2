@@ -343,7 +343,7 @@ impl<
 
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     pub fn origin(&self) -> UniqueClientId {
-        UniqueClientId(unsafe { UniqueId::from_value(self.details.origin) })
+        UniqueClientId(unsafe { UniqueId::from_raw_id(self.details.origin) })
     }
 
     fn increment_loan_counter(&self) -> Result<(), LoanError> {
@@ -385,7 +385,7 @@ impl<
         unsafe {
             header_ptr.write(service::header::request_response::ResponseHeader {
                 node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueId::from_value(
+                server_id: UniqueServerId(UniqueId::from_raw_id(
                     shared_state.response_sender.sender_port_id,
                 )),
                 request_id: self.request_id,

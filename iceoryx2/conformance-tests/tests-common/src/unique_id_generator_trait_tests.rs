@@ -13,7 +13,7 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 instantiate_conformance_tests_with_module!(
-    blub,
+    unique_system_id,
     iceoryx2_conformance_tests::unique_id_generator_trait,
-    iceoryx2::unique_id_generator::blub::UniqueSystemId
+    iceoryx2::unique_id_generator::unique_system_id::UniqueSystemId
 );

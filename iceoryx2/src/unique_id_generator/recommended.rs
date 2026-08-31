@@ -10,6 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub type Ipc = crate::unique_id_generator::blub::UniqueSystemId;
+/// Provides the recommended inter-process
+/// [`UniqueIdGenerator`](crate::unique_id_generator::UniqueIdGenerator)
+/// concept implementation for the target.
+pub type Ipc = crate::unique_id_generator::unique_system_id::UniqueSystemId;
 
-pub type Local = crate::unique_id_generator::blub::UniqueSystemId;
+/// Provides the recommended process-local
+/// [`UniqueIdGenerator`](crate::unique_id_generator::UniqueIdGenerator)
+/// concept implementation for the target.
+pub type Local = crate::unique_id_generator::unique_system_id::UniqueSystemId;

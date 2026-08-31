@@ -82,9 +82,6 @@ impl<'a, S: service::Service> From<&'a DiscoveryEvent<S>> for DiscoveryEventRef<
     }
 }
 
-/// The payload type used for publishing discovery changes
-// pub type Payload = DiscoveryEvent;
-
 /// Errors that can occur when creating the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
