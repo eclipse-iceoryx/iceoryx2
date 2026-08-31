@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+//! Generates a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
 pub use iceoryx2_bb_posix::unique_system_id::*;
 
 use crate::node::global_management_segment::GlobalManagementSegment;
@@ -23,12 +23,13 @@ impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorError {
 }
 
 impl UniqueIdGenerator for UniqueSystemId {
+    /// Generates a system-wide unique ID by using the process ID and the incremented static
+    /// atomic counter from the global management segment.
     fn generate<Service: service::Service>(
         builder: UniqueIdBuilder,
     ) -> Result<UniqueId, UniqueIdGeneratorError> {
         let id = match builder.entity {
             Entity::Node(_) => {
-                // increment counter in global mgmt segment and create UniqueSystemId with counter
                 let config = builder
                     .config
                     .as_ref()
@@ -46,7 +47,7 @@ impl UniqueIdGenerator for UniqueSystemId {
             }
             _ => UniqueSystemId::new()?,
         };
-        Ok(unsafe { UniqueId::from_value(id.value()) })
+        Ok(unsafe { UniqueId::from_raw_id(id.value()) })
     }
 
     fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {

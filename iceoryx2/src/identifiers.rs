@@ -172,7 +172,7 @@ impl UniqueNodeId {
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
     pub fn pid<Service: crate::service::Service>(&self) -> iceoryx2_bb_posix::process::ProcessId {
-        Service::UniqueSystemId::from(self.0)
+        Service::UniqueId::from(self.0)
             .pid()
             .expect("UniqueIdGenerator::pid() must be implemented.")
     }
@@ -181,7 +181,7 @@ impl UniqueNodeId {
     pub fn creation_time<Service: crate::service::Service>(
         &self,
     ) -> iceoryx2_bb_posix::clock::Time {
-        Service::UniqueSystemId::from(self.0)
+        Service::UniqueId::from(self.0)
             .creation_time()
             .expect("UniqueIdGenerator::creation_time() must be implemented.")
     }

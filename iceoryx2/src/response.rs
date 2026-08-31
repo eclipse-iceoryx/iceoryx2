@@ -169,7 +169,7 @@ impl<
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server) which sent
     /// the [`Response`].
     pub fn origin(&self) -> UniqueServerId {
-        UniqueServerId(unsafe { UniqueId::from_value(self.details.origin) })
+        UniqueServerId(unsafe { UniqueId::from_raw_id(self.details.origin) })
     }
 }
 

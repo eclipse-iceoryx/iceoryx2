@@ -53,7 +53,7 @@ impl<S: Service> GlobalManagementSegment<S> {
         .config(&config)
         .timeout(global_config.global.creation_timeout)
         .enable_global_access(true)
-        .initializer(|_, _| true) // TODO: initialize with Foo::default()/passed data from a config?
+        .initializer(|_, _| true)
         .open_or_create()
         {
             Ok(storage) => storage,
