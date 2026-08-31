@@ -34,7 +34,6 @@ struct State {
     node_counter: AtomicU32,
 }
 
-#[derive(Debug)]
 pub(crate) struct GlobalManagementSegment<S: Service> {
     storage: S::PersistentDynamicStorage<State>,
 }

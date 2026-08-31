@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Generates a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
+
 pub use iceoryx2_bb_posix::unique_system_id::*;
 
 use crate::node::global_management_segment::GlobalManagementSegment;

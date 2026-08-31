@@ -79,6 +79,7 @@
 * [#1845](https://github.com/eclipse-iceoryx/iceoryx2/issues/1845) Reduce imports for usage of the `semantic_string` macro
 * [#1853](https://github.com/eclipse-iceoryx/iceoryx2/issues/1853) Improve error message in static asserts
 * [#1891](https://github.com/eclipse-iceoryx/iceoryx2/issues/1891) Rename the tunnel to gateway and move its crates from `iceoryx2-services/` to a top-level `iceoryx2-gateway/` directory
+* [#1910](https://github.com/eclipse-iceoryx/iceoryx2/issues/1910) Add a `UniqueIdGenerator` trait to allow exchangeable `UniqueSystemId` implementations
 * [#1928](https://github.com/eclipse-iceoryx/iceoryx2/issues/1928) Make Windows platform abstraction use the `libc` crate instead of `bindgen`
 * [#1929](https://github.com/eclipse-iceoryx/iceoryx2/issues/1929) Make macOS platform abstraction use the `libc` crate instead of `bindgen`
 * [#1930](https://github.com/eclipse-iceoryx/iceoryx2/issues/1930) Make FreeBSD platform abstraction use the `libc` crate instead of `bindgen`
