@@ -986,8 +986,8 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;
 
-    // TODO: better name, remove "System"
-    type UniqueSystemId: UniqueIdGenerator + Debug;
+    /// Mechanism to generate IDs that are unique, at least within a single process.
+    type UniqueId: UniqueIdGenerator;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

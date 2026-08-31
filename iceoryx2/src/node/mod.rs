@@ -160,7 +160,6 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
@@ -185,7 +184,6 @@ use iceoryx2_cal::{
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 
 use crate::identifiers::UniqueNodeId;
-use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::node_name::NodeName;
 use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
@@ -1174,7 +1172,7 @@ impl<Service: service::Service> Node<Service> {
                         continue;
                     };
                     let node_id = match node_id.parse::<u128>() {
-                        Ok(v) => UniqueNodeId(unsafe { UniqueId::from_value(v) }),
+                        Ok(v) => UniqueNodeId(unsafe { UniqueId::from_raw_id(v) }),
                         Err(_) => continue,
                     };
 

@@ -206,6 +206,6 @@ impl<
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        UniquePublisherId(unsafe { UniqueId::from_value(self.details.origin) })
+        UniquePublisherId(unsafe { UniqueId::from_raw_id(self.details.origin) })
     }
 }

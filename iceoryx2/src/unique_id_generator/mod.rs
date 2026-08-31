@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// TODO: example?
+
 use core::{fmt::Debug, hash::Hash};
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -24,15 +26,14 @@ use crate::{
     service::{self, service_name::ServiceName},
 };
 
-// TODO: better name
-pub mod blub;
+#[doc(hidden)]
 pub mod recommended;
+pub mod unique_system_id;
 
-// TODO: documentation, tests
-
-// contract: unique_value member is unique within on process
-// system-wide unique when UniqueIdGenerator implementation guarantees this, e.g. iceoryx2_bb_posix::UniqueSystemId
-// that increments a static atomic counter and the pid
+/// 128-Byte ID that provides a `payload_value` and a `unique_value`. The latter is unique, at least
+/// within a single process. Further guarantees, such as a system-wide uniqueness, depend on the
+/// [`UniqueIdGenerator`] concept implementation. The `payload_value` can be used to provide additional
+/// information with the ID, as for instance the time when the unique ID was created.
 #[repr(C)]
 #[derive(
     Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Copy, Serialize, Deserialize, ZeroCopySend,
@@ -43,30 +44,70 @@ pub struct UniqueId {
 }
 
 impl UniqueId {
-    // safety: see contract
-    pub unsafe fn from_value(value: u128) -> Self {
+    /// Creates a new unique ID from a given raw ID.
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure that the raw ID is valid, i.e. [`UniqueId::unique_value()`] must
+    /// return a unique value for the created ID.
+    pub unsafe fn from_raw_id(value: u128) -> Self {
         Self {
             payload_value: (value >> 64) as u64,
             unique_value: value as u64,
         }
     }
 
+    /// Returns the underlying raw value of the ID.
     pub fn value(&self) -> u128 {
         (self.payload_value as u128) << 64 | (self.unique_value as u128)
     }
 
+    /// Returns the payload part of the ID.
     pub fn payload_value(&self) -> u64 {
         self.payload_value
     }
 
+    /// Returns the unique part of the ID.
     pub fn unique_value(&self) -> u64 {
         self.unique_value
     }
 }
 
+// TODO: remove builder?
+
+/// Builder to create a [`UniqueId`] via [`UniqueIdGenerator::generate()`].
+pub struct UniqueIdBuilder {
+    entity: Entity,
+    config: Option<Config>,
+}
+
+impl UniqueIdBuilder {
+    /// Creates a new [`UniqueIdBuilder`] for the passed [`Entity`].
+    pub fn new(entity: Entity) -> Self {
+        Self {
+            entity,
+            config: None,
+        }
+    }
+
+    /// Sets the configuration that iceoryx2 utilizes.
+    pub fn config(mut self, value: &Config) -> Self {
+        self.config = Some(value.clone());
+        self
+    }
+
+    /// Creates a new [`UniqueId`] for a specific [`service::Service`].
+    pub fn create<Service: service::Service>(self) -> Result<UniqueId, UniqueIdGeneratorError> {
+        Service::UniqueId::generate::<Service>(self)
+    }
+}
+
+/// Describes failures related to the [`UniqueIdGenerator`] trait.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UniqueIdGeneratorError {
+    /// The unique ID could not be generated.
     GenerationError,
+    /// The trait implementation does not provide the function.
     NotImplemented,
 }
 
@@ -78,57 +119,52 @@ impl core::fmt::Display for UniqueIdGeneratorError {
 
 impl core::error::Error for UniqueIdGeneratorError {}
 
-pub struct UniqueIdBuilder {
-    entity: Entity,
-    config: Option<Config>,
-}
-
-impl UniqueIdBuilder {
-    pub fn new(entity: Entity) -> Self {
-        Self {
-            entity: entity,
-            config: None,
-        }
-    }
-
-    pub fn config(mut self, value: &Config) -> Self {
-        self.config = Some(value.clone());
-        self
-    }
-
-    pub fn create<Service: service::Service>(mut self) -> Result<UniqueId, UniqueIdGeneratorError> {
-        Service::UniqueSystemId::generate::<Service>(self)
-    }
-}
-
+/// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
 pub trait UniqueIdGenerator: From<UniqueId> {
+    /// Generates a [`UniqueId`] for a specific [`service::Service] with a [`UniqueIdBuilder`].
     fn generate<Service: service::Service>(
         builder: UniqueIdBuilder,
     ) -> Result<UniqueId, UniqueIdGeneratorError>;
 
+    /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) that was used to create the [`UniqueId`].
     fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
             "pid() is not implemented");
     }
 
+    /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) when the [`UniqueId`] was created.
     fn creation_time(&self) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::creation_time()",
             with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
     }
 }
 
+/// Identifies the kind of entity for which a unique ID can be generated.
 pub enum Entity {
+    /// Identifies a [`Node`](crate::node::Node)
     Node(NodeName),
+    /// Identifies a publish-subscribe service.
     PubSubService(ServiceName),
+    /// Identifies a request-response service.
     ReqResService(ServiceName),
+    /// Identifies an event service.
     EventService(ServiceName),
+    /// Identifies a blackboard service.
     BlackboardService(ServiceName),
+    /// Identifies a [`Publisher`](crate::port::publisher::Publisher)
     Publisher(PortName),
+    /// Identifies a [`Subscriber`](crate::port::subscriber::Subscriber)
     Subscriber(PortName),
+    /// Identifies a [`Client`](crate::port::client::Client)
     Client(PortName),
+    /// Identifies a [`Server`](crate::port::server::Server)
     Server(PortName),
+    /// Identifies a [`Notifier`](crate::port::notifier::Notifier)
     Notifier(PortName),
+    /// Identifies a [`Listener`](crate::port::listener::Listener)
     Listener(PortName),
+    /// Identifies a [`Writer`](crate::port::writer::Writer)
     Writer(PortName),
+    /// Identifies a [`Reader`](crate::port::reader::Reader)
     Reader(PortName),
 }

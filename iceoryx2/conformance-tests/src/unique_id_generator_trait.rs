@@ -21,7 +21,6 @@ pub mod unique_id_generator_trait {
         Entity, UniqueId, UniqueIdBuilder, UniqueIdGenerator, UniqueIdGeneratorError,
     };
     use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
-    use iceoryx2_bb_container::string::StaticString;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_bb_testing_macros::test;
@@ -51,14 +50,14 @@ pub mod unique_id_generator_trait {
         fn generate<Service: service::Service>(
             _builder: UniqueIdBuilder,
         ) -> Result<UniqueId, UniqueIdGeneratorError> {
-            Ok(unsafe { UniqueId::from_value(TestUniqueId::new().value() as u128) })
+            Ok(unsafe { UniqueId::from_raw_id(TestUniqueId::new().value() as u128) })
         }
     }
 
     #[test]
     fn unique_id_can_be_created_from_value() {
         let value: u128 = 743243817103481069312485843209;
-        let id = unsafe { UniqueId::from_value(value) };
+        let id = unsafe { UniqueId::from_raw_id(value) };
         assert_that!(id.value(), eq value);
     }
 

@@ -12,7 +12,7 @@
 
 use iceoryx2::port::port_name::PortName;
 use iceoryx2::service::ipc;
-use iceoryx2::unique_id_generator::blub::UniqueSystemId;
+use iceoryx2::unique_id_generator::unique_system_id::UniqueSystemId;
 use iceoryx2::unique_id_generator::{Entity, UniqueIdBuilder};
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_container::string::StaticString;
