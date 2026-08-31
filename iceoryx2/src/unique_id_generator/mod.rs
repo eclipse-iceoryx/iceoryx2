@@ -73,35 +73,6 @@ impl UniqueId {
     }
 }
 
-// TODO: remove builder?
-
-/// Builder to create a [`UniqueId`] via [`UniqueIdGenerator::generate()`].
-pub struct UniqueIdBuilder {
-    entity: Entity,
-    config: Option<Config>,
-}
-
-impl UniqueIdBuilder {
-    /// Creates a new [`UniqueIdBuilder`] for the passed [`Entity`].
-    pub fn new(entity: Entity) -> Self {
-        Self {
-            entity,
-            config: None,
-        }
-    }
-
-    /// Sets the configuration that iceoryx2 utilizes.
-    pub fn config(mut self, value: &Config) -> Self {
-        self.config = Some(value.clone());
-        self
-    }
-
-    /// Creates a new [`UniqueId`] for a specific [`service::Service`].
-    pub fn create<Service: service::Service>(self) -> Result<UniqueId, UniqueIdGeneratorError> {
-        Service::UniqueId::generate::<Service>(self)
-    }
-}
-
 /// Describes failures related to the [`UniqueIdGenerator`] trait.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UniqueIdGeneratorError {
@@ -121,9 +92,10 @@ impl core::error::Error for UniqueIdGeneratorError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
 pub trait UniqueIdGenerator: From<UniqueId> {
-    /// Generates a [`UniqueId`] for a specific [`service::Service] with a [`UniqueIdBuilder`].
+    /// Generates a [`UniqueId`] for a specific [`service::Service].
     fn generate<Service: service::Service>(
-        builder: UniqueIdBuilder,
+        entity: Entity,
+        config: &Config,
     ) -> Result<UniqueId, UniqueIdGeneratorError>;
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) that was used to create the [`UniqueId`].
