@@ -202,10 +202,8 @@ impl<
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
-        let subscriber_id = UniqueSubscriberId::new::<Service>(
-            crate::unique_id_generator::Entity::Subscriber(config.port_name),
-            service.shared_node().config(),
-        );
+        let subscriber_id =
+            UniqueSubscriberId::new::<Service>(config.port_name, service.shared_node().config());
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service.shared_node().create_port_tag(

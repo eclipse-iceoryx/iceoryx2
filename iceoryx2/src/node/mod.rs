@@ -1562,7 +1562,7 @@ impl NodeBuilder {
                 None => NodeName::new(""),
             }
             , "This should never happen! {msg} since the name is not a valid node name.");
-        let node_id = UniqueNodeId::new::<Service>(Entity::Node(name), config);
+        let node_id = UniqueNodeId::new::<Service>(name, config);
 
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");

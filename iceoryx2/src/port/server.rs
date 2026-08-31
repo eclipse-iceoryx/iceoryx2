@@ -379,7 +379,7 @@ impl<
         let origin = "Server::new()";
         let service = &server_factory.factory.service;
         let server_id = UniqueServerId::new::<Service>(
-            crate::unique_id_generator::Entity::Server(server_factory.config.port_name),
+            server_factory.config.port_name,
             service.shared_node().config(),
         );
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

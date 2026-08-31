@@ -12,7 +12,8 @@
 
 use alloc::format;
 
-use crate::{config::Config, unique_id_generator::*};
+use crate::port::port_name::PortName;
+use crate::{config::Config, node::node_name::NodeName, unique_id_generator::*};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
@@ -20,7 +21,9 @@ use iceoryx2_log::fatal_panic;
 
 macro_rules! generate_id {
     { $(#[$documentation:meta])*
-        $id_name:ident } => {
+        $id_name:ident
+        $entity:ident
+        $name_type:ident} => {
         $(#[$documentation])*
         #[repr(C)]
         #[derive(
@@ -45,9 +48,9 @@ macro_rules! generate_id {
         }
 
         impl $id_name {
-            pub(crate) fn new<Service: crate::service::Service>(entity: Entity, config: &Config) -> Self {
+            pub(crate) fn new<Service: crate::service::Service>(name: $name_type, config: &Config) -> Self {
                 Self(fatal_panic!(from format!("{}::new()", stringify!($id_name)),
-                        when UniqueIdBuilder::new(entity).config(config).create::<Service>(),
+                    when Service::UniqueId::generate::<Service>(Entity::$entity(name), config),
                         "Unable to generate required {}!", stringify!($id_name)),
                 )
             }
@@ -63,39 +66,50 @@ macro_rules! generate_id {
 generate_id! {
     /// The system-wide unique id of a [`Publisher`](crate::port::publisher::Publisher).
     UniquePublisherId
+    Publisher
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Subscriber`](crate::port::subscriber::Subscriber).
     UniqueSubscriberId
+    Subscriber
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Notifier`](crate::port::notifier::Notifier).
     UniqueNotifierId
+    Notifier
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Listener`](crate::port::listener::Listener).
     UniqueListenerId
+    Listener
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Client`](crate::port::client::Client).
     UniqueClientId
+    Client
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Server`](crate::port::server::Server).
     UniqueServerId
+    Server
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Reader`](crate::port::reader::Reader).
     UniqueReaderId
+    Reader
+    PortName
 }
 generate_id! {
     /// The system-wide unique id of a [`Writer`](crate::port::writer::Writer).
     UniqueWriterId
-}
-
-generate_id! {
-    /// The system-wide unique id of a [`Service`](crate::service::Service).
-    UniqueServiceId
+    Writer
+    PortName
 }
 
 /// Enum that contains the unique port id
@@ -135,6 +149,52 @@ impl UniquePortId {
     }
 }
 
+/// The system-wide unique id of a [`Service`](crate::service::Service).
+#[repr(C)]
+#[derive(
+    Debug,
+    Eq,
+    Hash,
+    PartialEq,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ZeroCopySend,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub struct UniqueServiceId(pub(crate) UniqueId);
+
+impl core::fmt::Display for UniqueServiceId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:x}", self.0.value())
+    }
+}
+
+impl UniqueServiceId {
+    pub(crate) fn new<Service: crate::service::Service>(entity: Entity, config: &Config) -> Self {
+        let origin = "UniqueServiceId::new()";
+        let msg = "Unable to generate required UniqueServiceId";
+        match entity {
+            Entity::PubSubService(_)
+            | Entity::ReqResService(_)
+            | Entity::EventService(_)
+            | Entity::BlackboardService(_) => Self(fatal_panic!(from origin,
+                when Service::UniqueId::generate::<Service>(entity, config), "{msg}"
+            )),
+            _ => {
+                fatal_panic!(from origin, "{msg} since the passed entity does not identify a service.")
+            }
+        }
+    }
+
+    /// Returns the underlying raw value of the ID
+    pub fn value(&self) -> u128 {
+        self.0.value()
+    }
+}
+
 /// The system-wide unique id of a [`Node`](crate::node::Node).
 #[repr(C)]
 #[derive(
@@ -159,9 +219,9 @@ impl core::fmt::Display for UniqueNodeId {
 }
 
 impl UniqueNodeId {
-    pub(crate) fn new<Service: crate::service::Service>(entity: Entity, config: &Config) -> Self {
-        Self(fatal_panic!(from "UniqueNodeId::new",
-                when UniqueIdBuilder::new(entity).config(config).create::<Service>(),
+    pub(crate) fn new<Service: crate::service::Service>(name: NodeName, config: &Config) -> Self {
+        Self(fatal_panic!(from "UniqueNodeId::new()",
+                when Service::UniqueId::generate::<Service>(Entity::Node(name), config),
                 "Unable to generate required UniqueNodeId!"))
     }
 

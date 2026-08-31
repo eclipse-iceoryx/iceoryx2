@@ -26,14 +26,11 @@ impl UniqueIdGenerator for UniqueSystemId {
     /// Generates a system-wide unique ID by using the process ID and the incremented static
     /// atomic counter from the global management segment.
     fn generate<Service: service::Service>(
-        builder: UniqueIdBuilder,
+        entity: Entity,
+        config: &Config,
     ) -> Result<UniqueId, UniqueIdGeneratorError> {
-        let id = match builder.entity {
+        let id = match entity {
             Entity::Node(_) => {
-                let config = builder
-                    .config
-                    .as_ref()
-                    .unwrap_or_else(|| Config::global_config());
                 let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config)
                 {
                     Ok(mgmt) => mgmt.increment_node_counter(),

@@ -191,10 +191,8 @@ impl<Service: service::Service> Listener<Service> {
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
-        let listener_id = UniqueListenerId::new::<Service>(
-            crate::unique_id_generator::Entity::Listener(config.port_name),
-            service.shared_node().config(),
-        );
+        let listener_id =
+            UniqueListenerId::new::<Service>(config.port_name, service.shared_node().config());
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

@@ -464,10 +464,8 @@ impl<
         let origin = "Publisher::new()";
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
-        let port_id = UniquePublisherId::new::<Service>(
-            crate::unique_id_generator::Entity::Publisher(config.port_name),
-            service.shared_node().config(),
-        );
+        let port_id =
+            UniquePublisherId::new::<Service>(config.port_name, service.shared_node().config());
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service

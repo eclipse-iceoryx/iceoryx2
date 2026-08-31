@@ -207,10 +207,8 @@ impl<
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
-        let reader_id = UniqueReaderId::new::<Service>(
-            crate::unique_id_generator::Entity::Reader(config.port_name),
-            service.shared_node().config(),
-        );
+        let reader_id =
+            UniqueReaderId::new::<Service>(config.port_name, service.shared_node().config());
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service

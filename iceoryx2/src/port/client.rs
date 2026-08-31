@@ -455,7 +455,7 @@ impl<
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
         let client_id = UniqueClientId::new::<Service>(
-            crate::unique_id_generator::Entity::Client(client_factory.config.port_name),
+            client_factory.config.port_name,
             service.shared_node().config(),
         );
 
