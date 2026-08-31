@@ -151,7 +151,7 @@ impl HandleToType for iox2_port_factory_request_response_h_ref {
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_server_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_servers_callback =
     extern "C" fn(iox2_callback_context, iox2_server_details_ptr) -> iox2_callback_progression_e;
 
@@ -162,7 +162,7 @@ pub type iox2_list_servers_callback =
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_client_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_clients_callback =
     extern "C" fn(iox2_callback_context, iox2_client_details_ptr) -> iox2_callback_progression_e;
 

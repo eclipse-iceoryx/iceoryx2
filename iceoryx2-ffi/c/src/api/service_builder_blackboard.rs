@@ -826,11 +826,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_open_with_attributes(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_creator_h`](crate::iox2_service_builder_blackboard_creator_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_creator_h`]
 ///   obtained by
 ///   [`iox2_service_builder_blackboard_creator`](crate::iox2_service_builder_blackboard_creator)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///   [`iox2_port_factory_blackboard_t`](crate::iox2_port_factory_blackboard_t). If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_port_factory_blackboard_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_blackboard_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_blackboard_create_error_e`] otherwise.

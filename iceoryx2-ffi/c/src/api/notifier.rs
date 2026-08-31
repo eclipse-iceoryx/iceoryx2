@@ -198,7 +198,7 @@ pub unsafe extern "C" fn iox2_notifier_id(
     }
 }
 
-/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the port name.
 ///
 /// # Arguments
 ///
@@ -307,7 +307,7 @@ pub unsafe extern "C" fn iox2_notifier_notify(
 ///
 /// * notifier_handle -  Must be a valid [`iox2_notifier_h_ref`]
 ///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)
-/// * custom_event_id_ptr - Must be a pointer to an initialized [`iox2_event_id_t`](crate::iox2_event_id_t)
+/// * custom_event_id_ptr - Must be a pointer to an initialized [`iox2_event_id_t`]
 /// * number_of_notified_listener_ptr - Must be either a NULL pointer or a pointer to a `size_t` to store the number of notified listener
 ///
 /// Returns IOX2_OK on success, an [`iox2_notifier_notify_error_e`] otherwise.

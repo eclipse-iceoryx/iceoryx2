@@ -94,7 +94,7 @@ impl HandleToType for iox2_node_name_h_ref {
 /// * `node_name_len` - The length of the node name string, not including a null termination.
 /// * `node_name_handle_ptr` - An uninitialized or dangling [`iox2_node_name_h`] handle which will be initialized by this function call.
 ///
-/// Returns IOX2_OK on success, an [`iox2_semantic_string_error_e`](crate::iox2_semantic_string_error_e) otherwise.
+/// Returns IOX2_OK on success, an [`iox2_semantic_string_error_e`] otherwise.
 ///
 /// # Safety
 ///

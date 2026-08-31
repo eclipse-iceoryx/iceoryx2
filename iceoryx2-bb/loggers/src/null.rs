@@ -14,7 +14,7 @@ use iceoryx2_log_types::{Log, LogLevel};
 
 /// A logger that discards all log messages.
 ///
-/// This is the default logger used before [`set_logger`](crate::set_logger) is called.
+/// This is the default logger used before `iceoryx2_log::set_logger()` is called.
 /// It silently discards all log messages, ensuring that logging calls have no effect
 /// until a real logger is registered.
 #[allow(dead_code)]

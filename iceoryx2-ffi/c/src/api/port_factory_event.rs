@@ -126,7 +126,7 @@ impl HandleToType for iox2_port_factory_event_h_ref {
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_notifier_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_notifiers_callback =
     extern "C" fn(iox2_callback_context, iox2_notifier_details_ptr) -> iox2_callback_progression_e;
 
@@ -137,7 +137,7 @@ pub type iox2_list_notifiers_callback =
 /// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
 /// * [`iox2_listener_details_ptr`] -> a pointer to the details struct of the port
 ///
-/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+/// Returns a [`iox2_callback_progression_e`]
 pub type iox2_list_listeners_callback =
     extern "C" fn(iox2_callback_context, iox2_listener_details_ptr) -> iox2_callback_progression_e;
 // END type definition

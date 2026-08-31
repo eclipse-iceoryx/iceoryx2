@@ -1129,7 +1129,7 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
     IOX2_OK
 }
 
-/// Returns the [`iox2_config_ptr`](crate::iox2_config_ptr), an immutable pointer to the config.
+/// Returns the [`iox2_config_ptr`], an immutable pointer to the config.
 ///
 /// # Safety
 ///

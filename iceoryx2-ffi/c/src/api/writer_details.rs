@@ -52,7 +52,7 @@ pub unsafe extern "C" fn iox2_writer_details_writer_id(
     }
 }
 
-/// Returns the [`iox2_unique_node_id_ptr`](crate::iox2_unique_node_id_ptr), an immutable pointer to the node id.
+/// Returns the [`iox2_unique_node_id_ptr`], an immutable pointer to the node id.
 ///
 /// # Safety
 ///

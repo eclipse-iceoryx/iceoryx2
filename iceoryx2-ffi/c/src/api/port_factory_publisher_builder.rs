@@ -342,8 +342,8 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_allocation_stra
 ///
 /// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
 ///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
-/// * `handler` is the [`iox2_degradation_handler`](crate::iox2_degradation_handler)
-/// * `ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+/// * `handler` is the [`iox2_degradation_handler`]
+/// * `ctx` is an user defined [`iox2_callback_context`]
 ///
 /// # Safety
 ///
@@ -394,8 +394,8 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_degradation_han
 ///
 /// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
 ///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
-/// * `handler` is the [`iox2_backpressure_handler`](crate::iox2_backpressure_handler)
-/// * `ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+/// * `handler` is the [`iox2_backpressure_handler`]
+/// * `ctx` is an user defined [`iox2_callback_context`]
 ///
 /// # Safety
 ///

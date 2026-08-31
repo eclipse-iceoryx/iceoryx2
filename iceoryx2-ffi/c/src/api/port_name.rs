@@ -94,7 +94,7 @@ impl HandleToType for iox2_port_name_h_ref {
 /// * `port_name_len` - The length of the port name string, not including a null termination.
 /// * `port_name_handle_ptr` - An uninitialized or dangling [`iox2_port_name_h`] handle which will be initialized by this function call.
 ///
-/// Returns IOX2_OK on success, an [`iox2_semantic_string_error_e`](crate::iox2_semantic_string_error_e) otherwise.
+/// Returns IOX2_OK on success, an [`iox2_semantic_string_error_e`] otherwise.
 ///
 /// # Safety
 ///

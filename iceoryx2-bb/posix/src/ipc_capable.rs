@@ -77,7 +77,7 @@ pub(crate) mod internal {
         ///
         /// # Safety
         ///  * The handle must be uninitialized
-        ///  * Must not be shared with other threads before calling [`IpcCapable::initialize()`]
+        ///  * Must not be shared with other threads before calling [`HandleStorage::initialize()`]
         ///
         pub unsafe fn initialize<E, F: FnOnce(*mut T) -> Result<Capability, E>>(
             &self,
@@ -110,7 +110,7 @@ pub(crate) mod internal {
         /// # Safety
         ///  * The handle must be initialized
         ///  * Must not be used concurrently. Only one thread - the one that calls
-        ///    [`IpcCapable::cleanup()`] - is allowed to operate on the [`IpcCapable`].
+        ///    [`HandleStorage::cleanup()`] - is allowed to operate on the [`IpcCapable`].
         ///
         pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
             debug_assert!(
