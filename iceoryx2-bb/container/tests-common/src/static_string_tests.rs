@@ -50,7 +50,6 @@ pub fn from_bytes_unchecked_works() {
     assert_that!(sut, eq b"let me be your toad");
     assert_that!(sut, ne b"let me be your toad fuu");
     assert_that!(sut.as_bytes(), eq b"let me be your toad");
-    assert_that!(sut.as_mut_bytes(), eq b"let me be your toad");
     assert_that!(sut.as_bytes_with_nul(), eq b"let me be your toad\0");
     assert_that!(sut.pop(), eq Some(b'd'));
 }
@@ -64,7 +63,6 @@ pub fn from_bytes_unchecked_with_empty_slice_works() {
     assert_that!(sut, len 0);
     assert_that!(sut, eq b"");
     assert_that!(sut.as_bytes(), eq b"");
-    assert_that!(sut.as_mut_bytes(), eq b"");
     assert_that!(sut.as_bytes_with_nul(), eq b"\0");
     assert_that!(sut.pop(), is_none);
 }
@@ -81,7 +79,6 @@ pub fn from_bytes_with_len_smaller_capacity_works() {
     assert_that!(sut, eq b"bonjour world");
     assert_that!(sut, ne b"bonjour world! woo");
     assert_that!(sut.as_bytes(), eq b"bonjour world");
-    assert_that!(sut.as_mut_bytes(), eq b"bonjour world");
     assert_that!(sut.as_bytes_with_nul(), eq b"bonjour world\0");
     assert_that!(sut.pop(), eq Some(b'd'));
 }
@@ -97,7 +94,6 @@ pub fn from_bytes_with_empty_slice_works() {
     assert_that!(sut, len 0);
     assert_that!(sut, eq b"");
     assert_that!(sut.as_bytes(), eq b"");
-    assert_that!(sut.as_mut_bytes(), eq b"");
     assert_that!(sut.as_bytes_with_nul(), eq b"\0");
     assert_that!(sut.pop(), is_none);
 }
@@ -118,7 +114,6 @@ pub fn from_bytes_truncated_works_with_empty_bytes() {
     assert_that!(sut, eq b"");
     assert_that!(sut, ne b"woo");
     assert_that!(sut.as_bytes(), eq b"");
-    assert_that!(sut.as_mut_bytes(), eq b"");
     assert_that!(sut.as_bytes_with_nul(), eq b"\0");
     assert_that!(sut.pop(), is_none);
 }
@@ -135,7 +130,6 @@ pub fn from_bytes_truncated_works_with_len_smaller_than_capacity() {
     assert_that!(sut, eq b"bonjour world");
     assert_that!(sut, ne b"bonjour world! woo");
     assert_that!(sut.as_bytes(), eq b"bonjour world");
-    assert_that!(sut.as_mut_bytes(), eq b"bonjour world");
     assert_that!(sut.as_bytes_with_nul(), eq b"bonjour world\0");
     assert_that!(sut.pop(), eq Some(b'd'));
 }
@@ -150,7 +144,6 @@ pub fn from_bytes_truncated_works_with_len_greater_than_capacity() {
     assert_that!(sut, eq b"peek");
     assert_that!(sut, ne b"peek woo");
     assert_that!(sut.as_bytes(), eq b"peek");
-    assert_that!(sut.as_mut_bytes(), eq b"peek");
     assert_that!(sut.as_bytes_with_nul(), eq b"peek\0");
     assert_that!(sut.pop(), eq Some(b'k'));
 }
@@ -171,7 +164,6 @@ pub fn from_str_with_len_smaller_capacity_works() {
     assert_that!(sut, eq b"a frog sits on nalas head");
     assert_that!(sut, ne b"a frog sits on nalas foot");
     assert_that!(sut.as_bytes(), eq b"a frog sits on nalas head");
-    assert_that!(sut.as_mut_bytes(), eq b"a frog sits on nalas head");
     assert_that!(sut.as_bytes_with_nul(), eq b"a frog sits on nalas head\0");
     assert_that!(sut.pop(), eq Some(b'd'));
 }
@@ -186,7 +178,6 @@ pub fn from_str_with_len_zero_works() {
     assert_that!(sut, eq b"");
     assert_that!(sut, ne b"oot");
     assert_that!(sut.as_bytes(), eq b"");
-    assert_that!(sut.as_mut_bytes(), eq b"");
     assert_that!(sut.as_bytes_with_nul(), eq b"\0");
     assert_that!(sut.pop(), is_none);
 }
@@ -207,7 +198,6 @@ pub fn from_str_truncated_with_len_smaller_capacity_works() {
     assert_that!(sut, eq b"a butterfly sits on nalas nose");
     assert_that!(sut, ne b"a butterfly sits on nalas foot");
     assert_that!(sut.as_bytes(), eq b"a butterfly sits on nalas nose");
-    assert_that!(sut.as_mut_bytes(), eq b"a butterfly sits on nalas nose");
     assert_that!(sut.as_bytes_with_nul(), eq b"a butterfly sits on nalas nose\0");
     assert_that!(sut.pop(), eq Some(b'e'));
 }
@@ -222,7 +212,6 @@ pub fn from_str_truncated_with_len_greater_than_capacity_truncates() {
     assert_that!(sut, eq b"the ");
     assert_that!(sut, ne b"foo ");
     assert_that!(sut.as_bytes(), eq b"the ");
-    assert_that!(sut.as_mut_bytes(), eq b"the ");
     assert_that!(sut.as_bytes_with_nul(), eq b"the \0");
     assert_that!(sut.pop(), eq Some(b' '));
 }

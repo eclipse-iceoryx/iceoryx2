@@ -20,7 +20,6 @@ use iceoryx2_bb_testing_macros::tests;
 pub mod generic {
 
     use core::cmp::Ordering;
-    use core::ops::DerefMut;
     use core::ptr::NonNull;
 
     use alloc::boxed::Box;
@@ -137,7 +136,6 @@ pub mod generic {
         assert_that!(sut, len 0);
         assert_that!(sut.pop(), is_none);
         assert_that!(sut.as_bytes(), eq b"");
-        assert_that!(sut.as_mut_bytes(), eq b"");
         assert_that!(sut.as_bytes_with_nul(), eq b"\0");
     }
 
@@ -199,7 +197,6 @@ pub mod generic {
             let byte = (n as u8) % 80 + 32;
             assert_that!(sut.as_str().as_bytes(), eq temp.as_slice());
             assert_that!(sut.as_bytes(), eq temp.as_slice());
-            assert_that!(sut.as_mut_bytes(), eq temp.as_slice());
             temp.push(0);
             assert_that!(sut.as_bytes_with_nul(), eq temp.as_slice());
             temp.pop();
@@ -1092,18 +1089,6 @@ pub mod generic {
 
         assert_that!(hash_1, eq hash_1_1);
         assert_that!(hash_1, ne hash_2);
-    }
-
-    #[test]
-    pub fn deref_mut_works<Factory: StringTestFactory>() {
-        let factory = Factory::new();
-        let mut sut = factory.create_sut();
-
-        assert_that!(sut.push_bytes(b"hello"), is_ok);
-
-        sut.deref_mut()[0] = b'b';
-
-        assert_that!(sut.as_bytes(), eq b"bello");
     }
 
     #[test]

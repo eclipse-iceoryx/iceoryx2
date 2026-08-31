@@ -40,7 +40,7 @@ use core::{
     fmt::{Debug, Display},
     hash::Hash,
     mem::MaybeUninit,
-    ops::{Deref, DerefMut},
+    ops::Deref,
     ptr::NonNull,
 };
 
@@ -142,14 +142,6 @@ impl<Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Deref
 
     fn deref(&self) -> &Self::Target {
         self.as_bytes()
-    }
-}
-
-impl<Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> DerefMut
-    for PolymorphicString<'_, Allocator>
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut_bytes()
     }
 }
 
