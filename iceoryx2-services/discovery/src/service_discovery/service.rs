@@ -318,6 +318,9 @@ impl Default for Config {
     }
 }
 
+type ReqResPortFactory<S> = PortFactory<S, (), (), [StaticConfig<S>], ()>;
+type ServerPort<S> = Server<S, (), (), [StaticConfig<S>], ()>;
+
 /// The service discovery service.
 ///
 /// This service is responsible for tracking and publishing information about
@@ -333,8 +336,8 @@ pub struct Service<S: ServiceType + 'static> {
     discovery_config: Config,
     iceoryx_config: IceoryxConfig,
     publisher: Option<Publisher<S, DiscoveryEvent<S>, ()>>,
-    request_response: Option<PortFactory<S, (), (), [StaticConfig<S>], ()>>,
-    server: Option<Server<S, (), (), [StaticConfig<S>], ()>>,
+    request_response: Option<ReqResPortFactory<S>>,
+    server: Option<ServerPort<S>>,
     notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
     // Must remain the last field so all port tags are removed before node cleanup.

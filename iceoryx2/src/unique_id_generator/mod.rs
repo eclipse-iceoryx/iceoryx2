@@ -90,7 +90,7 @@ impl core::error::Error for UniqueIdGeneratorError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
 pub trait UniqueIdGenerator: From<UniqueId> {
-    /// Generates a [`UniqueId`] for a specific [`service::Service].
+    /// Generates a [`UniqueId`] for a specific [`service::Service`].
     fn generate<Service: service::Service>(
         entity: Entity,
         config: &Config,
