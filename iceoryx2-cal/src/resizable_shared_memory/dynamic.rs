@@ -51,7 +51,7 @@ use super::{
     ResizableSharedMemoryViewBuilder,
 };
 
-const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
+const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize;
 const SEGMENT_ID_SEPARATOR: &[u8] = b"__";
 const MANAGEMENT_SUFFIX: &[u8] = b"mgmt";
 const INVALID_KEY: usize = usize::MAX;

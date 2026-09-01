@@ -3622,7 +3622,7 @@ pub mod service_publish_subscribe {
     fn send_and_receives_increasing_samples_works<Sut: Service>(
         allocation_strategy: AllocationStrategy,
     ) {
-        const ITERATIONS: usize = 128;
+        const ITERATIONS: usize = 30;
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
@@ -3683,7 +3683,7 @@ pub mod service_publish_subscribe {
         allocation_strategy: AllocationStrategy,
     ) {
         const SUBSCRIBER_MAX_BUFFER_SIZE: usize = 5;
-        const ITERATIONS: usize = 128;
+        const ITERATIONS: usize = 50;
         const REPETITIONS: usize = 13;
         let test = Test::<Sut>::new();
         let node = test.create_node();

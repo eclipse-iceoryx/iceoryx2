@@ -71,6 +71,7 @@ enum_gen! { UniqueSystemIdCreationError
     Eq, Hash, PartialEq, Clone, Copy, PartialOrd, Ord, Serialize, Deserialize, ZeroCopySend,
 )]
 #[repr(C)]
+#[repr(align(16))]
 pub struct UniqueSystemId {
     pid: u32,
     seconds: u32,

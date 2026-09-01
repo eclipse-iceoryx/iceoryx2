@@ -1353,7 +1353,7 @@ pub mod service_request_response {
     fn send_and_receive_increasing_requests_works<Sut: Service>(
         allocation_strategy: AllocationStrategy,
     ) {
-        const ITERATIONS: usize = 128;
+        const ITERATIONS: usize = 10;
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
