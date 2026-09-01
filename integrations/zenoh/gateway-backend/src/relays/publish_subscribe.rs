@@ -37,6 +37,7 @@ use zenoh::{
     sample::{Locality, Sample},
 };
 
+use crate::descriptor::ServiceDescriptor;
 use crate::keys;
 use crate::relays::bytes::{initialize_sample, payload_bytes, user_header_bytes};
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
@@ -120,7 +121,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "publish_subscribe::Builder::create";
-        let key = keys::publish_subscribe(&self.description.service_hash);
+        let key = keys::publish_subscribe(&ServiceDescriptor::new(self.description));
 
         let publisher = fail!(
             from origin,

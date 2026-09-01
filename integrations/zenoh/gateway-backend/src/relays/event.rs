@@ -25,6 +25,7 @@ use zenoh::qos::Reliability;
 use zenoh::sample::{Locality, Sample};
 use zenoh::{Session, Wait};
 
+use crate::descriptor::ServiceDescriptor;
 use crate::keys;
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
 
@@ -99,7 +100,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "event::Builder::create";
-        let key = keys::event(&self.description.service_hash);
+        let key = keys::event(&ServiceDescriptor::new(self.description));
 
         let notifier = fail!(
             from origin,

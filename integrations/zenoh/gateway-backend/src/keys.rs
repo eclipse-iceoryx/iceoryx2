@@ -12,22 +12,86 @@
 
 use iceoryx2::service::service_hash::ServiceHash;
 
-/// The zenoh key for discovering available service details.
+use crate::descriptor::Fingerprint;
+use crate::descriptor::ServiceDescriptor;
+
+/// Namespace of all keys.
+pub const NAMESPACE: &str = "iox2";
+
+/// Version of the key scheme.
+pub const VERSION: &str = "v1";
+
+/// The zenoh key for discovering the details of announced service
+/// descriptions.
 pub fn service_discovery() -> String {
-    "iox2/service_description/*".into()
+    format!("{NAMESPACE}/{VERSION}/service_description/*/*")
 }
 
-/// The zenoh key at which the service details for the given service id can be received.
-pub fn service_description(service_hash: &ServiceHash) -> String {
-    format!("iox2/service_description/{}", service_hash.as_str())
+/// The zenoh key at which the details of the described service can be
+/// received.
+pub fn service_description(descriptor: &ServiceDescriptor) -> String {
+    format!(
+        "{NAMESPACE}/{VERSION}/service_description/{}/{}",
+        descriptor.service_hash.as_str(),
+        descriptor.fingerprint.as_str()
+    )
 }
 
-/// The zenoh key at which payloads for a given publish-subscribe service id can be received.
-pub fn publish_subscribe(service_hash: &ServiceHash) -> String {
-    format!("iox2/publish_subscribe/{}", service_hash.as_str())
+/// Recovers the descriptor from a key built by [`service_description`].
+pub fn parse_service_description(key: &str) -> Option<ServiceDescriptor> {
+    let mut segments = key.rsplit('/');
+    let fingerprint = Fingerprint::try_from(segments.next()?).ok()?;
+    let service_hash = ServiceHash::try_from(segments.next()?).ok()?;
+    Some(ServiceDescriptor {
+        service_hash,
+        fingerprint,
+    })
 }
 
-/// The zenoh key at which notifications for a given event service can be received.
-pub fn event(service_hash: &ServiceHash) -> String {
-    format!("iox2/event/{}", service_hash.as_str())
+/// The zenoh key at which payloads of the described publish-subscribe
+/// service can be received.
+pub fn publish_subscribe(descriptor: &ServiceDescriptor) -> String {
+    format!(
+        "{NAMESPACE}/{VERSION}/publish_subscribe/{}/{}",
+        descriptor.service_hash.as_str(),
+        descriptor.fingerprint.as_str()
+    )
+}
+
+/// The zenoh key at which notifications of the described event service can
+/// be received.
+pub fn event(descriptor: &ServiceDescriptor) -> String {
+    format!(
+        "{NAMESPACE}/{VERSION}/event/{}/{}",
+        descriptor.service_hash.as_str(),
+        descriptor.fingerprint.as_str()
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use iceoryx2::service::ipc;
+    use iceoryx2::service::service_name::ServiceName;
+    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_gateway_backend::types::service_description::{
+        EventDescription, PatternDescription, PortSettings, ServiceDescription,
+    };
+
+    #[test]
+    fn service_description_key_round_trips() {
+        let description = ServiceDescription::new::<ipc::Service>(
+            ServiceName::new("keys/round-trip").expect("valid service name"),
+            PatternDescription::Event(EventDescription {
+                settings: PortSettings::LocalDefaults,
+            }),
+        );
+        let descriptor = ServiceDescriptor::new(&description);
+
+        let key = service_description(&descriptor);
+        let parsed = parse_service_description(&key).expect("key is parsable");
+
+        assert_that!(parsed, eq descriptor);
+    }
 }
