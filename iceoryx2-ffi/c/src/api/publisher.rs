@@ -14,8 +14,8 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
-    iox2_backpressure_strategy_e, iox2_port_name_ptr, iox2_service_type_e,
-    iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
+    iox2_allocation_strategy_e, iox2_backpressure_strategy_e, iox2_port_name_ptr,
+    iox2_service_type_e, iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
 };
 
 use iceoryx2::port::LoanError;
@@ -320,6 +320,35 @@ pub unsafe extern "C" fn iox2_publisher_backpressure_strategy(
     }
 }
 
+/// Returns the strategy the publisher follows when the slice length requested exceeds the current slice buffer
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
+/// Returns [`iox2_allocation_strategy_e`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid and non-null
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_publisher_allocation_strategy(
+    publisher_handle: iox2_publisher_h_ref,
+) -> iox2_allocation_strategy_e {
+    publisher_handle.assert_non_null();
+
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
+
+        match publisher.service_type {
+            iox2_service_type_e::IPC => publisher.value.as_mut().ipc.allocation_strategy().into(),
+            iox2_service_type_e::LOCAL => {
+                publisher.value.as_mut().local.allocation_strategy().into()
+            }
+        }
+    }
+}
+
 /// Returns the maximum `[u8]` length that can be loaned in one sample, i.e. the max number of
 /// elements in the `[u8]` payload type used by the C binding.
 ///
@@ -345,6 +374,35 @@ pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
             }
             iox2_service_type_e::LOCAL => {
                 publisher.value.as_mut().local.initial_max_slice_len() as c_size_t
+            }
+        }
+    }
+}
+
+/// Returns the maximum number of samples that can be loaned at the same time by the publisher.
+///
+/// # Arguments
+/// * `publisher_handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
+/// Returns the maximum number of loaned samples as a [`c_size_t`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid and non-null
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_publisher_max_loaned_samples(
+    publisher_handle: iox2_publisher_h_ref,
+) -> c_size_t {
+    publisher_handle.assert_non_null();
+
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
+        match publisher.service_type {
+            iox2_service_type_e::IPC => {
+                publisher.value.as_mut().ipc.max_loaned_samples() as c_size_t
+            }
+            iox2_service_type_e::LOCAL => {
+                publisher.value.as_mut().local.max_loaned_samples() as c_size_t
             }
         }
     }

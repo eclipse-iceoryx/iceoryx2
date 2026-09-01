@@ -1880,4 +1880,45 @@ TYPED_TEST(ServicePublishSubscribeTest, port_names_can_be_set) {
     ASSERT_THAT(subscriber.name().to_string(), subscriber_name.to_string());
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_loaned_samples) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    auto publisher_1 = service.publisher_builder().max_loaned_samples(1).create().value();
+    ASSERT_THAT(publisher_1.max_loaned_samples(), Eq(1));
+
+    auto publisher_100 = service.publisher_builder().max_loaned_samples(100).create().value();
+    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(100));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using ValueType = uint8_t;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
+
+    auto publisher_default = service.publisher_builder().create().value();
+    ASSERT_THAT(publisher_default.allocation_strategy(), Eq(AllocationStrategy::Static));
+
+    auto publisher_best_fit =
+        service.publisher_builder().allocation_strategy(AllocationStrategy::BestFit).create().value();
+    ASSERT_THAT(publisher_best_fit.allocation_strategy(), Eq(AllocationStrategy::BestFit));
+
+    auto publisher_power_of_two =
+        service.publisher_builder().allocation_strategy(AllocationStrategy::PowerOfTwo).create().value();
+    ASSERT_THAT(publisher_power_of_two.allocation_strategy(), Eq(AllocationStrategy::PowerOfTwo));
+
+    auto publisher_static =
+        service.publisher_builder().allocation_strategy(AllocationStrategy::Static).create().value();
+    ASSERT_THAT(publisher_static.allocation_strategy(), Eq(AllocationStrategy::Static));
+}
+
 } // namespace
