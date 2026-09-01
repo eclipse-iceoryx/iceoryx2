@@ -12,9 +12,9 @@
 
 //! Byte views of untyped iceoryx2 messages for moving them through zenoh.
 
-use core::mem::MaybeUninit;
-
+use iceoryx2::service::Service;
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2_gateway_backend::types::publish_subscribe::{SampleMut, SampleMutUninit};
 
 /// Views the user header of an untyped message as bytes.
 pub fn user_header_bytes(user_header: &CustomHeaderMarker, size: usize) -> &[u8] {
@@ -28,35 +28,36 @@ pub fn payload_bytes(payload: &[CustomPayloadMarker]) -> &[u8] {
     unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) }
 }
 
-/// Copies user header and payload bytes into a loan.
+/// Initializes a loaned sample with received user header and payload
+/// bytes.
 ///
 /// # Safety
 ///
-/// `destination_user_header` must point to at least
-/// `source_user_header.len()` writable bytes.
-pub unsafe fn write_message(
-    user_header_bytes: &[u8],
-    payload_bytes: &[u8],
-    user_header_loan: *mut CustomHeaderMarker,
-    payload_loan: &mut [MaybeUninit<CustomPayloadMarker>],
-) {
+/// `user_header` must be exactly the size of the service's user header
+/// type and `payload` must be exactly the size of the loan.
+pub unsafe fn initialize_sample<S: Service>(
+    user_header: &[u8],
+    payload: &[u8],
+    mut sample: SampleMutUninit<S>,
+) -> SampleMut<S> {
     debug_assert!(
-        payload_loan.len() >= payload_bytes.len(),
-        "Loaned payload size ({}) is too small for received payload ({})",
-        payload_loan.len(),
-        payload_bytes.len()
+        sample.payload_mut().len() == payload.len(),
+        "Loaned payload size ({}) does not match received payload ({})",
+        sample.payload_mut().len(),
+        payload.len()
     );
 
     unsafe {
         core::ptr::copy_nonoverlapping(
-            user_header_bytes.as_ptr(),
-            user_header_loan as *mut u8,
-            user_header_bytes.len(),
+            user_header.as_ptr(),
+            sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
+            user_header.len(),
         );
         core::ptr::copy_nonoverlapping(
-            payload_bytes.as_ptr(),
-            payload_loan.as_mut_ptr().cast::<u8>(),
-            payload_bytes.len(),
+            payload.as_ptr(),
+            sample.payload_mut().as_mut_ptr().cast::<u8>(),
+            payload.len(),
         );
+        sample.assume_init()
     }
 }

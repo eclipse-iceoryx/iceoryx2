@@ -12,17 +12,22 @@
 
 use std::sync::Arc;
 
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2::service::{
     Service, local_threadsafe,
     marker::{CustomHeaderMarker, CustomPayloadMarker},
 };
 use iceoryx2_gateway_backend::{
     traits::{PublishSubscribeRelay, RelayBuilder},
-    types::publish_subscribe::{LoanFn, SampleMut},
-    types::service_description::{PatternDescription, ServiceDescription},
-    types::wake::WakeHandle,
+    types::{
+        publish_subscribe::{LoanFn, SampleMut},
+        service_description::{
+            PatternDescription, PublishSubscribeDescription, ServiceDescription,
+        },
+        wake::WakeHandle,
+    },
 };
-use iceoryx2_log::{fail, trace};
+use iceoryx2_log::{fail, trace, warn};
 use serde::{Deserialize, Serialize};
 
 use zenoh::{
@@ -33,7 +38,7 @@ use zenoh::{
 };
 
 use crate::keys;
-use crate::relays::bytes::{payload_bytes, user_header_bytes, write_message};
+use crate::relays::bytes::{initialize_sample, payload_bytes, user_header_bytes};
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -158,7 +163,7 @@ pub struct Relay<S: Service> {
 }
 
 impl<S: Service> Relay<S> {
-    fn put_sample_frame(&self, frame: &SampleFrame<'_>) -> Result<(), zenoh::Error> {
+    fn put_sample(&self, frame: &SampleFrame<'_>) -> Result<(), zenoh::Error> {
         let bytes = postcard::to_allocvec(frame)?;
         self.publisher.put(bytes).wait()
     }
@@ -179,17 +184,15 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             self.description.name
         );
 
+        let port = port_description(&self.description);
         let frame = SampleFrame {
-            user_header: user_header_bytes(
-                sample.user_header(),
-                user_header_size(&self.description),
-            ),
+            user_header: user_header_bytes(sample.user_header(), port.user_header.size),
             payload: payload_bytes(sample.payload()),
         };
 
         fail!(
             from self,
-            when self.put_sample_frame(&frame),
+            when self.put_sample(&frame),
             with SendError::PayloadPut,
             "Failed to propagate publish-subscribe payload to zenoh"
         );
@@ -201,14 +204,17 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
-        let zenoh_sample = fail!(
-            from self,
-            when self.subscriber.try_recv(),
-            with ReceiveError::SampleReceive,
-            "Failed to receive sample from Zenoh"
-        );
+        loop {
+            let zenoh_sample = fail!(
+                from self,
+                when self.subscriber.try_recv(),
+                with ReceiveError::SampleReceive,
+                "Failed to receive sample from Zenoh"
+            );
+            let Some(zenoh_sample) = zenoh_sample else {
+                return Ok(None);
+            };
 
-        if let Some(zenoh_sample) = zenoh_sample {
             trace!(
                 from self,
                 "Ingesting {}({})",
@@ -224,33 +230,149 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 "Failed to decode publish-subscribe frame received from zenoh"
             );
 
-            let mut iceoryx_sample = fail!(
+            let port = port_description(&self.description);
+            if !validate_frame(&frame, port) {
+                warn!(
+                    from self,
+                    "Discarding sample of {}({}), its message layout does not match \
+                    the local service description",
+                    self.description.pattern,
+                    self.description.name
+                );
+                continue;
+            }
+
+            let iceoryx_sample = fail!(
                 from self,
                 when loan(frame.payload.len()),
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"
             );
 
-            unsafe {
-                write_message(
-                    frame.user_header,
-                    frame.payload,
-                    iceoryx_sample.user_header_mut(),
-                    iceoryx_sample.payload_mut(),
-                )
-            };
-            let initialized_sample = unsafe { iceoryx_sample.assume_init() };
+            let sample =
+                unsafe { initialize_sample(frame.user_header, frame.payload, iceoryx_sample) };
 
-            return Ok(Some(initialized_sample));
-        };
-
-        Ok(None)
+            return Ok(Some(sample));
+        }
     }
 }
 
-fn user_header_size(description: &ServiceDescription) -> usize {
+fn port_description(description: &ServiceDescription) -> &PublishSubscribeDescription {
     let PatternDescription::PublishSubscribe(description) = &description.pattern else {
         unreachable!("relay is only built for publish-subscribe descriptions")
     };
-    description.user_header.size
+
+    description
+}
+
+fn validate_frame(frame: &SampleFrame<'_>, port: &PublishSubscribeDescription) -> bool {
+    let user_header_matches = frame.user_header.len() == port.user_header.size;
+    let payload_matches = match port.payload.variant {
+        TypeVariant::FixedSize => frame.payload.len() == port.payload.size,
+        TypeVariant::Dynamic => {
+            port.payload.size != 0 && frame.payload.len() % port.payload.size == 0
+        }
+    };
+    user_header_matches && payload_matches
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_gateway_backend::types::service_description::{PortSettings, TypeDescription};
+
+    fn type_description(variant: TypeVariant, size: usize) -> TypeDescription {
+        TypeDescription {
+            variant,
+            type_name: "test_type".into(),
+            size,
+            alignment: 1,
+        }
+    }
+
+    fn port_description(
+        user_header: TypeDescription,
+        payload: TypeDescription,
+    ) -> PublishSubscribeDescription {
+        PublishSubscribeDescription {
+            user_header,
+            payload,
+            settings: PortSettings::LocalDefaults,
+        }
+    }
+
+    #[test]
+    fn accepts_matching_fixed_size_message() {
+        let port = port_description(
+            type_description(TypeVariant::FixedSize, 4),
+            type_description(TypeVariant::FixedSize, 8),
+        );
+        let frame = SampleFrame {
+            user_header: &[0u8; 4],
+            payload: &[0u8; 8],
+        };
+
+        assert_that!(validate_frame(&frame, &port), eq true);
+    }
+
+    #[test]
+    fn accepts_dynamic_payload_of_whole_elements() {
+        let port = port_description(
+            type_description(TypeVariant::FixedSize, 0),
+            type_description(TypeVariant::Dynamic, 4),
+        );
+
+        for element_count in [0usize, 1, 3] {
+            let payload = vec![0u8; element_count * 4];
+            let frame = SampleFrame {
+                user_header: &[],
+                payload: &payload,
+            };
+            assert_that!(validate_frame(&frame, &port), eq true);
+        }
+    }
+
+    #[test]
+    fn rejects_mismatched_user_header_size() {
+        let port = port_description(
+            type_description(TypeVariant::FixedSize, 4),
+            type_description(TypeVariant::FixedSize, 8),
+        );
+        let frame = SampleFrame {
+            user_header: &[0u8; 8],
+            payload: &[0u8; 8],
+        };
+
+        assert_that!(validate_frame(&frame, &port), eq false);
+    }
+
+    #[test]
+    fn rejects_mismatched_fixed_size_payload() {
+        let port = port_description(
+            type_description(TypeVariant::FixedSize, 0),
+            type_description(TypeVariant::FixedSize, 8),
+        );
+        let frame = SampleFrame {
+            user_header: &[],
+            payload: &[0u8; 12],
+        };
+
+        assert_that!(validate_frame(&frame, &port), eq false);
+    }
+
+    #[test]
+    fn rejects_dynamic_payload_of_partial_elements() {
+        let port = port_description(
+            type_description(TypeVariant::FixedSize, 0),
+            type_description(TypeVariant::Dynamic, 4),
+        );
+        let frame = SampleFrame {
+            user_header: &[],
+            payload: &[0u8; 6],
+        };
+
+        assert_that!(validate_frame(&frame, &port), eq false);
+    }
 }
