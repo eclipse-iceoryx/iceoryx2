@@ -192,6 +192,11 @@ struct DynamicConfigCreationArgs {
     max_number_of_nodes: usize,
 }
 
+type StaticServiceResources<ServiceType> = (
+    StaticConfig<ServiceType>,
+    <ServiceType as service::Service>::StaticStorage,
+);
+
 impl<S: Service> Builder<S> {
     pub(crate) fn new(name: &ServiceName, shared_node: SharedNode<S>) -> Self {
         Self {
@@ -785,7 +790,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn is_service_available(
         &self,
         msg: &str,
-    ) -> Result<Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let expected_service_config = &self.service_config;
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());

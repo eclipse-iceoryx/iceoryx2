@@ -25,7 +25,9 @@ use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::ServiceState;
-use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
+use crate::service::builder::{
+    DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
+};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
@@ -477,7 +479,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let pubsub_service_config = self.config_details();
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {

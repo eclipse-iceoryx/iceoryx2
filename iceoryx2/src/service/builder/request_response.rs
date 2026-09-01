@@ -26,6 +26,7 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
+    StaticServiceResources,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -811,13 +812,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<
-        Option<(
-            static_config::StaticConfig<ServiceType>,
-            ServiceType::StaticStorage,
-        )>,
-        ServiceState,
-    > {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let reqres_service_config = self.config_details();
 
         match self.base.is_service_available(error_msg) {

@@ -127,6 +127,12 @@ impl<Service: service::Service> Abandonable for NoResource<Service> {
     unsafe fn abandon_in_place(_this: NonNull<Self>) {}
 }
 
+impl<Service: service::Service> Default for NoResource<Service> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Service: service::Service> NoResource<Service> {
     pub fn new() -> Self {
         Self {

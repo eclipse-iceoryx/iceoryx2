@@ -24,7 +24,9 @@ use alloc::vec::Vec;
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::service;
-use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
+use crate::service::builder::{
+    DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
+};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::marker::CustomKeyMarker;
@@ -360,7 +362,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let blackboard_service_config = *self.config_details();
         match self.config.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
