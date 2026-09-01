@@ -1899,13 +1899,17 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_loaned_samples) {
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint8_t MAX_PUBLISHERS = 4;
     using ValueType = uint8_t;
 
     const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto service =
-        node.service_builder(service_name).template publish_subscribe<bb::Slice<ValueType>>().create().value();
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<bb::Slice<ValueType>>()
+                       .max_publishers(MAX_PUBLISHERS)
+                       .create()
+                       .value();
 
     auto publisher_default = service.publisher_builder().create().value();
     ASSERT_THAT(publisher_default.allocation_strategy(), Eq(AllocationStrategy::Static));
