@@ -1882,17 +1882,19 @@ TYPED_TEST(ServicePublishSubscribeTest, port_names_can_be_set) {
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_loaned_samples) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint8_t MAX_LOANEN_SAMPLE_SMALL = 1;
+    constexpr uint8_t MAX_LOANEN_SAMPLE_LARGE = 100;
 
     const auto service_name = iox2::testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
-    auto publisher_1 = service.publisher_builder().max_loaned_samples(1).create().value();
-    ASSERT_THAT(publisher_1.max_loaned_samples(), Eq(1));
+    auto publisher_1 = service.publisher_builder().max_loaned_samples(MAX_LOANEN_SAMPLE_SMALL).create().value();
+    ASSERT_THAT(publisher_1.max_loaned_samples(), Eq(MAX_LOANEN_SAMPLE_SMALL));
 
-    auto publisher_100 = service.publisher_builder().max_loaned_samples(100).create().value();
-    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(100));
+    auto publisher_100 = service.publisher_builder().max_loaned_samples(MAX_LOANEN_SAMPLE_LARGE).create().value();
+    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(MAX_LOANEN_SAMPLE_LARGE));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {
