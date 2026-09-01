@@ -1567,6 +1567,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
  "iceoryx2-gateway",
  "iceoryx2-gateway-backend",
  "iceoryx2-gateway-conformance-tests",

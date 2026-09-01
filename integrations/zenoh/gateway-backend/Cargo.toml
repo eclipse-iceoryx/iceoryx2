@@ -16,6 +16,7 @@ harness = false
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-log = { workspace = true, features = ["std"] }
 iceoryx2-bb-concurrency = { workspace = true, features = ["std"] }
 iceoryx2-gateway-backend = { workspace = true, features = ["std"] }

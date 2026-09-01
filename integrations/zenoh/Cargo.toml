@@ -28,6 +28,7 @@ iceoryx2-integrations-zenoh-gateway-backend = { version = "0.9.999", path = "gat
 
 iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/" }
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
+iceoryx2-cal = { version = "0.9.999", path = "../../iceoryx2-cal/" }
 iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/" }
 iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concurrency/" }
 iceoryx2-bb-posix = { version = "0.9.999", path = "../../iceoryx2-bb/posix/" }
