@@ -66,6 +66,10 @@ impl core::error::Error for DiscoveryError {}
 // A local service announced to be remotely discoverable.
 #[derive(Debug)]
 struct AnnouncedService {
+    // The service as offered locally.
+    description: ServiceDescription,
+    // The descriptor the service is announced under.
+    descriptor: ServiceDescriptor,
     // A liveliness token which zenoh makes visible to all remotes. Declaring
     // it triggers a `Put` event, dropping it triggers a `Delete` event.
     _token: LivelinessToken,
@@ -105,6 +109,15 @@ impl LocalAnnouncements {
     /// Remove a local service that had been announced from the tracked set.
     fn remove(&mut self, local_hash: &ServiceHash) {
         self.services.remove(local_hash);
+    }
+
+    /// The local description of the service announced under `descriptor`,
+    /// if any.
+    fn announced_under(&self, descriptor: &ServiceDescriptor) -> Option<&ServiceDescription> {
+        self.services
+            .values()
+            .find(|service| service.descriptor == *descriptor)
+            .map(|service| &service.description)
     }
 }
 
@@ -348,6 +361,8 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         self.local_announcements.insert(
             local_hash,
             AnnouncedService {
+                description: local_description.clone(),
+                descriptor,
                 _token: token,
                 _queryable: queryable,
             },
@@ -485,11 +500,17 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         E: core::error::Error,
         F: FnMut(DiscoveryUpdate) -> Result<(), E>,
     {
-        // Track the discovered description. Request it if not yet known.
+        // Track the discovered service. Request the description if not
+        // already known.
         if !self.remote_descriptions.contains(&remote_descriptor) {
-            let query = self.request_service_description(&remote_descriptor)?;
+            let description = match self.local_announcements.announced_under(&remote_descriptor) {
+                Some(local_description) => RemoteDescription::Resolved(local_description.clone()),
+                None => RemoteDescription::Pending(
+                    self.request_service_description(&remote_descriptor)?,
+                ),
+            };
             self.remote_descriptions
-                .set(remote_descriptor.clone(), RemoteDescription::Pending(query));
+                .set(remote_descriptor.clone(), description);
         }
 
         // Track that the gateway is offering the description.
