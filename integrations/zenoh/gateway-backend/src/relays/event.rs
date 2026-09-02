@@ -18,7 +18,7 @@ use iceoryx2::service::local_threadsafe;
 use iceoryx2_gateway_backend::traits::{EventRelay, RelayBuilder};
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_gateway_backend::types::wake::WakeHandle;
-use iceoryx2_log::{fail, trace};
+use iceoryx2_log::{fail, trace, warn};
 
 use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::qos::Reliability;
@@ -61,7 +61,6 @@ impl core::error::Error for SendError {}
 pub enum ReceiveError {
     EventReceive,
     EventIngestion,
-    InvalidEvent,
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -172,32 +171,38 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     }
 
     fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
-        let sample = fail!(
-            from self,
-            when self.listener.try_recv(),
-            with ReceiveError::EventReceive,
-            "Failed to receive event from zenoh"
-        );
+        loop {
+            let sample = fail!(
+                from self,
+                when self.listener.try_recv(),
+                with ReceiveError::EventReceive,
+                "Failed to receive event from zenoh"
+            );
+            let Some(sample) = sample else {
+                return Ok(None);
+            };
 
-        match sample {
-            Some(sample) => {
-                trace!(
+            trace!(
+                from self,
+                "Ingesting {}({})",
+                self.description.pattern,
+                self.description.name
+            );
+
+            let payload = sample.payload();
+            if payload.len() != std::mem::size_of::<usize>() {
+                warn!(
                     from self,
-                    "Ingesting {}({})",
+                    "Discarding notification of {}({}), its payload is not an event id",
                     self.description.pattern,
                     self.description.name
                 );
-                let payload = sample.payload();
-                if payload.len() == std::mem::size_of::<usize>() {
-                    let id: usize =
-                        unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
-
-                    Ok(Some(EventId::new(id)))
-                } else {
-                    Err(ReceiveError::InvalidEvent)
-                }
+                continue;
             }
-            None => Ok(None),
+
+            let id: usize = unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
+
+            return Ok(Some(EventId::new(id)));
         }
     }
 }
