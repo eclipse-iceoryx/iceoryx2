@@ -29,7 +29,10 @@ use zenoh::{
     sample::{Locality, Sample, SampleKind},
 };
 
-use crate::keys;
+use crate::wire::description::EncodedDescription;
+use crate::wire::descriptor::ServiceDescriptor;
+use crate::wire::fingerprint::Fingerprint;
+use crate::wire::keys;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -94,7 +97,7 @@ pub struct Discovery<S: Service, M: Mapping<EndpointDescription = ServiceDescrip
     // Cache for replies to requests for remote service details.
     // Replies are filled asynchronously by Zenoh but only processed on
     // subsequent discover calls. Enables non-blocking implementation.
-    pending: BTreeMap<ServiceHash, FifoChannelHandler<Reply>>,
+    pending: BTreeMap<ServiceDescriptor, FifoChannelHandler<Reply>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -146,16 +149,17 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
         &mut self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
-        for (service_hash, kind) in self.receive_liveliness_changes()? {
+        for (descriptor, kind) in self.receive_liveliness_changes()? {
             match kind {
                 // A new service was detected on the network. Request its
                 // details. The reply is picked up by a subsequent discover call.
                 // Subject to network latency.
-                SampleKind::Put => self.request_service_description(&service_hash)?,
+                SampleKind::Put => self.request_service_description(&descriptor)?,
                 // The service disappeared. Remove it from the gateway and
                 // cancel any in-flight details request.
                 SampleKind::Delete => {
-                    self.pending.remove(&service_hash);
+                    let service_hash = descriptor.service_hash;
+                    self.pending.remove(&descriptor);
 
                     fail!(
                         from self,
@@ -170,13 +174,11 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>>
         // Poll the pending detail queries. A service is added to the
         // gateway once the reply with its details has been received.
         let (resolved, failed) = self.receive_service_descriptions();
-        for description in &resolved {
-            self.pending.remove(&description.service_hash);
+        for descriptor in failed {
+            self.request_service_description(&descriptor)?;
         }
-        for hash in failed {
-            self.request_service_description(&hash)?;
-        }
-        for description in resolved {
+        for (descriptor, description) in resolved {
+            self.pending.remove(&descriptor);
             let Some(description) = self.mapping.local::<S>(&description) else {
                 continue;
             };
@@ -208,17 +210,18 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             return Ok(());
         }
 
-        let key = keys::service_description(&service_hash);
-        let serialized = fail!(
+        let encoded = fail!(
             from self,
-            when serde_json::to_string(description),
+            when EncodedDescription::encode(description),
             with AnnouncementError::Serialization,
-            "Failed to serialize service config"
+            "Failed to encode service description"
         );
+        let descriptor = ServiceDescriptor::new(description.service_hash, encoded.fingerprint());
+        let key = keys::service_description(&descriptor);
 
         // Declare the queryable **before** the liveliness token. Peers
         // receive the token's Put as soon as it is declared.
-        let queryable = self.declare_queryable(&key, serialized)?;
+        let queryable = self.declare_queryable(&key, encoded)?;
         let token = self.declare_liveliness_token(&key)?;
 
         self.announced.insert(
@@ -239,11 +242,11 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
     }
 
     /// Declares a queryable that responds to remote peers' `get` requests for
-    /// a service's ServiceDescription with the pre-serialised JSON payload.
+    /// a service's ServiceDescription with the pre-encoded payload.
     fn declare_queryable(
         &self,
         key: &str,
-        serialized: String,
+        encoded: EncodedDescription,
     ) -> Result<Queryable<()>, AnnouncementError> {
         let reply_key = key.to_string();
         let queryable = fail!(
@@ -252,7 +255,7 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
                 .declare_queryable(key)
                 .callback(move |query| {
                     let _ = query
-                        .reply(reply_key.clone(), serialized.clone())
+                        .reply(reply_key.clone(), encoded.clone().into_bytes())
                         .wait()
                         .inspect_err(|e| {
                             error!("Failed to reply with service details for {}: {}", reply_key, e);
@@ -282,9 +285,11 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
     }
 
     /// Drains the liveliness samples received since the last call and
-    /// returns the (service, change) pairs in order of arrival. Samples
+    /// returns the (descriptor, change) pairs in order of arrival. Samples
     /// with unparsable keys are skipped.
-    fn receive_liveliness_changes(&self) -> Result<Vec<(ServiceHash, SampleKind)>, DiscoveryError> {
+    fn receive_liveliness_changes(
+        &self,
+    ) -> Result<Vec<(ServiceDescriptor, SampleKind)>, DiscoveryError> {
         let mut changes = Vec::new();
         loop {
             let sample = match fail!(
@@ -298,15 +303,15 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             };
 
             let key: &str = sample.key_expr().as_ref();
-            let service_hash = match parse_service_hash(key) {
-                Some(h) => h,
+            let descriptor = match keys::parse_service_description(key) {
+                Some(descriptor) => descriptor,
                 None => {
                     warn!("Skipping liveliness sample with unparsable key: {}", key);
                     continue;
                 }
             };
 
-            changes.push((service_hash, sample.kind()));
+            changes.push((descriptor, sample.kind()));
         }
         Ok(changes)
     }
@@ -317,9 +322,9 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
     /// subsequent iterations.
     fn request_service_description(
         &mut self,
-        service_hash: &ServiceHash,
+        descriptor: &ServiceDescriptor,
     ) -> Result<(), DiscoveryError> {
-        let key = keys::service_description(service_hash);
+        let key = keys::service_description(descriptor);
         let handler = fail!(
             from self,
             when self.session
@@ -329,22 +334,27 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             with DiscoveryError::DiscoveryQuery,
             "Failed to query for static config of {}", key
         );
-        self.pending.insert(*service_hash, handler);
+        self.pending.insert(descriptor.clone(), handler);
         Ok(())
     }
 
     /// Receives service descriptions from previously-issued queries.
-    /// Returns the resolved [`ServiceDescription`]s and the services whose
-    /// query channel closed without a usable reply.
-    fn receive_service_descriptions(&self) -> (Vec<ServiceDescription>, Vec<ServiceHash>) {
-        let mut resolved: Vec<ServiceDescription> = Vec::new();
-        let mut failed: Vec<ServiceHash> = Vec::new();
+    /// Returns the resolved queries as (descriptor, description) pairs and
+    /// the descriptors whose query channel closed without a usable reply.
+    fn receive_service_descriptions(
+        &self,
+    ) -> (
+        Vec<(ServiceDescriptor, ServiceDescription)>,
+        Vec<ServiceDescriptor>,
+    ) {
+        let mut resolved: Vec<(ServiceDescriptor, ServiceDescription)> = Vec::new();
+        let mut failed: Vec<ServiceDescriptor> = Vec::new();
 
-        for (hash, handler) in self.pending.iter() {
-            match check_pending(hash, handler) {
-                Ok(Some(description)) => resolved.push(description),
+        for (descriptor, handler) in self.pending.iter() {
+            match check_pending(descriptor, handler) {
+                Ok(Some(description)) => resolved.push((descriptor.clone(), description)),
                 Ok(None) => {}
-                Err(_) => failed.push(*hash),
+                Err(_) => failed.push(descriptor.clone()),
             }
         }
 
@@ -355,8 +365,10 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
 #[derive(Debug)]
 struct Disconnected;
 
+/// Polls a query for the described service. Replies whose payload does not
+/// match the descriptor's fingerprint are skipped.
 fn check_pending(
-    hash: &ServiceHash,
+    descriptor: &ServiceDescriptor,
     handler: &FifoChannelHandler<Reply>,
 ) -> Result<Option<ServiceDescription>, Disconnected> {
     loop {
@@ -369,25 +381,29 @@ fn check_pending(
             Err(e) => {
                 warn!(
                     "Skipping erroneous reply for service {}: {:?}",
-                    hash.as_str(),
+                    descriptor.service_hash.as_str(),
                     e
                 );
                 continue;
             }
         };
 
-        match serde_json::from_slice::<ServiceDescription>(&sample.payload().to_bytes()) {
+        let bytes = sample.payload().to_bytes();
+        if Fingerprint::digest(&bytes) != descriptor.fingerprint {
+            warn!(
+                "Skipping reply for service {} that does not match the announced fingerprint",
+                descriptor.service_hash.as_str()
+            );
+            continue;
+        }
+
+        match EncodedDescription::decode(&bytes) {
             Ok(description) => return Ok(Some(description)),
             Err(e) => warn!(
                 "Skipping unparsable reply for service {}: {}",
-                hash.as_str(),
+                descriptor.service_hash.as_str(),
                 e
             ),
         }
     }
-}
-
-fn parse_service_hash(key: &str) -> Option<ServiceHash> {
-    let suffix = key.rsplit('/').next()?;
-    ServiceHash::try_from(suffix).ok()
 }

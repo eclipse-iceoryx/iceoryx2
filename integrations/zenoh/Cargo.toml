@@ -28,6 +28,7 @@ iceoryx2-integrations-zenoh-gateway-backend = { version = "0.9.999", path = "gat
 
 iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/" }
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
+iceoryx2-cal = { version = "0.9.999", path = "../../iceoryx2-cal/" }
 iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/" }
 iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concurrency/" }
 iceoryx2-bb-posix = { version = "0.9.999", path = "../../iceoryx2-bb/posix/" }
@@ -42,7 +43,8 @@ better-panic = { version = "0.3.0" }
 clap = { version = "4.5.4", features = ["derive"] }
 flume = { version = "0.12.0" }
 human-panic = { version = "2.0.5" }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+postcard = { version = "1.1.3", default-features = false, features = ["alloc"] }
+serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }
 # Mitigate https://rustsec.org/advisories/RUSTSEC-2026-0041 by not enabling
 # transport_compression feature until a new version of lz4_flex is available in zenoh
 zenoh = { version = "1.9.0", default-features = false, features = [

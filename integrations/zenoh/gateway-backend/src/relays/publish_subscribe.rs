@@ -18,25 +18,31 @@ use iceoryx2::service::{
 };
 use iceoryx2_gateway_backend::{
     traits::{PublishSubscribeRelay, RelayBuilder},
-    types::publish_subscribe::{LoanFn, SampleMut},
-    types::service_description::{PatternDescription, ServiceDescription},
-    types::wake::WakeHandle,
+    types::{
+        publish_subscribe::{LoanFn, SampleMut, SampleMutUninit},
+        service_description::{
+            PatternDescription, PublishSubscribeDescription, ServiceDescription,
+        },
+        wake::WakeHandle,
+    },
 };
-use iceoryx2_log::{fail, trace};
+use iceoryx2_log::{fail, trace, warn};
 
 use zenoh::{
     Session, Wait,
-    bytes::ZBytes,
     pubsub::{Publisher, Subscriber},
     qos::Reliability,
     sample::{Locality, Sample},
 };
 
-use crate::keys;
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
+use crate::wire::descriptor;
+use crate::wire::keys;
+use crate::wire::message::{MessageFrame, payload_bytes, user_header_bytes, validate_frame};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
+    DescriptionEncoding,
     PublisherDeclaration,
     SubscriberDeclaration,
     ServiceAnouncement,
@@ -67,6 +73,7 @@ impl core::error::Error for SendError {}
 pub enum ReceiveError {
     SampleReceive,
     IceoryxLoan,
+    LoanSizeMismatch,
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -106,7 +113,13 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "publish_subscribe::Builder::create";
-        let key = keys::publish_subscribe(&self.description.service_hash);
+        let descriptor = fail!(
+            from origin,
+            when descriptor::describe(self.description),
+            with CreationError::DescriptionEncoding,
+            "Failed to encode service description"
+        );
+        let key = keys::publish_subscribe(&descriptor);
 
         let publisher = fail!(
             from origin,
@@ -148,6 +161,13 @@ pub struct Relay<S: Service> {
     _phantom: core::marker::PhantomData<S>,
 }
 
+impl<S: Service> Relay<S> {
+    fn put_sample(&self, frame: &MessageFrame<'_>) -> Result<(), zenoh::Error> {
+        let bytes = postcard::to_allocvec(frame)?;
+        self.publisher.put(bytes).wait()
+    }
+}
+
 impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
     type SendError = SendError;
     type ReceiveError = ReceiveError;
@@ -163,24 +183,15 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             self.description.name
         );
 
-        let user_header = sample.user_header();
-        let payload = sample.payload();
-
-        let mut writer = ZBytes::writer();
-        writer.append(unsafe {
-            core::slice::from_raw_parts(
-                user_header as *const CustomHeaderMarker as *const u8,
-                user_header_size(&self.description),
-            )
-            .into()
-        });
-        writer.append(unsafe {
-            core::slice::from_raw_parts(payload.as_ptr() as *mut u8, payload.len()).into()
-        });
+        let port = port_description(&self.description);
+        let frame = MessageFrame {
+            user_header: user_header_bytes(sample.user_header(), port.user_header.size),
+            payload: payload_bytes(sample.payload()),
+        };
 
         fail!(
             from self,
-            when self.publisher.put(writer).wait(),
+            when self.put_sample(&frame),
             with SendError::PayloadPut,
             "Failed to propagate publish-subscribe payload to zenoh"
         );
@@ -192,14 +203,17 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
-        let zenoh_sample = fail!(
-            from self,
-            when self.subscriber.try_recv(),
-            with ReceiveError::SampleReceive,
-            "Failed to receive sample from Zenoh"
-        );
+        loop {
+            let zenoh_sample = fail!(
+                from self,
+                when self.subscriber.try_recv(),
+                with ReceiveError::SampleReceive,
+                "Failed to receive sample from Zenoh"
+            );
+            let Some(zenoh_sample) = zenoh_sample else {
+                return Ok(None);
+            };
 
-        if let Some(zenoh_sample) = zenoh_sample {
             trace!(
                 from self,
                 "Ingesting {}({})",
@@ -207,54 +221,95 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 self.description.name
             );
 
-            let bytes_received = zenoh_sample.payload().to_bytes();
+            let bytes = zenoh_sample.payload().to_bytes();
+            let frame = match postcard::from_bytes::<MessageFrame<'_>>(&bytes) {
+                Ok(frame) => frame,
+                Err(e) => {
+                    warn!(
+                        from self,
+                        "Discarding sample of {}({}), it could not be decoded: {}",
+                        self.description.pattern,
+                        self.description.name,
+                        e
+                    );
+                    continue;
+                }
+            };
 
-            let user_header_size = user_header_size(&self.description);
-            let user_header_received = &bytes_received[0..user_header_size];
-            let payload_received = &bytes_received[user_header_size..];
+            let port = port_description(&self.description);
+            if !validate_frame(&frame, &port.user_header, &port.payload) {
+                warn!(
+                    from self,
+                    "Discarding sample of {}({}), its message layout does not match \
+                    the local service description",
+                    self.description.pattern,
+                    self.description.name
+                );
+                continue;
+            }
 
-            let mut iceoryx_sample = fail!(
+            let iceoryx_sample = fail!(
                 from self,
-                when loan(payload_received.len()),
+                when loan(frame.payload.len()),
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"
             );
-
-            let payload = iceoryx_sample.payload_mut();
-
-            debug_assert!(
-                payload.len() >= payload_received.len(),
-                "Loaned payload size ({}) is too small for received payload ({})",
-                payload.len(),
-                payload_received.len()
-            );
-
-            unsafe {
-                core::ptr::copy_nonoverlapping(
-                    user_header_received.as_ptr(),
-                    iceoryx_sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
-                    user_header_size,
+            if iceoryx_sample.payload().len() != frame.payload.len() {
+                fail!(
+                    from self,
+                    with ReceiveError::LoanSizeMismatch,
+                    "Loaned sample of {} bytes does not fit the received payload of {} bytes",
+                    iceoryx_sample.payload().len(),
+                    frame.payload.len()
                 );
             }
-            unsafe {
-                core::ptr::copy_nonoverlapping(
-                    payload_received.as_ptr(),
-                    iceoryx_sample.payload_mut().as_mut_ptr().cast::<u8>(),
-                    payload_received.len(),
-                );
-            }
-            let initialized_sample = unsafe { iceoryx_sample.assume_init() };
 
-            return Ok(Some(initialized_sample));
-        };
+            let sample =
+                unsafe { initialize_sample(frame.user_header, frame.payload, iceoryx_sample) };
 
-        Ok(None)
+            return Ok(Some(sample));
+        }
     }
 }
 
-fn user_header_size(description: &ServiceDescription) -> usize {
+fn port_description(description: &ServiceDescription) -> &PublishSubscribeDescription {
     let PatternDescription::PublishSubscribe(description) = &description.pattern else {
         unreachable!("relay is only built for publish-subscribe descriptions")
     };
-    description.user_header.size
+
+    description
+}
+
+/// Initializes a loaned sample with received user header and payload
+/// bytes.
+///
+/// # Safety
+///
+/// `user_header` must be exactly the size of the service's user header
+/// type and `payload` must be exactly the size of the loan.
+unsafe fn initialize_sample<S: Service>(
+    user_header: &[u8],
+    payload: &[u8],
+    mut sample: SampleMutUninit<S>,
+) -> SampleMut<S> {
+    debug_assert!(
+        sample.payload_mut().len() == payload.len(),
+        "Loaned payload size ({}) does not match received payload ({})",
+        sample.payload_mut().len(),
+        payload.len()
+    );
+
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            user_header.as_ptr(),
+            sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
+            user_header.len(),
+        );
+        core::ptr::copy_nonoverlapping(
+            payload.as_ptr(),
+            sample.payload_mut().as_mut_ptr().cast::<u8>(),
+            payload.len(),
+        );
+        sample.assume_init()
+    }
 }

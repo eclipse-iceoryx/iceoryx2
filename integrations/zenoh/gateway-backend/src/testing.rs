@@ -15,6 +15,8 @@ use core::time::Duration;
 use zenoh::Config;
 use zenoh::Wait;
 
+use crate::wire::keys;
+
 /// Poll interval while waiting for the probe publisher to match.
 const POLL_PERIOD: Duration = Duration::from_millis(10);
 
@@ -44,7 +46,7 @@ impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {
 
         let session = zenoh::open(Self::backend_config()).wait().unwrap();
         let publisher = session
-            .declare_publisher(format!("iox2/*/{id}/**"))
+            .declare_publisher(format!("{}/{}/*/{id}/**", keys::NAMESPACE, keys::VERSION))
             .wait()
             .unwrap();
 

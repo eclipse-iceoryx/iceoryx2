@@ -111,6 +111,7 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-posix                       \
     iceoryx2-bb-testing                     \
     iceoryx2-bb-testing-macros              \
+    iceoryx2-cal                            \
     iceoryx2-cli                            \
     iceoryx2-log                            \
     iceoryx2-gateway                        \

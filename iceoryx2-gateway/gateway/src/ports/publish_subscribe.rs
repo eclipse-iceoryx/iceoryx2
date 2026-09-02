@@ -20,12 +20,12 @@ use iceoryx2::service::Service;
 use iceoryx2::service::builder::publish_subscribe;
 use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2::service::static_config::message_type_details::TypeDetail;
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_gateway_backend::types::publish_subscribe::{
     Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
 };
 use iceoryx2_gateway_backend::types::service_description::{
-    PortSettings, PublishSubscribeDescription, PublishSubscribeSettings,
+    PortSettings, PublishSubscribeDescription, PublishSubscribeSettings, TypeDescription,
 };
 use iceoryx2_log::{fail, trace};
 
@@ -160,7 +160,16 @@ impl<S: Service> PublishSubscribePorts<S> {
 
         loop {
             let sample = ingest(&mut |number_of_bytes| {
-                let number_of_elements = number_of_bytes / self.description.payload.size;
+                let Some(number_of_elements) =
+                    number_of_elements(&self.description.payload, number_of_bytes)
+                else {
+                    fail!(
+                        from self,
+                        with LoanError::InternalFailure,
+                        "Backend requested a loan of {} bytes which does not hold whole payload elements",
+                        number_of_bytes
+                    );
+                };
 
                 let sample = unsafe { self.publisher.loan_custom_payload(number_of_elements) };
                 let sample = fail!(
@@ -244,6 +253,18 @@ impl<S: Service> PublishSubscribePorts<S> {
     }
 }
 
+/// Number of payload elements that exactly fill the given number of bytes.
+fn number_of_elements(payload: &TypeDescription, number_of_bytes: usize) -> Option<usize> {
+    match payload.variant {
+        TypeVariant::FixedSize => (number_of_bytes == payload.size).then_some(1),
+        TypeVariant::Dynamic => {
+            let fills_whole_elements =
+                payload.size != 0 && number_of_bytes.is_multiple_of(payload.size);
+            fills_whole_elements.then(|| number_of_bytes / payload.size)
+        }
+    }
+}
+
 fn apply_settings<S: Service>(
     builder: publish_subscribe::Builder<Payload, Header, S>,
     settings: &PublishSubscribeSettings,
@@ -256,4 +277,67 @@ fn apply_settings<S: Service>(
         .subscriber_max_buffer_size(settings.subscriber_max_buffer_size)
         .subscriber_max_borrowed_samples(settings.subscriber_max_borrowed_samples)
         .enable_safe_overflow(settings.safe_overflow)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use iceoryx2_bb_testing::assert_that;
+
+    fn payload(variant: TypeVariant, size: usize) -> TypeDescription {
+        TypeDescription {
+            variant,
+            type_name: "test_type".into(),
+            size,
+            alignment: 1,
+        }
+    }
+
+    #[test]
+    fn fixed_size_payload_holds_one_element() {
+        let payload = payload(TypeVariant::FixedSize, 8);
+
+        assert_that!(number_of_elements(&payload, 8), eq Some(1));
+    }
+
+    #[test]
+    fn zero_sized_fixed_size_payload_holds_one_element() {
+        let payload = payload(TypeVariant::FixedSize, 0);
+
+        assert_that!(number_of_elements(&payload, 0), eq Some(1));
+    }
+
+    #[test]
+    fn fixed_size_payload_rejects_other_byte_counts() {
+        let payload = payload(TypeVariant::FixedSize, 8);
+
+        assert_that!(number_of_elements(&payload, 0), eq None);
+        assert_that!(number_of_elements(&payload, 12), eq None);
+        assert_that!(number_of_elements(&payload, 16), eq None);
+    }
+
+    #[test]
+    fn dynamic_payload_holds_whole_elements() {
+        let payload = payload(TypeVariant::Dynamic, 4);
+
+        assert_that!(number_of_elements(&payload, 0), eq Some(0));
+        assert_that!(number_of_elements(&payload, 4), eq Some(1));
+        assert_that!(number_of_elements(&payload, 12), eq Some(3));
+    }
+
+    #[test]
+    fn dynamic_payload_rejects_partial_elements() {
+        let payload = payload(TypeVariant::Dynamic, 4);
+
+        assert_that!(number_of_elements(&payload, 6), eq None);
+    }
+
+    #[test]
+    fn zero_sized_dynamic_payload_rejects_every_byte_count() {
+        let payload = payload(TypeVariant::Dynamic, 0);
+
+        assert_that!(number_of_elements(&payload, 0), eq None);
+        assert_that!(number_of_elements(&payload, 4), eq None);
+    }
 }
