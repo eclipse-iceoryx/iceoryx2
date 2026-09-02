@@ -1574,7 +1574,6 @@ dependencies = [
  "iceoryx2-log",
  "postcard",
  "serde",
- "serde_json",
  "zenoh",
 ]
 

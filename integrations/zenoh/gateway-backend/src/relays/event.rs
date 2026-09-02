@@ -25,12 +25,13 @@ use zenoh::qos::Reliability;
 use zenoh::sample::{Locality, Sample};
 use zenoh::{Session, Wait};
 
-use crate::descriptor::ServiceDescriptor;
+use crate::descriptor;
 use crate::keys;
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
+    DescriptionEncoding,
     PublisherDeclaration,
     SubscriberDeclaration,
 }
@@ -100,7 +101,13 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "event::Builder::create";
-        let key = keys::event(&ServiceDescriptor::new(self.description));
+        let descriptor = fail!(
+            from origin,
+            when descriptor::describe(self.description),
+            with CreationError::DescriptionEncoding,
+            "Failed to encode service description"
+        );
+        let key = keys::event(&descriptor);
 
         let notifier = fail!(
             from origin,

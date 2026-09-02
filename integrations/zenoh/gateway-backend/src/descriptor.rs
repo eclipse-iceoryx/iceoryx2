@@ -16,7 +16,6 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_cal::hash::Hash;
 use iceoryx2_cal::hash::sha1::Sha1;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
-use iceoryx2_log::fatal_panic;
 
 /// Identifies a [`ServiceDescription`] on the wire, the service hash it
 /// belongs to and its fingerprint.
@@ -27,11 +26,43 @@ pub struct ServiceDescriptor {
 }
 
 impl ServiceDescriptor {
-    pub fn new(description: &ServiceDescription) -> Self {
+    pub fn new(service_hash: ServiceHash, fingerprint: Fingerprint) -> Self {
         Self {
-            service_hash: description.service_hash,
-            fingerprint: Fingerprint::new(description),
+            service_hash,
+            fingerprint,
         }
+    }
+}
+
+/// Derives the descriptor of a description by encoding it.
+pub fn describe(description: &ServiceDescription) -> Result<ServiceDescriptor, postcard::Error> {
+    let encoded = EncodedDescription::encode(description)?;
+    Ok(ServiceDescriptor::new(
+        description.service_hash,
+        encoded.fingerprint(),
+    ))
+}
+
+/// A service description in the form carried on the zenoh wire.
+#[derive(Debug, Clone)]
+pub struct EncodedDescription(Vec<u8>);
+
+impl EncodedDescription {
+    pub fn encode(description: &ServiceDescription) -> Result<Self, postcard::Error> {
+        postcard::to_allocvec(description).map(Self)
+    }
+
+    /// Decodes wire bytes produced by encode.
+    pub fn decode(bytes: &[u8]) -> Result<ServiceDescription, postcard::Error> {
+        postcard::from_bytes(bytes)
+    }
+
+    pub fn fingerprint(&self) -> Fingerprint {
+        Fingerprint::digest(&self.0)
+    }
+
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.0
     }
 }
 
@@ -55,15 +86,9 @@ impl core::fmt::Display for InvalidFingerprint {
 impl core::error::Error for InvalidFingerprint {}
 
 impl Fingerprint {
-    pub fn new(description: &ServiceDescription) -> Self {
-        let bytes = match postcard::to_allocvec(description) {
-            Ok(bytes) => bytes,
-            Err(e) => fatal_panic!(
-                from "DescriptionFingerprint::new",
-                "Failed to encode service description ({e:?})"
-            ),
-        };
-        Self(Sha1::new(&bytes).value().into())
+    /// Create a fingerprint from a byte digest.
+    pub fn digest(bytes: &[u8]) -> Self {
+        Self(Sha1::new(bytes).value().into())
     }
 
     pub fn as_str(&self) -> &str {
@@ -123,9 +148,15 @@ mod tests {
         )
     }
 
+    fn fingerprint_of(description: &ServiceDescription) -> Fingerprint {
+        EncodedDescription::encode(description)
+            .expect("description is encodable")
+            .fingerprint()
+    }
+
     #[test]
     fn fingerprint_to_string_round_trips() {
-        let fingerprint = Fingerprint::new(&service_description(
+        let fingerprint = fingerprint_of(&service_description(
             "fingerprint/round-trip",
             type_description("u64", 8),
             PublishSubscribeSettings::default(),
@@ -161,7 +192,7 @@ mod tests {
             PublishSubscribeSettings::default(),
         );
 
-        assert_that!(Fingerprint::new(&first), eq Fingerprint::new(&second));
+        assert_that!(fingerprint_of(&first), eq fingerprint_of(&second));
     }
 
     #[test]
@@ -177,7 +208,7 @@ mod tests {
             PublishSubscribeSettings::default(),
         );
 
-        assert_that!(Fingerprint::new(&first), ne Fingerprint::new(&second));
+        assert_that!(fingerprint_of(&first), ne fingerprint_of(&second));
     }
 
     #[test]
@@ -193,7 +224,7 @@ mod tests {
             PublishSubscribeSettings::default(),
         );
 
-        assert_that!(Fingerprint::new(&first), ne Fingerprint::new(&second));
+        assert_that!(fingerprint_of(&first), ne fingerprint_of(&second));
     }
 
     #[test]
@@ -212,6 +243,6 @@ mod tests {
             },
         );
 
-        assert_that!(Fingerprint::new(&first), ne Fingerprint::new(&second));
+        assert_that!(fingerprint_of(&first), ne fingerprint_of(&second));
     }
 }

@@ -37,13 +37,14 @@ use zenoh::{
     sample::{Locality, Sample},
 };
 
-use crate::descriptor::ServiceDescriptor;
+use crate::descriptor;
 use crate::keys;
 use crate::relays::bytes::{initialize_sample, payload_bytes, user_header_bytes};
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
+    DescriptionEncoding,
     PublisherDeclaration,
     SubscriberDeclaration,
     ServiceAnouncement,
@@ -121,7 +122,13 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "publish_subscribe::Builder::create";
-        let key = keys::publish_subscribe(&ServiceDescriptor::new(self.description));
+        let descriptor = fail!(
+            from origin,
+            when descriptor::describe(self.description),
+            with CreationError::DescriptionEncoding,
+            "Failed to encode service description"
+        );
+        let key = keys::publish_subscribe(&descriptor);
 
         let publisher = fail!(
             from origin,

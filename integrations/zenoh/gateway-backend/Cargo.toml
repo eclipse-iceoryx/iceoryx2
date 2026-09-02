@@ -24,7 +24,6 @@ iceoryx2-gateway-backend = { workspace = true, features = ["std"] }
 flume = { workspace = true }
 postcard = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 zenoh = { workspace = true }
 
 [dev-dependencies]

@@ -87,7 +87,8 @@ mod tests {
                 settings: PortSettings::LocalDefaults,
             }),
         );
-        let descriptor = ServiceDescriptor::new(&description);
+        let descriptor =
+            crate::descriptor::describe(&description).expect("description is encodable");
 
         let key = service_description(&descriptor);
         let parsed = parse_service_description(&key).expect("key is parsable");

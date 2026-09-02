@@ -29,7 +29,7 @@ use zenoh::{
     sample::{Locality, Sample, SampleKind},
 };
 
-use crate::descriptor::{Fingerprint, ServiceDescriptor};
+use crate::descriptor::{EncodedDescription, Fingerprint, ServiceDescriptor};
 use crate::keys;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -208,17 +208,18 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             return Ok(());
         }
 
-        let key = keys::service_description(&ServiceDescriptor::new(description));
-        let serialized = fail!(
+        let encoded = fail!(
             from self,
-            when serde_json::to_string(description),
+            when EncodedDescription::encode(description),
             with AnnouncementError::Serialization,
-            "Failed to serialize service config"
+            "Failed to encode service description"
         );
+        let descriptor = ServiceDescriptor::new(description.service_hash, encoded.fingerprint());
+        let key = keys::service_description(&descriptor);
 
         // Declare the queryable **before** the liveliness token. Peers
         // receive the token's Put as soon as it is declared.
-        let queryable = self.declare_queryable(&key, serialized)?;
+        let queryable = self.declare_queryable(&key, encoded)?;
         let token = self.declare_liveliness_token(&key)?;
 
         self.announced.insert(
@@ -239,11 +240,11 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
     }
 
     /// Declares a queryable that responds to remote peers' `get` requests for
-    /// a service's ServiceDescription with the pre-serialised JSON payload.
+    /// a service's ServiceDescription with the pre-encoded payload.
     fn declare_queryable(
         &self,
         key: &str,
-        serialized: String,
+        encoded: EncodedDescription,
     ) -> Result<Queryable<()>, AnnouncementError> {
         let reply_key = key.to_string();
         let queryable = fail!(
@@ -252,7 +253,7 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
                 .declare_queryable(key)
                 .callback(move |query| {
                     let _ = query
-                        .reply(reply_key.clone(), serialized.clone())
+                        .reply(reply_key.clone(), encoded.clone().into_bytes())
                         .wait()
                         .inspect_err(|e| {
                             error!("Failed to reply with service details for {}: {}", reply_key, e);
@@ -362,8 +363,8 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
 #[derive(Debug)]
 struct Disconnected;
 
-/// Polls a query for the described service. Replies whose description does
-/// not match the descriptor's fingerprint are skipped.
+/// Polls a query for the described service. Replies whose payload does not
+/// match the descriptor's fingerprint are skipped.
 fn check_pending(
     descriptor: &ServiceDescriptor,
     handler: &FifoChannelHandler<Reply>,
@@ -385,21 +386,8 @@ fn check_pending(
             }
         };
 
-        let description =
-            match serde_json::from_slice::<ServiceDescription>(&sample.payload().to_bytes()) {
-                Ok(description) => description,
-                Err(e) => {
-                    warn!(
-                        "Skipping unparsable reply for service {}: {}",
-                        descriptor.service_hash.as_str(),
-                        e
-                    );
-                    continue;
-                }
-            };
-
-        let fingerprint = Fingerprint::new(&description);
-        if fingerprint != descriptor.fingerprint {
+        let bytes = sample.payload().to_bytes();
+        if Fingerprint::digest(&bytes) != descriptor.fingerprint {
             warn!(
                 "Skipping reply for service {} that does not match the announced fingerprint",
                 descriptor.service_hash.as_str()
@@ -407,6 +395,13 @@ fn check_pending(
             continue;
         }
 
-        return Ok(Some(description));
+        match EncodedDescription::decode(&bytes) {
+            Ok(description) => return Ok(Some(description)),
+            Err(e) => warn!(
+                "Skipping unparsable reply for service {}: {}",
+                descriptor.service_hash.as_str(),
+                e
+            ),
+        }
     }
 }
