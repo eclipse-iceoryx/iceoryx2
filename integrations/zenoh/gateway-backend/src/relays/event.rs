@@ -25,9 +25,9 @@ use zenoh::qos::Reliability;
 use zenoh::sample::{Locality, Sample};
 use zenoh::{Session, Wait};
 
-use crate::descriptor;
-use crate::keys;
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
+use crate::wire::descriptor;
+use crate::wire::keys;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

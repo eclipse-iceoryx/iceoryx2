@@ -29,8 +29,10 @@ use zenoh::{
     sample::{Locality, Sample, SampleKind},
 };
 
-use crate::descriptor::{EncodedDescription, Fingerprint, ServiceDescriptor};
-use crate::keys;
+use crate::wire::description::EncodedDescription;
+use crate::wire::descriptor::ServiceDescriptor;
+use crate::wire::fingerprint::Fingerprint;
+use crate::wire::keys;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

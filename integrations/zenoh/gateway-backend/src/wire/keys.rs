@@ -12,8 +12,8 @@
 
 use iceoryx2::service::service_hash::ServiceHash;
 
-use crate::descriptor::Fingerprint;
-use crate::descriptor::ServiceDescriptor;
+use crate::wire::descriptor::ServiceDescriptor;
+use crate::wire::fingerprint::Fingerprint;
 
 /// Namespace of all keys.
 pub const NAMESPACE: &str = "iox2";
@@ -42,10 +42,7 @@ pub fn parse_service_description(key: &str) -> Option<ServiceDescriptor> {
     let mut segments = key.rsplit('/');
     let fingerprint = Fingerprint::try_from(segments.next()?).ok()?;
     let service_hash = ServiceHash::try_from(segments.next()?).ok()?;
-    Some(ServiceDescriptor {
-        service_hash,
-        fingerprint,
-    })
+    Some(ServiceDescriptor::new(service_hash, fingerprint))
 }
 
 /// The zenoh key at which payloads of the described publish-subscribe
@@ -79,6 +76,8 @@ mod tests {
         EventDescription, PatternDescription, PortSettings, ServiceDescription,
     };
 
+    use crate::wire::descriptor::describe;
+
     #[test]
     fn service_description_key_round_trips() {
         let description = ServiceDescription::new::<ipc::Service>(
@@ -87,8 +86,7 @@ mod tests {
                 settings: PortSettings::LocalDefaults,
             }),
         );
-        let descriptor =
-            crate::descriptor::describe(&description).expect("description is encodable");
+        let descriptor = describe(&description).expect("description is encodable");
 
         let key = service_description(&descriptor);
         let parsed = parse_service_description(&key).expect("key is parsable");

@@ -43,11 +43,10 @@
 //! ```
 
 pub mod backend;
-pub mod descriptor;
 pub mod discovery;
-pub mod keys;
 pub mod mapping;
 pub mod relays;
+pub mod wire;
 
 pub mod testing;
 

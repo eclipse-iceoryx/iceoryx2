@@ -10,38 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Identity of a service description on the zenoh wire.
-
-use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_cal::hash::Hash;
-use iceoryx2_cal::hash::sha1::Sha1;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
-/// Identifies a [`ServiceDescription`] on the wire, the service hash it
-/// belongs to and its fingerprint.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ServiceDescriptor {
-    pub service_hash: ServiceHash,
-    pub fingerprint: Fingerprint,
-}
-
-impl ServiceDescriptor {
-    pub fn new(service_hash: ServiceHash, fingerprint: Fingerprint) -> Self {
-        Self {
-            service_hash,
-            fingerprint,
-        }
-    }
-}
-
-/// Derives the descriptor of a description by encoding it.
-pub fn describe(description: &ServiceDescription) -> Result<ServiceDescriptor, postcard::Error> {
-    let encoded = EncodedDescription::encode(description)?;
-    Ok(ServiceDescriptor::new(
-        description.service_hash,
-        encoded.fingerprint(),
-    ))
-}
+use crate::wire::fingerprint::Fingerprint;
 
 /// A service description in the form carried on the zenoh wire.
 #[derive(Debug, Clone)]
@@ -63,51 +34,6 @@ impl EncodedDescription {
 
     pub fn into_bytes(self) -> Vec<u8> {
         self.0
-    }
-}
-
-/// A digest over an entire [`ServiceDescription`].
-///
-/// Equal fingerprints mean identical name, hash, pattern, types and
-/// settings.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Fingerprint(String);
-
-/// A string that is not the textual form of a [`DescriptionFingerprint`].
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub struct InvalidFingerprint;
-
-impl core::fmt::Display for InvalidFingerprint {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "InvalidFingerprint")
-    }
-}
-
-impl core::error::Error for InvalidFingerprint {}
-
-impl Fingerprint {
-    /// Create a fingerprint from a byte digest.
-    pub fn digest(bytes: &[u8]) -> Self {
-        Self(Sha1::new(bytes).value().into())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl TryFrom<&str> for Fingerprint {
-    type Error = InvalidFingerprint;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        const SHA1_HEX_LENGTH: usize = 40;
-
-        let is_hex_digest =
-            value.len() == SHA1_HEX_LENGTH && value.bytes().all(|byte| byte.is_ascii_hexdigit());
-        if !is_hex_digest {
-            return Err(InvalidFingerprint);
-        }
-        Ok(Self(value.into()))
     }
 }
 
@@ -152,31 +78,6 @@ mod tests {
         EncodedDescription::encode(description)
             .expect("description is encodable")
             .fingerprint()
-    }
-
-    #[test]
-    fn fingerprint_to_string_round_trips() {
-        let fingerprint = fingerprint_of(&service_description(
-            "fingerprint/round-trip",
-            type_description("u64", 8),
-            PublishSubscribeSettings::default(),
-        ));
-
-        let parsed = Fingerprint::try_from(fingerprint.as_str())
-            .expect("textual form of a fingerprint is valid");
-
-        assert_that!(parsed, eq fingerprint);
-    }
-
-    #[test]
-    fn rejects_text_that_is_not_a_hex_digest() {
-        const SHA1_HEX_LENGTH: usize = 40;
-        assert_that!(Fingerprint::try_from(""), eq Err(InvalidFingerprint));
-        assert_that!(Fingerprint::try_from("abc"), eq Err(InvalidFingerprint));
-        assert_that!(
-            Fingerprint::try_from("g".repeat(SHA1_HEX_LENGTH).as_str()),
-            eq Err(InvalidFingerprint)
-        );
     }
 
     #[test]

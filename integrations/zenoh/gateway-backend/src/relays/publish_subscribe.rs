@@ -12,7 +12,6 @@
 
 use std::sync::Arc;
 
-use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2::service::{
     Service, local_threadsafe,
     marker::{CustomHeaderMarker, CustomPayloadMarker},
@@ -20,7 +19,7 @@ use iceoryx2::service::{
 use iceoryx2_gateway_backend::{
     traits::{PublishSubscribeRelay, RelayBuilder},
     types::{
-        publish_subscribe::{LoanFn, SampleMut},
+        publish_subscribe::{LoanFn, SampleMut, SampleMutUninit},
         service_description::{
             PatternDescription, PublishSubscribeDescription, ServiceDescription,
         },
@@ -28,7 +27,6 @@ use iceoryx2_gateway_backend::{
     },
 };
 use iceoryx2_log::{fail, trace, warn};
-use serde::{Deserialize, Serialize};
 
 use zenoh::{
     Session, Wait,
@@ -37,10 +35,10 @@ use zenoh::{
     sample::{Locality, Sample},
 };
 
-use crate::descriptor;
-use crate::keys;
-use crate::relays::bytes::{initialize_sample, payload_bytes, user_header_bytes};
 use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
+use crate::wire::descriptor;
+use crate::wire::keys;
+use crate::wire::message::{MessageFrame, payload_bytes, user_header_bytes, validate_frame};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -85,13 +83,6 @@ impl core::fmt::Display for ReceiveError {
 }
 
 impl core::error::Error for ReceiveError {}
-
-/// Frame carried on the publish-subscribe key of a service.
-#[derive(Debug, Serialize, Deserialize)]
-struct SampleFrame<'a> {
-    user_header: &'a [u8],
-    payload: &'a [u8],
-}
 
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
@@ -171,7 +162,7 @@ pub struct Relay<S: Service> {
 }
 
 impl<S: Service> Relay<S> {
-    fn put_sample(&self, frame: &SampleFrame<'_>) -> Result<(), zenoh::Error> {
+    fn put_sample(&self, frame: &MessageFrame<'_>) -> Result<(), zenoh::Error> {
         let bytes = postcard::to_allocvec(frame)?;
         self.publisher.put(bytes).wait()
     }
@@ -193,7 +184,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         );
 
         let port = port_description(&self.description);
-        let frame = SampleFrame {
+        let frame = MessageFrame {
             user_header: user_header_bytes(sample.user_header(), port.user_header.size),
             payload: payload_bytes(sample.payload()),
         };
@@ -233,13 +224,13 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             let bytes = zenoh_sample.payload().to_bytes();
             let frame = fail!(
                 from self,
-                when postcard::from_bytes::<SampleFrame<'_>>(&bytes),
+                when postcard::from_bytes::<MessageFrame<'_>>(&bytes),
                 with ReceiveError::Decode,
                 "Failed to decode publish-subscribe frame received from zenoh"
             );
 
             let port = port_description(&self.description);
-            if !validate_frame(&frame, port) {
+            if !validate_frame(&frame, &port.user_header, &port.payload) {
                 warn!(
                     from self,
                     "Discarding sample of {}({}), its message layout does not match \
@@ -273,114 +264,36 @@ fn port_description(description: &ServiceDescription) -> &PublishSubscribeDescri
     description
 }
 
-fn validate_frame(frame: &SampleFrame<'_>, port: &PublishSubscribeDescription) -> bool {
-    let user_header_matches = frame.user_header.len() == port.user_header.size;
-    let payload_matches = match port.payload.variant {
-        TypeVariant::FixedSize => frame.payload.len() == port.payload.size,
-        TypeVariant::Dynamic => {
-            port.payload.size != 0 && frame.payload.len() % port.payload.size == 0
-        }
-    };
-    user_header_matches && payload_matches
-}
+/// Initializes a loaned sample with received user header and payload
+/// bytes.
+///
+/// # Safety
+///
+/// `user_header` must be exactly the size of the service's user header
+/// type and `payload` must be exactly the size of the loan.
+unsafe fn initialize_sample<S: Service>(
+    user_header: &[u8],
+    payload: &[u8],
+    mut sample: SampleMutUninit<S>,
+) -> SampleMut<S> {
+    debug_assert!(
+        sample.payload_mut().len() == payload.len(),
+        "Loaned payload size ({}) does not match received payload ({})",
+        sample.payload_mut().len(),
+        payload.len()
+    );
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_gateway_backend::types::service_description::{PortSettings, TypeDescription};
-
-    fn type_description(variant: TypeVariant, size: usize) -> TypeDescription {
-        TypeDescription {
-            variant,
-            type_name: "test_type".into(),
-            size,
-            alignment: 1,
-        }
-    }
-
-    fn port_description(
-        user_header: TypeDescription,
-        payload: TypeDescription,
-    ) -> PublishSubscribeDescription {
-        PublishSubscribeDescription {
-            user_header,
-            payload,
-            settings: PortSettings::LocalDefaults,
-        }
-    }
-
-    #[test]
-    fn accepts_matching_fixed_size_message() {
-        let port = port_description(
-            type_description(TypeVariant::FixedSize, 4),
-            type_description(TypeVariant::FixedSize, 8),
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            user_header.as_ptr(),
+            sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
+            user_header.len(),
         );
-        let frame = SampleFrame {
-            user_header: &[0u8; 4],
-            payload: &[0u8; 8],
-        };
-
-        assert_that!(validate_frame(&frame, &port), eq true);
-    }
-
-    #[test]
-    fn accepts_dynamic_payload_of_whole_elements() {
-        let port = port_description(
-            type_description(TypeVariant::FixedSize, 0),
-            type_description(TypeVariant::Dynamic, 4),
+        core::ptr::copy_nonoverlapping(
+            payload.as_ptr(),
+            sample.payload_mut().as_mut_ptr().cast::<u8>(),
+            payload.len(),
         );
-
-        for element_count in [0usize, 1, 3] {
-            let payload = vec![0u8; element_count * 4];
-            let frame = SampleFrame {
-                user_header: &[],
-                payload: &payload,
-            };
-            assert_that!(validate_frame(&frame, &port), eq true);
-        }
-    }
-
-    #[test]
-    fn rejects_mismatched_user_header_size() {
-        let port = port_description(
-            type_description(TypeVariant::FixedSize, 4),
-            type_description(TypeVariant::FixedSize, 8),
-        );
-        let frame = SampleFrame {
-            user_header: &[0u8; 8],
-            payload: &[0u8; 8],
-        };
-
-        assert_that!(validate_frame(&frame, &port), eq false);
-    }
-
-    #[test]
-    fn rejects_mismatched_fixed_size_payload() {
-        let port = port_description(
-            type_description(TypeVariant::FixedSize, 0),
-            type_description(TypeVariant::FixedSize, 8),
-        );
-        let frame = SampleFrame {
-            user_header: &[],
-            payload: &[0u8; 12],
-        };
-
-        assert_that!(validate_frame(&frame, &port), eq false);
-    }
-
-    #[test]
-    fn rejects_dynamic_payload_of_partial_elements() {
-        let port = port_description(
-            type_description(TypeVariant::FixedSize, 0),
-            type_description(TypeVariant::Dynamic, 4),
-        );
-        let frame = SampleFrame {
-            user_header: &[],
-            payload: &[0u8; 6],
-        };
-
-        assert_that!(validate_frame(&frame, &port), eq false);
+        sample.assume_init()
     }
 }

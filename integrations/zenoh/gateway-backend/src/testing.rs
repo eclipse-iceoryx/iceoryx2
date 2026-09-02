@@ -15,7 +15,7 @@ use core::time::Duration;
 use zenoh::Config;
 use zenoh::Wait;
 
-use crate::keys;
+use crate::wire::keys;
 
 /// Poll interval while waiting for the probe publisher to match.
 const POLL_PERIOD: Duration = Duration::from_millis(10);
