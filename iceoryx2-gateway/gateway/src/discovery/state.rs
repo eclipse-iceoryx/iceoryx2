@@ -252,6 +252,12 @@ impl RemoteServices {
         self.services.get(hash)
     }
 
+    /// Whether any gateway offers `hash`, regardless of whether the
+    /// descriptions resolve.
+    pub(crate) fn contains(&self, hash: &ServiceHash) -> bool {
+        self.services.contains_key(hash)
+    }
+
     /// Iterate all remote services and the offered descriptions.
     fn iter(&self) -> impl Iterator<Item = (&ServiceHash, &RemoteDescriptions)> {
         self.services.iter()
@@ -385,6 +391,10 @@ impl DiscoveryState {
 
     pub(crate) fn local_mut(&mut self) -> &mut LocalServices {
         &mut self.local
+    }
+
+    pub(crate) fn remote(&self) -> &RemoteServices {
+        &self.remote
     }
 
     pub(crate) fn remote_mut(&mut self) -> &mut RemoteServices {
@@ -707,6 +717,21 @@ mod tests {
 
                 sut.delta_update().set_not_offered(&gateway_b, &hash);
                 assert_that!(resolved_description(&sut, &hash), is_none);
+            }
+
+            #[test]
+            fn conflicted_services_still_tracked_as_offered() {
+                let gateway_a = gateway_id(1);
+                let gateway_b = gateway_id(2);
+                let (stored, conflicting) = differing_descriptions("state/remote/still-offered");
+
+                let mut sut = RemoteServices::default();
+                let mut update = sut.delta_update();
+                update.set_offered(gateway_a, &stored);
+                update.set_offered(gateway_b, &conflicting);
+
+                assert_that!(sut.contains(&stored.service_hash), eq true);
+                assert_that!(resolved_description(&sut, &stored.service_hash), is_none);
             }
 
             #[test]

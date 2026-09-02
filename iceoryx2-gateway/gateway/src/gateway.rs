@@ -365,6 +365,10 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
             if !bridges.is_established(hash) || announced.contains_key(hash) {
                 continue;
             }
+            // Do not announce services already offered remotely.
+            if self.discovery_state.remote().contains(hash) {
+                continue;
+            }
             if let Err(error) = announce_added::<S, B>(node, backend, gateway_id, description) {
                 if result.is_ok() {
                     result = Err(error);
