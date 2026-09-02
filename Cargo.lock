@@ -1430,6 +1430,7 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-testing",
  "iceoryx2-gateway-backend",
  "iceoryx2-log",
  "iceoryx2-services-discovery",

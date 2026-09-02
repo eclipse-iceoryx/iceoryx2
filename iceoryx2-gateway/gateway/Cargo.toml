@@ -27,3 +27,6 @@ iceoryx2 = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2-gateway-backend = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
