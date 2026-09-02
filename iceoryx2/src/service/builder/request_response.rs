@@ -26,6 +26,7 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
+    StaticServiceResources,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -696,7 +697,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig,
+        existing_service_config: &StaticConfig<ServiceType>,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), RequestResponseOpenError> {
         let required_service_config = &self.base.service_config;
@@ -811,8 +812,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
-    {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let reqres_service_config = self.config_details();
 
         match self.base.is_service_available(error_msg) {
@@ -859,7 +859,7 @@ impl<
     > {
         let msg = "Unable to create request response service";
 
-        let generate_dynamic_config = |service_config: &StaticConfig| {
+        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
             let reqres_config = service_config.request_response();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_clients: reqres_config.max_clients,

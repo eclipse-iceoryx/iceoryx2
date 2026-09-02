@@ -246,7 +246,7 @@ fn create_reactive<S, B, W>(
     mapping: <B as Backend<S>>::Mapping,
 ) -> Result<(Gateway<S, B>, Listener<W>), CreationError>
 where
-    S: Service,
+    S: Service + 'static,
     W: Service,
     B: Backend<S> + Debug,
     for<'b> B::Builder<'b>: ReactiveBackendBuilder<S, WakeService = W>,

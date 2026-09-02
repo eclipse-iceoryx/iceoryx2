@@ -184,7 +184,8 @@ impl<
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
-        let writer_id = UniqueWriterId::new();
+        let writer_id =
+            UniqueWriterId::new::<Service>(config.port_name, service.shared_node().config());
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service

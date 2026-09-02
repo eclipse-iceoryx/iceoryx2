@@ -462,14 +462,15 @@ impl<
     ) -> Result<Self, PublisherCreateError> {
         let msg = "Unable to create Publisher port";
         let origin = "Publisher::new()";
-        let port_id = UniquePublisherId::new();
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
+        let port_id =
+            UniquePublisherId::new::<Service>(config.port_name, service.shared_node().config());
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let port_tag = match service
             .shared_node()
-            .create_port_tag(origin, msg, port_id.0.value())
+            .create_port_tag(origin, msg, port_id.value())
         {
             Ok(port_tag) => port_tag,
             Err(e) => {

@@ -14,8 +14,8 @@ extern crate alloc;
 
 use crate::{config::Config, service::Service};
 use alloc::format;
-use iceoryx2_bb_concurrency::atomic::AtomicU32;
-use iceoryx2_bb_concurrency::atomic::Ordering;
+
+use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::package_version::PackageVersion;

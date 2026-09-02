@@ -485,7 +485,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             |existing_service_config| -> Result<(), EventOpenError> {
                 self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
-            |_| Ok(NoResource),
+            |_| Ok(NoResource::<ServiceType>::new()),
         )?;
 
         Ok(event::PortFactory::new(service_state))
@@ -512,7 +512,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let origin = format!("{self:?}");
         let msg = "Unable to create event service";
 
-        let prepare_static_config = |service_config: &mut StaticConfig| {
+        let prepare_static_config = |service_config: &mut StaticConfig<ServiceType>| {
             if let RelocatableOption::Some(ref mut deadline) = service_config.event_mut().deadline {
                 let now = fail!(from origin, when Time::now(),
                             with ServiceCreateError::InternalFailure,
@@ -524,7 +524,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             Ok(())
         };
 
-        let generate_dynamic_config = |service_config: &StaticConfig| {
+        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
             let event_config = service_config.event();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_listeners: event_config.max_listeners,
@@ -546,7 +546,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             || self.base.is_service_available(msg),
             prepare_static_config,
             generate_dynamic_config,
-            |_| Ok(NoResource),
+            |_| Ok(NoResource::<ServiceType>::new()),
             |_| {},
         )?;
 
@@ -576,7 +576,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig,
+        existing_service_config: &StaticConfig<ServiceType>,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), EventOpenError> {
         let required_service_config = &self.base.service_config;

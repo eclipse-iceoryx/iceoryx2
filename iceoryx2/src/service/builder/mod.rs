@@ -192,6 +192,11 @@ struct DynamicConfigCreationArgs {
     max_number_of_nodes: usize,
 }
 
+type StaticServiceResources<ServiceType> = (
+    StaticConfig<ServiceType>,
+    <ServiceType as service::Service>::StaticStorage,
+);
+
 impl<S: Service> Builder<S> {
     pub(crate) fn new(name: &ServiceName, shared_node: SharedNode<S>) -> Self {
         Self {
@@ -282,13 +287,16 @@ impl<S: Service> Builder<S> {
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
-    pub(crate) service_config: StaticConfig,
+    pub(crate) service_config: StaticConfig<ServiceType>,
     pub(crate) shared_node: SharedNode<ServiceType>,
     _phantom_data: PhantomData<ServiceType>,
 }
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
-    fn new(service_config: StaticConfig, shared_node: SharedNode<ServiceType>) -> Self {
+    fn new(
+        service_config: StaticConfig<ServiceType>,
+        shared_node: SharedNode<ServiceType>,
+    ) -> Self {
         Self {
             service_config,
             shared_node,
@@ -462,9 +470,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn open<
         ErrorType: From<ServiceOpenError> + From<ServiceState>,
         R: service::ServiceResource,
-        FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
-        F1: FnMut(&StaticConfig) -> Result<(), ErrorType>,
-        F2: FnMut(&StaticConfig) -> Result<R, ServiceOpenError>,
+        FA: FnMut() -> Result<
+            Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>,
+            ServiceState,
+        >,
+        F1: FnMut(&StaticConfig<ServiceType>) -> Result<(), ErrorType>,
+        F2: FnMut(&StaticConfig<ServiceType>) -> Result<R, ServiceOpenError>,
     >(
         &self,
         msg: &str,
@@ -636,10 +647,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     #[allow(clippy::too_many_arguments)] // not public API, generic function to consolidate extremely complex service create algorithm in one place
     fn create<
         R: service::ServiceResource,
-        FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
-        F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
-        F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
-        F3: FnMut(&StaticConfig) -> Result<R, ServiceCreateError>,
+        FA: FnMut() -> Result<
+            Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>,
+            ServiceState,
+        >,
+        F1: FnMut(&mut StaticConfig<ServiceType>) -> Result<(), ServiceCreateError>,
+        F2: FnMut(&StaticConfig<ServiceType>) -> DynamicConfigCreationArgs,
+        F3: FnMut(&StaticConfig<ServiceType>) -> Result<R, ServiceCreateError>,
         F4: FnMut(&R),
     >(
         &self,
@@ -776,7 +790,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn is_service_available(
         &self,
         msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let expected_service_config = &self.service_config;
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
@@ -831,7 +845,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             "{} since it is not possible to read the services underlying static details. Is the service accessible? [{e:?}]", msg);
                 }
 
-                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
+                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig<ServiceType>>(unsafe {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 

@@ -454,7 +454,10 @@ impl<
         let msg = "Unable to create Client port";
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
-        let client_id = UniqueClientId::new();
+        let client_id = UniqueClientId::new::<Service>(
+            client_factory.config.port_name,
+            service.shared_node().config(),
+        );
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

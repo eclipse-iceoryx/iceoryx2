@@ -30,9 +30,10 @@ pub mod messaging_pattern;
 
 pub mod blackboard;
 
+use core::marker::PhantomData;
+
 use alloc::format;
 
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::hash::Hash;
@@ -40,25 +41,34 @@ use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{config, identifiers::UniqueServiceId, service::service_hash::ServiceHash};
+use crate::{
+    config,
+    identifiers::UniqueServiceId,
+    service::{self, service_hash::ServiceHash},
+    unique_id_generator::*,
+};
 
 use self::messaging_pattern::MessagingPattern;
 
 use super::{attribute::AttributeSet, service_name::ServiceName};
 
 /// Defines a common set of static service configuration details every service shares.
-#[derive(Debug, Eq, PartialEq, Clone, ZeroCopySend, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 #[repr(C)]
-pub struct StaticConfig {
+pub struct StaticConfig<ServiceType: service::Service> {
     iceoryx2_version: PackageVersion,
     service_hash: ServiceHash,
     service_name: ServiceName,
     unique_service_id: UniqueServiceId,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
+    #[serde[skip]]
+    _service: PhantomData<ServiceType>,
 }
 
-impl StaticConfig {
+unsafe impl<ServiceType: service::Service> ZeroCopySend for StaticConfig<ServiceType> {}
+
+impl<ServiceType: service::Service> StaticConfig<ServiceType> {
     pub(crate) fn new_request_response<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
@@ -71,10 +81,14 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
-            unique_service_id: UniqueServiceId::new(),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                Entity::ReqResService(*service_name),
+                config,
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
+            _service: PhantomData,
         }
     }
 
@@ -89,10 +103,14 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
-            unique_service_id: UniqueServiceId::new(),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                Entity::EventService(*service_name),
+                config,
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
+            _service: PhantomData,
         }
     }
 
@@ -108,10 +126,14 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
-            unique_service_id: UniqueServiceId::new(),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                Entity::PubSubService(*service_name),
+                config,
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
+            _service: PhantomData,
         }
     }
 
@@ -126,10 +148,14 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
-            unique_service_id: UniqueServiceId::new(),
+            unique_service_id: UniqueServiceId::new::<ServiceType>(
+                Entity::BlackboardService(*service_name),
+                config,
+            ),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
+            _service: PhantomData,
         }
     }
 
@@ -163,7 +189,7 @@ impl StaticConfig {
         &self.messaging_pattern
     }
 
-    pub(crate) fn has_same_messaging_pattern(&self, rhs: &StaticConfig) -> bool {
+    pub(crate) fn has_same_messaging_pattern(&self, rhs: &StaticConfig<ServiceType>) -> bool {
         self.messaging_pattern
             .is_same_pattern(&rhs.messaging_pattern)
     }

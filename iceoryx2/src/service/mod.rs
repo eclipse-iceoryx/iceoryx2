@@ -275,25 +275,24 @@ use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
-use crate::identifiers::UniqueServiceId;
-use crate::node::{NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::ServiceResource;
-use crate::service::stale_resource_cleanup::{
-    remove_sender_and_receiver_connections_and_data_segment,
-    remove_sender_connection_and_data_segment,
-};
-use crate::service::stale_resource_cleanup::{remove_service_tag, remove_static_service_config};
 use crate::service::static_config::*;
 use crate::{
-    identifiers::{UniqueNodeId, UniquePortId},
-    node::NodeBuilder,
+    identifiers::{UniqueNodeId, UniquePortId, UniqueServiceId},
+    node::{NodeBuilder, NodeListFailure, NodeState, SharedNode},
     port::{listener::remove_connection_of_listener, notifier::Notifier},
     prelude::EventId,
-    service::stale_resource_cleanup::{remove_port_tag, remove_receiver_port_from_all_connections},
+    service::stale_resource_cleanup::{
+        remove_port_tag, remove_receiver_port_from_all_connections,
+        remove_sender_and_receiver_connections_and_data_segment,
+        remove_sender_connection_and_data_segment, remove_service_tag,
+        remove_static_service_config,
+    },
+    unique_id_generator::*,
 };
 use builder::event::EventOpenError;
 use dynamic_config::PortCleanupAction;
@@ -442,7 +441,7 @@ pub struct ServiceDynamicDetails<S: Service> {
 pub struct ServiceDetails<S: Service> {
     /// The static configuration of the [`Service`] that never changes during the [`Service`]
     /// lifetime.
-    pub static_details: StaticConfig,
+    pub static_details: StaticConfig<S>,
     /// The dynamic configuration of the [`Service`] that can conaints runtime information.
     pub dynamic_details: Option<ServiceDynamicDetails<S>>,
 }
@@ -452,7 +451,7 @@ pub struct ServiceDetails<S: Service> {
 pub struct ServiceState<S: Service, R: ServiceResource> {
     pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
     pub(crate) additional_resource: R,
-    pub(crate) static_config: StaticConfig,
+    pub(crate) static_config: StaticConfig<S>,
     pub(crate) shared_node: SharedNode<S>,
 
     // IMPORTANT: The static service config must be removed last since it contains the details about all
@@ -498,7 +497,7 @@ impl<S: Service, R: ServiceResource> Abandonable for SharedServiceState<S, R> {
 }
 
 impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
-    pub(crate) fn static_config(&self) -> &StaticConfig {
+    pub(crate) fn static_config(&self) -> &StaticConfig<S> {
         &self.state.static_config
     }
 
@@ -517,7 +516,7 @@ impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
 
 impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
-        static_config: StaticConfig,
+        static_config: StaticConfig<S>,
         shared_node: SharedNode<S>,
         dynamic_storage: S::DynamicStorage<DynamicConfig>,
         static_storage: S::StaticStorage,
@@ -703,7 +702,7 @@ pub mod internal {
         ///
         #[doc(hidden)]
         unsafe fn __internal_remove_service(
-            service_config: &StaticConfig,
+            service_config: &StaticConfig<S>,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveError> {
             let origin = "Service::remove()";
@@ -987,6 +986,9 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;
 
+    /// Mechanism to generate IDs that are unique, at least within a single process.
+    type UniqueId: UniqueIdGenerator;
+
     /// Checks if a service under a given [`config::Config`] does exist
     ///
     /// # Example
@@ -1140,7 +1142,7 @@ pub fn __internal_details<S: Service>(
 fn read_static_service_config<S: Service>(
     config: &config::Config,
     service_hash: &ServiceHash,
-) -> Result<Option<StaticConfig>, ServiceDetailsError> {
+) -> Result<Option<StaticConfig<S>>, ServiceDetailsError> {
     let msg = "Unable to acquire service details";
     let origin = "Service::details()";
     let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
@@ -1189,15 +1191,16 @@ fn read_static_service_config<S: Service>(
         }
     }
 
-    let service_config =
-        match S::ConfigSerializer::deserialize::<StaticConfig>(unsafe { content.as_mut_vec() }) {
-            Ok(service_config) => service_config,
-            Err(e) => {
-                fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
+    let service_config = match S::ConfigSerializer::deserialize::<StaticConfig<S>>(unsafe {
+        content.as_mut_vec()
+    }) {
+        Ok(service_config) => service_config,
+        Err(e) => {
+            fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
                     "{} since the static service info \"{}\" could not be deserialized ({:?}).",
                        msg, name, e );
-            }
-        };
+        }
+    };
 
     if service_hash != service_config.service_hash() {
         fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,

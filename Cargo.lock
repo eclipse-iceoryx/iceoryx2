@@ -1606,6 +1606,7 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",

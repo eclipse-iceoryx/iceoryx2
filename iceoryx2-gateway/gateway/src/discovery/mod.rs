@@ -25,7 +25,7 @@ use crate::discovery::tracker::DiscoveryTracker;
 /// [`Gateway`](crate::Gateway): a subscriber to a discovery service, or a
 /// poll-based tracker over the local service registry.
 #[derive(Debug)]
-pub(crate) enum LocalDiscoveryStrategy<S: Service> {
+pub(crate) enum LocalDiscoveryStrategy<S: Service + 'static> {
     Subscriber(DiscoverySubscriber<S>),
     Tracker(Box<DiscoveryTracker<S>>),
 }
