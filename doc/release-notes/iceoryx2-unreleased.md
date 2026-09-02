@@ -27,6 +27,7 @@
 * [#1773](https://github.com/eclipse-iceoryx/iceoryx2/issues/1773) Make ports identifiable by name
 * [#1798](https://github.com/eclipse-iceoryx/iceoryx2/issues/1798) Add support for musl 1.2.x
 * [#1813](https://github.com/eclipse-iceoryx/iceoryx2/issues/1813) Add API to deliver events to specific listener only
+* [#1958](https://github.com/eclipse-iceoryx/iceoryx2/issues/1958) Allow projects to acknowledge intentional Cargo builds from CMake
 
 ### Bugfixes
 

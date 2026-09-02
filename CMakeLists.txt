@@ -56,6 +56,12 @@ add_option(
     DEFAULT_VALUE OFF
 )
 
+add_option(
+    NAME IOX2_SUPPRESS_CARGO_BUILD_WARNING
+    DESCRIPTION "Emit a status message instead of a warning when Cargo builds the Rust part"
+    DEFAULT_VALUE OFF
+)
+
 add_param(
     NAME RUST_TARGET_TRIPLET
     DESCRIPTION "The target triplet for cross compilation when 'RUST_BUILD_ARTIFACT_PATH' is not set, e.g. 'aarch64-unknown-linux-gnu'"
@@ -153,12 +159,18 @@ endif()
 if(RUST_BUILD_ARTIFACT_PATH AND NOT "${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "" )
     add_subdirectory(iceoryx2-c)
 else()
-    message(WARNING
+    set(IOX2_INTERNAL_CARGO_BUILD_MESSAGE_TYPE WARNING)
+    if(IOX2_SUPPRESS_CARGO_BUILD_WARNING)
+        set(IOX2_INTERNAL_CARGO_BUILD_MESSAGE_TYPE STATUS)
+    endif()
+
+    message(${IOX2_INTERNAL_CARGO_BUILD_MESSAGE_TYPE}
         "Using cargo to build the Rust part of iceoryx2. "
         "This is fine for development but for production, it is "
         "recommended to use an existing installation with\n"
         "'-DRUST_BUILD_ARTIFACT_PATH=/full/path/to/iceoryx2/target/release'!"
     )
+    unset(IOX2_INTERNAL_CARGO_BUILD_MESSAGE_TYPE)
 
     set(RUST_BUILD_TYPE "release")
     set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
