@@ -23,17 +23,13 @@ pub struct Testing;
 impl iceoryx2_gateway_backend::traits::testing::Testing for Testing {
     type BackendConfig = Config;
 
-    /// Non-default config that disables waiting for scouted peers on
-    /// session initializaiton.
-    ///
-    /// The sync() method below takes care of waiting when required.
+    /// Non-default config reduces the per-test scouting period.
     fn backend_config() -> Config {
         let mut config = Config::default();
         config
-            .open
-            .return_conditions
-            .set_connect_scouted(Some(false))
-            .expect("failed to set connect_scouted");
+            .scouting
+            .set_delay(Some(50))
+            .expect("failed to set scouting period");
         config
     }
 
