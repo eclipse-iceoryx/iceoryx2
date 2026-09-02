@@ -173,17 +173,17 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
 
         let backend = &mut self.backend;
         let gateway_id = self.gateway_id;
-        let remote_discoveries = self.discovery_state.remote_mut();
+        let mut update = self.discovery_state.remote_mut().delta_update();
 
         fail!(
             from origin,
-            when backend.discovery().discover(gateway_id, |update| {
-                match update {
+            when backend.discovery().discover(gateway_id, |discovered| {
+                match discovered {
                     DiscoveryUpdate::Added(gateway, description) => {
-                        remote_discoveries.add(gateway, description);
+                        update.set_offered(gateway, &description);
                     }
                     DiscoveryUpdate::Removed(gateway, hash) => {
-                        remote_discoveries.remove(&gateway, &hash);
+                        update.set_not_offered(&gateway, &hash);
                     }
                 }
                 Ok::<(), DiscoveryError>(())
@@ -291,12 +291,12 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
 
         // Drop bridges to services no longer offered by any side.
         self.bridges.retain(
-            |hash| snapshot.contains(hash),
+            |hash| snapshot.resolves(hash),
             |hash| info!(from log_origin, "Closing bridge: {}", hash.as_str()),
         );
 
         // Open bridges for newly-offered services.
-        for (hash, description) in snapshot.iter() {
+        for (hash, description) in snapshot.resolved() {
             if self.bridges.contains(hash) {
                 continue;
             }
@@ -370,8 +370,11 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         #[cfg(debug_assertions)]
         {
             let snapshot = self.discovery_state.snapshot();
-            let same_count = self.bridges.number_of_tracked_services() == snapshot.iter().count();
-            let all_services_tracked = snapshot.iter().all(|(hash, _)| self.bridges.contains(hash));
+            let same_count =
+                self.bridges.number_of_tracked_services() == snapshot.resolved().count();
+            let all_services_tracked = snapshot
+                .resolved()
+                .all(|(hash, _)| self.bridges.contains(hash));
 
             debug_assert!(
                 same_count && all_services_tracked,
