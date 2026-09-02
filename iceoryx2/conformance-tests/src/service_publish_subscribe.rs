@@ -3748,6 +3748,41 @@ pub mod service_publish_subscribe {
         );
     }
 
+    #[conformance_test]
+    pub fn send_increasing_samples_with_best_fit_finally_leads_to_out_of_memory_error<
+        Sut: Service,
+    >() {
+        let _watchdog = Watchdog::new();
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .create()
+            .unwrap();
+
+        let publisher = service
+            .publisher_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let mut n = 0;
+        loop {
+            let sample_size = (n + 1) * 32;
+            let sample = publisher.loan_slice(sample_size);
+            if sample.is_err() {
+                assert_that!(sample.err(), eq Some(LoanError::OutOfMemory));
+                break;
+            }
+            n += 1;
+        }
+    }
+
     fn deliver_history_with_increasing_samples_works<Sut: Service>(
         allocation_strategy: AllocationStrategy,
     ) {

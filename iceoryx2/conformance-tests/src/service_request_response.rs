@@ -27,6 +27,7 @@ pub mod service_request_response {
     use iceoryx2::service::port_factory::client::ClientCreateError;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_testing::*;
 
@@ -1451,6 +1452,79 @@ pub mod service_request_response {
         Sut: Service,
     >() {
         send_and_receive_increasing_responses_works::<Sut>(AllocationStrategy::PowerOfTwo);
+    }
+
+    #[conformance_test]
+    pub fn send_increasing_requests_with_best_fit_finally_leads_to_out_of_memory_error<
+        Sut: Service,
+    >() {
+        let _watchdog = Watchdog::new();
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u8], u64>()
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let mut n = 0;
+        loop {
+            let request_size = (n + 1) * 32;
+            let request = client.loan_slice(request_size);
+            if request.is_err() {
+                assert_that!(request.err(), eq Some(LoanError::OutOfMemory));
+                break;
+            }
+            n += 1;
+        }
+    }
+
+    #[conformance_test]
+    pub fn send_increasing_responses_with_best_fit_finally_leads_to_out_of_memory_error<
+        Sut: Service,
+    >() {
+        let _watchdog = Watchdog::new();
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u8]>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let server = service
+            .server_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+        let _pending_response = client.send_copy(0).unwrap();
+        let active_request = server.receive().unwrap().unwrap();
+
+        let mut n = 0;
+        loop {
+            let response_size = (n + 1) * 32;
+            let response = active_request.loan_slice(response_size);
+            if response.is_err() {
+                assert_that!(response.err(), eq Some(LoanError::OutOfMemory));
+                break;
+            }
+            n += 1;
+        }
     }
 
     #[conformance_test]
