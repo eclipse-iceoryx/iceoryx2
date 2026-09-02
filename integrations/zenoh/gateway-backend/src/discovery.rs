@@ -150,12 +150,30 @@ impl RemoteOffers {
         self.gateways.contains_key(remote_descriptor)
     }
 
+    /// Returns true if `gateway` offers the description.
+    fn is_offered_by(&self, remote_descriptor: &ServiceDescriptor, gateway: &GatewayId) -> bool {
+        self.gateways
+            .get(remote_descriptor)
+            .is_some_and(|gateways| gateways.contains(gateway))
+    }
+
     /// The gateways offering the description.
     fn gateways(&self, remote_descriptor: &ServiceDescriptor) -> Vec<GatewayId> {
         self.gateways
             .get(remote_descriptor)
             .map(|gateways| gateways.iter().copied().collect())
             .unwrap_or_default()
+    }
+
+    /// The offered descriptors of the service with `remote_hash`. More than
+    /// one means the service is announced with conflicting descriptions.
+    fn descriptors_of(
+        &self,
+        remote_hash: &ServiceHash,
+    ) -> impl Iterator<Item = &ServiceDescriptor> {
+        self.gateways
+            .keys()
+            .filter(move |descriptor| descriptor.service_hash == *remote_hash)
     }
 }
 
@@ -529,6 +547,20 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
             self.remote_descriptions.remove(&remote_descriptor);
         }
 
+        // A gateway that re-announced the service under another description
+        // had its offer replaced when that description was resolved. Its
+        // stale token must not withdraw the new offer.
+        let offer_replaced = self
+            .remote_offers
+            .descriptors_of(&remote_descriptor.service_hash)
+            .any(|descriptor| {
+                self.remote_offers.is_offered_by(descriptor, &gateway)
+                    && self.remote_descriptions.resolved(descriptor).is_some()
+            });
+        if offer_replaced {
+            return Ok(());
+        }
+
         // Provide the update to the caller.
         if let Some(local_hash) = local_hash {
             fail!(
@@ -737,8 +769,8 @@ mod tests {
             assert_that!(sut.add(descriptor.clone(), first), eq false);
             assert_that!(sut.add(descriptor.clone(), second), eq true);
 
-            assert_that!(sut.is_offered(&descriptor), eq true);
-            assert_that!(sut.gateways(&descriptor), len 2);
+            assert_that!(sut.is_offered_by(&descriptor, &first), eq true);
+            assert_that!(sut.is_offered_by(&descriptor, &second), eq true);
         }
 
         #[test]
@@ -754,6 +786,24 @@ mod tests {
             assert_that!(sut.remove(&descriptor, &gateway), eq true);
             assert_that!(sut.is_offered(&descriptor), eq false);
             assert_that!(sut.remove(&descriptor, &gateway), eq false);
+        }
+
+        #[test]
+        fn descriptors_of_yields_every_descriptor_of_the_service() {
+            let gateway = gateway_id(1);
+            let (first, second) = differing_descriptions("discovery/two-descriptors");
+            let (other, _) = differing_descriptions("discovery/other-service");
+
+            let mut sut = RemoteOffers::new();
+            sut.add(describe(&first).expect("description is encodable"), gateway);
+            sut.add(
+                describe(&second).expect("description is encodable"),
+                gateway,
+            );
+            sut.add(describe(&other).expect("description is encodable"), gateway);
+
+            assert_that!(sut.descriptors_of(&first.service_hash).count(), eq 2);
+            assert_that!(sut.descriptors_of(&other.service_hash).count(), eq 1);
         }
     }
 
