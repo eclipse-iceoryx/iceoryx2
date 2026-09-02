@@ -216,6 +216,8 @@ impl From<&TypeDetail> for TypeDescription {
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum InvalidTypeDescription {
     TypeNameTooLong,
+    AlignmentNotPowerOfTwo,
+    SizeNotMultipleOfAlignment,
 }
 
 impl core::fmt::Display for InvalidTypeDescription {
@@ -230,6 +232,12 @@ impl TryFrom<&TypeDescription> for TypeDetail {
     type Error = InvalidTypeDescription;
 
     fn try_from(description: &TypeDescription) -> Result<Self, Self::Error> {
+        if !description.alignment.is_power_of_two() {
+            return Err(InvalidTypeDescription::AlignmentNotPowerOfTwo);
+        }
+        if !description.size.is_multiple_of(description.alignment) {
+            return Err(InvalidTypeDescription::SizeNotMultipleOfAlignment);
+        }
         TypeDetail::__internal_new_from_parts(
             description.variant,
             &description.type_name,
@@ -277,6 +285,37 @@ mod tests {
 
         let result = TypeDetail::try_from(&description);
         assert_that!(result, eq Err(InvalidTypeDescription::TypeNameTooLong));
+    }
+
+    #[test]
+    fn rejects_alignment_that_is_not_a_power_of_two() {
+        for alignment in [0usize, 3, 6] {
+            let description = TypeDescription {
+                variant: TypeVariant::FixedSize,
+                type_name: "test_type".into(),
+                size: 12,
+                alignment,
+            };
+
+            let result = TypeDetail::try_from(&description);
+            assert_that!(result, eq Err(InvalidTypeDescription::AlignmentNotPowerOfTwo));
+        }
+    }
+
+    #[test]
+    fn rejects_size_that_is_not_a_multiple_of_alignment() {
+        let description = TypeDescription {
+            variant: TypeVariant::FixedSize,
+            type_name: "test_type".into(),
+            size: 6,
+            alignment: 4,
+        };
+
+        let result = TypeDetail::try_from(&description);
+        assert_that!(
+            result,
+            eq Err(InvalidTypeDescription::SizeNotMultipleOfAlignment)
+        );
     }
 
     #[test]
