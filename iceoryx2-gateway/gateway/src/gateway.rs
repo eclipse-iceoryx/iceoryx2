@@ -334,9 +334,18 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
 
         // Open bridges for newly-offered services.
         for (hash, description) in snapshot.resolved() {
-            if self.bridges.contains(hash) {
+            if self.bridges.is_established(hash) {
                 continue;
             }
+            // A failed bridge is not retried unless the service disappears
+            // and reappears.
+            if self.bridges.failed_description(hash) == Some(description) {
+                continue;
+            }
+            // Clear any previous failures that occured with a different
+            // description.
+            self.bridges.clear_failed(hash);
+
             info!(
                 from log_origin,
                 "Opening bridge: {}({})",
@@ -344,9 +353,6 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
                 description.name
             );
 
-            // Bridges that fail to be established are remembered so that subsequent
-            // discovery calls do not waste time retrying. If however the service
-            // disappears then reappears, a retry will occur.
             self.bridges.open(&self.node, &self.backend, description);
         }
     }
@@ -413,9 +419,9 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
             let snapshot = self.discovery_state.snapshot();
             let same_count =
                 self.bridges.number_of_tracked_services() == snapshot.resolved().count();
-            let all_services_tracked = snapshot
-                .resolved()
-                .all(|(hash, _)| self.bridges.contains(hash));
+            let all_services_tracked = snapshot.resolved().all(|(hash, _)| {
+                self.bridges.is_established(hash) || self.bridges.failed_description(hash).is_some()
+            });
 
             debug_assert!(
                 same_count && all_services_tracked,

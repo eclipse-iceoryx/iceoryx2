@@ -35,10 +35,9 @@ use crate::ports::publish_subscribe::PublishSubscribePorts;
 pub(crate) struct Bridges<S: Service, B: Backend<S>> {
     publish_subscribe: BTreeMap<ServiceHash, PublishSubscribeBridge<S, B>>,
     event: BTreeMap<ServiceHash, EventBridge<S, B>>,
-    /// Services whose bridge could not be established. Remembered so that
-    /// subsequent discovery calls do not retry until the service is
-    /// reinstantiated.
-    failed: BTreeSet<ServiceHash>,
+    /// Services whose bridge could not be established, with the description
+    /// the attempt was made for.
+    failed: BTreeMap<ServiceHash, ServiceDescription>,
 }
 
 impl<S: Service, B: Backend<S>> Default for Bridges<S, B> {
@@ -46,7 +45,7 @@ impl<S: Service, B: Backend<S>> Default for Bridges<S, B> {
         Self {
             publish_subscribe: BTreeMap::new(),
             event: BTreeMap::new(),
-            failed: BTreeSet::new(),
+            failed: BTreeMap::new(),
         }
     }
 }
@@ -77,12 +76,6 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         }
     }
 
-    /// Whether a bridge for the specified service is tracked, both established
-    /// or failed.
-    pub(crate) fn contains(&self, hash: &ServiceHash) -> bool {
-        self.is_established(hash) || self.is_failed(hash)
-    }
-
     /// Whether an established bridge for the service exists.
     pub(crate) fn is_established(&self, hash: &ServiceHash) -> bool {
         let Bridges {
@@ -94,9 +87,14 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         publish_subscribe.contains_key(hash) || event.contains_key(hash)
     }
 
-    /// Whether the bridge has failed to be established for the service.
-    pub(crate) fn is_failed(&self, hash: &ServiceHash) -> bool {
-        self.failed.contains(hash)
+    /// The description a failed establishment attempt was made for.
+    pub(crate) fn failed_description(&self, hash: &ServiceHash) -> Option<&ServiceDescription> {
+        self.failed.get(hash)
+    }
+
+    /// Drops the record of a failed establishment attempt.
+    pub(crate) fn clear_failed(&mut self, hash: &ServiceHash) {
+        self.failed.remove(hash);
     }
 
     /// Number of tracked bridges, established or failed.
@@ -134,7 +132,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
 
         publish_subscribe.retain(|hash, _| keep_or_close(hash));
         event.retain(|hash, _| keep_or_close(hash));
-        failed.retain(|hash| keep(hash));
+        failed.retain(|hash, _| keep(hash));
     }
 
     /// The hashes of all established bridges.
@@ -181,7 +179,8 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
             description.name,
             error
         );
-        self.failed.insert(description.service_hash);
+        self.failed
+            .insert(description.service_hash, description.clone());
     }
 }
 
