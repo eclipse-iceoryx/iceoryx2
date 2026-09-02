@@ -124,7 +124,7 @@ impl LocalDeltaUpdate<'_> {
 
 /// The set of descriptions for the same service offered remotely.
 #[derive(Debug, Default)]
-struct RemoteDescriptions {
+pub(crate) struct RemoteDescriptions {
     by_gateway: BTreeMap<GatewayId, ServiceDescription>,
 }
 
@@ -145,6 +145,11 @@ impl RemoteDescriptions {
         !self.by_gateway.is_empty()
     }
 
+    /// Iterate the descriptions offered by each gateway.
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (&GatewayId, &ServiceDescription)> {
+        self.by_gateway.iter()
+    }
+
     /// Resolve the set of remote descriptions of the same service to a single
     /// description, if possible.
     ///
@@ -156,6 +161,11 @@ impl RemoteDescriptions {
         descriptions
             .all(|description| description == first)
             .then_some(first)
+    }
+
+    /// Whether the descriptions resolve to exactly `description`.
+    fn resolves_to(&self, description: &ServiceDescription) -> bool {
+        self.resolve() == Some(description)
     }
 }
 
@@ -222,6 +232,17 @@ impl RemoteDeltaUpdate<'_> {
     }
 }
 
+/// A service whose sources disagree on its description.
+#[derive(Debug)]
+pub(crate) struct Conflict<'a> {
+    pub(crate) hash: &'a ServiceHash,
+    /// The description offered locally, if the local system offers the
+    /// service.
+    pub(crate) local: Option<&'a ServiceDescription>,
+    /// The descriptions offered by remote gateways.
+    pub(crate) remote: &'a RemoteDescriptions,
+}
+
 /// A point-in-time view of all offered services.
 pub(crate) struct Snapshot<'a> {
     local: &'a LocalServices,
@@ -240,15 +261,15 @@ impl<'a> Snapshot<'a> {
     }
 
     /// Resolves the local description and remote descriptions of `hash` to
-    /// a single description if possible. The local description takes
-    /// precedence over the remote descriptions.
+    /// a single description if possible.
     ///
     /// Returns None if the descriptions cannot be resolved.
     fn resolved_description(&self, hash: &ServiceHash) -> Option<&'a ServiceDescription> {
         let local = self.local.description(hash);
         let remote = self.remote.descriptions(hash);
         match (local, remote) {
-            (Some(local), _) => Some(local),
+            (Some(local), None) => Some(local),
+            (Some(local), Some(remote)) => remote.resolves_to(local).then_some(local),
             (None, Some(remote)) => remote.resolve(),
             (None, None) => None,
         }
@@ -265,6 +286,22 @@ impl<'a> Snapshot<'a> {
     /// Whether `hash` is offered and resolves to one description.
     pub(crate) fn resolves(&self, hash: &ServiceHash) -> bool {
         self.resolved_description(hash).is_some()
+    }
+
+    /// The services whose sources do not agree on a service description.
+    pub(crate) fn conflicts(&self) -> impl Iterator<Item = Conflict<'a>> {
+        self.remote
+            .iter()
+            .filter_map(|(hash, remote_descriptions)| {
+                if self.resolves(hash) {
+                    return None;
+                }
+                Some(Conflict {
+                    hash,
+                    local: self.local.description(hash),
+                    remote: remote_descriptions,
+                })
+            })
     }
 }
 
@@ -685,9 +722,32 @@ mod tests {
         }
 
         #[test]
-        fn consolidates_services_offered_both_locally_and_remotely() {
+        fn consolidates_services_offered_identically_by_both_sides() {
             let gateway = gateway_id(1);
-            let (shared_local, shared_remote) = differing_descriptions("state/snapshot/shared");
+            let shared = ServiceDescription::new::<local::Service>(
+                ServiceName::new("state/snapshot/shared").expect("valid service name"),
+                PatternDescription::Event(EventDescription {
+                    settings: PortSettings::LocalDefaults,
+                }),
+            );
+
+            let mut state = DiscoveryState::default();
+            state.local_mut().delta_update().set_offered(shared.clone());
+            state
+                .remote_mut()
+                .delta_update()
+                .set_offered(gateway, &shared);
+
+            let snapshot = state.snapshot();
+            assert_that!(snapshot.resolves(&shared.service_hash), eq true);
+            let offered: Vec<ServiceHash> = snapshot.resolved().map(|(hash, _)| *hash).collect();
+            assert_that!(offered, len 1);
+        }
+
+        #[test]
+        fn hides_services_with_disagreeing_local_and_remote_descriptions() {
+            let gateway = gateway_id(1);
+            let (local_offer, remote_offer) = differing_descriptions("state/snapshot/disagree");
             let remote_only = ServiceDescription::new::<local::Service>(
                 ServiceName::new("state/snapshot/remote-only").expect("valid service name"),
                 PatternDescription::Event(EventDescription {
@@ -699,24 +759,92 @@ mod tests {
             state
                 .local_mut()
                 .delta_update()
-                .set_offered(shared_local.clone());
+                .set_offered(local_offer.clone());
             let mut remote_update = state.remote_mut().delta_update();
-            remote_update.set_offered(gateway, &shared_remote);
+            remote_update.set_offered(gateway, &remote_offer);
             remote_update.set_offered(gateway, &remote_only);
 
             let snapshot = state.snapshot();
+            assert_that!(snapshot.resolves(&local_offer.service_hash), eq false);
             let offered: Vec<ServiceHash> = snapshot.resolved().map(|(hash, _)| *hash).collect();
-            assert_that!(offered, len 2);
-            assert_that!(offered.contains(&shared_local.service_hash), eq true);
+            assert_that!(offered, len 1);
             assert_that!(offered.contains(&remote_only.service_hash), eq true);
+        }
 
-            // The local description shadows the remote one.
-            let stored = snapshot
-                .resolved()
-                .find(|(hash, _)| **hash == shared_local.service_hash)
-                .map(|(_, description)| description.clone())
-                .expect("shared service is offered");
-            assert_that!(stored, eq shared_local);
+        #[test]
+        fn hides_services_with_disagreeing_remote_descriptions() {
+            let gateway_a = gateway_id(1);
+            let gateway_b = gateway_id(2);
+            let (first, second) = differing_descriptions("state/snapshot/remote-disagree");
+
+            let mut state = DiscoveryState::default();
+            let mut remote_update = state.remote_mut().delta_update();
+            remote_update.set_offered(gateway_a, &first);
+            remote_update.set_offered(gateway_b, &second);
+
+            let snapshot = state.snapshot();
+            assert_that!(snapshot.resolves(&first.service_hash), eq false);
+            assert_that!(snapshot.resolved().count(), eq 0);
+        }
+    }
+
+    mod conflicts {
+        use super::*;
+
+        #[test]
+        fn lists_services_with_disagreeing_sources() {
+            let gateway_a = gateway_id(1);
+            let gateway_b = gateway_id(2);
+            let (local_offer, remote_offer) = differing_descriptions("state/conflicts/with-local");
+            let (remote_first, remote_second) =
+                differing_descriptions("state/conflicts/remote-only");
+
+            let mut state = DiscoveryState::default();
+            state
+                .local_mut()
+                .delta_update()
+                .set_offered(local_offer.clone());
+            let mut remote_update = state.remote_mut().delta_update();
+            remote_update.set_offered(gateway_a, &remote_offer);
+            remote_update.set_offered(gateway_a, &remote_first);
+            remote_update.set_offered(gateway_b, &remote_second);
+
+            let conflicts: Vec<_> = state.snapshot().conflicts().collect();
+            assert_that!(conflicts, len 2);
+
+            let with_local = conflicts
+                .iter()
+                .find(|conflict| *conflict.hash == local_offer.service_hash)
+                .expect("conflict with the local side is listed");
+            assert_that!(with_local.local, is_some);
+            assert_that!(with_local.remote.iter().count(), eq 1);
+
+            let remote_only = conflicts
+                .iter()
+                .find(|conflict| *conflict.hash == remote_first.service_hash)
+                .expect("conflict among remotes is listed");
+            assert_that!(remote_only.local, is_none);
+            assert_that!(remote_only.remote.iter().count(), eq 2);
+        }
+
+        #[test]
+        fn sources_that_resolve_produce_no_conflicts() {
+            let gateway = gateway_id(1);
+            let shared = ServiceDescription::new::<local::Service>(
+                ServiceName::new("state/conflicts/resolve").expect("valid service name"),
+                PatternDescription::Event(EventDescription {
+                    settings: PortSettings::LocalDefaults,
+                }),
+            );
+
+            let mut state = DiscoveryState::default();
+            state.local_mut().delta_update().set_offered(shared.clone());
+            state
+                .remote_mut()
+                .delta_update()
+                .set_offered(gateway, &shared);
+
+            assert_that!(state.snapshot().conflicts().count(), eq 0);
         }
     }
 }

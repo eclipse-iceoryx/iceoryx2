@@ -14,7 +14,8 @@ use core::fmt::Debug;
 
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeState, NodeView};
@@ -26,12 +27,12 @@ use iceoryx2_gateway_backend::traits::{Backend, Discovery, Mapping};
 use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
 use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
-use iceoryx2_log::{debug, fail, info};
+use iceoryx2_log::{debug, error, fail, info};
 use iceoryx2_services_discovery::service_discovery::DiscoveryEvent;
 
 use crate::bridge::Bridges;
 use crate::discovery::LocalDiscoveryStrategy;
-use crate::discovery::state::DiscoveryState;
+use crate::discovery::state::{Conflict, DiscoveryState};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -100,6 +101,7 @@ pub struct Gateway<S: Service, B: Backend<S> + Debug> {
     bridges: Bridges<S, B>,
     discovery_strategy: LocalDiscoveryStrategy<S>,
     announced: BTreeMap<ServiceHash, ServiceName>,
+    reported_conflicts: BTreeSet<ServiceHash>,
 }
 
 impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
@@ -130,6 +132,7 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
             bridges: Bridges::default(),
             discovery_strategy,
             announced: BTreeMap::new(),
+            reported_conflicts: BTreeSet::new(),
         }
     }
 
@@ -275,12 +278,45 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
 
     /// Reconciles the bridges and announcements with the discovery state.
     fn reconcile(&mut self) -> Result<(), DiscoveryError> {
+        self.report_conflicts();
+
         // Removals announced first to minimize window for remote services
         // to communicate with a service no longer offered.
         let removals = self.announce_removals();
         self.reconcile_bridges();
         let additions = self.announce_additions();
         removals.and(additions)
+    }
+
+    /// Reports changes in the set of services whose sources disagree on a
+    /// description. A conflict is reported once when it appears and once
+    /// when it clears.
+    fn report_conflicts(&mut self) {
+        let origin = format!("Gateway({})::report_conflicts", self.node.id());
+
+        let snapshot = self.discovery_state.snapshot();
+        let current: BTreeSet<ServiceHash> = snapshot
+            .conflicts()
+            .map(|conflict| *conflict.hash)
+            .collect();
+
+        let appeared = snapshot
+            .conflicts()
+            .filter(|conflict| !self.reported_conflicts.contains(conflict.hash));
+        for conflict in appeared {
+            report_conflict(&origin, &conflict);
+        }
+
+        let cleared = self.reported_conflicts.difference(&current);
+        for hash in cleared {
+            info!(
+                from origin,
+                "Description conflict resolved for service {}",
+                hash.as_str()
+            );
+        }
+
+        self.reported_conflicts = current;
     }
 
     /// Reconciles the opened bridges with a snapshot of the discovery state.
@@ -382,6 +418,32 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
             );
         }
     }
+}
+
+/// Logs a service whose sources disagree on its description.
+fn report_conflict(origin: &str, conflict: &Conflict) {
+    let Some((_, description)) = conflict.remote.iter().next() else {
+        return;
+    };
+    let gateways = conflict
+        .remote
+        .iter()
+        .map(|(gateway, _)| gateway.to_string())
+        .collect::<Vec<String>>()
+        .join(", ");
+    let locally = if conflict.local.is_some() {
+        " and locally"
+    } else {
+        ""
+    };
+    error!(
+        from origin,
+        "Service {} is offered with conflicting descriptions by gateway(s) {}{}. \
+        It is not bridged until the configurations are aligned",
+        description.name,
+        gateways,
+        locally
+    );
 }
 
 /// Broadcasts a service's availability to remote peers over the backend.
