@@ -74,6 +74,7 @@ pub enum ReceiveError {
     SampleReceive,
     Decode,
     IceoryxLoan,
+    LoanSizeMismatch,
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -247,6 +248,15 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 with ReceiveError::IceoryxLoan,
                 "Failed to loan sample from iceoryx"
             );
+            if iceoryx_sample.payload().len() != frame.payload.len() {
+                fail!(
+                    from self,
+                    with ReceiveError::LoanSizeMismatch,
+                    "Loaned sample of {} bytes does not fit the received payload of {} bytes",
+                    iceoryx_sample.payload().len(),
+                    frame.payload.len()
+                );
+            }
 
             let sample =
                 unsafe { initialize_sample(frame.user_header, frame.payload, iceoryx_sample) };
