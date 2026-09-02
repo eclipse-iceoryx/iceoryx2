@@ -72,7 +72,6 @@ impl core::error::Error for SendError {}
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
     SampleReceive,
-    Decode,
     IceoryxLoan,
     LoanSizeMismatch,
 }
@@ -223,12 +222,19 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             );
 
             let bytes = zenoh_sample.payload().to_bytes();
-            let frame = fail!(
-                from self,
-                when postcard::from_bytes::<MessageFrame<'_>>(&bytes),
-                with ReceiveError::Decode,
-                "Failed to decode publish-subscribe frame received from zenoh"
-            );
+            let frame = match postcard::from_bytes::<MessageFrame<'_>>(&bytes) {
+                Ok(frame) => frame,
+                Err(e) => {
+                    warn!(
+                        from self,
+                        "Discarding sample of {}({}), it could not be decoded: {}",
+                        self.description.pattern,
+                        self.description.name,
+                        e
+                    );
+                    continue;
+                }
+            };
 
             let port = port_description(&self.description);
             if !validate_frame(&frame, &port.user_header, &port.payload) {
