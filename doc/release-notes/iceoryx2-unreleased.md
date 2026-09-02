@@ -27,6 +27,7 @@
 * [#1773](https://github.com/eclipse-iceoryx/iceoryx2/issues/1773) Make ports identifiable by name
 * [#1798](https://github.com/eclipse-iceoryx/iceoryx2/issues/1798) Add support for musl 1.2.x
 * [#1813](https://github.com/eclipse-iceoryx/iceoryx2/issues/1813) Add API to deliver events to specific listener only
+* [#1960](https://github.com/eclipse-iceoryx/iceoryx2/issues/1960) Key zenoh gateway traffic by service description fingerprint so that hosts with differing descriptions of a service do not exchange samples
 
 ### Bugfixes
 
@@ -64,6 +65,7 @@
 * [#1918](https://github.com/eclipse-iceoryx/iceoryx2/issues/1917) Fix wrong `CLOCK_MONOTONIC` constant on macOS (1 instead of 6) which broke `Time::now_with_clock(ClockType::Monotonic)`
 * [#1924](https://github.com/eclipse-iceoryx/iceoryx2/issues/1924) Ensure discovery service node resources are removed during shutdown.
 * [#1940](https://github.com/eclipse-iceoryx/iceoryx2/issues/1940) Fix private rustdoc link diagnostics.
+* [#1960](https://github.com/eclipse-iceoryx/iceoryx2/issues/1960) Validate type descriptions and payload layouts received over gateway backends
 
 ### Refactoring
 
