@@ -14,7 +14,53 @@ use alloc::collections::BTreeMap;
 
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_gateway_backend::types::identity::GatewayId;
-use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
+use iceoryx2_gateway_backend::types::service_description::{
+    EventSettings, PatternDescription, PortSettings, PublishSubscribeSettings, ServiceDescription,
+};
+
+/// The settings a service created with the local config receives when
+/// none are specified.
+#[derive(Debug, Clone)]
+struct DefaultSettings {
+    publish_subscribe: PublishSubscribeSettings,
+    event: EventSettings,
+}
+
+impl DefaultSettings {
+    fn from_config(config: &iceoryx2::config::Config) -> Self {
+        Self {
+            publish_subscribe: PublishSubscribeSettings::from_config(config),
+            event: EventSettings::from_config(config),
+        }
+    }
+}
+
+impl Default for DefaultSettings {
+    fn default() -> Self {
+        Self::from_config(&iceoryx2::config::Config::default())
+    }
+}
+
+/// Returns `description` in its explicit representation, `LocalDefaults`
+/// replaced by the values of `defaults`.
+fn normalize_settings(
+    mut description: ServiceDescription,
+    defaults: &DefaultSettings,
+) -> ServiceDescription {
+    match &mut description.pattern {
+        PatternDescription::PublishSubscribe(pattern) => {
+            if let PortSettings::LocalDefaults = pattern.settings {
+                pattern.settings = PortSettings::Value(defaults.publish_subscribe.clone());
+            }
+        }
+        PatternDescription::Event(pattern) => {
+            if let PortSettings::LocalDefaults = pattern.settings {
+                pattern.settings = PortSettings::Value(defaults.event.clone());
+            }
+        }
+    }
+    description
+}
 
 /// The local description of a service as seen on a specific update epoch.
 #[derive(Debug)]
@@ -41,12 +87,14 @@ pub(crate) struct LocalServices {
     offered: BTreeMap<ServiceHash, LocalDescription>,
     // The current update epoch.
     epoch: u64,
+    defaults: DefaultSettings,
 }
 
 impl LocalServices {
     /// Records `description` as offered, stamping it with `epoch`. The caller                                                                                                                                                                                                                              ║
     /// passes its session epoch so all updates in a session share one stamp.
     fn insert(&mut self, description: ServiceDescription, epoch: u64) {
+        let description = normalize_settings(description, &self.defaults);
         self.offered.insert(
             description.service_hash,
             LocalDescription {
@@ -173,15 +221,17 @@ impl RemoteDescriptions {
 #[derive(Debug, Default)]
 pub(crate) struct RemoteServices {
     services: BTreeMap<ServiceHash, RemoteDescriptions>,
+    defaults: DefaultSettings,
 }
 
 impl RemoteServices {
     /// Records `gateway` as offering `description`.
     fn insert(&mut self, gateway: GatewayId, description: &ServiceDescription) {
+        let description = normalize_settings(description.clone(), &self.defaults);
         self.services
             .entry(description.service_hash)
             .or_default()
-            .insert(gateway, description.clone());
+            .insert(gateway, description);
     }
 
     /// Removes `gateway` from the gateways offering `hash`. The service is
@@ -313,6 +363,22 @@ pub(crate) struct DiscoveryState {
 }
 
 impl DiscoveryState {
+    /// Creates a state whose entering descriptions have `LocalDefaults`
+    /// resolved against `config`.
+    pub(crate) fn new(config: &iceoryx2::config::Config) -> Self {
+        let defaults = DefaultSettings::from_config(config);
+        Self {
+            local: LocalServices {
+                defaults: defaults.clone(),
+                ..LocalServices::default()
+            },
+            remote: RemoteServices {
+                defaults,
+                ..RemoteServices::default()
+            },
+        }
+    }
+
     pub(crate) fn local(&self) -> &LocalServices {
         &self.local
     }
@@ -677,6 +743,64 @@ mod tests {
 
                 assert_that!(resolved_description(&sut, &hash), is_none);
             }
+        }
+    }
+
+    mod defaults {
+        use super::*;
+
+        #[test]
+        fn local_defaults_resolve_to_the_config_values_on_entry() {
+            let spelled_default = ServiceDescription::new::<local::Service>(
+                ServiceName::new("state/defaults/resolve").expect("valid service name"),
+                PatternDescription::Event(EventDescription {
+                    settings: PortSettings::LocalDefaults,
+                }),
+            );
+
+            let mut sut = LocalServices::default();
+            sut.delta_update().set_offered(spelled_default);
+
+            let (_, stored) = sut.iter().next().expect("service is offered");
+            let PatternDescription::Event(description) = &stored.pattern else {
+                panic!("expected an event pattern description");
+            };
+            let expected = PortSettings::Value(EventSettings::from_config(
+                &iceoryx2::config::Config::default(),
+            ));
+            assert_that!(description.settings, eq expected);
+        }
+
+        #[test]
+        fn differing_representations_of_default_settings_resolve() {
+            let gateway = gateway_id(1);
+            let spelled_default = ServiceDescription::new::<local::Service>(
+                ServiceName::new("state/defaults/spellings").expect("valid service name"),
+                PatternDescription::Event(EventDescription {
+                    settings: PortSettings::LocalDefaults,
+                }),
+            );
+            let explicit_default = ServiceDescription::new::<local::Service>(
+                ServiceName::new("state/defaults/spellings").expect("valid service name"),
+                PatternDescription::Event(EventDescription {
+                    settings: PortSettings::Value(EventSettings::from_config(
+                        &iceoryx2::config::Config::default(),
+                    )),
+                }),
+            );
+
+            let mut state = DiscoveryState::default();
+            state
+                .local_mut()
+                .delta_update()
+                .set_offered(spelled_default.clone());
+            state
+                .remote_mut()
+                .delta_update()
+                .set_offered(gateway, &explicit_default);
+
+            assert_that!(state.snapshot().resolves(&spelled_default.service_hash), eq true);
+            assert_that!(state.snapshot().conflicts().count(), eq 0);
         }
     }
 

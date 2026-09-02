@@ -124,11 +124,12 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         discovery_strategy: LocalDiscoveryStrategy<S>,
     ) -> Self {
         let gateway_id = GatewayId::new(*node.id(), backend.id());
+        let discovery_state = DiscoveryState::new(node.config());
         Self {
             node,
             backend,
             gateway_id,
-            discovery_state: DiscoveryState::default(),
+            discovery_state,
             bridges: Bridges::default(),
             discovery_strategy,
             announced: BTreeMap::new(),
