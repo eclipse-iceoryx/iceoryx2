@@ -95,8 +95,8 @@ impl FromStr for GatewayId {
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
         let bytes = decode_hex(text)?;
-        let (id, remainder) = postcard::take_from_bytes(&bytes)
-            .map_err(|_| GatewayIdParseError::InvalidEncoding)?;
+        let (id, remainder) =
+            postcard::take_from_bytes(&bytes).map_err(|_| GatewayIdParseError::InvalidEncoding)?;
         if !remainder.is_empty() {
             return Err(GatewayIdParseError::InvalidEncoding);
         }

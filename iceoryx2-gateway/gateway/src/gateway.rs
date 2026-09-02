@@ -23,15 +23,15 @@ use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_gateway_backend::traits::{Backend, Discovery, Mapping};
-use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
-use iceoryx2_log::{fail, info};
+use iceoryx2_log::{debug, fail, info};
+use iceoryx2_services_discovery::service_discovery::DiscoveryEvent;
 
 use crate::bridge::Bridges;
 use crate::discovery::LocalDiscoveryStrategy;
-use crate::discovery::state::DeltaUpdate;
 use crate::discovery::state::DiscoveryState;
-use crate::discovery::state::Origin;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -95,6 +95,7 @@ pub struct Config {
 pub struct Gateway<S: Service, B: Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
+    gateway_id: GatewayId,
     discovery_state: DiscoveryState,
     bridges: Bridges<S, B>,
     discovery_strategy: LocalDiscoveryStrategy<S>,
@@ -120,9 +121,11 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         backend: B,
         discovery_strategy: LocalDiscoveryStrategy<S>,
     ) -> Self {
+        let gateway_id = GatewayId::new(*node.id(), backend.id());
         Self {
             node,
             backend,
+            gateway_id,
             discovery_state: DiscoveryState::default(),
             bridges: Bridges::default(),
             discovery_strategy,
@@ -169,12 +172,20 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         let origin = format!("Gateway({})::backend_discovery", self.node.id());
 
         let backend = &mut self.backend;
-        let mut update = self.discovery_state.delta_update(Origin::Remote);
+        let remote_discoveries = self.discovery_state.remote_mut();
 
         fail!(
             from origin,
-            when backend.discovery().discover(|event| {
-                on_discovery_update(&mut update, event)
+            when backend.discovery().discover(|update| {
+                match update {
+                    DiscoveryUpdate::Added(gateway, description) => {
+                        remote_discoveries.add(gateway, description);
+                    }
+                    DiscoveryUpdate::Removed(gateway, hash) => {
+                        remote_discoveries.remove(&gateway, &hash);
+                    }
+                }
+                Ok::<(), DiscoveryError>(())
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
@@ -187,27 +198,41 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     fn subscriber_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Gateway({})::subscriber_discovery", self.node.id());
 
-        let LocalDiscoveryStrategy::Subscriber(subscriber) = &mut self.discovery_strategy else {
+        let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.discovery_strategy else {
             panic!("Should never happen. Discovery strategy enforced in discover().");
         };
 
-        let backend = &mut self.backend;
-        let mut update = self.discovery_state.delta_update(Origin::Local);
+        let backend = &self.backend;
+        let mut update = self.discovery_state.local_mut().delta_update();
 
         fail!(
             from origin,
             when subscriber.discover(|event| {
-                // Skip local services outside the mapping's scope.
-                if let DiscoveryUpdate::Added(description) = &event
-                    && backend.mapping().remote(description).is_none()
-                {
-                    return Ok(());
+                match event {
+                    DiscoveryEvent::Added(static_config) => {
+                        let Ok(description) = ServiceDescription::try_from(static_config) else {
+                            debug!(
+                                from origin,
+                                "Skipping service with unsupported messaging pattern: {}",
+                                static_config.name()
+                            );
+                            return Ok(());
+                        };
+                        // Skip local services outside the mapping's scope.
+                        if backend.mapping().remote(&description).is_some() {
+                            update.set_offered(description);
+                        }
+                    }
+                    DiscoveryEvent::Removed(hash) => {
+                        update.set_not_offered(hash);
+                    }
                 }
-                on_discovery_update(&mut update, event)
+                Ok::<(), DiscoveryError>(())
             }),
             with DiscoveryError::DiscoveryOverService,
             "Failed to discover services via subscriber to discovery service"
         );
+
         Ok(())
     }
 
@@ -230,14 +255,13 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         );
 
         let node = &self.node;
-        let backend = &mut self.backend;
+        let backend = &self.backend;
         let mapping = backend.mapping();
         let discovery_state = &mut self.discovery_state;
 
         // Force the discovery local state to match the tracker snapshot.
         // Announcements are aligned in reconcile() once bridges are known.
-        discovery_state.force_update(
-            Origin::Local,
+        discovery_state.local_mut().force_update(
             tracker
                 .iter()
                 .filter(|details| is_locally_offered(details, node.id()))
@@ -294,15 +318,16 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     fn announce_additions(&mut self) -> Result<(), DiscoveryError> {
         let node = &self.node;
         let backend = &mut self.backend;
+        let gateway_id = self.gateway_id;
         let bridges = &self.bridges;
         let announced = &mut self.announced;
 
         let mut result = Ok(());
-        for (hash, description) in self.discovery_state.services(Origin::Local) {
+        for (hash, description) in self.discovery_state.local().iter() {
             if !bridges.is_established(hash) || announced.contains_key(hash) {
                 continue;
             }
-            if let Err(error) = announce_added::<S, B>(node, backend, description) {
+            if let Err(error) = announce_added::<S, B>(node, backend, gateway_id, description) {
                 if result.is_ok() {
                     result = Err(error);
                 }
@@ -317,16 +342,17 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     fn announce_removals(&mut self) -> Result<(), DiscoveryError> {
         let node = &self.node;
         let backend = &mut self.backend;
+        let gateway_id = self.gateway_id;
         let discovery_state = &self.discovery_state;
 
         // Entries whose withdrawal fails are kept and retried on the next
         // discovery call.
         let mut result = Ok(());
         self.announced.retain(|hash, name| {
-            if discovery_state.is_offered(Origin::Local, hash) {
+            if discovery_state.local().contains(hash) {
                 return true;
             }
-            if let Err(error) = announce_removed::<S, B>(node, backend, hash, name) {
+            if let Err(error) = announce_removed::<S, B>(node, backend, gateway_id, hash, name) {
                 if result.is_ok() {
                     result = Err(error);
                 }
@@ -354,27 +380,11 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
     }
 }
 
-/// Records a discovery update in the state the `DeltaUpdate` was opened for.
-fn on_discovery_update(
-    state: &mut DeltaUpdate<'_>,
-    update: DiscoveryUpdate,
-) -> Result<(), DiscoveryError> {
-    match update {
-        DiscoveryUpdate::Added(description) => {
-            state.set_offered(description);
-        }
-        DiscoveryUpdate::Removed(hash) => {
-            state.set_not_offered(&hash);
-        }
-    }
-
-    Ok(())
-}
-
 /// Broadcasts a service's availability to remote peers over the backend.
 fn announce_added<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &mut B,
+    own_id: GatewayId,
     description: &ServiceDescription,
 ) -> Result<(), DiscoveryError> {
     let origin = format!("Gateway({})::announce_added", node.id());
@@ -387,7 +397,7 @@ fn announce_added<S: Service, B: Backend<S>>(
     );
     fail!(
         from origin,
-        when backend.discovery().announce(DiscoveryUpdateRef::Added(description)),
+        when backend.discovery().announce(own_id, Announcement::Added(description)),
         with DiscoveryError::DiscoveryAnnouncement,
         "Failed to announce service over backend"
     );
@@ -398,6 +408,7 @@ fn announce_added<S: Service, B: Backend<S>>(
 fn announce_removed<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &mut B,
+    own_id: GatewayId,
     hash: &ServiceHash,
     name: &ServiceName,
 ) -> Result<(), DiscoveryError> {
@@ -405,7 +416,7 @@ fn announce_removed<S: Service, B: Backend<S>>(
     info!(from origin, "Announcing removal: {}", name);
     fail!(
         from origin,
-        when backend.discovery().announce(DiscoveryUpdateRef::Removed(hash)),
+        when backend.discovery().announce(own_id, Announcement::Removed(hash)),
         with DiscoveryError::DiscoveryAnnouncement,
         "Failed to announce service removal over backend"
     );

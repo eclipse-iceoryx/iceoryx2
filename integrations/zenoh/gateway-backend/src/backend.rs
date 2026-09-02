@@ -180,7 +180,7 @@ impl<
         let id = BackendId::new(session.zid().to_le_bytes());
 
         let mapping = Arc::new(self.mapping);
-        let discovery = Discovery::create(&session, Arc::clone(&mapping));
+        let discovery = Discovery::create(&session, id, Arc::clone(&mapping));
         let discovery = fail!(
             from origin,
             when discovery,

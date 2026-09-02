@@ -38,7 +38,8 @@ use iceoryx2_bb_posix::unix_datagram_socket::{
     UnixDatagramReceiver, UnixDatagramReceiverBuilder, UnixDatagramReceiverCreationError,
     UnixDatagramSendError, UnixDatagramSender, UnixDatagramSenderBuilder,
 };
-use iceoryx2_gateway_backend::types::identity::BackendId;
+use iceoryx2_gateway_backend::types::discovery::DiscoveryUpdate;
+use iceoryx2_gateway_backend::types::identity::{BackendId, GatewayId};
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
 use crate::backend::settings::MAX_DATAGRAM;
@@ -114,8 +115,7 @@ type SessionId = String;
 
 #[derive(Debug, Default)]
 struct PendingDiscovery {
-    added: Vec<ServiceDescription>,
-    removed: Vec<ServiceHash>,
+    updates: Vec<DiscoveryUpdate>,
 }
 
 #[derive(Debug)]
@@ -131,7 +131,7 @@ pub struct Session {
     /// Sending half of the connection to each live peer.
     connections: RefCell<BTreeMap<SessionId, UnixDatagramSender>>,
     /// Hashes of services offered by any live peer at the last `discover()`.
-    discovered_services: RefCell<BTreeSet<ServiceHash>>,
+    discovered_services: RefCell<BTreeSet<(GatewayId, ServiceHash)>>,
     /// Discovery events accumulated by `discover()` and drained by
     /// `discover()`.
     pending_discoveries: RefCell<PendingDiscovery>,
@@ -187,8 +187,12 @@ impl Session {
     }
 
     /// Make a service offered by this session discoverable to peers.
-    pub fn announce_added(&self, description: &ServiceDescription) -> Result<(), AnnounceError> {
-        self.registration.add_service(description)
+    pub fn announce_added(
+        &self,
+        gateway_id: GatewayId,
+        description: &ServiceDescription,
+    ) -> Result<(), AnnounceError> {
+        self.registration.add_service(gateway_id, description)
     }
 
     /// Withdraw a previously-announced service so peers stop discovering it.
@@ -196,8 +200,8 @@ impl Session {
         self.registration.remove_service(hash)
     }
 
-    /// Refresh the known-service set; new and dropped hashes are queued for
-    /// the next `pending_discoveries()` drain.
+    /// Refresh the known set of (gateway, service) pairs; new and dropped
+    /// pairs are queued for the next `pending_discoveries()` drain.
     pub fn discover(&self) {
         let sessions = self.refresh_connections();
         let mut pending = self.pending_discoveries.borrow_mut();
@@ -205,20 +209,26 @@ impl Session {
         let current = {
             let prev = self.discovered_services.borrow();
 
-            // Mark newly-discovered hashes as added
-            let mut current: BTreeSet<ServiceHash> = BTreeSet::new();
+            // Mark newly-discovered pairs as added
+            let mut current: BTreeSet<(GatewayId, ServiceHash)> = BTreeSet::new();
             for session in &sessions {
-                for (hash, cfg) in session.services() {
-                    if current.insert(hash) && !prev.contains(&hash) {
-                        pending.added.push(cfg);
+                for announced in session.services() {
+                    let key = (announced.gateway_id, announced.description.service_hash);
+                    if current.insert(key) && !prev.contains(&key) {
+                        pending.updates.push(DiscoveryUpdate::Added(
+                            announced.gateway_id,
+                            announced.description,
+                        ));
                     }
                 }
             }
 
-            // Mark previously-known hashes that are absent as removed
-            for hash in prev.iter() {
-                if !current.contains(hash) {
-                    pending.removed.push(*hash);
+            // Mark previously-known pairs that are absent as removed
+            for (gateway, hash) in prev.iter() {
+                if !current.contains(&(*gateway, *hash)) {
+                    pending
+                        .updates
+                        .push(DiscoveryUpdate::Removed(*gateway, *hash));
                 }
             }
 
@@ -228,13 +238,10 @@ impl Session {
         *self.discovered_services.borrow_mut() = current;
     }
 
-    /// Drain (added, removed) service-discovery events accumulated since the
-    /// last call.
-    pub fn pending_discoveries(&self) -> (Vec<ServiceDescription>, Vec<ServiceHash>) {
-        let mut pending = self.pending_discoveries.borrow_mut();
-        let added = core::mem::take(&mut pending.added);
-        let removed = core::mem::take(&mut pending.removed);
-        (added, removed)
+    /// Drain the discovery updates accumulated since the last call, in the
+    /// order they were observed.
+    pub fn pending_discoveries(&self) -> Vec<DiscoveryUpdate> {
+        core::mem::take(&mut self.pending_discoveries.borrow_mut().updates)
     }
 
     /// Send an event id for the given service to all live peers.

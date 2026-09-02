@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 
 use crate::wire::descriptor::ServiceDescriptor;
 use crate::wire::fingerprint::Fingerprint;
@@ -21,28 +22,41 @@ pub const NAMESPACE: &str = "iox2";
 /// Version of the key scheme.
 pub const VERSION: &str = "v1";
 
-/// The zenoh key for discovering the details of announced service
-/// descriptions.
+/// The zenoh key for discovering the details of service descriptions
+/// announced by any gateway.
 pub fn service_discovery() -> String {
-    format!("{NAMESPACE}/{VERSION}/service_description/*/*")
+    format!("{NAMESPACE}/{VERSION}/service_description/*/*/*")
 }
 
-/// The zenoh key at which the details of the described service can be
-/// received.
-pub fn service_description(descriptor: &ServiceDescriptor) -> String {
+/// The zenoh key at which the given gateway announces the details of the
+/// described service.
+pub fn service_description(descriptor: &ServiceDescriptor, gateway: &GatewayId) -> String {
     format!(
-        "{NAMESPACE}/{VERSION}/service_description/{}/{}",
+        "{NAMESPACE}/{VERSION}/service_description/{}/{}/{}",
+        descriptor.service_hash.as_str(),
+        descriptor.fingerprint.as_str(),
+        gateway
+    )
+}
+
+/// The zenoh key matching the details of the described service at any
+/// gateway.
+pub fn service_description_any(descriptor: &ServiceDescriptor) -> String {
+    format!(
+        "{NAMESPACE}/{VERSION}/service_description/{}/{}/*",
         descriptor.service_hash.as_str(),
         descriptor.fingerprint.as_str()
     )
 }
 
-/// Recovers the descriptor from a key built by [`service_description`].
-pub fn parse_service_description(key: &str) -> Option<ServiceDescriptor> {
+/// Recovers the descriptor and gateway from a key built by
+/// [`service_description`].
+pub fn parse_service_description(key: &str) -> Option<(ServiceDescriptor, GatewayId)> {
     let mut segments = key.rsplit('/');
+    let gateway = segments.next()?.parse().ok()?;
     let fingerprint = Fingerprint::try_from(segments.next()?).ok()?;
     let service_hash = ServiceHash::try_from(segments.next()?).ok()?;
-    Some(ServiceDescriptor::new(service_hash, fingerprint))
+    Some((ServiceDescriptor::new(service_hash, fingerprint), gateway))
 }
 
 /// The zenoh key at which payloads of the described publish-subscribe
@@ -69,9 +83,11 @@ pub fn event(descriptor: &ServiceDescriptor) -> String {
 mod tests {
     use super::*;
 
+    use iceoryx2::node::NodeBuilder;
     use iceoryx2::service::ipc;
     use iceoryx2::service::service_name::ServiceName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_gateway_backend::types::identity::{BACKEND_ID_LENGTH, BackendId};
     use iceoryx2_gateway_backend::types::service_description::{
         EventDescription, PatternDescription, PortSettings, ServiceDescription,
     };
@@ -87,10 +103,14 @@ mod tests {
             }),
         );
         let descriptor = describe(&description).expect("description is encodable");
+        let node = NodeBuilder::new()
+            .create::<ipc::Service>()
+            .expect("node creation succeeds");
+        let gateway = GatewayId::new(*node.id(), BackendId::new([7; BACKEND_ID_LENGTH]));
 
-        let key = service_description(&descriptor);
+        let key = service_description(&descriptor, &gateway);
         let parsed = parse_service_description(&key).expect("key is parsable");
 
-        assert_that!(parsed, eq descriptor);
+        assert_that!(parsed, eq(descriptor, gateway));
     }
 }

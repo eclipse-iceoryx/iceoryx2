@@ -19,7 +19,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_gateway_backend::traits::{Mapping, PayloadLayout, Translation, Translator};
-use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
 use iceoryx2_log::{fail, warn};
 
@@ -279,7 +279,7 @@ impl<
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&mut self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(&mut self, _announcement: Announcement<'_>) -> Result<(), Self::AnnouncementError> {
         // Nothing to announce explicitly. The gateway creates a relay for
         // every service it discovers on iceoryx2, and relay creation
         // registers the ROS 2 endpoints, which DDS discovery (SEDP) broadcasts

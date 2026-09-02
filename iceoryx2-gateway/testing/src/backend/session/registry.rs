@@ -14,7 +14,6 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-use alloc::collections::BTreeMap;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
@@ -30,7 +29,9 @@ use iceoryx2_bb_posix::process_state::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
+use serde::{Deserialize, Serialize};
 
 use crate::backend::settings::{
     LOCKFILE_NAME, ROOT_DIR, SERVICES_DIR_NAME, SESSIONS_DIR_NAME, SOCKET_NAME,
@@ -174,9 +175,10 @@ impl Registration {
     }
 
     /// Add a service to this session's registry entry, making it
-    /// discoverable by other sessions.
+    /// discoverable by other sessions as offered by the specified gateway.
     pub(super) fn add_service(
         &self,
+        gateway_id: GatewayId,
         description: &ServiceDescription,
     ) -> Result<(), AnnounceError> {
         let path = file_path_in_directory(
@@ -196,7 +198,11 @@ impl Registration {
             .create()
             .map_err(AnnounceError::FileCreate)?;
 
-        let bytes = postcard::to_allocvec(description).map_err(|_| AnnounceError::Encode)?;
+        let announced = AnnouncedService {
+            gateway_id,
+            description: description.clone(),
+        };
+        let bytes = postcard::to_allocvec(&announced).map_err(|_| AnnounceError::Encode)?;
         file.write(&bytes).map_err(AnnounceError::FileWrite)?;
 
         Ok(())
@@ -227,6 +233,14 @@ impl Drop for Cleanup {
     }
 }
 
+/// A service in a session's registry entry together with the gateway that
+/// announced it.
+#[derive(Debug, Serialize, Deserialize)]
+pub(super) struct AnnouncedService {
+    pub(super) gateway_id: GatewayId,
+    pub(super) description: ServiceDescription,
+}
+
 /// A foreign session's entry in the registry.
 #[derive(Debug)]
 pub(super) struct RegisteredSession {
@@ -237,8 +251,8 @@ pub(super) struct RegisteredSession {
 
 impl RegisteredSession {
     /// Return the services in this session's registry entry.
-    pub(super) fn services(&self) -> BTreeMap<ServiceHash, ServiceDescription> {
-        let mut services = BTreeMap::new();
+    pub(super) fn services(&self) -> Vec<AnnouncedService> {
+        let mut services = Vec::new();
 
         let Ok(services_dir) = Directory::new(&self.services_dir) else {
             return services;
@@ -259,10 +273,10 @@ impl RegisteredSession {
             if file.read_to_vector(&mut bytes).is_err() {
                 continue;
             }
-            let Ok(description) = postcard::from_bytes::<ServiceDescription>(&bytes) else {
+            let Ok(announced) = postcard::from_bytes::<AnnouncedService>(&bytes) else {
                 continue;
             };
-            services.insert(description.service_hash, description);
+            services.push(announced);
         }
 
         services

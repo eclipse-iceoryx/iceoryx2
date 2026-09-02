@@ -15,7 +15,8 @@
 #![warn(clippy::std_instead_of_core)]
 
 use alloc::rc::Rc;
-use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 
 use crate::backend::session::Session;
 
@@ -62,13 +63,17 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
 
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&mut self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(
+        &mut self,
+        gateway_id: GatewayId,
+        update: Announcement<'_>,
+    ) -> Result<(), Self::AnnouncementError> {
         match update {
-            DiscoveryUpdateRef::Added(description) => self
+            Announcement::Added(description) => self
                 .session
-                .announce_added(description)
+                .announce_added(gateway_id, description)
                 .map_err(AnnouncementError::AnnounceAdded),
-            DiscoveryUpdateRef::Removed(service_hash) => self
+            Announcement::Removed(service_hash) => self
                 .session
                 .announce_removed(service_hash)
                 .map_err(AnnouncementError::AnnounceRemoved),
@@ -80,15 +85,9 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         self.session.discover();
-        let (added, removed) = self.session.pending_discoveries();
 
-        for description in added {
-            process_discovery(DiscoveryUpdate::Added(description))
-                .map_err(|_| DiscoveryError::Processing)?;
-        }
-        for service_hash in removed {
-            process_discovery(DiscoveryUpdate::Removed(service_hash))
-                .map_err(|_| DiscoveryError::Processing)?;
+        for update in self.session.pending_discoveries() {
+            process_discovery(update).map_err(|_| DiscoveryError::Processing)?;
         }
 
         Ok(())
