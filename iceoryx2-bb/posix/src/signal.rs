@@ -400,9 +400,11 @@ impl SignalHandler {
         {
             let _sighandle = Self::instance();
             LAST_SIGNAL.store(posix::MAX_SIGNAL_VALUE, Ordering::Relaxed);
-
-            call();
         }
+
+        // `call()` must run outside the lock: it may raise a signal whose
+        // handler re-locks this mutex (iox2 #1458).
+        call();
 
         match LAST_SIGNAL.load(Ordering::Relaxed) {
             posix::MAX_SIGNAL_VALUE => None,
