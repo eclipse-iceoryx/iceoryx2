@@ -65,13 +65,13 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
 
     fn announce(
         &mut self,
-        gateway_id: GatewayId,
+        own_id: GatewayId,
         update: Announcement<'_>,
     ) -> Result<(), Self::AnnouncementError> {
         match update {
             Announcement::Added(description) => self
                 .session
-                .announce_added(gateway_id, description)
+                .announce_added(own_id, description)
                 .map_err(AnnouncementError::AnnounceAdded),
             Announcement::Removed(service_hash) => self
                 .session
@@ -82,7 +82,7 @@ impl iceoryx2_gateway_backend::traits::Discovery for Discovery {
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
-        _gateway: GatewayId,
+        _own_id: GatewayId,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         self.session.discover();

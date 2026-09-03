@@ -90,7 +90,7 @@ use crate::types::identity::GatewayId;
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&mut self, gateway_id: GatewayId, announcement: Announcement<'_>)
+///     fn announce(&mut self, own_id: GatewayId, announcement: Announcement<'_>)
 ///         -> Result<(), Self::AnnouncementError> {
 ///         // Make the described service discoverable over the backend,
 ///         // attributed to the announcing gateway
@@ -99,7 +99,7 @@ use crate::types::identity::GatewayId;
 ///
 ///     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
 ///         &mut self,
-///         gateway_id: GatewayId,
+///         own_id: GatewayId,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
@@ -125,13 +125,13 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `gateway_id` - The [`GatewayId`] of the gateway making the
-    ///   announcement
+    /// * `own_id` - The [`GatewayId`] of the gateway making the
+    ///   announcement.
     /// * `announcement` - The [`Announcement`] to announce over the
     ///   [`crate::traits::Backend`].
     fn announce(
         &mut self,
-        gateway_id: GatewayId,
+        own_id: GatewayId,
         announcement: Announcement<'_>,
     ) -> Result<(), Self::AnnouncementError>;
 
@@ -148,12 +148,13 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `gateway_id` - The [`GatewayId`] of the gateway
+    /// * `own_id` - The [`GatewayId`] of the gateway discovering remote
+    ///   services.
     /// * `process_discovery` - Callback provided by the caller to process
     ///   [`DiscoveryUpdate`]s received over the [`crate::traits::Backend`].
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
-        gateway_id: GatewayId,
+        own_id: GatewayId,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;
 }
