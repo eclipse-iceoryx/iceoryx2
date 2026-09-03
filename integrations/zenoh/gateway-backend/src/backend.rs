@@ -16,6 +16,7 @@ use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_gateway_backend::traits::{
     Backend, BackendBuilder, Identity, Mapping, Passthrough, ReactiveBackendBuilder, Translator,
 };
+use iceoryx2_gateway_backend::types::identity::BackendId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 use iceoryx2_gateway_backend::types::wake::WakeHandle;
 use iceoryx2_log::{fail, trace};
@@ -86,6 +87,10 @@ impl<
 
     fn builder(config: &Self::Config) -> Self::Builder<'_> {
         Builder::new(config)
+    }
+
+    fn id(&self) -> BackendId {
+        BackendId::new(self.session.zid().to_le_bytes())
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {

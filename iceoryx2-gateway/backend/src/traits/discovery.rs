@@ -12,7 +12,8 @@
 
 use core::error::Error;
 
-use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use crate::types::discovery::{Announcement, DiscoveryUpdate};
+use crate::types::identity::GatewayId;
 
 /// Service discovery interface for discoverying and announcing
 /// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
@@ -33,6 +34,7 @@ use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 ///
 /// ```no_run
 /// use iceoryx2_gateway_backend::traits::Discovery;
+/// use iceoryx2_gateway_backend::types::identity::GatewayId;
 ///
 /// #[derive(Debug)]
 /// struct MyDiscoveryError;
@@ -43,8 +45,11 @@ use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 /// }
 /// impl core::error::Error for MyDiscoveryError {}
 ///
-/// fn list_services<DiscoveryError, ProcessingError>(discovery: &mut impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
-///     discovery.discover(|event| -> Result<(), MyDiscoveryError> {
+/// fn list_services<DiscoveryError, ProcessingError>(
+///     gateway_id: GatewayId,
+///     discovery: &mut impl Discovery<DiscoveryError = DiscoveryError>,
+/// ) -> Result<(), DiscoveryError> {
+///     discovery.discover(gateway_id, |event| -> Result<(), MyDiscoveryError> {
 ///         println!("Discovery event: {:?}", event);
 ///         Ok(())
 ///     })?;
@@ -56,7 +61,8 @@ use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 ///
 /// ```no_run
 /// use iceoryx2_gateway_backend::traits::Discovery;
-/// use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+/// use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, Announcement};
+/// use iceoryx2_gateway_backend::types::identity::GatewayId;
 ///
 /// struct MyDiscovery {
 ///     // Discovery state
@@ -84,14 +90,16 @@ use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&mut self, update: DiscoveryUpdateRef<'_>)
+///     fn announce(&mut self, own_id: GatewayId, announcement: Announcement<'_>)
 ///         -> Result<(), Self::AnnouncementError> {
-///         // Make the described service discoverable over the backend
+///         // Make the described service discoverable over the backend,
+///         // attributed to the announcing gateway
 ///         Ok(())
 ///     }
 ///
 ///     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
 ///         &mut self,
+///         own_id: GatewayId,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
@@ -117,25 +125,36 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `update` - The [`DiscoveryUpdateRef`] to announce over the
+    /// * `own_id` - The [`GatewayId`] of the gateway making the
+    ///   announcement.
+    /// * `announcement` - The [`Announcement`] to announce over the
     ///   [`crate::traits::Backend`].
-    fn announce(&mut self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError>;
+    fn announce(
+        &mut self,
+        own_id: GatewayId,
+        announcement: Announcement<'_>,
+    ) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers services available remotely and processes each one with the
     /// provided callback.
     ///
     /// This method queries the backend's communication mechanism for all
     /// available [`Service`](iceoryx2::service::Service)s, then invokes
-    /// `process_discovery` for [`DiscoveryUpdate`]s.
+    /// `process_discovery` for [`DiscoveryUpdate`]s. Each update is
+    /// attributed to the remote gateway it originates from; a service
+    /// offered by several gateways yields one update per gateway.
     ///
     /// Discovery continues until all services are processed or an error occurs.
     ///
     /// # Parameters
     ///
+    /// * `own_id` - The [`GatewayId`] of the gateway discovering remote
+    ///   services.
     /// * `process_discovery` - Callback provided by the caller to process
     ///   [`DiscoveryUpdate`]s received over the [`crate::traits::Backend`].
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;
 }

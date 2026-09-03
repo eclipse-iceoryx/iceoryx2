@@ -19,13 +19,14 @@ use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_gateway_backend::traits::{Mapping, PayloadLayout, Translation, Translator};
-use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::PatternDescription;
 use iceoryx2_log::{fail, warn};
 
 use crate::config::{TopicName, TypeName};
 use crate::mapping::TopicDescription;
-use crate::rcl::RclNode;
+use crate::rcl::{self, RclNode};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
@@ -102,7 +103,7 @@ impl<
         topic: &TopicName,
         type_name: &TypeName,
     ) -> Result<TopicDescription, DiscoveryError> {
-        let origin = "Discovery::describe_remote";
+        let origin = "Discovery::topic_description";
 
         let profiles = fail!(from origin,
             when self.node.publisher_qos_profiles(&topic.into()),
@@ -123,12 +124,41 @@ impl<
         })
     }
 
+    /// Bridges the topics that have appeared on the graph since the last run.
+    ///
+    /// Topics that do not get processed successfully are remembered and not
+    /// retried in later runs until removed from the graph. After removal,
+    /// discovery logic is retried for the new instance of the topic.
+    fn discover_additions<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &mut self,
+        own_id: GatewayId,
+        graph: &HashMap<TopicName, TypeName>,
+        process_discovery: &mut F,
+    ) {
+        for (topic, type_name) in graph {
+            if self.state.contains_key(topic) {
+                continue;
+            }
+
+            let state = match self.on_discovered(own_id, topic, type_name, process_discovery) {
+                Ok(state) => state,
+                Err(error) => {
+                    warn!("Topic '{}' will not be bridged: {}", topic.as_str(), error);
+                    TopicState::Failed
+                }
+            };
+
+            self.state.insert(topic.clone(), state);
+        }
+    }
+
     /// Handles a topic that has become live.
     ///
     /// Returns the state to track the topic under, or `Err` if querying its
     /// QoS or running `process_discovery` failed.
     fn on_discovered<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &mut self,
+        &self,
+        own_id: GatewayId,
         topic: &TopicName,
         type_name: &TypeName,
         process_discovery: &mut F,
@@ -150,29 +180,16 @@ impl<
             "Translator failed to create translation for topic '{}'",
             topic.as_str()
         );
-        if let Translation::Transcode { payload_layout, .. } = translation
-            && let PatternDescription::PublishSubscribe(pattern_description) =
-                &mut service_description.pattern
-        {
-            match payload_layout {
-                PayloadLayout::FixedSize(layout) => {
-                    pattern_description.payload.variant = TypeVariant::FixedSize;
-                    pattern_description.payload.size = layout.size();
-                    pattern_description.payload.alignment = layout.align();
-                }
-                PayloadLayout::Dynamic { element } => {
-                    pattern_description.payload.variant = TypeVariant::Dynamic;
-                    pattern_description.payload.size = element.size();
-                    pattern_description.payload.alignment = element.align();
-                }
-            }
-        }
+
+        // TODO: Modifying payload information in a ServiceDescription is
+        //       awkward. API needs revising.
+        apply_payload_layout(&mut service_description.pattern, &translation);
 
         // Run discovery logic provided by the caller for the service discovered
         // as added.
         let service_hash = service_description.service_hash;
         fail!(from origin,
-            when process_discovery(DiscoveryUpdate::Added(service_description)),
+            when process_discovery(DiscoveryUpdate::Added(own_id, service_description)),
             with DiscoveryError::Processing,
             "Failed to process discovery 'Added' event for topic '{}'",
             topic.as_str()
@@ -181,12 +198,43 @@ impl<
         Ok(TopicState::Bridged(service_hash))
     }
 
+    /// Withdraws the topics that have left the graph since the last run.
+    ///
+    /// The departed set is taken before the loop so that no borrow of the
+    /// tracked state is held while `process_discovery` runs.
+    fn discover_removals<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &mut self,
+        own_id: GatewayId,
+        graph: &HashMap<TopicName, TypeName>,
+        process_discovery: &mut F,
+    ) -> Result<(), DiscoveryError> {
+        let departed: Vec<(TopicName, TopicState)> = self
+            .state
+            .iter()
+            .filter(|(topic, _)| !graph.contains_key(topic))
+            .map(|(topic, state)| (topic.clone(), *state))
+            .collect();
+
+        for (topic, state) in departed {
+            if let TopicState::Bridged(service_hash) = state {
+                self.on_removed(own_id, &topic, service_hash, process_discovery)?;
+            }
+
+            // Forget the verdict so the topic is judged again if it
+            // is discovered again.
+            self.state.remove(&topic);
+        }
+
+        Ok(())
+    }
+
     /// Handles a previously bridged topic that is no longer live.
     ///
     /// Returns `Ok` when the removal was processed, or `Err` if
     /// `process_discovery` failed.
     fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &mut self,
+        &self,
+        own_id: GatewayId,
         topic: &TopicName,
         service_hash: ServiceHash,
         process_discovery: &mut F,
@@ -196,78 +244,58 @@ impl<
         // Run discovery logic provided by the caller for the service discovered
         // as removed.
         fail!(from origin,
-            when process_discovery(DiscoveryUpdate::Removed(service_hash)),
+            when process_discovery(DiscoveryUpdate::Removed(own_id, service_hash)),
             with DiscoveryError::Processing,
             "Failed to process discovery 'Removed' event for topic '{}'",
             topic.as_str()
         );
 
-        // Stop tracking the service as discovered.
-        self.state.remove(topic);
-
         Ok(())
     }
+}
 
-    /// Bridges the topics that have appeared on the graph since the last run.
-    ///
-    /// Topics that do not get processed successfully are remembered and not
-    /// retried in later runs until removed from the graph. After removal,
-    /// discovery logic is retried for the new instance of the topic.
-    fn discover_additions<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &mut self,
-        live: &[(TopicName, TypeName)],
-        process_discovery: &mut F,
-    ) {
-        for (topic, type_name) in live {
-            if self.state.contains_key(topic) {
-                continue;
-            }
+/// Overrides the payload layout of a transcoded publish-subscribe service
+/// with the layout the translator produces.
+fn apply_payload_layout<T>(pattern: &mut PatternDescription, translation: &Translation<T>) {
+    let Translation::Transcode { payload_layout, .. } = translation else {
+        return;
+    };
+    let PatternDescription::PublishSubscribe(pattern_description) = pattern else {
+        return;
+    };
 
-            let state = match self.on_discovered(topic, type_name, process_discovery) {
-                Ok(state) => state,
-                Err(error) => {
-                    warn!("Topic '{}' will not be bridged: {}", topic.as_str(), error);
-                    TopicState::Failed
-                }
-            };
-
-            self.state.insert(topic.clone(), state);
+    match payload_layout {
+        PayloadLayout::FixedSize(layout) => {
+            pattern_description.payload.variant = TypeVariant::FixedSize;
+            pattern_description.payload.size = layout.size();
+            pattern_description.payload.alignment = layout.align();
+        }
+        PayloadLayout::Dynamic { element } => {
+            pattern_description.payload.variant = TypeVariant::Dynamic;
+            pattern_description.payload.size = element.size();
+            pattern_description.payload.alignment = element.align();
         }
     }
+}
 
-    /// Withdraws the topics that have left the graph since the last run.
-    ///
-    /// The departed set is taken before the loop so that no borrow of the
-    /// tracked state is held while `process_discovery` runs.
-    fn discover_removals<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &mut self,
-        live: &[(TopicName, TypeName)],
-        process_discovery: &mut F,
-    ) -> Result<(), DiscoveryError> {
-        let is_live = |topic: &TopicName| live.iter().any(|(name, _)| name == topic);
-
-        let departed: Vec<(TopicName, TopicState)> = self
-            .state
-            .iter()
-            .filter(|(topic, _)| !is_live(topic))
-            .map(|(topic, state)| (topic.clone(), *state))
-            .collect();
-
-        for (topic, state) in departed {
-            match state {
-                TopicState::Bridged(service_hash) => {
-                    self.on_removed(&topic, service_hash, process_discovery)?
-                }
-                // Forget the verdict so the topic is judged again if it
-                // is discovered again.
-                TopicState::Unmapped | TopicState::Failed => {
-                    self.state.remove(&topic);
-                }
+/// Parses the raw ROS graph returning a map from live topics to their types.
+fn parse(graph: Vec<(rcl::TopicName, Vec<rcl::TypeName>)>) -> HashMap<TopicName, TypeName> {
+    graph
+        .into_iter()
+        .filter_map(|(name, mut types)| {
+            if types.len() > 1 {
+                warn!(
+                    "Topic '{}' will not be bridged: multiple types found on the topic {:?}",
+                    name.as_str(),
+                    types
+                );
+                return None;
             }
-        }
+            let type_name = types.pop()?;
 
-        Ok(())
-    }
+            Some((TopicName::from(name), TypeName::from(type_name)))
+        })
+        .collect()
 }
 
 impl<
@@ -279,7 +307,11 @@ impl<
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&mut self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(
+        &mut self,
+        _own_id: GatewayId,
+        _announcement: Announcement<'_>,
+    ) -> Result<(), Self::AnnouncementError> {
         // Nothing to announce explicitly. The gateway creates a relay for
         // every service it discovers on iceoryx2, and relay creation
         // registers the ROS 2 endpoints, which DDS discovery (SEDP) broadcasts
@@ -289,6 +321,7 @@ impl<
 
     fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &mut self,
+        own_id: GatewayId,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let origin = "Discovery::discover";
@@ -299,26 +332,9 @@ impl<
             "Failed to query the ROS 2 graph"
         );
 
-        // Topics with multiple types cannot be bridged safely and are
-        // skipped.
-        let live: Vec<(TopicName, TypeName)> = graph
-            .into_iter()
-            .filter_map(|(name, mut types)| {
-                if types.len() > 1 {
-                    warn!(
-                        "Topic '{}' will not be bridged: multiple types found on the topic {:?}",
-                        name.as_str(),
-                        types
-                    );
-                    return None;
-                }
-                let type_name = types.pop()?;
+        let graph = parse(graph);
 
-                Some((TopicName::from(name), TypeName::from(type_name)))
-            })
-            .collect();
-
-        self.discover_additions(&live, &mut process_discovery);
-        self.discover_removals(&live, &mut process_discovery)
+        self.discover_additions(own_id, &graph, &mut process_discovery);
+        self.discover_removals(own_id, &graph, &mut process_discovery)
     }
 }

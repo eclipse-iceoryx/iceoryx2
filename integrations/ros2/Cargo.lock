@@ -770,6 +770,7 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
+ "postcard",
  "serde",
 ]
 
@@ -777,6 +778,7 @@ dependencies = [
 name = "iceoryx2-integrations-ros2-gateway-backend"
 version = "0.9.999"
 dependencies = [
+ "getrandom",
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-testing",

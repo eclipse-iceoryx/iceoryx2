@@ -12,36 +12,28 @@
 
 use iceoryx2::service::service_hash::ServiceHash;
 
+use crate::types::identity::GatewayId;
 use crate::types::service_description::ServiceDescription;
 
-/// A change to the set of services offered on one side of the gateway.
+/// A change to the set of services offered by one remote gateway.
 ///
-/// Owning variant.
+/// Several gateways may offer the same service. Each reports its own
+/// additions and removals.
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum DiscoveryUpdate {
-    /// A service became available; carries its description.
-    Added(ServiceDescription),
-    /// A service disappeared; carries its identity.
-    Removed(ServiceHash),
+    /// The gateway started offering a service.
+    Added(GatewayId, ServiceDescription),
+    /// The gateway stopped offering a service.
+    Removed(GatewayId, ServiceHash),
 }
 
-/// A change to the set of services offered on one side of the gateway.
-///
-/// Non-owning variant.
+/// A change to the set of services offered by the local gateway, to be
+/// announced over the backend.
 #[derive(Debug, Clone, Copy)]
-pub enum DiscoveryUpdateRef<'a> {
-    /// A service became available; carries its description.
+pub enum Announcement<'a> {
+    /// A service became available.
     Added(&'a ServiceDescription),
-    /// A service disappeared; carries its identity.
+    /// A service disappeared.
     Removed(&'a ServiceHash),
-}
-
-impl<'a> From<&'a DiscoveryUpdate> for DiscoveryUpdateRef<'a> {
-    fn from(update: &'a DiscoveryUpdate) -> Self {
-        match update {
-            DiscoveryUpdate::Added(description) => DiscoveryUpdateRef::Added(description),
-            DiscoveryUpdate::Removed(hash) => DiscoveryUpdateRef::Removed(hash),
-        }
-    }
 }

@@ -17,6 +17,7 @@ use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_gateway_backend::traits::{
     Backend, BackendBuilder, Mapping, Passthrough, ReactiveBackendBuilder, Translator,
 };
+use iceoryx2_gateway_backend::types::identity::{BACKEND_ID_LENGTH, BackendId};
 use iceoryx2_gateway_backend::types::wake::WakeHandle;
 use iceoryx2_log::fail;
 
@@ -33,6 +34,7 @@ use crate::{
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
     Node,
+    BackendId,
     TypeSupport,
 }
 
@@ -51,6 +53,7 @@ pub struct Ros2Backend<
     T: Translator<EndpointDescription = TopicDescription> = Passthrough<TopicDescription>,
 > {
     node: Rc<RclNode>,
+    id: BackendId,
     discovery: Discovery<S, M, T>,
     mapping: Rc<M>,
     translator: Rc<T>,
@@ -88,6 +91,10 @@ impl<
         Builder::new(config)
     }
 
+    fn id(&self) -> BackendId {
+        self.id
+    }
+
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
         Factory::new(
             Rc::clone(&self.node),
@@ -104,6 +111,13 @@ impl<
     fn mapping(&self) -> &Self::Mapping {
         &self.mapping
     }
+}
+
+/// Generates a random identity for this backend instance.
+fn generate_backend_id() -> Result<BackendId, getrandom::Error> {
+    let mut bytes = [0u8; BACKEND_ID_LENGTH];
+    getrandom::fill(&mut bytes)?;
+    Ok(BackendId::new(bytes))
 }
 
 /// Builder for [`Ros2Backend`].
@@ -167,6 +181,12 @@ impl<
             "Failed to create ROS 2 node"
         ));
 
+        let id = fail!(from origin,
+            when generate_backend_id(),
+            with CreationError::BackendId,
+            "Failed to generate random backend id"
+        );
+
         // Resolve the requested typesupport libraries during initialization.
         // Typesupport not loaded here will be lazily loaded.
         for type_name in &self.config.preload_types {
@@ -187,6 +207,7 @@ impl<
 
         Ok(Ros2Backend {
             node,
+            id,
             discovery,
             mapping,
             translator,

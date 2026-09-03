@@ -10,34 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use alloc::collections::BTreeMap;
+use alloc::collections::{BTreeMap, BTreeSet};
 
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
 
-/// Side of the system that a discovery event refers to.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum Origin {
-    /// Service was discovered (or its absence detected) on the local iceoryx system.
-    Local,
-    /// Service was discovered (or its absence detected) over the backend.
-    Remote,
-}
-
+// A service offered locally.
 #[derive(Debug)]
-struct OfferedService {
+struct LocalService {
     description: ServiceDescription,
     last_seen: u64,
 }
 
-/// The set of services offered by one side, keyed by hash.
+/// The set of services offered locally.
 #[derive(Debug, Default)]
-pub(crate) struct OfferedServices {
-    offered: BTreeMap<ServiceHash, OfferedService>,
+pub(crate) struct LocalServices {
+    offered: BTreeMap<ServiceHash, LocalService>,
     epoch: u64,
 }
 
-impl OfferedServices {
+impl LocalServices {
     /// Advances and returns the epoch, beginning a new update session.
     fn next_epoch(&mut self) -> u64 {
         self.epoch = self.epoch.wrapping_add(1);
@@ -49,7 +42,7 @@ impl OfferedServices {
     fn insert(&mut self, description: ServiceDescription, epoch: u64) {
         self.offered.insert(
             description.service_hash,
-            OfferedService {
+            LocalService {
                 description,
                 last_seen: epoch,
             },
@@ -61,19 +54,27 @@ impl OfferedServices {
         self.offered.remove(hash).map(|o| o.description)
     }
 
-    fn contains(&self, hash: &ServiceHash) -> bool {
+    /// Whether `hash` is offered locally.
+    pub(crate) fn contains(&self, hash: &ServiceHash) -> bool {
         self.offered.contains_key(hash)
     }
 
-    fn iter(&self) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription)> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription)> {
         self.offered
             .iter()
-            .map(|(hash, offered_service)| (hash, &offered_service.description))
+            .map(|(hash, service)| (hash, &service.description))
     }
 
-    /// Reconciles the offered services, taking an external collection as the
-    /// target.
-    fn reconcile<E>(
+    /// Returns a handle for applying delta updates. Advances the epoch,
+    /// beginning a new update session.
+    pub(crate) fn delta_update(&mut self) -> DeltaUpdate<'_> {
+        let epoch = self.next_epoch();
+        DeltaUpdate { local: self, epoch }
+    }
+
+    /// Forces the offered services to match an external target set, calling
+    /// the provided callbacks on addition or removal.
+    pub(crate) fn force_update<E>(
         &mut self,
         target: impl Iterator<Item = ServiceDescription>,
         mut on_added: impl FnMut(&ServiceDescription) -> Result<(), E>,
@@ -83,8 +84,8 @@ impl OfferedServices {
 
         for description in target {
             let hash = description.service_hash;
-            if let Some(offered_service) = self.offered.get_mut(&hash) {
-                offered_service.last_seen = epoch;
+            if let Some(service) = self.offered.get_mut(&hash) {
+                service.last_seen = epoch;
             } else {
                 on_added(&description)?;
                 self.insert(description, epoch);
@@ -92,12 +93,12 @@ impl OfferedServices {
         }
 
         let mut result = Ok(());
-        self.offered.retain(|_, offered_service| {
-            if offered_service.last_seen == epoch {
+        self.offered.retain(|_, service| {
+            if service.last_seen == epoch {
                 true
             } else {
                 if result.is_ok() {
-                    result = on_removed(&offered_service.description);
+                    result = on_removed(&service.description);
                 }
                 false
             }
@@ -106,10 +107,65 @@ impl OfferedServices {
     }
 }
 
+/// A remotely offered service grouped together with the remote gateways
+/// that offer it.
+#[derive(Debug)]
+struct RemoteService {
+    description: ServiceDescription,
+    gateways: BTreeSet<GatewayId>,
+}
+
+/// The set of services offered over the backend.
+#[derive(Debug, Default)]
+pub(crate) struct RemoteServices {
+    offered: BTreeMap<ServiceHash, RemoteService>,
+}
+
+impl RemoteServices {
+    /// Records `gateway` as offering `description`. The description of the
+    /// first announcing gateway is kept.
+    pub(crate) fn add(&mut self, gateway: GatewayId, description: ServiceDescription) {
+        let hash = description.service_hash;
+        self.offered
+            .entry(hash)
+            .or_insert_with(|| RemoteService {
+                description,
+                gateways: BTreeSet::new(),
+            })
+            .gateways
+            .insert(gateway);
+    }
+
+    /// Removes `gateway` from the gateways offering `hash`. Returns the
+    /// [`ServiceDescription`] once no gateway offers the service anymore.
+    pub(crate) fn remove(
+        &mut self,
+        gateway: &GatewayId,
+        hash: &ServiceHash,
+    ) -> Option<ServiceDescription> {
+        let service = self.offered.get_mut(hash)?;
+        service.gateways.remove(gateway);
+        if !service.gateways.is_empty() {
+            return None;
+        }
+        self.offered.remove(hash).map(|service| service.description)
+    }
+
+    fn contains(&self, hash: &ServiceHash) -> bool {
+        self.offered.contains_key(hash)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription)> {
+        self.offered
+            .iter()
+            .map(|(hash, service)| (hash, &service.description))
+    }
+}
+
 /// A borrowed, point-in-time view of all offered services.
 pub(crate) struct Snapshot<'a> {
-    local: &'a OfferedServices,
-    remote: &'a OfferedServices,
+    local: &'a LocalServices,
+    remote: &'a RemoteServices,
 }
 
 impl<'a> Snapshot<'a> {
@@ -130,82 +186,44 @@ impl<'a> Snapshot<'a> {
     }
 }
 
-/// Handle for applying incremental (delta) updates to one side's offered
+/// Handle for applying incremental (delta) updates to the locally offered
 /// services within a single epoch.
 pub(crate) struct DeltaUpdate<'a> {
-    offered_services: &'a mut OfferedServices,
+    local: &'a mut LocalServices,
     epoch: u64,
 }
 
 impl DeltaUpdate<'_> {
     /// Records `description` as offered, stamped with this handle's epoch.
     pub(crate) fn set_offered(&mut self, description: ServiceDescription) {
-        self.offered_services.insert(description, self.epoch);
+        self.local.insert(description, self.epoch);
     }
 
     /// Marks `hash` as no longer offered, returning its [`ServiceDescription`]
     /// if it was offered.
     pub(crate) fn set_not_offered(&mut self, hash: &ServiceHash) -> Option<ServiceDescription> {
-        self.offered_services.remove(hash)
+        self.local.remove(hash)
     }
 }
 
 /// The services the gateway has discovered, both locally and remotely.
 #[derive(Debug, Default)]
 pub(crate) struct DiscoveryState {
-    local: OfferedServices,
-    remote: OfferedServices,
+    local: LocalServices,
+    remote: RemoteServices,
 }
 
 impl DiscoveryState {
-    /// Returns a handle for applying delta updates to `origin`'s offered
-    /// services. Advances that side's epoch, beginning a new update session.
-    pub(crate) fn delta_update(&mut self, origin: Origin) -> DeltaUpdate<'_> {
-        let offered_services = match origin {
-            Origin::Local => &mut self.local,
-            Origin::Remote => &mut self.remote,
-        };
-        let epoch = offered_services.next_epoch();
-
-        DeltaUpdate {
-            offered_services,
-            epoch,
-        }
+    pub(crate) fn local(&self) -> &LocalServices {
+        &self.local
     }
 
-    /// Forces `origin`'s offerings to match an external target set, calling
-    /// the provided callbacks on addition or removal.
-    pub(crate) fn force_update<E>(
-        &mut self,
-        origin: Origin,
-        target: impl Iterator<Item = ServiceDescription>,
-        on_added: impl FnMut(&ServiceDescription) -> Result<(), E>,
-        on_removed: impl FnMut(&ServiceDescription) -> Result<(), E>,
-    ) -> Result<(), E> {
-        match origin {
-            Origin::Local => self.local.reconcile(target, on_added, on_removed),
-            Origin::Remote => self.remote.reconcile(target, on_added, on_removed),
-        }
+    pub(crate) fn local_mut(&mut self) -> &mut LocalServices {
+        &mut self.local
     }
 
-    /// Whether `origin`'s side currently offers `hash`.
-    pub(crate) fn is_offered(&self, origin: Origin, hash: &ServiceHash) -> bool {
-        self.side(origin).contains(hash)
-    }
-
-    /// The services offered by `origin`'s side.
-    pub(crate) fn services(
-        &self,
-        origin: Origin,
-    ) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription)> {
-        self.side(origin).iter()
-    }
-
-    fn side(&self, origin: Origin) -> &OfferedServices {
-        match origin {
-            Origin::Local => &self.local,
-            Origin::Remote => &self.remote,
-        }
+    pub(crate) fn remote_mut(&mut self) -> &mut RemoteServices {
+        &mut self.remote
     }
 
     /// A view over all services offered by either side.

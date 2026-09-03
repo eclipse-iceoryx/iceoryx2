@@ -15,10 +15,6 @@ use alloc::format;
 use iceoryx2::node::Node;
 use iceoryx2::prelude::ServiceName;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
-use iceoryx2_gateway_backend::traits::Discovery;
-use iceoryx2_gateway_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
-use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
-use iceoryx2_log::debug;
 use iceoryx2_log::fail;
 use iceoryx2_services_discovery::service_discovery::DiscoveryEvent;
 
@@ -50,17 +46,6 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum AnnouncementError {}
-
-impl core::fmt::Display for AnnouncementError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AnnouncementError::{self:?}")
-    }
-}
-
-impl core::error::Error for AnnouncementError {}
-
 #[derive(Debug)]
 pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
 
@@ -88,20 +73,13 @@ impl<S: Service> DiscoverySubscriber<S> {
     }
 }
 
-impl<S: Service> Discovery for DiscoverySubscriber<S> {
-    type DiscoveryError = DiscoveryError;
-    type AnnouncementError = AnnouncementError;
-
-    fn announce(&mut self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
-        // Nothing to do - local announcement handled by creating `iceoryx2`
-        // [`Service`](iceoryx2::service::Service)s.
-        Ok(())
-    }
-
-    fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
-        &mut self,
+impl<S: Service> DiscoverySubscriber<S> {
+    /// Drains the discovery service and passes each event to
+    /// `process_discovery`.
+    pub(crate) fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
+        &self,
         mut process_discovery: F,
-    ) -> Result<(), Self::DiscoveryError> {
+    ) -> Result<(), DiscoveryError> {
         let subscriber = &self.0;
 
         loop {
@@ -114,34 +92,13 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
             let Some(sample) = sample else {
                 return Ok(());
             };
-            let Some(update) = to_discovery_update(sample.payload()) else {
-                continue;
-            };
 
             fail!(
                 from self,
-                when process_discovery(update),
+                when process_discovery(sample.payload()),
                 with DiscoveryError::DiscoveryProcessing,
                 "Failed to process discovery event"
             );
         }
-    }
-}
-
-// TODO: Consider merging these structs
-/// Converts a discovery-service event into a gateway [`DiscoveryUpdate`].
-fn to_discovery_update(event: &DiscoveryEvent) -> Option<DiscoveryUpdate> {
-    match event {
-        DiscoveryEvent::Added(static_config) => match ServiceDescription::try_from(static_config) {
-            Ok(description) => Some(DiscoveryUpdate::Added(description)),
-            Err(_) => {
-                debug!(
-                    "Skipping service with unsupported messaging pattern: {}",
-                    static_config.name()
-                );
-                None
-            }
-        },
-        DiscoveryEvent::Removed(hash) => Some(DiscoveryUpdate::Removed(*hash)),
     }
 }
