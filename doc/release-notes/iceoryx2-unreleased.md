@@ -69,6 +69,7 @@
 * [#1924](https://github.com/eclipse-iceoryx/iceoryx2/issues/1924) Ensure discovery service node resources are removed during shutdown.
 * [#1940](https://github.com/eclipse-iceoryx/iceoryx2/issues/1940) Fix private rustdoc link diagnostics.
 * [#1960](https://github.com/eclipse-iceoryx/iceoryx2/issues/1960) Validate type descriptions and payload layouts received over gateway backends
+* [#1964](https://github.com/eclipse-iceoryx/iceoryx2/issues/1964) Propagate a service over the gateway only when every host offers it with identical settings
 
 ### Refactoring
 

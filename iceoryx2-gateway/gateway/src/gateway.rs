@@ -14,7 +14,8 @@ use core::fmt::Debug;
 
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeState, NodeView};
@@ -26,12 +27,12 @@ use iceoryx2_gateway_backend::traits::{Backend, Discovery, Mapping};
 use iceoryx2_gateway_backend::types::discovery::{Announcement, DiscoveryUpdate};
 use iceoryx2_gateway_backend::types::identity::GatewayId;
 use iceoryx2_gateway_backend::types::service_description::ServiceDescription;
-use iceoryx2_log::{debug, fail, info};
+use iceoryx2_log::{debug, error, fail, info};
 use iceoryx2_services_discovery::service_discovery::DiscoveryEvent;
 
 use crate::bridge::Bridges;
 use crate::discovery::LocalDiscoveryStrategy;
-use crate::discovery::state::DiscoveryState;
+use crate::discovery::state::{Conflict, DiscoveryState};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -100,6 +101,7 @@ pub struct Gateway<S: Service, B: Backend<S> + Debug> {
     bridges: Bridges<S, B>,
     discovery_strategy: LocalDiscoveryStrategy<S>,
     announced: BTreeMap<ServiceHash, ServiceName>,
+    reported_conflicts: BTreeSet<ServiceHash>,
 }
 
 impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
@@ -122,14 +124,16 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         discovery_strategy: LocalDiscoveryStrategy<S>,
     ) -> Self {
         let gateway_id = GatewayId::new(*node.id(), backend.id());
+        let discovery_state = DiscoveryState::new(node.config());
         Self {
             node,
             backend,
             gateway_id,
-            discovery_state: DiscoveryState::default(),
+            discovery_state,
             bridges: Bridges::default(),
             discovery_strategy,
             announced: BTreeMap::new(),
+            reported_conflicts: BTreeSet::new(),
         }
     }
 
@@ -173,17 +177,17 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
 
         let backend = &mut self.backend;
         let gateway_id = self.gateway_id;
-        let remote_discoveries = self.discovery_state.remote_mut();
+        let mut update = self.discovery_state.remote_mut().delta_update();
 
         fail!(
             from origin,
-            when backend.discovery().discover(gateway_id, |update| {
-                match update {
+            when backend.discovery().discover(gateway_id, |discovered| {
+                match discovered {
                     DiscoveryUpdate::Added(gateway, description) => {
-                        remote_discoveries.add(gateway, description);
+                        update.set_offered(gateway, &description);
                     }
                     DiscoveryUpdate::Removed(gateway, hash) => {
-                        remote_discoveries.remove(&gateway, &hash);
+                        update.set_not_offered(&gateway, &hash);
                     }
                 }
                 Ok::<(), DiscoveryError>(())
@@ -268,19 +272,52 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
                 .filter(|details| is_locally_offered(details, node.id()))
                 .filter_map(|details| ServiceDescription::try_from(&details.static_details).ok())
                 .filter(|description| mapping.remote(description).is_some()),
-            |_| Ok(()),
-            |_| Ok(()),
-        )
+        );
+
+        Ok(())
     }
 
     /// Reconciles the bridges and announcements with the discovery state.
     fn reconcile(&mut self) -> Result<(), DiscoveryError> {
+        self.report_conflicts();
+
         // Removals announced first to minimize window for remote services
         // to communicate with a service no longer offered.
         let removals = self.announce_removals();
         self.reconcile_bridges();
         let additions = self.announce_additions();
         removals.and(additions)
+    }
+
+    /// Reports changes in the set of services whose sources disagree on a
+    /// description. A conflict is reported once when it appears and once
+    /// when it clears.
+    fn report_conflicts(&mut self) {
+        let origin = format!("Gateway({})::report_conflicts", self.node.id());
+
+        let snapshot = self.discovery_state.snapshot();
+        let current: BTreeSet<ServiceHash> = snapshot
+            .conflicts()
+            .map(|conflict| *conflict.hash)
+            .collect();
+
+        let appeared = snapshot
+            .conflicts()
+            .filter(|conflict| !self.reported_conflicts.contains(conflict.hash));
+        for conflict in appeared {
+            report_conflict(&origin, &conflict);
+        }
+
+        let cleared = self.reported_conflicts.difference(&current);
+        for hash in cleared {
+            info!(
+                from origin,
+                "Description conflict resolved for service {}",
+                hash.as_str()
+            );
+        }
+
+        self.reported_conflicts = current;
     }
 
     /// Reconciles the opened bridges with a snapshot of the discovery state.
@@ -291,15 +328,24 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
 
         // Drop bridges to services no longer offered by any side.
         self.bridges.retain(
-            |hash| snapshot.contains(hash),
+            |hash| snapshot.resolves(hash),
             |hash| info!(from log_origin, "Closing bridge: {}", hash.as_str()),
         );
 
         // Open bridges for newly-offered services.
-        for (hash, description) in snapshot.iter() {
-            if self.bridges.contains(hash) {
+        for (hash, description) in snapshot.resolved() {
+            if self.bridges.is_established(hash) {
                 continue;
             }
+            // A failed bridge is not retried unless the service disappears
+            // and reappears.
+            if self.bridges.failed_description(hash) == Some(description) {
+                continue;
+            }
+            // Clear any previous failures that occured with a different
+            // description.
+            self.bridges.clear_failed(hash);
+
             info!(
                 from log_origin,
                 "Opening bridge: {}({})",
@@ -307,9 +353,6 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
                 description.name
             );
 
-            // Bridges that fail to be established are remembered so that subsequent
-            // discovery calls do not waste time retrying. If however the service
-            // disappears then reappears, a retry will occur.
             self.bridges.open(&self.node, &self.backend, description);
         }
     }
@@ -326,6 +369,10 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         let mut result = Ok(());
         for (hash, description) in self.discovery_state.local().iter() {
             if !bridges.is_established(hash) || announced.contains_key(hash) {
+                continue;
+            }
+            // Do not announce services already offered remotely.
+            if self.discovery_state.remote().contains(hash) {
                 continue;
             }
             if let Err(error) = announce_added::<S, B>(node, backend, gateway_id, description) {
@@ -370,8 +417,11 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
         #[cfg(debug_assertions)]
         {
             let snapshot = self.discovery_state.snapshot();
-            let same_count = self.bridges.number_of_tracked_services() == snapshot.iter().count();
-            let all_services_tracked = snapshot.iter().all(|(hash, _)| self.bridges.contains(hash));
+            let same_count =
+                self.bridges.number_of_tracked_services() == snapshot.resolved().count();
+            let all_services_tracked = snapshot.resolved().all(|(hash, _)| {
+                self.bridges.is_established(hash) || self.bridges.failed_description(hash).is_some()
+            });
 
             debug_assert!(
                 same_count && all_services_tracked,
@@ -379,6 +429,32 @@ impl<S: Service, B: Backend<S> + Debug> Gateway<S, B> {
             );
         }
     }
+}
+
+/// Logs a service whose sources disagree on its description.
+fn report_conflict(origin: &str, conflict: &Conflict) {
+    let Some((_, description)) = conflict.remote.iter().next() else {
+        return;
+    };
+    let gateways = conflict
+        .remote
+        .iter()
+        .map(|(gateway, _)| gateway.to_string())
+        .collect::<Vec<String>>()
+        .join(", ");
+    let locally = if conflict.local.is_some() {
+        " and locally"
+    } else {
+        ""
+    };
+    error!(
+        from origin,
+        "Service {} is offered with conflicting descriptions by gateway(s) {}{}. \
+        It is not bridged until the configurations are aligned",
+        description.name,
+        gateways,
+        locally
+    );
 }
 
 /// Broadcasts a service's availability to remote peers over the backend.

@@ -66,6 +66,10 @@ impl core::error::Error for DiscoveryError {}
 // A local service announced to be remotely discoverable.
 #[derive(Debug)]
 struct AnnouncedService {
+    // The service as offered locally.
+    description: ServiceDescription,
+    // The descriptor the service is announced under.
+    descriptor: ServiceDescriptor,
     // A liveliness token which zenoh makes visible to all remotes. Declaring
     // it triggers a `Put` event, dropping it triggers a `Delete` event.
     _token: LivelinessToken,
@@ -105,6 +109,15 @@ impl LocalAnnouncements {
     /// Remove a local service that had been announced from the tracked set.
     fn remove(&mut self, local_hash: &ServiceHash) {
         self.services.remove(local_hash);
+    }
+
+    /// The local description of the service announced under `descriptor`,
+    /// if any.
+    fn announced_under(&self, descriptor: &ServiceDescriptor) -> Option<&ServiceDescription> {
+        self.services
+            .values()
+            .find(|service| service.descriptor == *descriptor)
+            .map(|service| &service.description)
     }
 }
 
@@ -150,12 +163,30 @@ impl RemoteOffers {
         self.gateways.contains_key(remote_descriptor)
     }
 
+    /// Returns true if `gateway` offers the description.
+    fn is_offered_by(&self, remote_descriptor: &ServiceDescriptor, gateway: &GatewayId) -> bool {
+        self.gateways
+            .get(remote_descriptor)
+            .is_some_and(|gateways| gateways.contains(gateway))
+    }
+
     /// The gateways offering the description.
     fn gateways(&self, remote_descriptor: &ServiceDescriptor) -> Vec<GatewayId> {
         self.gateways
             .get(remote_descriptor)
             .map(|gateways| gateways.iter().copied().collect())
             .unwrap_or_default()
+    }
+
+    /// The offered descriptors of the service with `remote_hash`. More than
+    /// one means the service is announced with conflicting descriptions.
+    fn descriptors_of(
+        &self,
+        remote_hash: &ServiceHash,
+    ) -> impl Iterator<Item = &ServiceDescriptor> {
+        self.gateways
+            .keys()
+            .filter(move |descriptor| descriptor.service_hash == *remote_hash)
     }
 }
 
@@ -330,6 +361,8 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         self.local_announcements.insert(
             local_hash,
             AnnouncedService {
+                description: local_description.clone(),
+                descriptor,
                 _token: token,
                 _queryable: queryable,
             },
@@ -467,11 +500,17 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         E: core::error::Error,
         F: FnMut(DiscoveryUpdate) -> Result<(), E>,
     {
-        // Track the discovered description. Request it if not yet known.
+        // Track the discovered service. Request the description if not
+        // already known.
         if !self.remote_descriptions.contains(&remote_descriptor) {
-            let query = self.request_service_description(&remote_descriptor)?;
+            let description = match self.local_announcements.announced_under(&remote_descriptor) {
+                Some(local_description) => RemoteDescription::Resolved(local_description.clone()),
+                None => RemoteDescription::Pending(
+                    self.request_service_description(&remote_descriptor)?,
+                ),
+            };
             self.remote_descriptions
-                .set(remote_descriptor.clone(), RemoteDescription::Pending(query));
+                .set(remote_descriptor.clone(), description);
         }
 
         // Track that the gateway is offering the description.
@@ -527,6 +566,20 @@ impl<S: Service, M: Mapping<EndpointDescription = ServiceDescription>> Discovery
         // offering it.
         if !self.remote_offers.is_offered(&remote_descriptor) {
             self.remote_descriptions.remove(&remote_descriptor);
+        }
+
+        // A gateway that re-announced the service under another description
+        // had its offer replaced when that description was resolved. Its
+        // stale token must not withdraw the new offer.
+        let offer_replaced = self
+            .remote_offers
+            .descriptors_of(&remote_descriptor.service_hash)
+            .any(|descriptor| {
+                self.remote_offers.is_offered_by(descriptor, &gateway)
+                    && self.remote_descriptions.resolved(descriptor).is_some()
+            });
+        if offer_replaced {
+            return Ok(());
         }
 
         // Provide the update to the caller.
@@ -737,8 +790,8 @@ mod tests {
             assert_that!(sut.add(descriptor.clone(), first), eq false);
             assert_that!(sut.add(descriptor.clone(), second), eq true);
 
-            assert_that!(sut.is_offered(&descriptor), eq true);
-            assert_that!(sut.gateways(&descriptor), len 2);
+            assert_that!(sut.is_offered_by(&descriptor, &first), eq true);
+            assert_that!(sut.is_offered_by(&descriptor, &second), eq true);
         }
 
         #[test]
@@ -754,6 +807,24 @@ mod tests {
             assert_that!(sut.remove(&descriptor, &gateway), eq true);
             assert_that!(sut.is_offered(&descriptor), eq false);
             assert_that!(sut.remove(&descriptor, &gateway), eq false);
+        }
+
+        #[test]
+        fn descriptors_of_yields_every_descriptor_of_the_service() {
+            let gateway = gateway_id(1);
+            let (first, second) = differing_descriptions("discovery/two-descriptors");
+            let (other, _) = differing_descriptions("discovery/other-service");
+
+            let mut sut = RemoteOffers::new();
+            sut.add(describe(&first).expect("description is encodable"), gateway);
+            sut.add(
+                describe(&second).expect("description is encodable"),
+                gateway,
+            );
+            sut.add(describe(&other).expect("description is encodable"), gateway);
+
+            assert_that!(sut.descriptors_of(&first.service_hash).count(), eq 2);
+            assert_that!(sut.descriptors_of(&other.service_hash).count(), eq 1);
         }
     }
 

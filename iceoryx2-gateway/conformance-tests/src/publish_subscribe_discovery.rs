@@ -904,4 +904,378 @@ pub mod publish_subscribe_discovery {
         assert_that!(gateway.bridged_services().contains(service_a.service_hash()), eq true);
         assert_that!(gateway.bridged_services().contains(service_b.service_hash()), eq true);
     }
+
+    #[conformance_test]
+    pub fn conflicting_descriptions_prevent_bridging<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A offers the service.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let node_a = NodeBuilder::new()
+            .config(&iceoryx_config_a)
+            .create::<S>()
+            .unwrap();
+        let _service_a = node_a
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *_service_a.service_hash();
+
+        // Host B offers the same service with differing settings.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let _service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(20)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // Each host bridges its own service before learning of the other.
+        gateway_a.discover_over_iceoryx().unwrap();
+        gateway_b.discover_over_iceoryx().unwrap();
+        assert_that!(gateway_a.bridged_services().contains(&service_hash), eq true);
+        assert_that!(gateway_b.bridged_services().contains(&service_hash), eq true);
+
+        // === CONFLICT ===
+        // Each host observes the conflicting offer and closes its bridge.
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                gateway_b.discover_over_backend().unwrap();
+                if gateway_a.bridged_services().is_empty()
+                    && gateway_b.bridged_services().is_empty()
+                {
+                    return Ok(());
+                }
+                Err("Failed to close the bridges of the conflicted service")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn bridging_resumes_when_conflict_clears<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A offers the service.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let node_a = NodeBuilder::new()
+            .config(&iceoryx_config_a)
+            .create::<S>()
+            .unwrap();
+        let _service_a = node_a
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *_service_a.service_hash();
+
+        // Host B offers the same service with differing settings.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(20)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        gateway_a.discover_over_iceoryx().unwrap();
+        gateway_b.discover_over_iceoryx().unwrap();
+
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                gateway_b.discover_over_backend().unwrap();
+                if gateway_a.bridged_services().is_empty()
+                    && gateway_b.bridged_services().is_empty()
+                {
+                    return Ok(());
+                }
+                Err("Failed to close the bridges of the conflicted service")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+
+        // === CONFLICT CLEARS ===
+        // Host B's service is removed. Host A bridges its own service again,
+        // host B mirrors it.
+        drop(service_b);
+        gateway_b.discover_over_iceoryx().unwrap();
+
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                gateway_b.discover_over_backend().unwrap();
+                if gateway_a.bridged_services().contains(&service_hash)
+                    && gateway_b.bridged_services().contains(&service_hash)
+                {
+                    return Ok(());
+                }
+                Err("Failed to bridge the service after the conflict cleared")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn reannouncement_with_changed_description_replaces_the_offer<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
+        const OLD_HISTORY_SIZE: usize = 7;
+        const NEW_HISTORY_SIZE: usize = 13;
+
+        /// The history size of the service as materialized in `config`'s
+        /// iceoryx system, if it exists there.
+        fn history_size_of<S: Service>(
+            service_name: &ServiceName,
+            config: &iceoryx2::config::Config,
+        ) -> Option<usize> {
+            use iceoryx2::service::messaging_pattern::MessagingPattern;
+            use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as Pattern;
+
+            let details =
+                S::details(service_name, config, MessagingPattern::PublishSubscribe).ok()??;
+            match details.static_details.messaging_pattern() {
+                Pattern::PublishSubscribe(config) => Some(config.history_size()),
+                _ => None,
+            }
+        }
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A observes, announcing nothing locally.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
+
+        // Host B offers the service.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(OLD_HISTORY_SIZE)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_b.service_hash();
+        gateway_b.discover_over_iceoryx().unwrap();
+
+        // Host A mirrors the service with the announced settings.
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                if gateway_a.bridged_services().contains(&service_hash)
+                    && history_size_of::<S>(&service_name, &iceoryx_config_a)
+                        == Some(OLD_HISTORY_SIZE)
+                {
+                    return Ok(());
+                }
+                Err("Failed to mirror the service with the announced settings")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+
+        // === REINSTANTIATION ===
+        // Host B recreates the service with different settings.
+        drop(service_b);
+        gateway_b.discover_over_iceoryx().unwrap();
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                if gateway_a.bridged_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to detect remote service removal")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+
+        let _service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(NEW_HISTORY_SIZE)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        gateway_b.discover_over_iceoryx().unwrap();
+
+        // Host A mirrors the recreated service with the new settings.
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                if gateway_a.bridged_services().contains(&service_hash)
+                    && history_size_of::<S>(&service_name, &iceoryx_config_a)
+                        == Some(NEW_HISTORY_SIZE)
+                {
+                    return Ok(());
+                }
+                Err("Failed to mirror the recreated service with the new settings")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn withdrawn_services_do_not_survive_through_mirrors<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing<BackendConfig = B::Config>,
+    >() {
+        const TIMEOUT: Duration = Duration::from_secs(10);
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A offers the service.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut gateway_a = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let node_a = NodeBuilder::new()
+            .config(&iceoryx_config_a)
+            .create::<S>()
+            .unwrap();
+        let service_a = node_a
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_a.service_hash();
+        gateway_a.discover_over_iceoryx().unwrap();
+
+        // Hosts B and C mirror it.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut gateway_b = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
+        let iceoryx_config_c = generate_isolated_config();
+        let mut gateway_c = Gateway::<S, B>::new()
+            .backend_config(T::backend_config())
+            .iceoryx_config(iceoryx_config_c.clone())
+            .polled()
+            .create()
+            .unwrap();
+
+        T::retry(
+            || {
+                gateway_b.discover_over_backend().unwrap();
+                gateway_c.discover_over_backend().unwrap();
+                if gateway_b.bridged_services().contains(&service_hash)
+                    && gateway_c.bridged_services().contains(&service_hash)
+                {
+                    return Ok(());
+                }
+                Err("Failed to mirror the remote service")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+
+        // === WITHDRAWAL ===
+        // Host A withdraws. The mirrors at B and C are not own offerings and
+        // must not keep the service alive.
+        drop(service_a);
+        gateway_a.discover_over_iceoryx().unwrap();
+
+        T::retry(
+            || {
+                gateway_a.discover_over_backend().unwrap();
+                gateway_b.discover_over_backend().unwrap();
+                gateway_c.discover_over_backend().unwrap();
+                if gateway_b.bridged_services().is_empty()
+                    && gateway_c.bridged_services().is_empty()
+                {
+                    return Ok(());
+                }
+                Err("Withdrawn service survived through its mirrors")
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+    }
 }

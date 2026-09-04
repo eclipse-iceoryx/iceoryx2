@@ -111,11 +111,11 @@ pub struct PublishSubscribeSettings {
     pub safe_overflow: bool,
 }
 
-impl Default for PublishSubscribeSettings {
-    fn default() -> Self {
-        let defaults = iceoryx2::config::Config::default()
-            .defaults
-            .publish_subscribe;
+impl PublishSubscribeSettings {
+    /// The settings a publish-subscribe service created with `config`
+    /// receives by default.
+    pub fn from_config(config: &iceoryx2::config::Config) -> Self {
+        let defaults = &config.defaults.publish_subscribe;
         Self {
             max_subscribers: defaults.max_subscribers,
             max_publishers: defaults.max_publishers,
@@ -125,6 +125,12 @@ impl Default for PublishSubscribeSettings {
             subscriber_max_borrowed_samples: defaults.subscriber_max_borrowed_samples,
             safe_overflow: defaults.enable_safe_overflow,
         }
+    }
+}
+
+impl Default for PublishSubscribeSettings {
+    fn default() -> Self {
+        Self::from_config(&iceoryx2::config::Config::default())
     }
 }
 
@@ -142,6 +148,24 @@ pub struct EventSettings {
     pub notifier_created_event: Option<usize>,
     pub notifier_dropped_event: Option<usize>,
     pub notifier_dead_event: Option<usize>,
+}
+
+impl EventSettings {
+    /// The settings an event service created with `config` receives by
+    /// default.
+    pub fn from_config(config: &iceoryx2::config::Config) -> Self {
+        let defaults = &config.defaults.event;
+        Self {
+            max_notifiers: defaults.max_notifiers,
+            max_listeners: defaults.max_listeners,
+            max_nodes: defaults.max_nodes,
+            event_id_max_value: defaults.event_id_max_value,
+            deadline: defaults.deadline,
+            notifier_created_event: defaults.notifier_created_event,
+            notifier_dropped_event: defaults.notifier_dropped_event,
+            notifier_dead_event: defaults.notifier_dead_event,
+        }
+    }
 }
 
 /// A [`StaticConfig`] whose messaging pattern the gateway does not support.
