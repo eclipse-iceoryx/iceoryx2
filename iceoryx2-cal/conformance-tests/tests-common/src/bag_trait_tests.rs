@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -13,7 +13,7 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 instantiate_conformance_tests_with_module!(
-    semaphore,
-    iceoryx2_cal_conformance_tests::event_signal_mechanism_trait,
-    iceoryx2_cal::event::signal_mechanism::semaphore::Semaphore
+    container,
+    iceoryx2_cal_conformance_tests::bag_trait,
+    iceoryx2_cal::bag::default_bag::DefaultBag
 );

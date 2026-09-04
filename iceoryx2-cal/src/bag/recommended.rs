@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,10 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
-
-instantiate_conformance_tests_with_module!(
-    bitset,
-    iceoryx2_cal_conformance_tests::event_id_tracker_trait,
-    iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet
-);
+/// Provides the recommended
+/// [`BagFamily`](crate::bag::BagFamily) concept implementation
+/// for the target.
+pub type Recommended = crate::bag::default_bag::DefaultBag;

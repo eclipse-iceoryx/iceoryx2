@@ -106,9 +106,10 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::AllocationStrategy;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::bag::Bag;
+use iceoryx2_cal::bag::{BagHandle, BagState};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -139,9 +140,9 @@ pub(crate) const INVALID_CONNECTION_ID: usize = usize::MAX;
 pub struct SharedServerState<Service: service::Service> {
     pub(crate) config: LocalServerConfig,
     pub(crate) response_sender: Sender<Service, RequestResponseResources<Service>>,
-    server_handle: UnsafeCell<Option<ContainerHandle>>,
+    server_handle: UnsafeCell<Option<BagHandle>>,
     pub(crate) request_receiver: Receiver<Service, RequestResponseResources<Service>>,
-    client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
+    client_list_state: UnsafeCell<BagState<ClientDetails>>,
     service_state: SharedServiceState<Service, RequestResponseResources<Service>>,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
@@ -540,7 +541,7 @@ impl<
             .dynamic_storage()
             .get()
             .request_response()
-            .add_server_id(ServerDetails {
+            .register_server_id(ServerDetails {
                 server_id,
                 node_id: *service.shared_node().id(),
                 request_buffer_size: static_config.max_active_requests_per_client,

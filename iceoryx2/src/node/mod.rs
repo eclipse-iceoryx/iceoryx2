@@ -165,7 +165,6 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::clock::{NanosleepError, nanosleep};
@@ -177,6 +176,7 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -842,7 +842,7 @@ fn remove_node<Service: service::Service>(
 
 #[derive(Debug)]
 pub(crate) struct RegisteredServices {
-    handle: MutexHandle<BTreeMap<ServiceHash, (ContainerHandle, u64)>>,
+    handle: MutexHandle<BTreeMap<ServiceHash, (BagHandle, u64)>>,
 }
 
 impl RegisteredServices {
@@ -863,9 +863,9 @@ impl RegisteredServices {
     }
 
     fn insert(
-        services: &mut BTreeMap<ServiceHash, (ContainerHandle, u64)>,
+        services: &mut BTreeMap<ServiceHash, (BagHandle, u64)>,
         service_hash: ServiceHash,
-        handle: ContainerHandle,
+        handle: BagHandle,
     ) {
         if services.insert(service_hash, (handle, 1)).is_some() {
             fatal_panic!(from "RegisteredServices::insert()",
@@ -874,7 +874,7 @@ impl RegisteredServices {
         }
     }
 
-    pub(crate) fn add(&self, service_hash: &ServiceHash, handle: ContainerHandle) {
+    pub(crate) fn add(&self, service_hash: &ServiceHash, handle: BagHandle) {
         let mut guard = fatal_panic!(
             from self,
             when self.mutex().lock(),
@@ -884,7 +884,7 @@ impl RegisteredServices {
         Self::insert(&mut guard, *service_hash, handle);
     }
 
-    pub(crate) fn add_or<F: FnMut() -> Result<ContainerHandle, OpenDynamicStorageFailure>>(
+    pub(crate) fn add_or<F: FnMut() -> Result<BagHandle, OpenDynamicStorageFailure>>(
         &self,
         service_hash: &ServiceHash,
         mut or_callback: F,
@@ -907,7 +907,7 @@ impl RegisteredServices {
         Ok(())
     }
 
-    pub(crate) fn remove<F: FnMut(ContainerHandle)>(
+    pub(crate) fn remove<F: FnMut(BagHandle)>(
         &self,
         service_hash: &ServiceHash,
         mut cleanup_call: F,
@@ -929,7 +929,7 @@ impl RegisteredServices {
         drop(guard);
     }
 
-    fn mutex(&self) -> Mutex<'_, '_, BTreeMap<ServiceHash, (ContainerHandle, u64)>> {
+    fn mutex(&self) -> Mutex<'_, '_, BTreeMap<ServiceHash, (BagHandle, u64)>> {
         // Safe - the mutex is initialized when constructing the struct and
         // not interacted with by anything else.
         unsafe { Mutex::from_handle(&self.handle) }

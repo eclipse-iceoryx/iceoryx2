@@ -40,13 +40,13 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitError;
 use iceoryx2_bb_posix::clock::NanosleepError;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
@@ -286,6 +286,9 @@ pub struct BuilderWithServiceType<ServiceType: service::Service> {
     pub(crate) shared_node: SharedNode<ServiceType>,
     _phantom_data: PhantomData<ServiceType>,
 }
+
+type DynanmicConfigStorage<S> =
+    <S as service::Service>::DynamicStorage<DynamicConfig<<S as service::Service>::Bag>>;
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn new(service_config: StaticConfig, shared_node: SharedNode<ServiceType>) -> Self {
@@ -880,7 +883,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     }
 
     fn config_init_call(
-        config: &mut MaybeUninit<DynamicConfig>,
+        config: &mut MaybeUninit<DynamicConfig<ServiceType::Bag>>,
         allocator: &mut BumpAllocator,
         args: &DynamicConfigCreationArgs,
     ) -> bool {
@@ -896,17 +899,15 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         args: DynamicConfigCreationArgs,
         node_id: UniqueNodeId,
-    ) -> Result<
-        (ContainerHandle, ServiceType::DynamicStorage<DynamicConfig>),
-        DynamicStorageCreateError,
-    > {
-        let required_memory_size = DynamicConfig::memory_size(args.max_number_of_nodes);
+    ) -> Result<(BagHandle, DynanmicConfigStorage<ServiceType>), DynamicStorageCreateError> {
+        let required_memory_size =
+            DynamicConfig::<ServiceType::Bag>::memory_size(args.max_number_of_nodes);
         let segment_name = dynamic_config_name(self.service_config.unique_service_id());
         let mut handle = None;
-        match <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
-            DynamicConfig,
+        match <<ServiceType::DynamicStorage<DynamicConfig<ServiceType::Bag>> as DynamicStorage<
+            DynamicConfig<ServiceType::Bag>,
         >>::Builder<'_> as NamedConceptBuilder<
-            ServiceType::DynamicStorage<DynamicConfig>,
+            ServiceType::DynamicStorage<DynamicConfig<ServiceType::Bag>>,
         >>::new(&segment_name)
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(args.additional_size + required_memory_size)
@@ -936,10 +937,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         args: DynamicConfigCreationArgs,
         node_id: UniqueNodeId,
-    ) -> Result<
-        (ContainerHandle, ServiceType::DynamicStorage<DynamicConfig>),
-        DynamicStorageCreateError,
-    > {
+    ) -> Result<(BagHandle, DynanmicConfigStorage<ServiceType>), DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
         match self.create_dynamic_config_storage_resource(args, node_id) {
             Ok((node_handle, storage)) => Ok((node_handle, storage)),
@@ -957,14 +955,17 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn open_dynamic_config_storage(
         &self,
         unique_service_id: UniqueServiceId,
-    ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, OpenDynamicStorageFailure> {
+    ) -> Result<
+        ServiceType::DynamicStorage<DynamicConfig<ServiceType::Bag>>,
+        OpenDynamicStorageFailure,
+    > {
         let msg = "Failed to open dynamic service information";
         let segment_name = dynamic_config_name(unique_service_id);
         let storage = fail!(from self, when
-            <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
-                    DynamicConfig,
+            <<ServiceType::DynamicStorage<DynamicConfig<ServiceType::Bag>> as DynamicStorage<
+                    DynamicConfig<ServiceType::Bag>,
                 >>::Builder<'_> as NamedConceptBuilder<
-                    ServiceType::DynamicStorage<DynamicConfig>,
+                    ServiceType::DynamicStorage<DynamicConfig<ServiceType::Bag>>,
                 >>::new(&segment_name)
                     .timeout(self.shared_node.config().global.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))

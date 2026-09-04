@@ -49,6 +49,7 @@ impl crate::service::Service for Service {
     type ConfigSerializer = serialize::recommended::Recommended;
     type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         dynamic_storage::recommended::PersistentLocal<T>;
+    type Bag = bag::recommended::Recommended;
     type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         dynamic_storage::recommended::Local<T>;
     type ServiceNameHasher = hash::recommended::Recommended;

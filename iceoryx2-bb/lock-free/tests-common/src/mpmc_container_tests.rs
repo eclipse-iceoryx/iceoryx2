@@ -149,7 +149,7 @@ pub mod generic {
                     handle,
                     ReleaseMode::Default,
                 ).err()
-            }, eq Some(ContainerRemoveError::ContainerHandleNotOwnedByContainer));
+            }, eq Some(ContainerRemoveError::HandleNotOwnedByInstance));
 
         assert_that!(sut.is_empty(), eq true);
 
@@ -722,6 +722,111 @@ pub mod generic {
         });
 
         assert_that!(contained_values, is_empty);
+    }
+
+    #[test]
+    pub fn elements_can_be_found_when_there_is_only_one_element_per_owner_id<
+        T: Debug + Copy + From<usize> + Into<usize> + PartialEq + ZeroCopySend,
+    >() {
+        const OFFSET: u64 = 1000;
+        const CAPACITY_TINY: usize = 5;
+        let sut = FixedSizeContainer::<T, CAPACITY_TINY>::new();
+
+        let mut enumeration_handle_mapping = Vec::new();
+        for i in 0..CAPACITY_TINY as _ {
+            let owner_id = OwnerId::new(i + OFFSET).unwrap();
+            let (_, handle) = sut.add((i as usize).into(), owner_id).unwrap();
+            enumeration_handle_mapping.push((i, handle));
+        }
+
+        for (i, expected_handle) in enumeration_handle_mapping {
+            let owner_id = OwnerId::new(i + OFFSET).unwrap();
+
+            let count = sut.find(owner_id, |element, handle| {
+                assert_that!(handle, eq(expected_handle));
+                let expected_element: T = (i as usize).into();
+                assert_that!(unsafe { *element }, eq(expected_element));
+                CallbackProgression::Continue
+            });
+            assert_that!(count, eq(1));
+        }
+    }
+
+    #[test]
+    pub fn elements_can_be_found_when_there_are_multiple_elements_per_owner_id<
+        T: Debug + Copy + From<usize> + Into<usize> + PartialEq + ZeroCopySend,
+    >() {
+        const OFFSET: u64 = 1000;
+        const CAPACITY_TINY: usize = 5;
+        let sut = FixedSizeContainer::<T, CAPACITY_TINY>::new();
+
+        let mut expected_count = 0;
+        let mut handles = Vec::new();
+        for i in 0..CAPACITY_TINY as _ {
+            let base = i % 2;
+            let owner_id = OwnerId::new(base + OFFSET).unwrap();
+            let (_, handle) = sut.add((i as usize).into(), owner_id).unwrap();
+            handles.push(handle);
+            if base == 0 {
+                expected_count += 1;
+            }
+        }
+
+        let base = 0;
+        let owner_id = OwnerId::new(base + OFFSET).unwrap();
+
+        let mut next_expected_index = 0;
+        let count = sut.find(owner_id, |_, handle| {
+            let expected_handle = handles.get(next_expected_index).unwrap();
+            assert_that!(handle, eq(*expected_handle));
+            next_expected_index += 2;
+            CallbackProgression::Continue
+        });
+        assert_that!(count, eq(expected_count));
+    }
+
+    #[test]
+    pub fn elements_cannot_be_found_when_there_is_no_matching_owner_id<
+        T: Debug + Copy + From<usize> + Into<usize> + PartialEq + ZeroCopySend,
+    >() {
+        const OFFSET: u64 = 1000;
+        const CAPACITY_TINY: usize = 5;
+        let sut = FixedSizeContainer::<T, CAPACITY_TINY>::new();
+
+        for i in 0..CAPACITY_TINY as _ {
+            let owner_id = OwnerId::new(i + OFFSET).unwrap();
+            sut.add((i as usize).into(), owner_id).unwrap();
+        }
+
+        let owner_id = OwnerId::new(OFFSET * 10).unwrap();
+        let count = sut.find(owner_id, |_element, _handle| CallbackProgression::Continue);
+        assert_that!(count, eq(0));
+    }
+
+    #[test]
+    pub fn elements_cannot_be_found_after_the_owner_id_is_removed<
+        T: Debug + Copy + From<usize> + Into<usize> + PartialEq + ZeroCopySend,
+    >() {
+        const OFFSET: u64 = 1000;
+        const CAPACITY_TINY: usize = 5;
+        let sut = FixedSizeContainer::<T, CAPACITY_TINY>::new();
+
+        let mut handles = Vec::new();
+        for i in 0..CAPACITY_TINY as _ {
+            let owner_id = OwnerId::new(i + OFFSET).unwrap();
+            let (_, handle) = sut.add((i as usize).into(), owner_id).unwrap();
+            handles.push(handle);
+        }
+
+        let index = CAPACITY_TINY / 2;
+        let owner_id = OwnerId::new(index as u64 + OFFSET).unwrap();
+        let handle = handles.get(index).unwrap();
+        unsafe {
+            sut.remove(*handle, ReleaseMode::Default).unwrap();
+        }
+
+        let count = sut.find(owner_id, |_element, _handle| CallbackProgression::Continue);
+        assert_that!(count, eq(0));
     }
 
     #[test]
