@@ -203,7 +203,7 @@ impl<Service: service::Service> DataSegment<Service> {
         match data_segment_type {
             DataSegmentType::Static => 1,
             DataSegmentType::Dynamic => {
-                (Service::ResizableSharedMemory::max_number_of_reallocations() - 1) as u8
+                (Service::ResizableSharedMemory::max_number_of_reallocations()) as u8
             }
         }
     }
