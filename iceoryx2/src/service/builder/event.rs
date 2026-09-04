@@ -183,6 +183,9 @@ pub enum EventCreateError {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
+    /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
+    EventIdExceedsMaxSupportedValue,
 }
 
 impl From<ServiceCreateError> for EventCreateError {
@@ -234,6 +237,11 @@ impl From<EventCreateError> for ServiceCreateError {
             }
             EventCreateError::Interrupt => ServiceCreateError::Interrupt,
             EventCreateError::InternalFailure => ServiceCreateError::InternalFailure,
+            // No generic service-level equivalent: this is an event-specific
+            // contract violation detected before the generic create path runs.
+            EventCreateError::EventIdExceedsMaxSupportedValue => {
+                ServiceCreateError::InternalFailure
+            }
         }
     }
 }
@@ -511,6 +519,34 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
         let origin = format!("{self:?}");
         let msg = "Unable to create event service";
+
+        {
+            let settings = self.base.service_config.event();
+            let max = settings.event_id_max_value;
+            for (label, opt_id) in [
+                (
+                    "notifier_created_event",
+                    settings.notifier_created_event.as_option_ref().copied(),
+                ),
+                (
+                    "notifier_dropped_event",
+                    settings.notifier_dropped_event.as_option_ref().copied(),
+                ),
+                (
+                    "notifier_dead_event",
+                    settings.notifier_dead_event.as_option_ref().copied(),
+                ),
+            ] {
+                if let Some(id) = opt_id
+                    && id > max
+                {
+                    fail!(from self,
+                        with EventCreateError::EventIdExceedsMaxSupportedValue,
+                        "{} since the {} value {} exceeds event_id_max_value {}.",
+                        msg, label, id, max);
+                }
+            }
+        }
 
         let prepare_static_config = |service_config: &mut StaticConfig| {
             if let RelocatableOption::Some(ref mut deadline) = service_config.event_mut().deadline {

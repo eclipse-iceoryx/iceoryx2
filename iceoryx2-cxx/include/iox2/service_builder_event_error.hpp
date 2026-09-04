@@ -105,6 +105,9 @@ enum class EventCreateError : uint8_t {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
+    /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
+    EventIdExceedsMaxSupportedValue,
 };
 
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
@@ -197,6 +200,9 @@ enum class EventOpenOrCreateError : uint8_t {
     CreateUnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     CreateServiceConfigCouldNotBeCreated,
+    /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
+    /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
+    CreateEventIdExceedsMaxSupportedValue,
 };
 
 } // namespace iox2

@@ -91,6 +91,8 @@ pub enum iox2_event_open_or_create_error_e {
     C_UNABLE_TO_CREATE_SERVICE_TAG,
     #[CStr = "service config could not be created"]
     C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
+    #[CStr = "event id exceeds max supported value"]
+    C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE,
     #[CStr = "old connection still active"]
     C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "interrupt"]
@@ -185,6 +187,9 @@ impl IntoCInt for EventCreateError {
             }
             EventCreateError::UnableToCreateServiceTag => {
                 iox2_event_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            EventCreateError::EventIdExceedsMaxSupportedValue => {
+                iox2_event_open_or_create_error_e::C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE
             }
         }) as c_int
     }
