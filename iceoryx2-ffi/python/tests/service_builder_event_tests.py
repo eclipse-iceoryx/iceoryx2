@@ -218,9 +218,9 @@ def test_service_builder_configuration_works(
     event_id_max = 78
     max_notifiers = 9
     max_listeners = 10
-    notifier_created = iox2.EventId.new(321)
-    notifier_dead = iox2.EventId.new(654)
-    notifier_dropped = iox2.EventId.new(987)
+    notifier_created = iox2.EventId.new(21)
+    notifier_dead = iox2.EventId.new(54)
+    notifier_dropped = iox2.EventId.new(67)
     sut = (
         node.service_builder(service_name)
         .event()
