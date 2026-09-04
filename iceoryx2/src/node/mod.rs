@@ -275,7 +275,7 @@ pub enum NodeCleanupFailure {
     InsufficientPermissions,
     /// Trying to cleanup resources from a dead [`Node`] which was using a different iceoryx2 version.
     VersionMismatch,
-    /// Another instance has successfully cleaned up all resources.
+    /// There are no stale resources to remove.
     ResourcesAlreadyCleanedUp,
     /// Another instance has acquired the ownership of all resources and is currently cleaning up.
     AnotherInstanceIsCleaningUpTheNode,
@@ -750,8 +750,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     "{} due to an internal error while acquiring monitoring cleaner.", msg);
             }
             Err(MonitoringCreateCleanerError::InstanceStillAlive) => {
-                fatal_panic!(from self,
-                        "This should never happen! {} since the Node is still alive.", msg);
+                fail!(from self, with NodeCleanupFailure::ResourcesAlreadyCleanedUp,
+                    "{} since the Node is still alive and has no stale resources.", msg);
             }
         }
     }
