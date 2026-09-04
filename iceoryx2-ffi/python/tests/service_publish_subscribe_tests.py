@@ -459,3 +459,45 @@ def test_port_names_can_be_set(
 
     assert publisher.name == publisher_name
     assert subscriber.name == subscriber_name
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_slice_payload_element_count_is_correct_for_multi_byte_types(
+    service_type: iox2.ServiceType,
+) -> None:
+    # Regression test for #1533: payload() must return the element count, not
+    # the byte count. `__slice_len` reads `number_of_elements` from the sample
+    # header, as the C API does, so `Slice.len()` reports N for a slice of N
+    # elements. It used to return the raw payload byte length, so for element
+    # types wider than one byte `Slice.len()` reported N * sizeof(T).
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint32])
+        .create()
+    )
+
+    number_of_elements = 3
+    publisher = (
+        service.publisher_builder().initial_max_slice_len(number_of_elements).create()
+    )
+    subscriber = service.subscriber_builder().create()
+
+    sample_uninit = publisher.loan_slice_uninit(number_of_elements)
+    arr_type = ctypes.c_uint32 * number_of_elements
+    arr = arr_type(10, 20, 30)
+    ctypes.memmove(sample_uninit.payload_ptr, arr, ctypes.sizeof(arr))
+    sample_uninit.assume_init().send()
+
+    received_sample = subscriber.receive()
+    assert received_sample is not None
+
+    received_slice = received_sample.payload()
+    # Must be the element count (3), not the byte count (3 * sizeof(c_uint32) = 12).
+    assert received_slice.len() == number_of_elements
+    assert received_slice[0] == 10
+    assert received_slice[1] == 20
+    assert received_slice[2] == 30
