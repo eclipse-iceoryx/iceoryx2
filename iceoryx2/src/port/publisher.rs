@@ -122,7 +122,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagHandle, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagState};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -391,7 +391,7 @@ pub struct Publisher<
 > {
     pub(crate) publisher_shared_state:
         Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-    dynamic_publisher_handle: BagHandle,
+    dynamic_publisher_handle: <Service::Bag as BagFamily>::BagHandle,
     publisher_details: &'static PublisherDetails,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,

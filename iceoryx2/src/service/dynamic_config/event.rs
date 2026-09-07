@@ -34,7 +34,6 @@ use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
@@ -186,11 +185,11 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_listener_id(
         &self,
         details: ListenerDetails,
-    ) -> Option<(*const ListenerDetails, BagHandle)> {
+    ) -> Option<(*const ListenerDetails, B::BagHandle)> {
         unsafe { self.listeners.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_listener_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_listener_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.listeners.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister listener from service. This could indicate a corrupted system! [{e:?}]");
         }
@@ -199,11 +198,11 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_notifier_id(
         &self,
         details: NotifierDetails,
-    ) -> Option<(*const NotifierDetails, BagHandle)> {
+    ) -> Option<(*const NotifierDetails, B::BagHandle)> {
         unsafe { self.notifiers.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_notifier_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_notifier_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.notifiers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister notifier from service. This could indicate a corrupted system! [{e:?}]");
         }

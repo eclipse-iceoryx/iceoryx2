@@ -46,7 +46,7 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitError;
 use iceoryx2_bb_posix::clock::NanosleepError;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
@@ -899,7 +899,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         args: DynamicConfigCreationArgs,
         node_id: UniqueNodeId,
-    ) -> Result<(BagHandle, DynanmicConfigStorage<ServiceType>), DynamicStorageCreateError> {
+    ) -> Result<
+        (
+            <ServiceType::Bag as BagFamily>::BagHandle,
+            DynanmicConfigStorage<ServiceType>,
+        ),
+        DynamicStorageCreateError,
+    > {
         let required_memory_size =
             DynamicConfig::<ServiceType::Bag>::memory_size(args.max_number_of_nodes);
         let segment_name = dynamic_config_name(self.service_config.unique_service_id());
@@ -937,7 +943,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         args: DynamicConfigCreationArgs,
         node_id: UniqueNodeId,
-    ) -> Result<(BagHandle, DynanmicConfigStorage<ServiceType>), DynamicStorageCreateError> {
+    ) -> Result<
+        (
+            <ServiceType::Bag as BagFamily>::BagHandle,
+            DynanmicConfigStorage<ServiceType>,
+        ),
+        DynamicStorageCreateError,
+    > {
         let msg = "Failed to create dynamic storage for service";
         match self.create_dynamic_config_storage_resource(args, node_id) {
             Ok((node_handle, storage)) => Ok((node_handle, storage)),

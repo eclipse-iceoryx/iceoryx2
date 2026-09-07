@@ -59,7 +59,7 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
@@ -161,7 +161,7 @@ pub struct Reader<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
-    dynamic_reader_handle: BagHandle,
+    dynamic_reader_handle: <Service::Bag as BagFamily>::BagHandle,
     reader_details: &'static ReaderDetails,
 }
 

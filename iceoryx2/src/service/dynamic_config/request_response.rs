@@ -16,7 +16,6 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
@@ -173,11 +172,11 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_client_id(
         &self,
         details: ClientDetails,
-    ) -> Option<(*const ClientDetails, BagHandle)> {
+    ) -> Option<(*const ClientDetails, B::BagHandle)> {
         unsafe { self.clients.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_client_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_client_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.clients.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister client from service. This could indicate a corrupted system! [{e:?}]");
         }
@@ -186,11 +185,11 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_server_id(
         &self,
         details: ServerDetails,
-    ) -> Option<(*const ServerDetails, BagHandle)> {
+    ) -> Option<(*const ServerDetails, B::BagHandle)> {
         unsafe { self.servers.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_server_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_server_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.servers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister server from service. This could indicate a corrupted system! [{e:?}]");
         }

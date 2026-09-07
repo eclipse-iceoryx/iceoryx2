@@ -12,10 +12,12 @@
 
 //! The default implementation for the [`BagFamily`] concept and the [`Bag`] trait.
 
-use crate::bag::{Bag, BagAddFailure, BagFamily, BagHandle, BagRemoveError, BagState, BagType};
+use crate::bag::{
+    Bag, BagAddFailure, BagFamily, BagHandleFamily, BagRemoveError, BagState, BagType,
+};
 
 use iceoryx2_bb_lock_free::mpmc::container::{
-    Container, ContainerAddFailure, ContainerRemoveError,
+    Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError,
 };
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
@@ -39,14 +41,23 @@ impl From<ContainerRemoveError> for BagRemoveError {
     }
 }
 
+impl BagHandleFamily for ContainerHandle {
+    fn index(&self) -> usize {
+        self.index()
+    }
+}
+
 #[derive(Debug)]
 pub struct DefaultBag;
 
 impl BagFamily for DefaultBag {
+    type BagHandle = ContainerHandle;
     type Bag<T: BagType> = Container<T>;
 }
 
 impl<T: BagType> Bag<T> for Container<T> {
+    type BagHandle = ContainerHandle;
+
     fn capacity(&self) -> usize {
         self.capacity()
     }
@@ -63,7 +74,7 @@ impl<T: BagType> Bag<T> for Container<T> {
         &self,
         value: T,
         owner_id: OwnerId,
-    ) -> Result<(*const T, BagHandle), BagAddFailure>
+    ) -> Result<(*const T, Self::BagHandle), BagAddFailure>
     where
         T: PartialEq,
     {
@@ -72,7 +83,7 @@ impl<T: BagType> Bag<T> for Container<T> {
 
     unsafe fn remove(
         &self,
-        handle: BagHandle,
+        handle: Self::BagHandle,
         mode: ReleaseMode,
     ) -> Result<ReleaseState, BagRemoveError> {
         unsafe { self.remove(handle, mode).map_err(|e| e.into()) }

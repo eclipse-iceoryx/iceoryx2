@@ -38,7 +38,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::bag::{Bag, BagFamily};
-use iceoryx2_cal::bag::{BagAddFailure, BagHandle, BagRemoveError};
+use iceoryx2_cal::bag::{BagAddFailure, BagRemoveError};
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::identifiers::{UniqueNodeId, UniquePortId};
@@ -182,7 +182,7 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_node_id(
         &self,
         node_id: UniqueNodeId,
-    ) -> Result<BagHandle, RegisterNodeResult> {
+    ) -> Result<B::BagHandle, RegisterNodeResult> {
         let msg = "Unable to register NodeId in service";
         match unsafe { self.nodes.add(node_id, node_id.owner_id()) } {
             Ok(handle) => Ok(handle.1),
@@ -207,7 +207,7 @@ impl<B: BagFamily> DynamicConfig<B> {
 
     pub(crate) fn deregister_node_id(
         &self,
-        handle: BagHandle,
+        handle: B::BagHandle,
     ) -> Result<DeregisterNodeState, BagRemoveError> {
         match unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) } {
             Ok(ReleaseState::Locked) => Ok(DeregisterNodeState::NoMoreOwners),

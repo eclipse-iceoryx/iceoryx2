@@ -47,7 +47,7 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagHandle, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagState};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -316,7 +316,7 @@ pub struct Notifier<Service: service::Service> {
     listener_connections: Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>,
     default_event_id: EventId,
     event_id_max_value: usize,
-    dynamic_notifier_handle: BagHandle,
+    dynamic_notifier_handle: <Service::Bag as BagFamily>::BagHandle,
     notifier_details: &'static NotifierDetails,
     on_drop_notification: Option<EventId>,
     // IMPORTANT!

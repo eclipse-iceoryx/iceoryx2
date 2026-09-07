@@ -38,7 +38,6 @@ use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
@@ -205,7 +204,7 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_subscriber_id(
         &self,
         details: SubscriberDetails,
-    ) -> Option<(*const SubscriberDetails, BagHandle)> {
+    ) -> Option<(*const SubscriberDetails, B::BagHandle)> {
         unsafe {
             self.subscribers
                 .add(details, details.node_id.owner_id())
@@ -213,7 +212,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn release_subscriber_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_subscriber_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.subscribers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister subscriber from service. This could indicate a corrupted system! [{e:?}]");
         }
@@ -222,7 +221,7 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_publisher_id(
         &self,
         details: PublisherDetails,
-    ) -> Option<(*const PublisherDetails, BagHandle)> {
+    ) -> Option<(*const PublisherDetails, B::BagHandle)> {
         unsafe {
             self.publishers
                 .add(details, details.node_id.owner_id())
@@ -230,7 +229,7 @@ impl<B: BagFamily> DynamicConfig<B> {
         }
     }
 
-    pub(crate) fn release_publisher_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_publisher_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.publishers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister publisher from service. This could indicate a corrupted system! [{e:?}]");
         }

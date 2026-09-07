@@ -47,7 +47,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagHandle, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagState};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
@@ -128,7 +128,7 @@ pub struct Subscriber<
     Payload: IceoryxSend + Debug + ?Sized + 'static,
     UserHeader: ZeroCopySend + Debug,
 > {
-    dynamic_subscriber_handle: BagHandle,
+    dynamic_subscriber_handle: <Service::Bag as BagFamily>::BagHandle,
     subscriber_details: &'static SubscriberDetails,
     subscriber_shared_state: Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
 

@@ -176,7 +176,8 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::BagFamily;
+use iceoryx2_cal::bag::BagHandleFamily;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -841,11 +842,11 @@ fn remove_node<Service: service::Service>(
 }
 
 #[derive(Debug)]
-pub(crate) struct RegisteredServices {
+pub(crate) struct RegisteredServices<BagHandle: BagHandleFamily> {
     handle: MutexHandle<BTreeMap<ServiceHash, (BagHandle, u64)>>,
 }
 
-impl RegisteredServices {
+impl<BagHandle: BagHandleFamily> RegisteredServices<BagHandle> {
     pub(crate) fn new() -> Self {
         let origin = "RegisteredServices::new()";
         let handle = MutexHandle::new();
@@ -941,7 +942,7 @@ struct SharedNodeState<Service: service::Service> {
     id: UniqueNodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
-    registered_services: RegisteredServices,
+    registered_services: RegisteredServices<<Service::Bag as BagFamily>::BagHandle>,
     signal_handling_mode: SignalHandlingMode,
     details_storage: Service::StaticStorage,
 }
@@ -1048,7 +1049,9 @@ impl<Service: service::Service> SharedNode<Service> {
         &self.state.id
     }
 
-    pub(crate) fn registered_services(&self) -> &RegisteredServices {
+    pub(crate) fn registered_services(
+        &self,
+    ) -> &RegisteredServices<<Service::Bag as BagFamily>::BagHandle> {
         &self.state.registered_services
     }
 

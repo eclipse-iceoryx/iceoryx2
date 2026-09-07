@@ -43,11 +43,10 @@ use core::fmt::Debug;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
 
-pub type BagHandle = ContainerHandle;
 pub type BagState<T> = ContainerState<T>;
 
 /// States the reason why an element could not be added to the [`Bag`]
@@ -69,18 +68,31 @@ pub enum BagRemoveError {
     HandleNotOwnedByInstance,
 }
 
+/// The [`BagHandleFamily`] trait provides access to a handle of the concrete implementation of a bag
+pub trait BagHandleFamily: Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Send {
+    fn index(&self) -> usize;
+}
+
 /// A super trait defining the trait bounds of a [`Bag`] type
 pub trait BagType: Copy + Debug + ZeroCopySend {}
 impl<T: Copy + Debug + ZeroCopySend> BagType for T {}
 
 /// The [`BagFamily`] provides the associated type for the concrete type implementing the concept
 pub trait BagFamily: Debug + 'static {
-    type Bag<T: BagType>: Debug + Send + Sync + ZeroCopySend + RelocatableContainer + Bag<T>;
+    type BagHandle: BagHandleFamily;
+    type Bag<T: BagType>: Debug
+        + Send
+        + Sync
+        + ZeroCopySend
+        + RelocatableContainer
+        + Bag<T, BagHandle = Self::BagHandle>;
 }
 
 /// The [`Bag`] trait provides access to an unordered container with fix position for the data
 /// during its lifetime
 pub trait Bag<T: BagType>: Debug {
+    type BagHandle: BagHandleFamily;
+
     /// Returns the capacity of the bag.
     fn capacity(&self) -> usize;
 
@@ -103,7 +115,7 @@ pub trait Bag<T: BagType>: Debug {
         &self,
         value: T,
         owner_id: OwnerId,
-    ) -> Result<(*const T, BagHandle), BagAddFailure>
+    ) -> Result<(*const T, Self::BagHandle), BagAddFailure>
     where
         T: PartialEq;
 
@@ -122,7 +134,7 @@ pub trait Bag<T: BagType>: Debug {
     ///
     unsafe fn remove(
         &self,
-        handle: BagHandle,
+        handle: Self::BagHandle,
         mode: ReleaseMode,
     ) -> Result<ReleaseState, BagRemoveError>;
 

@@ -36,7 +36,6 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_cal::bag::BagHandle;
 use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_log::{error, fatal_panic};
 
@@ -176,11 +175,11 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_reader_id(
         &self,
         details: ReaderDetails,
-    ) -> Option<(*const ReaderDetails, BagHandle)> {
+    ) -> Option<(*const ReaderDetails, B::BagHandle)> {
         unsafe { self.readers.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_reader_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_reader_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.readers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister reader from service. This could indicate a corrupted system! [{e:?}]");
         }
@@ -189,11 +188,11 @@ impl<B: BagFamily> DynamicConfig<B> {
     pub(crate) fn register_writer_id(
         &self,
         details: WriterDetails,
-    ) -> Option<(*const WriterDetails, BagHandle)> {
+    ) -> Option<(*const WriterDetails, B::BagHandle)> {
         unsafe { self.writers.add(details, details.node_id.owner_id()).ok() }
     }
 
-    pub(crate) fn release_writer_handle(&self, handle: BagHandle) {
+    pub(crate) fn release_writer_handle(&self, handle: B::BagHandle) {
         if let Err(e) = unsafe { self.writers.remove(handle, ReleaseMode::Default) } {
             error!(from self, "Unable to deregister writer from service. This could indicate a corrupted system! [{e:?}]");
         }

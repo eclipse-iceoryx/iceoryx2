@@ -111,8 +111,8 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagHandle, BagState};
+use iceoryx2_cal::bag::BagState;
+use iceoryx2_cal::bag::{Bag, BagFamily};
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
@@ -177,7 +177,7 @@ pub struct ClientSharedState<Service: service::Service> {
     pub(crate) config: LocalClientConfig,
     pub(crate) request_sender: Sender<Service, RequestResponseResources<Service>>,
     pub(crate) response_receiver: Receiver<Service, RequestResponseResources<Service>>,
-    client_handle: UnsafeCell<Option<BagHandle>>,
+    client_handle: UnsafeCell<Option<<Service::Bag as BagFamily>::BagHandle>>,
     server_list_state: UnsafeCell<BagState<ServerDetails>>,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
     pub(crate) active_request_counter: AtomicUsize,

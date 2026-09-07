@@ -65,7 +65,7 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::bag::BagHandle;
+use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
@@ -76,7 +76,7 @@ struct WriterSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     service_state: SharedServiceState<Service, BlackboardResources<Service>>,
-    dynamic_writer_handle: UnsafeCell<Option<BagHandle>>,
+    dynamic_writer_handle: UnsafeCell<Option<<Service::Bag as BagFamily>::BagHandle>>,
     _key: PhantomData<KeyType>,
 }
 
