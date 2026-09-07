@@ -45,7 +45,6 @@ use crate::{
     config,
     identifiers::UniqueServiceId,
     service::{self, service_hash::ServiceHash},
-    unique_id_generator::*,
 };
 
 use self::messaging_pattern::MessagingPattern;
@@ -81,8 +80,8 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(
-                Entity::ReqResService(*service_name),
+            unique_service_id: UniqueServiceId::from_request_response_service::<ServiceType>(
+                service_name,
                 config,
             ),
             service_name: *service_name,
@@ -103,8 +102,8 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(
-                Entity::EventService(*service_name),
+            unique_service_id: UniqueServiceId::from_event_service::<ServiceType>(
+                service_name,
                 config,
             ),
             service_name: *service_name,
@@ -126,8 +125,8 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(
-                Entity::PubSubService(*service_name),
+            unique_service_id: UniqueServiceId::from_publish_subscribe_service::<ServiceType>(
+                service_name,
                 config,
             ),
             service_name: *service_name,
@@ -148,8 +147,8 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
-            unique_service_id: UniqueServiceId::new::<ServiceType>(
-                Entity::BlackboardService(*service_name),
+            unique_service_id: UniqueServiceId::from_blackboard_service::<ServiceType>(
+                service_name,
                 config,
             ),
             service_name: *service_name,

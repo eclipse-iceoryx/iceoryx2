@@ -13,6 +13,7 @@
 use alloc::format;
 
 use crate::port::port_name::PortName;
+use crate::service::service_name::ServiceName;
 use crate::{config::Config, node::node_name::NodeName, unique_id_generator::*};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -173,20 +174,52 @@ impl core::fmt::Display for UniqueServiceId {
 }
 
 impl UniqueServiceId {
-    pub(crate) fn new<Service: crate::service::Service>(entity: Entity, config: &Config) -> Self {
-        let origin = "UniqueServiceId::new()";
-        let msg = "Unable to generate required UniqueServiceId";
-        match entity {
-            Entity::PubSubService(_)
-            | Entity::ReqResService(_)
-            | Entity::EventService(_)
-            | Entity::BlackboardService(_) => Self(fatal_panic!(from origin,
-                when Service::UniqueId::generate::<Service>(entity, config), "{msg}"
-            )),
-            _ => {
-                fatal_panic!(from origin, "{msg} since the passed entity does not identify a service.")
-            }
-        }
+    pub(crate) fn from_publish_subscribe_service<Service: crate::service::Service>(
+        name: &ServiceName,
+        config: &Config,
+    ) -> Self {
+        Self(
+            fatal_panic!(from "UniqueSystemId", when Service::UniqueId::generate::<Service>(
+            Entity::PubSubService(*name),
+            config,
+        ), ": Unable to generate required UniqueServiceId"),
+        )
+    }
+
+    pub(crate) fn from_request_response_service<Service: crate::service::Service>(
+        name: &ServiceName,
+        config: &Config,
+    ) -> Self {
+        Self(
+            fatal_panic!(from "UniqueSystemId", when Service::UniqueId::generate::<Service>(
+            Entity::ReqResService(*name),
+            config,
+        ), ": Unable to generate required UniqueServiceId"),
+        )
+    }
+
+    pub(crate) fn from_event_service<Service: crate::service::Service>(
+        name: &ServiceName,
+        config: &Config,
+    ) -> Self {
+        Self(
+            fatal_panic!(from "UniqueSystemId", when Service::UniqueId::generate::<Service>(
+            Entity::EventService(*name),
+            config,
+        ), ": Unable to generate required UniqueServiceId"),
+        )
+    }
+
+    pub(crate) fn from_blackboard_service<Service: crate::service::Service>(
+        name: &ServiceName,
+        config: &Config,
+    ) -> Self {
+        Self(
+            fatal_panic!(from "UniqueSystemId", when Service::UniqueId::generate::<Service>(
+            Entity::BlackboardService(*name),
+            config,
+        ), ": Unable to generate required UniqueServiceId"),
+        )
     }
 
     /// Returns the underlying raw value of the ID
@@ -232,17 +265,14 @@ impl UniqueNodeId {
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
     pub fn pid<Service: crate::service::Service>(&self) -> iceoryx2_bb_posix::process::ProcessId {
-        Service::UniqueId::from(self.0)
-            .pid()
-            .expect("UniqueIdGenerator::pid() must be implemented.")
+        Service::UniqueId::pid(self.0).expect("UniqueIdGenerator::pid() must be implemented.")
     }
 
     /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) the id was created.
     pub fn creation_time<Service: crate::service::Service>(
         &self,
     ) -> iceoryx2_bb_posix::clock::Time {
-        Service::UniqueId::from(self.0)
-            .creation_time()
+        Service::UniqueId::creation_time(self.0)
             .expect("UniqueIdGenerator::creation_time() must be implemented.")
     }
 

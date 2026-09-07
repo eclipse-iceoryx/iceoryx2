@@ -40,13 +40,6 @@ pub mod unique_id_generator_trait {
             self.id
         }
     }
-    impl From<UniqueId> for TestUniqueId {
-        fn from(value: UniqueId) -> Self {
-            Self {
-                id: value.value() as u64,
-            }
-        }
-    }
     impl UniqueIdGenerator for TestUniqueId {
         fn generate<Service: service::Service>(
             _entity: Entity,
@@ -65,16 +58,22 @@ pub mod unique_id_generator_trait {
 
     #[test]
     fn pid_returns_error_when_not_implemented() {
-        let sut = TestUniqueId::new();
-        let pid = sut.pid();
+        let config = iceoryx2::config::Config::global_config();
+        let id =
+            TestUniqueId::generate::<ipc::Service>(Entity::Client(PortName::new_empty()), config)
+                .unwrap();
+        let pid = TestUniqueId::pid(id);
         assert_that!(pid, is_err);
         assert_that!(pid.err().unwrap(), eq UniqueIdGeneratorError::NotImplemented);
     }
 
     #[test]
     fn creation_time_returns_error_when_not_implemented() {
-        let sut = TestUniqueId::new();
-        let time = sut.creation_time();
+        let config = iceoryx2::config::Config::global_config();
+        let id =
+            TestUniqueId::generate::<ipc::Service>(Entity::Client(PortName::new_empty()), config)
+                .unwrap();
+        let time = TestUniqueId::creation_time(id);
         assert_that!(time, is_err);
         assert_that!(time.err().unwrap(), eq UniqueIdGeneratorError::NotImplemented);
     }

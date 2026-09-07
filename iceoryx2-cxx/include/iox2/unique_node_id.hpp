@@ -81,12 +81,12 @@ class UniqueNodeId {
 };
 
 template <ServiceType T>
-auto UniqueNodeId::pid() const -> int32_t {
+inline auto UniqueNodeId::pid() const -> int32_t {
     return iox2_unique_node_id_pid(&m_handle, iox2::bb::into<iox2_service_type_e>(T));
 }
 
 template <ServiceType T>
-auto UniqueNodeId::creation_time() const -> timespec {
+inline auto UniqueNodeId::creation_time() const -> timespec {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
     iox2_unique_node_id_creation_time(&m_handle, iox2::bb::into<iox2_service_type_e>(T), &seconds, &nanoseconds);

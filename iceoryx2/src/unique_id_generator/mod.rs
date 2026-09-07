@@ -24,8 +24,6 @@ use crate::{
     service::{self, service_name::ServiceName},
 };
 
-#[doc(hidden)]
-pub mod recommended;
 pub mod unique_system_id;
 
 /// 128-Byte ID that provides a `payload_value` and a `unique_value`. The latter is unique, at least
@@ -89,7 +87,7 @@ impl core::fmt::Display for UniqueIdGeneratorError {
 impl core::error::Error for UniqueIdGeneratorError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
-pub trait UniqueIdGenerator: From<UniqueId> {
+pub trait UniqueIdGenerator {
     /// Generates a [`UniqueId`] for a specific [`service::Service`].
     fn generate<Service: service::Service>(
         entity: Entity,
@@ -97,13 +95,15 @@ pub trait UniqueIdGenerator: From<UniqueId> {
     ) -> Result<UniqueId, UniqueIdGeneratorError>;
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) that was used to create the [`UniqueId`].
-    fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
+    fn pid(_id: UniqueId) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
             "pid() is not implemented");
     }
 
     /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) when the [`UniqueId`] was created.
-    fn creation_time(&self) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
+    fn creation_time(
+        _id: UniqueId,
+    ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
         fail!(from "UniqueIdGenerator::creation_time()",
             with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
     }
