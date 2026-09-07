@@ -742,12 +742,14 @@ pub mod generic {
         for (i, expected_handle) in enumeration_handle_mapping {
             let owner_id = OwnerId::new(i + OFFSET).unwrap();
 
-            let count = sut.find(owner_id, |element, handle| {
-                assert_that!(handle, eq(expected_handle));
-                let expected_element: T = (i as usize).into();
-                assert_that!(unsafe { *element }, eq(expected_element));
-                CallbackProgression::Continue
-            });
+            let count = unsafe {
+                sut.find(owner_id, |element, handle| {
+                    assert_that!(handle, eq(expected_handle));
+                    let expected_element: T = (i as usize).into();
+                    assert_that!(*element, eq(expected_element));
+                    CallbackProgression::Continue
+                })
+            };
             assert_that!(count, eq(1));
         }
     }
@@ -776,12 +778,14 @@ pub mod generic {
         let owner_id = OwnerId::new(base + OFFSET).unwrap();
 
         let mut next_expected_index = 0;
-        let count = sut.find(owner_id, |_, handle| {
-            let expected_handle = handles.get(next_expected_index).unwrap();
-            assert_that!(handle, eq(*expected_handle));
-            next_expected_index += 2;
-            CallbackProgression::Continue
-        });
+        let count = unsafe {
+            sut.find(owner_id, |_, handle| {
+                let expected_handle = handles.get(next_expected_index).unwrap();
+                assert_that!(handle, eq(*expected_handle));
+                next_expected_index += 2;
+                CallbackProgression::Continue
+            })
+        };
         assert_that!(count, eq(expected_count));
     }
 
@@ -799,7 +803,8 @@ pub mod generic {
         }
 
         let owner_id = OwnerId::new(OFFSET * 10).unwrap();
-        let count = sut.find(owner_id, |_element, _handle| CallbackProgression::Continue);
+        let count =
+            unsafe { sut.find(owner_id, |_element, _handle| CallbackProgression::Continue) };
         assert_that!(count, eq(0));
     }
 
@@ -825,7 +830,8 @@ pub mod generic {
             sut.remove(*handle, ReleaseMode::Default).unwrap();
         }
 
-        let count = sut.find(owner_id, |_element, _handle| CallbackProgression::Continue);
+        let count =
+            unsafe { sut.find(owner_id, |_element, _handle| CallbackProgression::Continue) };
         assert_that!(count, eq(0));
     }
 
