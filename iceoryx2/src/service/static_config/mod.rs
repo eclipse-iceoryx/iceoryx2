@@ -61,7 +61,7 @@ pub struct StaticConfig<ServiceType: service::Service> {
     unique_service_id: UniqueServiceId,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
-    #[serde[skip]]
+    #[serde(skip)]
     _service: PhantomData<ServiceType>,
 }
 
