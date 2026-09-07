@@ -664,7 +664,23 @@ impl<Service: service::Service> DeadNodeView<Service> {
         // now, everything not belonging to a service can be removed
         match Node::<Service>::port_tags(config, self.id(), |port_id| {
             match unsafe { remove_stale_port_resources::<Service>(self.id(), port_id, config) } {
-                Ok(()) => CallbackProgression::Continue,
+                Ok(()) => {
+                    // Remove the port tag file explicitly. For a dead node with
+                    // no registered services, the service cleanup path never runs
+                    // and would otherwise leavethe tag file behind, preventing the node directory
+                    // removal (`RemoveDirectoryA` -> ERROR_DIR_NOT_EMPTY).
+                    if let Ok(tag_name) = FileName::new(port_id.to_string().as_bytes()) {
+                        if let Err(e) = unsafe {
+                            <Service::StaticStorage as NamedConceptMgmt>::remove_cfg(
+                                &tag_name,
+                                &port_tag_config::<Service>(config, self.id()),
+                            )
+                        } {
+                            debug!(from self, "Unable to remove port tag {port_id}: {e:?}");
+                        }
+                    }
+                    CallbackProgression::Continue
+                }
                 Err(RemoveStalePortResourcesError::InsufficientPermissions) => {
                     cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
                     debug!(from self,
