@@ -111,7 +111,7 @@ impl From<UniqueIndexSetAcquireFailure> for ContainerAddFailure {
 pub enum ContainerRemoveError {
     /// The [`ContainerHandle`] is not part of the container. Either it is a double remove, belongs to
     /// a different [`Container`] or it was forcefully removed with [`Container::recover()`].
-    HandleNotOwnedByInstance,
+    ContainerHandleNotOwnedByContainer,
 }
 
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
@@ -463,7 +463,7 @@ impl<T: Copy + Debug> Container<T> {
             }
             Err(_) => {
                 fail!(from self,
-                        with ContainerRemoveError::HandleNotOwnedByInstance,
+                        with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
                         "Since the provided container handle {handle:?} is not owned by this container.");
             }
         };

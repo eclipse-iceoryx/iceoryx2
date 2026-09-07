@@ -149,7 +149,7 @@ pub mod generic {
                     handle,
                     ReleaseMode::Default,
                 ).err()
-            }, eq Some(ContainerRemoveError::HandleNotOwnedByInstance));
+            }, eq Some(ContainerRemoveError::ContainerHandleNotOwnedByContainer));
 
         assert_that!(sut.is_empty(), eq true);
 

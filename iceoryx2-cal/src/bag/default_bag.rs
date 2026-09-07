@@ -14,9 +14,30 @@
 
 use crate::bag::{Bag, BagAddFailure, BagFamily, BagHandle, BagRemoveError, BagState, BagType};
 
-use iceoryx2_bb_lock_free::mpmc::container::Container;
+use iceoryx2_bb_lock_free::mpmc::container::{
+    Container, ContainerAddFailure, ContainerRemoveError,
+};
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
+
+impl From<ContainerAddFailure> for BagAddFailure {
+    fn from(value: ContainerAddFailure) -> Self {
+        match value {
+            ContainerAddFailure::OutOfSpace => BagAddFailure::OutOfSpace,
+            ContainerAddFailure::IsLocked => BagAddFailure::IsLocked,
+        }
+    }
+}
+
+impl From<ContainerRemoveError> for BagRemoveError {
+    fn from(value: ContainerRemoveError) -> Self {
+        match value {
+            ContainerRemoveError::ContainerHandleNotOwnedByContainer => {
+                BagRemoveError::HandleNotOwnedByInstance
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct DefaultBag;
@@ -46,7 +67,7 @@ impl<T: BagType> Bag<T> for Container<T> {
     where
         T: PartialEq,
     {
-        unsafe { self.add(value, owner_id) }
+        unsafe { self.add(value, owner_id).map_err(|e| e.into()) }
     }
 
     unsafe fn remove(
@@ -54,7 +75,7 @@ impl<T: BagType> Bag<T> for Container<T> {
         handle: BagHandle,
         mode: ReleaseMode,
     ) -> Result<ReleaseState, BagRemoveError> {
-        unsafe { self.remove(handle, mode) }
+        unsafe { self.remove(handle, mode).map_err(|e| e.into()) }
     }
 
     unsafe fn get_state(&self) -> BagState<T> {

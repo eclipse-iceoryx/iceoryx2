@@ -43,16 +43,31 @@ use core::fmt::Debug;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use iceoryx2_bb_lock_free::mpmc::container::{
-    ContainerAddFailure, ContainerHandle, ContainerRemoveError, ContainerState,
-};
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
 
 pub type BagHandle = ContainerHandle;
 pub type BagState<T> = ContainerState<T>;
-pub type BagAddFailure = ContainerAddFailure;
-pub type BagRemoveError = ContainerRemoveError;
+
+/// States the reason why an element could not be added to the [`Bag`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BagAddFailure {
+    /// The new element would exceed the maximum [`Bag::capacity()`].
+    OutOfSpace,
+    /// The last element was removed from the [`Bag`] with the option
+    /// [`ReleaseMode::LockIfLastIndex`] which prevents adding new elements when the [`Bag`]
+    /// reached the [`Bag::is_empty()`] state.
+    IsLocked,
+}
+
+/// States the reason why a [`BagHandle`] could not be removed to the [`Bag`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BagRemoveError {
+    /// The [`BagHandle`] is not part of the container. Either it is a double remove, belongs to
+    /// a different [`Bag`] or it was forcefully removed with [`Bag::recover()`].
+    HandleNotOwnedByInstance,
+}
 
 /// A super trait defining the trait bounds of a [`Bag`] type
 pub trait BagType: Copy + Debug + ZeroCopySend {}
