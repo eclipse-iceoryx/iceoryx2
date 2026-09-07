@@ -1578,13 +1578,10 @@ impl NodeBuilder {
             .as_ref()
             .unwrap_or_else(|| Config::global_config());
 
-        let name = fatal_panic!(
-            from self,
-            when match &self.name {
-                Some(n) => NodeName::new(n.as_str()),
-                None => NodeName::new(""),
-            }
-            , "This should never happen! {msg} since the name is not a valid node name.");
+        let name = match &self.name {
+            Some(n) => n.clone(),
+            None => NodeName::default(),
+        };
         let node_id = UniqueNodeId::new::<Service>(name, config);
 
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),

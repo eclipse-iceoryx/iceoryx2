@@ -48,17 +48,13 @@ impl UniqueIdGenerator for UniqueSystemId {
         Ok(unsafe { UniqueId::from_raw_id(id.value()) })
     }
 
-    fn pid(&self) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
-        Ok(self.pid())
+    fn pid(id: UniqueId) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
+        Ok(UniqueSystemId::from(id.value()).pid())
     }
 
-    fn creation_time(&self) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
-        Ok(self.creation_time())
-    }
-}
-
-impl From<UniqueId> for UniqueSystemId {
-    fn from(value: UniqueId) -> Self {
-        Self::from(value.value())
+    fn creation_time(
+        id: UniqueId,
+    ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
+        Ok(UniqueSystemId::from(id.value()).creation_time())
     }
 }
