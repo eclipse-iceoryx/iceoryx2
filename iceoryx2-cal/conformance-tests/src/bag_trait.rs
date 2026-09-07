@@ -25,7 +25,7 @@ pub mod bag_trait {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_cal::bag::{Bag, BagAddFailure, BagFamily, BagHandleFamily};
+    use iceoryx2_cal::bag::{Bag, BagAddFailure, BagFamily, BagHandleFamily, BagStateFamily};
 
     #[derive(Debug, Copy, Clone, PartialEq, ZeroCopySend)]
     #[repr(C)]

@@ -122,7 +122,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagFamily, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagStateFamily};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -199,7 +199,7 @@ impl OffsetAndSize {
 pub struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
     pub(crate) sender: Sender<Service, PublishSubscribeResources<Service>>,
-    subscriber_list_state: UnsafeCell<BagState<SubscriberDetails>>,
+    subscriber_list_state: UnsafeCell<<Service::Bag as BagFamily>::BagState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     is_active: AtomicBool,
     // IMPORTANT!

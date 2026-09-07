@@ -47,7 +47,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagFamily, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagStateFamily};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
@@ -103,7 +103,8 @@ impl core::error::Error for SubscriberCreateError {}
 #[derive(Debug)]
 pub(crate) struct SubscriberSharedState<Service: service::Service> {
     pub(crate) receiver: Receiver<Service, PublishSubscribeResources<Service>>,
-    pub(crate) publisher_list_state: UnsafeCell<BagState<PublisherDetails>>,
+    pub(crate) publisher_list_state:
+        UnsafeCell<<Service::Bag as BagFamily>::BagState<PublisherDetails>>,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of

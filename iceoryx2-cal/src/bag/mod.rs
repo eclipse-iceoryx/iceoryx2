@@ -41,13 +41,11 @@ pub mod recommended;
 use core::fmt::Debug;
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
-
-pub type BagState<T> = ContainerState<T>;
 
 /// States the reason why an element could not be added to the [`Bag`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,10 +58,10 @@ pub enum BagAddFailure {
     IsLocked,
 }
 
-/// States the reason why a [`BagHandle`] could not be removed to the [`Bag`]
+/// States the reason why a [`BagHandleFamily`] handle could not be removed to the [`Bag`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BagRemoveError {
-    /// The [`BagHandle`] is not part of the container. Either it is a double remove, belongs to
+    /// The [`BagHandleFamily`] handle is not part of the bag. Either it is a double remove, belongs to
     /// a different [`Bag`] or it was forcefully removed with [`Bag::recover()`].
     HandleNotOwnedByInstance,
 }
@@ -74,24 +72,37 @@ pub trait BagHandleFamily: Debug + Clone + Copy + PartialEq + Eq + PartialOrd + 
 }
 
 /// A super trait defining the trait bounds of a [`Bag`] type
-pub trait BagType: Copy + Debug + ZeroCopySend {}
-impl<T: Copy + Debug + ZeroCopySend> BagType for T {}
+pub trait BagType: Copy + Debug + Send + ZeroCopySend {}
+impl<T: Copy + Debug + Send + ZeroCopySend> BagType for T {}
+
+/// The [`BagStateFamily`] trait provides access to a state of the concrete implementation of a bag
+pub trait BagStateFamily<T: BagType>: Debug + Send {
+    /// Iterates over all elements and calls the callback for each of them, providing the
+    /// index of the element and a reference to the underlying value.
+    /// **Note:** The index of a value never changes as long as it is stored inside the bag.
+    fn for_each<F: FnMut(usize, &T) -> CallbackProgression>(&self, callback: F);
+
+    /// Returns the element at the given index, if occupied
+    fn get(&self, index: usize) -> Option<&T>;
+}
 
 /// The [`BagFamily`] provides the associated type for the concrete type implementing the concept
 pub trait BagFamily: Debug + 'static {
     type BagHandle: BagHandleFamily;
+    type BagState<T: BagType>: BagStateFamily<T>;
     type Bag<T: BagType>: Debug
         + Send
         + Sync
         + ZeroCopySend
         + RelocatableContainer
-        + Bag<T, BagHandle = Self::BagHandle>;
+        + Bag<T, BagHandle = Self::BagHandle, BagState<T> = Self::BagState<T>>;
 }
 
 /// The [`Bag`] trait provides access to an unordered container with fix position for the data
 /// during its lifetime
 pub trait Bag<T: BagType>: Debug {
     type BagHandle: BagHandleFamily;
+    type BagState<TT: BagType>: BagStateFamily<T>;
 
     /// Returns the capacity of the bag.
     fn capacity(&self) -> usize;
@@ -124,12 +135,12 @@ pub trait Bag<T: BagType>: Debug {
     /// # Safety
     ///
     ///  * Ensure that [`Bag::init()`](RelocatableContainer::init()) was called before calling this method
-    ///  * Ensure that no one else possesses the [`BagHandle`] and the index was unrecoverable
+    ///  * Ensure that no one else possesses the [`BagHandleFamily`] handle and the index was unrecoverable
     ///    lost
     ///  * Ensure that the `handle` was acquired by the same [`Bag`]
     ///    with [`Bag::add()`], otherwise the method will panic.
     ///
-    /// **Important:** If the [`BagHandle`] still exists it causes double frees or freeing an index
+    /// **Important:** If the [`BagHandleFamily`] handle still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
     unsafe fn remove(
@@ -138,14 +149,14 @@ pub trait Bag<T: BagType>: Debug {
         mode: ReleaseMode,
     ) -> Result<ReleaseState, BagRemoveError>;
 
-    /// Returns [`BagState`] which contains all elements of this bag. Be aware that
+    /// Returns [`BagStateFamily`] state which contains all elements of this bag. Be aware that
     /// this state can be out of date as soon as it is returned from this function.
     ///
     /// # Safety
     ///
     ///  * Ensure that [`Bag::init()`](RelocatableContainer::init()) was called before calling this method
     ///
-    unsafe fn get_state(&self) -> BagState<T>;
+    unsafe fn get_state(&self) -> Self::BagState<T>;
 
     /// Recovers and releases all entries the dead [`OwnerId`] owned. It assumes that the dead owner
     /// maybe died while adding some entry, therefore it removes all entries where the
@@ -155,7 +166,7 @@ pub trait Bag<T: BagType>: Debug {
     /// # Safety
     ///
     ///  * Ensure that [`Bag::init()`](RelocatableContainer::init()) was called before calling this method
-    ///  * All existing [`BagHandle`] that belong to the [`OwnerId`] must never be removed with
+    ///  * All existing [`BagHandleFamily`] handle that belong to the [`OwnerId`] must never be removed with
     ///    [`Bag::remove()`] otherwise we corrupt the state.
     ///
     unsafe fn recover<F: FnMut(T) -> bool>(
@@ -165,7 +176,7 @@ pub trait Bag<T: BagType>: Debug {
         mode: ReleaseMode,
     ) -> ReleaseState;
 
-    /// Syncs the [`BagState`] with the current state of the [`Bag`]. If the state has
+    /// Syncs the [`BagStateFamily`] state with the current state of the [`Bag`]. If the state has
     /// changed it returns true, otherwise false.
     ///
     /// # Safety
@@ -174,5 +185,5 @@ pub trait Bag<T: BagType>: Debug {
     ///  * Ensure that the input argument `previous_state` was acquired by the same [`Bag`]
     ///    with [`Bag::get_state()`], otherwise the method will panic.
     ///
-    unsafe fn update_state(&self, previous_state: &mut BagState<T>) -> bool;
+    unsafe fn update_state(&self, previous_state: &mut Self::BagState<T>) -> bool;
 }

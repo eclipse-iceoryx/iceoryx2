@@ -38,7 +38,7 @@ use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_cal::bag::{Bag, BagFamily};
+use iceoryx2_cal::bag::{Bag, BagFamily, BagStateFamily};
 use iceoryx2_log::{error, fatal_panic};
 
 use super::PortCleanupAction;

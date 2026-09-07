@@ -47,7 +47,7 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagFamily, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagStateFamily};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -135,7 +135,7 @@ struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     service_state: SharedServiceState<Service, NoResource>,
-    list_state: UnsafeCell<BagState<ListenerDetails>>,
+    list_state: UnsafeCell<<Service::Bag as BagFamily>::BagState<ListenerDetails>>,
 }
 
 impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
@@ -149,7 +149,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn new(
         size: usize,
         service_state: SharedServiceState<Service, NoResource>,
-        list_state: UnsafeCell<BagState<ListenerDetails>>,
+        list_state: UnsafeCell<<Service::Bag as BagFamily>::BagState<ListenerDetails>>,
     ) -> Self {
         let mut new_self = Self {
             connections: vec![],

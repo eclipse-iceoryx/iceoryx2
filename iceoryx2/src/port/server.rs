@@ -109,7 +109,7 @@ use iceoryx2_bb_flatbuffers::AllocationStrategy;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::bag::Bag;
-use iceoryx2_cal::bag::{BagFamily, BagState};
+use iceoryx2_cal::bag::{BagFamily, BagStateFamily};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -142,7 +142,7 @@ pub struct SharedServerState<Service: service::Service> {
     pub(crate) response_sender: Sender<Service, RequestResponseResources<Service>>,
     server_handle: UnsafeCell<Option<<Service::Bag as BagFamily>::BagHandle>>,
     pub(crate) request_receiver: Receiver<Service, RequestResponseResources<Service>>,
-    client_list_state: UnsafeCell<BagState<ClientDetails>>,
+    client_list_state: UnsafeCell<<Service::Bag as BagFamily>::BagState<ClientDetails>>,
     service_state: SharedServiceState<Service, RequestResponseResources<Service>>,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the

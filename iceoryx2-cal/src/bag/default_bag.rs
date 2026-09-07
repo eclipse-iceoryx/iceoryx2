@@ -13,11 +13,12 @@
 //! The default implementation for the [`BagFamily`] concept and the [`Bag`] trait.
 
 use crate::bag::{
-    Bag, BagAddFailure, BagFamily, BagHandleFamily, BagRemoveError, BagState, BagType,
+    Bag, BagAddFailure, BagFamily, BagHandleFamily, BagRemoveError, BagStateFamily, BagType,
 };
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{
-    Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError,
+    Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError, ContainerState,
 };
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
@@ -47,16 +48,28 @@ impl BagHandleFamily for ContainerHandle {
     }
 }
 
+impl<T: BagType> BagStateFamily<T> for ContainerState<T> {
+    fn for_each<F: FnMut(usize, &T) -> CallbackProgression>(&self, callback: F) {
+        self.for_each(callback)
+    }
+
+    fn get(&self, index: usize) -> Option<&T> {
+        self.get(index)
+    }
+}
+
 #[derive(Debug)]
 pub struct DefaultBag;
 
 impl BagFamily for DefaultBag {
     type BagHandle = ContainerHandle;
+    type BagState<T: BagType> = ContainerState<T>;
     type Bag<T: BagType> = Container<T>;
 }
 
 impl<T: BagType> Bag<T> for Container<T> {
     type BagHandle = ContainerHandle;
+    type BagState<TT: BagType> = ContainerState<T>;
 
     fn capacity(&self) -> usize {
         self.capacity()
@@ -89,7 +102,7 @@ impl<T: BagType> Bag<T> for Container<T> {
         unsafe { self.remove(handle, mode).map_err(|e| e.into()) }
     }
 
-    unsafe fn get_state(&self) -> BagState<T> {
+    unsafe fn get_state(&self) -> Self::BagState<T> {
         unsafe { self.get_state() }
     }
 
@@ -102,7 +115,7 @@ impl<T: BagType> Bag<T> for Container<T> {
         unsafe { self.recover(dead_owner_id, predicate, mode) }
     }
 
-    unsafe fn update_state(&self, previous_state: &mut BagState<T>) -> bool {
+    unsafe fn update_state(&self, previous_state: &mut Self::BagState<T>) -> bool {
         unsafe { self.update_state(previous_state) }
     }
 }
