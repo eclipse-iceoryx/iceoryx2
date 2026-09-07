@@ -23,7 +23,7 @@ use crate::api::{AssertNonNullHandle, HandleToType};
 #[repr(C)]
 #[repr(align(8))] // core::mem::align_of::<UniqueWriterId>()
 pub struct iox2_unique_writer_id_storage_t {
-    internal: [u8; 24], // core::mem::size_of::<Option<UniqueWriterId>>()
+    internal: [u8; 20], // core::mem::size_of::<Option<UniqueWriterId>>()
 }
 
 #[repr(C)]

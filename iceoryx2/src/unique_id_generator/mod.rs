@@ -26,7 +26,7 @@ use crate::{
 
 pub mod unique_system_id;
 
-/// 128-Byte ID that provides a `payload_value` and a `unique_value`. The latter is unique, at least
+/// 128-bit ID that provides a `payload_value` and a `unique_value`. The latter is unique, at least
 /// within a single process. Further guarantees, such as a system-wide uniqueness, depend on the
 /// [`UniqueIdGenerator`] concept implementation. The `payload_value` can be used to provide additional
 /// information with the ID, as for instance the time when the unique ID was created.
@@ -48,14 +48,14 @@ impl UniqueId {
     /// return a unique value for the created ID.
     pub unsafe fn from_raw_id(value: u128) -> Self {
         Self {
-            payload_value: (value >> 64) as u64,
-            unique_value: value as u64,
+            payload_value: value as u64,
+            unique_value: (value >> 64) as u64,
         }
     }
 
     /// Returns the underlying raw value of the ID.
     pub fn value(&self) -> u128 {
-        (self.payload_value as u128) << 64 | (self.unique_value as u128)
+        (self.unique_value as u128) << 64 | (self.payload_value as u128)
     }
 
     /// Returns the payload part of the ID.

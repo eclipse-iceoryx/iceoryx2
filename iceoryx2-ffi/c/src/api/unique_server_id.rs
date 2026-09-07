@@ -23,7 +23,7 @@ use super::{AssertNonNullHandle, HandleToType};
 #[repr(C)]
 #[repr(align(8))] // core::mem::align_of::<UniqueServerId>()
 pub struct iox2_unique_server_id_storage_t {
-    internal: [u8; 24], // core::mem::size_of::<Option<UniqueServerId>>()
+    internal: [u8; 20], // core::mem::size_of::<Option<UniqueServerId>>()
 }
 
 #[repr(C)]
