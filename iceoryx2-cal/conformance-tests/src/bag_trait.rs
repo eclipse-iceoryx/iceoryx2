@@ -223,4 +223,30 @@ pub mod bag_trait {
 
         assert_that!(count, eq(1));
     }
+
+    #[conformance_test]
+    pub fn recover_locks_container_with_release_mode_lock_if_last_index<Sut: BagFamily>() {
+        let fixture = TestFixture::<Sut>::create();
+
+        let sut = &fixture.sut;
+
+        let id_to_recover = OwnerId::new(42).unwrap();
+        for i in 0..2 {
+            unsafe { sut.add(Data { value: i }, id_to_recover).unwrap() };
+        }
+
+        let release_state =
+            unsafe { sut.recover(id_to_recover, |_| true, ReleaseMode::LockIfLastIndex) };
+        assert_that!(release_state, eq(ReleaseState::Locked));
+
+        let state = unsafe { sut.get_state() };
+
+        let mut count = 0;
+        state.for_each(|_, _| {
+            count += 1;
+            CallbackProgression::Continue
+        });
+
+        assert_that!(count, eq(0));
+    }
 }
