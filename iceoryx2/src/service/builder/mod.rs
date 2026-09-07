@@ -287,7 +287,7 @@ pub struct BuilderWithServiceType<ServiceType: service::Service> {
     _phantom_data: PhantomData<ServiceType>,
 }
 
-type DynanmicConfigStorage<S> =
+type DynamicConfigStorage<S> =
     <S as service::Service>::DynamicStorage<DynamicConfig<<S as service::Service>::Bag>>;
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
@@ -902,7 +902,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<
         (
             <ServiceType::Bag as BagFamily>::BagHandle,
-            DynanmicConfigStorage<ServiceType>,
+            DynamicConfigStorage<ServiceType>,
         ),
         DynamicStorageCreateError,
     > {
@@ -946,7 +946,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<
         (
             <ServiceType::Bag as BagFamily>::BagHandle,
-            DynanmicConfigStorage<ServiceType>,
+            DynamicConfigStorage<ServiceType>,
         ),
         DynamicStorageCreateError,
     > {

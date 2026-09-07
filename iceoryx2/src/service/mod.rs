@@ -1217,11 +1217,11 @@ fn read_static_service_config<S: Service>(
     Ok(Some(service_config))
 }
 
-type DynanmicConfigStorage<S> = <S as Service>::DynamicStorage<DynamicConfig<<S as Service>::Bag>>;
+type DynamicConfigStorage<S> = <S as Service>::DynamicStorage<DynamicConfig<<S as Service>::Bag>>;
 fn open_dynamic_config<S: Service>(
     config: &config::Config,
     service_id: UniqueServiceId,
-) -> Result<Option<DynanmicConfigStorage<S>>, ServiceDetailsError> {
+) -> Result<Option<DynamicConfigStorage<S>>, ServiceDetailsError> {
     let origin = format!(
         "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
@@ -1230,10 +1230,10 @@ fn open_dynamic_config<S: Service>(
     let msg = "Unable to open the services dynamic config";
     let segment_name = dynamic_config_name(service_id);
     match
-            <<DynanmicConfigStorage<S> as DynamicStorage<
+            <<DynamicConfigStorage<S> as DynamicStorage<
                     DynamicConfig<S::Bag>,
                 >>::Builder<'_> as NamedConceptBuilder<
-                    DynanmicConfigStorage<S>,
+                    DynamicConfigStorage<S>,
                 >>::new(&segment_name)
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
