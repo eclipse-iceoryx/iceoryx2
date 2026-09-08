@@ -305,13 +305,23 @@ impl<Service: service::Service> ClientSharedState<Service> {
 
         self.prepare_channel_to_receive_responses(channel_id, request_id);
 
-        self.active_request_counter.fetch_add(1, Ordering::Relaxed);
-        Ok(self.request_sender.deliver_offset(
+        let number_of_recipients = match self.request_sender.deliver_offset(
             chunk,
             // All requests are delivered on the same channel, therefore we can use
             // ChannelId::new(0).
             ChannelId::new(0),
-        )?)
+        ) {
+            Ok(number_of_recipients) => number_of_recipients,
+            Err(error) => {
+                // No PendingResponse will be created to close this channel, even if
+                // the request reached some of the servers before delivery failed.
+                self.response_receiver.close_channel(channel_id, request_id);
+                return Err(error.into());
+            }
+        };
+
+        self.active_request_counter.fetch_add(1, Ordering::Relaxed);
+        Ok(number_of_recipients)
     }
 
     pub(crate) fn update_connections(
