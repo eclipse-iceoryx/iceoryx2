@@ -1145,6 +1145,29 @@ impl<Service: service::Service> Node<Service> {
         Builder::new(name, self.shared.clone())
     }
 
+    /// Returns the [`NodeState`] of a specific [`Node`] that has the provided [`UniqueNodeId`].
+    /// If this [`Node`] does not exist, the function returns [`None`].
+    pub fn state_of(
+        config: &Config,
+        node_id: UniqueNodeId,
+    ) -> Result<Option<NodeState<Service>>, NodeListFailure> {
+        let mut node_state = None;
+        match Node::list(config, |v| {
+            if *v.node_id() == node_id {
+                node_state = Some(v);
+                CallbackProgression::Stop
+            } else {
+                CallbackProgression::Continue
+            }
+        }) {
+            Ok(()) => Ok(node_state),
+            Err(e) => {
+                fail!(from "Node::state_of()", with e,
+                    "Unable to acquire the node state of \"{node_id}\" due to a failure while listing all nodes. [{e:?}]");
+            }
+        }
+    }
+
     /// Calls the provided callback for all [`Node`]s in the system under a given [`Config`] and
     /// provides [`NodeState<Service>`] as input argument. With every iteration the callback has to
     /// return [`CallbackProgression::Continue`] to perform the next iteration or

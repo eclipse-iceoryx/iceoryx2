@@ -1478,4 +1478,24 @@ pub mod service {
 
         assert_that!(sut, is_ok);
     }
+
+    #[conformance_test]
+    pub fn node_exists_until_service_is_dropped<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let service_name = generate_service_name();
+        let node = test.context().create_node();
+        let config = node.config().clone();
+        let node_id = *node.id();
+        let sut = test
+            .create(&node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+
+        drop(node);
+
+        assert_that!(Node::<Sut>::state_of(&config, node_id).unwrap(), is_some);
+
+        drop(sut);
+
+        assert_that!(Node::<Sut>::state_of(&config, node_id).unwrap(), is_none);
+    }
 }

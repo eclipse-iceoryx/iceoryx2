@@ -18,6 +18,8 @@ pub mod notifier {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
 
+    use iceoryx2::node::Node;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::{
         node::NodeBuilder,
         port::notifier::{NotifierCreateError, NotifierNotifyError},
@@ -94,6 +96,37 @@ pub mod notifier {
         let sut = service.notifier_builder().name(&notifier_name).create()?;
 
         assert_that!(*sut.name(), eq notifier_name);
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn service_and_node_exist_until_notifier_port_is_dropped<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let node_id = *node.id();
+        let service = node.service_builder(&service_name).event().create()?;
+
+        let sut = service.notifier_builder().create()?;
+
+        drop(node);
+        drop(service);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_some
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::Event), eq Ok(true));
+
+        drop(sut);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_none
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::Event), eq Ok(false));
 
         Ok(())
     }

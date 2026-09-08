@@ -955,4 +955,38 @@ pub mod publisher {
 
         Ok(())
     }
+
+    #[conformance_test]
+    pub fn service_and_node_exist_until_publisher_port_is_dropped<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let node_id = *node.id();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let sut = service.publisher_builder().create()?;
+
+        drop(node);
+        drop(service);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_some
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::PublishSubscribe), eq Ok(true));
+
+        drop(sut);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_none
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::PublishSubscribe), eq Ok(false));
+
+        Ok(())
+    }
 }
