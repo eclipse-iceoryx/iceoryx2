@@ -17,6 +17,7 @@ use crate::{
     attribute_set::AttributeSet,
     cleanup_state::CleanupState,
     duration::Duration,
+    dynamic_config_event::DynamicConfigEvent,
     error::NodeListFailure,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
@@ -40,6 +41,12 @@ pub struct PortFactoryEvent(pub(crate) Parc<PortFactoryEventType>);
 
 #[pymethods]
 impl PortFactoryEvent {
+    #[getter]
+    /// Returns the dynamic configuration, including the current port counts.
+    pub fn dynamic_config(&self) -> DynamicConfigEvent {
+        DynamicConfigEvent(self.0.clone())
+    }
+
     #[getter]
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
