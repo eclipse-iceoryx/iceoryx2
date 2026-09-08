@@ -18,6 +18,7 @@ use pyo3::prelude::*;
 use crate::attribute_set::AttributeSet;
 use crate::cleanup_state::CleanupState;
 use crate::duration::Duration;
+use crate::dynamic_config_blackboard::DynamicConfigBlackboard;
 use crate::error::NodeListFailure;
 use crate::node_state::{
     AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState,
@@ -72,6 +73,12 @@ impl PortFactoryBlackboard {
     #[getter]
     pub fn __key_type_details(&self) -> Option<Py<PyAny>> {
         self.key_type_storage.clone().value
+    }
+
+    #[getter]
+    /// Returns the dynamic configuration, including the current port counts.
+    pub fn dynamic_config(&self) -> DynamicConfigBlackboard {
+        DynamicConfigBlackboard(self.value.clone())
     }
 
     #[getter]

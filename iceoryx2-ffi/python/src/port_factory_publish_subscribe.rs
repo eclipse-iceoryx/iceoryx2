@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use crate::attribute_set::AttributeSet;
 use crate::cleanup_state::CleanupState;
 use crate::duration::Duration;
+use crate::dynamic_config_publish_subscribe::DynamicConfigPublishSubscribe;
 use crate::error::NodeListFailure;
 use crate::node_state::{
     AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState,
@@ -72,6 +73,12 @@ impl PortFactoryPublishSubscribe {
 
 #[pymethods]
 impl PortFactoryPublishSubscribe {
+    #[getter]
+    /// Returns the dynamic configuration, including the current port counts.
+    pub fn dynamic_config(&self) -> DynamicConfigPublishSubscribe {
+        DynamicConfigPublishSubscribe(self.value.clone())
+    }
+
     #[getter]
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
