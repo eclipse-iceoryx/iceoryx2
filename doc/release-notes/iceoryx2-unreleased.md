@@ -70,6 +70,7 @@
 * [#1924](https://github.com/eclipse-iceoryx/iceoryx2/issues/1924) Ensure discovery service node resources are removed during shutdown.
 * [#1940](https://github.com/eclipse-iceoryx/iceoryx2/issues/1940) Fix private rustdoc link diagnostics.
 * [#1960](https://github.com/eclipse-iceoryx/iceoryx2/issues/1960) Validate type descriptions and payload layouts received over gateway backends
+* [#1971](https://github.com/eclipse-iceoryx/iceoryx2/issues/1971) Ensure destruction order even when service and node are explicitly dropped
 
 ### Refactoring
 
