@@ -1418,5 +1418,6 @@ pub mod client {
             is_none
         );
         assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(false));
+        assert_that!(iceoryx2_testing::do_stale_node_resources_exist::<Sut>(test.config(), node_id), eq false);
     }
 }
