@@ -59,9 +59,9 @@ impl<T: BagType> BagStateFamily<T> for ContainerState<T> {
 }
 
 #[derive(Debug)]
-pub struct DefaultBag;
+pub struct LockFreeBag;
 
-impl BagFamily for DefaultBag {
+impl BagFamily for LockFreeBag {
     type BagHandle = ContainerHandle;
     type BagState<T: BagType> = ContainerState<T>;
     type Bag<T: BagType> = Container<T>;

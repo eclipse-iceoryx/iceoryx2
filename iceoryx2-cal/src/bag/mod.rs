@@ -35,7 +35,7 @@
 //! }
 //! ```
 
-pub mod default_bag;
+pub mod lock_free_bag;
 pub mod recommended;
 
 use core::fmt::Debug;

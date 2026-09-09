@@ -15,5 +15,5 @@ use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 instantiate_conformance_tests_with_module!(
     container,
     iceoryx2_cal_conformance_tests::bag_trait,
-    iceoryx2_cal::bag::default_bag::DefaultBag
+    iceoryx2_cal::bag::lock_free_bag::LockFreeBag
 );

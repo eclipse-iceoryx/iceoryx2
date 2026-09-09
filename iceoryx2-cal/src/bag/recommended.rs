@@ -13,4 +13,4 @@
 /// Provides the recommended
 /// [`BagFamily`](crate::bag::BagFamily) concept implementation
 /// for the target.
-pub type Recommended = crate::bag::default_bag::DefaultBag;
+pub type Recommended = crate::bag::lock_free_bag::LockFreeBag;
