@@ -47,7 +47,7 @@ pub(crate) enum ClientType {
 #[pyclass]
 /// Represents the receiving endpoint of an event based communication.
 pub struct Client {
-    pub(crate) value: ClientType,
+    pub(crate) value: Parc<ClientType>,
     pub(crate) request_payload_type_details: TypeStorage,
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) request_header_type_details: TypeStorage,
@@ -79,7 +79,7 @@ impl Client {
     #[getter]
     /// Returns the `UniqueClientId` of the `Client`
     pub fn id(&self) -> UniqueClientId {
-        match &self.value {
+        match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => UniqueClientId(v.id()),
             ClientType::Local(Some(v)) => UniqueClientId(v.id()),
             _ => fatal_panic!(from "Client::id()", "Accessing a released client."),
@@ -89,7 +89,7 @@ impl Client {
     #[getter]
     /// Returns the `PortName` of the `Client`
     pub fn name(&self) -> PortName {
-        match &self.value {
+        match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => PortName(*v.name()),
             ClientType::Local(Some(v)) => PortName(*v.name()),
             _ => fatal_panic!(from "Client::name()",
@@ -101,11 +101,11 @@ impl Client {
     ///
     /// After this call the `Client` is no longer usable!
     pub fn delete(&mut self) {
-        match self.value {
-            ClientType::Ipc(ref mut v) => {
+        match &mut *self.value.lock() {
+            ClientType::Ipc(v) => {
                 v.take();
             }
-            ClientType::Local(ref mut v) => {
+            ClientType::Local(v) => {
                 v.take();
             }
         }
@@ -115,7 +115,7 @@ impl Client {
     /// Returns the strategy the `Client` follows when a `RequestMut` cannot be delivered
     /// if the `Server`s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
-        match &self.value {
+        match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => v.backpressure_strategy().into(),
             ClientType::Local(Some(v)) => v.backpressure_strategy().into(),
             _ => {
@@ -136,7 +136,7 @@ impl Client {
     ///
     /// On failure it emits a `LoanError` describing the failure.
     pub fn __loan_slice_uninit(&self, slice_len: usize) -> PyResult<RequestMutUninit> {
-        match &self.value {
+        match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => Ok(RequestMutUninit {
                 value: Parc::new(RequestMutUninitType::Ipc(Some(unsafe {
                     v.loan_custom_payload(slice_len)
@@ -166,7 +166,7 @@ impl Client {
 
     /// Returns the maximum initial slice length configured for this `Client`.
     pub fn initial_max_slice_len(&self) -> usize {
-        match &self.value {
+        match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => v.initial_max_slice_len(),
             ClientType::Local(Some(v)) => v.initial_max_slice_len(),
             _ => {
@@ -179,7 +179,7 @@ impl Client {
     #[getter]
     /// Returns the maximum amount of active requests the `Client` can send.
     pub fn max_active_requests(&self) -> usize {
-        match &self.value {
+        match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => v.max_active_requests(),
             ClientType::Local(Some(v)) => v.max_active_requests(),
             _ => fatal_panic!(from "Client::max_active_requests()", "Accessing a released client."),

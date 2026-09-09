@@ -269,10 +269,10 @@ impl PortFactoryClient {
                     None => this,
                 };
                 Ok(Client {
-                    value: ClientType::Ipc(Some(
+                    value: Parc::new(ClientType::Ipc(Some(
                         this.create()
                             .map_err(|e| ClientCreateError::new_err(format!("{e:?}")))?,
-                    )),
+                    ))),
                     request_header_type_details: self.request_header_type_details.clone(),
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),
@@ -289,10 +289,10 @@ impl PortFactoryClient {
                     None => this,
                 };
                 Ok(Client {
-                    value: ClientType::Local(Some(
+                    value: Parc::new(ClientType::Local(Some(
                         this.create()
                             .map_err(|e| ClientCreateError::new_err(format!("{e:?}")))?,
-                    )),
+                    ))),
                     request_header_type_details: self.request_header_type_details.clone(),
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),
