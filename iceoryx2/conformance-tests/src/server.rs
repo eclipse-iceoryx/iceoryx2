@@ -1321,7 +1321,7 @@ pub mod server {
             .create()
             .unwrap();
 
-        let sut = service.server_builder().create();
+        let sut = service.server_builder().create().unwrap();
 
         drop(node);
         drop(service);

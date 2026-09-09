@@ -1400,7 +1400,7 @@ pub mod client {
             .create()
             .unwrap();
 
-        let sut = service.client_builder().create();
+        let sut = service.client_builder().create().unwrap();
 
         drop(node);
         drop(service);
