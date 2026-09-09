@@ -381,6 +381,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive;
     case iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         return iox2::EventOpenOrCreateError::CreateServiceConfigCouldNotBeCreated;
+    case iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE:
+        return iox2::EventOpenOrCreateError::CreateEventIdExceedsMaxSupportedValue;
     case iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
         return iox2::EventOpenOrCreateError::CreateUnableToCreateServiceTag;
 
@@ -458,6 +460,8 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     case iox2::EventOpenOrCreateError::CreateServiceConfigCouldNotBeCreated:
         return iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::EventOpenOrCreateError::CreateEventIdExceedsMaxSupportedValue:
+        return iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE;
     }
 
     IOX2_UNREACHABLE();
@@ -527,6 +531,8 @@ constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2
     case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
+        IOX2_UNREACHABLE();
+    case iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE:
         IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
         IOX2_UNREACHABLE();
@@ -613,6 +619,8 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
         return iox2::EventCreateError::UnableToCreateServiceTag;
     case iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         return iox2::EventCreateError::ServiceConfigCouldNotBeCreated;
+    case iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE:
+        return iox2::EventCreateError::EventIdExceedsMaxSupportedValue;
     case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         return iox2::EventCreateError::OldConnectionsStillActive;
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
@@ -686,6 +694,8 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
         return iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::EventCreateError::ServiceConfigCouldNotBeCreated:
         return iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::EventCreateError::EventIdExceedsMaxSupportedValue:
+        return iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE;
     }
 
     IOX2_UNREACHABLE();

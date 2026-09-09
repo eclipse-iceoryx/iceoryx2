@@ -97,9 +97,9 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     constexpr uint64_t NUMBER_OF_LISTENERS = 7;
     constexpr uint64_t NUMBER_OF_NODES = 8;
     constexpr uint64_t MAX_EVENT_ID_VALUE = 9;
-    const auto create_event_id = EventId(12);
-    const auto dropped_event_id = EventId(13);
-    const auto dead_event_id = EventId(14);
+    const auto create_event_id = EventId(6);
+    const auto dropped_event_id = EventId(7);
+    const auto dead_event_id = EventId(8);
 
     const auto service_name = iox2::testing::generate_service_name();
 

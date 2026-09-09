@@ -423,11 +423,11 @@
 //!     //          configurations that use a bitset as event tracking mechanism
 //!     .event_id_max_value(256)
 //!     // optional event id that is emitted when a new notifier was created
-//!     .notifier_created_event(EventId::new(999))
+//!     .notifier_created_event(EventId::new(255))
 //!     // optional event id that is emitted when a notifier is dropped
 //!     .notifier_dropped_event(EventId::new(0))
 //!     // optional event id that is emitted when a notifier is identified as dead
-//!     .notifier_dead_event(EventId::new(2000))
+//!     .notifier_dead_event(EventId::new(254))
 //!     // the deadline of the service defines how long a listener has to wait at most until
 //!     // a signal will be received
 //!     .deadline(Duration::from_secs(1))
