@@ -206,7 +206,10 @@ pub unsafe fn remove_dynamic_config<S: crate::service::Service>(
     let dyn_conf = dynamic_config_storage_config::<S>(config);
 
     unsafe {
-        <S::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::remove_cfg(&segment_name, &dyn_conf)
-            .unwrap()
+        <S::DynamicStorage<DynamicConfig<S::Bag>> as NamedConceptMgmt>::remove_cfg(
+            &segment_name,
+            &dyn_conf,
+        )
+        .unwrap()
     };
 }

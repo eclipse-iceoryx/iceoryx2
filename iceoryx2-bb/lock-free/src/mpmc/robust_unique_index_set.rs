@@ -112,8 +112,8 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
+use iceoryx2_bb_elementary::{CallbackProgression, enum_gen};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -368,6 +368,64 @@ impl RobustUniqueIndexSet {
                 Err(v) => current_generation_count = v,
             }
         }
+    }
+
+    /// Searches for all indices of a given [`OwnerId`].
+    ///
+    /// The obtained index can be out of date right after the return of the
+    /// function when the item was concurrently removed
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate iceoryx2_bb_loggers;
+    ///
+    /// use iceoryx2_bb_elementary::CallbackProgression;
+    /// use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::*;
+    /// use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::*;
+    ///
+    /// const CAPACITY: usize = 128;
+    ///
+    /// let index_set = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+    ///
+    /// let owner_id = OwnerId::new(313).unwrap(); // can be the PID + epoch for instance
+    /// let new_index = match unsafe { index_set.acquire(owner_id) } {
+    ///     Err(_) => panic!("Out of indices"),
+    ///     Ok(i) => i,
+    /// };
+    ///
+    /// let count = index_set.find(owner_id, |index| {
+    ///     assert!(index == new_index);
+    ///     CallbackProgression::Continue
+    /// });
+    /// assert!(count == 1);
+    /// ```
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`RobustUniqueIndexSet::init()`] was called once.
+    ///
+    pub unsafe fn find<F: FnMut(usize) -> CallbackProgression>(
+        &self,
+        owner_id: OwnerId,
+        mut callback: F,
+    ) -> usize {
+        self.verify_init("find()");
+        let mut count = 0;
+
+        let cell_ptr = self.cell_ptr.as_ptr();
+        for n in 0..self.capacity {
+            let cell = unsafe { &*cell_ptr.add(n) };
+            if owner_id.0 == cell.load(Ordering::Relaxed) {
+                let action = callback(n);
+                count += 1;
+                if action == CallbackProgression::Stop {
+                    break;
+                }
+            }
+        }
+
+        count
     }
 
     /// Releases a raw index.
@@ -655,6 +713,15 @@ impl<const CAPACITY: usize> StaticRobustUniqueIndexSet<CAPACITY> {
     /// ```
     pub fn acquire(&self, owner_id: OwnerId) -> Result<usize, UniqueIndexSetAcquireFailure> {
         unsafe { self.state.acquire(owner_id) }
+    }
+
+    /// Find indices of owner id.
+    pub fn find<F: FnMut(usize) -> CallbackProgression>(
+        &self,
+        owner_id: OwnerId,
+        callback: F,
+    ) -> usize {
+        unsafe { self.state.find(owner_id, callback) }
     }
 
     /// Releases a raw index.

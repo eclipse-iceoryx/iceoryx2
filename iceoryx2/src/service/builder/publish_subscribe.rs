@@ -724,9 +724,9 @@ impl<
                 messaging_pattern_settings: MessagingPatternSettings::PublishSubscribe(
                     dynamic_config_setting,
                 ),
-                additional_size: dynamic_config::publish_subscribe::DynamicConfig::memory_size(
-                    &dynamic_config_setting,
-                ),
+                additional_size: dynamic_config::publish_subscribe::DynamicConfig::<
+                    ServiceType::Bag,
+                >::memory_size(&dynamic_config_setting),
                 max_number_of_nodes: pubsub_config.max_nodes,
             }
         };

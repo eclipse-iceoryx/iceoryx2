@@ -111,7 +111,7 @@ impl<
 {
     type Service = Service;
     type StaticConfig = static_config::publish_subscribe::StaticConfig;
-    type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
+    type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig<Service::Bag>;
 
     fn name(&self) -> &ServiceName {
         self.service.static_config().name()
@@ -133,7 +133,7 @@ impl<
         self.service.static_config().publish_subscribe()
     }
 
-    fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
+    fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig<Service::Bag> {
         self.service.dynamic_storage().get().publish_subscribe()
     }
 

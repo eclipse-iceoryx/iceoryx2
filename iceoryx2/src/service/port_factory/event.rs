@@ -75,7 +75,7 @@ impl<Service: service::Service> Abandonable for PortFactory<Service> {
 impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
     type Service = Service;
     type StaticConfig = static_config::event::StaticConfig;
-    type DynamicConfig = dynamic_config::event::DynamicConfig;
+    type DynamicConfig = dynamic_config::event::DynamicConfig<Service::Bag>;
 
     fn name(&self) -> &ServiceName {
         self.service.static_config().name()
@@ -97,7 +97,7 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
         self.service.static_config().event()
     }
 
-    fn dynamic_config(&self) -> &dynamic_config::event::DynamicConfig {
+    fn dynamic_config(&self) -> &dynamic_config::event::DynamicConfig<Service::Bag> {
         self.service.dynamic_storage().get().event()
     }
 

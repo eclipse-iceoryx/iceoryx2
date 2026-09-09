@@ -18,8 +18,8 @@ use iceoryx2_log::fatal_panic;
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
     global_config: &config::Config,
-) -> <Service::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::Configuration {
-    <<Service::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::Configuration>::default()
+) -> <Service::DynamicStorage<DynamicConfig<Service::Bag>> as NamedConceptMgmt>::Configuration {
+    <<Service::DynamicStorage<DynamicConfig<Service::Bag>> as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.dynamic_config_storage_suffix)
         .path_hint(global_config.global.root_path())

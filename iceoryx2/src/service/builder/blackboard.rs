@@ -549,9 +549,10 @@ impl<
                 messaging_pattern_settings: MessagingPatternSettings::Blackboard(
                     dynamic_config_setting,
                 ),
-                additional_size: dynamic_config::blackboard::DynamicConfig::memory_size(
-                    &dynamic_config_setting,
-                ),
+                additional_size:
+                    dynamic_config::blackboard::DynamicConfig::<ServiceType::Bag>::memory_size(
+                        &dynamic_config_setting,
+                    ),
                 max_number_of_nodes: blackboard_config.max_nodes,
             }
         };

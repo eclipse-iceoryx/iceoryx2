@@ -144,7 +144,7 @@ impl<
 {
     type Service = Service;
     type StaticConfig = static_config::request_response::StaticConfig;
-    type DynamicConfig = dynamic_config::request_response::DynamicConfig;
+    type DynamicConfig = dynamic_config::request_response::DynamicConfig<Service::Bag>;
 
     fn name(&self) -> &ServiceName {
         self.service.static_config().name()

@@ -40,8 +40,8 @@ pub mod node_death {
 
     fn does_support_persistency<S: iceoryx2::service::Service>() -> bool {
         <S as Service>::DynamicStorage::<
-                    iceoryx2::service::dynamic_config::DynamicConfig,
-                >::does_support_persistency()
+            iceoryx2::service::dynamic_config::DynamicConfig<S::Bag>,
+        >::does_support_persistency()
     }
 
     #[conformance_test]

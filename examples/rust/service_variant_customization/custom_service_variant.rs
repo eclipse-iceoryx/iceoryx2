@@ -23,6 +23,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
     type ConfigSerializer = iceoryx2_cal::serialize::recommended::Recommended;
     type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         iceoryx2_cal::dynamic_storage::recommended::PersistentIpc<T>;
+    type Bag = iceoryx2_cal::bag::recommended::Recommended;
     // use a dynamic storage based on a file
     type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         iceoryx2_cal::dynamic_storage::file::Storage<T>;
