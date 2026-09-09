@@ -1497,5 +1497,6 @@ pub mod service {
         drop(sut);
 
         assert_that!(Node::<Sut>::state_of(&config, node_id).unwrap(), is_none);
+        assert_that!(iceoryx2_testing::do_stale_node_resources_exist::<Sut>(&config, node_id), eq false);
     }
 }

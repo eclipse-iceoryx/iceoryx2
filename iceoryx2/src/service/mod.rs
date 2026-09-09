@@ -541,12 +541,6 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
         let origin = "ServiceState::drop()";
         let hash = self.static_config.service_hash();
         self.shared_node.registered_services().remove(hash, |handle| {
-            if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), hash, self.shared_node.config())
-            {
-                debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",
-                        self.shared_node.id(), e);
-            }
-
             match self.dynamic_storage.get().deregister_node_id(handle) {
                 Ok(DeregisterNodeState::HasOwners) => {
                     trace!(from origin, "close service: {} ({:?})",
@@ -563,6 +557,15 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
                     error!(from origin,
                         "Unable to deregister node {} from service. This could indicate a corrupted system! [{e:?}]", self.shared_node.id())
                 }
+            }
+
+            // The service tag must be removed after the node was deregistered from the dynamic
+            // config. If this is reordered one has to search through all available services to
+            // ensure that the node is not connected to another service.
+            if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), hash, self.shared_node.config())
+            {
+                debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",
+                        self.shared_node.id(), e);
             }
         });
     }

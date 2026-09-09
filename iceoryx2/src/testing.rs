@@ -15,7 +15,7 @@ use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
 use crate::service::config_scheme::{
-    dynamic_config_storage_config, port_tag_config, service_tag_config,
+    dynamic_config_storage_config, node_details_path, port_tag_config, service_tag_config,
 };
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
@@ -30,6 +30,7 @@ use alloc::format;
 use alloc::string::ToString;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::math::ToB64;
+use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::{config::TEST_DIRECTORY, testing::*};
 use iceoryx2_bb_system_types::file_name::*;
@@ -162,6 +163,14 @@ pub unsafe fn remove_global_mgmt_segment<S: crate::service::Service>(
     config: &Config,
 ) -> Result<bool, NamedConceptRemoveError> {
     unsafe { GlobalManagementSegment::<S>::remove(config) }
+}
+
+pub fn do_stale_node_resources_exist<S: crate::service::Service>(
+    config: &Config,
+    node_id: UniqueNodeId,
+) -> bool {
+    let details_path = node_details_path(config, &node_id);
+    Directory::does_exist(&details_path).unwrap()
 }
 
 pub fn do_blackboard_resources_exist<S: crate::service::Service>(
