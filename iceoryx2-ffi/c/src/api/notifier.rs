@@ -74,7 +74,7 @@ impl NotifierUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<NotifierUnion>
 pub struct iox2_notifier_storage_t {
-    internal: [u8; 1440], // magic number obtained with size_of::<Option<NotifierUnion>>()
+    internal: [u8; 1448], // magic number obtained with size_of::<Option<NotifierUnion>>()
 }
 
 #[repr(C)]

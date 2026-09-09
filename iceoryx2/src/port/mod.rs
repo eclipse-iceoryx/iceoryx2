@@ -20,6 +20,7 @@ pub use iceoryx2_cal::event::EventId;
 pub use iceoryx2_cal::event::event_state::EventActivation;
 
 pub(crate) mod details;
+pub(crate) mod port_lifetime_tag;
 pub use details::data_segment::DataSegmentType;
 
 /// Sends requests to a [`Server`](crate::port::server::Server) and receives responses.

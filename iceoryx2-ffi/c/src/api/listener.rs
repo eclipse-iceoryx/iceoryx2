@@ -99,7 +99,7 @@ impl ListenerUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ListenerUnion>
 pub struct iox2_listener_storage_t {
-    internal: [u8; 1416], // magic number obtained with size_of::<Option<ListenerUnion>>()
+    internal: [u8; 1424], // magic number obtained with size_of::<Option<ListenerUnion>>()
 }
 
 #[repr(C)]
