@@ -69,22 +69,35 @@ impl UniqueId {
     }
 }
 
-/// Describes failures related to the [`UniqueIdGenerator`] trait.
+/// Describes failures that can occur when a [`UniqueId`] is generated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum UniqueIdGeneratorError {
+pub enum UniqueIdGeneratorGenerateError {
     /// The unique ID could not be generated.
     GenerationError,
+}
+
+impl core::fmt::Display for UniqueIdGeneratorGenerateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "UniqueIdGeneratorGenerateError::{self:?}")
+    }
+}
+
+impl core::error::Error for UniqueIdGeneratorGenerateError {}
+
+/// Describes failures related to the [`UniqueIdGenerator`] trait.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum UniqueIdGeneratorDetailsError {
     /// The trait implementation does not provide the function.
     NotImplemented,
 }
 
-impl core::fmt::Display for UniqueIdGeneratorError {
+impl core::fmt::Display for UniqueIdGeneratorDetailsError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "UniqueIdGeneratorError::{self:?}")
+        write!(f, "UniqueIdGeneratorDetailsError::{self:?}")
     }
 }
 
-impl core::error::Error for UniqueIdGeneratorError {}
+impl core::error::Error for UniqueIdGeneratorDetailsError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
 pub trait UniqueIdGenerator {
@@ -92,20 +105,22 @@ pub trait UniqueIdGenerator {
     fn generate<Service: service::Service>(
         entity: Entity,
         config: &Config,
-    ) -> Result<UniqueId, UniqueIdGeneratorError>;
+    ) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) that was used to create the [`UniqueId`].
-    fn pid(_id: UniqueId) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
-        fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorError::NotImplemented,
+    fn pid(
+        _id: UniqueId,
+    ) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorDetailsError> {
+        fail!(from "UniqueIdGenerator::pid()", with UniqueIdGeneratorDetailsError::NotImplemented,
             "pid() is not implemented");
     }
 
     /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) when the [`UniqueId`] was created.
     fn creation_time(
         _id: UniqueId,
-    ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
+    ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorDetailsError> {
         fail!(from "UniqueIdGenerator::creation_time()",
-            with UniqueIdGeneratorError::NotImplemented, "creation_time() not implemented");
+            with UniqueIdGeneratorDetailsError::NotImplemented, "creation_time() not implemented");
     }
 }
 

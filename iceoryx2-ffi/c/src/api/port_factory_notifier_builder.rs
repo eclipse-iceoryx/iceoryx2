@@ -34,6 +34,7 @@ pub enum iox2_notifier_create_error_e {
     EXCEEDS_MAX_SUPPORTED_NOTIFIERS = IOX2_OK as isize + 1,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    UNABLE_TO_GENERATE_UNIQUE_NOTIFIER_ID,
 }
 
 impl IntoCInt for NotifierCreateError {
@@ -47,6 +48,9 @@ impl IntoCInt for NotifierCreateError {
             }
             NotifierCreateError::UnableToCreatePortTag => {
                 iox2_notifier_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            NotifierCreateError::UnableToGenerateUniqueNotifierId => {
+                iox2_notifier_create_error_e::UNABLE_TO_GENERATE_UNIQUE_NOTIFIER_ID
             }
         }) as c_int
     }

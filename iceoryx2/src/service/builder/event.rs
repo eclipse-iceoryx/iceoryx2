@@ -186,6 +186,8 @@ pub enum EventCreateError {
     /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
     /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
     EventIdExceedsMaxSupportedValue,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl From<ServiceCreateError> for EventCreateError {
@@ -211,6 +213,9 @@ impl From<ServiceCreateError> for EventCreateError {
             }
             ServiceCreateError::ServiceConfigCouldNotBeCreated => {
                 EventCreateError::ServiceConfigCouldNotBeCreated
+            }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                EventCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -241,6 +246,9 @@ impl From<EventCreateError> for ServiceCreateError {
             // contract violation detected before the generic create path runs.
             EventCreateError::EventIdExceedsMaxSupportedValue => {
                 ServiceCreateError::InternalFailure
+            }
+            EventCreateError::UnableToGenerateUniqueServiceId => {
+                ServiceCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -584,6 +592,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             generate_dynamic_config,
             |_| Ok(NoResource::<ServiceType>::new()),
             |_| {},
+            |service_config| {
+                UniqueServiceId::from_event_service::<ServiceType>(
+                    service_config.name(),
+                    self.base.shared_node.config(),
+                )
+            },
         )?;
 
         Ok(event::PortFactory::new(service_state))

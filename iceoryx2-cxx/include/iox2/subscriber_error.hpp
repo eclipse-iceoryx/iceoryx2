@@ -37,6 +37,8 @@ enum class SubscriberCreateError : uint8_t {
     HistoryRequestExceedsHistorySizeOfService,
     /// When the [`Subscriber`] requests a larger history than its buffer can hold.
     HistoryRequestExceedsBufferSizeOfSubscriber,
+    /// The [`UniqueSubscriberId`] could not be generated.
+    UnableToGenerateUniqueSubscriberId,
 };
 
 } // namespace iox2

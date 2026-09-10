@@ -234,6 +234,8 @@ pub enum PublishSubscribeCreateError {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -268,6 +270,9 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
             ServiceCreateError::UnableToAcquireTypeDefinition => {
                 PublishSubscribeCreateError::UnableToAcquireTypeDefinition
             }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                PublishSubscribeCreateError::UnableToGenerateUniqueServiceId
+            }
         }
     }
 }
@@ -299,6 +304,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             }
             PublishSubscribeCreateError::UnableToAcquireTypeDefinition => {
                 ServiceCreateError::UnableToAcquireTypeDefinition
+            }
+            PublishSubscribeCreateError::UnableToGenerateUniqueServiceId => {
+                ServiceCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -754,6 +762,12 @@ impl<
                 )
             },
             |_| {},
+            |service_config| {
+                UniqueServiceId::from_publish_subscribe_service::<ServiceType>(
+                    service_config.name(),
+                    self.base.shared_node.config(),
+                )
+            },
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))

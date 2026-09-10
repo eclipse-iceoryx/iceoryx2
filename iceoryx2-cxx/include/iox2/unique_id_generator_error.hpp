@@ -10,16 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#ifndef IOX2_UNIQUE_ID_GENERATOR_ERROR_HPP
+#define IOX2_UNIQUE_ID_GENERATOR_ERROR_HPP
 
-extern crate alloc;
-extern crate iceoryx2_bb_loggers;
+#include <cstdint>
 
-pub mod attribute_tests;
-pub mod node_name_tests;
-pub mod port_name_tests;
-pub mod service_event_thread_safety_tests;
-pub mod service_publish_subscribe_thread_safety_tests;
-pub mod service_request_response_thread_safety_tests;
-pub mod service_static_config_tests;
-pub mod unique_id_generator_tests;
+namespace iox2 {
+enum class UniqueIdGeneratorDetailsError : uint8_t {
+    NotImplemented,
+};
+
+} // namespace iox2
+
+#endif

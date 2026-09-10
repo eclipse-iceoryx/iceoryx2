@@ -31,6 +31,8 @@ enum class WriterCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueWriterId`] could not be generated.
+    UnableToGenerateUniqueWriterId,
 };
 } // namespace iox2
 

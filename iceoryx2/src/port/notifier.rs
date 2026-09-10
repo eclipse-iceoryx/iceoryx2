@@ -85,6 +85,8 @@ pub enum NotifierCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueNotifierId`] could not be generated.
+    UnableToGenerateUniqueNotifierId,
 }
 
 impl core::fmt::Display for NotifierCreateError {
@@ -415,8 +417,9 @@ impl<Service: service::Service> Notifier<Service> {
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
-        let notifier_id =
-            UniqueNotifierId::new::<Service>(config.port_name, service.shared_node().config());
+        let notifier_id = fail!(from origin,
+            when UniqueNotifierId::new::<Service>(config.port_name, service.shared_node().config()),
+            with NotifierCreateError::UnableToGenerateUniqueNotifierId, "{msg} since the UniqueNotifierId could not be generated.");
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

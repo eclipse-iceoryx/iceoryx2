@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::error::UniqueIdGeneratorDetailsError;
 use pyo3::prelude::*;
 
 use crate::service_type::ServiceType;
@@ -32,10 +33,16 @@ impl UniqueNodeId {
     }
 
     /// Returns the process id of the process that owns the `Node`.
-    pub fn pid(&self, service_type: &ServiceType) -> u32 {
+    pub fn pid(&self, service_type: &ServiceType) -> PyResult<u32> {
         match service_type {
-            ServiceType::Ipc => self.0.pid::<crate::IpcService>().value() as _,
-            ServiceType::Local => self.0.pid::<crate::LocalService>().value() as _,
+            ServiceType::Ipc => match self.0.pid::<crate::IpcService>() {
+                Ok(v) => Ok(v.value() as _),
+                Err(e) => Err(UniqueIdGeneratorDetailsError::new_err(format!("{e:?}"))),
+            },
+            ServiceType::Local => match self.0.pid::<crate::LocalService>() {
+                Ok(v) => Ok(v.value() as _),
+                Err(e) => Err(UniqueIdGeneratorDetailsError::new_err(format!("{e:?}"))),
+            },
         }
     }
 }

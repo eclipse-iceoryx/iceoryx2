@@ -135,7 +135,10 @@ impl From<PublisherCreateError> for CreationError {
             }
             PublisherCreateError::UnableToCreateDataSegment
             | PublisherCreateError::FailedToDeployThreadsafetyPolicy
-            | PublisherCreateError::UnableToCreatePortTag => CreationError::PublisherCreationError,
+            | PublisherCreateError::UnableToCreatePortTag
+            | PublisherCreateError::UnableToGenerateUniquePublisherId => {
+                CreationError::PublisherCreationError
+            }
         }
     }
 }

@@ -31,6 +31,8 @@ enum class ListenerCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueListenerId`] could not be generated.
+    UnableToGenerateUniqueListenerId,
 };
 
 /// Defines failures that can occur while waiting for a notification from a

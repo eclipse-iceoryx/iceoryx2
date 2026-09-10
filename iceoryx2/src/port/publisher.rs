@@ -169,6 +169,8 @@ pub enum PublisherCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniquePublisherId`] could not be generated.
+    UnableToGenerateUniquePublisherId,
 }
 
 impl core::fmt::Display for PublisherCreateError {
@@ -465,8 +467,10 @@ impl<
         let origin = "Publisher::new()";
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
-        let port_id =
-            UniquePublisherId::new::<Service>(config.port_name, service.shared_node().config());
+        let port_id = fail!(from origin,
+            when UniquePublisherId::new::<Service>(config.port_name, service.shared_node().config()),
+            with PublisherCreateError::UnableToGenerateUniquePublisherId,
+            "{msg} since the UniquePublisherId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let lifetime_tag = PortLifetimeTag::new(

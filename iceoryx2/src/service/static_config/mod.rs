@@ -45,6 +45,7 @@ use crate::{
     config,
     identifiers::UniqueServiceId,
     service::{self, service_hash::ServiceHash},
+    unique_id_generator::UniqueId,
 };
 
 use self::messaging_pattern::MessagingPattern;
@@ -58,7 +59,7 @@ pub struct StaticConfig<ServiceType: service::Service> {
     iceoryx2_version: PackageVersion,
     service_hash: ServiceHash,
     service_name: ServiceName,
-    unique_service_id: UniqueServiceId,
+    pub(crate) unique_service_id: UniqueServiceId,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
     #[serde(skip)]
@@ -80,10 +81,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
-            unique_service_id: UniqueServiceId::from_request_response_service::<ServiceType>(
-                service_name,
-                config,
-            ),
+            unique_service_id: UniqueServiceId(unsafe { UniqueId::from_raw_id(0) }), // set during service creation
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -102,10 +100,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
-            unique_service_id: UniqueServiceId::from_event_service::<ServiceType>(
-                service_name,
-                config,
-            ),
+            unique_service_id: UniqueServiceId(unsafe { UniqueId::from_raw_id(0) }), // set during service creation
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -125,10 +120,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
-            unique_service_id: UniqueServiceId::from_publish_subscribe_service::<ServiceType>(
-                service_name,
-                config,
-            ),
+            unique_service_id: UniqueServiceId(unsafe { UniqueId::from_raw_id(0) }), // set during service creation
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -147,10 +139,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
-            unique_service_id: UniqueServiceId::from_blackboard_service::<ServiceType>(
-                service_name,
-                config,
-            ),
+            unique_service_id: UniqueServiceId(unsafe { UniqueId::from_raw_id(0) }), // set during service creation
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),

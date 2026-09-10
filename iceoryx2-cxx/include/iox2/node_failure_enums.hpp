@@ -49,6 +49,8 @@ enum class NodeCreationFailure : uint8_t {
     InternalError,
     /// Indicates that another "instance" on the system removed the resource required by the [`Node`].
     SystemCorrupted,
+    /// The [`UniqueNodeId`] could not be generated.
+    UnableToGenerateUniqueNodeId,
 };
 
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of

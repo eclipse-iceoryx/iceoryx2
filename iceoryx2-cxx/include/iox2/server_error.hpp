@@ -29,6 +29,8 @@ enum class ServerCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueServerId`] could not be generated.
+    UnableToGenerateUniqueServerId,
 };
 } // namespace iox2
 #endif

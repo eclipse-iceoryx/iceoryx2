@@ -109,6 +109,8 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
+    #[CStr = "unique service id could not be generated"]
+    C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID,
 }
 
 impl IntoCInt for PublishSubscribeOpenError {
@@ -186,25 +188,30 @@ impl IntoCInt for PublishSubscribeCreateError {
                 iox2_pub_sub_open_or_create_error_e::C_SUBSCRIBER_BUFFER_MUST_BE_LARGER_THAN_HISTORY_SIZE
             }
             PublishSubscribeCreateError::AlreadyExists => iox2_pub_sub_open_or_create_error_e::C_ALREADY_EXISTS,
-          PublishSubscribeCreateError::InsufficientPermissions => {
-             iox2_pub_sub_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
-         }
+            PublishSubscribeCreateError::InsufficientPermissions => {
+                iox2_pub_sub_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
+            }
             PublishSubscribeCreateError::InternalFailure => {
                 iox2_pub_sub_open_or_create_error_e::C_INTERNAL_FAILURE
             }
             PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance => {
                 iox2_pub_sub_open_or_create_error_e::C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE
             }
-         PublishSubscribeCreateError::HangsInCreation => {
-             iox2_pub_sub_open_or_create_error_e::C_HANGS_IN_CREATION
-         }
-         PublishSubscribeCreateError::UnableToCreateServiceTag => {
-             iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
-         }
-         PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated => {
-             iox2_pub_sub_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
-         }
-         PublishSubscribeCreateError::UnableToAcquireTypeDefinition => iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
+            PublishSubscribeCreateError::HangsInCreation => {
+                iox2_pub_sub_open_or_create_error_e::C_HANGS_IN_CREATION
+            }
+            PublishSubscribeCreateError::UnableToCreateServiceTag => {
+                iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated => {
+                iox2_pub_sub_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
+            }
+            PublishSubscribeCreateError::UnableToAcquireTypeDefinition => {
+                iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
+            }
+            PublishSubscribeCreateError::UnableToGenerateUniqueServiceId => {
+                iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID
+            }
         }) as c_int
     }
 }

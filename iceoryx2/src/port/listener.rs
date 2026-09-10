@@ -103,6 +103,8 @@ pub enum ListenerCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueListenerId`] could not be generated.
+    UnableToGenerateUniqueListenerId,
 }
 
 impl core::fmt::Display for ListenerCreateError {
@@ -192,8 +194,10 @@ impl<Service: service::Service> Listener<Service> {
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
-        let listener_id =
-            UniqueListenerId::new::<Service>(config.port_name, service.shared_node().config());
+        let listener_id = fail!(from origin,
+            when UniqueListenerId::new::<Service>(config.port_name, service.shared_node().config()),
+            with ListenerCreateError::UnableToGenerateUniqueListenerId,
+            "{msg} since the UniqueListenerId could not be generated");
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

@@ -217,6 +217,8 @@ pub enum NodeCreationFailure {
     InternalError,
     /// Indicates that another "instance" on the system removed the resource required by the [`Node`].
     SystemCorrupted,
+    /// The [`UniqueNodeId`] could not be generated.
+    UnableToGenerateUniqueNodeId,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -1582,10 +1584,12 @@ impl NodeBuilder {
             Some(n) => n.clone(),
             None => NodeName::default(),
         };
-        let node_id = UniqueNodeId::new::<Service>(name, config);
+        let node_id = fail!(from self, when UniqueNodeId::new::<Service>(name, config),
+            with NodeCreationFailure::UnableToGenerateUniqueNodeId,
+            "{msg} since the UniqueNodeId could not be generated.");
 
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+                                "This should never happen! {msg} since the UniqueNodeId is not a valid file name.");
         let (details_storage, details) =
             self.create_node_details_storage::<Service>(config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(config, &monitor_name)?;

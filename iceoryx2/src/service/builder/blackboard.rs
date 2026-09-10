@@ -162,6 +162,8 @@ pub enum BlackboardCreateError {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for BlackboardCreateError {
@@ -210,6 +212,9 @@ impl From<ServiceCreateError> for BlackboardCreateError {
             }
             ServiceCreateError::UnableToCreateServiceTag => {
                 BlackboardCreateError::UnableToCreateServiceTag
+            }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                BlackboardCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -568,6 +573,12 @@ impl<
             |resource| {
                 resource.data.release_ownership();
                 resource.mgmt.release_ownership();
+            },
+            |service_config| {
+                UniqueServiceId::from_blackboard_service::<ServiceType>(
+                    service_config.name(),
+                    self.builder.config.base.shared_node.config(),
+                )
             },
         )?;
 

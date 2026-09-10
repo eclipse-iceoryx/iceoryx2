@@ -23,6 +23,7 @@ use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use crate::identifiers::UniqueServiceId;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
@@ -244,6 +245,8 @@ pub enum RequestResponseCreateError {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -294,6 +297,9 @@ impl From<ServiceCreateError> for RequestResponseCreateError {
             ServiceCreateError::Interrupt => RequestResponseCreateError::Interrupt,
             ServiceCreateError::UnableToAcquireTypeDefinition => {
                 RequestResponseCreateError::UnableToAcquireTypeDefinition
+            }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                RequestResponseCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -904,6 +910,12 @@ impl<
                 )
             },
             |_| {},
+            |service_config| {
+                UniqueServiceId::from_request_response_service::<ServiceType>(
+                    service_config.name(),
+                    self.base.shared_node.config(),
+                )
+            },
         )?;
 
         Ok(request_response::PortFactory::new(service_state))
