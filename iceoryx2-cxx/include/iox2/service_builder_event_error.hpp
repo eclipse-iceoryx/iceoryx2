@@ -108,6 +108,8 @@ enum class EventCreateError : uint8_t {
     /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
     /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
     EventIdExceedsMaxSupportedValue,
+    /// The unique service id could not be generated.
+    UnableToGenerateUniqueServiceId,
 };
 
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
@@ -203,6 +205,8 @@ enum class EventOpenOrCreateError : uint8_t {
     /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
     /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
     CreateEventIdExceedsMaxSupportedValue,
+    /// The unique service id could not be generated.
+    CreateUnableToGenerateUniqueServiceId,
 };
 
 } // namespace iox2

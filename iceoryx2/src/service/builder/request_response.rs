@@ -23,6 +23,7 @@ use iceoryx2_bb_flatbuffers::{TypeName, is_binary_flatbuffer_schema};
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use crate::identifiers::UniqueServiceId;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
@@ -254,6 +255,8 @@ pub enum RequestResponseCreateError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -307,6 +310,9 @@ impl From<ServiceCreateError> for RequestResponseCreateError {
             }
             ServiceCreateError::InvalidTypeDefinition => {
                 RequestResponseCreateError::InvalidTypeDefinition
+            }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                RequestResponseCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -932,6 +938,12 @@ impl<
                 )
             },
             |_| {},
+            |service_config| {
+                UniqueServiceId::from_request_response_service::<ServiceType>(
+                    service_config.name(),
+                    self.base.shared_node.config(),
+                )
+            },
         )?;
 
         Ok(request_response::PortFactory::new(service_state))

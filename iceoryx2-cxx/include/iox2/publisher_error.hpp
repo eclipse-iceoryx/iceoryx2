@@ -34,6 +34,8 @@ enum class PublisherCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniquePublisherId`] could not be generated.
+    UnableToGenerateUniquePublisherId,
 };
 } // namespace iox2
 

@@ -17,9 +17,9 @@ pub use iceoryx2_bb_posix::unique_system_id::*;
 use crate::node::global_management_segment::GlobalManagementSegment;
 pub use crate::unique_id_generator::*;
 
-impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorError {
+impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
     fn from(_: UniqueSystemIdCreationError) -> Self {
-        UniqueIdGeneratorError::GenerationError
+        UniqueIdGeneratorGenerateError::GenerationError
     }
 }
 
@@ -29,7 +29,7 @@ impl UniqueIdGenerator for UniqueSystemId {
     fn generate<Service: service::Service>(
         entity: Entity,
         config: &Config,
-    ) -> Result<UniqueId, UniqueIdGeneratorError> {
+    ) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
         let id = match entity {
             Entity::Node(_) => {
                 let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config)
@@ -37,7 +37,7 @@ impl UniqueIdGenerator for UniqueSystemId {
                     Ok(mgmt) => mgmt.increment_node_counter(),
                     Err(e) => {
                         fail!(from "UniqueIdGenerator::generate()",
-                        with UniqueIdGeneratorError::GenerationError,
+                        with UniqueIdGeneratorGenerateError::GenerationError,
                         "Unable to generate unique id since the global management segment could not be opened. {e:?}");
                     }
                 };
@@ -48,13 +48,15 @@ impl UniqueIdGenerator for UniqueSystemId {
         Ok(unsafe { UniqueId::from_raw_id(id.value()) })
     }
 
-    fn pid(id: UniqueId) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorError> {
+    fn pid(
+        id: UniqueId,
+    ) -> Result<iceoryx2_bb_posix::process::ProcessId, UniqueIdGeneratorDetailsError> {
         Ok(UniqueSystemId::from(id.value()).pid())
     }
 
     fn creation_time(
         id: UniqueId,
-    ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorError> {
+    ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorDetailsError> {
         Ok(UniqueSystemId::from(id.value()).creation_time())
     }
 }

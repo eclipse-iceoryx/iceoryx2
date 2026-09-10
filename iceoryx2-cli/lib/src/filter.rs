@@ -87,10 +87,22 @@ impl Filter<NodeState<Service>> for NodeIdentifier {
                 NodeState::Undefined(node_id) => NodeIdString::from(node_id) == **id,
             },
             NodeIdentifier::Pid(pid) => match node {
-                NodeState::Alive(view) => view.id().pid::<Service>().value() == *pid,
-                NodeState::Dead(view) => view.id().pid::<Service>().value() == *pid,
-                NodeState::Inaccessible(node_id) => node_id.pid::<Service>().value() == *pid,
-                NodeState::Undefined(node_id) => node_id.pid::<Service>().value() == *pid,
+                NodeState::Alive(view) => match view.id().pid::<Service>() {
+                    Ok(id) => id.value() == *pid,
+                    Err(_) => false,
+                },
+                NodeState::Dead(view) => match view.id().pid::<Service>() {
+                    Ok(id) => id.value() == *pid,
+                    Err(_) => false,
+                },
+                NodeState::Inaccessible(node_id) => match node_id.pid::<Service>() {
+                    Ok(id) => id.value() == *pid,
+                    Err(_) => false,
+                },
+                NodeState::Undefined(node_id) => match node_id.pid::<Service>() {
+                    Ok(id) => id.value() == *pid,
+                    Err(_) => false,
+                },
             },
         }
     }

@@ -74,6 +74,7 @@ use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::static_config::*;
+use crate::unique_id_generator::UniqueIdGeneratorGenerateError;
 
 use super::Service;
 use super::config_scheme::dynamic_config_storage_config;
@@ -135,6 +136,7 @@ pub enum ServiceCreateError {
     Interrupt,
     UnableToAcquireTypeDefinition,
     InvalidTypeDefinition,
+    UnableToGenerateUniqueServiceId,
 }
 
 impl From<ServiceState> for ServiceCreateError {
@@ -434,7 +436,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             | ServiceCreateError::Interrupt
                             | ServiceCreateError::ServiceConfigCouldNotBeCreated
                             | ServiceCreateError::InvalidTypeDefinition
-                            | ServiceCreateError::UnableToAcquireTypeDefinition => {
+                            | ServiceCreateError::UnableToAcquireTypeDefinition
+                            | ServiceCreateError::UnableToGenerateUniqueServiceId => {
                                 return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
                             }
                         }
@@ -662,6 +665,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         F2: FnMut(&StaticConfig<ServiceType>) -> DynamicConfigCreationArgs,
         F3: FnMut(&StaticConfig<ServiceType>) -> Result<R, ServiceCreateError>,
         F4: FnMut(&R),
+        F5: FnMut(
+            &mut StaticConfig<ServiceType>,
+        ) -> Result<UniqueServiceId, UniqueIdGeneratorGenerateError>,
     >(
         &self,
         msg: &str,
@@ -671,8 +677,15 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut generate_dynamic_config: F2,
         mut create_service_resource: F3,
         mut release_service_resource_ownership: F4,
+        mut set_service_id: F5,
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
         let mut service_config = self.service_config.clone();
+
+        service_config.unique_service_id = fail!(
+            from self, when set_service_id(&mut service_config),
+            with ServiceCreateError::UnableToGenerateUniqueServiceId,
+            "{} since the unique service id could not be generated.", msg);
+
         match is_service_available()? {
             None => {
                 prepare_service_config(&mut service_config)?;
@@ -742,9 +755,11 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
                 let dyn_conf_creation_args = generate_dynamic_config(&service_config);
 
-                let (node_handle, dynamic_config) = match self
-                    .create_dynamic_config_storage(dyn_conf_creation_args, *self.shared_node.id())
-                {
+                let (node_handle, dynamic_config) = match self.create_dynamic_config_storage(
+                    dyn_conf_creation_args,
+                    *self.shared_node.id(),
+                    service_config.unique_service_id,
+                ) {
                     Ok(dynamic_config) => dynamic_config,
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
@@ -917,6 +932,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         args: DynamicConfigCreationArgs,
         node_id: UniqueNodeId,
+        service_id: UniqueServiceId,
     ) -> Result<
         (
             <ServiceType::Bag as BagFamily>::BagHandle,
@@ -926,7 +942,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     > {
         let required_memory_size =
             DynamicConfig::<ServiceType::Bag>::memory_size(args.max_number_of_nodes);
-        let segment_name = dynamic_config_name(self.service_config.unique_service_id());
+        let segment_name = dynamic_config_name(service_id);
         let mut handle = None;
         match <<ServiceType::DynamicStorage<DynamicConfig<ServiceType::Bag>> as DynamicStorage<
             DynamicConfig<ServiceType::Bag>,
@@ -961,6 +977,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         args: DynamicConfigCreationArgs,
         node_id: UniqueNodeId,
+        service_id: UniqueServiceId,
     ) -> Result<
         (
             <ServiceType::Bag as BagFamily>::BagHandle,
@@ -969,7 +986,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         DynamicStorageCreateError,
     > {
         let msg = "Failed to create dynamic storage for service";
-        match self.create_dynamic_config_storage_resource(args, node_id) {
+        match self.create_dynamic_config_storage_resource(args, node_id, service_id) {
             Ok((node_handle, storage)) => Ok((node_handle, storage)),
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with DynamicStorageCreateError::AlreadyExists,

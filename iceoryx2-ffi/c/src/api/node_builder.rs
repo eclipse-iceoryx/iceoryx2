@@ -36,6 +36,7 @@ pub enum iox2_node_creation_failure_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
     SYSTEM_CORRUPTED,
+    UNABLE_TO_GENERATE_UNIQUE_NODE_ID,
 }
 
 impl IntoCInt for NodeCreationFailure {
@@ -46,6 +47,9 @@ impl IntoCInt for NodeCreationFailure {
             }
             NodeCreationFailure::InternalError => iox2_node_creation_failure_e::INTERNAL_ERROR,
             NodeCreationFailure::SystemCorrupted => iox2_node_creation_failure_e::SYSTEM_CORRUPTED,
+            NodeCreationFailure::UnableToGenerateUniqueNodeId => {
+                iox2_node_creation_failure_e::UNABLE_TO_GENERATE_UNIQUE_NODE_ID
+            }
         }) as c_int
     }
 }

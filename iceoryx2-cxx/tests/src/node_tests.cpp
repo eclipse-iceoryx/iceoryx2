@@ -104,6 +104,6 @@ TYPED_TEST(NodeTest, node_id_is_unique) {
 
     ASSERT_THAT(id_1, Eq(id_1_1));
     ASSERT_THAT(id_2, Ne(id_1));
-    ASSERT_THAT(id_1.template pid<SERVICE_TYPE>(), Eq(id_2.template pid<SERVICE_TYPE>()));
+    ASSERT_THAT(id_1.template pid<SERVICE_TYPE>().value(), Eq(id_2.template pid<SERVICE_TYPE>().value()));
 }
 } // namespace

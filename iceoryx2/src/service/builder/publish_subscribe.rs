@@ -246,6 +246,8 @@ pub enum PublishSubscribeCreateError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -283,6 +285,9 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
             ServiceCreateError::InvalidTypeDefinition => {
                 PublishSubscribeCreateError::InvalidTypeDefinition
             }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                PublishSubscribeCreateError::UnableToGenerateUniqueServiceId
+            }
         }
     }
 }
@@ -317,6 +322,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             }
             PublishSubscribeCreateError::InvalidTypeDefinition => {
                 ServiceCreateError::InvalidTypeDefinition
+            }
+            PublishSubscribeCreateError::UnableToGenerateUniqueServiceId => {
+                ServiceCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -781,6 +789,12 @@ impl<
                 )
             },
             |_| {},
+            |service_config| {
+                UniqueServiceId::from_publish_subscribe_service::<ServiceType>(
+                    service_config.name(),
+                    self.base.shared_node.config(),
+                )
+            },
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))

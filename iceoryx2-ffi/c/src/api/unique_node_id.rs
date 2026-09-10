@@ -12,12 +12,34 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, iox2_service_type_e};
+use core::ffi::c_int;
 
-use iceoryx2::identifiers::UniqueNodeId;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
+use crate::{
+    IOX2_OK,
+    api::{AssertNonNullHandle, HandleToType, IntoCInt, iox2_service_type_e},
+};
+
+use iceoryx2::{identifiers::UniqueNodeId, unique_id_generator::UniqueIdGeneratorDetailsError};
+use iceoryx2_bb_elementary_traits::AsCStr;
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 // BEGIN type definition
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_unique_id_generator_details_error_e {
+    NOT_IMPLEMENTED = IOX2_OK as isize + 1,
+}
+
+impl IntoCInt for UniqueIdGeneratorDetailsError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            UniqueIdGeneratorDetailsError::NotImplemented => {
+                iox2_unique_id_generator_details_error_e::NOT_IMPLEMENTED
+            }
+        }) as c_int
+    }
+}
 
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<NodeId>
@@ -171,26 +193,38 @@ pub unsafe extern "C" fn iox2_unique_node_id_value_low(
     }
 }
 
-/// Returns the process id of the [`iox2_unique_node_id_h`].
+/// Copies the process id of the [`iox2_unique_node_id_h`] to `process_id`.
 ///
 /// # Safety
 ///
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
+/// * `process_id` - Must point to a valid memory location
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_pid(
     node_id_handle: iox2_unique_node_id_h_ref,
     service_type: iox2_service_type_e,
-) -> i32 {
+    process_id: *mut i32,
+) -> c_int {
     node_id_handle.assert_non_null();
+    debug_assert!(!process_id.is_null());
     unsafe {
         let node_id = &mut *node_id_handle.as_type();
         match service_type {
-            iox2_service_type_e::IPC => {
-                node_id.value.as_ref().pid::<crate::IpcService>().value() as _
-            }
-            iox2_service_type_e::LOCAL => {
-                node_id.value.as_ref().pid::<crate::LocalService>().value() as _
-            }
+            iox2_service_type_e::IPC => match node_id.value.as_ref().pid::<crate::IpcService>() {
+                Ok(id) => {
+                    *process_id = id.value() as _;
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+            iox2_service_type_e::LOCAL => match node_id.value.as_ref().pid::<crate::LocalService>()
+            {
+                Ok(id) => {
+                    *process_id = id.value() as _;
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
         }
     }
 }
@@ -208,7 +242,7 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
     service_type: iox2_service_type_e,
     seconds: *mut u64,
     nanoseconds: *mut u32,
-) {
+) -> c_int {
     node_id_handle.assert_non_null();
     debug_assert!(!seconds.is_null());
     debug_assert!(!nanoseconds.is_null());
@@ -216,28 +250,28 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
         let node_id = &mut *node_id_handle.as_type();
         match service_type {
             iox2_service_type_e::IPC => {
-                *seconds = node_id
-                    .value
-                    .as_ref()
-                    .creation_time::<crate::IpcService>()
-                    .seconds();
-                *nanoseconds = node_id
-                    .value
-                    .as_ref()
-                    .creation_time::<crate::IpcService>()
-                    .nanoseconds();
+                match node_id.value.as_ref().creation_time::<crate::IpcService>() {
+                    Ok(time) => {
+                        *seconds = time.seconds();
+                        *nanoseconds = time.nanoseconds();
+                        IOX2_OK
+                    }
+                    Err(error) => error.into_c_int(),
+                }
             }
             iox2_service_type_e::LOCAL => {
-                *seconds = node_id
+                match node_id
                     .value
                     .as_ref()
                     .creation_time::<crate::LocalService>()
-                    .seconds();
-                *nanoseconds = node_id
-                    .value
-                    .as_ref()
-                    .creation_time::<crate::LocalService>()
-                    .nanoseconds();
+                {
+                    Ok(time) => {
+                        *seconds = time.seconds();
+                        *nanoseconds = time.nanoseconds();
+                        IOX2_OK
+                    }
+                    Err(error) => error.into_c_int(),
+                }
             }
         }
     }

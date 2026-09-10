@@ -38,6 +38,7 @@ pub enum iox2_server_create_error_e {
     UNABLE_TO_CREATE_DATA_SEGMENT,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    UNABLE_TO_GENERATE_UNIQUE_SERVER_ID,
 }
 
 impl IntoCInt for ServerCreateError {
@@ -54,6 +55,9 @@ impl IntoCInt for ServerCreateError {
             }
             ServerCreateError::UnableToCreatePortTag => {
                 iox2_server_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            ServerCreateError::UnableToGenerateUniqueServerId => {
+                iox2_server_create_error_e::UNABLE_TO_GENERATE_UNIQUE_SERVER_ID
             }
         }) as c_int
     }

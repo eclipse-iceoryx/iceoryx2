@@ -99,6 +99,8 @@ pub enum iox2_event_open_or_create_error_e {
     C_INTERRUPT,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
+    #[CStr = "unique service id could not be generated"]
+    C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID,
 }
 
 impl IntoCInt for EventOpenError {
@@ -190,6 +192,9 @@ impl IntoCInt for EventCreateError {
             }
             EventCreateError::EventIdExceedsMaxSupportedValue => {
                 iox2_event_open_or_create_error_e::C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE
+            }
+            EventCreateError::UnableToGenerateUniqueServiceId => {
+                iox2_event_open_or_create_error_e::C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID
             }
         }) as c_int
     }
