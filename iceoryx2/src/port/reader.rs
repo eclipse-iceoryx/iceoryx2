@@ -37,6 +37,7 @@
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::identifiers::UniqueReaderId;
+use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::port::port_name::PortName;
 use crate::prelude::EventId;
 use crate::service::dynamic_config::blackboard::ReaderDetails;
@@ -108,7 +109,7 @@ struct ReaderSharedState<
     // the struct.
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
-    port_tag: Service::StaticStorage,
+    lifetime_tag: PortLifetimeTag<Service>,
 }
 
 unsafe impl<
@@ -126,7 +127,7 @@ impl<
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
-        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
+        unsafe { Abandonable::abandon_in_place(NonNull::from_mut(&mut this.lifetime_tag)) };
     }
 }
 
@@ -210,20 +211,17 @@ impl<
         let reader_id = UniqueReaderId::new();
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = match service
-            .shared_node()
-            .create_port_tag(origin, msg, reader_id.0.value())
-        {
-            Ok(port_tag) => port_tag,
-            Err(e) => {
-                fail!(from origin, with ReaderCreateError::UnableToCreatePortTag,
-                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
-            }
-        };
+        let lifetime_tag = PortLifetimeTag::new(
+            origin,
+            msg,
+            reader_id.0.value(),
+            service.shared_node(),
+            ReaderCreateError::UnableToCreatePortTag,
+        )?;
 
         let shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(ReaderSharedState {
-                port_tag,
+                lifetime_tag,
                 service_state: service.clone(),
                 _key: PhantomData,
             });

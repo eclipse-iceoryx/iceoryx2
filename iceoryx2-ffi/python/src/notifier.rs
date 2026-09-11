@@ -14,8 +14,8 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
-    duration::Duration, error::NotifierNotifyError, event_id::EventId, port_name::PortName,
-    unique_notifier_id::UniqueNotifierId,
+    duration::Duration, error::NotifierNotifyError, event_id::EventId, parc::Parc,
+    port_name::PortName, unique_notifier_id::UniqueNotifierId,
 };
 
 #[allow(clippy::large_enum_variant)] // allowed since they are the same port type based on a different service variant
@@ -26,14 +26,14 @@ pub(crate) enum NotifierType {
 
 #[pyclass]
 /// Represents the sending endpoint of an event based communication.
-pub struct Notifier(pub(crate) NotifierType);
+pub struct Notifier(pub(crate) Parc<NotifierType>);
 
 #[pymethods]
 impl Notifier {
     #[getter]
     /// Returns the `UniqueNotifierId` of the `Notifier`
     pub fn id(&self) -> UniqueNotifierId {
-        match &self.0 {
+        match &*self.0.lock() {
             NotifierType::Ipc(Some(v)) => UniqueNotifierId(v.id()),
             NotifierType::Local(Some(v)) => UniqueNotifierId(v.id()),
             _ => fatal_panic!(from "Notifier::id()",
@@ -44,7 +44,7 @@ impl Notifier {
     #[getter]
     /// Returns the `PortName` of the `Notifier`
     pub fn name(&self) -> PortName {
-        match &self.0 {
+        match &*self.0.lock() {
             NotifierType::Ipc(Some(v)) => PortName(*v.name()),
             NotifierType::Local(Some(v)) => PortName(*v.name()),
             _ => fatal_panic!(from "Notifier::name()",
@@ -55,7 +55,7 @@ impl Notifier {
     #[getter]
     /// Returns the deadline of the corresponding `Service`.
     pub fn deadline(&self) -> Option<Duration> {
-        match &self.0 {
+        match &*self.0.lock() {
             NotifierType::Ipc(Some(v)) => v.deadline().map(Duration),
             NotifierType::Local(Some(v)) => v.deadline().map(Duration),
             _ => fatal_panic!(from "Notifier::deadline()",
@@ -68,7 +68,7 @@ impl Notifier {
     /// Returns on success the number of `Listener`s that were notified otherwise it emits
     /// `NotifierNotifyError`.
     pub fn notify(&self) -> PyResult<usize> {
-        match &self.0 {
+        match &*self.0.lock() {
             NotifierType::Ipc(Some(v)) => Ok(v
                 .notify()
                 .map_err(|e| NotifierNotifyError::new_err(format!("{e:?}")))?),
@@ -84,7 +84,7 @@ impl Notifier {
     /// Returns on success the number of `Listener`s that were notified otherwise it returns
     /// `NotifierNotifyError`.
     pub fn notify_with_custom_event_id(&self, event_id: &EventId) -> PyResult<usize> {
-        match &self.0 {
+        match &*self.0.lock() {
             NotifierType::Ipc(Some(v)) => Ok(v
                 .notify_with_custom_event_id(event_id.0)
                 .map_err(|e| NotifierNotifyError::new_err(format!("{e:?}")))?),
@@ -100,11 +100,11 @@ impl Notifier {
     ///
     /// After this call the `Notifier` is no longer usable!
     pub fn delete(&mut self) {
-        match self.0 {
-            NotifierType::Ipc(ref mut v) => {
+        match &mut *self.0.lock() {
+            NotifierType::Ipc(v) => {
                 v.take();
             }
-            NotifierType::Local(ref mut v) => {
+            NotifierType::Local(v) => {
                 v.take();
             }
         }

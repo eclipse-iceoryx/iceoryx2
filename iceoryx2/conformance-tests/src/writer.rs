@@ -554,4 +554,40 @@ pub mod writer {
         }
         let _entry_handle_mut = entry_value_uninit.update();
     }
+
+    #[conformance_test]
+    pub fn service_and_node_exist_until_writer_port_is_dropped<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let node_id = *node.id();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()?;
+
+        let sut = service.writer_builder().create()?;
+
+        drop(node);
+        drop(service);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_some
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::Blackboard), eq Ok(true));
+
+        drop(sut);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_none
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::Blackboard), eq Ok(false));
+        assert_that!(iceoryx2_testing::do_stale_node_resources_exist::<Sut>(test.config(), node_id), eq false);
+
+        Ok(())
+    }
 }

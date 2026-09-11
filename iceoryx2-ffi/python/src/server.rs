@@ -47,7 +47,7 @@ pub(crate) enum ServerType {
 #[pyclass]
 /// Represents the receiving endpoint of an event based communication.
 pub struct Server {
-    pub(crate) value: ServerType,
+    pub(crate) value: Parc<ServerType>,
     pub(crate) request_payload_type_details: TypeStorage,
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) request_header_type_details: TypeStorage,
@@ -79,7 +79,7 @@ impl Server {
     #[getter]
     /// Returns the `UniqueServerId` of the `Server`
     pub fn id(&self) -> UniqueServerId {
-        match &self.value {
+        match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => UniqueServerId(v.id()),
             ServerType::Local(Some(v)) => UniqueServerId(v.id()),
             _ => fatal_panic!(from "Server::id()",
@@ -90,7 +90,7 @@ impl Server {
     #[getter]
     /// Returns the `PortName` of the `Server`
     pub fn name(&self) -> PortName {
-        match &self.value {
+        match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => PortName(*v.name()),
             ServerType::Local(Some(v)) => PortName(*v.name()),
             _ => fatal_panic!(from "Server::name()",
@@ -101,7 +101,7 @@ impl Server {
     #[getter]
     /// Returns true if the `Server` has `RequestMut`s in its buffer.
     pub fn has_requests(&self) -> PyResult<bool> {
-        match &self.value {
+        match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => Ok(v
                 .has_requests()
                 .map_err(|e| ConnectionFailure::new_err(format!("{e:?}")))?),
@@ -116,7 +116,7 @@ impl Server {
     #[getter]
     /// Returns the maximum initial slice length configured for this `Server`.
     pub fn __initial_max_slice_len(&self) -> usize {
-        match &self.value {
+        match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => v.initial_max_slice_len(),
             ServerType::Local(Some(v)) => v.initial_max_slice_len(),
             _ => fatal_panic!(from "Server::initial_max_slice_len()",
@@ -127,7 +127,7 @@ impl Server {
     /// Receives a `RequestMut` that was sent by a `Client` and returns an `ActiveRequest`
     /// which can be used to respond. If no `RequestMut`s were received it returns `None`.
     pub fn receive(&self) -> PyResult<Option<ActiveRequest>> {
-        match &self.value {
+        match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => Ok(v
                 .receive()
                 .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
@@ -157,11 +157,11 @@ impl Server {
     ///
     /// After this call the `Server` is no longer usable!
     pub fn delete(&mut self) {
-        match self.value {
-            ServerType::Ipc(ref mut v) => {
+        match &mut *self.value.lock() {
+            ServerType::Ipc(v) => {
                 v.take();
             }
-            ServerType::Local(ref mut v) => {
+            ServerType::Local(v) => {
                 v.take();
             }
         }
@@ -171,7 +171,7 @@ impl Server {
     /// Returns the strategy the `Server` follows when a `ResponseMut` cannot be delivered
     /// if the `Client`s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
-        match &self.value {
+        match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => v.backpressure_strategy().into(),
             ServerType::Local(Some(v)) => v.backpressure_strategy().into(),
             _ => {

@@ -133,6 +133,7 @@ use iceoryx2_log::{fail, warn};
 use crate::port::details::chunk::ChunkMut;
 use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
 use crate::port::details::sender::*;
+use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::prelude::{BackpressureStrategy, Flatbuffer};
@@ -207,7 +208,7 @@ pub struct PublisherSharedState<Service: service::Service> {
     // the struct.
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
-    port_tag: Service::StaticStorage,
+    lifetime_tag: PortLifetimeTag<Service>,
 }
 
 impl<Service: service::Service> DataSegmentSharedState for PublisherSharedState<Service> {
@@ -263,7 +264,7 @@ impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
                 NonNull::from_mut(&mut this.sender),
             )
         }
-        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) }
+        unsafe { Abandonable::abandon_in_place(NonNull::from_mut(&mut this.lifetime_tag)) }
     }
 }
 
@@ -467,16 +468,13 @@ impl<
         let service = &publisher_factory.factory.service;
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = match service
-            .shared_node()
-            .create_port_tag(origin, msg, port_id.0.value())
-        {
-            Ok(port_tag) => port_tag,
-            Err(e) => {
-                fail!(from origin, with PublisherCreateError::UnableToCreatePortTag,
-                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
-            }
-        };
+        let lifetime_tag = PortLifetimeTag::new(
+            origin,
+            msg,
+            port_id.0.value(),
+            service.shared_node(),
+            PublisherCreateError::UnableToCreatePortTag,
+        )?;
 
         let static_config = publisher_factory
             .factory
@@ -546,7 +544,7 @@ impl<
 
         let publisher_shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(PublisherSharedState {
-                port_tag,
+                lifetime_tag,
                 is_active: AtomicBool::new(true),
                 sender: Sender {
                     data_segment,

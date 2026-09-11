@@ -59,6 +59,7 @@
 //! ```
 
 use crate::config::Config;
+use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::port::port_name::PortName;
 use crate::service::SharedServiceState;
 use crate::service::config_scheme::event_config;
@@ -127,7 +128,7 @@ pub struct Listener<Service: service::Service> {
     // the struct.
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
-    port_tag: Service::StaticStorage,
+    lifetime_tag: PortLifetimeTag<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for Listener<Service> where
@@ -170,7 +171,7 @@ impl<Service: service::Service> Abandonable for Listener<Service> {
             Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(&mut this.listener))
         };
         unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
-        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
+        unsafe { Abandonable::abandon_in_place(NonNull::from_mut(&mut this.lifetime_tag)) };
     }
 }
 
@@ -195,17 +196,13 @@ impl<Service: service::Service> Listener<Service> {
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = match service.shared_node().create_port_tag(
+        let lifetime_tag = PortLifetimeTag::new(
             origin,
             msg,
             listener_id.0.value(),
-        ) {
-            Ok(port_tag) => port_tag,
-            Err(e) => {
-                fail!(from origin, with ListenerCreateError::UnableToCreatePortTag,
-                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
-            }
-        };
+            service.shared_node(),
+            ListenerCreateError::UnableToCreatePortTag,
+        )?;
 
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(service.shared_node().config());
@@ -245,7 +242,7 @@ impl<Service: service::Service> Listener<Service> {
         };
 
         Ok(Self {
-            port_tag,
+            lifetime_tag,
             service_state: service.clone(),
             dynamic_listener_handle: handle,
             listener_details: unsafe { &*details },

@@ -17,7 +17,9 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod subscriber {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
+    use iceoryx2::node::Node;
     use iceoryx2::port::ReceiveError;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::{
         port::port_name::PortName, port::subscriber::SubscriberCreateError, service::Service,
     };
@@ -99,6 +101,41 @@ pub mod subscriber {
             .create()?;
 
         assert_that!(*sut.name(), eq subscriber_name);
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn service_and_node_exist_until_subscriber_port_is_dropped<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let node_id = *node.id();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let sut = service.subscriber_builder().create()?;
+
+        drop(node);
+        drop(service);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_some
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::PublishSubscribe), eq Ok(true));
+
+        drop(sut);
+
+        assert_that!(
+            Node::<Sut>::state_of(test.config(), node_id).unwrap(),
+            is_none
+        );
+        assert_that!(Sut::does_exist(&service_name, test.config(), MessagingPattern::PublishSubscribe), eq Ok(false));
+        assert_that!(iceoryx2_testing::do_stale_node_resources_exist::<Sut>(test.config(), node_id), eq false);
 
         Ok(())
     }

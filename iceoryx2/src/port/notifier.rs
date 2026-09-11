@@ -53,6 +53,7 @@ use iceoryx2_cal::{
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use iceoryx2_log::{debug, fail, warn};
 
+use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::service::SharedServiceState;
 use crate::service::resource::NoResource;
 use crate::{
@@ -324,7 +325,7 @@ pub struct Notifier<Service: service::Service> {
     // the struct.
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
-    port_tag: Service::StaticStorage,
+    lifetime_tag: PortLifetimeTag<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for Notifier<Service> where
@@ -346,7 +347,7 @@ impl<Service: service::Service> Abandonable for Notifier<Service> {
             ))
         };
         unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag));
+            Abandonable::abandon_in_place(NonNull::from_mut(&mut this.lifetime_tag));
         }
     }
 }
@@ -418,17 +419,13 @@ impl<Service: service::Service> Notifier<Service> {
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = match service.shared_node().create_port_tag(
+        let lifetime_tag = PortLifetimeTag::new(
             origin,
             msg,
             notifier_id.0.value(),
-        ) {
-            Ok(port_tag) => port_tag,
-            Err(e) => {
-                fail!(from origin, with NotifierCreateError::UnableToCreatePortTag,
-                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
-            }
-        };
+            service.shared_node(),
+            NotifierCreateError::UnableToCreatePortTag,
+        )?;
 
         let listener_list = &service.dynamic_storage().get().event().listeners;
 
@@ -474,7 +471,7 @@ impl<Service: service::Service> Notifier<Service> {
         };
 
         Ok(Self {
-            port_tag,
+            lifetime_tag,
             listener_connections,
             default_event_id: config.default_event_id,
             event_id_max_value: static_config.event_id_max_value,

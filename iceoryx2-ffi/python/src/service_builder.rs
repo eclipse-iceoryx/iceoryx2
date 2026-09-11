@@ -13,6 +13,7 @@
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
+use crate::parc::Parc;
 use crate::service_builder_blackboard::{
     ServiceBuilderBlackboardCreatorType, ServiceBuilderBlackboardOpenerType,
 };
@@ -33,13 +34,13 @@ pub(crate) enum ServiceBuilderType {
 
 #[pyclass]
 /// Builder to create or open `Service`s
-pub struct ServiceBuilder(pub(crate) ServiceBuilderType);
+pub struct ServiceBuilder(pub(crate) Parc<ServiceBuilderType>);
 
 #[pymethods]
 impl ServiceBuilder {
     /// Create a new builder to create a `MessagingPattern::Event` `Service`.
     pub fn event(&self) -> ServiceBuilderEvent {
-        match &self.0 {
+        match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderEvent(ServiceBuilderEventType::Ipc(this.event()))
@@ -53,7 +54,7 @@ impl ServiceBuilder {
 
     /// Create a new builder to create a `MessagingPattern::PublishSubscribe` `Service`.
     pub fn __publish_subscribe(&self) -> ServiceBuilderPublishSubscribe {
-        match &self.0 {
+        match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderPublishSubscribe::new(ServiceBuilderPublishSubscribeType::Ipc(
@@ -73,7 +74,7 @@ impl ServiceBuilder {
 
     /// Create a new builder to create a `MessagingPattern::RequestResponse` `Service`.
     pub fn __request_response(&self) -> ServiceBuilderRequestResponse {
-        match &self.0 {
+        match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderRequestResponse::new(ServiceBuilderRequestResponseType::Ipc(
@@ -95,7 +96,7 @@ impl ServiceBuilder {
 
     /// Create a new builder to create a `MessagingPattern::Blackboard` `Service`.
     pub fn __blackboard_creator(&self) -> ServiceBuilderBlackboardCreator {
-        match &self.0 {
+        match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderBlackboardCreator::new(ServiceBuilderBlackboardCreatorType::Ipc(
@@ -113,7 +114,7 @@ impl ServiceBuilder {
 
     /// Create a new builder to open a `MessagingPattern::Blackboard` `Service`.
     pub fn __blackboard_opener(&self) -> ServiceBuilderBlackboardOpener {
-        match &self.0 {
+        match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderBlackboardOpener::new(ServiceBuilderBlackboardOpenerType::Ipc(Some(

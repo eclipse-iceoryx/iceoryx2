@@ -132,12 +132,12 @@ impl Node {
     /// Instantiates a `ServiceBuilder` for a service with the provided name.
     pub fn service_builder(&self, name: &ServiceName) -> ServiceBuilder {
         match &*self.0.lock() {
-            NodeType::Ipc(node) => {
-                ServiceBuilder(ServiceBuilderType::Ipc(node.service_builder(&name.0)))
-            }
-            NodeType::Local(node) => {
-                ServiceBuilder(ServiceBuilderType::Local(node.service_builder(&name.0)))
-            }
+            NodeType::Ipc(node) => ServiceBuilder(Parc::new(ServiceBuilderType::Ipc(
+                node.service_builder(&name.0),
+            ))),
+            NodeType::Local(node) => ServiceBuilder(Parc::new(ServiceBuilderType::Local(
+                node.service_builder(&name.0),
+            ))),
         }
     }
 

@@ -51,6 +51,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
+use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::service::SharedServiceState;
@@ -109,14 +110,14 @@ pub(crate) struct SubscriberSharedState<Service: service::Service> {
     // the struct.
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
-    port_tag: Service::StaticStorage,
+    lifetime_tag: PortLifetimeTag<Service>,
 }
 
 impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { Receiver::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
-        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
+        unsafe { Abandonable::abandon_in_place(NonNull::from_mut(&mut this.lifetime_tag)) };
     }
 }
 
@@ -205,17 +206,13 @@ impl<
         let subscriber_id = UniqueSubscriberId::new();
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = match service.shared_node().create_port_tag(
+        let lifetime_tag = PortLifetimeTag::new(
             origin,
             msg,
             subscriber_id.0.value(),
-        ) {
-            Ok(port_tag) => port_tag,
-            Err(e) => {
-                fail!(from origin, with SubscriberCreateError::UnableToCreatePortTag,
-                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
-            }
-        };
+            service.shared_node(),
+            SubscriberCreateError::UnableToCreatePortTag,
+        )?;
 
         let publisher_list = &service
             .dynamic_storage()
@@ -278,7 +275,7 @@ impl<
             number_of_to_be_removed_connections + number_of_active_connections;
 
         let subscriber_shared_state = Service::ArcThreadSafetyPolicy::new(SubscriberSharedState {
-            port_tag,
+            lifetime_tag,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             receiver: Receiver {
                 connections: PolymorphicVec::from_fn(

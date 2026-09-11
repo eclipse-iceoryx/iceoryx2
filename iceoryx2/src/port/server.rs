@@ -74,6 +74,7 @@
 //! ```
 
 use crate::port::details::data_segment_shared_state::DataSegmentSharedState;
+use crate::port::port_lifetime_tag::PortLifetimeTag;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
@@ -149,7 +150,7 @@ pub struct SharedServerState<Service: service::Service> {
     // the struct.
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
-    port_tag: Service::StaticStorage,
+    lifetime_tag: PortLifetimeTag<Service>,
 }
 
 impl<Service: service::Service> DataSegmentSharedState for SharedServerState<Service> {
@@ -202,7 +203,7 @@ impl<Service: service::Service> Abandonable for SharedServerState<Service> {
         unsafe { Sender::abandon_in_place(NonNull::from_mut(&mut this.response_sender)) };
         unsafe { Receiver::abandon_in_place(NonNull::from_mut(&mut this.request_receiver)) };
         unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
-        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
+        unsafe { Abandonable::abandon_in_place(NonNull::from_mut(&mut this.lifetime_tag)) };
     }
 }
 
@@ -381,16 +382,13 @@ impl<
         let service = &server_factory.factory.service;
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = match service
-            .shared_node()
-            .create_port_tag(origin, msg, server_id.0.value())
-        {
-            Ok(port_tag) => port_tag,
-            Err(e) => {
-                fail!(from origin, with ServerCreateError::UnableToCreatePortTag,
-                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
-            }
-        };
+        let lifetime_tag = PortLifetimeTag::new(
+            origin,
+            msg,
+            server_id.0.value(),
+            service.shared_node(),
+            ServerCreateError::UnableToCreatePortTag,
+        )?;
 
         let static_config = server_factory.factory.static_config();
         let number_of_requests_per_client =
@@ -511,7 +509,7 @@ impl<
         };
 
         let shared_state = Service::ArcThreadSafetyPolicy::new(SharedServerState {
-            port_tag,
+            lifetime_tag,
             config: server_factory.config,
             request_receiver,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),

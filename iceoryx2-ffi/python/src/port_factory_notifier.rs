@@ -112,15 +112,17 @@ impl PortFactoryNotifier {
         match &self.value {
             PortFactoryNotifierType::Ipc(v) => {
                 let this = v.clone();
-                Ok(Notifier(NotifierType::Ipc(Some(this.create().map_err(
-                    |e| NotifierCreateError::new_err(format!("{e:?}")),
-                )?))))
+                Ok(Notifier(Parc::new(NotifierType::Ipc(Some(
+                    this.create()
+                        .map_err(|e| NotifierCreateError::new_err(format!("{e:?}")))?,
+                )))))
             }
             PortFactoryNotifierType::Local(v) => {
                 let this = v.clone();
-                Ok(Notifier(NotifierType::Local(Some(this.create().map_err(
-                    |e| NotifierCreateError::new_err(format!("{e:?}")),
-                )?))))
+                Ok(Notifier(Parc::new(NotifierType::Local(Some(
+                    this.create()
+                        .map_err(|e| NotifierCreateError::new_err(format!("{e:?}")))?,
+                )))))
             }
         }
     }
