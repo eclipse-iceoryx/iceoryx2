@@ -51,7 +51,6 @@ use iceoryx2_cal::zero_copy_connection::ChannelState;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{arc_sync_policy::ArcSyncPolicy, zero_copy_connection::ChannelId};
 use iceoryx2_log::fail;
 
@@ -61,6 +60,7 @@ use crate::port::details::chunk::ChunkMut;
 use crate::service::marker::CustomHeaderMarker;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::marker::Flatbuffer;
+use crate::unique_id_generator::UniqueId;
 use crate::{
     identifiers::{UniqueClientId, UniqueServerId},
     port::{
@@ -343,7 +343,7 @@ impl<
 
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     pub fn origin(&self) -> UniqueClientId {
-        UniqueClientId(UniqueSystemId::from(self.details.origin))
+        UniqueClientId(unsafe { UniqueId::from_raw_id(self.details.origin) })
     }
 
     fn increment_loan_counter(&self) -> Result<(), LoanError> {
@@ -385,7 +385,7 @@ impl<
         unsafe {
             header_ptr.write(service::header::request_response::ResponseHeader {
                 node_id: *shared_state.response_sender.shared_node.id(),
-                server_id: UniqueServerId(UniqueSystemId::from(
+                server_id: UniqueServerId(UniqueId::from_raw_id(
                     shared_state.response_sender.sender_port_id,
                 )),
                 request_id: self.request_id,

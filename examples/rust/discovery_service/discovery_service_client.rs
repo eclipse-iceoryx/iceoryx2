@@ -23,21 +23,23 @@ const CYCLE_TIME: Duration = Duration::from_millis(10);
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    type Service = ipc::Service;
+
+    let node = NodeBuilder::new().create::<Service>()?;
 
     let service = node
         .service_builder(service_name())
-        .request_response::<(), [StaticConfig]>()
+        .request_response::<(), [StaticConfig<Service>]>()
         .open_or_create()?;
 
     let client = service.client_builder().create()?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = WaitSetBuilder::new().create::<Service>()?;
     let guard = waitset.attach_interval(CYCLE_TIME)?;
 
     let pending_response = client.send_copy(())?;
 
-    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    let on_event = |attachment_id: WaitSetAttachmentId<Service>| {
         if attachment_id.has_event_from(&guard)
             && let Some(response) = pending_response.receive().unwrap()
         {

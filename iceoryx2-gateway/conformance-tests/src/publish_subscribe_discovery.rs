@@ -35,7 +35,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn discovers_added_and_removed_services_via_subscriber<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -59,7 +59,7 @@ pub mod publish_subscribe_discovery {
         let discovery_service_name: ServiceName = DISCOVERY_TOPIC.try_into().unwrap();
         let discovery_service = node
             .service_builder(&discovery_service_name)
-            .publish_subscribe::<DiscoveryEvent>()
+            .publish_subscribe::<DiscoveryEvent<S>>()
             .max_publishers(1)
             .open_or_create()
             .unwrap();
@@ -104,7 +104,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn discovers_added_and_removed_services_via_tracker<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -146,7 +146,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn discovers_added_and_removed_services_via_backend<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -244,7 +244,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn aggregates_announcements_from_multiple_hosts<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -356,7 +356,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn detects_ungraceful_remote_departure<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -433,7 +433,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn discovers_pre_existing_remote_services<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -493,7 +493,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn rediscovers_service_after_removal<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -594,7 +594,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn ignores_duplicate_added_events<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -619,7 +619,7 @@ pub mod publish_subscribe_discovery {
         let discovery_service_name: ServiceName = DISCOVERY_TOPIC.try_into().unwrap();
         let discovery_service = node
             .service_builder(&discovery_service_name)
-            .publish_subscribe::<DiscoveryEvent>()
+            .publish_subscribe::<DiscoveryEvent<S>>()
             .max_publishers(1)
             .open_or_create()
             .unwrap();
@@ -656,7 +656,7 @@ pub mod publish_subscribe_discovery {
     }
 
     pub fn lifecycle_with_local_service_on_one_host<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -750,7 +750,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn lifecycle_with_local_service_on_two_hosts<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -863,7 +863,7 @@ pub mod publish_subscribe_discovery {
 
     #[conformance_test]
     pub fn no_allowlist_forwards_all_services<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {

@@ -90,6 +90,8 @@ pub enum SubscriberCreateError {
     HistoryRequestExceedsHistorySizeOfService,
     /// When the [`Subscriber`] requests a larger history than its buffer can hold.
     HistoryRequestExceedsBufferSizeOfSubscriber,
+    /// The [`UniqueSubscriberId`] could not be generated.
+    UnableToGenerateUniqueSubscriberId,
 }
 
 impl core::fmt::Display for SubscriberCreateError {
@@ -203,7 +205,10 @@ impl<
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
-        let subscriber_id = UniqueSubscriberId::new();
+        let subscriber_id = fail!(from origin,
+            when UniqueSubscriberId::new::<Service>(config.port_name, service.shared_node().config()),
+            with SubscriberCreateError::UnableToGenerateUniqueSubscriberId,
+            "{msg} since the UniqueSubscriberId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let lifetime_tag = PortLifetimeTag::new(

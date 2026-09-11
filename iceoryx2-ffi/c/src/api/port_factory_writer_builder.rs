@@ -35,6 +35,7 @@ pub enum iox2_writer_create_error_e {
     INTERNAL_FAILURE,
     FAILED_TO_DEPLOY_THREADSAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    UNABLE_TO_GENERATE_UNIQUE_WRITER_ID,
 }
 
 impl IntoCInt for WriterCreateError {
@@ -49,6 +50,9 @@ impl IntoCInt for WriterCreateError {
             }
             WriterCreateError::UnableToCreatePortTag => {
                 iox2_writer_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            WriterCreateError::UnableToGenerateUniqueWriterId => {
+                iox2_writer_create_error_e::UNABLE_TO_GENERATE_UNIQUE_WRITER_ID
             }
         }) as c_int
     }

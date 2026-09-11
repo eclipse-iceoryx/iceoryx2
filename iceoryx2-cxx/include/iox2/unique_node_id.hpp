@@ -13,8 +13,12 @@
 #ifndef IOX2_UNIQUE_NODE_ID_HPP
 #define IOX2_UNIQUE_NODE_ID_HPP
 
+#include "iox2/bb/expected.hpp"
+#include "iox2/bb/into.hpp"
+#include "iox2/enum_translation.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/service_type.hpp"
+#include "iox2/unique_id_generator_error.hpp"
 
 #include <cstdint>
 #include <ctime>
@@ -44,10 +48,12 @@ class UniqueNodeId {
     auto value_low() const -> uint64_t;
 
     /// Returns the [`ProcessId`] of the process that owns the [`Node`].
-    auto pid() const -> int32_t;
+    template <ServiceType T>
+    auto pid() const -> bb::Expected<int32_t, UniqueIdGeneratorDetailsError>;
 
     /// Returns the time the [`Node`] was created.
-    auto creation_time() const -> timespec;
+    template <ServiceType T>
+    auto creation_time() const -> bb::Expected<timespec, UniqueIdGeneratorDetailsError>;
 
   private:
     template <ServiceType>
@@ -75,6 +81,29 @@ class UniqueNodeId {
 
     iox2_unique_node_id_h m_handle = nullptr;
 };
+
+template <ServiceType T>
+inline auto UniqueNodeId::pid() const -> bb::Expected<int32_t, UniqueIdGeneratorDetailsError> {
+    int32_t pid = 0;
+    auto result = iox2_unique_node_id_pid(&m_handle, iox2::bb::into<iox2_service_type_e>(T), &pid);
+    if (result == IOX2_OK) {
+        return pid;
+    }
+    return bb::err(bb::into<UniqueIdGeneratorDetailsError>(result));
+}
+
+template <ServiceType T>
+inline auto UniqueNodeId::creation_time() const -> bb::Expected<timespec, UniqueIdGeneratorDetailsError> {
+    uint64_t seconds = 0;
+    uint32_t nanoseconds = 0;
+    auto result =
+        iox2_unique_node_id_creation_time(&m_handle, iox2::bb::into<iox2_service_type_e>(T), &seconds, &nanoseconds);
+    if (result == IOX2_OK) {
+        return timespec { static_cast<decltype(timespec::tv_sec)>(seconds),
+                          static_cast<decltype(timespec::tv_nsec)>(nanoseconds) };
+    }
+    return bb::err(bb::into<UniqueIdGeneratorDetailsError>(result));
+}
 
 auto operator<<(std::ostream& stream, const UniqueNodeId& node) -> std::ostream&;
 auto operator==(const UniqueNodeId& lhs, const UniqueNodeId& rhs) -> bool;

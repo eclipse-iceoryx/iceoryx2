@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize, de::Visitor};
 type NodeNameString = StaticString<MAX_NODE_NAME_LENGTH>;
 
 /// Represent the name for a [`crate::node::Node`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct NodeName {
     value: NodeNameString,
 }

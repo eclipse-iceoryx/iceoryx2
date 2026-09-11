@@ -28,6 +28,8 @@ enum class ReaderCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueReaderId`] could not be generated.
+    UnableToGenerateUniqueReaderId,
 };
 } // namespace iox2
 

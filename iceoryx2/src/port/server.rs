@@ -378,8 +378,10 @@ impl<
     ) -> Result<Self, ServerCreateError> {
         let msg = "Failed to create Server port";
         let origin = "Server::new()";
-        let server_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
+        let server_id = fail!(from origin,
+            when UniqueServerId::new::<Service>(server_factory.config.port_name, service.shared_node().config()),
+            with ServerCreateError::UnableToGenerateUniqueServerId, "{msg} since the UniqueServerId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let lifetime_tag = PortLifetimeTag::new(

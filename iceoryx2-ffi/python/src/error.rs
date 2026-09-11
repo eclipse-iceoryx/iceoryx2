@@ -320,3 +320,10 @@ create_exception!(
     PyException,
     "Errors caused when growing a payload memory."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    UniqueIdGeneratorDetailsError,
+    PyException,
+    "Errors caused when using a unique id."
+);

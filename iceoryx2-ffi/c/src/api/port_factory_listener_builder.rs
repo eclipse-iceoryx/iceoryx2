@@ -35,6 +35,7 @@ pub enum iox2_listener_create_error_e {
     RESOURCE_CREATION_FAILED,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    UNABLE_TO_GENERATE_UNIQUE_LISTENER_ID,
 }
 
 impl IntoCInt for ListenerCreateError {
@@ -51,6 +52,9 @@ impl IntoCInt for ListenerCreateError {
             }
             ListenerCreateError::UnableToCreatePortTag => {
                 iox2_listener_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            ListenerCreateError::UnableToGenerateUniqueListenerId => {
+                iox2_listener_create_error_e::UNABLE_TO_GENERATE_UNIQUE_LISTENER_ID
             }
         }) as c_int
     }

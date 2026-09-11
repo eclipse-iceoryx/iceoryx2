@@ -72,9 +72,9 @@ enum_gen! { UniqueSystemIdCreationError
 )]
 #[repr(C)]
 pub struct UniqueSystemId {
-    pid: u32,
     seconds: u32,
     nanoseconds: u32,
+    pid: u32,
     counter: u32,
 }
 

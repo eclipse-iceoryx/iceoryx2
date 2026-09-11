@@ -24,7 +24,9 @@ use alloc::vec::Vec;
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::service;
-use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
+use crate::service::builder::{
+    DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
+};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::marker::CustomKeyMarker;
@@ -160,6 +162,8 @@ pub enum BlackboardCreateError {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for BlackboardCreateError {
@@ -208,6 +212,9 @@ impl From<ServiceCreateError> for BlackboardCreateError {
             }
             ServiceCreateError::UnableToCreateServiceTag => {
                 BlackboardCreateError::UnableToCreateServiceTag
+            }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                BlackboardCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -360,7 +367,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let blackboard_service_config = *self.config_details();
         match self.config.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
@@ -538,7 +545,7 @@ impl<
                 "{} without entries. At least one key-value pair is required.", msg);
         }
 
-        let generate_dynamic_config = |service_config: &StaticConfig| {
+        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
             let blackboard_config = service_config.blackboard();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_writers: blackboard_config.max_writers,
@@ -566,6 +573,12 @@ impl<
             |resource| {
                 resource.data.release_ownership();
                 resource.mgmt.release_ownership();
+            },
+            |service_config| {
+                UniqueServiceId::from_blackboard_service::<ServiceType>(
+                    service_config.name(),
+                    self.builder.config.base.shared_node.config(),
+                )
             },
         )?;
 
@@ -685,7 +698,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig,
+        existing_service_config: &StaticConfig<ServiceType>,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), BlackboardOpenError> {
         let required_service_config = &self.builder.config.base.service_config;

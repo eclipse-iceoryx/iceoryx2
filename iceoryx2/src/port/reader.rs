@@ -145,6 +145,8 @@ pub enum ReaderCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueReaderId`] could not be generated.
+    UnableToGenerateUniqueReaderId,
 }
 
 impl core::fmt::Display for ReaderCreateError {
@@ -208,7 +210,9 @@ impl<
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
-        let reader_id = UniqueReaderId::new();
+        let reader_id = fail!(from origin,
+            when UniqueReaderId::new::<Service>(config.port_name, service.shared_node().config()),
+            with ReaderCreateError::UnableToGenerateUniqueReaderId, "{msg} since the UniqueReaderId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
         let lifetime_tag = PortLifetimeTag::new(

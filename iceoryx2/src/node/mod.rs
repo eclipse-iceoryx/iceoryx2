@@ -184,7 +184,6 @@ use iceoryx2_cal::{
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 
 use crate::identifiers::UniqueNodeId;
-use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::node_name::NodeName;
 use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
@@ -199,11 +198,12 @@ use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
 use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
+use crate::unique_id_generator::*;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
 impl UniqueNodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
-        fatal_panic!(from self, when FileName::new(self.0.to_string().as_bytes()),
+        fatal_panic!(from self, when FileName::new(self.0.value().to_string().as_bytes()),
                         "This should never happen! The NodeId shall be always a valid FileName.")
     }
 }
@@ -217,6 +217,8 @@ pub enum NodeCreationFailure {
     InternalError,
     /// Indicates that another "instance" on the system removed the resource required by the [`Node`].
     SystemCorrupted,
+    /// The [`UniqueNodeId`] could not be generated.
+    UnableToGenerateUniqueNodeId,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -1195,7 +1197,7 @@ impl<Service: service::Service> Node<Service> {
                         continue;
                     };
                     let node_id = match node_id.parse::<u128>() {
-                        Ok(v) => UniqueNodeId(v.into()),
+                        Ok(v) => UniqueNodeId(unsafe { UniqueId::from_raw_id(v) }),
                         Err(_) => continue,
                     };
 
@@ -1571,34 +1573,23 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        let config = self
-            .config
-            .as_ref()
-            .unwrap_or_else(|| Config::global_config());
-        let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config) {
-            Ok(mgmt) => mgmt.increment_node_counter(),
-            Err(e) => {
-                fail!(from "NodeBuilder::create()",
-                    with NodeCreationFailure::InternalError,
-                    "Unable to create node since the global management segment could not be opened. [{e:?}]");
-            }
-        };
-
-        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new(node_counter)) }
-    }
-
-    #[doc(hidden)]
-    pub unsafe fn __internal_create_with_custom_node_id<Service: service::Service>(
-        self,
-        node_id: UniqueNodeId,
-    ) -> Result<Node<Service>, NodeCreationFailure> {
-        let config = self
-            .config
-            .as_ref()
-            .unwrap_or_else(|| Config::global_config());
         let msg = "Unable to create node";
+
+        let config = self
+            .config
+            .as_ref()
+            .unwrap_or_else(|| Config::global_config());
+
+        let name = match &self.name {
+            Some(n) => n.clone(),
+            None => NodeName::default(),
+        };
+        let node_id = fail!(from self, when UniqueNodeId::new::<Service>(name, config),
+            with NodeCreationFailure::UnableToGenerateUniqueNodeId,
+            "{msg} since the UniqueNodeId could not be generated.");
+
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+                                "This should never happen! {msg} since the UniqueNodeId is not a valid file name.");
         let (details_storage, details) =
             self.create_node_details_storage::<Service>(config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(config, &monitor_name)?;

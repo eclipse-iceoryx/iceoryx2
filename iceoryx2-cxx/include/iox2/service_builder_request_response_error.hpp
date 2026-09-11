@@ -104,6 +104,8 @@ enum class RequestResponseCreateError : uint8_t {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// The unique service id could not be generated.
+    UnableToGenerateUniqueServiceId,
 };
 
 /// Errors that can occur when a [`MessagingPattern::RequestResponse`] [`Service`] shall be
@@ -191,6 +193,8 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     CreateUnableToAcquireTypeDefinition,
+    /// The unique service id could not be generated.
+    CreateUnableToGenerateUniqueServiceId,
 
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.

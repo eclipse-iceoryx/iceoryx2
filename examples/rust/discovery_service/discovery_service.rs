@@ -23,11 +23,13 @@ use iceoryx2_services_discovery::*;
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level(LogLevel::Info);
 
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    type Service = ipc::Service;
+
+    let node = NodeBuilder::new().create::<Service>()?;
 
     let publish_subscribe = node
         .service_builder(service_discovery::service_name())
-        .publish_subscribe::<service_discovery::Payload>()
+        .publish_subscribe::<DiscoveryEvent<Service>>()
         .open()
         .inspect_err(|_| {
             cerrln!("Unable to open service discovery service. Was it started?");
@@ -44,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         })?;
     let listener = event.listener_builder().create()?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = WaitSetBuilder::new().create::<Service>()?;
     let guard = waitset.attach_notification(&listener)?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 
@@ -53,9 +55,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // Optionally store StaticConfigs if required.
     // The StaticConfig is provided for Added services, but only the hash
     // is provided for Removed services.
-    let mut known: BTreeMap<ServiceHash, StaticConfig> = BTreeMap::new();
+    let mut known: BTreeMap<ServiceHash, StaticConfig<Service>> = BTreeMap::new();
 
-    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    let on_event = |attachment_id: WaitSetAttachmentId<Service>| {
         if attachment_id == attachment {
             // Drain all pending.
             listener.try_wait(|_| {}).unwrap();

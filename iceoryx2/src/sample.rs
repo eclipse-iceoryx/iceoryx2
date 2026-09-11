@@ -37,7 +37,6 @@ use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
@@ -48,6 +47,7 @@ use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::subscriber::SubscriberSharedState;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::marker::Flatbuffer;
+use crate::unique_id_generator::UniqueId;
 
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
@@ -206,6 +206,6 @@ impl<
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        UniquePublisherId(UniqueSystemId::from(self.details.origin))
+        UniquePublisherId(unsafe { UniqueId::from_raw_id(self.details.origin) })
     }
 }

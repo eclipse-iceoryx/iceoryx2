@@ -126,6 +126,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "system in flux"]
     SYSTEM_IN_FLUX,
+    #[CStr = "unique service id could not be generated"]
+    C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID,
 }
 
 impl IntoCInt for RequestResponseOpenError {
@@ -191,6 +193,9 @@ impl IntoCInt for RequestResponseCreateError {
             }
             RequestResponseCreateError::UnableToAcquireTypeDefinition => {
                 iox2_request_response_open_or_create_error_e::C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
+            }
+            RequestResponseCreateError::UnableToGenerateUniqueServiceId => {
+                iox2_request_response_open_or_create_error_e::C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID
             }
         }) as c_int
     }

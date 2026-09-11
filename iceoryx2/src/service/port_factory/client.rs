@@ -65,6 +65,8 @@ pub enum ClientCreateError {
     /// When the [`Client`] requires more active requests than the
     /// [`Service`](crate::service::Service) offers, the creation will fail.
     MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService,
+    /// The [`UniqueClientId`](crate::identifiers::UniqueClientId) could not be generated.
+    UnableToGenerateUniqueClientId,
 }
 
 impl core::fmt::Display for ClientCreateError {
