@@ -44,6 +44,7 @@
 * [#588](https://github.com/eclipse-iceoryx/iceoryx2/issues/588) Replace deprecated `serde_yaml` dependency with `yaml_serde`.
 * [#1152](https://github.com/eclipse-iceoryx/iceoryx2/issues/1152) Fix `no_std` build of the console logger on platforms other than linux and nto.
 * [#1488](https://github.com/eclipse-iceoryx/iceoryx2/issues/1488) Service builder silently accepted lifecycle event IDs exceeding `event_id_max_value`; create now returns `EventCreateError::EventIdExceedsMaxSupportedValue`.
+* [#1533](https://github.com/eclipse-iceoryx/iceoryx2/issues/1533) Python `Slice` payloads reported the byte length instead of the number of elements; `__slice_len` now reads `number_of_elements` from the sample header, as the C API does.
 * [#1548](https://github.com/eclipse-iceoryx/iceoryx2/issues/1548) Fix Payload data lifetime tracking in python ffi by anchoring views to their owning Sample.
 * [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) Thread-stack-size is the same as process-stack-size on all platforms.
 * [#1695](https://github.com/eclipse-iceoryx/iceoryx2/issues/1695) Remove port_tag when stale resources of port are removed.
