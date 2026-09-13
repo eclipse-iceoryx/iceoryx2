@@ -20,6 +20,8 @@ mod diagnostics;
 mod discovery_state;
 mod link;
 mod ports;
+mod wake;
 
 pub use bridge::{Bridges, PropagateError};
 pub use link::{DiscoveryError, Link};
+pub use wake::WakeCreationError;

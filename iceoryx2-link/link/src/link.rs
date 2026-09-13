@@ -12,17 +12,21 @@
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeState, NodeView};
+use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::CallbackProgression;
 use iceoryx2::service::{Service, ServiceDetails};
 use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::Resolver;
-use iceoryx2_link_backend::{Backend, Generation, Refusal, RemoteDescription, RemoteId};
+use iceoryx2_link_backend::{
+    Backend, Generation, Reactive, Refusal, RemoteDescription, RemoteId, WakeService,
+};
 use iceoryx2_log::fail;
 
 use crate::announcement_state::AnnouncementState;
 use crate::bridge::{Bridges, PropagateError};
 use crate::discovery_state::DiscoveryState;
+use crate::wake::{Wake, WakeCreationError};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
@@ -46,6 +50,8 @@ pub struct Link<S: Service, B: Backend<S>> {
     state: DiscoveryState<RemoteId<S, B>, RemoteDescription<S, B>, Refusal<S, B>>,
     announcements: AnnouncementState,
     bridges: Bridges<S, B>,
+    /// A reactive link's wake service.
+    wake: Option<Wake>,
     // Placed last on purpose, required for clean-up order.
     node: Node<S>,
 }
@@ -58,6 +64,7 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
             state: DiscoveryState::default(),
             announcements: AnnouncementState::default(),
             bridges: Bridges::default(),
+            wake: None,
             node,
         }
     }
@@ -170,6 +177,33 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
     /// The bridges the link currently holds.
     pub fn bridges(&self) -> &Bridges<S, B> {
         &self.bridges
+    }
+}
+
+impl<S: Service, B: Backend<S> + Reactive> Link<S, B> {
+    /// A listener on the link's wake service, signalled whenever a cycle
+    /// may have something to do.
+    pub fn listener(&mut self) -> Result<Listener<WakeService>, WakeCreationError> {
+        let origin = origin!("Link::listener");
+
+        // Create the service.
+        if self.wake.is_none() {
+            let wake = fail!(
+                from origin,
+                when Wake::create(self.node.config(), self.node.id()),
+                "Failed to create the wake service"
+            );
+            let handle = fail!(
+                from origin,
+                when wake.handle(),
+                "Failed to create the wake handle"
+            );
+            self.backend.attach(handle);
+            self.wake = Some(wake);
+        }
+
+        // Hand the listener to the caller.
+        self.wake.as_ref().expect("created above").listener()
     }
 }
 
