@@ -66,7 +66,7 @@ flatc -o examples/cxx/flatbuffer_publish_subscribe/src --cpp \
 ### Generate Binary Schema
 
 Every iceoryx2 service embeds a binary schema file to enforce strong typing.
-Before running the example, we need to generate it from the source .fbs file.
+Before running the example, we need to generate it from the source `.fbs` file.
 
 ```sh
 flatc -o examples/cxx/flatbuffer_publish_subscribe/src --schema --binary \

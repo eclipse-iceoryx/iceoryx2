@@ -1,7 +1,7 @@
 # FlatBuffers Request-Response
 
-This example demonstrates how to use dynamically sized data and Flatbuffers
-for request-response zero-copy communication with iceoryx2.
+This example demonstrates how to use dynamically sized data and Flatbuffers for
+request-response zero-copy communication with iceoryx2.
 
 FlatBuffers are fully integrated into iceoryx2. This means that users can work
 with the FlatBuffers API directly through the iceoryx2 API without having to
@@ -11,9 +11,9 @@ backwards.
 All surrounding memory management is handled by iceoryx2, allowing users to
 focus entirely on generating dynamically sized data with the FlatBuffers API.
 
-In this example, we send a request of type `UnboundedData`, and receive a `DataProps`
-response type. The types are defined in the `unbounded_data.fbs` and `data_props.fbs`
-as follows:
+In this example, we send a request of type `UnboundedData`, and receive a
+`DataProps` response type. The types are defined in the `unbounded_data.fbs` and
+`data_props.fbs` as follows:
 
 ## Data Types
 
@@ -61,6 +61,8 @@ apt install libflatbuffers-dev
 
 ## Usage
 
+### Generate Code
+
 The generated C++ code is already included in this example. For completeness,
 the command used to generate it is documented below:
 
@@ -70,6 +72,20 @@ flatc -o examples/cxx/flatbuffer_request_response/src --cpp \
 flatc -o examples/cxx/flatbuffer_request_response/src --cpp \
     examples/cxx/flatbuffer_request_response/src/data_props.fbs
 ```
+
+### Generate Binary Schema
+
+Every iceoryx2 service embeds a binary schema file to enforce strong typing.
+Before running the example, we need to generate it from the source `.fbs` file.
+
+```sh
+flatc -o examples/cxx/flatbuffer_request_response/src --schema --binary \
+    examples/cxx/flatbuffer_request_response/src/unbounded_data.fbs
+flatc -o examples/cxx/flatbuffer_request_response/src --schema --binary \
+    examples/cxx/flatbuffer_request_response/src/data_props.fbs
+```
+
+### Compile
 
 By default, FlatBuffers support is disabled in iceoryx2. It can be enabled by
 setting `IOX2_FEATURE_FLATBUFFERS` in cmake with:
@@ -96,13 +112,11 @@ export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/cxx/flatbuffer_request_respo
 ./target/ff/cc/build/examples/cxx/flatbuffer_request_response/example_cxx_flatbuffer_request_response_client
 ```
 
-Feel free to run multiple instances of client or server processes
-simultaneously to explore how iceoryx2 handles request-response
-communication efficiently.
+Feel free to run multiple instances of client or server processes simultaneously
+to explore how iceoryx2 handles request-response communication efficiently.
 
-> [!TIP]
-> You may hit the maximum supported number of ports when too many server or
-> client processes run. Take a look at the
-> [iceoryx2 config](../../../config) to set the limits globally or at the
+> [!TIP] You may hit the maximum supported number of ports when too many server
+> or client processes run. Take a look at the [iceoryx2 config](../../../config)
+> to set the limits globally or at the
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
