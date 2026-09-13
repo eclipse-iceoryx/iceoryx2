@@ -41,7 +41,7 @@ fn is_flatbuffer_schema(name: &FileName) -> bool {
     let name = name.as_str();
     if let Some(pos) = name.rfind(".") {
         let suffix = &name[pos + 1..];
-        suffix.eq_ignore_ascii_case("fbs")
+        suffix.eq_ignore_ascii_case("bfbs")
     } else {
         false
     }
@@ -77,12 +77,12 @@ fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
 ///
 /// The best fitting schema file in descending order:
 ///
-/// 1. `namespace/name.fbs`
-/// 2. `name.fbs`
-/// 3. `something/namespace/name.fbs`
-/// 4. `something/name.fbs`
+/// 1. `namespace/name.bfbs`
+/// 2. `name.bfbs`
+/// 3. `something/namespace/name.bfbs`
+/// 4. `something/name.bfbs`
 ///
-pub fn find_best_fitting_schema_file(
+pub fn find_best_fitting_binary_schema_file(
     type_name: &TypeName,
     root_path: &Path,
 ) -> Result<Option<FilePath>, FindSchemaFileError> {
@@ -166,7 +166,7 @@ pub fn find_best_fitting_schema_file(
     }
 
     if let Some(dir) = &namespace_subdirectory
-        && let Ok(Some(file)) = find_best_fitting_schema_file(type_name, dir)
+        && let Ok(Some(file)) = find_best_fitting_binary_schema_file(type_name, dir)
     {
         return Ok(Some(file));
     }
@@ -177,8 +177,10 @@ pub fn find_best_fitting_schema_file(
 
     for entry in &contents {
         if entry.metadata().file_type() == FileType::Directory
-            && let Ok(Some(file)) =
-                find_best_fitting_schema_file(type_name, &create_sub_path(root_path, entry.name())?)
+            && let Ok(Some(file)) = find_best_fitting_binary_schema_file(
+                type_name,
+                &create_sub_path(root_path, entry.name())?,
+            )
         {
             return Ok(Some(file));
         }
