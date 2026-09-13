@@ -11,3 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![no_std]
+
+extern crate alloc;
+
+pub mod relay;
+pub mod resolver;
+#[cfg(test)]
+mod testing;
+mod tunnel;
+
+pub use tunnel::Tunnel;

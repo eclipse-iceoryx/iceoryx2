@@ -28,4 +28,12 @@ rust_library(
         ],
         "//conditions:default": [],
     }),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-link/backend:iceoryx2-link-backend",
+        "//iceoryx2-link/carrier:iceoryx2-link-carrier",
+        "//iceoryx2-log/log:iceoryx2-log",
+    ],
 )
