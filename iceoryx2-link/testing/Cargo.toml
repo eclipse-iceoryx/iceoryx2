@@ -15,4 +15,13 @@ workspace = true
 
 [features]
 default = []
-std = []
+std = [
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-link-backend/std",
+  "iceoryx2-link-carrier/std",
+]
+
+[dependencies]
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-link-backend = { workspace = true }
+iceoryx2-link-carrier = { workspace = true }
