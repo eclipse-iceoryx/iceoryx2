@@ -10,14 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+mod event;
+mod publish_subscribe;
 
-extern crate alloc;
-
-mod announcement_state;
-mod bridge;
-mod diagnostics;
-mod discovery_state;
-mod ports;
-
-pub use bridge::{Bridges, PropagateError};
+pub(crate) use event::EventPorts;
+pub(crate) use publish_subscribe::PublishSubscribePorts;
