@@ -1,0 +1,15 @@
+[package]
+name = "iceoryx2-link-carrier"
+description = "iceoryx2: the carrier contract a transport implements to carry a tunnel"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = []

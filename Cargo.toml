@@ -83,6 +83,7 @@ members = [
     "iceoryx2-gateway/host-to-host-tests",
 
     "iceoryx2-link/backend",
+    "iceoryx2-link/carrier",
 
     "iceoryx2-userland/record-and-replay",
 
@@ -156,6 +157,7 @@ iceoryx2-gateway-backend = { version = "0.9.999", path = "iceoryx2-gateway/backe
 iceoryx2-gateway-host-to-host-tests = { version = "0.9.999", path = "iceoryx2-gateway/host-to-host-tests" }
 iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "iceoryx2-gateway/conformance-tests" }
 iceoryx2-link-backend = { version = "0.9.999", path = "iceoryx2-link/backend", default-features = false }
+iceoryx2-link-carrier = { version = "0.9.999", path = "iceoryx2-link/carrier", default-features = false }
 iceoryx2-userland-record-and-replay = { version = "0.9.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################
