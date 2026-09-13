@@ -90,6 +90,7 @@
 * [#1942](https://github.com/eclipse-iceoryx/iceoryx2/issues/1942) Split implementation of gateway testing backend into modules
 * [#1949](https://github.com/eclipse-iceoryx/iceoryx2/issues/1949) Take `&mut self` in gateway Discovery trait
 * [#1955](https://github.com/eclipse-iceoryx/iceoryx2/issues/1955) Remove `as_mut_bytes` and `deref_mut` from the `String` API in iceoryx2-bb-container
+* [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Refactor architecture for gateways and tunnels into new `iceoryx2-link` layer
 
 ### Workflow
 
