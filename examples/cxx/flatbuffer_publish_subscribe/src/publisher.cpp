@@ -54,7 +54,7 @@ auto main() -> int {
                        // This method allows us to use a custom schema file path when no schema lookup path was
                        // defined or when a custom file is required (maybe outside of the lookup path).
                        // IOX2_DEFINE_TYPE_NAME must be called for the generated payload type.
-                       // .flatbuffer_schema_path(bb::FilePath::create("unbounded_data.fbs").value())
+                       // .flatbuffer_schema_path(bb::FilePath::create("unbounded_data.bfbs").value())
                        .user_header<uint64_t>()
                        .open_or_create()
                        .value();
