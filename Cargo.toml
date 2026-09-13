@@ -84,6 +84,7 @@ members = [
 
     "iceoryx2-link/backend",
     "iceoryx2-link/carrier",
+    "iceoryx2-link/testing",
 
     "iceoryx2-userland/record-and-replay",
 
@@ -200,6 +201,7 @@ iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
 iceoryx2-gateway-testing = { path = "iceoryx2-gateway/testing", default-features = false }
 iceoryx2-gateway-conformance-tests-common = { path = "iceoryx2-gateway/conformance-tests/tests-common", default-features = false }
 iceoryx2-gateway-conformance-tests-nostd = { path = "iceoryx2-gateway/conformance-tests/tests-nostd" }
+iceoryx2-link-testing = { path = "iceoryx2-link/testing", default-features = false }
 
 ################################################################################
 
