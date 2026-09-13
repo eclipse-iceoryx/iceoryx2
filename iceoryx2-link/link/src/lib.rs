@@ -18,6 +18,8 @@ mod announcement_state;
 mod bridge;
 mod diagnostics;
 mod discovery_state;
+mod link;
 mod ports;
 
 pub use bridge::{Bridges, PropagateError};
+pub use link::{DiscoveryError, Link};
