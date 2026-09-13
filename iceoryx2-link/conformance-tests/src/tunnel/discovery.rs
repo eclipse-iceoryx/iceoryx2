@@ -24,7 +24,7 @@ pub mod tunnel_discovery {
 
     use crate::fixture::TunnelFixture;
     use crate::parameters::AnyService;
-    use crate::testing::{retry, service_exists, side};
+    use crate::testing::{rejecting, retry, service_exists, side};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -63,6 +63,45 @@ pub mod tunnel_discovery {
         )
         .expect("the service is bridged on the opposing side");
         assert_that!(service_exists::<S>(&service_name, &b.config, X::PATTERN), eq true);
+    }
+
+    #[conformance_test]
+    pub fn a_service_the_filter_rejects_is_not_mirrored<
+        S: Service,
+        X: AnyService,
+        F: TunnelFixture,
+    >() {
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // Two sides tunnelled over one carrier, an application on side A
+        // offering a service and side B's filter rejecting it.
+        let mut a = side::<S, _>(|config| fixture.tunnel(config));
+        let b = side::<S, _>(|config| fixture.tunnel(config));
+        let service_name = X::service_name();
+        let _service = X::create::<S>(&a.node, &service_name);
+        let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);
+        let (filter, rejected) = rejecting(service_name);
+        let mut b_link = b.link.with_filter(filter);
+
+        // === FILTER ===
+        // Side B learns of the service, is asked about its mirror and
+        // rejects it.
+        retry(
+            || {
+                a.link.discover().expect("discovery succeeds");
+                b_link.discover().expect("discovery succeeds");
+                match rejected.get() {
+                    true => Ok(()),
+                    false => Err("the filter has not rejected the service"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the filter rejects the service");
+
+        assert_that!(b_link.bridges().contains(&hash), eq false);
+        assert_that!(service_exists::<S>(&service_name, &b.config, X::PATTERN), eq false);
     }
 
     #[conformance_test]

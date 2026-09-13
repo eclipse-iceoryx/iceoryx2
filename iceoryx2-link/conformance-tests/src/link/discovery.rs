@@ -25,7 +25,7 @@ pub mod link_discovery {
     use crate::fixture::LinkFixture;
 
     use crate::parameters::AnyService;
-    use crate::testing::{Side, retry, side};
+    use crate::testing::{Side, rejecting, retry, side};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -46,6 +46,33 @@ pub mod link_discovery {
         link.discover().expect("discovery succeeds");
 
         assert_that!(link.bridges().contains(&hash), eq true);
+    }
+
+    #[conformance_test]
+    pub fn a_local_service_the_filter_rejects_is_not_bridged<
+        S: Service,
+        X: AnyService,
+        F: LinkFixture<S>,
+    >() {
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // One application in a local system, and a link whose filter
+        // rejects its service.
+        let Side { node, link, .. } = side::<S, _>(|config| fixture.backend(config));
+
+        let service_name = X::service_name();
+        let _service = X::create::<S>(&node, &service_name);
+        let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);
+        let (filter, rejected) = rejecting(service_name);
+        let mut link = link.with_filter(filter);
+
+        // === FILTER ===
+        // The filter is asked about the application's service and rejects it.
+        link.discover().expect("discovery succeeds");
+
+        assert_that!(rejected.get(), eq true);
+        assert_that!(link.bridges().contains(&hash), eq false);
     }
 
     #[conformance_test]

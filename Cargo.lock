@@ -1548,6 +1548,7 @@ name = "iceoryx2-link-conformance-tests"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",

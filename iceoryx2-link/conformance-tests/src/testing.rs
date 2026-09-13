@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::collections::BTreeSet;
+use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::time::Duration;
@@ -27,6 +28,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as Pattern;
 use iceoryx2::testing::generate_isolated_config;
+use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
@@ -118,6 +120,23 @@ pub fn types_of(payload: &str) -> ServiceTypes {
         },
         user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
     })
+}
+
+/// A link filter rejecting only the service `name`, and whether it has
+/// rejected it yet, so a scenario knows the link got as far as deciding.
+pub fn rejecting(name: ServiceName) -> (impl Fn(&ServiceName) -> bool + 'static, Rc<Cell<bool>>) {
+    let rejected = Rc::new(Cell::new(false));
+    let filter = {
+        let rejected = rejected.clone();
+        move |candidate: &ServiceName| {
+            let admitted = *candidate != name;
+            if !admitted {
+                rejected.set(true);
+            }
+            admitted
+        }
+    };
+    (filter, rejected)
 }
 
 /// One side of the boundary, an isolated local system with an
