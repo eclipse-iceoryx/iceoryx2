@@ -10,20 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_link_backend::description::ServiceDescriptor;
 
-extern crate alloc;
-
-mod announcement;
-mod carrier;
-mod channel;
-mod frame;
-mod offer;
-mod peer_id;
-
-pub use announcement::Announcement;
-pub use carrier::Carrier;
-pub use channel::Channel;
-pub use frame::{Frame, Malformed};
-pub use offer::Offer;
-pub use peer_id::PeerId;
+/// A change to this tunnel's offers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)] // a descriptor is announced by value, announcements are rare and short-lived
+pub enum Announcement {
+    Offered { descriptor: ServiceDescriptor },
+    Withdrawn { hash: ServiceHash },
+}

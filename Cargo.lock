@@ -1526,6 +1526,11 @@ dependencies = [
 [[package]]
 name = "iceoryx2-link-carrier"
 version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-backend",
+]
 
 [[package]]
 name = "iceoryx2-log"

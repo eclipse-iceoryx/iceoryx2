@@ -10,20 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+use iceoryx2_link_backend::description::ServiceDescriptor;
 
-extern crate alloc;
+use crate::PeerId;
 
-mod announcement;
-mod carrier;
-mod channel;
-mod frame;
-mod offer;
-mod peer_id;
-
-pub use announcement::Announcement;
-pub use carrier::Carrier;
-pub use channel::Channel;
-pub use frame::{Frame, Malformed};
-pub use offer::Offer;
-pub use peer_id::PeerId;
+/// One peer's offer of a service in another domain.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Offer {
+    pub peer: PeerId,
+    pub descriptor: ServiceDescriptor,
+}

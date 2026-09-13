@@ -10,20 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+use core::error::Error;
 
-extern crate alloc;
+use crate::Frame;
 
-mod announcement;
-mod carrier;
-mod channel;
-mod frame;
-mod offer;
-mod peer_id;
+/// Carries the frames of one service in both directions.
+pub trait Channel {
+    type Error: Error;
 
-pub use announcement::Announcement;
-pub use carrier::Carrier;
-pub use channel::Channel;
-pub use frame::{Frame, Malformed};
-pub use offer::Offer;
-pub use peer_id::PeerId;
+    /// Sends one frame to every peer on the channel.
+    fn send(&self, frame: Frame<'_>) -> Result<(), Self::Error>;
+
+    /// Hands the next pending frame to `on_frame`, or returns `None` if
+    /// nothing is pending.
+    fn receive<R>(&self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error>;
+}
