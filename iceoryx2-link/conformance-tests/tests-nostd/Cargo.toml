@@ -1,0 +1,29 @@
+[package]
+name = "iceoryx2-link-conformance-tests-nostd"
+description = "iceoryx2: [internal] nostd deployment of iceoryx2-link-conformance-tests"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+  "iceoryx2/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-link-conformance-tests/std",
+  "iceoryx2-link-conformance-tests-common/std",
+]
+
+[dependencies]
+iceoryx2 = { workspace = true, features = [] }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true, features = [] }
+iceoryx2-bb-memory = { workspace = true, features = [] }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-link-conformance-tests = { workspace = true, features = [] }
+iceoryx2-link-conformance-tests-common = { workspace = true, features = [] }

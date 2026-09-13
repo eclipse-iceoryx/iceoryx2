@@ -1,0 +1,20 @@
+[package]
+name = "iceoryx2-link-conformance-tests-common"
+description = "iceoryx2: [internal] conformance test instantiations for the link"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+std = [
+  "iceoryx2-bb-loggers/std",
+]
+
+[dependencies]
+iceoryx2-bb-loggers = { workspace = true }

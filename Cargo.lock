@@ -1533,6 +1533,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-link-conformance-tests"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-conformance-tests-common",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests-common"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2-bb-loggers",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests-nostd"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-conformance-tests",
+ "iceoryx2-link-conformance-tests-common",
+]
+
+[[package]]
 name = "iceoryx2-link-testing"
 version = "0.9.999"
 dependencies = [

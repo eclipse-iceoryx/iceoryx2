@@ -85,6 +85,9 @@ members = [
     "iceoryx2-link/backend",
     "iceoryx2-link/carrier",
     "iceoryx2-link/testing",
+    "iceoryx2-link/conformance-tests",
+    "iceoryx2-link/conformance-tests/tests-common",
+    "iceoryx2-link/conformance-tests/tests-nostd",
 
     "iceoryx2-userland/record-and-replay",
 
@@ -159,6 +162,7 @@ iceoryx2-gateway-host-to-host-tests = { version = "0.9.999", path = "iceoryx2-ga
 iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "iceoryx2-gateway/conformance-tests" }
 iceoryx2-link-backend = { version = "0.9.999", path = "iceoryx2-link/backend", default-features = false }
 iceoryx2-link-carrier = { version = "0.9.999", path = "iceoryx2-link/carrier", default-features = false }
+iceoryx2-link-conformance-tests = { version = "0.9.999", path = "iceoryx2-link/conformance-tests" }
 iceoryx2-userland-record-and-replay = { version = "0.9.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################
@@ -202,6 +206,8 @@ iceoryx2-gateway-testing = { path = "iceoryx2-gateway/testing", default-features
 iceoryx2-gateway-conformance-tests-common = { path = "iceoryx2-gateway/conformance-tests/tests-common", default-features = false }
 iceoryx2-gateway-conformance-tests-nostd = { path = "iceoryx2-gateway/conformance-tests/tests-nostd" }
 iceoryx2-link-testing = { path = "iceoryx2-link/testing", default-features = false }
+iceoryx2-link-conformance-tests-common = { path = "iceoryx2-link/conformance-tests/tests-common", default-features = false }
+iceoryx2-link-conformance-tests-nostd = { path = "iceoryx2-link/conformance-tests/tests-nostd" }
 
 ################################################################################
 
