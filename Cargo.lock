@@ -1592,6 +1592,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-link-tunnel"
+version = "0.9.999"
+
+[[package]]
 name = "iceoryx2-log"
 version = "0.9.999"
 dependencies = [

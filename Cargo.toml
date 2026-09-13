@@ -85,6 +85,7 @@ members = [
     "iceoryx2-link/link",
     "iceoryx2-link/backend",
     "iceoryx2-link/carrier",
+    "iceoryx2-link/tunnel",
     "iceoryx2-link/testing",
     "iceoryx2-link/conformance-tests",
     "iceoryx2-link/conformance-tests/tests-common",
@@ -164,6 +165,7 @@ iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "iceoryx2-gat
 iceoryx2-link = { version = "0.9.999", path = "iceoryx2-link/link", default-features = false }
 iceoryx2-link-backend = { version = "0.9.999", path = "iceoryx2-link/backend", default-features = false }
 iceoryx2-link-carrier = { version = "0.9.999", path = "iceoryx2-link/carrier", default-features = false }
+iceoryx2-link-tunnel = { version = "0.9.999", path = "iceoryx2-link/tunnel", default-features = false }
 iceoryx2-link-conformance-tests = { version = "0.9.999", path = "iceoryx2-link/conformance-tests" }
 iceoryx2-userland-record-and-replay = { version = "0.9.999", path = "iceoryx2-userland/record-and-replay" }
 

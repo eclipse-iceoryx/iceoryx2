@@ -51,6 +51,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-link-backend               \
     iceoryx2-link-carrier               \
     iceoryx2-link                       \
+    iceoryx2-link-tunnel                \
     iceoryx2-link-conformance-tests     \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
