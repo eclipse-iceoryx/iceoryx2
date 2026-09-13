@@ -22,10 +22,19 @@ macro_rules! origin {
     };
 }
 
+mod backend;
 pub mod description;
+pub mod diagnostic;
+mod epoch;
 mod generation;
+mod never;
 mod reactive;
+pub mod relay;
+pub mod resolver;
 pub mod wire;
 
+pub use backend::{Announcement, Backend, OnRemote, Refusal, RemoteDescription, RemoteId};
+pub use epoch::Epoch;
 pub use generation::{Generation, GenerationCounter};
+pub use never::Never;
 pub use reactive::{Reactive, WakeHandle, WakeService};
