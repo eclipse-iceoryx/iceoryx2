@@ -10,10 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod carrier;
-pub mod link;
-pub mod tunnel;
+use iceoryx2::config::Config;
+use iceoryx2_link_tunnel::Tunnel;
 
-pub use carrier::CarrierFixture;
-pub use link::{LinkFixture, TunnelLinkFixture};
-pub use tunnel::TunnelFixture;
+use crate::fixture::CarrierFixture;
+
+/// One communication mechanism and the tunnels on it, each over a
+/// carrier of its own.
+pub trait TunnelFixture: CarrierFixture {
+    /// A tunnel on the mechanism, over a new carrier, for the local
+    /// system configured by `config`.
+    fn tunnel(&mut self, config: &Config) -> Tunnel<Self::Carrier> {
+        Tunnel::new(self.carrier(), config)
+    }
+}

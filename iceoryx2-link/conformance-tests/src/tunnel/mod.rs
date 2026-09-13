@@ -10,10 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod carrier;
-pub mod link;
-pub mod tunnel;
-
-pub use carrier::CarrierFixture;
-pub use link::{LinkFixture, TunnelLinkFixture};
-pub use tunnel::TunnelFixture;
+pub mod discovery;
+pub mod event;
+pub mod publish_subscribe;

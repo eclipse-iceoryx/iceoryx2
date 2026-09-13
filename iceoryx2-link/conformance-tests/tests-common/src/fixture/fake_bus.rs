@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_link_carrier::PeerId;
-use iceoryx2_link_conformance_tests::fixture::CarrierFixture;
+use iceoryx2_link_conformance_tests::fixture::{CarrierFixture, TunnelFixture};
 use iceoryx2_link_testing::{FakeBus, FakeCarrier};
 
 /// A fake bus and its peers.
@@ -35,3 +35,5 @@ impl CarrierFixture for FakeBusFixture {
         self.bus.join(PeerId::new([self.peers; PeerId::LENGTH]))
     }
 }
+
+impl TunnelFixture for FakeBusFixture {}
