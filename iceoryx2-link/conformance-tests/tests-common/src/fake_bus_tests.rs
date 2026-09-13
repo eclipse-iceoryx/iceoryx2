@@ -10,13 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(any(test, feature = "std")), no_std)]
+use iceoryx2_bb_testing::instantiate_conformance_tests;
 
-extern crate alloc;
+use crate::fixture::FakeBusFixture;
 
-mod carrier;
-pub use carrier::discovery as carrier_discovery;
-pub use carrier::propagation as carrier_propagation;
-pub use carrier::wake as carrier_wake;
-pub mod fixture;
-pub mod testing;
+instantiate_conformance_tests!(
+    iceoryx2_link_conformance_tests::carrier_discovery,
+    FakeBusFixture
+);
+instantiate_conformance_tests!(
+    iceoryx2_link_conformance_tests::carrier_propagation,
+    FakeBusFixture
+);
+instantiate_conformance_tests!(
+    iceoryx2_link_conformance_tests::carrier_wake,
+    FakeBusFixture
+);

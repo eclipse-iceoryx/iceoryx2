@@ -10,13 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(any(test, feature = "std")), no_std)]
+mod fake_bus;
 
-extern crate alloc;
-
-mod carrier;
-pub use carrier::discovery as carrier_discovery;
-pub use carrier::propagation as carrier_propagation;
-pub use carrier::wake as carrier_wake;
-pub mod fixture;
-pub mod testing;
+pub(crate) use fake_bus::FakeBusFixture;

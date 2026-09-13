@@ -13,3 +13,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate iceoryx2_bb_loggers;
+
+pub mod fake_bus_tests;
+mod fixture;
