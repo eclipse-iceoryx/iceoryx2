@@ -10,6 +10,78 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Conformance tests for the link, its backends and their parts.
+//!
+//! An instantiation names the suite, the iceoryx2 service variant, the
+//! service the scenarios run over and the fixture:
+//!
+//! ```ignore
+//! instantiate_conformance_tests!(
+//!     iceoryx2_link_conformance_tests::tunnel_discovery,
+//!     Ipc,
+//!     PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+//!     MyCarrierFixture
+//! );
+//! ```
+//!
+//! To test a carrier or a backend built from it:
+//!
+//! * Implement the corresponding contract of [`fixture`].
+//! * Choose the services in [`parameters`] for the messaging pattern it
+//!   carries.
+//! * Instantiate the suites of its kind with each, in a module per
+//!   pattern:
+//!
+//! ```ignore
+//! mod publish_subscribe {
+//!     use super::*;
+//!
+//!     instantiate_conformance_tests!(
+//!         iceoryx2_link_conformance_tests::tunnel_discovery,
+//!         Ipc,
+//!         PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+//!         MyCarrierFixture
+//!     );
+//!     instantiate_conformance_tests!(
+//!         iceoryx2_link_conformance_tests::tunnel_publish_subscribe,
+//!         Ipc,
+//!         PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+//!         MyCarrierFixture
+//!     );
+//!     instantiate_conformance_tests!(
+//!         iceoryx2_link_conformance_tests::link_discovery,
+//!         Ipc,
+//!         PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+//!         TunnelLinkFixture<MyCarrierFixture>
+//!     );
+//! }
+//!
+//! mod event {
+//!     use super::*;
+//!
+//!     instantiate_conformance_tests!(
+//!         iceoryx2_link_conformance_tests::tunnel_discovery,
+//!         Ipc,
+//!         Event<AnyName>,
+//!         MyCarrierFixture
+//!     );
+//!     instantiate_conformance_tests!(
+//!         iceoryx2_link_conformance_tests::tunnel_event,
+//!         Ipc,
+//!         Event<AnyName>,
+//!         MyCarrierFixture
+//!     );
+//!     instantiate_conformance_tests!(
+//!         iceoryx2_link_conformance_tests::link_discovery,
+//!         Ipc,
+//!         Event<AnyName>,
+//!         TunnelLinkFixture<MyCarrierFixture>
+//!     );
+//! }
+//! ```
+//!
+//! A fixture of each kind can be seen in `tests-common`.
+
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 
 extern crate alloc;

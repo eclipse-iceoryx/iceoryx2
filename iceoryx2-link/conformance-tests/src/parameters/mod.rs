@@ -10,6 +10,40 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! The service a suite runs over, one type per messaging pattern.
+//!
+//! * [`PublishSubscribe<N, P, H>`], services named by `N`, of the payload
+//!   `P` under the user header `H`.
+//! * [`Event<N>`], services named by `N`.
+//!
+//! A carrier or tunnel fixture carries anything, so it passes [`AnyName`]
+//! with whatever payload and header it likes:
+//!
+//! ```ignore
+//! instantiate_conformance_tests!(
+//!     iceoryx2_link_conformance_tests::tunnel_publish_subscribe,
+//!     Ipc,
+//!     PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+//!     MyCarrierFixture
+//! );
+//! instantiate_conformance_tests!(
+//!     iceoryx2_link_conformance_tests::tunnel_publish_subscribe,
+//!     Ipc,
+//!     PublishSubscribe<AnyName, SlicePayload<u8>, ()>,
+//!     MyCarrierFixture
+//! );
+//! instantiate_conformance_tests!(
+//!     iceoryx2_link_conformance_tests::tunnel_event,
+//!     Ipc,
+//!     Event<AnyName>,
+//!     MyCarrierFixture
+//! );
+//! ```
+//!
+//! The scenarios run against [`AnyService`], [`PublishSubscribeService`]
+//! and [`EventService`], which [`PublishSubscribe`] and [`Event`]
+//! implement.
+
 pub mod event;
 pub mod payload;
 pub mod publish_subscribe;

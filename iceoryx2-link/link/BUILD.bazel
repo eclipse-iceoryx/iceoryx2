@@ -22,6 +22,7 @@ filegroup(
 rust_library(
     name = "iceoryx2-link",
     srcs = glob(["src/**/*.rs"]),
+    compile_data = ["README.md"],
     crate_features = select({
         "//:cfg_feature_std": [
             "std",
