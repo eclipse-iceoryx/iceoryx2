@@ -1513,6 +1513,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-link-backend"
+version = "0.9.999"
+
+[[package]]
 name = "iceoryx2-log"
 version = "0.9.999"
 dependencies = [

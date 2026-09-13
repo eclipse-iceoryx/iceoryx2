@@ -48,6 +48,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-gateway-backend            \
     iceoryx2-gateway                    \
     iceoryx2-gateway-conformance-tests  \
+    iceoryx2-link-backend               \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
 

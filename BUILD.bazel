@@ -335,6 +335,7 @@ filegroup(
         "//iceoryx2-gateway/backend:all_srcs",
         "//iceoryx2-gateway/conformance-tests:all_srcs",
         "//iceoryx2-gateway/host-to-host-tests:all_srcs",
+        "//iceoryx2-link/backend:all_srcs",
         "//iceoryx2-userland/record-and-replay:all_srcs",
         "//iceoryx2/testing:all_srcs",
         "//iceoryx2/conformance-tests:all_srcs",

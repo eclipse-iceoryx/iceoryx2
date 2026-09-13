@@ -82,6 +82,8 @@ members = [
     "iceoryx2-gateway/conformance-tests/tests-nostd",
     "iceoryx2-gateway/host-to-host-tests",
 
+    "iceoryx2-link/backend",
+
     "iceoryx2-userland/record-and-replay",
 
     "iceoryx2-cli",
@@ -153,6 +155,7 @@ iceoryx2-gateway = { version = "0.9.999", path = "iceoryx2-gateway/gateway", def
 iceoryx2-gateway-backend = { version = "0.9.999", path = "iceoryx2-gateway/backend", default-features = false }
 iceoryx2-gateway-host-to-host-tests = { version = "0.9.999", path = "iceoryx2-gateway/host-to-host-tests" }
 iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "iceoryx2-gateway/conformance-tests" }
+iceoryx2-link-backend = { version = "0.9.999", path = "iceoryx2-link/backend", default-features = false }
 iceoryx2-userland-record-and-replay = { version = "0.9.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################
