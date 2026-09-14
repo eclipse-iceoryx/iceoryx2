@@ -20,7 +20,21 @@ use crate::file_type::FileType;
 use crate::group::Gid;
 use crate::permission::{Permission, PermissionExt};
 use crate::user::Uid;
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_system_types::path::{Path, SemanticString};
+use iceoryx2_pal_posix::posix::{Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
+
+enum_gen! { MetadataFromPathError
+  entry:
+    InsufficientPermissions,
+    IOerror,
+    DoesNotExist,
+    PathPrefixIsNotADirectory,
+    DataOverflowInStatStruct,
+    LoopInSymbolicLinks,
+    UnknownError(i32)
+}
 
 /// Contains all information like type, credentials, size, access times about every
 /// structure which has a file handle representation. Every struct which implements the
@@ -42,6 +56,26 @@ pub struct Metadata {
 }
 
 impl Metadata {
+    pub fn from_path(path: &Path) -> Result<Metadata, MetadataFromPathError> {
+        let origin = "Metadata::from_path()";
+        let msg = format!("Failed to acquire the metadata of the path \"{path}\"");
+        let mut buffer = posix::stat_t::new_zeroed();
+
+        if unsafe { posix::stat(path.as_c_str(), &mut buffer) } == -1 {
+            handle_errno!(MetadataFromPathError, from origin,
+                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions to open path.", msg),
+                Errno::EIO => (IOerror, "{} due to an io error while reading directory stats.", msg),
+                Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a symbolic link loop in the path.", msg),
+                Errno::ENOENT => (DoesNotExist, "{} since the path does not exist.", msg),
+                Errno::ENOTDIR => (PathPrefixIsNotADirectory, "{} since the path prefix is not a directory.", msg),
+                Errno::EOVERFLOW => (DataOverflowInStatStruct, "{} since certain properties like size would cause an overflow in the underlying stat struct.", msg),
+                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+            );
+        }
+
+        Ok(Metadata::create(&buffer))
+    }
+
     pub fn number_of_links(&self) -> u64 {
         self.number_of_links
     }
