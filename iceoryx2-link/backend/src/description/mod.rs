@@ -106,7 +106,7 @@ impl ServiceDescription {
         &self.types
     }
 
-    /// The halves typed by their pattern.
+    /// The messaging pattern the description represents.
     pub fn messaging_pattern(&self) -> MessagingPattern<'_> {
         MessagingPattern::of(self)
     }
