@@ -340,7 +340,7 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, schema_path_lookup_works_when_
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
     auto service_name = iox2::testing::generate_service_name();
 
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto sut =
         node.service_builder(service_name).template publish_subscribe<Flatbuffer<Example::UnboundedData>>().create();
@@ -355,7 +355,7 @@ TYPED_TEST(ServicePublishSubscribeFlatbufferTest, schema_path_lookup_works_when_
     auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().value();
     auto service_name = iox2::testing::generate_service_name();
 
-    auto schema_file = this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    auto schema_file = this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto sut_create =
         node.service_builder(service_name).template publish_subscribe<Flatbuffer<Example::UnboundedData>>().create();

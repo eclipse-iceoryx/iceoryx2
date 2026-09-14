@@ -412,7 +412,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, open_succeeds_when_schema_conte
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, schema_path_lookup_works_when_creating_a_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -427,7 +427,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, schema_path_lookup_works_when_c
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, schema_path_lookup_works_when_opening_a_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -464,7 +464,7 @@ auto produce_example_data(flatbuffers::FlatBufferBuilder& builder,
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, request_response_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -524,7 +524,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, request_response_works) {
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_allocate_more_memory_when_reserve_is_out) {
     for (auto allocation_strategy : { AllocationStrategy::PowerOfTwo, AllocationStrategy::BestFit }) {
         constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-        this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+        this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
         auto config = Config();
         config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -591,7 +591,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest,
            server_and_client_with_user_header_allocate_more_memory_when_reserve_is_out) {
     for (auto allocation_strategy : { AllocationStrategy::PowerOfTwo, AllocationStrategy::BestFit }) {
         constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-        this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+        this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
         auto config = Config();
         config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -661,7 +661,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest,
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_data_can_be_reconstructed_from_payload_bytes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -718,7 +718,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_and_client_data_can_be_r
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_can_read_its_own_payload) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -751,7 +751,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_can_read_its_own_payload
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_can_read_its_own_payload) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -795,7 +795,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_can_read_its_own_payload
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_does_not_allocate_when_allocation_strategy_is_static) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
@@ -824,7 +824,7 @@ TYPED_TEST(ServiceRequestResponseFlatbufferTest, client_does_not_allocate_when_a
 
 TYPED_TEST(ServiceRequestResponseFlatbufferTest, server_does_not_allocate_when_allocation_strategy_is_static) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    this->create_schema_file(SCHEMA, "unbounded_data.fbs");
+    this->create_schema_file(SCHEMA, "unbounded_data.bfbs");
 
     auto config = Config();
     config.global().service().set_flatbuffer_schema_path(iox2::testing::test_directory_path());
