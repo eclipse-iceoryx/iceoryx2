@@ -18,7 +18,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::builder::event;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_backend::service_description::EventSettings;
-use iceoryx2_log::{fail, origin, warn};
+use iceoryx2_log::{fail, origin};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -67,8 +67,6 @@ pub(crate) struct EventPorts<S: Service> {
     name: ServiceName,
     notifier: Notifier<S>,
     listener: Listener<S>,
-    /// Whether an id beyond the service's ceiling was warned about.
-    warned_out_of_bounds: bool,
 }
 
 impl<S: Service> EventPorts<S> {
@@ -100,7 +98,6 @@ impl<S: Service> EventPorts<S> {
             name: *name,
             notifier,
             listener,
-            warned_out_of_bounds: false,
         })
     }
 
@@ -142,7 +139,7 @@ impl<S: Service> EventPorts<S> {
 
     /// Notifies every listener of the service but the link's own with
     /// each id `ingest` hands over, until it has nothing more. An id the
-    /// service cannot hold is dropped, warned about once.
+    /// service cannot hold fails the send.
     ///
     /// Returns the number of notifications sent.
     pub(crate) fn send<E>(
@@ -167,14 +164,11 @@ impl<S: Service> EventPorts<S> {
             match self.notifier.__internal_notify(id, true) {
                 Ok(_) => sent += 1,
                 Err(NotifierNotifyError::EventIdOutOfBounds) => {
-                    if !self.warned_out_of_bounds {
-                        self.warned_out_of_bounds = true;
-                        warn!(
-                            from origin,
-                            "Dropped a notification of {} whose id {:?} exceeds the local ceiling",
-                            self.name, id
-                        );
-                    }
+                    fail!(
+                        from origin,
+                        with SendError::Delivery,
+                        "Failed to notify {} with {:?}, the id exceeds the local ceiling", self.name, id
+                    );
                 }
                 Err(error) => {
                     fail!(
@@ -323,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn an_id_beyond_the_ceiling_is_dropped() {
+    fn an_id_beyond_the_ceiling_fails_the_send() {
         const CEILING: usize = 4;
         const BEYOND_CEILING: usize = 9;
 
@@ -338,10 +332,8 @@ mod tests {
 
         let mut sut = EventPorts::open(&link_node, &service_name, &settings).expect("ports open");
         let mut pending = alloc::vec![EventId::new(BEYOND_CEILING)];
-        let sent = sut
-            .send(|| Ok::<_, ()>(pending.pop()))
-            .expect("sending succeeds");
+        let result = sut.send(|| Ok::<_, ()>(pending.pop()));
 
-        assert_that!(sent, eq 0);
+        assert_that!(result, eq Err(SendError::Delivery));
     }
 }
