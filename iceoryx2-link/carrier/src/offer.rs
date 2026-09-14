@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_backend::description::ServiceDescriptor;
+use iceoryx2_link_backend::service_description::ServiceDescriptor;
 
 use crate::PeerId;
 

@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::cell::{Cell, RefCell};
 use iceoryx2_link_backend::WakeHandle;
-use iceoryx2_link_backend::description::ServiceDescriptor;
+use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_carrier::Announcement;
 use iceoryx2_link_carrier::PeerId;
 

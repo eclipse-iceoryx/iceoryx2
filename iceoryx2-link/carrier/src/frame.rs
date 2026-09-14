@@ -12,7 +12,7 @@
 
 use alloc::vec::Vec;
 
-use iceoryx2_link_backend::description::PublishSubscribeTypes;
+use iceoryx2_link_backend::service_description::PublishSubscribeTypes;
 use iceoryx2_link_backend::wire::publish_subscribe::fits;
 
 /// A publish-subscribe sample as it crosses a channel, the user header
@@ -63,7 +63,7 @@ mod tests {
     use alloc::string::String;
     use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_backend::description::{PublishSubscribeTypes, TypeDescription};
+    use iceoryx2_link_backend::service_description::{PublishSubscribeTypes, TypeDescription};
 
     const HEADER_SIZE: usize = 2;
     const PAYLOAD_SIZE: usize = 3;

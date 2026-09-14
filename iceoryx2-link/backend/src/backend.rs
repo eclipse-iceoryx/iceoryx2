@@ -16,10 +16,10 @@ use core::fmt::Display;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 
-use crate::description::ServiceDescription;
 use crate::generation::Generation;
 use crate::relay::{EventRelay, PublishSubscribeRelay, RelayFactory};
 use crate::resolver::Resolver;
+use crate::service_description::ServiceDescription;
 
 /// What identifies a description in a backend's listing.
 pub type RemoteId<S, B> = <B as Backend<S>>::RemoteId;

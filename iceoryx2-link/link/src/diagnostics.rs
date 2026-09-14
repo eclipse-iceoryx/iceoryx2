@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::diagnostic::{Findings, Update};
 use iceoryx2_link_backend::origin;
+use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_log::error;
 
 use crate::bridge::OpenError;

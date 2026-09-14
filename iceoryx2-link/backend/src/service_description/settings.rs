@@ -134,8 +134,8 @@ mod tests {
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_testing::assert_that;
 
-    use crate::description::ServiceDescription;
-    use crate::description::tests::static_config_of;
+    use crate::service_description::ServiceDescription;
+    use crate::service_description::tests::static_config_of;
 
     #[test]
     fn settings_from_config_match_a_service_created_without_settings() {

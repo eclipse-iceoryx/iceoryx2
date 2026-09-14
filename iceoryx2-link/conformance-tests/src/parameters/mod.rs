@@ -63,7 +63,7 @@ use iceoryx2::node::Node;
 use iceoryx2::service::Service;
 use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_link_backend::description::ServiceDescription;
+use iceoryx2_link_backend::service_description::ServiceDescription;
 
 /// A name source for fixtures that accept any name, each one generated
 /// fresh.

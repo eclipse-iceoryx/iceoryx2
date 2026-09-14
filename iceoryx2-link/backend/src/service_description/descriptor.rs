@@ -14,7 +14,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use serde::{Deserialize, Serialize};
 
-use crate::description::{ServiceDescription, ServiceTypes};
+use crate::service_description::{ServiceDescription, ServiceTypes};
 
 /// What identifies a service across the boundary.
 ///

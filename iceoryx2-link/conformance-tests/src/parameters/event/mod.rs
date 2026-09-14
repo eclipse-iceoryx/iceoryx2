@@ -23,7 +23,7 @@ use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::port_factory::event::PortFactory;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::testing::generate_service_name;
-use iceoryx2_link_backend::description::{EventSettings, ServiceDescription};
+use iceoryx2_link_backend::service_description::{EventSettings, ServiceDescription};
 
 use super::{AnyName, AnyService};
 use crate::testing::notifications_of;

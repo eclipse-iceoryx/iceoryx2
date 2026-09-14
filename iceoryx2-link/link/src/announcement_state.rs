@@ -12,8 +12,8 @@
 use alloc::collections::BTreeMap;
 
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::origin;
+use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_backend::{Announcement, Epoch};
 use iceoryx2_log::{fail, trace};
 
@@ -142,7 +142,7 @@ mod tests {
     use iceoryx2::service::local;
     use iceoryx2::service::service_name::ServiceName;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_backend::description::ServiceTypes;
+    use iceoryx2_link_backend::service_description::ServiceTypes;
 
     /// An announcement as logged, owning what it names.
     #[derive(Debug, PartialEq, Eq)]

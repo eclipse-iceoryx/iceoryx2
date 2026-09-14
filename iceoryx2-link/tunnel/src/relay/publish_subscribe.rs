@@ -13,11 +13,11 @@
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::description::{
-    PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescriptor,
-};
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_link_backend::service_description::{
+    PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescriptor,
+};
 use iceoryx2_link_backend::wire::publish_subscribe::{
     LoanFn, Sample, SampleMut, initialize_sample, payload_bytes, user_header_bytes,
 };

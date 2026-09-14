@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_link_backend::description::ServiceDescriptor;
+use iceoryx2_link_backend::service_description::ServiceDescriptor;
 
 /// A change to this tunnel's offers.
 #[derive(Debug, Clone, PartialEq, Eq)]

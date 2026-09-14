@@ -17,10 +17,10 @@ use core::error::Error;
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::description::{
+use iceoryx2_link_backend::relay::RelayFactory;
+use iceoryx2_link_backend::service_description::{
     EventDescription, PublishSubscribeDescription, ServiceDescriptor,
 };
-use iceoryx2_link_backend::relay::RelayFactory;
 
 use iceoryx2_link_carrier::Carrier;
 

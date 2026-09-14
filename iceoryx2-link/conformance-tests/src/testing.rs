@@ -34,7 +34,7 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
-use iceoryx2_link_backend::description::{
+use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
     ServiceTypes, TypeDescription,
 };

@@ -12,7 +12,7 @@
 
 use core::ops::Deref;
 
-use crate::description::{
+use crate::service_description::{
     EventSettings, PatternSettings, PublishSubscribeSettings, PublishSubscribeTypes,
     ServiceDescription, ServiceDescriptor, ServiceTypes,
 };

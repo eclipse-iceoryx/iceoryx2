@@ -21,7 +21,7 @@ pub mod carrier_discovery {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_backend::Generation;
-    use iceoryx2_link_backend::description::ServiceDescriptor;
+    use iceoryx2_link_backend::service_description::ServiceDescriptor;
     use iceoryx2_link_carrier::{Announcement, Carrier};
 
     use crate::fixture::CarrierFixture;

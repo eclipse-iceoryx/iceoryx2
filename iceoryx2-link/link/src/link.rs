@@ -18,9 +18,9 @@ use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::CallbackProgression;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::{Service, ServiceDetails};
-use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::{Resolution, Resolver};
+use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_backend::{
     Backend, Generation, Reactive, Refusal, RemoteDescription, RemoteId, WakeService,
 };

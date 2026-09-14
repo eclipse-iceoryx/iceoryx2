@@ -16,7 +16,7 @@ use iceoryx2::config::Config;
 use iceoryx2::service::local;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_link_backend::description::{
+use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
     TypeDescription,
 };

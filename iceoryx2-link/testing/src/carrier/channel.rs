@@ -12,7 +12,7 @@
 
 use alloc::collections::VecDeque;
 
-use iceoryx2_link_backend::description::ServiceDescriptor;
+use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_carrier::Channel;
 use iceoryx2_link_carrier::{Frame, PeerId};
 

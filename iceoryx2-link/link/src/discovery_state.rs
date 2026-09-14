@@ -13,10 +13,10 @@ use alloc::collections::BTreeMap;
 use core::fmt::Display;
 
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::diagnostic::Findings;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::Resolution;
+use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_backend::{Epoch, Generation};
 use iceoryx2_log::{trace, warn};
 
@@ -485,7 +485,7 @@ mod tests {
     use iceoryx2::service::local;
     use iceoryx2::service::service_name::ServiceName;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_backend::description::ServiceTypes;
+    use iceoryx2_link_backend::service_description::ServiceTypes;
 
     /// A remote description, belonging to the service it names.
     #[derive(Debug, Clone, PartialEq, Eq)]

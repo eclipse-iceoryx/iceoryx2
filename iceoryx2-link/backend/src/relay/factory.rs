@@ -14,8 +14,8 @@ use core::error::Error;
 
 use iceoryx2::service::Service;
 
-use crate::description::{EventDescription, PublishSubscribeDescription};
 use crate::relay::{EventRelay, PublishSubscribeRelay};
+use crate::service_description::{EventDescription, PublishSubscribeDescription};
 
 /// Configures and creates one relay.
 pub trait RelayBuilder {

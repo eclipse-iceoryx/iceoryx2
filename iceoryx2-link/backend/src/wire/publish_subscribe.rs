@@ -16,7 +16,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 
-use crate::description::PublishSubscribeTypes;
+use crate::service_description::PublishSubscribeTypes;
 
 /// The untyped user header as it passes through a relay.
 pub type Header = CustomHeaderMarker;

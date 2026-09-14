@@ -14,7 +14,7 @@ use core::fmt::Display;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 
-use crate::description::ServiceDescription;
+use crate::service_description::ServiceDescription;
 
 /// What a service resolves to, decided from both of its sides.
 #[derive(Debug, Clone, PartialEq, Eq)]

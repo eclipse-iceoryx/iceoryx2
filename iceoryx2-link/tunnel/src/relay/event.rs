@@ -14,9 +14,9 @@ use core::marker::PhantomData;
 
 use iceoryx2::port::event_id::EventId;
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::description::{EventDescription, ServiceDescriptor};
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder};
+use iceoryx2_link_backend::service_description::{EventDescription, ServiceDescriptor};
 use iceoryx2_link_backend::wire::event::{decode, encode};
 use iceoryx2_log::fail;
 

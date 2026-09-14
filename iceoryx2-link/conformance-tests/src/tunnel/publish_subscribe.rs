@@ -20,7 +20,7 @@ pub mod tunnel_publish_subscribe {
     use iceoryx2::service::Service;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_link_backend::description::PublishSubscribeSettings;
+    use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
 
     use crate::fixture::TunnelFixture;
     use crate::parameters::Foreign as Y;

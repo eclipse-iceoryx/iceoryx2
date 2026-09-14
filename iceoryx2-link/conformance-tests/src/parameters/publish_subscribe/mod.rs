@@ -29,7 +29,7 @@ use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::testing::generate_service_name;
 use iceoryx2_bb_elementary_traits::type_name::TypeName;
-use iceoryx2_link_backend::description::ServiceDescription;
+use iceoryx2_link_backend::service_description::ServiceDescription;
 
 use super::{AnyName, AnyService, FixedSizePayload, PayloadShape};
 use crate::testing::describe;
