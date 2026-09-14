@@ -14,12 +14,11 @@ use core::marker::PhantomData;
 
 use iceoryx2::port::event_id::EventId;
 use iceoryx2::service::Service;
-use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_backend::description::{EventDescription, ServiceDescriptor};
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder};
 use iceoryx2_link_backend::wire::event::{decode, encode};
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::fail;
 
 use crate::relay::{CreationError, ReceiveError, SendError};
 use iceoryx2_link_carrier::Frame;
@@ -63,7 +62,6 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
         );
         Ok(Relay {
             channel,
-            name: self.description.name(),
             _service: PhantomData,
         })
     }
@@ -72,7 +70,6 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
 /// Moves event ids over a carrier channel as [`Frame`]s without a header.
 pub struct Relay<S: Service, C: Channel> {
     channel: C,
-    name: ServiceName,
     _service: PhantomData<S>,
 }
 
@@ -93,7 +90,7 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
             to SendError<C::Error>,
             "Failed to send a frame"
         );
-        debug!(from origin, "Sent a frame of the Event service {}", self.name);
+
         Ok(())
     }
 
@@ -102,7 +99,6 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
         let received = fail!(
             from origin,
             when self.channel.receive(|bytes| {
-                debug!(from origin, "Received a frame of the Event service {}", self.name);
                 let id = fail!(
                     from origin,
                     when decode(bytes).ok_or(ReceiveError::Malformed),

@@ -17,7 +17,7 @@ use iceoryx2_link_backend::description::EventDescription;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder, RelayFactory};
 use iceoryx2_link_backend::{Backend, RemoteDescription};
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::fail;
 
 use crate::bridge::{Bridged, OpenError, PropagateError};
 use crate::ports::EventPorts;
@@ -63,7 +63,6 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
         fail!(
             from origin,
             when self.ports.receive(|id| {
-                debug!(from origin, "Relaying a notification of {}", self.ports.name());
                 self.relay.send(id)
             }),
             with PropagateError::Propagation,

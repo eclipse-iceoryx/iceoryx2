@@ -17,7 +17,7 @@ use iceoryx2_link_backend::description::PublishSubscribeDescription;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder, RelayFactory};
 use iceoryx2_link_backend::{Backend, RemoteDescription};
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::fail;
 
 use crate::bridge::{Bridged, OpenError, PropagateError};
 use crate::ports::PublishSubscribePorts;
@@ -61,7 +61,6 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
         fail!(
             from origin,
             when self.ports.receive(own_node, |sample| {
-                debug!(from origin, "Relaying a sample of {}", self.ports.name());
                 self.relay.send(&sample)
             }),
             with PropagateError::Propagation,

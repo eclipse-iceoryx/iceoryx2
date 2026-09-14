@@ -20,7 +20,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_link_backend::description::EventSettings;
 use iceoryx2_link_backend::origin;
-use iceoryx2_log::{debug, fail, warn};
+use iceoryx2_log::{fail, warn};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -74,10 +74,6 @@ pub(crate) struct EventPorts<S: Service> {
 }
 
 impl<S: Service> EventPorts<S> {
-    pub(crate) fn name(&self) -> &ServiceName {
-        &self.name
-    }
-
     pub(crate) fn open(
         node: &Node<S>,
         name: &ServiceName,
@@ -127,7 +123,7 @@ impl<S: Service> EventPorts<S> {
                 if failed {
                     return;
                 }
-                debug!(from origin, "Received a notification of {}", self.name);
+
                 match propagate(activation.id) {
                     Ok(()) => received = true,
                     Err(_) => failed = true,
@@ -167,7 +163,7 @@ impl<S: Service> EventPorts<S> {
             let Some(id) = id else {
                 break;
             };
-            debug!(from origin, "Sending a notification of {}", self.name);
+
             // The link's listener would otherwise receive what the link
             // notified, and propagate it back to where it came from.
             match self.notifier.__internal_notify(id, true) {

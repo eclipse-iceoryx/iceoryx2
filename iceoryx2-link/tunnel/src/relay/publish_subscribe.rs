@@ -13,7 +13,6 @@
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_backend::description::{
     PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescriptor,
 };
@@ -22,7 +21,7 @@ use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
 use iceoryx2_link_backend::wire::publish_subscribe::{
     LoanFn, Sample, SampleMut, initialize_sample, payload_bytes, user_header_bytes,
 };
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::fail;
 
 use crate::relay::{CreationError, ReceiveError, SendError};
 use iceoryx2_link_carrier::Frame;
@@ -68,7 +67,6 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
 
         Ok(Relay {
             channel,
-            name: self.description.name(),
             types: self.description.types().clone(),
             _service: PhantomData,
         })
@@ -78,7 +76,6 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
 /// Moves publish-subscribe samples over a carrier channel as [`Frame`]s.
 pub struct Relay<S: Service, C: Channel> {
     channel: C,
-    name: ServiceName,
     types: PublishSubscribeTypes,
     _service: PhantomData<S>,
 }
@@ -102,7 +99,7 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
             to SendError<C::Error>,
             "Failed to send a frame"
         );
-        debug!(from origin, "Sent a frame of the PublishSubscribe service {}", self.name);
+
         Ok(())
     }
 
@@ -114,7 +111,6 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
         let received = fail!(
             from origin,
             when self.channel.receive(|bytes| {
-                debug!(from origin, "Received a frame of the PublishSubscribe service {}", self.name);
                 let frame = fail!(
                     from origin,
                     when Frame::parse(bytes, &self.types),

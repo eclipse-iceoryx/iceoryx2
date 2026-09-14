@@ -26,7 +26,7 @@ use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::wire::publish_subscribe::{
     Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
 };
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::fail;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -83,10 +83,6 @@ pub(crate) struct PublishSubscribePorts<S: Service> {
 }
 
 impl<S: Service> PublishSubscribePorts<S> {
-    pub(crate) fn name(&self) -> &ServiceName {
-        &self.name
-    }
-
     pub(crate) fn open(
         node: &Node<S>,
         name: &ServiceName,
@@ -172,7 +168,6 @@ impl<S: Service> PublishSubscribePorts<S> {
             if sample.header().node_id() == *own_node {
                 continue;
             }
-            debug!(from origin, "Received a sample of {}", self.name);
             fail!(
                 from origin,
                 when propagate(sample),
@@ -206,7 +201,6 @@ impl<S: Service> PublishSubscribePorts<S> {
             let Some(sample) = sample else {
                 break;
             };
-            debug!(from origin, "Sending a sample of {}", self.name);
             fail!(
                 from origin,
                 when sample.send(),
