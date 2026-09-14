@@ -215,29 +215,39 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
 }
 
 impl<S: Service, B: Backend<S> + Reactive> Link<S, B> {
-    /// A listener on the link's wake service, signalled whenever a cycle
-    /// may have something to do.
+    /// Get the listener on the link's wake service which is signalled whenever
+    /// there is work to do.
     pub fn listener(&mut self) -> Result<Listener<WakeService>, WakeCreationError> {
         let origin = origin!("Link::listener");
+        let wake = match &self.wake {
+            Some(wake) => wake,
+            None => {
+                let wake = fail!(
+                    from origin,
+                    when self.create_wake(),
+                    "Failed to create the wake"
+                );
+                self.wake.insert(wake)
+            }
+        };
+        wake.listener()
+    }
 
-        // Create the service.
-        if self.wake.is_none() {
-            let wake = fail!(
-                from origin,
-                when Wake::create(self.node.config(), self.node.id()),
-                "Failed to create the wake service"
-            );
-            let handle = fail!(
-                from origin,
-                when wake.handle(),
-                "Failed to create the wake handle"
-            );
-            self.backend.attach(handle);
-            self.wake = Some(wake);
-        }
-
-        // Hand the listener to the caller.
-        self.wake.as_ref().expect("created above").listener()
+    /// Creates the wake service and attaches the backend to it.
+    fn create_wake(&mut self) -> Result<Wake, WakeCreationError> {
+        let origin = origin!("Link::create_wake");
+        let wake = fail!(
+            from origin,
+            when Wake::create(self.node.config(), self.node.id()),
+            "Failed to create the wake service"
+        );
+        let handle = fail!(
+            from origin,
+            when wake.handle(),
+            "Failed to create the wake handle"
+        );
+        self.backend.attach(handle);
+        Ok(wake)
     }
 }
 
