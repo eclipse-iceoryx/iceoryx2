@@ -870,9 +870,10 @@ impl<
                 messaging_pattern_settings: MessagingPatternSettings::RequestResponse(
                     dynamic_config_setting,
                 ),
-                additional_size: dynamic_config::request_response::DynamicConfig::memory_size(
-                    &dynamic_config_setting,
-                ),
+                additional_size:
+                    dynamic_config::request_response::DynamicConfig::<ServiceType::Bag>::memory_size(
+                        &dynamic_config_setting,
+                    ),
                 max_number_of_nodes: reqres_config.max_nodes,
             }
         };

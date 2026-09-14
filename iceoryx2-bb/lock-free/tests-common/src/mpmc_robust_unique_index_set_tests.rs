@@ -13,6 +13,7 @@
 use alloc::vec;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::*;
@@ -119,6 +120,90 @@ pub fn release_makes_space_for_more_indices() {
 
     assert_that!(sut.acquire(owner_id), is_ok);
     assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::OutOfIndices));
+}
+
+#[test]
+pub fn indices_can_be_found_when_there_is_only_one_index_per_owner_id() {
+    const OFFSET: u64 = 1000;
+    const CAPACITY_TINY: usize = 5;
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY_TINY>::new();
+
+    for i in 0..CAPACITY_TINY as _ {
+        let owner_id = OwnerId::new(i + OFFSET).unwrap();
+        sut.acquire(owner_id).unwrap();
+    }
+
+    for i in 0..CAPACITY_TINY as _ {
+        let owner_id = OwnerId::new(i + OFFSET).unwrap();
+
+        let count = sut.find(owner_id, |index| {
+            assert_that!(index, eq(i as _));
+            CallbackProgression::Continue
+        });
+        assert_that!(count, eq(1));
+    }
+}
+
+#[test]
+pub fn indices_can_be_found_when_there_are_multiple_indices_per_owner_id() {
+    const OFFSET: u64 = 1000;
+    const CAPACITY_TINY: usize = 5;
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY_TINY>::new();
+
+    let mut expected_count = 0;
+    for i in 0..CAPACITY_TINY as _ {
+        let base = i % 2;
+        let owner_id = OwnerId::new(base + OFFSET).unwrap();
+        sut.acquire(owner_id).unwrap();
+        if base == 0 {
+            expected_count += 1;
+        }
+    }
+
+    let base = 0;
+    let owner_id = OwnerId::new(base + OFFSET).unwrap();
+
+    let mut next_expected_index = 0;
+    let count = sut.find(owner_id, |index| {
+        assert_that!(index, eq(next_expected_index));
+        next_expected_index += 2;
+        CallbackProgression::Continue
+    });
+    assert_that!(count, eq(expected_count));
+}
+
+#[test]
+pub fn indices_cannot_be_found_when_there_is_no_matching_owner_id() {
+    const OFFSET: u64 = 1000;
+    const CAPACITY_TINY: usize = 5;
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY_TINY>::new();
+
+    for i in 0..CAPACITY_TINY as _ {
+        let owner_id = OwnerId::new(i + OFFSET).unwrap();
+        sut.acquire(owner_id).unwrap();
+    }
+
+    let owner_id = OwnerId::new(OFFSET * 10).unwrap();
+    let count = sut.find(owner_id, |_index| CallbackProgression::Continue);
+    assert_that!(count, eq(0));
+}
+
+#[test]
+pub fn indices_cannot_be_found_after_the_owner_id_is_removed() {
+    const OFFSET: u64 = 1000;
+    const CAPACITY_TINY: usize = 5;
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY_TINY>::new();
+
+    for i in 0..CAPACITY_TINY as _ {
+        let owner_id = OwnerId::new(i + OFFSET).unwrap();
+        sut.acquire(owner_id).unwrap();
+    }
+
+    let index = CAPACITY_TINY / 2;
+    let owner_id = OwnerId::new(index as u64 + OFFSET).unwrap();
+    sut.release(index, owner_id, ReleaseMode::Default).unwrap();
+    let count = sut.find(owner_id, |_index| CallbackProgression::Continue);
+    assert_that!(count, eq(0));
 }
 
 #[test]

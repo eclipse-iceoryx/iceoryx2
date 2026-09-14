@@ -169,7 +169,7 @@ pub(crate) fn nodes<
     Service: crate::service::Service,
     F: FnMut(NodeState<Service>) -> CallbackProgression,
 >(
-    dynamic_config: &DynamicConfig,
+    dynamic_config: &DynamicConfig<Service::Bag>,
     config: &Config,
     mut callback: F,
 ) -> Result<(), NodeListFailure> {

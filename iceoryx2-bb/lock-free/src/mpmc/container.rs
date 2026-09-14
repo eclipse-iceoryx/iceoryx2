@@ -383,6 +383,69 @@ impl<T: Copy + Debug> Container<T> {
         }
     }
 
+    /// Searches for all elements corresponding to the given owner ID.
+    ///
+    /// The obtained information can be out of date right after the return of the
+    /// function when the item was concurrently removed.
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`Container::init()`] was called before calling this method
+    ///  * The data can become invalid any time. The user has to ensure that there
+    ///    is no invalidation during the lifetime of the data pointer passed to the
+    ///    `callback`
+    ///
+    pub unsafe fn find<F: FnMut(*const T, ContainerHandle) -> CallbackProgression>(
+        &self,
+        owner_id: OwnerId,
+        mut callback: F,
+    ) -> usize {
+        self.verify_init("find()");
+
+        unsafe {
+            self.index_set.find(owner_id, |index| {
+                let element_generation_counter =
+                    &*self.element_generation_counter_ptr.as_ptr().add(index as _);
+
+                //////////////////////////////////////
+                // SYNC POINT synchronize the data from the index
+                //////////////////////////////////////
+                let gen_count = element_generation_counter.load(Ordering::Acquire);
+
+                // only pass the data to the callback if the slot is valid and the generation counter did not change
+                if Self::contains_data(gen_count) {
+                    let data = (*self.data_ptr.as_ptr().add(index as _)).get().cast();
+
+                    //////////////////////////////////////
+                    // SYNC POINT prevent reordering of the data after the check if the data was changed during reading the pointer
+                    //////////////////////////////////////
+                    if element_generation_counter
+                        .compare_exchange(
+                            gen_count,
+                            gen_count,
+                            Ordering::Release,
+                            Ordering::Acquire,
+                        )
+                        .is_ok()
+                    {
+                        callback(
+                            data,
+                            ContainerHandle {
+                                index,
+                                owner_id,
+                                container_id: self.container_id.value(),
+                            },
+                        )
+                    } else {
+                        CallbackProgression::Continue
+                    }
+                } else {
+                    CallbackProgression::Continue
+                }
+            })
+        }
+    }
+
     /// Useful in IPC context when an application holding the UniqueIndex has died.
     ///
     /// # Safety
@@ -759,6 +822,25 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
         owner_id: OwnerId,
     ) -> Result<(*const T, ContainerHandle), ContainerAddFailure> {
         unsafe { self.container.add(value, owner_id) }
+    }
+
+    /// Searches for all elements corresponding to the given owner ID.
+    ///
+    /// The obtained information can be out of date right after the return of the
+    /// function when the item was concurrently removed.
+    ///
+    /// # Safety
+    ///
+    ///  * The data can become invalid any time. The user has to ensure that there
+    ///    is no invalidation during the lifetime of the data pointer passed to the
+    ///    `callback`
+    ///
+    pub unsafe fn find<F: FnMut(*const T, ContainerHandle) -> CallbackProgression>(
+        &self,
+        owner_id: OwnerId,
+        callback: F,
+    ) -> usize {
+        unsafe { self.container.find(owner_id, callback) }
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.

@@ -75,6 +75,7 @@ unsafe impl ZeroCopySend for () {}
 unsafe impl<T: ZeroCopySend> ZeroCopySend for [T] {}
 unsafe impl<T: ZeroCopySend, const N: usize> ZeroCopySend for [T; N] {}
 unsafe impl<T: ZeroCopySend> ZeroCopySend for core::mem::MaybeUninit<T> {}
+unsafe impl<T: ZeroCopySend> ZeroCopySend for core::marker::PhantomData<T> {}
 
 // Note: `ZeroCopySend` cannot be implemented for tuples because `#[repr(C)]` can only be applied
 // to structs, enums, and unions.

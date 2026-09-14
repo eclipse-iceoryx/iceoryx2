@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -13,7 +13,7 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 instantiate_conformance_tests_with_module!(
-    bitset,
-    iceoryx2_cal_conformance_tests::event_id_tracker_trait,
-    iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet
+    container,
+    iceoryx2_cal_conformance_tests::bag_trait,
+    iceoryx2_cal::bag::lock_free_bag::LockFreeBag
 );
