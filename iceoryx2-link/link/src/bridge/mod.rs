@@ -220,7 +220,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
             );
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn len(&self) -> usize {

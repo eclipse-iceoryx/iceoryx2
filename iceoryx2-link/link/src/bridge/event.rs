@@ -41,12 +41,14 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
         remote: &RemoteDescription<S, B>,
     ) -> Result<Self, OpenError> {
         let origin = origin!("EventBridge::open");
+
         let ports = fail!(
             from origin,
             when EventPorts::open(node, &description.name(), description.settings()),
             with OpenError::Ports,
             "Failed to open the local ports of {}", description.name()
         );
+
         let mut factory = backend.relay_factory();
         let relay = fail!(
             from origin,
@@ -54,6 +56,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             with OpenError::Relay,
             "Failed to create the relay of {}", description.name()
         );
+
         Ok(Self {
             ports,
             relay,
@@ -65,6 +68,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
     /// is filtered by node.
     fn propagate(&mut self, _: &UniqueNodeId) -> Result<(), BridgeError> {
         let origin = origin!("EventBridge::propagate");
+
         let propagated = fail!(
             from origin,
             when self.ports.receive(|id| self.relay.send(id)),
@@ -72,6 +76,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             "Failed to propagate notifications"
         );
         self.counters.outbound += propagated;
+
         let ingested = fail!(
             from origin,
             when self.ports.send(|| self.relay.receive()),
@@ -79,6 +84,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             "Failed to ingest notifications from the opposing side"
         );
         self.counters.inbound += ingested;
+
         Ok(())
     }
 

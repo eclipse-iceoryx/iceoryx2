@@ -41,12 +41,14 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
         remote: &RemoteDescription<S, B>,
     ) -> Result<Self, OpenError> {
         let origin = origin!("PublishSubscribeBridge::open");
+
         let ports = fail!(
             from origin,
             when PublishSubscribePorts::open(node, &description.name(), description.settings(), description.types()),
             with OpenError::Ports,
             "Failed to open the local ports of {}", description.name()
         );
+
         let mut factory = backend.relay_factory();
         let relay = fail!(
             from origin,
@@ -54,6 +56,7 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
             with OpenError::Relay,
             "Failed to create the relay of {}", description.name()
         );
+
         Ok(Self {
             ports,
             relay,
@@ -63,6 +66,7 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
 
     fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), BridgeError> {
         let origin = origin!("PublishSubscribeBridge::propagate");
+
         let propagated = fail!(
             from origin,
             when self.ports.receive(own_node, |sample| self.relay.send(&sample)),
@@ -70,6 +74,7 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
             "Failed to propagate samples"
         );
         self.counters.outbound += propagated;
+
         let ingested = fail!(
             from origin,
             when self.ports.send(|loan| self.relay.receive(loan)),
