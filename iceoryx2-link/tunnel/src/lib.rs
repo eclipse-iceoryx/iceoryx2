@@ -30,6 +30,19 @@
 //! * Publish-subscribe and event services are relayed, each over a
 //!   channel of the carrier keyed by the service's descriptor.
 //! * A tunnel over a carrier that is `Reactive` is reactive itself.
+//!
+//! ## Trust
+//!
+//! A tunnel assumes systems that trust each other, over a carrier they
+//! trust. Frames are checked for shape, not content, so a sample's bytes
+//! arrive unvalidated from a peer, as a local publisher would write them
+//! into shared memory.
+//!
+//! * A trusted system runs software that writes only valid values, a
+//!   property established by qualifying that software, as within one
+//!   shared memory domain.
+//! * A trusted carrier neither corrupts, loses, repeats nor reorders a
+//!   frame.
 
 #![no_std]
 
