@@ -87,7 +87,7 @@ pub fn find_best_fitting_binary_schema_file(
     type_name: &TypeName,
     root_path: &Path,
 ) -> Result<Option<FilePath>, FindSchemaFileError> {
-    let origin = format!("find_best_fitting_schema_file({root_path:?})");
+    let origin = format!("find_best_fitting_binary_schema_file({root_path:?})");
     let msg = "Unable to find best fitting schema file";
 
     let dir = match Directory::new(root_path) {

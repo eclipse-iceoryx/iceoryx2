@@ -52,6 +52,11 @@ auto main() -> int {
                        .request_response<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
                        .request_user_header<uint64_t>()
                        .response_user_header<uint64_t>()
+                       // Those methods allows us to use a custom schema file path when no schema lookup path was
+                       // defined or when a custom file is required (maybe outside of the lookup path).
+                       //
+                       // .request_flatbuffer_schema_path(bb::FilePath::create("unbounded_data.bfbs").value())
+                       // .response_flatbuffer_schema_path(bb::FilePath::create("data_pros.bfbs").value())
                        .open_or_create()
                        .value();
 

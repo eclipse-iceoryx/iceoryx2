@@ -115,8 +115,10 @@ export IOX2_FLATBUFFER_SCHEMA_PATH="$(pwd)/examples/cxx/flatbuffer_request_respo
 Feel free to run multiple instances of client or server processes simultaneously
 to explore how iceoryx2 handles request-response communication efficiently.
 
-> [!TIP] You may hit the maximum supported number of ports when too many server
-> or client processes run. Take a look at the [iceoryx2 config](../../../config)
-> to set the limits globally or at the
+> [!TIP]
+>
+> You may hit the maximum supported number of ports when too many server or
+> client processes run. Take a look at the [iceoryx2 config](../../../config) to
+> set the limits globally or at the
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
