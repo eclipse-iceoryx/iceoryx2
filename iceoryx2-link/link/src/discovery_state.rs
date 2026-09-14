@@ -13,8 +13,8 @@ use alloc::collections::BTreeMap;
 use core::fmt::Display;
 
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_bb_elementary::generation::Generation;
-use iceoryx2_link_backend::Epoch;
 use iceoryx2_link_backend::diagnostic::Findings;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::Resolution;

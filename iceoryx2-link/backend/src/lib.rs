@@ -88,7 +88,6 @@ macro_rules! origin {
 
 mod backend;
 pub mod diagnostic;
-mod epoch;
 mod never;
 mod reactive;
 pub mod relay;
@@ -97,6 +96,5 @@ pub mod service_description;
 pub mod wire;
 
 pub use backend::{Announcement, Backend, OnRemote, Refusal, RemoteDescription, RemoteId};
-pub use epoch::Epoch;
 pub use never::Never;
 pub use reactive::{Reactive, WakeHandle, WakeService};

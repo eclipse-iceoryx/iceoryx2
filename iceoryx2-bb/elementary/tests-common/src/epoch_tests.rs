@@ -10,19 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+use iceoryx2_bb_elementary::epoch::Epoch;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::test;
 
-extern crate iceoryx2_bb_loggers;
+#[test]
+pub fn the_next_epoch_is_later() {
+    let sut = Epoch::default();
 
-pub mod alignment_tests;
-pub mod allocator;
-pub mod bump_allocator_tests;
-pub mod code_style_tests;
-pub mod cyclic_tagger_tests;
-pub mod epoch_tests;
-pub mod generation_tests;
-pub mod math_tests;
-pub mod package_version_tests;
-pub mod relocatable_ptr_tests;
-pub mod scope_guard_tests;
-pub mod unique_id_tests;
+    assert_that!(sut.next() > sut, eq true);
+    assert_that!(sut.next().next() > sut.next(), eq true);
+}

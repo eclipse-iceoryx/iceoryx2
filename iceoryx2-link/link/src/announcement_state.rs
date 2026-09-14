@@ -12,9 +12,10 @@
 use alloc::collections::BTreeMap;
 
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_bb_elementary::epoch::Epoch;
+use iceoryx2_link_backend::Announcement;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::service_description::ServiceDescription;
-use iceoryx2_link_backend::{Announcement, Epoch};
 use iceoryx2_log::{fail, trace};
 
 use crate::discovery_state::CreationId;

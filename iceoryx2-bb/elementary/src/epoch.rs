@@ -10,6 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Counts the updates some state has gone through, so what an update saw
+//! can be told from what it did not.
+//!
+//! ```
+//! use iceoryx2_bb_elementary::epoch::Epoch;
+//!
+//! let mut epoch = Epoch::default();
+//! let seen = epoch;
+//!
+//! // an update
+//! epoch = epoch.next();
+//!
+//! assert!(seen < epoch);
+//! ```
+
 /// A count of the updates some state has gone through. What an update
 /// sees is stamped with its epoch, what carries an older stamp was not
 /// seen since.
@@ -20,20 +35,5 @@ impl Epoch {
     /// The epoch of the next update.
     pub fn next(self) -> Self {
         Self(self.0.wrapping_add(1))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn the_next_epoch_is_later() {
-        let sut = Epoch::default();
-
-        assert_that!(sut.next() > sut, eq true);
-        assert_that!(sut.next().next() > sut.next(), eq true);
     }
 }

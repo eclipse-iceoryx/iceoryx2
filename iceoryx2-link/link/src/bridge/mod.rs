@@ -19,9 +19,10 @@ use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::service_description::{MessagingPattern, ServiceDescription};
-use iceoryx2_link_backend::{Backend, Epoch, RemoteDescription};
+use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::fail;
 
 use crate::bridge::event::EventBridge;
