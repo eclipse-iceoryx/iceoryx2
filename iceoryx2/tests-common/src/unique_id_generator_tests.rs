@@ -38,7 +38,7 @@ impl UniqueIdGenerator for TestUniqueId {
         _entity: Entity,
         _config: &Config,
     ) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
-        Ok(unsafe { UniqueId::from_raw_id(TestUniqueId::new().value() as u128) })
+        Ok(unsafe { UniqueId::from_raw_id((TestUniqueId::new().value() as u128) << 64) })
     }
 }
 

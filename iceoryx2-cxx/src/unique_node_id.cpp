@@ -72,7 +72,7 @@ auto UniqueNodeId::value_low() const -> uint64_t {
 }
 
 auto operator<<(std::ostream& stream, const UniqueNodeId& node) -> std::ostream& {
-    stream << "NodeId { value_high: " << node.value_high() << ", value_low: " << node.value_low();
+    stream << "NodeId { value_high: " << node.value_high() << ", value_low: " << node.value_low() << " }";
     return stream;
 }
 

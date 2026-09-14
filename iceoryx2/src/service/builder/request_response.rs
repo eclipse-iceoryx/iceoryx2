@@ -337,6 +337,9 @@ impl From<RequestResponseCreateError> for ServiceCreateError {
             RequestResponseCreateError::UnableToCreateServiceTag => {
                 ServiceCreateError::UnableToCreateServiceTag
             }
+            RequestResponseCreateError::UnableToGenerateUniqueServiceId => {
+                ServiceCreateError::UnableToGenerateUniqueServiceId
+            }
             _ => ServiceCreateError::InternalFailure,
         }
     }

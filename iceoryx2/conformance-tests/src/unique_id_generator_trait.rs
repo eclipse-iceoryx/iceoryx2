@@ -43,8 +43,8 @@ pub mod unique_id_generator_trait {
             Sut::generate::<ipc::Service>(Entity::Server(PortName::new("Name").unwrap()), config)
                 .unwrap();
 
-        assert_that!(sut1, ne sut2);
-        assert_that!(sut1, ne sut3);
-        assert_that!(sut2, ne sut3);
+        assert_that!(sut1.unique_value(), ne sut2.unique_value());
+        assert_that!(sut1.unique_value(), ne sut3.unique_value());
+        assert_that!(sut2.unique_value(), ne sut3.unique_value());
     }
 }
