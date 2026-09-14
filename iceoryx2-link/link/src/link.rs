@@ -219,27 +219,33 @@ impl<S: Service, B: Backend<S> + Reactive> Link<S, B> {
     /// there is work to do.
     pub fn listener(&mut self) -> Result<Listener<WakeService>, WakeCreationError> {
         let origin = origin!("Link::listener");
-        let wake = match &self.wake {
-            Some(wake) => wake,
+        match &self.wake {
+            Some(wake) => wake.listener(),
             None => {
-                let wake = fail!(
+                let (wake, listener) = fail!(
                     from origin,
                     when self.create_wake(),
                     "Failed to create the wake"
                 );
-                self.wake.insert(wake)
+                self.wake = Some(wake);
+                Ok(listener)
             }
-        };
-        wake.listener()
+        }
     }
 
-    /// Creates the wake service and attaches the backend to it.
-    fn create_wake(&mut self) -> Result<Wake, WakeCreationError> {
+    /// Creates the wake service and its first listener, then attaches the
+    /// backend.
+    fn create_wake(&mut self) -> Result<(Wake, Listener<WakeService>), WakeCreationError> {
         let origin = origin!("Link::create_wake");
         let wake = fail!(
             from origin,
             when Wake::create(self.node.config(), self.node.id()),
             "Failed to create the wake service"
+        );
+        let listener = fail!(
+            from origin,
+            when wake.listener(),
+            "Failed to create the wake listener"
         );
         let handle = fail!(
             from origin,
@@ -247,7 +253,7 @@ impl<S: Service, B: Backend<S> + Reactive> Link<S, B> {
             "Failed to create the wake handle"
         );
         self.backend.attach(handle);
-        Ok(wake)
+        Ok((wake, listener))
     }
 }
 
