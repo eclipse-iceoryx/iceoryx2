@@ -13,7 +13,7 @@
 use alloc::string::String;
 
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic, origin};
 use serde::{Deserialize, Serialize};
 
 /// The types of a service's pattern.

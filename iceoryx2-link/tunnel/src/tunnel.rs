@@ -13,10 +13,9 @@
 use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2_bb_elementary::generation::Generation;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_backend::{Announcement, Backend, OnRemote, Reactive, WakeHandle};
-use iceoryx2_log::trace;
+use iceoryx2_log::{origin, trace};
 
 use crate::relay::{self, Factory};
 use crate::resolver::Resolver;

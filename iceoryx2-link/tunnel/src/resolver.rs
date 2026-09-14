@@ -12,10 +12,9 @@
 use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::{self, Resolution};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceDescriptor};
-use iceoryx2_log::warn;
+use iceoryx2_log::{origin, warn};
 
 use iceoryx2_link_carrier::PeerId;
 

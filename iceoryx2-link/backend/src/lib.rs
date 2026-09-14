@@ -78,14 +78,6 @@
 
 extern crate alloc;
 
-/// The origin of a log line, `site` under the module it is logged from.
-#[macro_export]
-macro_rules! origin {
-    ($site:literal) => {
-        concat!(module_path!(), "::", $site)
-    };
-}
-
 mod backend;
 pub mod diagnostic;
 mod never;

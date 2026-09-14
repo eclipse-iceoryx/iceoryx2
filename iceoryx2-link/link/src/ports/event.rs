@@ -17,9 +17,8 @@ use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::service::Service;
 use iceoryx2::service::builder::event;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::service_description::EventSettings;
-use iceoryx2_log::{fail, warn};
+use iceoryx2_log::{fail, origin, warn};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

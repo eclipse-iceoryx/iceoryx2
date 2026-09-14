@@ -16,10 +16,9 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::diagnostic::Findings;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::Resolution;
 use iceoryx2_link_backend::service_description::ServiceDescription;
-use iceoryx2_log::{trace, warn};
+use iceoryx2_log::{origin, trace, warn};
 
 /// What identifies one creation of a local service. `UniqueServiceId`
 /// once it can be generated outside iceoryx2.

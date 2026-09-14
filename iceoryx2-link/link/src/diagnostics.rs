@@ -12,9 +12,8 @@
 
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_link_backend::diagnostic::{Findings, Update};
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::service_description::ServiceDescription;
-use iceoryx2_log::error;
+use iceoryx2_log::{error, origin};
 
 use crate::bridge::OpenError;
 

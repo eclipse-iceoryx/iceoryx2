@@ -18,8 +18,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_link_backend::RemoteDescription;
-use iceoryx2_link_backend::origin;
-use iceoryx2_log::{fail, trace};
+use iceoryx2_log::{fail, origin, trace};
 
 use crate::bridge::{Bridged, OpenError};
 

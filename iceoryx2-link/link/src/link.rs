@@ -19,11 +19,10 @@ use iceoryx2::prelude::CallbackProgression;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::{Service, ServiceDetails};
 use iceoryx2_bb_elementary::generation::Generation;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::{Resolution, Resolver};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_backend::{Backend, Reactive, Refusal, RemoteDescription, RemoteId, WakeService};
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use crate::announcement_state::AnnouncementState;
 use crate::bridge::{Bridges, PropagateError};

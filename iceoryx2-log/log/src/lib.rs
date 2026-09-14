@@ -23,6 +23,8 @@
 //! The [`fail!`] macro can return when the function which was called return an
 //! error containing result.
 //! The [`fatal_panic!`] macro calls [`panic!`].
+//! The [`origin!`] macro names the site a message is logged from, under
+//! its module.
 //!
 //! # Example
 //!

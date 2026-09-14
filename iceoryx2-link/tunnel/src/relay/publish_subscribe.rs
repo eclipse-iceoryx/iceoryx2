@@ -13,7 +13,6 @@
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescriptor,
@@ -21,7 +20,7 @@ use iceoryx2_link_backend::service_description::{
 use iceoryx2_link_backend::wire::publish_subscribe::{
     LoanFn, Sample, SampleMut, initialize_sample, payload_bytes, user_header_bytes,
 };
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
 use iceoryx2_link_carrier::Frame;

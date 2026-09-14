@@ -13,11 +13,10 @@
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder, RelayFactory};
 use iceoryx2_link_backend::service_description::PublishSubscribeDescription;
 use iceoryx2_link_backend::{Backend, RemoteDescription};
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use crate::bridge::{Bridged, Counters, OpenError, PropagateError};
 use crate::ports::PublishSubscribePorts;

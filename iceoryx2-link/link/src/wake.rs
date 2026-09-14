@@ -15,9 +15,8 @@ use iceoryx2::node::{Node, NodeBuilder};
 use iceoryx2::port::listener::Listener;
 use iceoryx2::service::port_factory::event::PortFactory;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::{WakeHandle, WakeService};
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum WakeCreationError {
