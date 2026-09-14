@@ -18,7 +18,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::builder::publish_subscribe;
 use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, PublishSubscribeTypes, TypeDescription,
 };
@@ -89,21 +89,16 @@ impl<S: Service> PublishSubscribePorts<S> {
         types: &PublishSubscribeTypes,
     ) -> Result<Self, CreationError> {
         let origin = origin!("PublishSubscribePorts::open");
-        let payload = fail!(
+        let (payload, user_header) = fail!(
             from origin,
-            when TypeDetail::try_from(&types.payload),
+            when types.type_details(),
             with CreationError::TypeDetails,
-            "Payload type of {} cannot be represented as a type detail", name
-        );
-        let user_header = fail!(
-            from origin,
-            when TypeDetail::try_from(&types.user_header),
-            with CreationError::TypeDetails,
-            "User header type of {} cannot be represented as a type detail", name
+            "Types of {} cannot be laid out as samples", name
         );
 
         // SAFETY: the type details come from a description of this exact
-        // service, so the untyped markers stand in for the real types.
+        // service and compose into a valid sample layout, so the untyped
+        // markers stand in for the real types.
         let builder = unsafe {
             node.service_builder(name)
                 .publish_subscribe::<Payload>()

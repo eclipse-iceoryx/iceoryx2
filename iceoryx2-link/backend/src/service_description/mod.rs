@@ -20,7 +20,10 @@ pub use messaging_pattern::{EventDescription, MessagingPattern, PublishSubscribe
 pub use settings::{
     EventSettings, Identified, PatternSettings, PublishSubscribeSettings, ServiceSettings,
 };
-pub use types::{InvalidTypeDescription, PublishSubscribeTypes, ServiceTypes, TypeDescription};
+pub use types::{
+    InvalidSampleLayout, InvalidTypeDescription, PublishSubscribeTypes, ServiceTypes,
+    TypeDescription,
+};
 
 use iceoryx2::config::Config;
 use iceoryx2::service::Service;

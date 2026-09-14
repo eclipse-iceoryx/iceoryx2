@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::string::String;
+use core::alloc::Layout;
 
+use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_log::{fail, fatal_panic, origin};
 use serde::{Deserialize, Serialize};
@@ -47,6 +49,76 @@ pub struct PublishSubscribeTypes {
     pub user_header: TypeDescription,
 }
 
+impl PublishSubscribeTypes {
+    /// The type details of the payload and the user header, checked to
+    /// compose with `iceoryx2`'s own header into a valid sample layout.
+    pub fn type_details(&self) -> Result<(TypeDetail, TypeDetail), InvalidSampleLayout> {
+        let origin = origin!("PublishSubscribeTypes::type_details");
+
+        let payload = match TypeDetail::try_from(&self.payload) {
+            Ok(detail) => detail,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with InvalidSampleLayout::Payload(error),
+                    "Payload type '{}' cannot be represented as a type detail", self.payload.type_name
+                );
+            }
+        };
+        let user_header = match TypeDetail::try_from(&self.user_header) {
+            Ok(detail) => detail,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with InvalidSampleLayout::UserHeader(error),
+                    "User header type '{}' cannot be represented as a type detail", self.user_header.type_name
+                );
+            }
+        };
+
+        // A sample is the header, the user header and the payload laid out
+        // in that order. The service builds that layout unchecked, so
+        // check here that it fits within what a layout may hold.
+        let composed = Layout::new::<Header>()
+            .extend(layout_of(&user_header))
+            .and_then(|(layout, _)| layout.extend(layout_of(&payload)));
+
+        fail!(
+            from origin,
+            when composed,
+            with InvalidSampleLayout::Overflow,
+            "Samples of '{}' under '{}' exceed what a layout may hold",
+            self.payload.type_name, self.user_header.type_name
+        );
+        Ok((payload, user_header))
+    }
+}
+
+/// The layout of one type detail, whose size and alignment
+/// [`TypeDetail::try_from`] checked to form one.
+fn layout_of(detail: &TypeDetail) -> Layout {
+    Layout::from_size_align(detail.size(), detail.alignment()).expect("checked by try_from")
+}
+
+/// The sample layout a publish-subscribe service of some types cannot be
+/// created with.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum InvalidSampleLayout {
+    Payload(InvalidTypeDescription),
+    UserHeader(InvalidTypeDescription),
+    /// The header, user header and payload together exceed what a layout
+    /// may hold.
+    Overflow,
+}
+
+impl core::fmt::Display for InvalidSampleLayout {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "InvalidSampleLayout::{self:?}")
+    }
+}
+
+impl core::error::Error for InvalidSampleLayout {}
+
 /// A [`TypeDetail`] in a form that crosses the boundary.
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TypeDescription {
@@ -74,6 +146,8 @@ pub enum InvalidTypeDescription {
     TypeNameTooLong,
     AlignmentNotPowerOfTwo,
     SizeNotMultipleOfAlignment,
+    /// The size rounded up to the alignment exceeds what a layout may hold.
+    LayoutOverflow,
 }
 
 impl core::fmt::Display for InvalidTypeDescription {
@@ -95,6 +169,9 @@ impl TryFrom<&TypeDescription> for TypeDetail {
         }
         if !description.size.is_multiple_of(description.alignment) {
             return Err(InvalidTypeDescription::SizeNotMultipleOfAlignment);
+        }
+        if Layout::from_size_align(description.size, description.alignment).is_err() {
+            return Err(InvalidTypeDescription::LayoutOverflow);
         }
         let detail = fail!(
             from origin,
@@ -182,6 +259,94 @@ mod tests {
         assert_that!(
             result,
             eq Err(InvalidTypeDescription::SizeNotMultipleOfAlignment)
+        );
+    }
+
+    // No real type has these sizes, a description received from the
+    // opposing side can. They sit at the bound `Layout::from_size_align`
+    // enforces, a size that fits an `isize` once rounded up to the
+    // alignment, so one step under passes and the step itself fails.
+
+    /// The largest power of two a layout holds as size and alignment.
+    const LARGEST_WITHIN_LAYOUT_BOUND: usize = (usize::MAX >> 2) + 1;
+    /// The first size a layout refuses.
+    const FIRST_BEYOND_LAYOUT_BOUND: usize = (usize::MAX >> 1) + 1;
+
+    fn described(type_name: &str, size: usize, alignment: usize) -> TypeDescription {
+        TypeDescription {
+            variant: TypeVariant::FixedSize,
+            type_name: type_name.into(),
+            size,
+            alignment,
+        }
+    }
+
+    #[test]
+    fn size_beyond_what_a_layout_holds_is_rejected() {
+        let description = described("huge", FIRST_BEYOND_LAYOUT_BOUND, FIRST_BEYOND_LAYOUT_BOUND);
+
+        let result = TypeDetail::try_from(&description);
+        assert_that!(result, eq Err(InvalidTypeDescription::LayoutOverflow));
+    }
+
+    #[test]
+    fn ordinary_types_compose_into_a_sample_layout() {
+        let types = PublishSubscribeTypes {
+            payload: TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize)),
+            user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
+        };
+
+        let result = types.type_details();
+        assert_that!(result.is_ok(), eq true);
+    }
+
+    #[test]
+    fn a_large_payload_within_the_bound_composes_into_a_sample_layout() {
+        // Whether such a service can be created is the allocator's call
+        // at open, the layout itself is valid.
+        const GIGABYTE: usize = 1 << 30;
+        const SIZE: usize = GIGABYTE;
+        const ALIGNMENT: usize = core::mem::align_of::<u64>();
+
+        let types = PublishSubscribeTypes {
+            payload: described("large", SIZE, ALIGNMENT),
+            user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
+        };
+
+        let result = types.type_details();
+        assert_that!(result.is_ok(), eq true);
+    }
+
+    #[test]
+    fn types_whose_sample_layout_overflows_are_rejected() {
+        // Valid on its own, the headers rounded up to its alignment plus
+        // one element exceed what a layout may hold.
+        let payload = described(
+            "huge",
+            LARGEST_WITHIN_LAYOUT_BOUND,
+            LARGEST_WITHIN_LAYOUT_BOUND,
+        );
+        assert_that!(TypeDetail::try_from(&payload).is_ok(), eq true);
+        let types = PublishSubscribeTypes {
+            payload,
+            user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
+        };
+
+        let result = types.type_details();
+        assert_that!(result, eq Err(InvalidSampleLayout::Overflow));
+    }
+
+    #[test]
+    fn an_invalid_payload_type_names_the_payload() {
+        let types = PublishSubscribeTypes {
+            payload: described("huge", FIRST_BEYOND_LAYOUT_BOUND, FIRST_BEYOND_LAYOUT_BOUND),
+            user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
+        };
+
+        let result = types.type_details();
+        assert_that!(
+            result,
+            eq Err(InvalidSampleLayout::Payload(InvalidTypeDescription::LayoutOverflow))
         );
     }
 }
