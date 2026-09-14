@@ -105,6 +105,21 @@ pub fn find_schema_works() {
 }
 
 #[test]
+pub fn only_binary_schemas_are_discovered() {
+    let mut test = Test::new();
+    let path = vec!["flatbuffer_test_type.fbs"];
+    test.create_file(&path);
+
+    let sut = find_best_fitting_binary_schema_file(
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
+        test.root_path(),
+    )
+    .unwrap();
+
+    assert_that!(sut, is_none);
+}
+
+#[test]
 pub fn when_the_schema_is_not_existing_it_returns_none() {
     let test = Test::new();
 
