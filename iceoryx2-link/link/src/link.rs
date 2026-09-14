@@ -62,7 +62,8 @@ pub struct Link<S: Service, B: Backend<S>> {
 }
 
 impl<S: Service, B: Backend<S>> Link<S, B> {
-    /// Creates a link running `backend` from `node`.
+    /// Creates a link between the services visible to `node` and the provided
+    /// `backend`.
     pub fn new(node: Node<S>, backend: B) -> Self {
         Self {
             backend,
