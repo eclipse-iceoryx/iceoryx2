@@ -67,7 +67,7 @@
 //!         // Inform the opposing side of what this side bridges.
 //!     }
 //!
-//!     fn relay_factory(&self) -> MyRelayFactory<'_> {
+//!     fn relay_factory(&mut self) -> MyRelayFactory<'_> {
 //!         // The factory the relays of bridged services are created with.
 //!     }
 //! }

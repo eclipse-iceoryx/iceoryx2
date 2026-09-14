@@ -40,7 +40,7 @@ pub trait Carrier {
 
     /// The byte channel for the described service.
     fn open_channel(
-        &self,
+        &mut self,
         descriptor: &ServiceDescriptor,
     ) -> Result<Self::Channel, Self::ChannelError>;
 }

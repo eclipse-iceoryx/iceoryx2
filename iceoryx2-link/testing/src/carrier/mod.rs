@@ -76,7 +76,7 @@ impl Carrier for FakeCarrier {
     }
 
     fn open_channel(
-        &self,
+        &mut self,
         descriptor: &ServiceDescriptor,
     ) -> Result<Self::Channel, Self::ChannelError> {
         self.bus

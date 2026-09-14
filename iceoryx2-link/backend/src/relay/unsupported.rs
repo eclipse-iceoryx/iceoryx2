@@ -39,12 +39,12 @@ impl<S: Service> PublishSubscribeRelay<S> for UnsupportedRelay<S> {
     type SendError = Unsupported;
     type ReceiveError = Unsupported;
 
-    fn send(&self, _: &Sample<S>) -> Result<(), Self::SendError> {
+    fn send(&mut self, _: &Sample<S>) -> Result<(), Self::SendError> {
         match self.0 {}
     }
 
     fn receive<LoanError>(
-        &self,
+        &mut self,
         _: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         match self.0 {}
@@ -55,11 +55,11 @@ impl<S: Service> EventRelay<S> for UnsupportedRelay<S> {
     type SendError = Unsupported;
     type ReceiveError = Unsupported;
 
-    fn send(&self, _: EventId) -> Result<(), Self::SendError> {
+    fn send(&mut self, _: EventId) -> Result<(), Self::SendError> {
         match self.0 {}
     }
 
-    fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
+    fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError> {
         match self.0 {}
     }
 }

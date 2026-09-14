@@ -74,10 +74,10 @@ pub mod carrier_wake {
 
         // === SETUP ===
         // Peers A and B with the same channel open, B waiting on its wake.
-        let a = fixture.carrier();
+        let mut a = fixture.carrier();
         let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
-        let channel_a = a.open_channel(&descriptor).expect("channel opens");
+        let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
         let _channel_b = b.open_channel(&descriptor).expect("channel opens");
         assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
         let source = WakeSource::new();

@@ -86,8 +86,8 @@ impl<S: Service, C: Carrier> Backend<S> for Tunnel<C> {
         self.carrier.announce(announcement)
     }
 
-    fn relay_factory(&self) -> Self::RelayFactory<'_> {
-        Factory::new(&self.carrier)
+    fn relay_factory(&mut self) -> Self::RelayFactory<'_> {
+        Factory::new(&mut self.carrier)
     }
 }
 
@@ -128,10 +128,10 @@ mod tests {
 
     impl Channel for NoChannel {
         type Error = core::fmt::Error;
-        fn send(&self, _: Frame<'_>) -> Result<(), Self::Error> {
+        fn send(&mut self, _: Frame<'_>) -> Result<(), Self::Error> {
             Ok(())
         }
-        fn receive<R>(&self, _: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
+        fn receive<R>(&mut self, _: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
             Ok(None)
         }
     }
@@ -161,7 +161,10 @@ mod tests {
             Ok(())
         }
 
-        fn open_channel(&self, _: &ServiceDescriptor) -> Result<Self::Channel, Self::ChannelError> {
+        fn open_channel(
+            &mut self,
+            _: &ServiceDescriptor,
+        ) -> Result<Self::Channel, Self::ChannelError> {
             Ok(NoChannel)
         }
     }

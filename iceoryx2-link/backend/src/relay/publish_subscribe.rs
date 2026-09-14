@@ -23,12 +23,12 @@ pub trait PublishSubscribeRelay<S: Service> {
 
     /// Sends a sample taken from the local subscriber to the opposing
     /// side.
-    fn send(&self, sample: &Sample<S>) -> Result<(), Self::SendError>;
+    fn send(&mut self, sample: &Sample<S>) -> Result<(), Self::SendError>;
 
     /// Receives one sample from the opposing side into a loan from the
     /// local publisher, or `None` if nothing is pending.
     fn receive<LoanError>(
-        &self,
+        &mut self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError>;
 }

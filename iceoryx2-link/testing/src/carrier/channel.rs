@@ -39,13 +39,13 @@ impl FakeChannel {
 impl Channel for FakeChannel {
     type Error = Error;
 
-    fn send(&self, frame: Frame<'_>) -> Result<(), Self::Error> {
+    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error> {
         let frame = frame.to_bytes();
         self.bus.state.deliver(&self.descriptor, self.peer, frame);
         Ok(())
     }
 
-    fn receive<R>(&self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
+    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
         let frame = self
             .bus
             .state

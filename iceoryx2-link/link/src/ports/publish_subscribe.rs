@@ -147,7 +147,7 @@ impl<S: Service> PublishSubscribePorts<S> {
     ///
     /// Returns the number of samples propagated.
     pub(crate) fn receive<E>(
-        &self,
+        &mut self,
         own_node: &UniqueNodeId,
         mut propagate: impl FnMut(Sample<S>) -> Result<(), E>,
     ) -> Result<u64, ReceiveError> {
@@ -184,7 +184,7 @@ impl<S: Service> PublishSubscribePorts<S> {
     ///
     /// Returns the number of samples published.
     pub(crate) fn send<E>(
-        &self,
+        &mut self,
         mut ingest: impl for<'a> FnMut(
             &'a mut LoanFn<'a, S, LoanError>,
         ) -> Result<Option<SampleMut<S>>, E>,
@@ -345,7 +345,7 @@ mod tests {
         let ServiceTypes::PublishSubscribe(types) = &description.types() else {
             panic!("a publish-subscribe service");
         };
-        let sut = PublishSubscribePorts::open(&link_node, &service_name, settings, types)
+        let mut sut = PublishSubscribePorts::open(&link_node, &service_name, settings, types)
             .expect("ports open on the existing service");
 
         // Out of the local system: the app publishes, the ports receive.

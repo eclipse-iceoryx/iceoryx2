@@ -37,7 +37,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
 
     fn open(
         node: &Node<S>,
-        backend: &B,
+        backend: &mut B,
         description: EventDescription<'_>,
         remote: &RemoteDescription<S, B>,
     ) -> Result<Self, OpenError> {
@@ -48,9 +48,10 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             with OpenError::Ports,
             "Failed to open the local ports of {}", description.name()
         );
+        let mut factory = backend.relay_factory();
         let relay = fail!(
             from origin,
-            when backend.relay_factory().event(description, remote).create(),
+            when factory.event(description, remote).create(),
             with OpenError::Relay,
             "Failed to create the relay of {}", description.name()
         );

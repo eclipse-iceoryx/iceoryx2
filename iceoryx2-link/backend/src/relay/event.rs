@@ -21,9 +21,9 @@ pub trait EventRelay<S: Service> {
 
     /// Sends a notification received by the local listener to the
     /// opposing side.
-    fn send(&self, id: EventId) -> Result<(), Self::SendError>;
+    fn send(&mut self, id: EventId) -> Result<(), Self::SendError>;
 
     /// Receives one notification from the opposing side for the local
     /// notifier, or `None` if nothing is pending.
-    fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError>;
+    fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError>;
 }

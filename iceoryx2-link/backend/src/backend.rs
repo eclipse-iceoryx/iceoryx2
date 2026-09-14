@@ -97,5 +97,5 @@ pub trait Backend<S: Service> {
     fn announce(&mut self, announcement: Announcement<'_>) -> Result<(), Self::AnnouncementError>;
 
     /// The factory the relays of bridged services are created with.
-    fn relay_factory(&self) -> Self::RelayFactory<'_>;
+    fn relay_factory(&mut self) -> Self::RelayFactory<'_>;
 }

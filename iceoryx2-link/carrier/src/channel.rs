@@ -19,9 +19,9 @@ pub trait Channel {
     type Error: Error;
 
     /// Sends one frame to every peer on the channel.
-    fn send(&self, frame: Frame<'_>) -> Result<(), Self::Error>;
+    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error>;
 
     /// Hands the next pending frame to `on_frame`, or returns `None` if
     /// nothing is pending.
-    fn receive<R>(&self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error>;
+    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error>;
 }

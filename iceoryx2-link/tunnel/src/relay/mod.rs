@@ -25,12 +25,12 @@ use iceoryx2_link_backend::relay::RelayFactory;
 use iceoryx2_link_carrier::Carrier;
 
 pub struct Factory<'a, S: Service, C: Carrier> {
-    carrier: &'a C,
+    carrier: &'a mut C,
     _service: PhantomData<S>,
 }
 
 impl<'a, S: Service, C: Carrier> Factory<'a, S, C> {
-    pub(crate) fn new(carrier: &'a C) -> Self {
+    pub(crate) fn new(carrier: &'a mut C) -> Self {
         Self {
             carrier,
             _service: PhantomData,
@@ -52,7 +52,7 @@ impl<'a, S: Service, C: Carrier> RelayFactory<S> for Factory<'a, S, C> {
         Self: 'b;
 
     fn publish_subscribe<'b>(
-        &self,
+        &'b mut self,
         description: PublishSubscribeDescription<'b>,
         descriptor: &'b ServiceDescriptor,
     ) -> Self::PublishSubscribeBuilder<'b>
@@ -63,7 +63,7 @@ impl<'a, S: Service, C: Carrier> RelayFactory<S> for Factory<'a, S, C> {
     }
 
     fn event<'b>(
-        &self,
+        &'b mut self,
         description: EventDescription<'b>,
         descriptor: &'b ServiceDescriptor,
     ) -> Self::EventBuilder<'b>

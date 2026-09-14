@@ -33,13 +33,13 @@ pub mod carrier_propagation {
         Frame { header, payload }
     }
 
-    fn receive<C: Channel>(channel: &C) -> Option<Vec<u8>> {
+    fn receive<C: Channel>(channel: &mut C) -> Option<Vec<u8>> {
         channel
             .receive(|frame| frame.to_vec())
             .expect("receiving succeeds")
     }
 
-    fn expect_frame<C: Channel>(channel: &C, expected: &[u8]) {
+    fn expect_frame<C: Channel>(channel: &mut C, expected: &[u8]) {
         retry(
             || match receive(channel) {
                 Some(frame) if frame == expected => Ok(()),
@@ -59,14 +59,14 @@ pub mod carrier_propagation {
 
         // === SETUP ===
         // Three peers with the same channel open.
-        let a = fixture.carrier();
-        let b = fixture.carrier();
-        let c = fixture.carrier();
+        let mut a = fixture.carrier();
+        let mut b = fixture.carrier();
+        let mut c = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
 
-        let channel_a = a.open_channel(&descriptor).expect("channel opens");
-        let channel_b = b.open_channel(&descriptor).expect("channel opens");
-        let channel_c = c.open_channel(&descriptor).expect("channel opens");
+        let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
+        let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
+        let mut channel_c = c.open_channel(&descriptor).expect("channel opens");
         assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
 
         // === SEND ===
@@ -76,9 +76,9 @@ pub mod carrier_propagation {
             .send(frame(b"fra", b"me"))
             .expect("sending succeeds");
 
-        expect_frame(&channel_b, b"frame");
-        expect_frame(&channel_c, b"frame");
-        assert_that!(receive(&channel_a), is_none);
+        expect_frame(&mut channel_b, b"frame");
+        expect_frame(&mut channel_c, b"frame");
+        assert_that!(receive(&mut channel_a), is_none);
     }
 
     #[conformance_test]
@@ -89,19 +89,19 @@ pub mod carrier_propagation {
 
         // === SETUP ===
         // Peer A sends before peer B has the channel open.
-        let a = fixture.carrier();
-        let b = fixture.carrier();
+        let mut a = fixture.carrier();
+        let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
 
-        let channel_a = a.open_channel(&descriptor).expect("channel opens");
+        let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
         channel_a
             .send(frame(b"fra", b"me"))
             .expect("sending succeeds");
 
         // === OPEN LATE ===
         // Nothing is held for a peer that was not listening.
-        let channel_b = b.open_channel(&descriptor).expect("channel opens");
-        assert_that!(receive(&channel_b), is_none);
+        let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
+        assert_that!(receive(&mut channel_b), is_none);
     }
 
     #[conformance_test]
@@ -114,13 +114,13 @@ pub mod carrier_propagation {
         // === SETUP ===
         // Two peers on one service under differing types, so their
         // descriptors share the hash and differ in types.
-        let a = fixture.carrier();
-        let b = fixture.carrier();
+        let mut a = fixture.carrier();
+        let mut b = fixture.carrier();
 
-        let channel_a = a
+        let mut channel_a = a
             .open_channel(&descriptor(SERVICE, PAYLOAD))
             .expect("channel opens");
-        let channel_b = b
+        let mut channel_b = b
             .open_channel(&descriptor(SERVICE, OTHER_PAYLOAD))
             .expect("channel opens");
 
@@ -130,7 +130,7 @@ pub mod carrier_propagation {
             .send(frame(b"fra", b"me"))
             .expect("sending succeeds");
 
-        assert_that!(receive(&channel_b), is_none);
+        assert_that!(receive(&mut channel_b), is_none);
     }
 
     #[conformance_test]
@@ -141,12 +141,12 @@ pub mod carrier_propagation {
 
         // === SETUP ===
         // Two peers with the same channel open.
-        let a = fixture.carrier();
-        let b = fixture.carrier();
+        let mut a = fixture.carrier();
+        let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
 
-        let channel_a = a.open_channel(&descriptor).expect("channel opens");
-        let channel_b = b.open_channel(&descriptor).expect("channel opens");
+        let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
+        let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
         assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
 
         // === SEND ===
@@ -158,8 +158,8 @@ pub mod carrier_propagation {
             .send(frame(b"seco", b"nd"))
             .expect("sending succeeds");
 
-        expect_frame(&channel_b, b"first");
-        expect_frame(&channel_b, b"second");
+        expect_frame(&mut channel_b, b"first");
+        expect_frame(&mut channel_b, b"second");
     }
 
     #[conformance_test]
@@ -170,11 +170,11 @@ pub mod carrier_propagation {
 
         // === SETUP ===
         // Two peers with the same channel open, peer B closes its end.
-        let a = fixture.carrier();
-        let b = fixture.carrier();
+        let mut a = fixture.carrier();
+        let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
 
-        let channel_a = a.open_channel(&descriptor).expect("channel opens");
+        let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
         let channel_b = b.open_channel(&descriptor).expect("channel opens");
         drop(channel_b);
 
@@ -184,7 +184,7 @@ pub mod carrier_propagation {
             .send(frame(b"fra", b"me"))
             .expect("sending succeeds");
 
-        let channel_b = b.open_channel(&descriptor).expect("channel opens");
-        assert_that!(receive(&channel_b), is_none);
+        let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
+        assert_that!(receive(&mut channel_b), is_none);
     }
 }

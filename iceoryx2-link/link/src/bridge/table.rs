@@ -53,7 +53,7 @@ impl<B: Bridged> BridgeTable<B> {
     pub(super) fn reconcile(
         &mut self,
         node: &Node<B::Service>,
-        backend: &B::Backend,
+        backend: &mut B::Backend,
         description: B::Pattern<'_>,
         remote: &RemoteDescription<B::Service, B::Backend>,
         resolved: Epoch,

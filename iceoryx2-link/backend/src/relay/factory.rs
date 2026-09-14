@@ -41,7 +41,7 @@ pub trait RelayFactory<S: Service> {
 
     /// Initiate the build for a publish-subscribe relay.
     fn publish_subscribe<'a>(
-        &self,
+        &'a mut self,
         description: PublishSubscribeDescription<'a>,
         remote: &'a Self::RemoteDescription,
     ) -> Self::PublishSubscribeBuilder<'a>
@@ -50,7 +50,7 @@ pub trait RelayFactory<S: Service> {
 
     /// Initiate the build for an event relay.
     fn event<'a>(
-        &self,
+        &'a mut self,
         description: EventDescription<'a>,
         remote: &'a Self::RemoteDescription,
     ) -> Self::EventBuilder<'a>

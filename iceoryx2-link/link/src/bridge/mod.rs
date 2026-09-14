@@ -83,7 +83,7 @@ trait Bridged: Sized {
 
     fn open(
         node: &Node<Self::Service>,
-        backend: &Self::Backend,
+        backend: &mut Self::Backend,
         description: Self::Pattern<'_>,
         remote: &RemoteDescription<Self::Service, Self::Backend>,
     ) -> Result<Self, OpenError>;
@@ -122,7 +122,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
     pub(crate) fn reconcile<'a>(
         &mut self,
         node: &Node<S>,
-        backend: &B,
+        backend: &mut B,
         bridgeable: impl Iterator<
             Item = (
                 &'a ServiceHash,

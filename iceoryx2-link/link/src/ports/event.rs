@@ -17,7 +17,6 @@ use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::service::Service;
 use iceoryx2::service::builder::event;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_link_backend::description::EventSettings;
 use iceoryx2_link_backend::origin;
 use iceoryx2_log::{fail, warn};
@@ -70,7 +69,7 @@ pub(crate) struct EventPorts<S: Service> {
     notifier: Notifier<S>,
     listener: Listener<S>,
     /// Whether an id beyond the service's ceiling was warned about.
-    warned_out_of_bounds: Cell<bool>,
+    warned_out_of_bounds: bool,
 }
 
 impl<S: Service> EventPorts<S> {
@@ -102,7 +101,7 @@ impl<S: Service> EventPorts<S> {
             name: *name,
             notifier,
             listener,
-            warned_out_of_bounds: Cell::new(false),
+            warned_out_of_bounds: false,
         })
     }
 
@@ -111,7 +110,7 @@ impl<S: Service> EventPorts<S> {
     ///
     /// Returns the number of notifications propagated.
     pub(crate) fn receive<E>(
-        &self,
+        &mut self,
         mut propagate: impl FnMut(EventId) -> Result<(), E>,
     ) -> Result<u64, ReceiveError> {
         let origin = origin!("EventPorts::receive");
@@ -148,7 +147,7 @@ impl<S: Service> EventPorts<S> {
     ///
     /// Returns the number of notifications sent.
     pub(crate) fn send<E>(
-        &self,
+        &mut self,
         mut ingest: impl FnMut() -> Result<Option<EventId>, E>,
     ) -> Result<u64, SendError> {
         let origin = origin!("EventPorts::send");
@@ -169,8 +168,8 @@ impl<S: Service> EventPorts<S> {
             match self.notifier.__internal_notify(id, true) {
                 Ok(_) => sent += 1,
                 Err(NotifierNotifyError::EventIdOutOfBounds) => {
-                    if !self.warned_out_of_bounds.get() {
-                        self.warned_out_of_bounds.set(true);
+                    if !self.warned_out_of_bounds {
+                        self.warned_out_of_bounds = true;
                         warn!(
                             from origin,
                             "Dropped a notification of {} whose id {:?} exceeds the local ceiling",
@@ -265,7 +264,7 @@ mod tests {
             .create()
             .expect("listener is created");
 
-        let sut = EventPorts::open(
+        let mut sut = EventPorts::open(
             &link_node,
             &service_name,
             &EventSettings::from_config(&config),
@@ -308,7 +307,7 @@ mod tests {
             .expect("node is created");
         let service_name = generate_service_name();
 
-        let sut = EventPorts::open(
+        let mut sut = EventPorts::open(
             &link_node,
             &service_name,
             &EventSettings::from_config(&config),
@@ -338,7 +337,7 @@ mod tests {
         let mut settings = EventSettings::from_config(&config);
         settings.event_id_max_value = CEILING;
 
-        let sut = EventPorts::open(&link_node, &service_name, &settings).expect("ports open");
+        let mut sut = EventPorts::open(&link_node, &service_name, &settings).expect("ports open");
         let mut pending = alloc::vec![EventId::new(BEYOND_CEILING)];
         let sent = sut
             .send(|| Ok::<_, ()>(pending.pop()))

@@ -29,7 +29,7 @@ use iceoryx2_link_carrier::{Carrier, Channel};
 
 /// Creates relays over a carrier.
 pub struct Builder<'a, S: Service, C: Carrier> {
-    carrier: &'a C,
+    carrier: &'a mut C,
     description: PublishSubscribeDescription<'a>,
     /// What the service is shared with the peers as.
     descriptor: &'a ServiceDescriptor,
@@ -38,7 +38,7 @@ pub struct Builder<'a, S: Service, C: Carrier> {
 
 impl<'a, S: Service, C: Carrier> Builder<'a, S, C> {
     pub(super) fn new(
-        carrier: &'a C,
+        carrier: &'a mut C,
         description: PublishSubscribeDescription<'a>,
         descriptor: &'a ServiceDescriptor,
     ) -> Self {
@@ -84,7 +84,7 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
     type SendError = SendError<C::Error>;
     type ReceiveError = ReceiveError<C::Error>;
 
-    fn send(&self, sample: &Sample<S>) -> Result<(), Self::SendError> {
+    fn send(&mut self, sample: &Sample<S>) -> Result<(), Self::SendError> {
         let origin = origin!("Relay::send");
 
         let frame = Frame {
@@ -104,7 +104,7 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
     }
 
     fn receive<LoanError>(
-        &self,
+        &mut self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");

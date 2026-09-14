@@ -56,7 +56,7 @@
 //!         // Call back once per offer of every peer but this one.
 //!     }
 //!
-//!     fn open_channel(&self, descriptor: &ServiceDescriptor) -> Result<MyChannel, MyError> {
+//!     fn open_channel(&mut self, descriptor: &ServiceDescriptor) -> Result<MyChannel, MyError> {
 //!         // Join the peers sharing this descriptor's byte stream.
 //!     }
 //! }

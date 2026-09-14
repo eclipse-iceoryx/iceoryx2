@@ -25,7 +25,7 @@ use iceoryx2_link_carrier::Frame;
 use iceoryx2_link_carrier::{Carrier, Channel};
 
 pub struct Builder<'a, S: Service, C: Carrier> {
-    carrier: &'a C,
+    carrier: &'a mut C,
     description: EventDescription<'a>,
     /// What the service is shared with the peers as.
     descriptor: &'a ServiceDescriptor,
@@ -34,7 +34,7 @@ pub struct Builder<'a, S: Service, C: Carrier> {
 
 impl<'a, S: Service, C: Carrier> Builder<'a, S, C> {
     pub(super) fn new(
-        carrier: &'a C,
+        carrier: &'a mut C,
         description: EventDescription<'a>,
         descriptor: &'a ServiceDescriptor,
     ) -> Self {
@@ -77,7 +77,7 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
     type SendError = SendError<C::Error>;
     type ReceiveError = ReceiveError<C::Error>;
 
-    fn send(&self, id: EventId) -> Result<(), Self::SendError> {
+    fn send(&mut self, id: EventId) -> Result<(), Self::SendError> {
         let origin = origin!("Relay::send");
 
         let frame = Frame {
@@ -94,7 +94,7 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
         Ok(())
     }
 
-    fn receive(&self) -> Result<Option<EventId>, Self::ReceiveError> {
+    fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
         let received = fail!(
             from origin,
