@@ -36,7 +36,7 @@ impl core::fmt::Display for Error {
 
 impl core::error::Error for Error {}
 
-/// A carrier over an [`FakeBus`].
+/// A carrier over a [`FakeBus`].
 pub struct FakeCarrier {
     peer: PeerId,
     bus: FakeBus,

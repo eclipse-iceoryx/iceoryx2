@@ -14,6 +14,6 @@
 ///
 /// Fills an associated type an implementer has nothing for, e.g. the relay
 /// of a pattern a backend does not bridge.
-// TODO: replace with the never type `!` once it is stablized.
+// TODO(#1979): replace with the never type `!` once it is stabilized.
 #[derive(Debug, Clone, Copy)]
 pub enum Never {}

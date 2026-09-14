@@ -18,7 +18,7 @@ use iceoryx2_link_carrier::{Frame, PeerId};
 
 use crate::carrier::{Error, FakeBus};
 
-/// A channel over an [`FakeBus`]. Frames reach every other peer that has the
+/// A channel over a [`FakeBus`]. Frames reach every other peer that has the
 /// channel open.
 pub struct FakeChannel {
     peer: PeerId,

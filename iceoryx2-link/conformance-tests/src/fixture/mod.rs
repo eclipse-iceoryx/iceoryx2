@@ -12,7 +12,7 @@
 
 //! The contracts a fixture implements, one per suite family.
 //!
-//! * [`CarrierFixture`] for the carrier suites, additionlly implementing
+//! * [`CarrierFixture`] for the carrier suites, additionally implementing
 //!   [`TunnelFixture`] for the tunnel suites.
 //!
 //! The link suites take the tunnel fixture, passed as [`TunnelLinkFixture`]

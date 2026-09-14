@@ -32,7 +32,7 @@ impl WakeHandle {
         }
     }
 
-    /// Signals that there link should wake up to do work.
+    /// Signals that link should wake up to do work.
     pub fn signal(&self) {
         let _ = self.notifier.notify();
     }
