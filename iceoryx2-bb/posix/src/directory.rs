@@ -48,10 +48,8 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use iceoryx2_log::{error, fail, fatal_panic, trace};
-use iceoryx2_pal_configuration::PATH_SEPARATOR;
-use iceoryx2_pal_posix::posix::MemZeroedStruct;
+use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
-use iceoryx2_pal_posix::{posix::S_IFDIR, posix::errno::Errno};
 
 use crate::file::{File, FileRemoveError};
 use crate::file_type::FileType;
@@ -90,7 +88,7 @@ enum_gen! { DirectoryReadError
     UnknownError(i32)
 
   mapping:
-    DirectoryStatError
+    MetadataFromPathError
 }
 
 enum_gen! { DirectoryCreateError
@@ -367,11 +365,11 @@ impl Directory {
                             msg, inc_path, e);
                     }
                 },
-                Err(DirectoryAccessError::InsufficientPermissions) => {
+                Err(MetadataFromPathError::InsufficientPermissions) => {
                     fail!(from origin, with DirectoryCreateError::InsufficientPermissions,
                         "{} since the path {} could not be accessed due to insufficient permissions.", msg, inc_path);
                 }
-                Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
+                Err(MetadataFromPathError::PathPrefixIsNotADirectory) => {
                     fail!(from origin, with DirectoryCreateError::PartsOfThePathAreNotADirectory,
                         "{} since the path {} is not a directory.", msg, inc_path);
                 }
@@ -525,8 +523,8 @@ impl Directory {
                     );
                     match Self::acquire_metadata(self, &name, &msg) {
                         Ok(metadata) => contents.push(DirectoryEntry { name, metadata }),
-                        Err(DirectoryStatError::DoesNotExist)
-                        | Err(DirectoryStatError::InsufficientPermissions) => (),
+                        Err(MetadataFromPathError::DoesNotExist)
+                        | Err(MetadataFromPathError::InsufficientPermissions) => (),
                         Err(e) => {
                             fail!(from self, with e.into(),
                                     "{} due to an internal failure {:?}.", msg, e);
@@ -543,44 +541,35 @@ impl Directory {
     }
 
     /// Returns true if a directory already exists, otherwise false
-    pub fn does_exist(path: &Path) -> Result<bool, DirectoryAccessError> {
-        let mut buffer = posix::stat_t::new_zeroed();
+    pub fn does_exist(path: &Path) -> Result<bool, MetadataFromPathError> {
+        let origin = "Directory::does_exist()";
         let msg = format!("Unable to determine if \"{path}\" does exist");
 
-        if unsafe { posix::stat(path.as_c_str(), &mut buffer) } == -1 {
-            handle_errno!(DirectoryAccessError, from "Directory::does_exist",
-                success Errno::ENOENT => false,
-                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions to open path.", msg),
-                Errno::EIO => (IOerror, "{} due to an io error while reading directory stats.", msg),
-                Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a symbolic link loop in the path.", msg),
-                Errno::ENOTDIR => (PathPrefixIsNotADirectory, "{} since the path prefix is not a directory.", msg),
-                Errno::EOVERFLOW => (DataOverflowInStatStruct, "{} since certain properties like size would cause an overflow in the underlying stat struct.", msg),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-            );
+        match Metadata::from_path(path) {
+            Ok(v) => Ok(v.file_type() == FileType::Directory),
+            Err(MetadataFromPathError::DoesNotExist) => Ok(false),
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the metadata could not be acquired. [{e:?}]");
+            }
         }
-
-        Ok(buffer.st_mode & S_IFDIR != 0)
     }
 
-    fn acquire_metadata(&self, file: &FileName, msg: &str) -> Result<Metadata, DirectoryStatError> {
-        let mut buffer = posix::stat_t::new_zeroed();
+    fn acquire_metadata(
+        &self,
+        file: &FileName,
+        msg: &str,
+    ) -> Result<Metadata, MetadataFromPathError> {
         let mut path = *self.path();
-        path.push(PATH_SEPARATOR).unwrap();
-        path.push_bytes(file.as_bytes()).unwrap();
+        path.add_path_entry(&file.into()).unwrap();
 
-        if unsafe { posix::stat(path.as_c_str(), &mut buffer) } == -1 {
-            handle_errno!(DirectoryStatError, from self,
-                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions to open path.", msg),
-                Errno::EIO => (IOerror, "{} due to an io error while reading directory stats.", msg),
-                Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a symbolic link loop in the path.", msg),
-                Errno::ENOENT => (DoesNotExist, "{} since the path does not exist.", msg),
-                Errno::ENOTDIR => (PathPrefixIsNotADirectory, "{} since the path prefix is not a directory.", msg),
-                Errno::EOVERFLOW => (DataOverflowInStatStruct, "{} since certain properties like size would cause an overflow in the underlying stat struct.", msg),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-            );
+        match Metadata::from_path(&path) {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                fail!(from self, with e,
+                    "{msg} since the metadata could not be acquired. [{e:?}]");
+            }
         }
-
-        Ok(Metadata::create(&buffer))
     }
 }
 

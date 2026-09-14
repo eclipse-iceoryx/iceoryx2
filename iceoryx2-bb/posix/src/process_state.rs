@@ -147,11 +147,12 @@ pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use crate::{
     access_mode::AccessMode,
-    directory::{Directory, DirectoryAccessError, DirectoryCreateError},
+    directory::{Directory, DirectoryCreateError},
     file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError, FileStatError},
     file_descriptor::{
         FileDescriptorManagement, FileGetLockStateError, FileTryLockError, LockType,
     },
+    metadata::MetadataFromPathError,
     mutex::{Handle, Mutex, MutexBuilder, MutexHandle},
     permission::Permission,
     process::{Process, UniqueProcessId},
@@ -603,12 +604,12 @@ impl ProcessGuardBuilder {
                     msg, dir_path, v);
                 }
             },
-            Err(DirectoryAccessError::InsufficientPermissions) => {
+            Err(MetadataFromPathError::InsufficientPermissions) => {
                 fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
                     "{} since the directory {} could not be accessed due to insufficient permissions.",
                     msg, dir_path);
             }
-            Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
+            Err(MetadataFromPathError::PathPrefixIsNotADirectory) => {
                 fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
                     "{} since the directory {} is actually not a valid directory.", msg, dir_path);
             }
