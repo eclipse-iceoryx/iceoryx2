@@ -18,7 +18,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::{Epoch, RemoteDescription};
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::{fail, trace};
 
 use crate::bridge::{Bridged, OpenError};
 
@@ -67,7 +67,7 @@ impl<B: Bridged> BridgeTable<B> {
                 bridge.seen = epoch;
                 return Ok(());
             }
-            debug!(from origin, "Closing the {:?} bridge of {}, its resolution changed", bridge.pattern, bridge.name);
+            trace!(from origin, "Closing the {:?} bridge of {}, its resolution changed", bridge.pattern, bridge.name);
             self.bridges.remove(&hash);
         }
         let pattern = description.settings().pattern.messaging_pattern();
@@ -83,7 +83,9 @@ impl<B: Bridged> BridgeTable<B> {
             resolved,
             seen: epoch,
         };
-        debug!(from origin, "Opened {:?} bridge of {}", bridge.pattern, bridge.name);
+
+        trace!(from origin, "Opened {:?} bridge of {}", bridge.pattern, bridge.name);
+
         self.bridges.insert(hash, bridge);
         Ok(())
     }
@@ -95,7 +97,7 @@ impl<B: Bridged> BridgeTable<B> {
         self.bridges.retain(|_, bridge| {
             let keep = bridge.seen == epoch;
             if !keep {
-                debug!(from origin, "Closing the {:?} bridge of {}", bridge.pattern, bridge.name);
+                trace!(from origin, "Closing the {:?} bridge of {}", bridge.pattern, bridge.name);
             }
             keep
         });

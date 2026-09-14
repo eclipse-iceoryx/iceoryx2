@@ -14,7 +14,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::diagnostic::{Findings, Update};
 use iceoryx2_link_backend::origin;
-use iceoryx2_log::warn;
+use iceoryx2_log::error;
 
 use crate::bridge::OpenError;
 
@@ -46,7 +46,7 @@ impl Diagnostics {
         let origin = origin!("Diagnostics::failed_bridges");
 
         let warn_failure = move |_: &ServiceHash, failure: &Failure| {
-            warn!(
+            error!(
                 from origin,
                 "Failed to bridge {}: {}", failure.description.name(), failure.error
             );

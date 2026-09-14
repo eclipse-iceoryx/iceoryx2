@@ -15,7 +15,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_link_backend::description::ServiceDescription;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::{Announcement, Epoch};
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::{fail, trace};
 
 use crate::discovery_state::CreationId;
 
@@ -78,7 +78,7 @@ where
                 entry.seen = epoch;
                 return Ok(());
             }
-            debug!(from origin, "Withdrawing {}, it was recreated", description.name());
+            trace!(from origin, "Withdrawing {}, it was recreated", description.name());
             fail!(
                 from origin,
                 when (self.announce)(Announcement::Withdrawn(hash)),
@@ -86,7 +86,7 @@ where
             );
             announced.remove(&hash);
         }
-        debug!(from origin, "Announcing {}", description.name());
+        trace!(from origin, "Announcing {}", description.name());
         fail!(
             from origin,
             when (self.announce)(Announcement::Offered(description)),
@@ -116,7 +116,7 @@ where
             if entry.seen == epoch || failed.is_some() {
                 return true;
             }
-            debug!(from origin, "Withdrawing the service {}", hash.as_str());
+            trace!(from origin, "Withdrawing the service {}", hash.as_str());
             match announce(Announcement::Withdrawn(*hash)) {
                 Ok(()) => false,
                 Err(error) => {

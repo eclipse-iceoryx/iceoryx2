@@ -15,7 +15,7 @@ use iceoryx2::service::Service;
 use iceoryx2_link_backend::description::ServiceDescriptor;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::{Announcement, Backend, Generation, OnRemote, Reactive, WakeHandle};
-use iceoryx2_log::debug;
+use iceoryx2_log::trace;
 
 use crate::relay::{self, Factory};
 use crate::resolver::Resolver;
@@ -73,13 +73,13 @@ impl<S: Service, C: Carrier> Backend<S> for Tunnel<C> {
         let origin = origin!("Tunnel::announce");
         let announcement = match announcement {
             Announcement::Offered(description) => {
-                debug!(from origin, "Offering {}", description.name());
+                trace!(from origin, "Offering {}", description.name());
                 carrier::Announcement::Offered {
                     descriptor: ServiceDescriptor::from(description),
                 }
             }
             Announcement::Withdrawn(hash) => {
-                debug!(from origin, "Withdrawing the service {}", hash.as_str());
+                trace!(from origin, "Withdrawing the service {}", hash.as_str());
                 carrier::Announcement::Withdrawn { hash }
             }
         };

@@ -18,7 +18,7 @@ use iceoryx2_link_backend::diagnostic::Findings;
 use iceoryx2_link_backend::origin;
 use iceoryx2_link_backend::resolver::Resolution;
 use iceoryx2_link_backend::{Epoch, Generation};
-use iceoryx2_log::{debug, warn};
+use iceoryx2_log::{trace, warn};
 
 /// What identifies one creation of a local service. `UniqueServiceId`
 /// once it can be generated outside iceoryx2.
@@ -261,7 +261,7 @@ impl<Id, Description, Refusal> LocalUpdate<'_, Id, Description, Refusal> {
     pub(crate) fn insert(&mut self, id: CreationId, description: ServiceDescription) {
         let origin = origin!("LocalUpdate::insert");
 
-        debug!(
+        trace!(
             from origin,
             "Discovered the local {:?} service {} ({})",
             description.settings().pattern.messaging_pattern(),
@@ -344,7 +344,7 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
     pub(crate) fn insert(&mut self, hash: ServiceHash, id: Id, remote: Description) {
         let origin = origin!("RemoteUpdate::insert");
 
-        debug!(from origin, "Discovered the service {} on {}", hash.as_str(), id);
+        trace!(from origin, "Discovered the service {} on {}", hash.as_str(), id);
         let epoch = self.epoch;
         if let Some(previous) = self.listed.insert(id.clone(), hash)
             && previous != hash
@@ -443,18 +443,18 @@ impl<Id, Description: PartialEq, Refusal: core::fmt::Display + PartialEq>
         match &resolution {
             Resolution::Exported(_) => {
                 match self.entry.local.as_ref().map(|local| &local.description) {
-                    Some(local) => debug!(
+                    Some(local) => trace!(
                         from origin,
                         "{:?} service {} ({}) is exported",
                         local.settings().pattern.messaging_pattern(),
                         local.name(),
                         hash
                     ),
-                    None => debug!(from origin, "Service {} is exported", hash),
+                    None => trace!(from origin, "Service {} is exported", hash),
                 }
             }
             Resolution::Imported(mirror, _) => {
-                debug!(
+                trace!(
                     from origin,
                     "{:?} service {} ({}) is imported",
                     mirror.settings().pattern.messaging_pattern(),
@@ -463,7 +463,7 @@ impl<Id, Description: PartialEq, Refusal: core::fmt::Display + PartialEq>
                 );
             }
             Resolution::OutOfScope => {
-                debug!(from origin, "Service {} is out of scope", hash);
+                trace!(from origin, "Service {} is out of scope", hash);
             }
             Resolution::Refused(refusal) => warn!(
                 from origin,
