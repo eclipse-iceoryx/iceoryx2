@@ -121,9 +121,9 @@ impl From<ServiceOpenError> for BlackboardOpenError {
             ServiceOpenError::InsufficientPermissions => {
                 BlackboardOpenError::InsufficientPermissions
             }
-            ServiceOpenError::InternalFailure | ServiceOpenError::UnableToAcquireTypeDefinition => {
-                BlackboardOpenError::InternalFailure
-            }
+            ServiceOpenError::InternalFailure
+            | ServiceOpenError::UnableToAcquireTypeDefinition
+            | ServiceOpenError::InvalidTypeDefinition => BlackboardOpenError::InternalFailure,
             ServiceOpenError::IsMarkedForDestruction => BlackboardOpenError::IsMarkedForDestruction,
             ServiceOpenError::ServiceInCorruptedState => {
                 BlackboardOpenError::ServiceInCorruptedState
@@ -194,9 +194,8 @@ impl From<ServiceCreateError> for BlackboardCreateError {
                 BlackboardCreateError::InsufficientPermissions
             }
             ServiceCreateError::InternalFailure
-            | ServiceCreateError::UnableToAcquireTypeDefinition => {
-                BlackboardCreateError::InternalFailure
-            }
+            | ServiceCreateError::UnableToAcquireTypeDefinition
+            | ServiceCreateError::InvalidTypeDefinition => BlackboardCreateError::InternalFailure,
             ServiceCreateError::IsBeingCreatedByAnotherInstance => {
                 BlackboardCreateError::IsBeingCreatedByAnotherInstance
             }

@@ -102,6 +102,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_SERVICE_IN_CORRUPTED_STATE,
     #[CStr = "interrupt"]
     O_INTERRUPT,
+    #[CStr = "invalid type definition"]
+    O_INVALID_TYPE_DEFINITION,
     #[CStr = "unable to acquire type definition"]
     O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "already exists"]
@@ -124,6 +126,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     C_INTERRUPT,
     #[CStr = "unable to acquire type definition"]
     C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
+    #[CStr = "invalid type definition"]
+    C_INVALID_TYPE_DEFINITION,
     #[CStr = "system in flux"]
     SYSTEM_IN_FLUX,
 }
@@ -131,6 +135,7 @@ pub enum iox2_request_response_open_or_create_error_e {
 impl IntoCInt for RequestResponseOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
+            RequestResponseOpenError::InvalidTypeDefinition => iox2_request_response_open_or_create_error_e::O_INVALID_TYPE_DEFINITION,
             RequestResponseOpenError::Interrupt => iox2_request_response_open_or_create_error_e::O_INTERRUPT,
             RequestResponseOpenError::DoesNotExist => iox2_request_response_open_or_create_error_e::O_DOES_NOT_EXIST,
             RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENT_REQUEST_LOANS,
@@ -162,6 +167,9 @@ impl IntoCInt for RequestResponseOpenError {
 impl IntoCInt for RequestResponseCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
+            RequestResponseCreateError::InvalidTypeDefinition => {
+                iox2_request_response_open_or_create_error_e::C_INVALID_TYPE_DEFINITION
+            }
             RequestResponseCreateError::Interrupt => {
                 iox2_request_response_open_or_create_error_e::C_INTERRUPT
             }

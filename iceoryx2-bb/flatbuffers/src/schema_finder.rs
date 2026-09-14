@@ -37,7 +37,8 @@ enum_gen! { FindSchemaFileError
     SchemaFilePathExceedsMaxSupportedPathLength
 }
 
-fn is_flatbuffer_schema(name: &FileName) -> bool {
+/// Returns true if the provided [`FileName`] is a binary flatbuffer schema, otherwise false.
+pub fn is_binary_flatbuffer_schema(name: &FileName) -> bool {
     let name = name.as_str();
     if let Some(pos) = name.rfind(".") {
         let suffix = &name[pos + 1..];
@@ -48,7 +49,7 @@ fn is_flatbuffer_schema(name: &FileName) -> bool {
 }
 
 fn is_schema_for_type_name(file_name: &FileName, type_name: &TypeName) -> bool {
-    if !is_flatbuffer_schema(file_name) {
+    if !is_binary_flatbuffer_schema(file_name) {
         return false;
     }
 

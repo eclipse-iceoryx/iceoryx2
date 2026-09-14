@@ -643,7 +643,7 @@ pub mod service_request_response_flatbuffer {
     pub fn create_succeeds_with_request_schema_file<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let sut = node
@@ -659,7 +659,7 @@ pub mod service_request_response_flatbuffer {
     pub fn create_succeeds_with_response_schema_file<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let sut = node
@@ -675,7 +675,7 @@ pub mod service_request_response_flatbuffer {
     pub fn create_succeeds_with_request_and_response_schema_file<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let sut = node
@@ -692,7 +692,7 @@ pub mod service_request_response_flatbuffer {
     pub fn open_fails_when_no_request_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let _sut_create = node
@@ -713,7 +713,7 @@ pub mod service_request_response_flatbuffer {
     pub fn open_fails_when_no_response_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let _sut_create = node
@@ -734,8 +734,8 @@ pub mod service_request_response_flatbuffer {
     pub fn open_fails_when_request_schema_file_is_not_the_same<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let alt_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let _sut_create = node
@@ -759,8 +759,8 @@ pub mod service_request_response_flatbuffer {
     pub fn open_fails_when_response_schema_file_is_not_the_same<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let alt_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let _sut_create = node
@@ -784,8 +784,8 @@ pub mod service_request_response_flatbuffer {
     pub fn open_succeeds_when_schema_content_is_identical<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let alt_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let _sut_create = node
@@ -966,8 +966,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1014,8 +1014,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1080,8 +1080,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1112,8 +1112,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1153,8 +1153,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1197,8 +1197,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1241,8 +1241,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1308,8 +1308,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1350,7 +1350,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1397,7 +1397,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1465,7 +1465,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1497,7 +1497,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1538,7 +1538,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1576,7 +1576,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1621,7 +1621,7 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -1679,8 +1679,8 @@ pub mod service_request_response_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let request_schema_file = create_file_with_content(UNBOUND_DATA_SCHEMA);
-        let response_schema_file = create_file_with_content(DATA_PROPS_SCHEMA);
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)

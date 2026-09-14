@@ -409,7 +409,7 @@ pub mod service_publish_subscribe_flatbuffer {
     pub fn create_succeeds_with_schema_file<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let service_name = generate_service_name();
         let sut = node
@@ -426,7 +426,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -447,8 +447,8 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
-        let alt_schema_file = create_file_with_content(ALT_SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(ALT_SCHEMA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -470,8 +470,8 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
-        let alt_schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -531,7 +531,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -577,7 +577,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -614,7 +614,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -674,7 +674,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -703,7 +703,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -741,7 +741,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -776,7 +776,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -816,7 +816,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -875,7 +875,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -908,7 +908,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_file_with_content(SCHEMA);
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)

@@ -21,7 +21,7 @@ use crate::service::resource::type_definition::TypeDefinition;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_flatbuffers::TypeName;
+use iceoryx2_bb_flatbuffers::{TypeName, is_binary_flatbuffer_schema};
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::ServiceState;
@@ -94,6 +94,9 @@ pub enum PublishSubscribeOpenError {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    InvalidTypeDefinition,
 }
 
 impl core::fmt::Display for PublishSubscribeOpenError {
@@ -153,6 +156,9 @@ impl From<ServiceOpenError> for PublishSubscribeOpenError {
             ServiceOpenError::UnableToAcquireTypeDefinition => {
                 PublishSubscribeOpenError::UnableToAcquireTypeDefinition
             }
+            ServiceOpenError::InvalidTypeDefinition => {
+                PublishSubscribeOpenError::InvalidTypeDefinition
+            }
         }
     }
 }
@@ -197,6 +203,9 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
             PublishSubscribeOpenError::UnableToAcquireTypeDefinition => {
                 ServiceOpenError::UnableToAcquireTypeDefinition
             }
+            PublishSubscribeOpenError::InvalidTypeDefinition => {
+                ServiceOpenError::InvalidTypeDefinition
+            }
         }
     }
 }
@@ -232,6 +241,9 @@ pub enum PublishSubscribeCreateError {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    InvalidTypeDefinition,
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -266,6 +278,9 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
             ServiceCreateError::UnableToAcquireTypeDefinition => {
                 PublishSubscribeCreateError::UnableToAcquireTypeDefinition
             }
+            ServiceCreateError::InvalidTypeDefinition => {
+                PublishSubscribeCreateError::InvalidTypeDefinition
+            }
         }
     }
 }
@@ -297,6 +312,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             }
             PublishSubscribeCreateError::UnableToAcquireTypeDefinition => {
                 ServiceCreateError::UnableToAcquireTypeDefinition
+            }
+            PublishSubscribeCreateError::InvalidTypeDefinition => {
+                ServiceCreateError::InvalidTypeDefinition
             }
         }
     }
@@ -713,6 +731,15 @@ impl<
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
+        if let Some(schema_path) = &self.flatbuffer_schema_path {
+            if !is_binary_flatbuffer_schema(&schema_path.file_name()) {
+                fail!(from self,
+                    with PublishSubscribeCreateError::InvalidTypeDefinition,
+                    "{msg} since the type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
+                    schema_path);
+            }
+        }
+
         let generate_dynamic_config = |service_config: &StaticConfig| {
             let pubsub_config = service_config.publish_subscribe();
             let dynamic_config_setting = DynamicConfigSettings {
@@ -765,6 +792,15 @@ impl<
         PublishSubscribeOpenError,
     > {
         let msg = "Unable to open publish subscribe service";
+
+        if let Some(schema_path) = &self.flatbuffer_schema_path {
+            if !is_binary_flatbuffer_schema(&schema_path.file_name()) {
+                fail!(from self,
+                    with PublishSubscribeOpenError::InvalidTypeDefinition,
+                    "{msg} since the type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
+                    schema_path);
+            }
+        }
 
         let service_state = self.base.open(
             msg,
