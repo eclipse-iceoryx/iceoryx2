@@ -731,13 +731,13 @@ impl<
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
-        if let Some(schema_path) = &self.flatbuffer_schema_path {
-            if !is_binary_flatbuffer_schema(&schema_path.file_name()) {
-                fail!(from self,
+        if let Some(schema_path) = &self.flatbuffer_schema_path
+            && !is_binary_flatbuffer_schema(&schema_path.file_name())
+        {
+            fail!(from self,
                     with PublishSubscribeCreateError::InvalidTypeDefinition,
                     "{msg} since the type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
                     schema_path);
-            }
         }
 
         let generate_dynamic_config = |service_config: &StaticConfig| {
@@ -793,13 +793,13 @@ impl<
     > {
         let msg = "Unable to open publish subscribe service";
 
-        if let Some(schema_path) = &self.flatbuffer_schema_path {
-            if !is_binary_flatbuffer_schema(&schema_path.file_name()) {
-                fail!(from self,
+        if let Some(schema_path) = &self.flatbuffer_schema_path
+            && !is_binary_flatbuffer_schema(&schema_path.file_name())
+        {
+            fail!(from self,
                     with PublishSubscribeOpenError::InvalidTypeDefinition,
                     "{msg} since the type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
                     schema_path);
-            }
         }
 
         let service_state = self.base.open(

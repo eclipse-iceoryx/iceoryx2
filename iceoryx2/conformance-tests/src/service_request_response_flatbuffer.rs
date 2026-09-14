@@ -689,6 +689,40 @@ pub mod service_request_response_flatbuffer {
     }
 
     #[conformance_test]
+    pub fn create_fails_when_wrong_suffix_is_used_in_request_schema_file<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, Flatbuffer<u64>>()
+            .request_flatbuffer_schema_path(&"whatever.fbs".try_into().unwrap())
+            .response_flatbuffer_schema_path(schema_file.path().unwrap())
+            .create();
+
+        assert_that!(sut.err(), eq Some(RequestResponseCreateError::InvalidTypeDefinition));
+    }
+
+    #[conformance_test]
+    pub fn create_fails_when_wrong_suffix_is_used_in_response_schema_file<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, Flatbuffer<u64>>()
+            .request_flatbuffer_schema_path(schema_file.path().unwrap())
+            .response_flatbuffer_schema_path(&"whatever.fbs".try_into().unwrap())
+            .create();
+
+        assert_that!(sut.err(), eq Some(RequestResponseCreateError::InvalidTypeDefinition));
+    }
+
+    #[conformance_test]
     pub fn open_fails_when_no_request_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
@@ -803,6 +837,56 @@ pub mod service_request_response_flatbuffer {
             .open();
 
         assert_that!(sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn open_fails_when_wrong_suffix_is_used_in_request_schema_file<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
+
+        let service_name = generate_service_name();
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, Flatbuffer<u64>>()
+            .request_flatbuffer_schema_path(schema_file.path().unwrap())
+            .response_flatbuffer_schema_path(alt_schema_file.path().unwrap())
+            .create();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, Flatbuffer<u64>>()
+            .request_flatbuffer_schema_path(&"whatever_blubb.fbs".try_into().unwrap())
+            .response_flatbuffer_schema_path(alt_schema_file.path().unwrap())
+            .open();
+
+        assert_that!(sut.err(), eq Some(RequestResponseOpenError::InvalidTypeDefinition));
+    }
+
+    #[conformance_test]
+    pub fn open_fails_when_wrong_suffix_is_used_in_response_schema_file<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let alt_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
+
+        let service_name = generate_service_name();
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, Flatbuffer<u64>>()
+            .request_flatbuffer_schema_path(schema_file.path().unwrap())
+            .response_flatbuffer_schema_path(alt_schema_file.path().unwrap())
+            .create();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, Flatbuffer<u64>>()
+            .request_flatbuffer_schema_path(schema_file.path().unwrap())
+            .response_flatbuffer_schema_path(&"whatever_blubb.fbs".try_into().unwrap())
+            .open();
+
+        assert_that!(sut.err(), eq Some(RequestResponseOpenError::InvalidTypeDefinition));
     }
 
     #[conformance_test]

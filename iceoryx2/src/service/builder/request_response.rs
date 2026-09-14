@@ -895,13 +895,13 @@ impl<
             ("request", &self.request_flatbuffer_schema_path),
             ("response", &self.response_flatbuffer_schema_path),
         ] {
-            if let Some(schema_path) = path {
-                if !is_binary_flatbuffer_schema(&schema_path.file_name()) {
-                    fail!(from self,
+            if let Some(schema_path) = path
+                && !is_binary_flatbuffer_schema(&schema_path.file_name())
+            {
+                fail!(from self,
                     with RequestResponseCreateError::InvalidTypeDefinition,
                     "{msg} since the {name} type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
                     schema_path);
-                }
             }
         }
 
@@ -956,13 +956,13 @@ impl<
             ("request", &self.request_flatbuffer_schema_path),
             ("response", &self.response_flatbuffer_schema_path),
         ] {
-            if let Some(schema_path) = path {
-                if !is_binary_flatbuffer_schema(&schema_path.file_name()) {
-                    fail!(from self,
+            if let Some(schema_path) = path
+                && !is_binary_flatbuffer_schema(&schema_path.file_name())
+            {
+                fail!(from self,
                     with RequestResponseOpenError::InvalidTypeDefinition,
                     "{msg} since the {name} type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
                     schema_path);
-                }
             }
         }
 

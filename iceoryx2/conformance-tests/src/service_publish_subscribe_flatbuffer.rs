@@ -422,6 +422,21 @@ pub mod service_publish_subscribe_flatbuffer {
     }
 
     #[conformance_test]
+    pub fn create_fails_when_wrong_suffix_is_used_in_schema_file<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(&"some_definition.fbs".try_into().unwrap())
+            .create();
+
+        assert_that!(sut.err(), eq Some(PublishSubscribeCreateError::InvalidTypeDefinition));
+    }
+
+    #[conformance_test]
     pub fn open_fails_when_no_schema_file_is_available<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
@@ -440,6 +455,28 @@ pub mod service_publish_subscribe_flatbuffer {
             .open();
 
         assert_that!(sut.err(), eq Some(PublishSubscribeOpenError::UnableToAcquireTypeDefinition));
+    }
+
+    #[conformance_test]
+    pub fn open_fails_when_wrong_suffix_is_used_in_schema_file<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+
+        let _sut_create = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(&"some_definition.fbs".try_into().unwrap())
+            .open();
+
+        assert_that!(sut.err(), eq Some(PublishSubscribeOpenError::InvalidTypeDefinition));
     }
 
     #[conformance_test]

@@ -56,7 +56,7 @@ auto main() -> int {
                        // defined or when a custom file is required (maybe outside of the lookup path).
                        //
                        // .request_flatbuffer_schema_path(bb::FilePath::create("unbounded_data.bfbs").value())
-                       // .response_flatbuffer_schema_path(bb::FilePath::create("data_pros.bfbs").value())
+                       // .response_flatbuffer_schema_path(bb::FilePath::create("data_props.bfbs").value())
                        .open_or_create()
                        .value();
 
