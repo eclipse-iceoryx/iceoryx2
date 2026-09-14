@@ -28,6 +28,7 @@ pub mod allocation_strategy;
 pub mod bump_allocator;
 pub mod code_style;
 pub mod cyclic_tagger;
+pub mod generation;
 pub mod lazy_singleton;
 pub mod math;
 pub mod owning_pointer;

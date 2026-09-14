@@ -12,10 +12,11 @@ version = { workspace = true }
 
 [features]
 default = ["std"]
-std = ["iceoryx2/std", "iceoryx2-link-backend/std"]
+std = ["iceoryx2/std", "iceoryx2-bb-elementary/std", "iceoryx2-link-backend/std"]
 
 [dependencies]
 iceoryx2 = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-link-backend = { workspace = true }
 
 [dev-dependencies]

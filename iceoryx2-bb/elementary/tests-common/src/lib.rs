@@ -19,6 +19,7 @@ pub mod allocator;
 pub mod bump_allocator_tests;
 pub mod code_style_tests;
 pub mod cyclic_tagger_tests;
+pub mod generation_tests;
 pub mod math_tests;
 pub mod package_version_tests;
 pub mod relocatable_ptr_tests;

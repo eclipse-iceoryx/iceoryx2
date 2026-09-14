@@ -18,9 +18,9 @@ pub mod carrier_discovery {
     use alloc::vec::Vec;
     use core::time::Duration;
 
+    use iceoryx2_bb_elementary::generation::Generation;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_link_backend::Generation;
     use iceoryx2_link_backend::service_description::ServiceDescriptor;
     use iceoryx2_link_carrier::{Announcement, Carrier};
 

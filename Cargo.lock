@@ -1518,6 +1518,7 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-testing",
  "iceoryx2-link-backend",
  "iceoryx2-log",
@@ -1528,7 +1529,7 @@ name = "iceoryx2-link-backend"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
- "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
  "serde",
@@ -1539,6 +1540,7 @@ name = "iceoryx2-link-carrier"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-testing",
  "iceoryx2-link-backend",
 ]
@@ -1549,6 +1551,7 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
@@ -1593,6 +1596,7 @@ name = "iceoryx2-link-testing"
 version = "0.9.999"
 dependencies = [
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
  "iceoryx2-link-backend",
  "iceoryx2-link-carrier",
 ]
@@ -1603,6 +1607,7 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-testing",
  "iceoryx2-link-backend",
  "iceoryx2-link-carrier",

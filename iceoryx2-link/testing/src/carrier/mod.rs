@@ -18,8 +18,9 @@ pub use channel::FakeChannel;
 
 use alloc::collections::VecDeque;
 
+use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
-use iceoryx2_link_backend::{Generation, Reactive, WakeHandle};
+use iceoryx2_link_backend::{Reactive, WakeHandle};
 use iceoryx2_link_carrier::PeerId;
 use iceoryx2_link_carrier::{Announcement, Carrier, Offer};
 

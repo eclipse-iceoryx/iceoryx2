@@ -22,8 +22,9 @@
 //! A backend does four things.
 //!
 //! * Lists what the opposing side offers, a remote description under a
-//!   remote id each, and reports a [`Generation`] that moves when the
-//!   listing changed.
+//!   remote id each, and reports a
+//!   [`Generation`](iceoryx2_bb_elementary::generation::Generation) that
+//!   moves when the listing changed.
 //! * Provides a [`resolver::Resolver`], which decides service by service
 //!   what is bridged, from the local description and the remote
 //!   descriptions of the service, and names the refusal when nothing is.
@@ -88,7 +89,6 @@ macro_rules! origin {
 mod backend;
 pub mod diagnostic;
 mod epoch;
-mod generation;
 mod never;
 mod reactive;
 pub mod relay;
@@ -98,6 +98,5 @@ pub mod wire;
 
 pub use backend::{Announcement, Backend, OnRemote, Refusal, RemoteDescription, RemoteId};
 pub use epoch::Epoch;
-pub use generation::{Generation, GenerationCounter};
 pub use never::Never;
 pub use reactive::{Reactive, WakeHandle, WakeService};

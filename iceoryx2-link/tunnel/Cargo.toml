@@ -15,6 +15,7 @@ default = ["std"]
 std = [
   "iceoryx2/std",
   "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-elementary/std",
   "iceoryx2-link-backend/std",
   "iceoryx2-link-carrier/std",
   "iceoryx2-log/std",
@@ -23,6 +24,7 @@ std = [
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-link-backend = { workspace = true }
 iceoryx2-link-carrier = { workspace = true }
 iceoryx2-log = { workspace = true }

@@ -10,6 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Tracks whether a set of data may have changed since it was last looked
+//! at, as a [`Generation`] its writer advances on every change.
+//!
+//! ```
+//! use iceoryx2_bb_elementary::generation::*;
+//!
+//! let counter = GenerationCounter::new();
+//! let seen = counter.current();
+//!
+//! // the writer changes the data
+//! counter.advance();
+//!
+//! assert!(!counter.current().unchanged_since(seen));
+//! ```
+
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
 /// Tracks generation of a particular set of data.
@@ -48,36 +63,5 @@ impl GenerationCounter {
     /// The generation as of now.
     pub fn current(&self) -> Generation {
         Generation::At(self.count.load(Ordering::Relaxed))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn a_tracked_generation_is_unchanged_since_itself_only() {
-        assert_that!(Generation::At(3).unchanged_since(Generation::At(3)), eq true);
-        assert_that!(Generation::At(3).unchanged_since(Generation::At(2)), eq false);
-        assert_that!(Generation::At(3).unchanged_since(Generation::Untracked), eq false);
-    }
-
-    #[test]
-    fn an_untracked_generation_is_never_unchanged() {
-        assert_that!(Generation::Untracked.unchanged_since(Generation::Untracked), eq false);
-        assert_that!(Generation::Untracked.unchanged_since(Generation::At(3)), eq false);
-    }
-
-    #[test]
-    fn a_counter_advances_its_generation() {
-        let sut = GenerationCounter::new();
-        let before = sut.current();
-
-        sut.advance();
-
-        assert_that!(sut.current().unchanged_since(before), eq false);
-        assert_that!(sut.current().unchanged_since(sut.current()), eq true);
     }
 }

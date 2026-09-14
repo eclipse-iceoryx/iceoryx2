@@ -31,6 +31,7 @@ rust_library(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-link/backend:iceoryx2-link-backend",
         "//iceoryx2-link/carrier:iceoryx2-link-carrier",

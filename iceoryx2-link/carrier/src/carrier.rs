@@ -12,7 +12,7 @@
 
 use core::error::Error;
 
-use iceoryx2_link_backend::Generation;
+use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 
 use crate::{Announcement, Channel, Offer};
