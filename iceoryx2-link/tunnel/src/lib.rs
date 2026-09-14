@@ -35,10 +35,12 @@
 
 extern crate alloc;
 
+mod offer_id;
 pub mod relay;
 pub mod resolver;
 #[cfg(test)]
 mod testing;
 mod tunnel;
 
+pub use offer_id::OfferId;
 pub use tunnel::Tunnel;

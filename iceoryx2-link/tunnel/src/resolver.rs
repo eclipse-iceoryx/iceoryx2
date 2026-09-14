@@ -16,7 +16,7 @@ use iceoryx2_link_backend::resolver::{self, Resolution};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceDescriptor};
 use iceoryx2_log::{origin, warn};
 
-use iceoryx2_link_carrier::PeerId;
+use crate::OfferId;
 
 /// Why a service the peers offer is not bridged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,7 +51,7 @@ impl Resolver {
 }
 
 impl<S: Service> resolver::Resolver<S> for Resolver {
-    type RemoteId = PeerId;
+    type RemoteId = OfferId;
     type RemoteDescription = ServiceDescriptor;
     type Refusal = Refusal;
 

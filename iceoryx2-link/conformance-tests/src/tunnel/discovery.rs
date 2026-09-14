@@ -66,6 +66,56 @@ pub mod tunnel_discovery {
     }
 
     #[conformance_test]
+    pub fn two_services_offered_by_one_side_are_both_bridged_on_the_other<
+        S: Service,
+        X: AnyService,
+        F: TunnelFixture,
+    >() {
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // Two sides tunnelled over one carrier, an application on side A
+        // offering two services.
+        let mut a = side::<S, _>(|config| fixture.tunnel(config));
+        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let first_name = X::service_name();
+        let second_name = X::service_name();
+        let _first = X::create::<S>(&a.node, &first_name);
+        let _second = X::create::<S>(&a.node, &second_name);
+        let first = ServiceHash::new::<S::ServiceNameHasher>(&first_name, X::PATTERN);
+        let second = ServiceHash::new::<S::ServiceNameHasher>(&second_name, X::PATTERN);
+
+        // === BRIDGE ===
+        // Side A bridges and announces both, side B mirrors both, one
+        // peer's offers never displacing each other.
+        a.link.discover().expect("discovery succeeds");
+        assert_that!(a.link.bridges().contains(&first), eq true);
+        assert_that!(a.link.bridges().contains(&second), eq true);
+
+        retry(
+            || {
+                b.link.discover().expect("discovery succeeds");
+                let bridges = b.link.bridges();
+                match (bridges.contains(&first), bridges.contains(&second)) {
+                    (true, true) => Ok(()),
+                    (false, _) => Err("the first service is not bridged on the opposing side"),
+                    (_, false) => Err("the second service is not bridged on the opposing side"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("both services are bridged on the opposing side");
+
+        // === HOLD ===
+        // Another cycle keeps both.
+        b.link.discover().expect("discovery succeeds");
+        assert_that!(b.link.bridges().contains(&first), eq true);
+        assert_that!(b.link.bridges().contains(&second), eq true);
+        assert_that!(service_exists::<S>(&first_name, &b.config, X::PATTERN), eq true);
+        assert_that!(service_exists::<S>(&second_name, &b.config, X::PATTERN), eq true);
+    }
+
+    #[conformance_test]
     pub fn a_service_the_filter_rejects_is_not_mirrored<
         S: Service,
         X: AnyService,

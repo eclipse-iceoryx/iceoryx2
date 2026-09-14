@@ -17,9 +17,9 @@ use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_backend::{Announcement, Backend, OnRemote, Reactive, WakeHandle};
 use iceoryx2_log::{origin, trace};
 
+use crate::OfferId;
 use crate::relay::{self, Factory};
 use crate::resolver::Resolver;
-use iceoryx2_link_carrier::PeerId;
 use iceoryx2_link_carrier::{self as carrier, Carrier};
 
 /// A backend connecting `iceoryx2` systems over a carrier.
@@ -42,7 +42,7 @@ impl<C: Carrier> Tunnel<C> {
 impl<S: Service, C: Carrier> Backend<S> for Tunnel<C> {
     type ListError = C::ListError;
     type AnnouncementError = C::AnnouncementError;
-    type RemoteId = PeerId;
+    type RemoteId = OfferId;
     type RemoteDescription = ServiceDescriptor;
     type Refusal = crate::resolver::Refusal;
     type Resolver<'a>
@@ -62,7 +62,7 @@ impl<S: Service, C: Carrier> Backend<S> for Tunnel<C> {
 
     fn list(&self, on_remote: &mut OnRemote<'_, S, Self>) -> Result<(), C::ListError> {
         self.carrier
-            .offers(&mut |offer| on_remote(&offer.peer, &offer.descriptor))
+            .offers(&mut |offer| on_remote(&OfferId::from(&offer), &offer.descriptor))
     }
 
     fn resolver(&self) -> &Resolver {
@@ -107,8 +107,8 @@ mod tests {
     use iceoryx2_bb_testing::assert_that;
 
     use crate::testing::{description, descriptor, peer};
+    use iceoryx2_link_carrier::Frame;
     use iceoryx2_link_carrier::{Channel, Offer};
-    use iceoryx2_link_carrier::{Frame, PeerId};
 
     const FIRST_PEER: u8 = 1;
     const SECOND_PEER: u8 = 2;
@@ -176,10 +176,10 @@ mod tests {
         }
     }
 
-    fn list(sut: &Tunnel<FakeCarrier>) -> Vec<(PeerId, ServiceDescriptor)> {
+    fn list(sut: &Tunnel<FakeCarrier>) -> Vec<(OfferId, ServiceDescriptor)> {
         let mut listed = Vec::new();
-        <Tunnel<FakeCarrier> as Backend<local::Service>>::list(sut, &mut |peer, descriptor| {
-            listed.push((*peer, descriptor.clone()));
+        <Tunnel<FakeCarrier> as Backend<local::Service>>::list(sut, &mut |id, descriptor| {
+            listed.push((*id, descriptor.clone()));
         })
         .expect("carrier never fails");
         listed
@@ -191,7 +191,7 @@ mod tests {
     }
 
     #[test]
-    fn the_peers_offers_are_listed_by_peer_and_descriptor() {
+    fn the_peers_offers_are_listed_by_offer_id_and_descriptor() {
         const SERVICE: &str = "tunnel/list";
 
         let carrier = FakeCarrier {
@@ -203,8 +203,14 @@ mod tests {
         let listed = list(&sut);
 
         let expected = alloc::vec![
-            (peer(FIRST_PEER), descriptor(SERVICE, PAYLOAD)),
-            (peer(SECOND_PEER), descriptor(SERVICE, PAYLOAD)),
+            (
+                OfferId::from(&offer(FIRST_PEER, SERVICE)),
+                descriptor(SERVICE, PAYLOAD)
+            ),
+            (
+                OfferId::from(&offer(SECOND_PEER, SERVICE)),
+                descriptor(SERVICE, PAYLOAD)
+            ),
         ];
         assert_that!(listed, eq expected);
     }
