@@ -17,8 +17,8 @@ use iceoryx2::service::local;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::description::{
-    PatternSettings, PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription,
-    ServiceDescriptor, ServiceSettings, ServiceTypes, TypeDescription,
+    PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
+    TypeDescription,
 };
 
 use iceoryx2_link_carrier::PeerId;
@@ -36,24 +36,16 @@ pub(crate) fn description(name: &str, payload: &str) -> ServiceDescription {
         size: 8,
         alignment: 8,
     };
-    ServiceDescription::compose::<local::Service>(
-        ServiceSettings::new(
-            ServiceName::new(name).expect("valid service name"),
-            defaults(),
-        ),
-        ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+    ServiceDescription::compose_publish_subscribe::<local::Service>(
+        ServiceName::new(name).expect("valid service name"),
+        PublishSubscribeSettings::from_config(&Config::default()),
+        PublishSubscribeTypes {
             payload: type_description.clone(),
             user_header: type_description,
-        }),
+        },
     )
-    .expect("halves of one pattern")
 }
 
 pub(crate) fn descriptor(name: &str, payload: &str) -> ServiceDescriptor {
     ServiceDescriptor::from(&description(name, payload))
-}
-
-/// The default settings of a publish-subscribe service.
-pub(crate) fn defaults() -> PatternSettings {
-    PatternSettings::PublishSubscribe(PublishSubscribeSettings::from_config(&Config::default()))
 }

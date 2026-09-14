@@ -35,8 +35,8 @@ use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
 use iceoryx2_link_backend::description::{
-    PatternSettings, PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription,
-    ServiceDescriptor, ServiceSettings, ServiceTypes, TypeDescription,
+    PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
+    ServiceTypes, TypeDescription,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 /// Calls `attempt` until it succeeds or `timeout` passes. On timeout the
@@ -76,17 +76,14 @@ pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
     name: &ServiceName,
     config: &Config,
 ) -> ServiceDescription {
-    ServiceDescription::compose::<S>(
-        ServiceSettings::new(
-            *name,
-            PatternSettings::PublishSubscribe(PublishSubscribeSettings::from_config(config)),
-        ),
-        ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+    ServiceDescription::compose_publish_subscribe::<S>(
+        *name,
+        PublishSubscribeSettings::from_config(config),
+        PublishSubscribeTypes {
             payload: TypeDescription::from(&Payload::type_detail()),
             user_header: TypeDescription::from(&TypeDetail::new::<Header>(TypeVariant::FixedSize)),
-        }),
+        },
     )
-    .expect("halves of one pattern")
 }
 
 /// The hash of the publish-subscribe service `name`.

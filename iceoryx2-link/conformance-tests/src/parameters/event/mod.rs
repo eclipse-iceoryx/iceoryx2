@@ -23,9 +23,7 @@ use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::port_factory::event::PortFactory;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::testing::generate_service_name;
-use iceoryx2_link_backend::description::{
-    EventSettings, PatternSettings, ServiceDescription, ServiceSettings, ServiceTypes,
-};
+use iceoryx2_link_backend::description::{EventSettings, ServiceDescription};
 
 use super::{AnyName, AnyService};
 use crate::testing::notifications_of;
@@ -105,14 +103,7 @@ impl<N: EventName> AnyService for Event<N> {
     }
 
     fn describe<S: Service>(name: &ServiceName, config: &Config) -> ServiceDescription {
-        ServiceDescription::compose::<S>(
-            ServiceSettings::new(
-                *name,
-                PatternSettings::Event(EventSettings::from_config(config)),
-            ),
-            ServiceTypes::Event,
-        )
-        .expect("halves of one pattern")
+        ServiceDescription::compose_event::<S>(*name, EventSettings::from_config(config))
     }
 
     fn create<S: Service>(node: &Node<S>, name: &ServiceName) -> Self::Handle<S> {

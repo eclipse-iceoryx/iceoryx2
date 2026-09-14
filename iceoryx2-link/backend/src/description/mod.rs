@@ -38,19 +38,26 @@ pub struct ServiceDescription {
 }
 
 impl ServiceDescription {
-    /// The description of the service with these settings and types,
-    /// hashed with the name hasher of `S`. Settings and types of different
-    /// patterns compose nothing.
-    pub fn compose<S: Service>(
-        settings: ServiceSettings,
-        types: ServiceTypes,
-    ) -> Result<Self, PatternMismatch> {
-        match (&settings.pattern, &types) {
-            (PatternSettings::PublishSubscribe(_), ServiceTypes::PublishSubscribe(_))
-            | (PatternSettings::Event(_), ServiceTypes::Event) => {}
-            _ => return Err(PatternMismatch),
-        }
-        Ok(Self::hashed::<S>(settings, types))
+    /// The description of the publish-subscribe service `name` with these
+    /// settings and types, hashed with the name hasher of `S`.
+    pub fn compose_publish_subscribe<S: Service>(
+        name: ServiceName,
+        settings: PublishSubscribeSettings,
+        types: PublishSubscribeTypes,
+    ) -> Self {
+        Self::hashed::<S>(
+            ServiceSettings::new(name, PatternSettings::PublishSubscribe(settings)),
+            ServiceTypes::PublishSubscribe(types),
+        )
+    }
+
+    /// The description of the event service `name` with these settings,
+    /// hashed with the name hasher of `S`.
+    pub fn compose_event<S: Service>(name: ServiceName, settings: EventSettings) -> Self {
+        Self::hashed::<S>(
+            ServiceSettings::new(name, PatternSettings::Event(settings)),
+            ServiceTypes::Event,
+        )
     }
 
     /// The description of the service `name` with these types and the
@@ -104,18 +111,6 @@ impl ServiceDescription {
         MessagingPattern::of(self)
     }
 }
-
-/// The settings and the types are of different patterns.
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub struct PatternMismatch;
-
-impl core::fmt::Display for PatternMismatch {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "PatternMismatch")
-    }
-}
-
-impl core::error::Error for PatternMismatch {}
 
 /// The [`StaticConfig`] has a messaging pattern the link does not carry.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -308,7 +303,7 @@ mod tests {
     }
 
     #[test]
-    fn compose_computes_the_same_hash_as_the_service() {
+    fn compose_publish_subscribe_computes_the_same_hash_as_the_service() {
         let config = generate_isolated_config();
         let node = NodeBuilder::new()
             .config(&config)
@@ -323,46 +318,35 @@ mod tests {
 
         let static_config = static_config_of(&service_name, &config, Pattern::PublishSubscribe);
         let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
-        let sut =
-            ServiceDescription::compose::<local::Service>(described.settings, described.types)
-                .expect("halves of one pattern");
+        let PatternSettings::PublishSubscribe(settings) = described.settings.pattern else {
+            panic!("a publish-subscribe service");
+        };
+        let ServiceTypes::PublishSubscribe(types) = described.types else {
+            panic!("a publish-subscribe service");
+        };
+        let sut = ServiceDescription::compose_publish_subscribe::<local::Service>(
+            service_name,
+            settings,
+            types,
+        );
 
         assert_that!(sut.hash, eq * static_config.service_hash());
     }
 
     #[test]
-    fn compose_hashes_an_event_service_by_its_pattern() {
+    fn compose_event_hashes_by_its_pattern() {
         let config = Config::default();
         let name = generate_service_name();
-        let settings = ServiceSettings::new(
-            name,
-            PatternSettings::Event(EventSettings::from_config(&config)),
-        );
 
-        let sut = ServiceDescription::compose::<local::Service>(settings, ServiceTypes::Event)
-            .expect("halves of one pattern");
+        let sut = ServiceDescription::compose_event::<local::Service>(
+            name,
+            EventSettings::from_config(&config),
+        );
 
         assert_that!(
             sut.hash,
             eq ServiceHash::new::<<local::Service as Service>::ServiceNameHasher>(&name, Pattern::Event)
         );
-    }
-
-    #[test]
-    fn settings_and_types_of_different_patterns_compose_nothing() {
-        let config = Config::default();
-        let settings = ServiceSettings::new(
-            generate_service_name(),
-            PatternSettings::Event(EventSettings::from_config(&config)),
-        );
-        let types = ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
-            payload: (&TypeDetail::new::<u64>(TypeVariant::FixedSize)).into(),
-            user_header: (&TypeDetail::new::<()>(TypeVariant::FixedSize)).into(),
-        });
-
-        let result = ServiceDescription::compose::<local::Service>(settings, types);
-
-        assert_that!(result, eq Err(PatternMismatch));
     }
 
     #[test]
