@@ -19,7 +19,7 @@ use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder, RelayFac
 use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::fail;
 
-use crate::bridge::{Bridged, OpenError, PropagateError};
+use crate::bridge::{Bridged, Counters, OpenError, PropagateError};
 use crate::ports::PublishSubscribePorts;
 
 /// A publish-subscribe service's local ports paired with the backend's
@@ -27,6 +27,7 @@ use crate::ports::PublishSubscribePorts;
 pub(super) struct PublishSubscribeBridge<S: Service, B: Backend<S>> {
     ports: PublishSubscribePorts<S>,
     relay: B::PublishSubscribeRelay,
+    counters: Counters,
 }
 
 impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
@@ -53,25 +54,33 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
             with OpenError::Relay,
             "Failed to create the relay of {}", description.name()
         );
-        Ok(Self { ports, relay })
+        Ok(Self {
+            ports,
+            relay,
+            counters: Counters::default(),
+        })
     }
 
-    fn propagate(&self, own_node: &UniqueNodeId) -> Result<(), PropagateError> {
+    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), PropagateError> {
         let origin = origin!("PublishSubscribeBridge::propagate");
-        fail!(
+        let propagated = fail!(
             from origin,
-            when self.ports.receive(own_node, |sample| {
-                self.relay.send(&sample)
-            }),
+            when self.ports.receive(own_node, |sample| self.relay.send(&sample)),
             with PropagateError::Propagation,
             "Failed to propagate samples"
         );
-        fail!(
+        self.counters.outbound += propagated;
+        let ingested = fail!(
             from origin,
             when self.ports.send(|loan| self.relay.receive(loan)),
             with PropagateError::Ingestion,
             "Failed to ingest samples from the opposing side"
         );
+        self.counters.inbound += ingested;
         Ok(())
+    }
+
+    fn counters(&mut self) -> &mut Counters {
+        &mut self.counters
     }
 }

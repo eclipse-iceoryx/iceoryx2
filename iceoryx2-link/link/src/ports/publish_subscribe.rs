@@ -145,14 +145,14 @@ impl<S: Service> PublishSubscribePorts<S> {
     /// Hands every pending sample not published by `own_node` to
     /// `propagate`.
     ///
-    /// Returns true when payloads are propagated.
+    /// Returns the number of samples propagated.
     pub(crate) fn receive<E>(
         &self,
         own_node: &UniqueNodeId,
         mut propagate: impl FnMut(Sample<S>) -> Result<(), E>,
-    ) -> Result<bool, ReceiveError> {
+    ) -> Result<u64, ReceiveError> {
         let origin = origin!("PublishSubscribePorts::receive");
-        let mut received = false;
+        let mut received = 0;
         loop {
             let sample = fail!(
                 from origin,
@@ -174,7 +174,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                 with ReceiveError::Propagation,
                 "Failed to propagate a sample of {}", self.name
             );
-            received = true;
+            received += 1;
         }
         Ok(received)
     }
@@ -182,15 +182,15 @@ impl<S: Service> PublishSubscribePorts<S> {
     /// Publishes every sample `ingest` fills into a loan, until it has
     /// nothing more.
     ///
-    /// Returns true when payloads are ingested.
+    /// Returns the number of samples published.
     pub(crate) fn send<E>(
         &self,
         mut ingest: impl for<'a> FnMut(
             &'a mut LoanFn<'a, S, LoanError>,
         ) -> Result<Option<SampleMut<S>>, E>,
-    ) -> Result<bool, SendError> {
+    ) -> Result<u64, SendError> {
         let origin = origin!("PublishSubscribePorts::send");
-        let mut sent = false;
+        let mut sent = 0;
         loop {
             let sample = fail!(
                 from origin,
@@ -207,7 +207,7 @@ impl<S: Service> PublishSubscribePorts<S> {
                 with SendError::Delivery,
                 "Failed to send a sample of {}", self.name
             );
-            sent = true;
+            sent += 1;
         }
         Ok(sent)
     }
@@ -351,7 +351,7 @@ mod tests {
         // Out of the local system: the app publishes, the ports receive.
         app_publisher.send_copy(PUBLISHED).expect("sample is sent");
         let mut received = alloc::vec::Vec::new();
-        let any = sut
+        let propagated = sut
             .receive(link_node.id(), |sample| {
                 received.push(u64::from_ne_bytes(
                     iceoryx2_link_backend::wire::publish_subscribe::payload_bytes(sample.payload())
@@ -361,12 +361,12 @@ mod tests {
                 Ok::<(), ()>(())
             })
             .expect("receive succeeds");
-        assert_that!(any, eq true);
+        assert_that!(propagated, eq 1);
         assert_that!(received, eq alloc::vec![PUBLISHED]);
 
         // Into the local system: the ports ingest, the app receives.
         let mut ingested_once = false;
-        let any = sut
+        let published = sut
             .send(|loan| {
                 if ingested_once {
                     return Ok::<_, ()>(None);
@@ -385,7 +385,7 @@ mod tests {
                 Ok(Some(sample))
             })
             .expect("send succeeds");
-        assert_that!(any, eq true);
+        assert_that!(published, eq 1);
         // The app's subscriber also saw the app's own publication first.
         let mut at_app = alloc::vec::Vec::new();
         while let Some(sample) = app_subscriber.receive().expect("receive succeeds") {
@@ -394,9 +394,9 @@ mod tests {
         assert_that!(at_app, eq alloc::vec![PUBLISHED, INGESTED]);
 
         // The ports do not receive back what they sent themselves.
-        let any = sut
+        let propagated = sut
             .receive(link_node.id(), |_| Ok::<(), ()>(()))
             .expect("receive succeeds");
-        assert_that!(any, eq false);
+        assert_that!(propagated, eq 0);
     }
 }

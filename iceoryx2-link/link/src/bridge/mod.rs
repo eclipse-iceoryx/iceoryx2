@@ -57,6 +57,22 @@ impl core::fmt::Display for PropagateError {
 
 impl core::error::Error for PropagateError {}
 
+/// How much a bridge moved in each direction since last taken.
+#[derive(Default)]
+struct Counters {
+    outbound: u64,
+    inbound: u64,
+}
+
+impl Counters {
+    /// The outbound and inbound counts, reset to zero.
+    fn take(&mut self) -> (u64, u64) {
+        let counts = (self.outbound, self.inbound);
+        *self = Self::default();
+        counts
+    }
+}
+
 /// The link's local ports of one pattern joined to the backend's relay
 /// for them.
 trait Bridged: Sized {
@@ -73,7 +89,10 @@ trait Bridged: Sized {
     ) -> Result<Self, OpenError>;
 
     /// Moves what is pending in both directions.
-    fn propagate(&self, own_node: &UniqueNodeId) -> Result<(), PropagateError>;
+    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), PropagateError>;
+
+    /// What was moved since last taken.
+    fn counters(&mut self) -> &mut Counters;
 }
 
 pub struct Bridges<S: Service, B: Backend<S>> {
@@ -155,22 +174,31 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
 
     /// Moves pending samples and notifications of every bridge in both
     /// directions, samples first so a notification about one never
-    /// arrives before it.
-    pub(crate) fn propagate(&self, own_node: &UniqueNodeId) -> Result<(), PropagateError> {
+    /// arrives before it. With `monitoring`, reports what each bridge
+    /// moved.
+    pub(crate) fn propagate(
+        &mut self,
+        own_node: &UniqueNodeId,
+        monitoring: bool,
+    ) -> Result<(), PropagateError> {
         let origin = origin!("Bridges::propagate");
-        for bridge in self.publish_subscribe.bridged() {
+        for bridge in self.publish_subscribe.bridged_mut() {
             fail!(
                 from origin,
                 when bridge.propagate(own_node),
                 "Failed to propagate a publish-subscribe bridge"
             );
         }
-        for bridge in self.event.bridged() {
+        for bridge in self.event.bridged_mut() {
             fail!(
                 from origin,
                 when bridge.propagate(own_node),
                 "Failed to propagate an event bridge"
             );
+        }
+        if monitoring {
+            self.publish_subscribe.report();
+            self.event.report();
         }
         Ok(())
     }

@@ -109,13 +109,13 @@ impl<S: Service> EventPorts<S> {
     /// Hands every pending notification to `propagate`. The link's own
     /// notifications never reach its listener, see [`Self::send`].
     ///
-    /// Returns true when notifications are propagated.
+    /// Returns the number of notifications propagated.
     pub(crate) fn receive<E>(
         &self,
         mut propagate: impl FnMut(EventId) -> Result<(), E>,
-    ) -> Result<bool, ReceiveError> {
+    ) -> Result<u64, ReceiveError> {
         let origin = origin!("EventPorts::receive");
-        let mut received = false;
+        let mut received = 0;
         let mut failed = false;
         fail!(
             from origin,
@@ -125,7 +125,7 @@ impl<S: Service> EventPorts<S> {
                 }
 
                 match propagate(activation.id) {
-                    Ok(()) => received = true,
+                    Ok(()) => received += 1,
                     Err(_) => failed = true,
                 }
             }),
@@ -146,13 +146,13 @@ impl<S: Service> EventPorts<S> {
     /// each id `ingest` hands over, until it has nothing more. An id the
     /// service cannot hold is dropped, warned about once.
     ///
-    /// Returns true when notifications are ingested.
+    /// Returns the number of notifications sent.
     pub(crate) fn send<E>(
         &self,
         mut ingest: impl FnMut() -> Result<Option<EventId>, E>,
-    ) -> Result<bool, SendError> {
+    ) -> Result<u64, SendError> {
         let origin = origin!("EventPorts::send");
-        let mut sent = false;
+        let mut sent = 0;
         loop {
             let id = fail!(
                 from origin,
@@ -167,7 +167,7 @@ impl<S: Service> EventPorts<S> {
             // The link's listener would otherwise receive what the link
             // notified, and propagate it back to where it came from.
             match self.notifier.__internal_notify(id, true) {
-                Ok(_) => sent = true,
+                Ok(_) => sent += 1,
                 Err(NotifierNotifyError::EventIdOutOfBounds) => {
                     if !self.warned_out_of_bounds.get() {
                         self.warned_out_of_bounds.set(true);
@@ -276,24 +276,24 @@ mod tests {
         app_notifier
             .notify_with_custom_event_id(EventId::new(APP_ID))
             .expect("notification is sent");
-        let mut propagated = Vec::new();
-        let any = sut
+        let mut ids = Vec::new();
+        let propagated = sut
             .receive(|id| {
-                propagated.push(id);
+                ids.push(id);
                 Ok::<(), ()>(())
             })
             .expect("receiving succeeds");
-        assert_that!(any, eq true);
-        assert_that!(propagated, eq alloc::vec![EventId::new(APP_ID)]);
+        assert_that!(propagated, eq 1);
+        assert_that!(ids, eq alloc::vec![EventId::new(APP_ID)]);
         // The app's own listener hears the app's notifier too.
         assert_that!(received(&app_listener), eq alloc::vec![EventId::new(APP_ID)]);
 
         // Into the local system: the ports notify, the app receives.
         let mut pending = alloc::vec![EventId::new(PORTS_ID)];
-        let any = sut
+        let sent = sut
             .send(|| Ok::<_, ()>(pending.pop()))
             .expect("sending succeeds");
-        assert_that!(any, eq true);
+        assert_that!(sent, eq 1);
         assert_that!(received(&app_listener), eq alloc::vec![EventId::new(PORTS_ID)]);
     }
 
@@ -318,10 +318,10 @@ mod tests {
         sut.send(|| Ok::<_, ()>(pending.pop()))
             .expect("sending succeeds");
 
-        let any = sut
+        let propagated = sut
             .receive(|_| Ok::<(), ()>(()))
             .expect("receiving succeeds");
-        assert_that!(any, eq false);
+        assert_that!(propagated, eq 0);
     }
 
     #[test]
@@ -340,10 +340,10 @@ mod tests {
 
         let sut = EventPorts::open(&link_node, &service_name, &settings).expect("ports open");
         let mut pending = alloc::vec![EventId::new(BEYOND_CEILING)];
-        let any = sut
+        let sent = sut
             .send(|| Ok::<_, ()>(pending.pop()))
             .expect("sending succeeds");
 
-        assert_that!(any, eq false);
+        assert_that!(sent, eq 0);
     }
 }

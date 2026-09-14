@@ -112,7 +112,23 @@ impl<B: Bridged> BridgeTable<B> {
     }
 
     /// Iterates the bridges in hash order.
-    pub(super) fn bridged(&self) -> impl Iterator<Item = &B> {
-        self.bridges.values().map(|bridge| &bridge.bridged)
+    pub(super) fn bridged_mut(&mut self) -> impl Iterator<Item = &mut B> {
+        self.bridges.values_mut().map(|bridge| &mut bridge.bridged)
+    }
+
+    /// Logs what every bridge moved since the last report.
+    pub(super) fn report(&mut self) {
+        let origin = origin!("BridgeTable::report");
+
+        for bridge in self.bridges.values_mut() {
+            let (outbound, inbound) = bridge.bridged.counters().take();
+            if outbound != 0 || inbound != 0 {
+                trace!(
+                    from origin,
+                    "{:?} bridge of {} moved {} out, {} in",
+                    bridge.pattern, bridge.name, outbound, inbound
+                );
+            }
+        }
     }
 }

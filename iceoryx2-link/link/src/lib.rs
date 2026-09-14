@@ -57,6 +57,8 @@
 //! * [`Link::node`] is the node representing the link in the local system.
 //! * [`Link::with_filter`] restricts the link to the services a filter
 //!   admits by name, those it exports and the mirrors it creates alike.
+//! * [`Link::with_monitoring`] reports at trace level what every bridge
+//!   moved in each direction, once per propagation.
 //! * A failed cycle reports a [`DiscoveryError`] or a [`PropagateError`]
 //!   but leaves the link usable for the next cycle.
 //!

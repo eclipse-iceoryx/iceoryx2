@@ -19,7 +19,7 @@ use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder, RelayFactory};
 use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::fail;
 
-use crate::bridge::{Bridged, OpenError, PropagateError};
+use crate::bridge::{Bridged, Counters, OpenError, PropagateError};
 use crate::ports::EventPorts;
 
 /// An event service's local ports paired with the backend's relay for
@@ -27,6 +27,7 @@ use crate::ports::EventPorts;
 pub(super) struct EventBridge<S: Service, B: Backend<S>> {
     ports: EventPorts<S>,
     relay: B::EventRelay,
+    counters: Counters,
 }
 
 impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
@@ -53,27 +54,35 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             with OpenError::Relay,
             "Failed to create the relay of {}", description.name()
         );
-        Ok(Self { ports, relay })
+        Ok(Self {
+            ports,
+            relay,
+            counters: Counters::default(),
+        })
     }
 
     /// The link's own notifications never reach its listener, so nothing
     /// is filtered by node.
-    fn propagate(&self, _: &UniqueNodeId) -> Result<(), PropagateError> {
+    fn propagate(&mut self, _: &UniqueNodeId) -> Result<(), PropagateError> {
         let origin = origin!("EventBridge::propagate");
-        fail!(
+        let propagated = fail!(
             from origin,
-            when self.ports.receive(|id| {
-                self.relay.send(id)
-            }),
+            when self.ports.receive(|id| self.relay.send(id)),
             with PropagateError::Propagation,
             "Failed to propagate notifications"
         );
-        fail!(
+        self.counters.outbound += propagated;
+        let ingested = fail!(
             from origin,
             when self.ports.send(|| self.relay.receive()),
             with PropagateError::Ingestion,
             "Failed to ingest notifications from the opposing side"
         );
+        self.counters.inbound += ingested;
         Ok(())
+    }
+
+    fn counters(&mut self) -> &mut Counters {
+        &mut self.counters
     }
 }
