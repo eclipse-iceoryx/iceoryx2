@@ -20,6 +20,7 @@ use crate::file_type::FileType;
 use crate::group::Gid;
 use crate::permission::{Permission, PermissionExt};
 use crate::user::Uid;
+use alloc::format;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::path::{Path, SemanticString};
 use iceoryx2_pal_posix::posix::{Errno, MemZeroedStruct};
