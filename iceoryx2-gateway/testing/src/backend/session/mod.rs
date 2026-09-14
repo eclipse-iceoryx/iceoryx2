@@ -26,12 +26,11 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
-use iceoryx2_bb_posix::directory::{
-    DirectoryAccessError, DirectoryCreateError, DirectoryOpenError,
-};
+use iceoryx2_bb_posix::directory::{DirectoryCreateError, DirectoryOpenError};
 use iceoryx2_bb_posix::file::{
     FileAccessError, FileCreationError, FileRemoveError, FileWriteError, Permission,
 };
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 use iceoryx2_bb_posix::process_state::ProcessGuardCreateError;
 use iceoryx2_bb_posix::unique_system_id::{UniqueSystemId, UniqueSystemIdCreationError};
 use iceoryx2_bb_posix::unix_datagram_socket::{
@@ -51,7 +50,7 @@ use wire::{Envelope, Kind, Sample, deserialize_envelope, serialize_envelope};
 pub enum CreationError {
     UniqueIdCreation(UniqueSystemIdCreationError),
     Path(SemanticStringError),
-    DirectoryPermissions(DirectoryAccessError),
+    DirectoryPermissions(MetadataFromPathError),
     DirectoryCreation(DirectoryCreateError),
     DirectoryOpen(DirectoryOpenError),
     ProcessGuard(ProcessGuardCreateError),

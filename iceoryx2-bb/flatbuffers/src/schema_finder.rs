@@ -19,10 +19,9 @@ use alloc::format;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::code_style::{camel_to_snake_case, snake_to_upper_camel_case};
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_posix::directory::{
-    Directory, DirectoryOpenError, DirectoryReadError, DirectoryStatError,
-};
+use iceoryx2_bb_posix::directory::{Directory, DirectoryOpenError, DirectoryReadError};
 use iceoryx2_bb_posix::file_type::FileType;
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
@@ -113,8 +112,8 @@ pub fn find_best_fitting_schema_file(
     let contents = match dir.contents() {
         Ok(contents) => contents,
         Err(DirectoryReadError::InsufficientPermissions)
-        | Err(DirectoryReadError::DirectoryStatError(
-            DirectoryStatError::InsufficientPermissions,
+        | Err(DirectoryReadError::MetadataFromPathError(
+            MetadataFromPathError::InsufficientPermissions,
         )) => {
             fail!(from origin,
                 with FindSchemaFileError::InsufficientPermissions,
