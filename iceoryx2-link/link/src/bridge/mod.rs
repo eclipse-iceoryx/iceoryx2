@@ -27,7 +27,7 @@ use iceoryx2_log::{fail, origin};
 use crate::bridge::event::EventBridge;
 use crate::bridge::publish_subscribe::PublishSubscribeBridge;
 use crate::bridge::table::BridgeTable;
-use crate::diagnostics::{Diagnostics, Failure};
+use crate::diagnostics::{Diagnostics, OpenFailure};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum OpenError {
@@ -43,10 +43,25 @@ impl core::fmt::Display for OpenError {
 
 impl core::error::Error for OpenError {}
 
+/// Why one bridge failed to propagate.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum PropagateError {
+pub enum BridgeError {
     Propagation,
     Ingestion,
+}
+
+impl core::fmt::Display for BridgeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "BridgeError::{self:?}")
+    }
+}
+
+impl core::error::Error for BridgeError {}
+
+/// How many bridges failed to propagate in a cycle.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum PropagateError {
+    Bridges(usize),
 }
 
 impl core::fmt::Display for PropagateError {
@@ -89,7 +104,7 @@ trait Bridged: Sized {
     ) -> Result<Self, OpenError>;
 
     /// Moves what is pending in both directions.
-    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), PropagateError>;
+    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), BridgeError>;
 
     /// What was moved since last taken.
     fn counters(&mut self) -> &mut Counters;
@@ -136,7 +151,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
     {
         self.epoch = self.epoch.next();
         let epoch = self.epoch;
-        let mut failed = self.diagnostics.failed_bridges();
+        let mut failed = self.diagnostics.failed_opens();
 
         for (hash, description, remote, resolved) in bridgeable {
             let opened = match description.messaging_pattern() {
@@ -149,7 +164,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
                 }
             };
             if let Err(error) = opened {
-                let failure = Failure {
+                let failure = OpenFailure {
                     description: description.clone(),
                     error,
                 };
@@ -174,32 +189,49 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
 
     /// Moves pending samples and notifications of every bridge in both
     /// directions, samples first so a notification about one never
-    /// arrives before it. With `monitoring`, reports what each bridge
-    /// moved.
+    /// arrives before it. Every bridge is attempted even when one fails,
+    /// the failures are reported once each and counted in the error.
     pub(crate) fn propagate(
         &mut self,
         own_node: &UniqueNodeId,
         monitoring: bool,
     ) -> Result<(), PropagateError> {
         let origin = origin!("Bridges::propagate");
-        for bridge in self.publish_subscribe.bridged_mut() {
-            fail!(
-                from origin,
-                when bridge.propagate(own_node),
-                "Failed to propagate a publish-subscribe bridge"
-            );
+        let publish_subscribe = self.publish_subscribe.propagate(own_node);
+        let event = self.event.propagate(own_node);
+
+        let mut failed = self.diagnostics.failed_propagations();
+        for (hash, failure) in self.publish_subscribe.failed().chain(self.event.failed()) {
+            failed.record(*hash, failure);
         }
-        for bridge in self.event.bridged_mut() {
-            fail!(
-                from origin,
-                when bridge.propagate(own_node),
-                "Failed to propagate an event bridge"
-            );
-        }
+        failed.commit();
+
         if monitoring {
             self.publish_subscribe.report();
             self.event.report();
         }
-        Ok(())
+
+        let failures = failed_bridges(publish_subscribe) + failed_bridges(event);
+        if failures != 0 {
+            fail!(
+                from origin,
+                with PropagateError::Bridges(failures),
+                "Failed to propagate {} of {} bridges", failures, self.len()
+            );
+        }
+
+        return Ok(());
+    }
+
+    fn len(&self) -> usize {
+        self.publish_subscribe.len() + self.event.len()
+    }
+}
+
+/// How many bridges a table's propagation failed on.
+fn failed_bridges(outcome: Result<(), PropagateError>) -> usize {
+    match outcome {
+        Ok(()) => 0,
+        Err(PropagateError::Bridges(failures)) => failures,
     }
 }

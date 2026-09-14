@@ -18,7 +18,7 @@ use iceoryx2_link_backend::service_description::PublishSubscribeDescription;
 use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::{fail, origin};
 
-use crate::bridge::{Bridged, Counters, OpenError, PropagateError};
+use crate::bridge::{BridgeError, Bridged, Counters, OpenError};
 use crate::ports::PublishSubscribePorts;
 
 /// A publish-subscribe service's local ports paired with the backend's
@@ -61,19 +61,19 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
         })
     }
 
-    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), PropagateError> {
+    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), BridgeError> {
         let origin = origin!("PublishSubscribeBridge::propagate");
         let propagated = fail!(
             from origin,
             when self.ports.receive(own_node, |sample| self.relay.send(&sample)),
-            with PropagateError::Propagation,
+            with BridgeError::Propagation,
             "Failed to propagate samples"
         );
         self.counters.outbound += propagated;
         let ingested = fail!(
             from origin,
             when self.ports.send(|loan| self.relay.receive(loan)),
-            with PropagateError::Ingestion,
+            with BridgeError::Ingestion,
             "Failed to ingest samples from the opposing side"
         );
         self.counters.inbound += ingested;

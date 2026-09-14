@@ -12,6 +12,7 @@
 
 use alloc::collections::BTreeMap;
 
+use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_hash::ServiceHash;
@@ -20,7 +21,8 @@ use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_link_backend::RemoteDescription;
 use iceoryx2_log::{fail, origin, trace};
 
-use crate::bridge::{Bridged, OpenError};
+use crate::bridge::{BridgeError, Bridged, OpenError, PropagateError};
+use crate::diagnostics::PropagationFailure;
 
 /// One bridge, stamped with the resolution it was opened for and the
 /// reconcile that last saw it.
@@ -32,6 +34,8 @@ struct Bridge<B> {
     resolved: Epoch,
     /// The epoch of the reconcile that last saw the service bridgeable.
     seen: Epoch,
+    /// How the bridge's last propagation ended.
+    failure: Option<BridgeError>,
 }
 
 /// The bridges of one pattern, keyed by service.
@@ -82,6 +86,7 @@ impl<B: Bridged> BridgeTable<B> {
             pattern,
             resolved,
             seen: epoch,
+            failure: None,
         };
 
         trace!(from origin, "Opened {:?} bridge of {}", bridge.pattern, bridge.name);
@@ -111,9 +116,37 @@ impl<B: Bridged> BridgeTable<B> {
         self.bridges.is_empty()
     }
 
-    /// Iterates the bridges in hash order.
-    pub(super) fn bridged_mut(&mut self) -> impl Iterator<Item = &mut B> {
-        self.bridges.values_mut().map(|bridge| &mut bridge.bridged)
+    /// Moves what is pending on every bridge in both directions, in hash
+    /// order. A failing bridge does not stop the others, the number of
+    /// failures are returned in the error.
+    pub(super) fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), PropagateError> {
+        let mut failures = 0;
+        for bridge in self.bridges.values_mut() {
+            bridge.failure = bridge.bridged.propagate(own_node).err();
+            failures += usize::from(bridge.failure.is_some());
+        }
+        match failures {
+            0 => Ok(()),
+            n => Err(PropagateError::Bridges(n)),
+        }
+    }
+
+    /// The bridges whose last propagation failed, with why.
+    pub(super) fn failed(&self) -> impl Iterator<Item = (&ServiceHash, PropagationFailure)> {
+        self.bridges.iter().filter_map(|(hash, bridge)| {
+            bridge.failure.map(|error| {
+                let failure = PropagationFailure {
+                    name: bridge.name,
+                    pattern: bridge.pattern,
+                    error,
+                };
+                (hash, failure)
+            })
+        })
+    }
+
+    pub(super) fn len(&self) -> usize {
+        self.bridges.len()
     }
 
     /// Logs what every bridge moved since the last report.

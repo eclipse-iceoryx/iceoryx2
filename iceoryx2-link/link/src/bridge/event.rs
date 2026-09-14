@@ -18,7 +18,7 @@ use iceoryx2_link_backend::service_description::EventDescription;
 use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::{fail, origin};
 
-use crate::bridge::{Bridged, Counters, OpenError, PropagateError};
+use crate::bridge::{BridgeError, Bridged, Counters, OpenError};
 use crate::ports::EventPorts;
 
 /// An event service's local ports paired with the backend's relay for
@@ -63,19 +63,19 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
 
     /// The link's own notifications never reach its listener, so nothing
     /// is filtered by node.
-    fn propagate(&mut self, _: &UniqueNodeId) -> Result<(), PropagateError> {
+    fn propagate(&mut self, _: &UniqueNodeId) -> Result<(), BridgeError> {
         let origin = origin!("EventBridge::propagate");
         let propagated = fail!(
             from origin,
             when self.ports.receive(|id| self.relay.send(id)),
-            with PropagateError::Propagation,
+            with BridgeError::Propagation,
             "Failed to propagate notifications"
         );
         self.counters.outbound += propagated;
         let ingested = fail!(
             from origin,
             when self.ports.send(|| self.relay.receive()),
-            with PropagateError::Ingestion,
+            with BridgeError::Ingestion,
             "Failed to ingest notifications from the opposing side"
         );
         self.counters.inbound += ingested;
