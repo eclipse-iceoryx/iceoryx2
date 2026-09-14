@@ -20,7 +20,6 @@ pub enum Generation {
 }
 
 impl Generation {
-    // TODO: A better name for this method.
     /// Whether this is a tracked generation equal to `other`.
     pub fn unchanged_since(self, other: Generation) -> bool {
         match (self, other) {
