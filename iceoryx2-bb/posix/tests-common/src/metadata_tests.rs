@@ -17,6 +17,8 @@ use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::file_type::*;
 use iceoryx2_bb_posix::group::*;
+use iceoryx2_bb_posix::metadata::Metadata;
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::user::*;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -75,4 +77,23 @@ pub fn reads_owner_and_permission_stats_correctly() {
     assert_that!(sut.gid(), eq Group::from_self().expect("").gid());
 
     File::remove_self(file).unwrap();
+}
+
+#[test]
+pub fn from_path_works_for_existing_file() {
+    create_test_directory();
+    let file = iceoryx2_bb_posix::testing::create_file_with_content("fuu");
+
+    let sut = Metadata::from_path(&file.path().unwrap().into()).unwrap();
+
+    assert_that!(sut.file_type(), eq FileType::File);
+}
+
+#[test]
+pub fn from_path_works_for_non_existing_file() {
+    let file = iceoryx2_bb_posix::testing::generate_file_path();
+
+    let sut = Metadata::from_path(&file.into());
+
+    assert_that!(sut.err(), eq Some(MetadataFromPathError::DoesNotExist));
 }
