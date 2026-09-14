@@ -78,6 +78,9 @@ enum class PublishSubscribeOpenError : uint8_t {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    InvalidTypeDefinition,
 };
 
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
@@ -114,6 +117,9 @@ enum class PublishSubscribeCreateError : uint8_t {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    InvalidTypeDefinition,
 };
 
 /// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
@@ -178,6 +184,9 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     OpenUnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    OpenInvalidTypeDefinition,
 
     /// An interrupt signal was raised.
     CreateInterrupt,
@@ -211,6 +220,9 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     CreateUnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    CreateInvalidTypeDefinition,
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.
     SystemInFlux,
