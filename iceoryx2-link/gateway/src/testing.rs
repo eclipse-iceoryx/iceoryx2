@@ -16,12 +16,16 @@ use alloc::vec::Vec;
 use iceoryx2::service::local;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, ServiceDescription, TypeDescription,
 };
 
-use iceoryx2_link_adapter::EndpointDescription;
 use iceoryx2_link_adapter::Mapping;
+use iceoryx2_link_adapter::{
+    Adapter, Destination, EndpointDescription, PublishSubscribeEndpoints, TakeError,
+    UnsupportedEndpoints,
+};
 use iceoryx2_link_adapter::{NoTranscoder, PublishSubscribeTranslation, Translator};
 use iceoryx2_link_backend::service_description::Identified;
 use iceoryx2_link_backend::service_description::{
@@ -228,6 +232,64 @@ impl Translator for RefusingTranslator {
 }
 
 /// An adapter whose endpoints and generation are set by the test.
+#[derive(Default)]
+pub(crate) struct StubAdapter {
+    pub(crate) endpoints: Vec<StubEndpointDescription>,
+    pub(crate) generation: u64,
+}
+
+/// Endpoints that carry nothing.
+pub(crate) struct NoEndpoints;
+
+impl PublishSubscribeEndpoints for NoEndpoints {
+    type Failure = core::fmt::Error;
+
+    fn publish(&mut self, _: &[u8], _: &[u8]) -> Result<(), Self::Failure> {
+        Ok(())
+    }
+
+    fn take<D: Destination>(&mut self, _: &mut D) -> Result<bool, TakeError<Self::Failure>> {
+        Ok(false)
+    }
+}
+
+impl Adapter for StubAdapter {
+    type ListError = core::fmt::Error;
+    type OpenError = core::fmt::Error;
+    type EndpointSettings = StubEndpointSettings;
+    type EndpointTypes = ServiceTypes;
+    type PublishSubscribeEndpoints = NoEndpoints;
+    type EventEndpoints = UnsupportedEndpoints;
+
+    fn generation(&self) -> Generation {
+        Generation::At(self.generation)
+    }
+
+    fn endpoints(
+        &self,
+        callback: &mut dyn FnMut(&StubEndpointDescription),
+    ) -> Result<(), Self::ListError> {
+        for endpoint in &self.endpoints {
+            callback(endpoint);
+        }
+        Ok(())
+    }
+
+    fn publish_subscribe(
+        &mut self,
+        _: &StubEndpointDescription,
+    ) -> Result<NoEndpoints, Self::OpenError> {
+        Ok(NoEndpoints)
+    }
+
+    fn event(
+        &mut self,
+        _: &StubEndpointDescription,
+    ) -> Result<UnsupportedEndpoints, Self::OpenError> {
+        Err(core::fmt::Error)
+    }
+}
+
 pub(crate) fn settings(history_size: usize) -> PublishSubscribeSettings {
     let mut settings = PublishSubscribeSettings::from_config(&iceoryx2::config::Config::default());
     settings.history_size = history_size;

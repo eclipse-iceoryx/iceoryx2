@@ -14,7 +14,10 @@
 
 extern crate alloc;
 
+mod gateway;
 pub mod relay;
 pub mod resolver;
 #[cfg(test)]
 mod testing;
+
+pub use gateway::Gateway;
