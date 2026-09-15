@@ -14,7 +14,7 @@ extern crate alloc;
 
 use alloc::{vec, vec::Vec};
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_flatbuffers::{TypeName, find_best_fitting_schema_file};
+use iceoryx2_bb_flatbuffers::{TypeName, find_best_fitting_binary_schema_file};
 use iceoryx2_bb_posix::config::TEST_DIRECTORY;
 use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::{CreationMode, File, FileBuilder, Permission};
@@ -92,10 +92,10 @@ pub mod test_name_space {
 #[test]
 pub fn find_schema_works() {
     let mut test = Test::new();
-    let path = vec!["flatbuffer_test_type.fbs"];
+    let path = vec!["flatbuffer_test_type.bfbs"];
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -105,10 +105,25 @@ pub fn find_schema_works() {
 }
 
 #[test]
+pub fn only_binary_schemas_are_discovered() {
+    let mut test = Test::new();
+    let path = vec!["flatbuffer_test_type.fbs"];
+    test.create_file(&path);
+
+    let sut = find_best_fitting_binary_schema_file(
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
+        test.root_path(),
+    )
+    .unwrap();
+
+    assert_that!(sut, is_none);
+}
+
+#[test]
 pub fn when_the_schema_is_not_existing_it_returns_none() {
     let test = Test::new();
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -120,12 +135,12 @@ pub fn when_the_schema_is_not_existing_it_returns_none() {
 #[test]
 pub fn schema_in_namespace_is_preferred() {
     let mut test = Test::new();
-    let path = vec!["test_name_space", "flatbuffer_test_type.fbs"];
+    let path = vec!["test_name_space", "flatbuffer_test_type.bfbs"];
     test.create_directory(&["test_name_space"]);
-    test.create_file(&["flatbuffer_test_type.fbs"]);
+    test.create_file(&["flatbuffer_test_type.bfbs"]);
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -140,7 +155,7 @@ pub fn schema_requires_flatbuffer_extension() {
     let path = vec!["flatbuffer_test_type.bs"];
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -152,10 +167,10 @@ pub fn schema_requires_flatbuffer_extension() {
 #[test]
 pub fn file_extension_can_have_lower_and_upper_case() {
     let mut test = Test::new();
-    let path = vec!["flatbuffer_test_type.FbS"];
+    let path = vec!["flatbuffer_test_type.bFbS"];
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -167,10 +182,10 @@ pub fn file_extension_can_have_lower_and_upper_case() {
 #[test]
 pub fn name_can_have_lower_and_upper_case() {
     let mut test = Test::new();
-    let path = vec!["flatbUFFER_test_type.fbs"];
+    let path = vec!["flatbUFFER_test_type.bfbs"];
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -182,10 +197,10 @@ pub fn name_can_have_lower_and_upper_case() {
 #[test]
 pub fn name_can_be_camel_case() {
     let mut test = Test::new();
-    let path = vec!["FlatbufferTestType.fbs"];
+    let path = vec!["FlatbufferTestType.bfbs"];
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -197,12 +212,12 @@ pub fn name_can_be_camel_case() {
 #[test]
 pub fn schema_in_camel_case_namespace_is_preferred() {
     let mut test = Test::new();
-    let path = vec!["TestNameSpace", "flatbuffer_test_type.fbs"];
+    let path = vec!["TestNameSpace", "flatbuffer_test_type.bfbs"];
     test.create_directory(&["TestNameSpace"]);
-    test.create_file(&["flatbuffer_test_type.fbs"]);
+    test.create_file(&["flatbuffer_test_type.bfbs"]);
     test.create_file(&path);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
@@ -215,33 +230,33 @@ pub fn schema_in_camel_case_namespace_is_preferred() {
 pub fn schema_is_preferred_over_non_namespace_directory() {
     let mut test = Test::new();
     test.create_directory(&["fuu"]);
-    test.create_file(&["flatbuffer_test_type.fbs"]);
-    test.create_file(&["fuu", "flatbuffer_test_type.fbs"]);
+    test.create_file(&["flatbuffer_test_type.bfbs"]);
+    test.create_file(&["fuu", "flatbuffer_test_type.bfbs"]);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
 
-    assert_that!(test.is_same_path(&["flatbuffer_test_type.fbs"], &sut.unwrap()), eq true);
+    assert_that!(test.is_same_path(&["flatbuffer_test_type.bfbs"], &sut.unwrap()), eq true);
 }
 
 #[test]
 pub fn the_correct_schema_file_is_picked() {
     let mut test = Test::new();
-    test.create_file(&["flatbuffer_test_type.fbs"]);
-    test.create_file(&["fer_test_type.fbs"]);
-    test.create_file(&["flatbuffr_type.fbs"]);
-    test.create_file(&["flatbuype.fbs"]);
+    test.create_file(&["flatbuffer_test_type.bfbs"]);
+    test.create_file(&["fer_test_type.bfbs"]);
+    test.create_file(&["flatbuffr_type.bfbs"]);
+    test.create_file(&["flatbuype.bfbs"]);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
 
-    assert_that!(test.is_same_path(&["flatbuffer_test_type.fbs"], &sut.unwrap()), eq true);
+    assert_that!(test.is_same_path(&["flatbuffer_test_type.bfbs"], &sut.unwrap()), eq true);
 }
 
 #[test]
@@ -249,18 +264,18 @@ pub fn namespace_directory_is_preferred_over_any_other_directory() {
     let mut test = Test::new();
     test.create_directory(&["apfelkopf"]);
     test.create_directory(&["TestNameSpace"]);
-    test.create_file(&["apfelkopf", "flatbuffer_test_type.fbs"]);
-    test.create_file(&["apfelkopf", "fuu_type.fbs"]);
-    test.create_file(&["TestNameSpace", "flatbuffer_test_type.fbs"]);
-    test.create_file(&["TestNameSpace", "fuu_type.fbs"]);
+    test.create_file(&["apfelkopf", "flatbuffer_test_type.bfbs"]);
+    test.create_file(&["apfelkopf", "fuu_type.bfbs"]);
+    test.create_file(&["TestNameSpace", "flatbuffer_test_type.bfbs"]);
+    test.create_file(&["TestNameSpace", "fuu_type.bfbs"]);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
 
-    assert_that!(test.is_same_path(&["TestNameSpace", "flatbuffer_test_type.fbs"], &sut.unwrap()), eq true);
+    assert_that!(test.is_same_path(&["TestNameSpace", "flatbuffer_test_type.bfbs"], &sut.unwrap()), eq true);
 }
 
 #[test]
@@ -270,20 +285,20 @@ pub fn namespace_directory_is_preferred_over_any_other_directory_in_subdirectory
     test.create_directory(&["birnenschaedel"]);
     test.create_directory(&["birnenschaedel", "Knoedel"]);
     test.create_directory(&["birnenschaedel", "TestNameSpace"]);
-    test.create_file(&["birnenschaedel", "Knoedel", "flatbuffer_test_type.fbs"]);
-    test.create_file(&["birnenschaedel", "Knoedel", "fuu_type.fbs"]);
+    test.create_file(&["birnenschaedel", "Knoedel", "flatbuffer_test_type.bfbs"]);
+    test.create_file(&["birnenschaedel", "Knoedel", "fuu_type.bfbs"]);
     test.create_file(&[
         "birnenschaedel",
         "TestNameSpace",
-        "flatbuffer_test_type.fbs",
+        "flatbuffer_test_type.bfbs",
     ]);
-    test.create_file(&["birnenschaedel", "TestNameSpace", "fuu_type.fbs"]);
+    test.create_file(&["birnenschaedel", "TestNameSpace", "fuu_type.bfbs"]);
 
-    let sut = find_best_fitting_schema_file(
+    let sut = find_best_fitting_binary_schema_file(
         &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
 
-    assert_that!(test.is_same_path(&["birnenschaedel", "TestNameSpace", "flatbuffer_test_type.fbs"], &sut.unwrap()), eq true);
+    assert_that!(test.is_same_path(&["birnenschaedel", "TestNameSpace", "flatbuffer_test_type.bfbs"], &sut.unwrap()), eq true);
 }

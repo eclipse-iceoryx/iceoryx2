@@ -20,6 +20,11 @@ set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/rust/flatbuffer_publi
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+cd examples/rust/flatbuffer_publish_subscribe
+spawn flatc --schema --binary unbounded_data.fbs
+wait
+cd ${REPO_ROOT}
+
 #### Test Setup
 
 set timeout 10

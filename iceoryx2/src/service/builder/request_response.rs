@@ -19,7 +19,7 @@ use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_flatbuffers::TypeName;
+use iceoryx2_bb_flatbuffers::{TypeName, is_binary_flatbuffer_schema};
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
@@ -103,6 +103,9 @@ pub enum RequestResponseOpenError {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    InvalidTypeDefinition,
 }
 
 impl core::fmt::Display for RequestResponseOpenError {
@@ -137,6 +140,9 @@ impl From<ServiceState> for RequestResponseOpenError {
 impl From<ServiceOpenError> for RequestResponseOpenError {
     fn from(value: ServiceOpenError) -> Self {
         match value {
+            ServiceOpenError::InvalidTypeDefinition => {
+                RequestResponseOpenError::InvalidTypeDefinition
+            }
             ServiceOpenError::DoesNotExist => RequestResponseOpenError::DoesNotExist,
             ServiceOpenError::ExceedsMaxNumberOfNodes => {
                 RequestResponseOpenError::ExceedsMaxNumberOfNodes
@@ -173,6 +179,7 @@ impl From<ServiceOpenError> for RequestResponseOpenError {
 impl From<RequestResponseOpenError> for ServiceOpenError {
     fn from(value: RequestResponseOpenError) -> Self {
         match value {
+            RequestResponseOpenError::InvalidTypeDefinition => ServiceOpenError::InvalidTypeDefinition,
             RequestResponseOpenError::DoesNotExist => ServiceOpenError::DoesNotExist,
             RequestResponseOpenError::ExceedsMaxNumberOfNodes => {
                 ServiceOpenError::ExceedsMaxNumberOfNodes
@@ -243,6 +250,9 @@ pub enum RequestResponseCreateError {
     /// the config. If no type definition file was specified in the service builder
     /// and no file could be found, this error is returned.
     UnableToAcquireTypeDefinition,
+    /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
+    /// type definition format. If the wrong type definition format was provided, this error is returned.
+    InvalidTypeDefinition,
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -293,6 +303,9 @@ impl From<ServiceCreateError> for RequestResponseCreateError {
             ServiceCreateError::Interrupt => RequestResponseCreateError::Interrupt,
             ServiceCreateError::UnableToAcquireTypeDefinition => {
                 RequestResponseCreateError::UnableToAcquireTypeDefinition
+            }
+            ServiceCreateError::InvalidTypeDefinition => {
+                RequestResponseCreateError::InvalidTypeDefinition
             }
         }
     }
@@ -878,6 +891,20 @@ impl<
             }
         };
 
+        for (name, path) in [
+            ("request", &self.request_flatbuffer_schema_path),
+            ("response", &self.response_flatbuffer_schema_path),
+        ] {
+            if let Some(schema_path) = path
+                && !is_binary_flatbuffer_schema(&schema_path.file_name())
+            {
+                fail!(from self,
+                    with RequestResponseCreateError::InvalidTypeDefinition,
+                    "{msg} since the {name} type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
+                    schema_path);
+            }
+        }
+
         let service_state = self.base.create(
             msg,
             attributes,
@@ -924,6 +951,20 @@ impl<
         RequestResponseOpenError,
     > {
         let msg = "Unable to open request response service";
+
+        for (name, path) in [
+            ("request", &self.request_flatbuffer_schema_path),
+            ("response", &self.response_flatbuffer_schema_path),
+        ] {
+            if let Some(schema_path) = path
+                && !is_binary_flatbuffer_schema(&schema_path.file_name())
+            {
+                fail!(from self,
+                    with RequestResponseOpenError::InvalidTypeDefinition,
+                    "{msg} since the {name} type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
+                    schema_path);
+            }
+        }
 
         let service_state = self.base.open(
             msg,

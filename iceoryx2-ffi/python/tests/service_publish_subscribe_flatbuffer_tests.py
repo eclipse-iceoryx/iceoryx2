@@ -24,8 +24,8 @@ from flatbuffer_types.UnboundedData import UnboundedData
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
-schema_unbounded = "unbounded_data.fbs"
-schema_incompatible = "incompatible_data.fbs"
+schema_unbounded = "unbounded_data.bfbs"
+schema_incompatible = "incompatible_data.bfbs"
 
 
 @pytest.mark.parametrize("service_type", service_types)

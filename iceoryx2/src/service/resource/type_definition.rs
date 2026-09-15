@@ -20,7 +20,9 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::time::Duration;
-use iceoryx2_bb_flatbuffers::{FindSchemaFileError, TypeName, find_best_fitting_schema_file};
+use iceoryx2_bb_flatbuffers::{
+    FindSchemaFileError, TypeName, find_best_fitting_binary_schema_file,
+};
 use iceoryx2_bb_posix::file::{AccessMode, FileBuilder, FileOpenError, FileReadError};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use iceoryx2_cal::{
@@ -385,7 +387,10 @@ impl TypeDefinition {
                 unsafe { Ok(FilePath::new_unchecked(path.as_bytes())) }
             }
             None => {
-                match find_best_fitting_schema_file(&self.type_name, &flatbuffer_schema_path()?) {
+                match find_best_fitting_binary_schema_file(
+                    &self.type_name,
+                    &flatbuffer_schema_path()?,
+                ) {
                     Ok(Some(file)) => Ok(file),
                     Ok(None) => {
                         fail!(from self, with SchemaPathError::NoFittingSchemaFileFound,

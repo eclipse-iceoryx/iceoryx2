@@ -85,6 +85,8 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     O_INTERRUPT,
     #[CStr = "unable to acquire type definition"]
     O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
+    #[CStr = "invalid type definition"]
+    O_INVALID_TYPE_DEFINITION,
     #[CStr = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
     #[CStr = "subscriber buffer must be larger than history size"]
@@ -107,6 +109,8 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_INTERRUPT,
     #[CStr = "unable to acquire type definition"]
     C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
+    #[CStr = "invalid type definition"]
+    C_INVALID_TYPE_DEFINITION,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
 }
@@ -114,6 +118,7 @@ pub enum iox2_pub_sub_open_or_create_error_e {
 impl IntoCInt for PublishSubscribeOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
+            PublishSubscribeOpenError::InvalidTypeDefinition => iox2_pub_sub_open_or_create_error_e::O_INVALID_TYPE_DEFINITION,
             PublishSubscribeOpenError::Interrupt => iox2_pub_sub_open_or_create_error_e::O_INTERRUPT,
             PublishSubscribeOpenError::DoesNotExist => iox2_pub_sub_open_or_create_error_e::O_DOES_NOT_EXIST,
          PublishSubscribeOpenError::InternalFailure => {
@@ -178,6 +183,7 @@ impl IntoCInt for PublishSubscribeOpenError {
 impl IntoCInt for PublishSubscribeCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
+            PublishSubscribeCreateError::InvalidTypeDefinition => iox2_pub_sub_open_or_create_error_e::C_INVALID_TYPE_DEFINITION,
             PublishSubscribeCreateError::Interrupt => iox2_pub_sub_open_or_create_error_e::C_INTERRUPT,
             PublishSubscribeCreateError::ServiceInCorruptedState => {
                 iox2_pub_sub_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE

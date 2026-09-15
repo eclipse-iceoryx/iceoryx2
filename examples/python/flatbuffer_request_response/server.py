@@ -70,8 +70,8 @@ service = (
     # defined or when a custom file is required (maybe outside of the lookup path or
     # or the type_name() was not defined).
     #
-    # .request_flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.fbs"))
-    # .response_flatbuffer_schema_path(iox2.FilePath.new("data_props.fbs"))
+    # .request_flatbuffer_schema_path(iox2.FilePath.new("unbounded_data.bfbs"))
+    # .response_flatbuffer_schema_path(iox2.FilePath.new("data_props.bfbs"))
     .request_header(ctypes.c_uint64)
     .response_header(ctypes.c_uint64)
     .open_or_create()

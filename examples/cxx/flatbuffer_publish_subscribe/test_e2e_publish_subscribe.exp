@@ -18,6 +18,11 @@ cd ${REPO_ROOT}
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+cd examples/cxx/flatbuffer_publish_subscribe/src
+spawn flatc --schema --binary unbounded_data.fbs
+wait
+cd ${REPO_ROOT}
+
 set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/cxx/flatbuffer_publish_subscribe/src
 
 set publisher_binary target/ff/cc/build/examples/cxx/flatbuffer_publish_subscribe/example_cxx_flatbuffer_publish_subscribe_publisher

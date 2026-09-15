@@ -44,6 +44,8 @@ apt install libflatbuffers-dev
 
 ## Usage
 
+### Generate Code
+
 The generated Rust code is already included in this example. For completeness,
 the command used to generate it is documented below:
 
@@ -54,6 +56,16 @@ flatc -o examples/rust/flatbuffer_publish_subscribe --rust \
 
 To observe the communication in action, open two terminals and run the following
 commands.
+
+### Generate Binary Schema
+
+Every iceoryx2 service embeds a binary schema file to enforce strong typing.
+Before running the example, we need to generate it from the source `.fbs` file.
+
+```sh
+flatc -o examples/rust/flatbuffer_publish_subscribe --schema --binary \
+    examples/rust/flatbuffer_publish_subscribe/unbounded_data.fbs
+```
 
 ### Terminal 1
 
@@ -74,6 +86,7 @@ simultaneously to explore how iceoryx2 handles publisher-subscriber
 communication efficiently.
 
 > [!TIP]
+>
 > You may hit the maximum supported number of ports when too many publisher or
 > subscriber processes run. Take a look at the
 > [iceoryx2 config](../../../config) to set the limits globally or at the

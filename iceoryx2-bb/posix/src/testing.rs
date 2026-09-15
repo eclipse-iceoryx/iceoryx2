@@ -57,6 +57,14 @@ pub fn create_file_with_content(content: &str) -> File {
     create_file_with_content_at(content, generate_file_name().as_str())
 }
 
+pub fn create_typed_file_with_content(content: &str, suffix: &str) -> File {
+    let mut file_name = generate_file_name();
+    file_name
+        .push_bytes((".".to_string() + suffix).as_bytes())
+        .unwrap();
+    create_file_with_content_at(content, file_name.as_str())
+}
+
 pub fn create_file_with_content_at(content: &str, file_name: &str) -> File {
     let file_path = FilePath::from_path_and_file(
         &TEST_DIRECTORY,
