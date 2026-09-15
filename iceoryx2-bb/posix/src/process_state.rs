@@ -147,11 +147,12 @@ pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use crate::{
     access_mode::AccessMode,
-    directory::{Directory, DirectoryAccessError, DirectoryCreateError},
+    directory::{Directory, DirectoryCreateError},
     file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError, FileStatError},
     file_descriptor::{
         FileDescriptorManagement, FileGetLockStateError, FileTryLockError, LockType,
     },
+    metadata::{Metadata, MetadataFromPathError},
     mutex::{Handle, Mutex, MutexBuilder, MutexHandle},
     permission::Permission,
     process::{Process, UniqueProcessId},
@@ -603,12 +604,12 @@ impl ProcessGuardBuilder {
                     msg, dir_path, v);
                 }
             },
-            Err(DirectoryAccessError::InsufficientPermissions) => {
+            Err(MetadataFromPathError::InsufficientPermissions) => {
                 fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
                     "{} since the directory {} could not be accessed due to insufficient permissions.",
                     msg, dir_path);
             }
-            Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
+            Err(MetadataFromPathError::PathPrefixIsNotADirectory) => {
                 fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
                     "{} since the directory {} is actually not a valid directory.", msg, dir_path);
             }
@@ -996,30 +997,23 @@ impl ProcessMonitor {
             }
         };
 
-        // first we need to open the context_file with AccessMode::Write only since it could
-        // be in init mode. After the initialization we can open it with AccessMode::Read
-        match Self::open_file(self, &self.context_path, AccessMode::Write) {
-            Ok(Some(context_file)) => match context_file.permission() {
-                Ok(permission) => {
-                    if permission == INIT_PERMISSION {
-                        return Ok(ProcessState::Starting);
-                    }
+        // first we need to acquire the metadata of the context path and check if has
+        // `INIT_PERMISSION` since it could be in init mode. After the initialization we can open it with
+        // AccessMode::Read
+        match Metadata::from_path(&self.context_path.into()) {
+            Ok(metadata) => {
+                if metadata.permission() == INIT_PERMISSION {
+                    return Ok(ProcessState::Starting);
                 }
-                Err(e) => {
-                    fail!(from self, with ProcessMonitorStateError::InternalError,
-                            "{msg} since the permissions of the context file \"{}\" could not be acquired. [{e:?}]",
-                            self.context_path);
-                }
-            },
-            Ok(None) => {
+            }
+            Err(MetadataFromPathError::DoesNotExist) => {
                 return Ok(ProcessState::DoesNotExist);
             }
-            Err(ProcessMonitorOpenError::InsufficientPermissions) => {
-                // if the process state is initialized the permissions are read only and the file cannot be opened
-                // with `AccessMode::Write`
+            Err(e) => {
+                fail!(from self, with ProcessMonitorStateError::InternalError,
+                    "{msg} since the context file \"{}\" metadata could not be acquired. [{e:?}]", self.context_path);
             }
-            Err(e) => return Err(e.into()),
-        }
+        };
 
         if let Some(context_file) = Self::open_file(self, &self.context_path, AccessMode::Read)? {
             let other_process_id: UniqueProcessId = match context_file.read_val() {
