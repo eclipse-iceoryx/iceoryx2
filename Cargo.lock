@@ -1571,6 +1571,7 @@ dependencies = [
  "iceoryx2-link-backend",
  "iceoryx2-link-carrier",
  "iceoryx2-link-conformance-tests-common",
+ "iceoryx2-link-gateway",
  "iceoryx2-link-tunnel",
 ]
 
@@ -1586,6 +1587,7 @@ dependencies = [
  "iceoryx2-link-backend",
  "iceoryx2-link-carrier",
  "iceoryx2-link-conformance-tests",
+ "iceoryx2-link-gateway",
  "iceoryx2-link-testing",
  "iceoryx2-link-tunnel",
  "iceoryx2-pal-print",

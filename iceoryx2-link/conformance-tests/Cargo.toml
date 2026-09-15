@@ -23,6 +23,7 @@ std = [
   "iceoryx2-link-adapter/std",
   "iceoryx2-link-backend/std",
   "iceoryx2-link-carrier/std",
+  "iceoryx2-link-gateway/std",
   "iceoryx2-link-tunnel/std",
 ]
 
@@ -42,6 +43,7 @@ iceoryx2-link = { workspace = true }
 iceoryx2-link-adapter = { workspace = true }
 iceoryx2-link-backend = { workspace = true }
 iceoryx2-link-carrier = { workspace = true }
+iceoryx2-link-gateway = { workspace = true }
 iceoryx2-link-tunnel = { workspace = true }
 
 [dev-dependencies]

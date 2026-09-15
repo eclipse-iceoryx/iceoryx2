@@ -81,7 +81,6 @@
 //! ```
 //!
 //! A fixture of each kind can be seen in `tests-common`.
-
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 
 extern crate alloc;
@@ -90,12 +89,15 @@ mod adapter;
 pub use adapter::discovery as adapter_discovery;
 pub use adapter::publish_subscribe as adapter_publish_subscribe;
 pub use adapter::wake as adapter_wake;
-
 mod carrier;
 pub use carrier::discovery as carrier_discovery;
 pub use carrier::propagation as carrier_propagation;
 pub use carrier::wake as carrier_wake;
 pub mod fixture;
+mod gateway;
+pub use gateway::discovery as gateway_discovery;
+pub use gateway::publish_subscribe_header as gateway_publish_subscribe_header;
+pub use gateway::publish_subscribe_payload as gateway_publish_subscribe_payload;
 mod link;
 pub use link::discovery as link_discovery;
 pub use link::wake as link_wake;

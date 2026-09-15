@@ -54,10 +54,12 @@
 
 pub mod adapter;
 pub mod carrier;
+pub mod gateway;
 pub mod link;
 pub mod tunnel;
 
 pub use adapter::{AdapterFixture, MessageEndpoints};
 pub use carrier::CarrierFixture;
-pub use link::{LinkFixture, TunnelLinkFixture};
+pub use gateway::{DiscoverableEndpoints, GatewayFixture, PayloadEndpoints, SampleEndpoints};
+pub use link::{GatewayLinkFixture, LinkFixture, TunnelLinkFixture};
 pub use tunnel::TunnelFixture;
