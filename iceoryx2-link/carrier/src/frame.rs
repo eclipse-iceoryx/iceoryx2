@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_link_backend::service_description::PublishSubscribeTypes;
 use iceoryx2_link_backend::wire::publish_subscribe::fits;
+use iceoryx2_log::{fail, origin};
 
 /// A publish-subscribe sample as it crosses a channel, the user header
 /// bytes followed by the payload bytes.
@@ -32,13 +33,22 @@ impl<'a> Frame<'a> {
     /// The frame in `bytes`, malformed if header or payload do not fit
     /// the types.
     pub fn parse(bytes: &'a [u8], types: &PublishSubscribeTypes) -> Result<Self, Malformed> {
+        let origin = origin!("Frame::parse");
         let header_size = types.user_header.size;
         if bytes.len() < header_size {
-            return Err(Malformed);
+            fail!(
+                from origin,
+                with Malformed,
+                "A frame of {} bytes cannot hold a user header of {}", bytes.len(), header_size
+            );
         }
         let (header, payload) = bytes.split_at(header_size);
         if !fits(types, header.len(), payload.len()) {
-            return Err(Malformed);
+            fail!(
+                from origin,
+                with Malformed,
+                "A payload of {} bytes does not fit the service's types", payload.len()
+            );
         }
         Ok(Self { header, payload })
     }
