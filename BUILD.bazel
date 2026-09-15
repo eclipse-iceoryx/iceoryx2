@@ -340,6 +340,7 @@ filegroup(
         "//iceoryx2-link/backend:all_srcs",
         "//iceoryx2-link/carrier:all_srcs",
         "//iceoryx2-link/tunnel:all_srcs",
+        "//iceoryx2-link/gateway:all_srcs",
         "//iceoryx2-link/testing:all_srcs",
         "//iceoryx2-link/conformance-tests:all_srcs",
         "//iceoryx2-userland/record-and-replay:all_srcs",

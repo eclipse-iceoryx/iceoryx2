@@ -1605,6 +1605,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-link-gateway"
+version = "0.9.999"
+
+[[package]]
 name = "iceoryx2-link-testing"
 version = "0.9.999"
 dependencies = [
