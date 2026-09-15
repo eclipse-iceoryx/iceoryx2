@@ -10,6 +10,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Decides which endpoint represents a local service on the middleware
+//! and which local service represents an endpoint, from their names and
+//! settings.
+//!
+//! Either direction answers `Ok(None)` when the mapping does not cover the
+//! input, and `Err` when it covers the input but refuses it, for example
+//! an endpoint whose settings differ from what the mapping defines. The
+//! error is reported as the reason.
+//!
+//! ```rust,ignore
+//! impl Mapping for MyMapping {
+//!     type EndpointSettings = MyEndpointSettings;
+//!     type Error = MyRefusal;
+//!
+//!     fn remote(&self, local: &ServiceSettings) -> Result<Option<MyEndpointSettings>, MyRefusal> {
+//!         match self.entry_named(&local.name) {
+//!             None => Ok(None),
+//!             Some(entry) if entry.settings != local.pattern => Err(MyRefusal::Settings),
+//!             Some(entry) => Ok(Some(entry.endpoint.clone())),
+//!         }
+//!     }
+//!
+//!     fn local(&self, remote: &MyEndpointSettings) -> Result<Option<ServiceSettings>, MyRefusal> {
+//!         // The same the other way round.
+//!     }
+//! }
+//! ```
+
 use core::error::Error;
 
 use iceoryx2_link_backend::service_description::Identified;

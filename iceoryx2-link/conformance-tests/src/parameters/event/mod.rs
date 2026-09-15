@@ -28,7 +28,7 @@ use iceoryx2_link_backend::service_description::{EventSettings, ServiceDescripti
 use super::{AnyName, AnyService};
 use crate::testing::notifications_of;
 
-/// A source of names for event services.
+/// A source of names for event services the mapping covers.
 pub trait EventName {
     /// A fresh service name.
     fn service_name() -> ServiceName;

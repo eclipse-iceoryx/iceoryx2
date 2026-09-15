@@ -40,9 +40,63 @@
 //! );
 //! ```
 //!
+//! An adapter or gateway fixture must pass services its mapping and
+//! translator accept, and supplies three things for that.
+//!
+//! * `N`, a source of names its mapping covers. [`AnyName`] when the
+//!   mapping covers any name, else a type of its own implementing
+//!   [`PublishSubscribeName`] or [`EventName`] depending on the supported
+//!   pattern.
+//! * `P`, [`FixedSizePayload<T>`] or [`SlicePayload<T>`], `T` being the
+//!   payload type of the iceoryx2 services its translator translates.
+//! * `H`, the user header its translator accepts, `()` for none.
+//!
+//! For a translator carrying a C struct under a mapping with configured
+//! names:
+//!
+//! ```ignore
+//! #[repr(C)]
+//! #[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
+//! #[type_name("my_msgs/msg/Counter")]
+//! struct Counter {
+//!     value: u64,
+//! }
+//!
+//! impl From<u64> for Counter {
+//!     fn from(value: u64) -> Self {
+//!         Self { value }
+//!     }
+//! }
+//!
+//! struct MyMapping;
+//!
+//! impl PublishSubscribeName for MyMapping {
+//!     fn service_name() -> ServiceName {
+//!         ServiceName::new("my/configured/service").expect("a valid service name")
+//!     }
+//! }
+//! ```
+//!
+//! And the gateway suites over it:
+//!
+//! ```ignore
+//! instantiate_conformance_tests!(
+//!     iceoryx2_link_conformance_tests::gateway_discovery,
+//!     Ipc,
+//!     PublishSubscribe<MyMapping, FixedSizePayload<Counter>, ()>,
+//!     MyMiddlewareFixture
+//! );
+//! instantiate_conformance_tests!(
+//!     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+//!     Ipc,
+//!     PublishSubscribe<MyMapping, FixedSizePayload<Counter>, ()>,
+//!     MyMiddlewareFixture
+//! );
+//! ```
+//!
 //! The scenarios run against [`AnyService`], [`PublishSubscribeService`]
 //! and [`EventService`], which [`PublishSubscribe`] and [`Event`]
-//! implement.
+//! implement. A fixture writes the name source and nothing more.
 
 pub mod event;
 pub mod payload;
@@ -65,8 +119,8 @@ use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 
-/// A name source for fixtures that accept any name, each one generated
-/// fresh.
+/// A name source for fixtures whose mapping covers any name, each one
+/// generated fresh.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct AnyName;
 
@@ -79,7 +133,7 @@ pub trait AnyService {
     /// A port on the service.
     type Port<S: Service>;
 
-    /// A fresh service name.
+    /// A fresh name the mapping covers.
     fn service_name() -> ServiceName;
 
     /// The description a service of this pattern has under `config`.

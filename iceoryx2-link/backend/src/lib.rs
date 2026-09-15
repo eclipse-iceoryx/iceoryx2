@@ -14,10 +14,10 @@
 //!
 //! A link extends the local `iceoryx2` system across a boundary. It
 //! knows the local system, which services are offered and which are
-//! bridged, and nothing beyond. A backend knows the opposing side. One
-//! kind ships, a tunnel to another `iceoryx2` system over a carrier.
-//! Further kinds can be provided by implementing the traits of this
-//! crate.
+//! bridged, and nothing beyond. A backend knows the opposing side. Two
+//! kinds ship, a tunnel to another `iceoryx2` system over a carrier and
+//! a gateway to a middleware over an adapter. Further kinds can be
+//! provided by implementing the traits of this crate.
 //!
 //! A backend does four things.
 //!
@@ -73,7 +73,6 @@
 //!     }
 //! }
 //! ```
-
 #![no_std]
 
 extern crate alloc;

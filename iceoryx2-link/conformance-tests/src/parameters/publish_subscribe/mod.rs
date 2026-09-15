@@ -41,7 +41,7 @@ pub type Header<X> = <X as PublishSubscribeService>::Header;
 /// A payload value of the services of `X` in the suites' hands.
 pub type Value<X> = <<X as PublishSubscribeService>::Payload as PayloadShape>::Value;
 
-/// A source of names for publish-subscribe services.
+/// A source of names for publish-subscribe services the mapping covers.
 pub trait PublishSubscribeName {
     /// A fresh service name.
     fn service_name() -> ServiceName;

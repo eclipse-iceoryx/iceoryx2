@@ -24,7 +24,7 @@
 //! );
 //! ```
 //!
-//! To test a carrier or a backend built from it:
+//! To test a carrier, an adapter or a backend built from them:
 //!
 //! * Implement the corresponding contract of [`fixture`].
 //! * Choose the services in [`parameters`] for the messaging pattern it
