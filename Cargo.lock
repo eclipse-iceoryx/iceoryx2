@@ -1612,6 +1612,7 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-link-adapter",
  "iceoryx2-link-backend",
+ "iceoryx2-log",
 ]
 
 [[package]]

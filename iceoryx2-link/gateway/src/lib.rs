@@ -14,6 +14,7 @@
 
 extern crate alloc;
 
+pub mod relay;
 pub mod resolver;
 #[cfg(test)]
 mod testing;
