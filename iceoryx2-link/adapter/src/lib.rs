@@ -14,12 +14,14 @@
 
 extern crate alloc;
 
+mod adapter;
 mod destination;
 mod endpoints;
 pub mod mapping;
 mod region;
 pub mod translator;
 
+pub use adapter::Adapter;
 pub use destination::Destination;
 pub use endpoints::{
     EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints,
