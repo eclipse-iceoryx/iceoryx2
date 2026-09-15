@@ -55,6 +55,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::fmt::Display;
+use serde::{Deserialize, Serialize};
 
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_container::string::strnlen;
@@ -142,7 +143,7 @@ impl GroupDetails {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Gid {
     gid: u32,
 }

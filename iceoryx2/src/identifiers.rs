@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::format;
+use serde::{Deserialize, Serialize};
 
 use crate::port::port_name::PortName;
 use crate::service::service_name::ServiceName;
@@ -118,7 +119,7 @@ generate_id! {
 }
 
 /// Enum that contains the unique port id
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum UniquePortId {
     /// The system-wide unique id of a [`Publisher`](crate::port::publisher::Publisher).
     Publisher(UniquePublisherId),

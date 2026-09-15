@@ -18,6 +18,7 @@ use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::bag::{Bag, BagFamily, BagStateFamily};
 use iceoryx2_log::{error, fatal_panic};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     identifiers::{UniqueClientId, UniqueNodeId, UniquePortId, UniqueServerId},
@@ -30,7 +31,7 @@ use super::PortCleanupAction;
 /// Contains the communication settings of the connected
 /// [`Server`](crate::port::server::Server).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
@@ -58,7 +59,7 @@ pub struct ServerDetails {
 /// Contains the communication settings of the connected
 /// [`Client`](crate::port::client::Client).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,
