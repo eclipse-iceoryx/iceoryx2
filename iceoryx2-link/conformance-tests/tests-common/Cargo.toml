@@ -17,6 +17,8 @@ std = [
   "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-testing/std",
   "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-link-adapter/std",
+  "iceoryx2-link-backend/std",
   "iceoryx2-link-carrier/std",
   "iceoryx2-link-conformance-tests/std",
   "iceoryx2-link-testing/std",
@@ -29,6 +31,8 @@ iceoryx2 = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-link-adapter = { workspace = true }
+iceoryx2-link-backend = { workspace = true }
 iceoryx2-link-carrier = { workspace = true }
 iceoryx2-link-conformance-tests = { workspace = true }
 iceoryx2-link-testing = { workspace = true }

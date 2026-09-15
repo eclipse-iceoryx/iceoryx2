@@ -10,11 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-extern crate alloc;
-extern crate iceoryx2_bb_loggers;
-
-pub mod fake_bus_tests;
-pub mod fake_middleware_tests;
-mod fixture;
+pub mod discovery;
+pub mod publish_subscribe;
+pub mod wake;

@@ -34,11 +34,13 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
+use iceoryx2_link_adapter::{Destination, Region, ResizeError};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
     ServiceTypes, TypeDescription,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
+
 /// Calls `attempt` until it succeeds or `timeout` passes. On timeout the
 /// error lists every distinct failure seen.
 pub fn retry(
@@ -261,5 +263,23 @@ impl WakeSource {
 impl Default for WakeSource {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// A taken message held in memory, a destination for what endpoints
+/// writes.
+#[derive(Debug, Default)]
+pub struct Taken {
+    pub header: Vec<u8>,
+    pub payload: Vec<u8>,
+}
+
+impl Destination for Taken {
+    fn payload(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+        self.payload.for_length(len)
+    }
+
+    fn header(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+        self.header.for_length(len)
     }
 }

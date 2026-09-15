@@ -52,10 +52,12 @@
 //! );
 //! ```
 
+pub mod adapter;
 pub mod carrier;
 pub mod link;
 pub mod tunnel;
 
+pub use adapter::{AdapterFixture, MessageEndpoints};
 pub use carrier::CarrierFixture;
 pub use link::{LinkFixture, TunnelLinkFixture};
 pub use tunnel::TunnelFixture;
