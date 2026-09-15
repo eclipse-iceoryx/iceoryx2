@@ -10,16 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![cfg_attr(not(feature = "std"), no_std)]
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-extern crate alloc;
-extern crate iceoryx2_bb_loggers;
-
-pub mod attribute_tests;
-pub mod node_name_tests;
-pub mod port_name_tests;
-pub mod service_event_thread_safety_tests;
-pub mod service_publish_subscribe_thread_safety_tests;
-pub mod service_request_response_thread_safety_tests;
-pub mod service_static_config_tests;
-pub mod unique_id_generator_tests;
+instantiate_conformance_tests_with_module!(
+    unique_system_id,
+    iceoryx2_conformance_tests::unique_id_generator_trait,
+    iceoryx2::unique_id_generator::unique_system_id::UniqueSystemId
+);

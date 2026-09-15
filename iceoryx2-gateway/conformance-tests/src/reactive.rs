@@ -34,7 +34,7 @@ pub mod reactive {
     #[conformance_test]
     pub fn wakes_on_publish_subscribe_data<S, B, T, W>()
     where
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
         W: Service,
@@ -112,7 +112,7 @@ pub mod reactive {
     #[conformance_test]
     pub fn wakes_on_event<S, B, T, W>()
     where
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
         W: Service,

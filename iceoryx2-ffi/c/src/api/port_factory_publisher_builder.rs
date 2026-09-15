@@ -114,6 +114,7 @@ pub enum iox2_publisher_create_error_e {
     UNABLE_TO_CREATE_DATA_SEGMENT,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    UNABLE_TO_GENERATE_UNIQUE_PUBLISHER_ID,
 }
 
 impl IntoCInt for PublisherCreateError {
@@ -130,6 +131,9 @@ impl IntoCInt for PublisherCreateError {
             }
             PublisherCreateError::UnableToCreatePortTag => {
                 iox2_publisher_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            PublisherCreateError::UnableToGenerateUniquePublisherId => {
+                iox2_publisher_create_error_e::UNABLE_TO_GENERATE_UNIQUE_PUBLISHER_ID
             }
         }) as c_int
     }

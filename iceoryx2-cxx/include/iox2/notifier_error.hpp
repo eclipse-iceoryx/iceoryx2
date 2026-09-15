@@ -28,6 +28,8 @@ enum class NotifierCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueNotifierId`] could not be generated.
+    UnableToGenerateUniqueNotifierId,
 };
 
 /// Defines the failures that can occur while a [`Notifier::notify()`] call.

@@ -103,6 +103,8 @@ pub enum iox2_blackboard_create_error_e {
     C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "interrupt"]
     C_INTERRUPT,
+    #[CStr = "unique service id could not be generated"]
+    C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID,
 }
 
 impl IntoCInt for BlackboardOpenError {
@@ -183,6 +185,9 @@ impl IntoCInt for BlackboardCreateError {
             }
             BlackboardCreateError::UnableToCreateServiceTag => {
                 iox2_blackboard_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            BlackboardCreateError::UnableToGenerateUniqueServiceId => {
+                iox2_blackboard_create_error_e::C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID
             }
         }) as c_int
     }

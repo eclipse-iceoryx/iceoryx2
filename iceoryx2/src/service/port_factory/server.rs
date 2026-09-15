@@ -73,6 +73,8 @@ pub enum ServerCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueServerId`](crate::identifiers::UniqueServerId) could not be generated.
+    UnableToGenerateUniqueServerId,
 }
 
 impl core::fmt::Display for ServerCreateError {

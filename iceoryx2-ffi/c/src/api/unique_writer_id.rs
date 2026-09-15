@@ -21,7 +21,7 @@ use crate::api::{AssertNonNullHandle, HandleToType};
 
 /// The system-wide unique id of a `iox2_writer_t`.
 #[repr(C)]
-#[repr(align(4))] // core::mem::align_of::<UniqueWriterId>()
+#[repr(align(8))] // core::mem::align_of::<UniqueWriterId>()
 pub struct iox2_unique_writer_id_storage_t {
     internal: [u8; 20], // core::mem::size_of::<Option<UniqueWriterId>>()
 }

@@ -34,6 +34,8 @@ enum class ClientCreateError : uint8_t {
     /// When the [`Client`] requires more active requests than the
     /// [`Service`] offers, the creation will fail.
     MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService,
+    /// The [`UniqueClientId`] could not be generated.
+    UnableToGenerateUniqueClientId,
 };
 } // namespace iox2
 #endif

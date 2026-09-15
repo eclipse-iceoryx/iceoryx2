@@ -103,6 +103,8 @@ pub enum ListenerCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// The [`UniqueListenerId`] could not be generated.
+    UnableToGenerateUniqueListenerId,
 }
 
 impl core::fmt::Display for ListenerCreateError {
@@ -120,7 +122,7 @@ pub struct Listener<Service: service::Service> {
     listener: Service::ArcThreadSafetyPolicy<
         <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
     >,
-    service_state: SharedServiceState<Service, NoResource>,
+    service_state: SharedServiceState<Service, NoResource<Service>>,
     listener_details: &'static ListenerDetails,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
@@ -187,12 +189,15 @@ impl<Service: service::Service> Drop for Listener<Service> {
 
 impl<Service: service::Service> Listener<Service> {
     pub(crate) fn new(
-        service: SharedServiceState<Service, NoResource>,
+        service: SharedServiceState<Service, NoResource<Service>>,
         config: ListenerConfig,
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
-        let listener_id = UniqueListenerId::new();
+        let listener_id = fail!(from origin,
+            when UniqueListenerId::new::<Service>(config.port_name, service.shared_node().config()),
+            with ListenerCreateError::UnableToGenerateUniqueListenerId,
+            "{msg} since the UniqueListenerId could not be generated");
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.

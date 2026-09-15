@@ -93,7 +93,7 @@ impl TypeDefinition {
         &self,
         name: &FileName,
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceCreateError> {
         if !self.use_type_definition {
             return Ok(None);
@@ -133,7 +133,7 @@ impl TypeDefinition {
         &self,
         name: &FileName,
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceOpenError> {
         if !self.use_type_definition {
             return Ok(None);
@@ -180,7 +180,7 @@ impl TypeDefinition {
         &self,
         name: &FileName,
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceOpenError> {
         if !self.use_type_definition {
             return Ok(None);
@@ -254,7 +254,7 @@ impl TypeDefinition {
     pub fn remove_stale_storage<S: crate::service::Service>(
         name: &FileName,
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> Result<(), RemoveStaleResourcesError> {
         let origin = "TypeDefinition::remove_stale_storage()";
         let msg = "Unable to remove stale type definition storage";
@@ -284,7 +284,7 @@ impl TypeDefinition {
 
     pub fn remove_resource_directory<S: crate::service::Service>(
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> Result<(), RemoveStaleResourcesError> {
         let origin = "TypeDefinition::remove_resource_directory()";
         let msg = "Unable to remove resource directory";
@@ -305,7 +305,7 @@ impl TypeDefinition {
 
     fn type_definition_static_storage_config<S: crate::service::Service>(
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> <S::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::Configuration {
         let dir = Self::service_resource_directory(config, static_config);
         (<<S::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::Configuration as Default>::default())
@@ -314,9 +314,9 @@ impl TypeDefinition {
             .suffix(&config.global.service.type_definition_suffix)
     }
 
-    fn service_resource_directory(
+    fn service_resource_directory<S: crate::service::Service>(
         config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
+        static_config: &crate::service::static_config::StaticConfig<S>,
     ) -> Path {
         let origin = "TypeDefinition::service_resource_directory()";
         let mut root = config.global.service_dir();

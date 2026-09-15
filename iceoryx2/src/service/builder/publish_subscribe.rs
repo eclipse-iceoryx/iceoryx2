@@ -25,7 +25,9 @@ use iceoryx2_bb_flatbuffers::{TypeName, is_binary_flatbuffer_schema};
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::ServiceState;
-use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
+use crate::service::builder::{
+    DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
+};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
@@ -244,6 +246,8 @@ pub enum PublishSubscribeCreateError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The [`UniqueServiceId`] could not be generated.
+    UnableToGenerateUniqueServiceId,
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -281,6 +285,9 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
             ServiceCreateError::InvalidTypeDefinition => {
                 PublishSubscribeCreateError::InvalidTypeDefinition
             }
+            ServiceCreateError::UnableToGenerateUniqueServiceId => {
+                PublishSubscribeCreateError::UnableToGenerateUniqueServiceId
+            }
         }
     }
 }
@@ -315,6 +322,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             }
             PublishSubscribeCreateError::InvalidTypeDefinition => {
                 ServiceCreateError::InvalidTypeDefinition
+            }
+            PublishSubscribeCreateError::UnableToGenerateUniqueServiceId => {
+                ServiceCreateError::UnableToGenerateUniqueServiceId
             }
         }
     }
@@ -495,7 +505,7 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+    ) -> Result<Option<StaticServiceResources<ServiceType>>, ServiceState> {
         let pubsub_service_config = self.config_details();
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
@@ -635,7 +645,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig,
+        existing_service_config: &StaticConfig<ServiceType>,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), PublishSubscribeOpenError> {
         let required_service_config = &self.base.service_config;
@@ -740,7 +750,7 @@ impl<
                     schema_path);
         }
 
-        let generate_dynamic_config = |service_config: &StaticConfig| {
+        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
             let pubsub_config = service_config.publish_subscribe();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_publishers: pubsub_config.max_publishers,
@@ -779,6 +789,12 @@ impl<
                 )
             },
             |_| {},
+            |service_config| {
+                UniqueServiceId::from_publish_subscribe_service::<ServiceType>(
+                    service_config.name(),
+                    self.base.shared_node.config(),
+                )
+            },
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))

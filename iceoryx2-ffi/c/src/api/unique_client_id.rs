@@ -21,7 +21,7 @@ use super::{AssertNonNullHandle, HandleToType};
 
 /// The system-wide unique id of a `iox2_client_t`.
 #[repr(C)]
-#[repr(align(4))] // core::mem::align_of::<UniqueClientId>()
+#[repr(align(8))] // core::mem::align_of::<UniqueClientId>()
 pub struct iox2_unique_client_id_storage_t {
     internal: [u8; 20], // core::mem::size_of::<Option<UniqueClientId>>()
 }

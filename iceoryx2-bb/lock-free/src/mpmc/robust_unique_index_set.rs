@@ -144,11 +144,11 @@ pub struct OwnerId(u64);
 impl OwnerId {
     const EMPTY: OwnerId = OwnerId(u64::MAX);
 
-    /// Constructs a new [`OwnerId`]. The value is not allowed to be zero.
+    /// Constructs a new [`OwnerId`]. The value is not allowed to be u64::MAX.
     pub fn new(value: u64) -> Result<Self, OwnerIdNewError> {
         if value == Self::EMPTY.0 {
             fail!(from "OwnerId::new()", with OwnerIdNewError::InvalidOwnerValue,
-                "Invalid value for OwnerId. The OwnerId cannot be 0.");
+                "Invalid value for OwnerId. The OwnerId cannot be u64::MAX.");
         }
 
         Ok(Self(value))

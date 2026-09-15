@@ -46,7 +46,7 @@ pub mod publish_subscribe_propagation {
     }
 
     fn propagate_struct_payloads<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >(
@@ -171,7 +171,7 @@ pub mod publish_subscribe_propagation {
     }
 
     fn propagate_slice_payloads<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >(
@@ -303,7 +303,7 @@ pub mod publish_subscribe_propagation {
 
     #[conformance_test]
     pub fn propagates_struct_payload<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -312,7 +312,7 @@ pub mod publish_subscribe_propagation {
 
     #[conformance_test]
     pub fn propagates_struct_payload_many<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -321,7 +321,7 @@ pub mod publish_subscribe_propagation {
 
     #[conformance_test]
     pub fn propagates_slice_payload<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -330,7 +330,7 @@ pub mod publish_subscribe_propagation {
 
     #[conformance_test]
     pub fn propagates_slice_payload_many<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -339,7 +339,7 @@ pub mod publish_subscribe_propagation {
 
     #[conformance_test]
     pub fn samples_are_routed_to_their_own_service<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {
@@ -504,7 +504,7 @@ pub mod publish_subscribe_propagation {
 
     #[conformance_test]
     pub fn propagated_payloads_do_not_loop_back<
-        S: Service,
+        S: Service + 'static,
         B: Backend<S> + Debug,
         T: Testing<BackendConfig = B::Config>,
     >() {

@@ -120,6 +120,8 @@ enum class PublishSubscribeCreateError : uint8_t {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The unique service id could not be generated.
+    UnableToGenerateUniqueServiceId,
 };
 
 /// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
@@ -223,6 +225,9 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     CreateInvalidTypeDefinition,
+    /// The unique service id could not be generated.
+    CreateUnableToGenerateUniqueServiceId,
+
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.
     SystemInFlux,

@@ -76,6 +76,8 @@ enum class BlackboardCreateError : uint8_t {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// The unique service id could not be generated.
+    UnableToGenerateUniqueServiceId,
 };
 } // namespace iox2
 

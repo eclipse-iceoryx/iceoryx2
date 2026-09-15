@@ -39,6 +39,7 @@ pub enum iox2_subscriber_create_error_e {
     UNABLE_TO_CREATE_PORT_TAG,
     HISTORY_REQUEST_EXCEEDS_HISTORY_SIZE_OF_SERVICE,
     HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER,
+    UNABLE_TO_GENERATE_UNIQUE_SUBSCRIBER_ID,
 }
 
 impl IntoCInt for SubscriberCreateError {
@@ -61,6 +62,9 @@ impl IntoCInt for SubscriberCreateError {
             }
             SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber => {
                 iox2_subscriber_create_error_e::HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER
+            }
+            SubscriberCreateError::UnableToGenerateUniqueSubscriberId => {
+                iox2_subscriber_create_error_e::UNABLE_TO_GENERATE_UNIQUE_SUBSCRIBER_ID
             }
         }) as c_int
     }

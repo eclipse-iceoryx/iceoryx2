@@ -48,6 +48,7 @@
 #include "iox2/signal_handling_mode.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
+#include "iox2/unique_id_generator_error.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
 
@@ -122,6 +123,8 @@ constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept ->
         return iox2::NodeCreationFailure::InternalError;
     case iox2_node_creation_failure_e_SYSTEM_CORRUPTED:
         return iox2::NodeCreationFailure::SystemCorrupted;
+    case iox2_node_creation_failure_e_UNABLE_TO_GENERATE_UNIQUE_NODE_ID:
+        return iox2::NodeCreationFailure::UnableToGenerateUniqueNodeId;
     }
 
     IOX2_UNREACHABLE();
@@ -138,6 +141,8 @@ from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(const iox2::NodeCr
         return iox2_node_creation_failure_e_INTERNAL_ERROR;
     case iox2::NodeCreationFailure::SystemCorrupted:
         return iox2_node_creation_failure_e_SYSTEM_CORRUPTED;
+    case iox2::NodeCreationFailure::UnableToGenerateUniqueNodeId:
+        return iox2_node_creation_failure_e_UNABLE_TO_GENERATE_UNIQUE_NODE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -385,6 +390,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::CreateEventIdExceedsMaxSupportedValue;
     case iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
         return iox2::EventOpenOrCreateError::CreateUnableToCreateServiceTag;
+    case iox2_event_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::EventOpenOrCreateError::CreateUnableToGenerateUniqueServiceId;
 
     case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::EventOpenOrCreateError::SystemInFlux;
@@ -462,6 +469,8 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
     case iox2::EventOpenOrCreateError::CreateEventIdExceedsMaxSupportedValue:
         return iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE;
+    case iox2::EventOpenOrCreateError::CreateUnableToGenerateUniqueServiceId:
+        return iox2_event_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -537,6 +546,8 @@ constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2
     case iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
         IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_C_INTERRUPT:
+        IOX2_UNREACHABLE();
+    case iox2_event_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
         IOX2_UNREACHABLE();
@@ -623,6 +634,8 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
         return iox2::EventCreateError::EventIdExceedsMaxSupportedValue;
     case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         return iox2::EventCreateError::OldConnectionsStillActive;
+    case iox2_event_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::EventCreateError::UnableToGenerateUniqueServiceId;
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
         IOX2_UNREACHABLE();
@@ -696,6 +709,8 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
         return iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
     case iox2::EventCreateError::EventIdExceedsMaxSupportedValue:
         return iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE;
+    case iox2::EventCreateError::UnableToGenerateUniqueServiceId:
+        return iox2_event_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -780,6 +795,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::CreateUnableToAcquireTypeDefinition;
     case iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::PublishSubscribeOpenOrCreateError::CreateInvalidTypeDefinition;
+    case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateUnableToGenerateUniqueServiceId;
 
     case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::PublishSubscribeOpenOrCreateError::SystemInFlux;
@@ -863,6 +880,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
     case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         IOX2_UNREACHABLE();
 
         // NOLINTEND(bugprone-branch-clone)
@@ -958,6 +977,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
         return iox2::PublishSubscribeCreateError::UnableToAcquireTypeDefinition;
     case iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::PublishSubscribeCreateError::InvalidTypeDefinition;
+    case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::PublishSubscribeCreateError::UnableToGenerateUniqueServiceId;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
@@ -1039,6 +1060,8 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::PublishSubscribeCreateError::InvalidTypeDefinition:
         return iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::PublishSubscribeCreateError::UnableToGenerateUniqueServiceId:
+        return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1126,6 +1149,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::PublishSubscribeOpenOrCreateError::CreateInvalidTypeDefinition:
         return iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::PublishSubscribeOpenOrCreateError::CreateUnableToGenerateUniqueServiceId:
+        return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1165,6 +1190,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
         return iox2::RequestResponseCreateError::UnableToAcquireTypeDefinition;
     case iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::RequestResponseCreateError::InvalidTypeDefinition;
+    case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::RequestResponseCreateError::UnableToGenerateUniqueServiceId;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_request_response_open_or_create_error_e_O_DOES_NOT_EXIST:
@@ -1251,6 +1278,8 @@ constexpr auto from<iox2::RequestResponseCreateError, iox2_request_response_open
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::RequestResponseCreateError::InvalidTypeDefinition:
         return iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::RequestResponseCreateError::UnableToGenerateUniqueServiceId:
+        return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1342,6 +1371,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
     case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
@@ -1493,6 +1524,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::CreateUnableToAcquireTypeDefinition;
     case iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::RequestResponseOpenOrCreateError::CreateInvalidTypeDefinition;
+    case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::RequestResponseOpenOrCreateError::CreateUnableToGenerateUniqueServiceId;
 
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::RequestResponseOpenOrCreateError::SystemInFlux;
@@ -1578,6 +1611,9 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::RequestResponseOpenOrCreateError::CreateInvalidTypeDefinition:
         return iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::RequestResponseOpenOrCreateError::CreateUnableToGenerateUniqueServiceId:
+        return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
+
 
     case iox2::RequestResponseOpenOrCreateError::SystemInFlux:
         return iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX;
@@ -1618,6 +1654,8 @@ constexpr auto from<int, iox2::BlackboardCreateError>(const int value) noexcept 
         return iox2::BlackboardCreateError::UnableToCreateServiceTag;
     case iox2_blackboard_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         return iox2::BlackboardCreateError::ServiceConfigCouldNotBeCreated;
+    case iox2_blackboard_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
+        return iox2::BlackboardCreateError::UnableToGenerateUniqueServiceId;
     }
 
     IOX2_UNREACHABLE();
@@ -1648,6 +1686,8 @@ from<iox2::BlackboardCreateError, iox2_blackboard_create_error_e>(const iox2::Bl
         return iox2_blackboard_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::BlackboardCreateError::ServiceConfigCouldNotBeCreated:
         return iox2_blackboard_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::BlackboardCreateError::UnableToGenerateUniqueServiceId:
+        return iox2_blackboard_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1756,6 +1796,8 @@ constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> i
         return iox2::WriterCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_writer_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::WriterCreateError::UnableToCreatePortTag;
+    case iox2_writer_create_error_e_UNABLE_TO_GENERATE_UNIQUE_WRITER_ID:
+        return iox2::WriterCreateError::UnableToGenerateUniqueWriterId;
     }
 
     IOX2_UNREACHABLE();
@@ -1773,6 +1815,8 @@ constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const i
         return iox2_writer_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY;
     case iox2::WriterCreateError::UnableToCreatePortTag:
         return iox2_writer_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::WriterCreateError::UnableToGenerateUniqueWriterId:
+        return iox2_writer_create_error_e_UNABLE_TO_GENERATE_UNIQUE_WRITER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1826,6 +1870,8 @@ constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> i
         return iox2::ReaderCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_reader_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::ReaderCreateError::UnableToCreatePortTag;
+    case iox2_reader_create_error_e_UNABLE_TO_GENERATE_UNIQUE_READER_ID:
+        return iox2::ReaderCreateError::UnableToGenerateUniqueReaderId;
     }
 
     IOX2_UNREACHABLE();
@@ -1841,6 +1887,8 @@ constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const i
         return iox2_reader_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY;
     case iox2::ReaderCreateError::UnableToCreatePortTag:
         return iox2_reader_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::ReaderCreateError::UnableToGenerateUniqueReaderId:
+        return iox2_reader_create_error_e_UNABLE_TO_GENERATE_UNIQUE_READER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1892,6 +1940,8 @@ constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> i
         return iox2::ClientCreateError::UnableToCreatePortTag;
     case iox2_client_create_error_e_MAX_ACTIVE_REQUESTS_EXCEEDS_MAX_SUPPORTED_ACTIVE_REQUESTS_OF_SERVICE:
         return iox2::ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService;
+    case iox2_client_create_error_e_UNABLE_TO_GENERATE_UNIQUE_CLIENT_ID:
+        return iox2::ClientCreateError::UnableToGenerateUniqueClientId;
     }
 
     IOX2_UNREACHABLE();
@@ -1911,6 +1961,8 @@ constexpr auto from<iox2::ClientCreateError, iox2_client_create_error_e>(const i
         return iox2_client_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     case iox2::ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService:
         return iox2_client_create_error_e_MAX_ACTIVE_REQUESTS_EXCEEDS_MAX_SUPPORTED_ACTIVE_REQUESTS_OF_SERVICE;
+    case iox2::ClientCreateError::UnableToGenerateUniqueClientId:
+        return iox2_client_create_error_e_UNABLE_TO_GENERATE_UNIQUE_CLIENT_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1933,6 +1985,8 @@ constexpr auto from<int, iox2::ServerCreateError>(const int value) noexcept -> i
         return iox2::ServerCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_server_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::ServerCreateError::UnableToCreatePortTag;
+    case iox2_server_create_error_e_UNABLE_TO_GENERATE_UNIQUE_SERVER_ID:
+        return iox2::ServerCreateError::UnableToGenerateUniqueServerId;
     }
 
     IOX2_UNREACHABLE();
@@ -1950,6 +2004,8 @@ constexpr auto from<iox2::ServerCreateError, iox2_server_create_error_e>(const i
         return iox2_server_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     case iox2::ServerCreateError::UnableToCreatePortTag:
         return iox2_server_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::ServerCreateError::UnableToGenerateUniqueServerId:
+        return iox2_server_create_error_e_UNABLE_TO_GENERATE_UNIQUE_SERVER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -1970,6 +2026,8 @@ constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept ->
         return iox2::NotifierCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_notifier_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::NotifierCreateError::UnableToCreatePortTag;
+    case iox2_notifier_create_error_e_UNABLE_TO_GENERATE_UNIQUE_NOTIFIER_ID:
+        return iox2::NotifierCreateError::UnableToGenerateUniqueNotifierId;
     }
 
     IOX2_UNREACHABLE();
@@ -1986,6 +2044,8 @@ from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(const iox2::Notifi
         return iox2_notifier_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     case iox2::NotifierCreateError::UnableToCreatePortTag:
         return iox2_notifier_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::NotifierCreateError::UnableToGenerateUniqueNotifierId:
+        return iox2_notifier_create_error_e_UNABLE_TO_GENERATE_UNIQUE_NOTIFIER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -2009,6 +2069,8 @@ constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept ->
         return iox2::ListenerCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_listener_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::ListenerCreateError::UnableToCreatePortTag;
+    case iox2_listener_create_error_e_UNABLE_TO_GENERATE_UNIQUE_LISTENER_ID:
+        return iox2::ListenerCreateError::UnableToGenerateUniqueListenerId;
     }
 
     IOX2_UNREACHABLE();
@@ -2027,6 +2089,8 @@ from<iox2::ListenerCreateError, iox2_listener_create_error_e>(const iox2::Listen
         return iox2_listener_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     case iox2::ListenerCreateError::UnableToCreatePortTag:
         return iox2_listener_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::ListenerCreateError::UnableToGenerateUniqueListenerId:
+        return iox2_listener_create_error_e_UNABLE_TO_GENERATE_UNIQUE_LISTENER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -2126,6 +2190,8 @@ constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -
         return iox2::PublisherCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_publisher_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::PublisherCreateError::UnableToCreatePortTag;
+    case iox2_publisher_create_error_e_UNABLE_TO_GENERATE_UNIQUE_PUBLISHER_ID:
+        return iox2::PublisherCreateError::UnableToGenerateUniquePublisherId;
     }
 
     IOX2_UNREACHABLE();
@@ -2144,6 +2210,8 @@ from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(const iox2::Publ
         return iox2_publisher_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     case iox2::PublisherCreateError::UnableToCreatePortTag:
         return iox2_publisher_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::PublisherCreateError::UnableToGenerateUniquePublisherId:
+        return iox2_publisher_create_error_e_UNABLE_TO_GENERATE_UNIQUE_PUBLISHER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -2171,6 +2239,8 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
         return iox2::SubscriberCreateError::HistoryRequestExceedsHistorySizeOfService;
     case iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER:
         return iox2::SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber;
+    case iox2_subscriber_create_error_e_UNABLE_TO_GENERATE_UNIQUE_SUBSCRIBER_ID:
+        return iox2::SubscriberCreateError::UnableToGenerateUniqueSubscriberId;
     }
 
     IOX2_UNREACHABLE();
@@ -2193,6 +2263,8 @@ from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(const iox2::Su
         return iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_HISTORY_SIZE_OF_SERVICE;
     case iox2::SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber:
         return iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER;
+    case iox2::SubscriberCreateError::UnableToGenerateUniqueSubscriberId:
+        return iox2_subscriber_create_error_e_UNABLE_TO_GENERATE_UNIQUE_SUBSCRIBER_ID;
     }
 
     IOX2_UNREACHABLE();
@@ -2935,6 +3007,17 @@ from<iox2_service_remove_error_e, iox2::ServiceRemoveError>(const iox2_service_r
     IOX2_UNREACHABLE();
 }
 
+template <>
+constexpr auto from<int, iox2::UniqueIdGeneratorDetailsError>(const int value) noexcept
+    -> iox2::UniqueIdGeneratorDetailsError {
+    const auto error = static_cast<iox2_unique_id_generator_details_error_e>(value);
+    switch (error) {
+    case iox2_unique_id_generator_details_error_e_NOT_IMPLEMENTED:
+        return iox2::UniqueIdGeneratorDetailsError::NotImplemented;
+    }
+
+    IOX2_UNREACHABLE();
+}
 
 } // namespace bb
 } // namespace iox2
