@@ -38,6 +38,7 @@ use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::bag::{Bag, BagFamily, BagStateFamily};
 use iceoryx2_log::{error, fatal_panic};
+use serde::{Deserialize, Serialize};
 
 use super::PortCleanupAction;
 
@@ -51,7 +52,7 @@ pub(crate) struct DynamicConfigSettings {
 /// Contains the communication settings of the connected
 /// [`Reader`](crate::port::reader::Reader).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub struct ReaderDetails {
     /// The [`UniqueReaderId`] of the [`Reader`](crate::port::reader::Reader).
     pub reader_id: UniqueReaderId,
@@ -65,7 +66,7 @@ pub struct ReaderDetails {
 /// Contains the communication settings of the connected
 /// [`Writer`](crate::port::writer::Writer).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub struct WriterDetails {
     /// The [`UniqueWriterId`] of the [`Writer`](crate::port::writer::Writer).
     pub writer_id: UniqueWriterId,

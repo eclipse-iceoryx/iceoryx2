@@ -36,6 +36,8 @@ use core::fmt::Display;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::group::Gid;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};
@@ -146,7 +148,7 @@ impl UserDetails {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Uid {
     uid: u32,
 }

@@ -151,8 +151,11 @@ mod tests {
             .create()
             .expect("service is created");
 
-        let static_config =
-            static_config_of(&service_name, &config, MessagingPattern::PublishSubscribe);
+        let static_config = static_config_of::<local::Service>(
+            &service_name,
+            &config,
+            MessagingPattern::PublishSubscribe,
+        );
         let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
         let PatternSettings::PublishSubscribe(settings) = described.settings.pattern else {
             panic!("a publish-subscribe service");
@@ -175,7 +178,8 @@ mod tests {
             .create()
             .expect("service is created");
 
-        let static_config = static_config_of(&service_name, &config, MessagingPattern::Event);
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, MessagingPattern::Event);
         let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
         let PatternSettings::Event(settings) = described.settings.pattern else {
             panic!("an event service");

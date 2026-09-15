@@ -34,6 +34,7 @@ use iceoryx2_cal::{
     },
 };
 use iceoryx2_log::fail;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     config,
@@ -45,7 +46,7 @@ use crate::{
 
 /// Defines the data segment type of a zero copy capable sender port.
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub enum DataSegmentType {
     /// The data segment can be resized if no more memory is available.
     Dynamic,

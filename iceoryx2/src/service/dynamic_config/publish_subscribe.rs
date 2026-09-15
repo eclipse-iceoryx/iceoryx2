@@ -40,6 +40,7 @@ use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::bag::{Bag, BagFamily, BagStateFamily};
 use iceoryx2_log::{error, fatal_panic};
+use serde::{Deserialize, Serialize};
 
 use super::PortCleanupAction;
 
@@ -53,7 +54,7 @@ pub(crate) struct DynamicConfigSettings {
 /// Contains the communication settings of the connected
 /// [`Publisher`](crate::port::publisher::Publisher).
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub struct PublisherDetails {
     /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
@@ -79,7 +80,7 @@ pub struct PublisherDetails {
 /// Contains the communication settings of the connected
 /// [`Subscriber`](crate::port::subscriber::Subscriber).
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, ZeroCopySend)]
+#[derive(Debug, Copy, Clone, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 pub struct SubscriberDetails {
     /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,
