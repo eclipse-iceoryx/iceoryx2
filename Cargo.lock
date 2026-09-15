@@ -1527,6 +1527,10 @@ dependencies = [
 [[package]]
 name = "iceoryx2-link-adapter"
 version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-link-backend",
+]
 
 [[package]]
 name = "iceoryx2-link-backend"

@@ -10,14 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+mod event;
+mod publish_subscribe;
+mod unsupported;
 
-extern crate alloc;
-
-mod destination;
-mod endpoints;
-mod region;
-
-pub use destination::Destination;
-pub use endpoints::{EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints};
-pub use region::{Region, ResizeError};
+pub use event::EventEndpoints;
+pub use publish_subscribe::{PublishSubscribeEndpoints, TakeError};
+pub use unsupported::UnsupportedEndpoints;

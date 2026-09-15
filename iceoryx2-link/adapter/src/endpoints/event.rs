@@ -10,14 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+use core::error::Error;
 
-extern crate alloc;
+use iceoryx2::port::event_id::EventId;
 
-mod destination;
-mod endpoints;
-mod region;
+/// The gateway's notifier and listener on the middleware.
+pub trait EventEndpoints {
+    type Failure: Error;
 
-pub use destination::Destination;
-pub use endpoints::{EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints};
-pub use region::{Region, ResizeError};
+    /// Notifies every other endpoint under the same description.
+    fn notify(&mut self, id: EventId) -> Result<(), Self::Failure>;
+
+    /// The pending notification, if any.
+    fn take(&mut self) -> Result<Option<EventId>, Self::Failure>;
+}
