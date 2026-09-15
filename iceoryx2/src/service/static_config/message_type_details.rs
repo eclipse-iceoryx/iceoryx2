@@ -25,7 +25,18 @@ use crate::constants::MAX_TYPE_NAME_LENGTH;
 /// or if its a type that satisfies [`Sized`] ([`TypeVariant::FixedSize`]).
 #[repr(C)]
 #[derive(
-    Default, Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize,
+    Default,
+    Debug,
+    Clone,
+    Copy,
+    Eq,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    ZeroCopySend,
+    Serialize,
+    Deserialize,
 )]
 pub enum TypeVariant {
     #[default]

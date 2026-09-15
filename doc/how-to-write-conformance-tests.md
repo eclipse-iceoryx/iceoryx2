@@ -293,14 +293,16 @@ with `my_module` as macro name:
 macro_rules! my_module {
     ($module_path:path, $($sut_type:ty),+) => {
         mod my_module {
+            use super::*;
             use $module_path::*;
+            use $module_path::{my_module as __suite};
             #[test]
             fn test_feature_x() {
-                my_module::test_feature_x::<$($sut_type),+>();
+                __suite::test_feature_x::<$($sut_type),+>();
             }
             #[test]
             fn test_feature_y() {
-                my_module::test_feature_y::<$($sut_type),+>();
+                __suite::test_feature_y::<$($sut_type),+>();
             }
         }
     };

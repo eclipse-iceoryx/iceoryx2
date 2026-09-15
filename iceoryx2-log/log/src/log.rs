@@ -265,3 +265,20 @@ macro_rules! fatal_panic {
         }
     }
 }
+
+/// The origin of a log line, `site` under the module it is logged from.
+///
+/// ```
+/// use iceoryx2_log::{origin, warn};
+///
+/// fn do_it() {
+///     let origin = origin!("do_it");
+///     warn!(from origin, "Something happened");
+/// }
+/// ```
+#[macro_export]
+macro_rules! origin {
+    ($site:literal) => {
+        core::concat!(core::module_path!(), "::", $site)
+    };
+}

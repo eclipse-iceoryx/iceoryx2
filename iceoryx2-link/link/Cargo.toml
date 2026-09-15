@@ -1,0 +1,32 @@
+[package]
+name = "iceoryx2-link"
+description = "iceoryx2: link extending communication beyond a shared memory domain"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+  "iceoryx2/std",
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-link-backend/std",
+  "iceoryx2-log/std",
+]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-link-backend = { workspace = true }
+iceoryx2-log = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }

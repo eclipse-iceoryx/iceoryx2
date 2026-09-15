@@ -82,6 +82,15 @@ members = [
     "iceoryx2-gateway/conformance-tests/tests-nostd",
     "iceoryx2-gateway/host-to-host-tests",
 
+    "iceoryx2-link/link",
+    "iceoryx2-link/backend",
+    "iceoryx2-link/carrier",
+    "iceoryx2-link/tunnel",
+    "iceoryx2-link/testing",
+    "iceoryx2-link/conformance-tests",
+    "iceoryx2-link/conformance-tests/tests-common",
+    "iceoryx2-link/conformance-tests/tests-nostd",
+
     "iceoryx2-userland/record-and-replay",
 
     "iceoryx2-cli",
@@ -153,6 +162,11 @@ iceoryx2-gateway = { version = "0.9.999", path = "iceoryx2-gateway/gateway", def
 iceoryx2-gateway-backend = { version = "0.9.999", path = "iceoryx2-gateway/backend", default-features = false }
 iceoryx2-gateway-host-to-host-tests = { version = "0.9.999", path = "iceoryx2-gateway/host-to-host-tests" }
 iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "iceoryx2-gateway/conformance-tests" }
+iceoryx2-link = { version = "0.9.999", path = "iceoryx2-link/link", default-features = false }
+iceoryx2-link-backend = { version = "0.9.999", path = "iceoryx2-link/backend", default-features = false }
+iceoryx2-link-carrier = { version = "0.9.999", path = "iceoryx2-link/carrier", default-features = false }
+iceoryx2-link-tunnel = { version = "0.9.999", path = "iceoryx2-link/tunnel", default-features = false }
+iceoryx2-link-conformance-tests = { version = "0.9.999", path = "iceoryx2-link/conformance-tests" }
 iceoryx2-userland-record-and-replay = { version = "0.9.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################
@@ -195,6 +209,9 @@ iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
 iceoryx2-gateway-testing = { path = "iceoryx2-gateway/testing", default-features = false }
 iceoryx2-gateway-conformance-tests-common = { path = "iceoryx2-gateway/conformance-tests/tests-common", default-features = false }
 iceoryx2-gateway-conformance-tests-nostd = { path = "iceoryx2-gateway/conformance-tests/tests-nostd" }
+iceoryx2-link-testing = { path = "iceoryx2-link/testing", default-features = false }
+iceoryx2-link-conformance-tests-common = { path = "iceoryx2-link/conformance-tests/tests-common", default-features = false }
+iceoryx2-link-conformance-tests-nostd = { path = "iceoryx2-link/conformance-tests/tests-nostd" }
 
 ################################################################################
 

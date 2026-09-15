@@ -40,7 +40,7 @@ pub fn proc_macro(
     let macro_name = mod_ident;
 
     // collect all functions with #[conformance_test] attribute
-    let conformance_test_fns = collect_conformance_test_functions(&input, mod_ident);
+    let conformance_test_fns = collect_conformance_test_functions(&input);
 
     // generate and append the declarative macro to the current module
     let output = quote! {
@@ -50,9 +50,11 @@ pub fn proc_macro(
         macro_rules! #macro_name {
             ($module_path:path, $($sut_type:ty),+) => {
                 mod #mod_ident {
+                    use super::*;
                     use iceoryx2_bb_testing_macros::test;
                     use iceoryx2_bb_testing_macros::requires_std;
                     use $module_path::*;
+                    use $module_path::{#mod_ident as __suite};
                     #(#conformance_test_fns)*
                 }
             };
@@ -70,15 +72,11 @@ pub fn proc_macro(
 /// # Arguments
 ///
 /// * `module` - The module to scan for conformance test functions.
-/// * `mod_ident` - The identifier of the module.
 ///
 /// # Returns
 ///
 /// A vector of token streams, each representing a generated test function.
-fn collect_conformance_test_functions(
-    module: &ItemMod,
-    mod_ident: &syn::Ident,
-) -> Vec<proc_macro2::TokenStream> {
+fn collect_conformance_test_functions(module: &ItemMod) -> Vec<proc_macro2::TokenStream> {
     let mut conformance_test_fns = Vec::new();
 
     if let Some((_brace, items)) = &module.content {
@@ -104,7 +102,7 @@ fn collect_conformance_test_functions(
                         #(#test_attrs)*
                         #[test]
                         fn #fn_ident() #fn_return {
-                            #mod_ident::#fn_ident::<$($sut_type),+>()
+                            __suite::#fn_ident::<$($sut_type),+>()
                         }
                     });
                 }

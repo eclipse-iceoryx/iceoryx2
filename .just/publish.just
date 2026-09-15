@@ -48,6 +48,11 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-gateway-backend            \
     iceoryx2-gateway                    \
     iceoryx2-gateway-conformance-tests  \
+    iceoryx2-link-backend               \
+    iceoryx2-link-carrier               \
+    iceoryx2-link                       \
+    iceoryx2-link-tunnel                \
+    iceoryx2-link-conformance-tests     \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
 
@@ -65,6 +70,9 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-gateway-host-to-host-tests             \
     iceoryx2-gateway-conformance-tests-common       \
     iceoryx2-gateway-conformance-tests-nostd        \
+    iceoryx2-link-testing                           \
+    iceoryx2-link-conformance-tests-common          \
+    iceoryx2-link-conformance-tests-nostd           \
     iceoryx2-bb-trait-tests                         \
     iceoryx2-bb-elementary-tests-common             \
     iceoryx2-bb-elementary-tests-nostd              \

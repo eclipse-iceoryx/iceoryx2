@@ -1513,6 +1513,109 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-link"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-backend"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-testing",
+ "iceoryx2-log",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-link-carrier"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-link",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-link-conformance-tests-common",
+ "iceoryx2-link-tunnel",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests-common"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-link-carrier",
+ "iceoryx2-link-conformance-tests",
+ "iceoryx2-link-testing",
+ "iceoryx2-link-tunnel",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests-nostd"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-conformance-tests",
+ "iceoryx2-link-conformance-tests-common",
+]
+
+[[package]]
+name = "iceoryx2-link-testing"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+]
+
+[[package]]
+name = "iceoryx2-link-tunnel"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-testing",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-log",
+]
+
+[[package]]
 name = "iceoryx2-log"
 version = "0.9.999"
 dependencies = [
