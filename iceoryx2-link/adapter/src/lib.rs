@@ -16,8 +16,18 @@ extern crate alloc;
 
 mod destination;
 mod endpoints;
+pub mod mapping;
 mod region;
+pub mod translator;
 
 pub use destination::Destination;
-pub use endpoints::{EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints};
+pub use endpoints::{
+    EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints,
+};
+pub use mapping::Mapping;
 pub use region::{Region, ResizeError};
+pub use translator::{
+    HeaderTranscoder, NoTranscoder, Passthrough, PayloadTranscoder, PublishSubscribeTranslation,
+    SampleTranscoder, SampleTranscoders, SampleTranscodings, TranscodeError, Transcoding,
+    Translator,
+};

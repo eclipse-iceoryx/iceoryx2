@@ -10,12 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod endpoint_description;
-mod event;
-mod publish_subscribe;
-mod unsupported;
-
-pub use endpoint_description::EndpointDescription;
-pub use event::EventEndpoints;
-pub use publish_subscribe::{PublishSubscribeEndpoints, TakeError};
-pub use unsupported::UnsupportedEndpoints;
+/// The middleware's description of an endpoint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EndpointDescription<S, T> {
+    pub settings: S,
+    pub types: T,
+}
