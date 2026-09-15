@@ -127,10 +127,10 @@ impl core::fmt::Display for UnsupportedPattern {
 
 impl core::error::Error for UnsupportedPattern {}
 
-impl TryFrom<&StaticConfig> for ServiceDescription {
+impl<Service: iceoryx2::service::Service> TryFrom<&StaticConfig<Service>> for ServiceDescription {
     type Error = UnsupportedPattern;
 
-    fn try_from(static_config: &StaticConfig) -> Result<Self, Self::Error> {
+    fn try_from(static_config: &StaticConfig<Service>) -> Result<Self, Self::Error> {
         let (pattern, types) = match static_config.messaging_pattern() {
             StaticPattern::PublishSubscribe(config) => {
                 let types = config.message_type_details();
@@ -188,12 +188,12 @@ mod tests {
 
     /// The static config of the service `name` of `pattern` in the
     /// system of `config`.
-    pub(super) fn static_config_of(
+    pub(super) fn static_config_of<S: iceoryx2::service::Service>(
         name: &ServiceName,
         config: &Config,
         pattern: Pattern,
-    ) -> StaticConfig {
-        local::Service::details(name, config, pattern)
+    ) -> StaticConfig<S> {
+        S::details(name, config, pattern)
             .expect("details are readable")
             .expect("service exists")
             .static_details
@@ -229,7 +229,8 @@ mod tests {
             .create()
             .expect("service is created");
 
-        let static_config = static_config_of(&service_name, &config, Pattern::PublishSubscribe);
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
         let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
 
         assert_that!(sut.name(), eq service_name);
@@ -284,7 +285,8 @@ mod tests {
             .create()
             .expect("service is created");
 
-        let static_config = static_config_of(&service_name, &config, Pattern::Event);
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, Pattern::Event);
         let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
 
         assert_that!(sut.name(), eq service_name);
@@ -319,7 +321,8 @@ mod tests {
             .create()
             .expect("service is created");
 
-        let static_config = static_config_of(&service_name, &config, Pattern::PublishSubscribe);
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
         let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
         let PatternSettings::PublishSubscribe(settings) = described.settings.pattern else {
             panic!("a publish-subscribe service");
