@@ -27,7 +27,6 @@ use iceoryx2::prelude::*;
 use iceoryx2::service::ServiceRemoveError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_bb_posix::process::Process;
 use iceoryx2_ffi_macros::CStrRepr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -562,11 +561,11 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
                 .details()
                 .as_ref()
                 .map(|view| {
-                    let exec_name = match Process::from_pid(view.process_id()).executable() {
-                        Ok(n) => CString::new(n.file_name().as_bytes()).unwrap(),
-                        Err(_) => unknown_executable.clone(),
-                    };
-                    (exec_name, view.name() as _, view.config() as _)
+                    (
+                        CString::new(view.executable().as_bytes()).unwrap(),
+                        view.name() as _,
+                        view.config() as _,
+                    )
                 })
                 .unwrap_or((unknown_executable, core::ptr::null(), core::ptr::null()));
             callback(
@@ -584,11 +583,11 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
                 .details()
                 .as_ref()
                 .map(|view| {
-                    let exec_name = match Process::from_pid(view.process_id()).executable() {
-                        Ok(n) => CString::new(n.file_name().as_bytes()).unwrap(),
-                        Err(_) => unknown_executable.clone(),
-                    };
-                    (exec_name, view.name() as _, view.config() as _)
+                    (
+                        CString::new(view.executable().as_bytes()).unwrap(),
+                        view.name() as _,
+                        view.config() as _,
+                    )
                 })
                 .unwrap_or((unknown_executable, core::ptr::null(), core::ptr::null()));
             callback(

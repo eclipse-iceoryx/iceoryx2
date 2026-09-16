@@ -318,6 +318,7 @@ enum NodeReadPortTagsFailure {
 /// process has sufficient access permissions.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
+    executable: FileName,
     process: ProcessId,
     name: NodeName,
     config: Config,
@@ -330,8 +331,20 @@ impl NodeDetails {
     }
 
     fn new(node_name: &Option<NodeName>, config: &Config) -> Self {
+        let process = Process::from_self();
+
+        let executable = match process.executable() {
+            Ok(n) => n.file_name(),
+            Err(e) => {
+                debug!(from "NodeDetails::new()", "Unable to acquire executable name of the Node's process ({:?}).", e);
+                const FALLBACK_EXEC: &[u8] = b"undefined";
+                unsafe { FileName::new_unchecked(FALLBACK_EXEC) }
+            }
+        };
+
         Self {
-            process: Process::from_self().id(),
+            executable,
+            process: process.id(),
             name: if let Some(name) = node_name {
                 name.clone()
             } else {
@@ -339,6 +352,11 @@ impl NodeDetails {
             },
             config: config.clone(),
         }
+    }
+
+    /// Returns the executable [`FileName`] of the [`Node`]s owner process.
+    pub fn executable(&self) -> &FileName {
+        &self.executable
     }
 
     /// Returns the [`ProcessId`] of the [`Node`]s owner process.

@@ -21,7 +21,6 @@ use iceoryx2::service::ServiceDetails as IceoryxServiceDetails;
 use iceoryx2::service::ServiceDynamicDetails as IceoryxServiceDynamicDetails;
 use iceoryx2::service::attribute::AttributeSet as IceoryxAttributeSet;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as IceoryxMessagingPattern;
-use iceoryx2_bb_posix::process::Process;
 use iceoryx2_pal_posix::posix::pid_t;
 
 #[derive(serde::Serialize, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -145,16 +144,11 @@ where
             IceoryxNodeState::Alive(view) => NodeDescriptor {
                 state: NodeState::Alive,
                 id: NodeIdString::from(view.id()),
-                pid: view
-                    .id()
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
-                executable: view.details().as_ref().map(|details| {
-                    match Process::from_pid(details.process_id()).executable() {
-                        Ok(n) => n.file_name().to_string(),
-                        Err(_) => "unknown_executable".to_string(),
-                    }
-                }),
+                pid: view.id().pid::<T>().map_or(None, |v| Some(v.value())),
+                executable: view
+                    .details()
+                    .as_ref()
+                    .map(|details| details.executable().to_string()),
                 name: view
                     .details()
                     .as_ref()
@@ -163,16 +157,11 @@ where
             IceoryxNodeState::Dead(view) => NodeDescriptor {
                 state: NodeState::Dead,
                 id: NodeIdString::from(view.id()),
-                pid: view
-                    .id()
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
-                executable: view.details().as_ref().map(|details| {
-                    match Process::from_pid(details.process_id()).executable() {
-                        Ok(n) => n.file_name().to_string(),
-                        Err(_) => "unknown_executable".to_string(),
-                    }
-                }),
+                pid: view.id().pid::<T>().map_or(None, |v| Some(v.value())),
+                executable: view
+                    .details()
+                    .as_ref()
+                    .map(|details| details.executable().to_string()),
                 name: view
                     .details()
                     .as_ref()
@@ -181,18 +170,14 @@ where
             IceoryxNodeState::Inaccessible(node_id) => NodeDescriptor {
                 state: NodeState::Inaccessible,
                 id: NodeIdString::from(node_id),
-                pid: node_id
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
+                pid: node_id.pid::<T>().map_or(None, |v| Some(v.value())),
                 executable: None,
                 name: None,
             },
             IceoryxNodeState::Undefined(node_id) => NodeDescriptor {
                 state: NodeState::Undefined,
                 id: NodeIdString::from(node_id),
-                pid: node_id
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
+                pid: node_id.pid::<T>().map_or(None, |v| Some(v.value())),
                 executable: None,
                 name: None,
             },
