@@ -1597,6 +1597,36 @@ dependencies = [
 [[package]]
 name = "iceoryx2-integrations-zenoh-link-carrier"
 version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-testing",
+ "iceoryx2-cal",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-log",
+ "postcard",
+ "zenoh",
+]
+
+[[package]]
+name = "iceoryx2-link-backend"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-log",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-link-carrier"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
 
 [[package]]
 name = "iceoryx2-log"

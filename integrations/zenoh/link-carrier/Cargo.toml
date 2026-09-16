@@ -10,3 +10,15 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[dependencies]
+iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-cal = { workspace = true, features = ["std"] }
+iceoryx2-log = { workspace = true, features = ["std"] }
+iceoryx2-link-backend = { workspace = true, features = ["std"] }
+iceoryx2-link-carrier = { workspace = true, features = ["std"] }
+
+postcard = { workspace = true }
+zenoh = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
