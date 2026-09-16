@@ -293,4 +293,16 @@
     my_str.deref_mut()[0] = b'b'; // Compiler Error
     ```
 
+1. `Service` implementations must define a `UniqueIdGenerator` and a `Bag` concept.
+
+    ```rust
+    pub struct CustomServiceVariant {}
+
+    impl iceoryx2::service::Service for CustomServiceVariant {
+        // ...
+        type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemId;
+        type Bag = iceoryx2_cal::bag::recommended::Recommended;
+    }
+    ```
+
 <!-- markdownlint-enable MD013 -->
