@@ -1,0 +1,12 @@
+[package]
+name = "iceoryx2-integrations-zenoh-link-carrier"
+description = "iceoryx2-integrations: tunnel carrier for Zenoh"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+

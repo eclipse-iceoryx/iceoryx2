@@ -1595,6 +1595,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-integrations-zenoh-link-carrier"
+version = "0.9.999"
+
+[[package]]
 name = "iceoryx2-log"
 version = "0.9.999"
 dependencies = [
