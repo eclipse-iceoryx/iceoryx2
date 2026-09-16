@@ -139,6 +139,69 @@ Options:
   -V, --version                      Print version
 ```
 
+## Link
+
+> [!IMPORTANT]
+> The link is currently a prototype and requires validation in real
+> deployments. Only recommended for experimentation in development
+> deployments.
+>
+> If encountering issues, create an issue to help us converge to stability.
+
+The `iox2 link` sub-command extends `iceoryx2` services across the boundary of
+a shared memory domain. `iox2-link` itself implements no backend; it groups
+the implementations by backend and delegates to binaries named
+`iox2-link-<backend>-<implementation>`, which are installed separately.
+
+```console
+$ iox2 link --help
+Launch a link extending iceoryx2 services across a boundary.
+
+Usage: iox2 link <COMMAND>
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+
+Commands:
+  tunnel   Launch a tunnel to other iceoryx2 systems over a carrier.
+  gateway  Launch a gateway to another middleware over an adapter.
+```
+
+### Implementations
+
+* **Tunnel over Zenoh**, `cargo install iceoryx2-integrations-zenoh-link-tunnel-cli`
+* **Gateway to ROS 2**, built from source inside a sourced ROS 2 environment,
+  see `integrations/ros2/link-gateway-cli`
+
+Once installed, an implementation is listed under its backend:
+
+```console
+$ iox2 link tunnel --list
+Discovered Commands:
+  zenoh
+```
+
+Invoke an implementation by name; any additional arguments are forwarded to
+its binary:
+
+```console
+$ iox2 link tunnel zenoh --help
+Launch an iceoryx2 tunnel to other iceoryx2 systems over zenoh.
+
+Usage: iox2 link tunnel zenoh [OPTIONS]
+
+Options:
+  -z, --zenoh-config <PATH>       Path to a zenoh configuration file
+  -a, --allow <SERVICE>           Bridge iceoryx2 services whose names match this wildcard pattern, where '*' matches zero or more characters and '?' matches one. Repeatable. When omitted, all services are bridged.
+      --poll <RATE>               Polling rate in milliseconds for discovery and sample propagation (defaults to 100ms when no other wake source is given; otherwise must be set explicitly to enable polling)
+      --reactive                  Wake the tunnel when the peers have new data
+      --listener <EVENT_SERVICE>  Additionally wake the tunnel when the named iceoryx2 event service fires (repeatable)
+      --monitor                   Report what every bridge moved after each propagation, at trace level
+  -h, --help                      Print help
+  -V, --version                   Print version
+```
+
 ## Extending
 
 1. The CLI can be augmented with your own custom tool by developing binaries

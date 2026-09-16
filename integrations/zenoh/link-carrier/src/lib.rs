@@ -10,6 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! A carrier over zenoh, tunnelling `iceoryx2` systems across hosts.
+//!
+//! [`ZenohCarrier`] implements the carrier contract on one zenoh session.
+//! Offers are liveliness tokens, one per service and description, with a
+//! queryable beside each serving the descriptor. Frames cross on a key
+//! per service and description.
+
 mod carrier;
 mod channel;
 mod fingerprint;
