@@ -74,6 +74,8 @@
 * [#1969](https://github.com/eclipse-iceoryx/iceoryx2/issues/1969) Release active-request capacity and close response channels when request delivery fails.
 
 * [#1971](https://github.com/eclipse-iceoryx/iceoryx2/issues/1971) Ensure destruction order even when service and node are explicitly dropped
+* [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) `iox2 --list` shows only the immediate child commands instead of every command at any depth
+* [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Propagate the exit code of a child command through `iox2`
 
 ### Refactoring
 
