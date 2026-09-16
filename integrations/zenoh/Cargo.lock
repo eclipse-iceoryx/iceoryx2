@@ -1615,6 +1615,20 @@ dependencies = [
 [[package]]
 name = "iceoryx2-integrations-zenoh-link-tunnel-cli"
 version = "0.9.999"
+dependencies = [
+ "anyhow",
+ "better-panic",
+ "clap",
+ "human-panic",
+ "iceoryx2",
+ "iceoryx2-cli",
+ "iceoryx2-integrations-zenoh-link-carrier",
+ "iceoryx2-link",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-tunnel",
+ "iceoryx2-log",
+ "zenoh",
+]
 
 [[package]]
 name = "iceoryx2-link"
