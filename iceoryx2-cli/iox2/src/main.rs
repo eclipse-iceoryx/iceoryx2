@@ -43,6 +43,7 @@ fn main() -> Result<()> {
         };
         if let Err(e) = command::execute(command_name, command_args) {
             eprintln!("Failed to execute command: {e}");
+            std::process::exit(1);
         }
     } else {
         Cli::command().print_help().expect("Failed to print help");
