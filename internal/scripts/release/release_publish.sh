@@ -51,6 +51,10 @@ print_sanity_checks() {
     echo -e "* Run 'just publish all --sanity-checks'"
 }
 
+print_check_owner() {
+    echo -e "* Check for the owner of the crate"
+}
+
 print_publish_crates_io() {
     echo -e "* All crates, including dev-dependencies, must be published"
     echo -e "* The crates must be published in the correct order"
@@ -143,6 +147,25 @@ echo -e "Shall I run the sanity checks?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
     just publish all --sanity-checks
+
+    show_completion
+fi
+
+print_step "Check owner"
+echo -e "Check if you are the owner of the crates?"
+show_default_selector
+if [[ ${SELECTION} == ${YES} ]]; then
+    echo "Note: The easiest way to add a new owner is with 'cargo owner --add user-name crate-name'"
+    read -p "crates.io user name: " OWNER
+
+    if [ -z "$OWNER" ]; then
+        echo "Error: Owner name cannot be empty." >&2
+        exit 1
+    fi
+
+    just publish sdk --check-owner ${OWNER}
+    just publish integrations-zenoh --check-owner ${OWNER}
+    just publish integrations-ros2 --check-owner ${OWNER}
 
     show_completion
 fi

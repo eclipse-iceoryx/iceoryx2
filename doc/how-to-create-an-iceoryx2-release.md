@@ -75,10 +75,14 @@ There are three scripts to perform the iceoryx2 release
 3. `./internal/scripts/release/release_tagging.sh`
 4. Login to [crates.io](https://crates.io) and generate API token
 5. `export CARGO_REGISTRY_TOKEN ???`
-6. `./internal/scripts/release/release_publish.sh`
-7. Verify that the release looks fine on `docs.rs` (click through the
+6. Check if you are owner of all the crates to release with
+   `just publish sdk --check-owner crates-io-user-name`
+   `just publish integrations-zenoh --check-owner crates-io-user-name`
+   `just publish integrations-ros2 --check-owner crates-io-user-name`
+7. `./internal/scripts/release/release_publish.sh`
+8. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)
-8. For patch releases, port the changelog back to the main branch and set
+9. For patch releases, port the changelog back to the main branch and set
    `PREVIOUS_RELEASE` from `internal/VERSIONS` to the latest patch release
 
 ## 3: Publish Python bindings to pypi.org

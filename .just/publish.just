@@ -146,18 +146,21 @@ _publish-dispatch workspace *flags:
     SANITY_CHECKS="false"
     LIST="false"
     NO_VERIFY="false"
+    CHECK_OWNER="false"
+    OWNER_TO_CHECK=""
     REGISTRY=""
 
     set -- {{ flags }}
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --dry-run)       DRY_RUN="true";       shift ;;
-            --allow-dirty)   ALLOW_DIRTY="true";    shift ;;
-            --sanity-checks) SANITY_CHECKS="true";  shift ;;
-            --list)          LIST="true";            shift ;;
-            --no-verify)     NO_VERIFY="true";       shift ;;
-            --registry)      REGISTRY="$2";         shift 2 ;;
-            *)               echo "Unknown flag: $1"; exit 1 ;;
+            --dry-run)       DRY_RUN="true";            shift ;;
+            --allow-dirty)   ALLOW_DIRTY="true";        shift ;;
+            --sanity-checks) SANITY_CHECKS="true";      shift ;;
+            --list)          LIST="true";               shift ;;
+            --no-verify)     NO_VERIFY="true";          shift ;;
+            --check-owner)   CHECK_OWNER="true"; OWNER_TO_CHECK="$2";   shift 2;;
+            --registry)      REGISTRY="$2";             shift 2 ;;
+            *)               echo "Unknown flag: $1";   exit 1 ;;
         esac
     done
 
@@ -184,6 +187,8 @@ _publish-dispatch workspace *flags:
         just _publish-list "{{ workspace }}"
     elif [ "$SANITY_CHECKS" = "true" ]; then
         just _publish-sanity-checks "{{ workspace }}"
+    elif [ "$CHECK_OWNER" = "true" ]; then
+        just _publish-check-owner "{{ workspace }}" "$OWNER_TO_CHECK"
     else
         just _publish "{{ workspace }}" "$DRY_RUN" "$ALLOW_DIRTY" "$NO_VERIFY" "$REGISTRY"
     fi
@@ -315,6 +320,80 @@ _publish-check-cyclic-deps workspace:
 
     if [ "$HAS_ERROR" = true ]; then
         exit 1
+    fi
+
+
+[private]
+_publish-check-owner workspace owner_to_check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{ owner_to_check }}" = "" ]; then
+        echo "no owner to check provided"
+        exit 1
+    fi
+
+    FOUND_CRATES=()
+    NOT_FOUND_CRATES=()
+    NOT_PUBLISHED_CRATES=()
+
+    CRATES_TO_PUBLISH=$(just _publish-crates-to-publish "{{ workspace }}")
+
+    for CRATE in $CRATES_TO_PUBLISH; do
+        printf '\r\x1b[K  Processing %s' "$CRATE"
+
+        if OWNERS=$(cargo owner --quiet --list "$CRATE" 2>/dev/null); then
+            OWNER_FOUND=""
+            while read -r OWNER REST; do
+                if [ "$OWNER" = "{{ owner_to_check }}" ]; then
+                    OWNER_FOUND="$OWNER"
+                    break
+                fi
+            done <<< "$OWNERS"
+
+            if [ "$OWNER_FOUND" = "" ]; then
+                NOT_FOUND_CRATES+=("$CRATE")
+            else
+                FOUND_CRATES+=("$CRATE")
+            fi
+        else
+            EXIT_CODE=$?
+            if [ "$EXIT_CODE" -eq 101 ]; then
+                NOT_PUBLISHED_CRATES+=("$CRATE")
+            else
+                echo "$CRATE -> unexpected error ($EXIT_CODE)" >&2
+                exit 1
+            fi
+        fi
+    done
+    # remove the "Processing ..." printing
+    printf '\r\x1b[K'
+
+    echo ""
+    echo "=== Summary {{ workspace }} ==="
+    echo ""
+
+    echo "{{ owner_to_check }} is owner of ${#FOUND_CRATES[@]} crates:"
+    if [ "${#FOUND_CRATES[@]}" -gt 0 ]; then
+        printf '  - %s\n' "${FOUND_CRATES[@]}"
+    else
+        echo "  (none)"
+    fi
+
+    echo ""
+    echo "{{ owner_to_check }} is not owner of ${#NOT_FOUND_CRATES[@]} crates:"
+    if [ "${#NOT_FOUND_CRATES[@]}" -gt 0 ]; then
+        printf '  - %s\n' "${NOT_FOUND_CRATES[@]}"
+    else
+        echo "  (none)"
+    fi
+
+    echo ""
+    echo "${#NOT_PUBLISHED_CRATES[@]} crates are not yet published and have no owner:"
+    if [ "${#NOT_PUBLISHED_CRATES[@]}" -gt 0 ]; then
+        printf '  - %s\n' "${NOT_PUBLISHED_CRATES[@]}"
+    else
+        echo "  (none)"
     fi
 
 # -----------------------------------------------------------------------------

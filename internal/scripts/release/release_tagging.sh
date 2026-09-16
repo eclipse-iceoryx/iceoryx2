@@ -82,6 +82,10 @@ print_publish_release() {
     echo -e "  * Set the PREVIOUS_VERSION in 'internal/VERSIONS' on main to the latest patch release"
 
     echo -e "* For the publishing, the 'just publish all' script can be used from the git root!"
+    echo -e "  * Check if you are the owner of the crates to publish with"
+    echo -e "    just publish sdk --check-owner crates-io-user-name"
+    echo -e "    just publish integrations-zenoh --check-owner crates-io-user-name"
+    echo -e "    just publish integrations-ros2 --check-owner crates-io-user-name"
 }
 
 print_howto() {
