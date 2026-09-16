@@ -11,12 +11,20 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_bb_elementary::generation::{Generation, GenerationCounter};
+use iceoryx2_link_backend::WakeHandle;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_carrier::{Offer, PeerId};
+use iceoryx2_log::{error, origin, trace, warn};
+use zenoh::key_expr::OwnedKeyExpr;
+use zenoh::sample::{Locality, Sample, SampleKind};
+use zenoh::{Session, Wait};
 
-use crate::fingerprint::Fingerprint;
+use crate::fingerprint::{Encoded, Fingerprint};
+use crate::keys;
 
 /// One descriptor as offered by the peers.
 struct Offered {
@@ -120,6 +128,148 @@ impl OfferTable {
                     descriptor: descriptor.clone(),
                 });
             }
+        }
+    }
+}
+
+/// Tracks the peers' offers from their liveliness, moving a generation and
+/// signalling the wake when they change.
+pub(crate) struct OfferTracker {
+    table: Mutex<OfferTable>,
+    generation: GenerationCounter,
+    wake: Arc<OnceLock<WakeHandle>>,
+}
+
+impl OfferTracker {
+    pub(crate) fn new(wake: Arc<OnceLock<WakeHandle>>) -> Self {
+        Self {
+            table: Mutex::new(OfferTable::default()),
+            generation: GenerationCounter::new(),
+            wake,
+        }
+    }
+
+    pub(crate) fn table(&self) -> MutexGuard<'_, OfferTable> {
+        self.table.lock().expect("the table is not poisoned")
+    }
+
+    pub(crate) fn generation(&self) -> Generation {
+        self.generation.current()
+    }
+
+    /// Moves the generation and signals the wake.
+    fn changed(&self) {
+        self.generation.advance();
+        if let Some(wake) = self.wake.get() {
+            wake.signal();
+        }
+    }
+
+    /// Records a peer's offer or withdrawal.
+    pub(crate) fn on_liveliness(self: &Arc<Self>, session: &Session, own: &PeerId, sample: Sample) {
+        let origin = origin!("OfferTracker::on_liveliness");
+
+        let Some((hash, fingerprint, peer)) = keys::parse_offer(sample.key_expr()) else {
+            warn!(from origin, "Skipping a liveliness sample with an unparsable key {}", sample.key_expr());
+            return;
+        };
+        if peer == *own {
+            return;
+        }
+        match sample.kind() {
+            SampleKind::Put => {
+                trace!(from origin, "An offer arrived at {}", sample.key_expr());
+                let state = self.table().offer(hash, fingerprint.clone(), peer);
+                match state {
+                    OfferState::New => self.changed(),
+                    OfferState::Pending => self.query(
+                        session,
+                        OwnedKeyExpr::from(sample.key_expr().clone()),
+                        hash,
+                        fingerprint,
+                    ),
+                    OfferState::Known => {}
+                }
+            }
+            SampleKind::Delete => {
+                trace!(from origin, "An offer was withdrawn at {}", sample.key_expr());
+                if self.table().withdraw(&hash, &fingerprint, &peer) {
+                    self.changed();
+                }
+            }
+        }
+    }
+
+    /// Queries the descriptor at `key` and stores the replies recorded as they arrive.
+    fn query(
+        self: &Arc<Self>,
+        session: &Session,
+        key: OwnedKeyExpr,
+        hash: ServiceHash,
+        fingerprint: Fingerprint,
+    ) {
+        let origin = origin!("OfferTracker::query");
+
+        let query = Query {
+            key: key.clone(),
+            hash,
+            fingerprint,
+            tracker: self.clone(),
+        };
+        if let Err(error) = session
+            .get(key.clone())
+            .allowed_destination(Locality::Remote)
+            .callback(move |reply| {
+                if let Ok(sample) = reply.result() {
+                    query.on_reply(sample);
+                }
+            })
+            .wait()
+        {
+            error!(from origin, "Failed to query the descriptor at {}: {}", key, error);
+        }
+    }
+}
+
+/// A query for the descriptor of one pending offer.
+struct Query {
+    key: OwnedKeyExpr,
+    hash: ServiceHash,
+    fingerprint: Fingerprint,
+    tracker: Arc<OfferTracker>,
+}
+
+impl Query {
+    /// Records the descriptor a reply carries.
+    fn on_reply(&self, sample: &Sample) {
+        let origin = origin!("Query::on_reply");
+
+        let Some(descriptor) = Encoded::decode(&sample.payload().to_bytes(), &self.fingerprint)
+        else {
+            warn!(from origin, "Skipping a reply at {} that does not fingerprint to its key", self.key);
+            return;
+        };
+        trace!(from origin, "The descriptor of {} arrived from {}", descriptor.name, self.key);
+        if self
+            .tracker
+            .table()
+            .describe(&self.hash, &self.fingerprint, descriptor)
+        {
+            self.tracker.changed();
+        }
+    }
+}
+
+impl Drop for Query {
+    fn drop(&mut self) {
+        let origin = origin!("Query::drop");
+
+        if self
+            .tracker
+            .table()
+            .is_pending(&self.hash, &self.fingerprint)
+        {
+            warn!(from origin, "No descriptor was served at {}", self.key);
         }
     }
 }

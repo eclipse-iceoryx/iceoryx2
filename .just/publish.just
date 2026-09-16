@@ -119,6 +119,7 @@ INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH := `echo \
 INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2                           \
     iceoryx2-bb-concurrency            \
+    iceoryx2-bb-elementary             \
     iceoryx2-bb-posix                  \
     iceoryx2-bb-testing                \
     iceoryx2-bb-testing-macros         \
