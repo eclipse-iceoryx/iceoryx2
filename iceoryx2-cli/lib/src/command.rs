@@ -414,6 +414,10 @@ mod tests {
                 temp_path,
                 format!("{}{}-{}", PREFIX, FOO_COMMAND, NESTED_COMMAND)
             );
+            create_file!(
+                temp_path,
+                format!("{}{}-{}.exe", PREFIX, FOO_COMMAND, NESTED_COMMAND)
+            );
             create_file!(temp_path, BAZ_COMMAND);
             create_file!(temp_path, format!("{}.d", BAZ_COMMAND));
             create_file!(temp_path, format!("{}.exe", BAZ_COMMAND));
