@@ -21,6 +21,7 @@ use iceoryx2::service::ServiceDetails as IceoryxServiceDetails;
 use iceoryx2::service::ServiceDynamicDetails as IceoryxServiceDynamicDetails;
 use iceoryx2::service::attribute::AttributeSet as IceoryxAttributeSet;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as IceoryxMessagingPattern;
+use iceoryx2_bb_posix::process::Process;
 use iceoryx2_pal_posix::posix::pid_t;
 
 #[derive(serde::Serialize, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -148,10 +149,12 @@ where
                     .id()
                     .pid::<T>()
                     .map_or_else(|_| None, |v| Some(v.value())),
-                executable: view
-                    .details()
-                    .as_ref()
-                    .map(|details| details.executable().to_string()),
+                executable: view.details().as_ref().map(|details| {
+                    match Process::from_pid(details.process_id()).executable() {
+                        Ok(n) => n.file_name().to_string(),
+                        Err(_) => "unknown_executable".to_string(),
+                    }
+                }),
                 name: view
                     .details()
                     .as_ref()
@@ -164,10 +167,12 @@ where
                     .id()
                     .pid::<T>()
                     .map_or_else(|_| None, |v| Some(v.value())),
-                executable: view
-                    .details()
-                    .as_ref()
-                    .map(|details| details.executable().to_string()),
+                executable: view.details().as_ref().map(|details| {
+                    match Process::from_pid(details.process_id()).executable() {
+                        Ok(n) => n.file_name().to_string(),
+                        Err(_) => "unknown_executable".to_string(),
+                    }
+                }),
                 name: view
                     .details()
                     .as_ref()

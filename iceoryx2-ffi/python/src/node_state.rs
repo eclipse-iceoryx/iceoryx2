@@ -14,8 +14,8 @@ use iceoryx2::node::NodeView;
 use pyo3::prelude::*;
 
 use crate::{
-    config::Config, duration::Duration, error::NodeCleanupFailure, file_name::FileName,
-    node_name::NodeName, parc::Parc, unique_node_id::UniqueNodeId,
+    config::Config, duration::Duration, error::NodeCleanupFailure, node_name::NodeName, parc::Parc,
+    unique_node_id::UniqueNodeId,
 };
 
 #[derive(Clone)]
@@ -38,9 +38,9 @@ pub struct NodeDetails(pub(crate) iceoryx2::node::NodeDetails);
 #[pymethods]
 impl NodeDetails {
     #[getter]
-    /// Returns the executable `FileName` of the `Node`s owner process.
-    pub fn executable(&self) -> FileName {
-        FileName(self.0.executable())
+    /// Returns the `ProcessId` of the `Node`s owner process.
+    pub fn process_id(&self) -> u32 {
+        self.0.process_id().value() as _
     }
 
     #[getter]

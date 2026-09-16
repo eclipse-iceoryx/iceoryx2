@@ -346,18 +346,6 @@ impl NodeDetails {
         self.process
     }
 
-    /// Returns the executable [`FileName`] of the [`Node`]s owner process.
-    pub fn executable(&self) -> FileName {
-        match Process::from_pid(self.process).executable() {
-            Ok(n) => n.file_name(),
-            Err(e) => {
-                debug!(from "NodeDetails::new()", "Unable to acquire executable name of the Node's process ({:?}).", e);
-                const FALLBACK_EXEC: &[u8] = b"undefined";
-                unsafe { FileName::new_unchecked(FALLBACK_EXEC) }
-            }
-        }
-    }
-
     /// Returns the [`NodeName`]. Multiple [`Node`]s are allowed to have the same [`NodeName`], it
     /// is not unique!
     pub fn name(&self) -> &NodeName {
