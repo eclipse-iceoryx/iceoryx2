@@ -83,62 +83,6 @@ Commands:
   details  Show node details
 ```
 
-## Gateway
-
-The `iox2 gateway` sub-command bridges `iceoryx2` instances running on
-different hosts or networks. `iox2-gateway` itself does not implement any
-transport; it discovers and delegates to backend-specific binaries named
-`iox2-gateway-<backend>`, which must be installed separately.
-
-```console
-$ iox2 gateway --help
-Launch a gateway between iceoryx2 instances.
-
-Usage: iox2 gateway [OPTIONS]
-
-Options:
-  -l, --list     List all installed gateway backends
-  -p, --paths    Display paths that will be checked for gateway backends
-  -h, --help     Print help
-  -V, --version  Print version
-
-Commands:
-  ...            See installed gateway backends with --list
-```
-
-### Backends
-
-Available backends:
-
-* **Zenoh** — `cargo install iceoryx2-integrations-zenoh-gateway-cli`
-
-Once installed, a backend is discovered automatically:
-
-```console
-$ iox2 gateway --list
-Discovered Commands:
-  zenoh
-```
-
-Invoke a backend by name; any additional arguments are forwarded to the
-backend binary:
-
-```console
-$ iox2 gateway zenoh --help
-Launch an iceoryx2 gateway using Zenoh as the transport.
-
-Usage: iox2 gateway zenoh [OPTIONS]
-
-Options:
-  -z, --zenoh-config <PATH>          Path to a zenoh configuration file
-  -d, --discovery-service <DISCOVERY_SERVICE>
-                                     Name of a service providing discovery updates to connect to
-      --poll <RATE>                  Poll for discovery updates and samples at the provided rate in milliseconds [default: 100]
-      --reactive                     Reactively process discovery updates and samples
-  -h, --help                         Print help
-  -V, --version                      Print version
-```
-
 ## Link
 
 > [!IMPORTANT]

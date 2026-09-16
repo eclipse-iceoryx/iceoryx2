@@ -37,10 +37,6 @@ name = "iox2-config"
 path = "iox2-config/src/main.rs"
 
 [[bin]]
-name = "iox2-gateway"
-path = "iox2-gateway/src/main.rs"
-
-[[bin]]
 name = "iox2-link"
 path = "iox2-link/src/main.rs"
 
