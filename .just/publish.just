@@ -114,7 +114,8 @@ SDK_CRATES_TO_IGNORE := `echo \
 INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH := `echo \
     iceoryx2-integrations-zenoh-gateway-backend \
     iceoryx2-integrations-zenoh-gateway-cli     \
-    iceoryx2-integrations-zenoh-link-carrier`
+    iceoryx2-integrations-zenoh-link-carrier    \
+    iceoryx2-integrations-zenoh-link-tunnel-cli`
 
 INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2                           \

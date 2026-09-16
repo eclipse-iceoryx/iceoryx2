@@ -4,6 +4,7 @@ members = [
     "gateway-backend",
     "gateway-cli",
     "link-carrier",
+    "link-tunnel-cli",
 ]
 
 [workspace.package]
@@ -27,6 +28,7 @@ version = "0.9.999"
 iceoryx2-integrations-zenoh-gateway-cli = { version = "0.9.999", path = "gateway-cli" }
 iceoryx2-integrations-zenoh-gateway-backend = { version = "0.9.999", path = "gateway-backend" }
 iceoryx2-integrations-zenoh-link-carrier = { version = "0.9.999", path = "link-carrier" }
+iceoryx2-integrations-zenoh-link-tunnel-cli = { version = "0.9.999", path = "link-tunnel-cli" }
 
 iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/" }
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }

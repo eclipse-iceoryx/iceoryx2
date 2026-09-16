@@ -1613,6 +1613,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-integrations-zenoh-link-tunnel-cli"
+version = "0.9.999"
+
+[[package]]
 name = "iceoryx2-link"
 version = "0.9.999"
 dependencies = [
