@@ -500,7 +500,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             |existing_service_config| -> Result<(), EventOpenError> {
                 self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
-            |_| Ok(NoResource::<ServiceType>::new()),
+            |_| Ok(NoResource),
         )?;
 
         Ok(event::PortFactory::new(service_state))
@@ -555,7 +555,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             }
         }
 
-        let prepare_static_config = |service_config: &mut StaticConfig<ServiceType>| {
+        let prepare_static_config = |service_config: &mut StaticConfig| {
             if let RelocatableOption::Some(ref mut deadline) = service_config.event_mut().deadline {
                 let now = fail!(from origin, when Time::now(),
                             with ServiceCreateError::InternalFailure,
@@ -567,7 +567,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             Ok(())
         };
 
-        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
+        let generate_dynamic_config = |service_config: &StaticConfig| {
             let event_config = service_config.event();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_listeners: event_config.max_listeners,
@@ -590,7 +590,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             || self.base.is_service_available(msg),
             prepare_static_config,
             generate_dynamic_config,
-            |_| Ok(NoResource::<ServiceType>::new()),
+            |_| Ok(NoResource),
             |_| {},
             |service_config| {
                 UniqueServiceId::from_event_service::<ServiceType>(
@@ -626,7 +626,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig<ServiceType>,
+        existing_service_config: &StaticConfig,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), EventOpenError> {
         let required_service_config = &self.base.service_config;

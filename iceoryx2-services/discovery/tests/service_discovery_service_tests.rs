@@ -53,7 +53,7 @@ mod service_discovery_service {
 
         let service = node
             .service_builder(service_name())
-            .publish_subscribe::<DiscoveryEvent<ipc::Service>>()
+            .publish_subscribe::<DiscoveryEvent>()
             .open_or_create()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -167,7 +167,7 @@ mod service_discovery_service {
 
         let service = node
             .service_builder(service_name())
-            .publish_subscribe::<DiscoveryEvent<ipc::Service>>()
+            .publish_subscribe::<DiscoveryEvent>()
             .open_or_create()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -229,7 +229,7 @@ mod service_discovery_service {
         // === Request current discovery state ===
         let service = node
             .service_builder(service_name())
-            .request_response::<(), [StaticConfig<ipc::Service>]>()
+            .request_response::<(), [StaticConfig]>()
             .open_or_create()
             .unwrap();
 

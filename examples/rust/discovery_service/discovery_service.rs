@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publish_subscribe = node
         .service_builder(service_discovery::service_name())
-        .publish_subscribe::<DiscoveryEvent<Service>>()
+        .publish_subscribe::<DiscoveryEvent>()
         .open()
         .inspect_err(|_| {
             cerrln!("Unable to open service discovery service. Was it started?");
@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // Optionally store StaticConfigs if required.
     // The StaticConfig is provided for Added services, but only the hash
     // is provided for Removed services.
-    let mut known: BTreeMap<ServiceHash, StaticConfig<Service>> = BTreeMap::new();
+    let mut known: BTreeMap<ServiceHash, StaticConfig> = BTreeMap::new();
 
     let on_event = |attachment_id: WaitSetAttachmentId<Service>| {
         if attachment_id == attachment {

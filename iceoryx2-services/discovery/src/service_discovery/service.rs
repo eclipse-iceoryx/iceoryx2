@@ -26,7 +26,7 @@ use iceoryx2::{
     },
     prelude::ServiceName,
     service::{
-        self, Service as ServiceType, ServiceDetails,
+        Service as ServiceType, ServiceDetails,
         builder::{
             event::EventOpenOrCreateError, publish_subscribe::PublishSubscribeOpenOrCreateError,
         },
@@ -48,11 +48,11 @@ const SERVICE_NAME: &str = "discovery/services/";
 // Largest variant dictates the size required for ZeroCopySend payload.
 #[allow(clippy::large_enum_variant)]
 #[repr(C)]
-pub enum DiscoveryEvent<S: service::Service> {
+pub enum DiscoveryEvent {
     /// A service has been added to the system.
     ///
     /// Contains the static configuration of the newly added service.
-    Added(StaticConfig<S>),
+    Added(StaticConfig),
 
     /// A service has been removed from the system.
     ///
@@ -65,16 +65,16 @@ pub enum DiscoveryEvent<S: service::Service> {
 /// Non-owning variant. Used to propagate through API layers without
 /// copy.
 #[derive(Debug)]
-pub enum DiscoveryEventRef<'a, S: service::Service> {
+pub enum DiscoveryEventRef<'a> {
     /// A service has been added to the system.
-    Added(&'a StaticConfig<S>),
+    Added(&'a StaticConfig),
 
     /// A service has been removed from the system.
     Removed(&'a ServiceHash),
 }
 
-impl<'a, S: service::Service> From<&'a DiscoveryEvent<S>> for DiscoveryEventRef<'a, S> {
-    fn from(event: &'a DiscoveryEvent<S>) -> Self {
+impl<'a> From<&'a DiscoveryEvent> for DiscoveryEventRef<'a> {
+    fn from(event: &'a DiscoveryEvent) -> Self {
         match event {
             DiscoveryEvent::Added(sc) => DiscoveryEventRef::Added(sc),
             DiscoveryEvent::Removed(h) => DiscoveryEventRef::Removed(h),
@@ -321,8 +321,8 @@ impl Default for Config {
     }
 }
 
-type ReqResPortFactory<S> = PortFactory<S, (), (), [StaticConfig<S>], ()>;
-type ServerPort<S> = Server<S, (), (), [StaticConfig<S>], ()>;
+type ReqResPortFactory<S> = PortFactory<S, (), (), [StaticConfig], ()>;
+type ServerPort<S> = Server<S, (), (), [StaticConfig], ()>;
 
 /// The service discovery service.
 ///
@@ -335,10 +335,10 @@ type ServerPort<S> = Server<S, (), (), [StaticConfig<S>], ()>;
 /// * `S` - The service type that this discovery service operates on.
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct Service<S: ServiceType + 'static> {
+pub struct Service<S: ServiceType> {
     discovery_config: Config,
     iceoryx_config: IceoryxConfig,
-    publisher: Option<Publisher<S, DiscoveryEvent<S>, ()>>,
+    publisher: Option<Publisher<S, DiscoveryEvent, ()>>,
     request_response: Option<ReqResPortFactory<S>>,
     server: Option<ServerPort<S>>,
     notifier: Option<Notifier<S>>,
@@ -371,7 +371,7 @@ impl<S: ServiceType> Service<S> {
         if discovery_config.publish_events {
             let publish_subscribe = node
                 .service_builder(service_name())
-                .publish_subscribe::<DiscoveryEvent<S>>()
+                .publish_subscribe::<DiscoveryEvent>()
                 .subscriber_max_buffer_size(discovery_config.max_buffer_size)
                 .subscriber_max_borrowed_samples(discovery_config.max_borrrowed_samples)
                 .history_size(discovery_config.history_size)
@@ -404,7 +404,7 @@ impl<S: ServiceType> Service<S> {
         let (request_response, server) = if discovery_config.enable_server {
             let request_response = node
                 .service_builder(service_name())
-                .request_response::<(), [StaticConfig<S>]>()
+                .request_response::<(), [StaticConfig]>()
                 .open_or_create()
                 .map_err(|_| CreationError::ServiceCreationFailure)?;
 
@@ -466,7 +466,7 @@ impl<S: ServiceType> Service<S> {
         // Capture error from within callback.
         let mut error: Option<SpinError> = None;
 
-        let publish = |payload: DiscoveryEvent<S>| -> Result<(), SpinError> {
+        let publish = |payload: DiscoveryEvent| -> Result<(), SpinError> {
             if let Some(p) = publisher {
                 let sample = p.loan_uninit()?;
                 let sample = sample.write_payload(payload);
