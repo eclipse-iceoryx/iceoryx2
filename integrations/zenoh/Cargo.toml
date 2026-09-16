@@ -1,8 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "gateway-backend",
-    "gateway-cli",
     "link-carrier",
     "link-tunnel-cli",
 ]
@@ -25,8 +23,6 @@ rust-version = "1.89"
 version = "0.9.999"
 
 [workspace.dependencies]
-iceoryx2-integrations-zenoh-gateway-cli = { version = "0.9.999", path = "gateway-cli" }
-iceoryx2-integrations-zenoh-gateway-backend = { version = "0.9.999", path = "gateway-backend" }
 iceoryx2-integrations-zenoh-link-carrier = { version = "0.9.999", path = "link-carrier" }
 iceoryx2-integrations-zenoh-link-tunnel-cli = { version = "0.9.999", path = "link-tunnel-cli" }
 
@@ -39,9 +35,6 @@ iceoryx2-bb-elementary = { version = "0.9.999", path = "../../iceoryx2-bb/elemen
 iceoryx2-bb-posix = { version = "0.9.999", path = "../../iceoryx2-bb/posix/" }
 iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/" }
 iceoryx2-bb-testing-macros = { version = "0.9.999", path = "../../iceoryx2-bb/testing-macros/" }
-iceoryx2-gateway = { version = "0.9.999", path = "../../iceoryx2-gateway/gateway" }
-iceoryx2-gateway-backend = { version = "0.9.999", path = "../../iceoryx2-gateway/backend" }
-iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-gateway/conformance-tests" }
 iceoryx2-link = { version = "0.9.999", path = "../../iceoryx2-link/link" }
 iceoryx2-link-backend = { version = "0.9.999", path = "../../iceoryx2-link/backend" }
 iceoryx2-link-carrier = { version = "0.9.999", path = "../../iceoryx2-link/carrier" }

@@ -113,28 +113,23 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-tests-nostd`
 
 INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH := `echo \
-    iceoryx2-integrations-zenoh-gateway-backend \
-    iceoryx2-integrations-zenoh-gateway-cli     \
     iceoryx2-integrations-zenoh-link-carrier    \
     iceoryx2-integrations-zenoh-link-tunnel-cli`
 
 INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
-    iceoryx2                           \
-    iceoryx2-bb-concurrency            \
-    iceoryx2-bb-elementary             \
-    iceoryx2-bb-posix                  \
-    iceoryx2-bb-testing                \
-    iceoryx2-bb-testing-macros         \
-    iceoryx2-cal                       \
-    iceoryx2-cli                       \
-    iceoryx2-log                       \
-    iceoryx2-gateway                   \
-    iceoryx2-gateway-backend           \
-    iceoryx2-gateway-conformance-tests \
-    iceoryx2-link                      \
-    iceoryx2-link-backend              \
-    iceoryx2-link-carrier              \
-    iceoryx2-link-conformance-tests    \
+    iceoryx2                        \
+    iceoryx2-bb-concurrency         \
+    iceoryx2-bb-elementary          \
+    iceoryx2-bb-posix               \
+    iceoryx2-bb-testing             \
+    iceoryx2-bb-testing-macros      \
+    iceoryx2-cal                    \
+    iceoryx2-cli                    \
+    iceoryx2-log                    \
+    iceoryx2-link                   \
+    iceoryx2-link-backend           \
+    iceoryx2-link-carrier           \
+    iceoryx2-link-conformance-tests \
     iceoryx2-link-tunnel`
 
 INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := `echo \
