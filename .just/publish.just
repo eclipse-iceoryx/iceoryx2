@@ -147,7 +147,7 @@ _publish-dispatch workspace *flags:
     LIST="false"
     NO_VERIFY="false"
     CHECK_OWNER="false"
-    OWNER_TO_CHECJ=""
+    OWNER_TO_CHECK=""
     REGISTRY=""
 
     set -- {{ flags }}
