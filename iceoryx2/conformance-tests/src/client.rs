@@ -637,6 +637,132 @@ pub mod client {
     }
 
     #[conformance_test]
+    pub fn failed_request_send_does_not_consume_active_request_capacity<Sut: Service>() {
+        for capacity in [1, 4] {
+            let test = Test::<Sut>::new();
+            let node = test.create_node();
+            let service = node
+                .service_builder(&generate_service_name())
+                .request_response::<u64, u64>()
+                .enable_safe_overflow_for_requests(false)
+                .enable_fire_and_forget_requests(true)
+                .max_active_requests_per_client(capacity)
+                .create()
+                .unwrap();
+            let server = service.server_builder().create().unwrap();
+            let sut = service
+                .client_builder()
+                .set_backpressure_handler(|_| BackpressureAction::DiscardDataAndFail)
+                .create()
+                .unwrap();
+            server.update_connections().unwrap();
+
+            for _ in 0..3 {
+                for value in 0..capacity {
+                    drop(sut.send_copy(value as u64).unwrap());
+                }
+
+                for _ in 0..capacity + 1 {
+                    assert_that!(sut.send_copy(123).err(),
+                        eq Some(RequestSendError::SendError(SendError::UnableToDeliver)));
+                }
+
+                for value in 0..capacity {
+                    assert_that!(*server.receive().unwrap().unwrap(), eq value as u64);
+                }
+
+                let pending = sut.send_copy(456).unwrap();
+                let request = server.receive().unwrap().unwrap();
+                assert_that!(*request, eq 456);
+                request.send_copy(789).unwrap();
+                assert_that!(*pending.receive().unwrap().unwrap(), eq 789);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn failed_request_send_closes_partially_delivered_response_channels<Sut: Service>() {
+        for fire_and_forget in [false, true] {
+            let test = Test::<Sut>::new();
+            let node = test.create_node();
+            let service = node
+                .service_builder(&generate_service_name())
+                .request_response::<u64, u64>()
+                .enable_safe_overflow_for_requests(false)
+                .enable_fire_and_forget_requests(fire_and_forget)
+                .max_active_requests_per_client(1)
+                .create()
+                .unwrap();
+            let slow_server = service.server_builder().create().unwrap();
+            let healthy_server = service.server_builder().create().unwrap();
+            let sut = service
+                .client_builder()
+                .set_backpressure_handler(|_| BackpressureAction::DiscardDataAndFail)
+                .create()
+                .unwrap();
+            slow_server.update_connections().unwrap();
+            healthy_server.update_connections().unwrap();
+
+            drop(sut.send_copy(1).unwrap());
+            drop(healthy_server.receive().unwrap());
+            assert_that!(sut.send_copy(2).err(),
+                eq Some(RequestSendError::SendError(SendError::UnableToDeliver)));
+
+            let delivered = healthy_server.receive().unwrap();
+            if fire_and_forget {
+                let request = delivered.unwrap();
+                assert_that!(*request, eq 2);
+                assert_that!(request.is_connected(), eq false);
+            } else {
+                assert_that!(delivered, is_none);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn failed_request_send_preserves_other_pending_responses<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&generate_service_name())
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(false)
+            .enable_fire_and_forget_requests(true)
+            .max_active_requests_per_client(2)
+            .create()
+            .unwrap();
+        let server = service.server_builder().create().unwrap();
+        let sut = service
+            .client_builder()
+            .set_backpressure_handler(|_| BackpressureAction::DiscardDataAndFail)
+            .create()
+            .unwrap();
+        server.update_connections().unwrap();
+
+        let pending = sut.send_copy(1).unwrap();
+        drop(sut.send_copy(2).unwrap());
+        assert_that!(sut.send_copy(3).err(),
+            eq Some(RequestSendError::SendError(SendError::UnableToDeliver)));
+
+        let request = server.receive().unwrap().unwrap();
+        assert_that!(*request, eq 1);
+        assert_that!(request.is_connected(), eq true);
+        request.send_copy(11).unwrap();
+        assert_that!(*pending.receive().unwrap().unwrap(), eq 11);
+        drop(server.receive().unwrap().unwrap());
+
+        let recovered = sut.send_copy(4).unwrap();
+        let recovered_request = server.receive().unwrap().unwrap();
+        assert_that!(recovered_request.is_connected(), eq true);
+        recovered_request.send_copy(44).unwrap();
+        assert_that!(*recovered.receive().unwrap().unwrap(), eq 44);
+        assert_that!(sut.send_copy(5).err(), eq Some(RequestSendError::ExceedsMaxActiveRequests));
+
+        drop(pending);
+        assert_that!(sut.send_copy(6), is_ok);
+    }
+
+    #[conformance_test]
     pub fn client_with_backpressure_handler_follows_backpressure_strategy_with_discard_data<
         Sut: Service,
     >() {
