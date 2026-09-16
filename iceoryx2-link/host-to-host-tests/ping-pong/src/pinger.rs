@@ -43,7 +43,6 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(&PING_SERVICE_NAME.try_into()?)
         .publish_subscribe::<P::PayloadType>()
         .user_header::<CustomHeader>()
-        .history_size(HISTORY_SIZE)
         .open_or_create()?
         .publisher_builder()
         .create()?;
@@ -59,7 +58,6 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(&PONG_SERVICE_NAME.try_into()?)
         .publish_subscribe::<P::PayloadType>()
         .user_header::<CustomHeader>()
-        .history_size(HISTORY_SIZE)
         .open_or_create()?
         .subscriber_builder()
         .create()?;

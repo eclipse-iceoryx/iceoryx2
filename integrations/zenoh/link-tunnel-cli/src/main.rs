@@ -32,10 +32,10 @@ fn main() -> anyhow::Result<()> {
 
     info!(from ORIGIN, "Starting iox2-link-tunnel-zenoh v{}", env!("CARGO_PKG_VERSION"));
 
-    let iceoryx_config = iceoryx2::config::Config::default();
+    let iceoryx_config = iceoryx2::config::Config::global_config();
     let mut tunnel = fail!(
         from ORIGIN,
-        when create_tunnel(&cli, &iceoryx_config),
+        when create_tunnel(&cli, iceoryx_config),
         "Failed to create the tunnel"
     );
     let wake_sources = fail!(

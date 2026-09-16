@@ -345,6 +345,7 @@ jobs:
             --build-arg TUNNEL_BIN=integrations/${{ matrix.implementation }}/target/release/iox2-link-tunnel-${{ matrix.implementation }} \
             --build-arg PINGER_BIN=target/release/link-host-to-host-pinger \
             --build-arg PONGER_BIN=target/release/link-host-to-host-ponger \
+            --build-arg CONFIG_FILE=iceoryx2-link/host-to-host-tests/iceoryx2.toml \
             -t host-to-host-tests:${{ github.sha }} .
 
       - name: Run host-to-host tests
