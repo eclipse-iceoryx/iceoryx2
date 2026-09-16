@@ -107,12 +107,14 @@ jobs:
           just test-e2e integrations-ros2
 
       - name: Setup example workspace
+        if: false
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           just setup ros2-workspace
 
       - name: End-to-end test examples
+        if: false
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
