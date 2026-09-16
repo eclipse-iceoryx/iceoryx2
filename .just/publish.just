@@ -129,7 +129,8 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2-gateway-backend           \
     iceoryx2-gateway-conformance-tests \
     iceoryx2-link-backend              \
-    iceoryx2-link-carrier`
+    iceoryx2-link-carrier              \
+    iceoryx2-link-conformance-tests`
 
 INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := `echo \
     iceoryx2-integrations-ros2-interop         \

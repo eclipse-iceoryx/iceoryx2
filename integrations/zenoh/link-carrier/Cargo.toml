@@ -22,3 +22,4 @@ zenoh = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+iceoryx2-link-conformance-tests = { workspace = true, features = ["std"] }

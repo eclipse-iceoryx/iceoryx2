@@ -12,5 +12,6 @@
 
 mod fingerprint;
 mod keys;
+mod offers;
 
 pub use keys::channels_of;

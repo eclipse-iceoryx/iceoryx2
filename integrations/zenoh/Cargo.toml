@@ -41,6 +41,7 @@ iceoryx2-gateway-backend = { version = "0.9.999", path = "../../iceoryx2-gateway
 iceoryx2-gateway-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-gateway/conformance-tests" }
 iceoryx2-link-backend = { version = "0.9.999", path = "../../iceoryx2-link/backend" }
 iceoryx2-link-carrier = { version = "0.9.999", path = "../../iceoryx2-link/carrier" }
+iceoryx2-link-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-link/conformance-tests" }
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }
