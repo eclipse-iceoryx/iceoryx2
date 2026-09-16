@@ -343,6 +343,7 @@ filegroup(
         "//iceoryx2-link/gateway:all_srcs",
         "//iceoryx2-link/testing:all_srcs",
         "//iceoryx2-link/conformance-tests:all_srcs",
+        "//iceoryx2-link/host-to-host-tests:all_srcs",
         "//iceoryx2-userland/record-and-replay:all_srcs",
         "//iceoryx2/testing:all_srcs",
         "//iceoryx2/conformance-tests:all_srcs",
