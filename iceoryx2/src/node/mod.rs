@@ -174,6 +174,7 @@ use iceoryx2_bb_posix::mutex::MutexBuilder;
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
+use iceoryx2_bb_posix::process::ProcessId;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
@@ -317,7 +318,7 @@ enum NodeReadPortTagsFailure {
 /// process has sufficient access permissions.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
-    executable: FileName,
+    process: ProcessId,
     name: NodeName,
     config: Config,
 }
@@ -329,17 +330,8 @@ impl NodeDetails {
     }
 
     fn new(node_name: &Option<NodeName>, config: &Config) -> Self {
-        let executable = match Process::from_self().executable() {
-            Ok(n) => n.file_name(),
-            Err(e) => {
-                debug!(from "NodeDetails::new()", "Unable to acquire executable name of the Node's process ({:?}).", e);
-                const FALLBACK_EXEC: &[u8] = b"undefined";
-                unsafe { FileName::new_unchecked(FALLBACK_EXEC) }
-            }
-        };
-
         Self {
-            executable,
+            process: Process::from_self().id(),
             name: if let Some(name) = node_name {
                 name.clone()
             } else {
@@ -349,9 +341,21 @@ impl NodeDetails {
         }
     }
 
+    /// Returns the [`ProcessId`] of the [`Node`]s owner process.
+    pub fn process_id(&self) -> ProcessId {
+        self.process
+    }
+
     /// Returns the executable [`FileName`] of the [`Node`]s owner process.
-    pub fn executable(&self) -> &FileName {
-        &self.executable
+    pub fn executable(&self) -> FileName {
+        match Process::from_pid(self.process).executable() {
+            Ok(n) => n.file_name(),
+            Err(e) => {
+                debug!(from "NodeDetails::new()", "Unable to acquire executable name of the Node's process ({:?}).", e);
+                const FALLBACK_EXEC: &[u8] = b"undefined";
+                unsafe { FileName::new_unchecked(FALLBACK_EXEC) }
+            }
+        }
     }
 
     /// Returns the [`NodeName`]. Multiple [`Node`]s are allowed to have the same [`NodeName`], it

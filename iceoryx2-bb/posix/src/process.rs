@@ -53,6 +53,7 @@ use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 use iceoryx2_pal_posix::*;
+use serde::{Deserialize, Serialize};
 
 use crate::unique_system_id::{UniqueSystemId, UniqueSystemIdCreationError};
 use crate::{
@@ -138,7 +139,7 @@ unsafe impl Zeroable for UniqueProcessId {}
 unsafe impl PlainOldDataWithoutPadding for UniqueProcessId {}
 
 /// Represents a process id.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProcessId(posix::pid_t);
 
 impl ProcessId {
