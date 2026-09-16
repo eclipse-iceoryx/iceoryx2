@@ -409,26 +409,30 @@ impl<S: Service, LoanError> Region for Loan<'_, '_, S, LoanError> {
         let origin = origin!("Loan::for_length");
 
         let header_size = self.header_size();
-        if self.sample.is_none() {
-            if !fits(self.types, header_size, payload_size) {
-                fail!(
+        let sample = match self.sample {
+            Some(ref mut sample) => sample,
+            None => {
+                if !fits(self.types, header_size, payload_size) {
+                    fail!(
+                        from origin,
+                        with ResizeError::Malformed,
+                        "A payload of {} bytes does not fit the service description", payload_size
+                    );
+                }
+                let sample = fail!(
                     from origin,
-                    with ResizeError::Malformed,
-                    "A payload of {} bytes does not fit the service", payload_size
+                    when (self.loan)(payload_size),
+                    with ResizeError::Exhausted,
+                    "Failed to loan a sample for a payload of {} bytes", payload_size
                 );
+                self.sample.insert(sample)
             }
-            let sample = fail!(
-                from origin,
-                when (self.loan)(payload_size),
-                with ResizeError::Exhausted,
-                "Failed to loan a sample for a payload of {} bytes", payload_size
-            );
-            self.sample = Some(sample);
-        }
-        let sample = self.sample.as_mut().expect("loaned above");
+        };
+
         // SAFETY: the header size is the service's, as its description
         // states.
         let (_, payload) = unsafe { regions_mut(sample, header_size) };
+
         // TODO: Resize the loaned sample instead, once slice samples can be
         // resized through the publisher's allocation strategy.
         if payload.len() != payload_size {
@@ -438,6 +442,7 @@ impl<S: Service, LoanError> Region for Loan<'_, '_, S, LoanError> {
                 "The sample holds a payload of {} bytes, not {}", payload.len(), payload_size
             );
         }
+
         Ok(payload)
     }
 }
