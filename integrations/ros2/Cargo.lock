@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-testing"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
@@ -683,7 +683,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-testing-macros"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-pal-print",
@@ -716,7 +716,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cli"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -772,7 +772,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-integrations-ros2-link-gateway-cli"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -802,7 +802,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link-adapter"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-elementary",
@@ -811,7 +811,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link-backend"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-elementary",
@@ -821,7 +821,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link-carrier"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-elementary",
@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link-conformance-tests"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -850,7 +850,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link-gateway"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-elementary",
@@ -861,7 +861,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-link-tunnel"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -922,7 +922,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-testing"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
@@ -932,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-discovery"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -943,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-userland-record-and-replay"
-version = "0.10.0"
+version = "0.10.999"
 dependencies = [
  "anyhow",
  "iceoryx2",
