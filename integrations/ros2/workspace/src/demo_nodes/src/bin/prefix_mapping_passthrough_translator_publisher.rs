@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 1u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        let message = std_msgs::msg::String {
+        let message = ros_env::std_msgs::msg::String {
             data: format!("Hello from iceoryx2: {counter}"),
         };
         let payload = cdr::serialize::<_, _, CdrLe>(&message, Infinite)?;

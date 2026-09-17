@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     coutln!("waiting for messages on {SERVICE_NAME}");
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            let message: std_msgs::msg::String = cdr::deserialize(as_bytes(sample.payload()))?;
+            let message: ros_env::std_msgs::msg::String = cdr::deserialize(as_bytes(sample.payload()))?;
             let header = sample.user_header();
 
             coutln!(

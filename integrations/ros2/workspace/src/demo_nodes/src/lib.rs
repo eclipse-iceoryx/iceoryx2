@@ -22,7 +22,7 @@ pub struct StdMsgStringByte(pub u8);
 
 unsafe impl ZeroCopySend for StdMsgStringByte {
     unsafe fn type_name() -> &'static str {
-        <<std_msgs::msg::String as Message>::RmwMsg as RmwMessage>::TYPE_NAME
+        <<ros_env::std_msgs::msg::String as Message>::RmwMsg as RmwMessage>::TYPE_NAME
     }
 }
 
@@ -39,10 +39,10 @@ pub fn as_bytes(payload: &[StdMsgStringByte]) -> &[u8] {
 /// with [`ZeroCopySend`] implemented so it can be used in an iceoryx2 service.
 #[derive(Debug, Default, Clone)]
 #[repr(transparent)]
-pub struct Twist(pub geometry_msgs::msg::rmw::Twist);
+pub struct Twist(pub ros_env::geometry_msgs::msg::rmw::Twist);
 
 unsafe impl ZeroCopySend for Twist {
     unsafe fn type_name() -> &'static str {
-        <<geometry_msgs::msg::Twist as Message>::RmwMsg as RmwMessage>::TYPE_NAME
+        <<ros_env::geometry_msgs::msg::Twist as Message>::RmwMsg as RmwMessage>::TYPE_NAME
     }
 }
