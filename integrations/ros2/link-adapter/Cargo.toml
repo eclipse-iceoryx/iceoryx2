@@ -1,0 +1,13 @@
+[package]
+name = "iceoryx2-integrations-ros2-link-adapter"
+description = "iceoryx2-integrations: gateway adapter for ROS 2"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]

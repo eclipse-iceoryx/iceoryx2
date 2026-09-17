@@ -145,6 +145,7 @@ INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
     iceoryx2-integrations-ros2-gateway-backend \
     iceoryx2-integrations-ros2-gateway-cli     \
     iceoryx2-integrations-ros2-interop         \
+    iceoryx2-integrations-ros2-link-adapter    \
     iceoryx2-log`
 
 [private]

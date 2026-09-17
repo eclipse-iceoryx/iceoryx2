@@ -817,6 +817,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-integrations-ros2-link-adapter"
+version = "0.10.999"
+
+[[package]]
 name = "iceoryx2-log"
 version = "0.10.999"
 dependencies = [
