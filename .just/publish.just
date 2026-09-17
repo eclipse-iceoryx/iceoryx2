@@ -136,16 +136,17 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
 INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := ""
 
 INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
-    iceoryx2                                   \
-    iceoryx2-bb-concurrency                    \
-    iceoryx2-bb-testing                        \
-    iceoryx2-cli                               \
-    iceoryx2-gateway                           \
-    iceoryx2-gateway-backend                   \
-    iceoryx2-integrations-ros2-gateway-backend \
-    iceoryx2-integrations-ros2-gateway-cli     \
-    iceoryx2-integrations-ros2-interop         \
-    iceoryx2-integrations-ros2-link-adapter    \
+    iceoryx2                                    \
+    iceoryx2-bb-concurrency                     \
+    iceoryx2-bb-testing                         \
+    iceoryx2-cli                                \
+    iceoryx2-gateway                            \
+    iceoryx2-gateway-backend                    \
+    iceoryx2-integrations-ros2-gateway-backend  \
+    iceoryx2-integrations-ros2-gateway-cli      \
+    iceoryx2-integrations-ros2-interop          \
+    iceoryx2-integrations-ros2-link-adapter     \
+    iceoryx2-integrations-ros2-link-gateway-cli \
     iceoryx2-log`
 
 [private]

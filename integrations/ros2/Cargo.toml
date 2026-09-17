@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "interop",
     "link-adapter",
+    "link-gateway-cli",
 ]
 # Exclude the colcon workspace because its `ament_cargo` packages are built by colcon.
 exclude = [

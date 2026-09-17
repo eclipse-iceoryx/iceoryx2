@@ -542,6 +542,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-integrations-ros2-link-gateway-cli"
+version = "0.10.0"
+
+[[package]]
 name = "iceoryx2-link"
 version = "0.10.0"
 dependencies = [
