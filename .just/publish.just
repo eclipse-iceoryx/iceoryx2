@@ -45,9 +45,6 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-testing                    \
     iceoryx2-conformance-tests          \
     iceoryx2-services-discovery         \
-    iceoryx2-gateway-backend            \
-    iceoryx2-gateway                    \
-    iceoryx2-gateway-conformance-tests  \
     iceoryx2-link-backend               \
     iceoryx2-link-carrier               \
     iceoryx2-link-adapter               \
@@ -68,6 +65,9 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-ffi-c                                  \
     iceoryx2-ffi-macros                             \
     iceoryx2-ffi-python                             \
+    iceoryx2-gateway-backend            \
+    iceoryx2-gateway                    \
+    iceoryx2-gateway-conformance-tests  \
     iceoryx2-gateway-testing                        \
     iceoryx2-gateway-host-to-host-tests             \
     iceoryx2-gateway-conformance-tests-common       \
