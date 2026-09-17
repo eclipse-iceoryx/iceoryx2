@@ -16,6 +16,8 @@ pub mod qos;
 
 #[allow(unsafe_code)]
 pub(crate) mod rcl;
+#[allow(unsafe_code)]
+pub(crate) mod typesupport;
 
 pub use qos::QosProfile;
 

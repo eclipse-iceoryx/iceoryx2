@@ -10,15 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Runtime resolution of rosidl typesupport handles from ROS 2 type names,
-//! by loading the per-package typesupport library from the sourced
-//! environment.
-
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use iceoryx2_bb_concurrency::cell::RefCell;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use libloading::Library;
 use r2r_rcl::rosidl_message_type_support_t;
@@ -127,7 +123,7 @@ pub(crate) fn load_introspection(type_name: &str) -> Result<Rc<TypeSupport>, Loa
 
 /// Resolves the typesupport handle of `type_name` from its shared library.
 fn resolve(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    let origin = "typesupport::resolve";
+    let origin = origin!("resolve");
 
     let (package, message) = fail!(
         from origin,
@@ -136,17 +132,22 @@ fn resolve(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
         type_name
     );
 
-    Ok(Rc::new(load_handle(
-        type_name,
-        format!("lib{package}__rosidl_typesupport_c.so"),
-        format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}"),
-    )?))
+    let handle = fail!(
+        from origin,
+        when load_handle(
+            type_name,
+            format!("lib{package}__rosidl_typesupport_c.so"),
+            format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}"),
+        ),
+        "Failed to load the typesupport of '{}'", type_name
+    );
+    Ok(Rc::new(handle))
 }
 
 /// Resolves the introspection typesupport handle of `type_name` from its
 /// shared library.
 fn resolve_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    let origin = "typesupport::resolve_introspection";
+    let origin = origin!("resolve_introspection");
 
     let (package, message) = fail!(
         from origin,
@@ -155,13 +156,18 @@ fn resolve_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> 
         type_name
     );
 
-    Ok(Rc::new(load_handle(
-        type_name,
-        format!("lib{package}__rosidl_typesupport_introspection_c.so"),
-        format!(
-            "rosidl_typesupport_introspection_c__get_message_type_support_handle__{package}__msg__{message}"
+    let handle = fail!(
+        from origin,
+        when load_handle(
+            type_name,
+            format!("lib{package}__rosidl_typesupport_introspection_c.so"),
+            format!(
+                "rosidl_typesupport_introspection_c__get_message_type_support_handle__{package}__msg__{message}"
+            ),
         ),
-    )?))
+        "Failed to load the introspection typesupport of '{}'", type_name
+    );
+    Ok(Rc::new(handle))
 }
 
 /// Loads `library_name` and retrieves the handle pointer that `symbol_name`
@@ -171,7 +177,7 @@ fn load_handle(
     library_name: String,
     symbol_name: String,
 ) -> Result<TypeSupport, LoadError> {
-    let origin = "typesupport::load_handle";
+    let origin = origin!("load_handle");
 
     // Load the typesupport library, found via the sourced environment's
     // LD_LIBRARY_PATH.
@@ -222,6 +228,8 @@ fn load_handle(
 }
 
 fn split_type_name(type_name: &str) -> Result<(&str, &str), LoadError> {
+    let origin = origin!("split_type_name");
+
     let mut parts = type_name.split('/');
     match (parts.next(), parts.next(), parts.next(), parts.next()) {
         (Some(package), Some("msg"), Some(message), None)
@@ -229,9 +237,13 @@ fn split_type_name(type_name: &str) -> Result<(&str, &str), LoadError> {
         {
             Ok((package, message))
         }
-        _ => Err(LoadError::InvalidTypeName {
-            type_name: type_name.to_string(),
-        }),
+        _ => {
+            fail!(
+                from origin,
+                with LoadError::InvalidTypeName { type_name: type_name.to_string() },
+                "Type name '{}' is not of the form package/msg/Message", type_name
+            );
+        }
     }
 }
 
