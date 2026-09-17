@@ -4,14 +4,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "gateway-backend",
-    "gateway-cli",
     "interop",
     "link-adapter",
 ]
-# The examples are `ament_cargo` packages built individually by colcon, which
-# patches their dependencies in the install space; they are their own
-# standalone workspaces, not members of this one.
 exclude = [
     "workspace",
 ]
