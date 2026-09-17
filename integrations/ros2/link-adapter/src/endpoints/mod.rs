@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod event;
-mod factory;
 pub mod publish_subscribe;
 
-pub use factory::*;
+pub use publish_subscribe::{PublishSubscribeEndpoints, PublishSubscribeEndpointsError};
