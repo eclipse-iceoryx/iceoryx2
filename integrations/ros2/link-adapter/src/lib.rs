@@ -12,6 +12,7 @@
 
 #![deny(unsafe_code)]
 
+pub mod adapter;
 pub mod config;
 pub mod endpoint_description;
 #[allow(unsafe_code)]
@@ -27,12 +28,19 @@ pub(crate) mod rcl;
 #[allow(unsafe_code)]
 pub(crate) mod typesupport;
 
+pub use adapter::Ros2Adapter;
 pub use config::{Config, TopicName, TypeName};
 pub use endpoint_description::{TopicDescription, TopicSettings, TopicTypes};
 pub use endpoints::PublishSubscribeEndpoints;
+pub use iceoryx2_link_backend::AllowList;
 pub use mapping::{PrefixMapping, StaticMapping};
 pub use qos::QosProfile;
 pub use translator::{CdrTranscoder, PassthroughTranslator, PlainStructTranslator};
+
+/// The name of the ROS 2 node representing the gateway.
+#[allow(unsafe_code)]
+const NODE_NAME: rcl::NodeName =
+    unsafe { rcl::NodeName::from_c_str_static_unchecked(c"iceoryx2_gateway") };
 
 /// The reason a string failed ROS 2 name validation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
