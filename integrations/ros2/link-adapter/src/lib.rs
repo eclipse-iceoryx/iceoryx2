@@ -20,6 +20,7 @@ pub mod endpoints;
 pub mod mapping;
 pub mod qos;
 pub mod ros_header;
+pub mod testing;
 #[allow(unsafe_code)]
 pub mod translator;
 

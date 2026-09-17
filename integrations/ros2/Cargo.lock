@@ -471,7 +471,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-testing"
-version = "0.9.999"
+version = "0.10.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
@@ -480,6 +480,17 @@ dependencies = [
  "iceoryx2-pal-testing",
  "inventory",
  "libtest-mimic",
+]
+
+[[package]]
+name = "iceoryx2-bb-testing-macros"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2-bb-testing",
+ "iceoryx2-pal-print",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -518,14 +529,27 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-integrations-ros2-interop",
  "iceoryx2-link-adapter",
  "iceoryx2-link-backend",
+ "iceoryx2-link-conformance-tests",
  "iceoryx2-log",
  "libloading",
  "r2r_rcl",
  "serde",
  "toml",
+]
+
+[[package]]
+name = "iceoryx2-link"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
 ]
 
 [[package]]
@@ -545,6 +569,58 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-log",
  "serde",
+]
+
+[[package]]
+name = "iceoryx2-link-carrier"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-link",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-link-gateway",
+ "iceoryx2-link-tunnel",
+]
+
+[[package]]
+name = "iceoryx2-link-gateway"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-tunnel"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-log",
 ]
 
 [[package]]
@@ -598,7 +674,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-testing"
-version = "0.9.999"
+version = "0.10.0"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
