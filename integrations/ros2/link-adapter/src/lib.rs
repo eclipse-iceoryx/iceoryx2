@@ -19,6 +19,8 @@ pub mod endpoints;
 pub mod mapping;
 pub mod qos;
 pub mod ros_header;
+#[allow(unsafe_code)]
+pub mod translator;
 
 #[allow(unsafe_code)]
 pub(crate) mod rcl;
@@ -30,6 +32,7 @@ pub use endpoint_description::{TopicDescription, TopicSettings, TopicTypes};
 pub use endpoints::PublishSubscribeEndpoints;
 pub use mapping::{PrefixMapping, StaticMapping};
 pub use qos::QosProfile;
+pub use translator::{CdrTranscoder, PassthroughTranslator, PlainStructTranslator};
 
 /// The reason a string failed ROS 2 name validation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
