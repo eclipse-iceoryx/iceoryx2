@@ -11,22 +11,21 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::ffi::c_void;
-use std::pin::Pin;
 use std::rc::Rc;
 
 use r2r_rcl::{
-    RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, RMW_GID_STORAGE_SIZE,
-    rcl_get_zero_initialized_subscription, rcl_serialized_message_t, rcl_subscription_fini,
-    rcl_subscription_get_default_options, rcl_subscription_init,
+    RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, rcl_get_zero_initialized_subscription,
+    rcl_serialized_message_t, rcl_subscription_fini, rcl_subscription_get_default_options,
+    rcl_subscription_get_publisher_count, rcl_subscription_init,
     rcl_subscription_set_on_new_message_callback, rcl_take_serialized_message, rcutils_allocator_t,
     rmw_message_info_t,
 };
 
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{RclError, TopicName, qos};
+use crate::rcl::{Gid, RclError, TopicName, qos};
 use crate::typesupport::TypeSupport;
 
 /// A callback invoked with the number of newly-arrived messages. The RMW
@@ -60,8 +59,20 @@ impl core::fmt::Display for CallbackError {
 impl core::error::Error for CallbackError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum CountError {
+    Count,
+}
+
+impl core::fmt::Display for CountError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CountError::{self:?}")
+    }
+}
+
+impl core::error::Error for CountError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TakeError {
-    /// The loan closure declined to provide a destination buffer.
     LoanDeclined,
     Take,
 }
@@ -77,18 +88,16 @@ impl core::error::Error for TakeError {}
 /// Per-message metadata accompanying a take.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct MessageInfo {
-    /// The originating DDS writer's GUID.
-    pub gid: [u8; RMW_GID_STORAGE_SIZE as usize],
+    /// The originating DDS writer's ID.
+    pub gid: Gid,
     pub source_timestamp_ns: i64,
     pub sequence_number: u64,
 }
 
 impl From<&rmw_message_info_t> for MessageInfo {
     fn from(info: &rmw_message_info_t) -> Self {
-        let mut gid = [0u8; RMW_GID_STORAGE_SIZE as usize];
-        gid.copy_from_slice(&info.publisher_gid.data);
         Self {
-            gid,
+            gid: Gid::from(&info.publisher_gid),
             source_timestamp_ns: info.source_timestamp,
             sequence_number: info.publication_sequence_number,
         }
@@ -123,14 +132,12 @@ impl<'a> RclSubscriptionBuilder<'a> {
     }
 
     pub fn create(self) -> Result<RclSubscription, CreationError> {
-        let origin = "RclSubscriptionBuilder::create";
+        let origin = origin!("RclSubscriptionBuilder::create");
 
         unsafe {
             let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
             let mut options = rcl_subscription_get_default_options();
             qos::apply(&self.qos, &mut options.qos);
-            // Prevent loopback.
-            options.rmw_subscription_options.ignore_local_publications = true;
             let ret = rcl_subscription_init(
                 subscription.as_mut(),
                 self.node.handle(),
@@ -159,9 +166,9 @@ impl<'a> RclSubscriptionBuilder<'a> {
 /// Receives serialized messages from a ROS 2 topic.
 pub struct RclSubscription {
     subscription: *mut r2r_rcl::rcl_subscription_t,
-    /// The new-message callback while one is registered, kept alive and pinned
-    /// so the `user_data` pointer rcl holds stays valid until it is cleared.
-    callback: Option<Pin<Box<NewMessageCallback>>>,
+    /// The registered new-message callback. rcl holds a thin pointer to it as
+    /// `user_data`, hence the box around the boxed closure.
+    callback: Option<Box<NewMessageCallback>>,
     node: Rc<RclNode>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: Rc<TypeSupport>,
@@ -183,11 +190,9 @@ impl RclSubscription {
     /// the RMW from a middleware thread and must not panic; a previously
     /// registered callback is replaced.
     pub fn on_new_message(&mut self, callback: NewMessageCallback) -> Result<(), CallbackError> {
-        let origin = "RclSubscription::on_new_message";
+        let origin = origin!("RclSubscription::on_new_message");
 
-        // Pin to a stable heap address, then pass rcl a thin pointer to the
-        // boxed closure as `user_data`.
-        let callback = Box::pin(callback);
+        let callback = Box::new(callback);
         let user_data: *const NewMessageCallback = &*callback;
 
         let ret = unsafe {
@@ -226,7 +231,7 @@ impl RclSubscription {
     where
         F: FnOnce(usize) -> Option<*mut u8>,
     {
-        let origin = "RclSubscription::take_into";
+        let origin = origin!("RclSubscription::take_into");
 
         let mut loan: Option<F> = Some(loan);
         let mut message = rcl_serialized_message_t {
@@ -268,6 +273,23 @@ impl RclSubscription {
             message.buffer_length,
             MessageInfo::from(&message_info),
         )))
+    }
+
+    /// The number of publishers matched with the subscription.
+    pub fn publisher_count(&self) -> Result<usize, CountError> {
+        let origin = origin!("RclSubscription::publisher_count");
+
+        let mut count = 0;
+        let ret = unsafe { rcl_subscription_get_publisher_count(self.subscription, &mut count) };
+        if ret != RCL_RET_OK as i32 {
+            fail!(
+                from origin,
+                with CountError::Count,
+                "Failed to count the matched publishers: {}",
+                RclError::from(ret)
+            );
+        }
+        Ok(count)
     }
 }
 

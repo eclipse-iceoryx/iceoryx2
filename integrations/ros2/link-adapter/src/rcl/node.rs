@@ -16,15 +16,16 @@ use r2r_rcl::{
     RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_publishers_info_by_topic,
     rcl_get_subscriptions_info_by_topic, rcl_get_topic_names_and_types,
     rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
-    rcl_get_zero_initialized_node, rcl_init, rcl_init_options_fini, rcl_init_options_init,
-    rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini, rcl_node_get_default_options,
-    rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator,
-    rcutils_string_array_t, rmw_get_zero_initialized_topic_endpoint_info_array,
-    rmw_topic_endpoint_info_array_fini,
+    rcl_get_zero_initialized_node, rcl_guard_condition_t, rcl_init, rcl_init_options_fini,
+    rcl_init_options_init, rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini,
+    rcl_node_get_default_options, rcl_node_get_graph_guard_condition, rcl_node_init, rcl_node_t,
+    rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator, rcutils_string_array_t,
+    rmw_get_zero_initialized_topic_endpoint_info_array, rmw_topic_endpoint_info_array_fini,
+    rmw_topic_endpoint_info_array_t,
 };
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_log::{fail, warn};
+use iceoryx2_log::{fail, origin, warn};
 
 use crate::qos::QosProfile;
 use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, qos};
@@ -32,8 +33,8 @@ use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, qos};
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
 
-/// Topic and type names are demangled into their ROS form rather than left as
-/// the underlying middleware names.
+/// Demangle topic and type names into their ROS form rather than keeping them
+/// as the underlying middleware names.
 const NO_DEMANGLE: bool = false;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -66,9 +67,6 @@ impl core::error::Error for GraphError {}
 
 /// An rcl node together with the context it belongs to. The gateway is a single
 /// node, so it can be coupled to the context.
-///
-/// The node is shared: everything that needs it to stay alive - endpoints,
-/// discovery, the backend itself - holds a share of one `Rc<RclNode>`.
 #[derive(Debug)]
 pub struct RclNode {
     node: Box<UnsafeCell<rcl_node_t>>,
@@ -80,9 +78,19 @@ impl RclNode {
         self.node.get()
     }
 
+    pub(crate) fn context(&self) -> *mut rcl_context_t {
+        self.context.get()
+    }
+
+    /// The guard condition the rmw triggers on every change of the graph and
+    /// stays alive as long as the node.
+    pub(crate) fn graph_guard_condition(&self) -> *const rcl_guard_condition_t {
+        unsafe { rcl_node_get_graph_guard_condition(self.node.get()) }
+    }
+
     /// Query the ROS graph for all topics visible to this node and their type names.
     pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
-        let origin = "RclNode::topic_names_and_types";
+        let origin = origin!("RclNode::topic_names_and_types");
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
@@ -118,9 +126,9 @@ impl RclNode {
         }
     }
 
-    /// Query the QoS profiles of the publishers currently offering `topic`.
-    pub fn publisher_qos_profiles(&self, topic: &TopicName) -> Result<Vec<QosProfile>, GraphError> {
-        let origin = "RclNode::publisher_qos_profiles";
+    /// The publishers on `topic` known to the graph.
+    pub fn publishers(&self, topic: &TopicName) -> Result<Vec<EndpointInfo>, GraphError> {
+        let origin = origin!("RclNode::publishers");
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
@@ -141,28 +149,15 @@ impl RclNode {
                     RclError::from(ret)
                 );
             }
-
-            let profiles = if info.info_array.is_null() {
-                Vec::new()
-            } else {
-                core::slice::from_raw_parts(info.info_array, info.size)
-                    .iter()
-                    .map(|endpoint| qos::parse(&endpoint.qos_profile))
-                    .collect()
-            };
-
+            let endpoints = collect_endpoints(&info);
             let _ = rmw_topic_endpoint_info_array_fini(&mut info, &mut allocator);
-
-            Ok(profiles)
+            Ok(endpoints)
         }
     }
 
-    /// Query the QoS profiles of the subscriptions currently on `topic`.
-    pub fn subscription_qos_profiles(
-        &self,
-        topic: &TopicName,
-    ) -> Result<Vec<QosProfile>, GraphError> {
-        let origin = "RclNode::subscription_qos_profiles";
+    /// The subscriptions on `topic` known to the graph.
+    pub fn subscriptions(&self, topic: &TopicName) -> Result<Vec<EndpointInfo>, GraphError> {
+        let origin = origin!("RclNode::subscriptions");
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
@@ -183,21 +178,40 @@ impl RclNode {
                     RclError::from(ret)
                 );
             }
-
-            let profiles = if info.info_array.is_null() {
-                Vec::new()
-            } else {
-                core::slice::from_raw_parts(info.info_array, info.size)
-                    .iter()
-                    .map(|endpoint| qos::parse(&endpoint.qos_profile))
-                    .collect()
-            };
-
+            let endpoints = collect_endpoints(&info);
             let _ = rmw_topic_endpoint_info_array_fini(&mut info, &mut allocator);
-
-            Ok(profiles)
+            Ok(endpoints)
         }
     }
+}
+
+/// One publisher or subscription the graph lists on a topic.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct EndpointInfo {
+    /// The name of the node holding the endpoint.
+    pub node_name: String,
+    pub qos: QosProfile,
+}
+
+/// Extract [`EndpointInfo`]s from the RMW topic and endpoint array.
+///
+/// # Safety
+///
+/// `info` must be an initialized array whose strings stay valid for the
+/// duration of the call.
+unsafe fn collect_endpoints(info: &rmw_topic_endpoint_info_array_t) -> Vec<EndpointInfo> {
+    if info.info_array.is_null() {
+        return Vec::new();
+    }
+    unsafe { core::slice::from_raw_parts(info.info_array, info.size) }
+        .iter()
+        .map(|endpoint| EndpointInfo {
+            node_name: unsafe { CStr::from_ptr(endpoint.node_name) }
+                .to_string_lossy()
+                .into_owned(),
+            qos: qos::parse(&endpoint.qos_profile),
+        })
+        .collect()
 }
 
 impl Drop for RclNode {
@@ -226,6 +240,7 @@ impl Drop for RclNode {
 pub struct RclNodeBuilder {
     name: NodeName,
     namespace: NodeNamespace,
+    rosout: bool,
 }
 
 impl RclNodeBuilder {
@@ -235,17 +250,25 @@ impl RclNodeBuilder {
         Self {
             name,
             namespace: NodeNamespace::root(),
+            rosout: true,
         }
     }
 
-    /// Sets the node's namespace. Defaults to the root namespace.
+    /// Set whether the node publishes its log output on `/rosout`. RCL enables
+    /// this by default so must be explicitly disabled if not desired.
+    pub fn rosout(mut self, enabled: bool) -> Self {
+        self.rosout = enabled;
+        self
+    }
+
+    #[allow(dead_code)]
     pub fn namespace(mut self, namespace: NodeNamespace) -> Self {
         self.namespace = namespace;
         self
     }
 
     pub fn create(self) -> Result<RclNode, CreationError> {
-        let origin = "RclNodeBuilder::create";
+        let origin = origin!("RclNodeBuilder::create");
 
         unsafe {
             let mut init_options = rcl_get_zero_initialized_init_options();
@@ -272,7 +295,8 @@ impl RclNodeBuilder {
             }
 
             let node = Box::new(UnsafeCell::new(rcl_get_zero_initialized_node()));
-            let node_options = rcl_node_get_default_options();
+            let mut node_options = rcl_node_get_default_options();
+            node_options.enable_rosout = self.rosout;
             let ret = rcl_node_init(
                 node.get(),
                 self.name.as_c_str().as_ptr(),

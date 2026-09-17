@@ -10,11 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Safe wrappers around the `r2r_rcl` bindings, covering what the gateway
+//! needs from `rcl`.
+
 pub(crate) mod error;
 pub(crate) mod gid;
+pub(crate) mod graph_listener;
 pub(crate) mod names;
+pub(crate) mod node;
+pub(crate) mod publisher;
 pub(crate) mod qos;
+pub(crate) mod subscription;
 
 pub(crate) use error::RclError;
 pub(crate) use gid::Gid;
+pub(crate) use graph_listener::GraphListener;
 pub(crate) use names::*;
+pub(crate) use node::{EndpointInfo, RclNode, RclNodeBuilder};
+pub(crate) use publisher::{RclPublisher, RclPublisherBuilder};
+pub(crate) use subscription::{MessageInfo, RclSubscription, RclSubscriptionBuilder};

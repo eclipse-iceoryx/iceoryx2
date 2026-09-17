@@ -13,22 +13,26 @@
 use std::rc::Rc;
 
 use r2r_rcl::{
-    RCL_RET_OK, rcl_get_zero_initialized_publisher, rcl_publish_serialized_message,
-    rcl_publisher_fini, rcl_publisher_get_default_options, rcl_publisher_init, rcl_ret_t,
-    rcl_serialized_message_t, rcutils_get_default_allocator,
+    RCL_RET_OK, RMW_GID_STORAGE_SIZE, RMW_RET_OK, rcl_get_zero_initialized_publisher,
+    rcl_publish_serialized_message, rcl_publisher_fini, rcl_publisher_get_default_options,
+    rcl_publisher_get_rmw_handle, rcl_publisher_get_subscription_count, rcl_publisher_init,
+    rcl_ret_t, rcl_serialized_message_t, rcutils_get_default_allocator, rmw_get_gid_for_publisher,
+    rmw_gid_t,
 };
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{RclError, TopicName, qos};
+use crate::rcl::{Gid, RclError, TopicName, qos};
 use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     PublisherInit,
+    /// The publisher's gid could not be read.
+    Gid,
 }
 
 impl core::fmt::Display for CreationError {
@@ -80,9 +84,10 @@ impl<'a> RclPublisherBuilder<'a> {
     }
 
     pub fn create(self) -> Result<RclPublisher, CreationError> {
-        let origin = "RclPublisherBuilder::create";
+        let origin = origin!("RclPublisherBuilder::create");
 
         unsafe {
+            // The publisher with the builder's QoS over the default options.
             let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
             let mut options = rcl_publisher_get_default_options();
             qos::apply(&self.qos, &mut options.qos);
@@ -103,19 +108,52 @@ impl<'a> RclPublisherBuilder<'a> {
                 );
             }
 
+            // The gid is kept so the node's own subscription can recognize
+            // and skip its own publications.
+            let mut gid = rmw_gid_t {
+                implementation_identifier: core::ptr::null(),
+                data: [0; RMW_GID_STORAGE_SIZE as usize],
+            };
+            let ret =
+                rmw_get_gid_for_publisher(rcl_publisher_get_rmw_handle(publisher.get()), &mut gid);
+            if ret != RMW_RET_OK as i32 {
+                let _ = rcl_publisher_fini(publisher.get(), self.node.handle());
+                fail!(
+                    from origin,
+                    with CreationError::Gid,
+                    "Failed to read the publisher's gid: {}",
+                    RclError::from(ret)
+                );
+            }
+
             Ok(RclPublisher {
                 node: self.node,
                 publisher,
+                gid: Gid::from(&gid),
                 _type_support: self.type_support,
             })
         }
     }
 }
 
-/// Publishes pre-serialized messages on a ROS 2 topic.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum CountError {
+    Count,
+}
+
+impl core::fmt::Display for CountError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CountError::{self:?}")
+    }
+}
+
+impl core::error::Error for CountError {}
+
+/// Publishes CDR-serialized messages on a ROS 2 topic.
 pub struct RclPublisher {
     node: Rc<RclNode>,
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
+    gid: Gid,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: Rc<TypeSupport>,
 }
@@ -131,10 +169,10 @@ impl core::fmt::Debug for RclPublisher {
 }
 
 impl RclPublisher {
-    /// Publishes the payload as-is; it must be a serialized message of the
+    /// Publishes the payload as-is; it must be a CDR-serialized message of the
     /// publisher's type.
     pub fn publish(&self, payload: &[u8]) -> Result<(), PublishError> {
-        let origin = "RclPublisher::publish";
+        let origin = origin!("RclPublisher::publish");
 
         let message = rcl_serialized_message_t {
             buffer: payload.as_ptr() as *mut u8,
@@ -156,6 +194,28 @@ impl RclPublisher {
         }
 
         Ok(())
+    }
+
+    /// The publisher's own GID.
+    pub fn gid(&self) -> &Gid {
+        &self.gid
+    }
+
+    /// The number of subscriptions matched with the publisher.
+    pub fn subscription_count(&self) -> Result<usize, CountError> {
+        let origin = origin!("RclPublisher::subscription_count");
+
+        let mut count = 0;
+        let ret = unsafe { rcl_publisher_get_subscription_count(self.publisher.get(), &mut count) };
+        if ret != RCL_RET_OK as rcl_ret_t {
+            fail!(
+                from origin,
+                with CountError::Count,
+                "Failed to count the matched subscriptions: {}",
+                RclError::from(ret)
+            );
+        }
+        Ok(count)
     }
 }
 
