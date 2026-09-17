@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -13,13 +13,12 @@
 use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
-
 use iceoryx2_cli::help_template;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2 gateway ros2",
-    bin_name = "iox2 gateway ros2",
+    name = "iox2 link gateway ros2",
+    bin_name = "iox2 link gateway ros2",
     about = "Launch an iceoryx2 gateway to ROS 2.",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
@@ -34,7 +33,8 @@ pub struct Cli {
         conflicts_with = "static_mapping",
         help = "Bridge ROS 2 topics matching this wildcard pattern, where '*' matches zero or \
                 more characters and '?' matches one. Repeatable. When omitted, attempts to \
-                bridge all topics."
+                bridge all topics. ROS 2's own topics, /rosout and /parameter_events, are \
+                never bridged."
     )]
     pub allow: Vec<String>,
 
@@ -68,32 +68,29 @@ pub struct Cli {
 
     #[clap(
         long,
-        short = 'd',
-        help = "Name of a service providing discovery updates to connect to"
-    )]
-    pub discovery_service: Option<String>,
-
-    #[clap(
-        long,
         value_name = "RATE",
         help = "Polling rate in milliseconds for discovery and sample propagation \
-                (defaults to 100ms when no other flags are given; otherwise must be \
-                set explicitly to enable polling)"
+                (defaults to 100ms when no other wake source is given; otherwise \
+                must be set explicitly to enable polling)"
     )]
     pub poll: Option<u64>,
 
-    #[clap(
-        long = "reactive-backend",
-        help = "Reactively wake the gateway when the backend has new data"
-    )]
-    pub reactive_backend: bool,
+    #[clap(long, help = "Wake the gateway when ROS 2 has new data or endpoints")]
+    pub reactive: bool,
 
     #[clap(
         long,
         value_name = "EVENT_SERVICE",
-        help = "Additionally wake the gateway when the named iceoryx2 event service fires (repeatable)"
+        help = "Additionally wake the gateway when the named iceoryx2 event service fires \
+                (repeatable)"
     )]
     pub listener: Vec<String>,
+
+    #[clap(
+        long,
+        help = "Report what every bridge moved after each propagation, at trace level"
+    )]
+    pub monitor: bool,
 }
 
 impl Cli {
@@ -118,10 +115,11 @@ pub enum Mapping {
 #[derive(ValueEnum, Debug, Clone, Copy, Eq, PartialEq)]
 #[value(rename_all = "PascalCase")]
 pub enum Translator {
-    /// Payload bytes cross unmodified.
+    /// Payload bytes cross unmodified, the CDR of the ROS 2 type as a byte
+    /// slice.
     Passthrough,
-    /// (De)serializes payloads at the boundary to ROS 2 using
-    /// the ROS 2 typesupport libraries. Only supports fixed-sized structs
-    /// that can be placed in shared memory.
+    /// (De)serializes payloads at the boundary to ROS 2 using the ROS 2
+    /// typesupport libraries. Only supports fixed-sized structs that can be
+    /// placed in shared memory.
     PlainStruct,
 }
