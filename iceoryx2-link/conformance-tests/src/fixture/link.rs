@@ -13,12 +13,13 @@
 use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::Backend;
+use iceoryx2_link_gateway::Gateway;
 use iceoryx2_link_tunnel::Tunnel;
 
-use crate::fixture::TunnelFixture;
+use crate::fixture::{GatewayFixture, TunnelFixture};
 
 /// What the link suites build their backends from. Sealed, implemented
-/// by `TunnelLinkFixture` alone.
+/// by `TunnelLinkFixture` and `GatewayLinkFixture` alone.
 pub trait LinkFixture<S: Service>: sealed::Sealed {
     type Backend: Backend<S>;
 
@@ -45,7 +46,23 @@ impl<S: Service, F: TunnelFixture> LinkFixture<S> for TunnelLinkFixture<F> {
     }
 }
 
+/// A link fixture over a gateway fixture, its gateways the link's backends.
+pub struct GatewayLinkFixture<F>(F);
+
+impl<S: Service, F: GatewayFixture<S>> LinkFixture<S> for GatewayLinkFixture<F> {
+    type Backend = Gateway<F::Adapter, F::Mapping, F::Translator>;
+
+    fn new() -> Self {
+        Self(F::new())
+    }
+
+    fn backend(&mut self, _: &Config) -> Self::Backend {
+        self.0.gateway()
+    }
+}
+
 mod sealed {
     pub trait Sealed {}
     impl<F> Sealed for super::TunnelLinkFixture<F> {}
+    impl<F> Sealed for super::GatewayLinkFixture<F> {}
 }

@@ -1,0 +1,31 @@
+[package]
+name = "iceoryx2-link-gateway"
+description = "iceoryx2: gateway backend connecting iceoryx2 to a middleware through an adapter"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+  "iceoryx2/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-link-adapter/std",
+  "iceoryx2-link-backend/std",
+  "iceoryx2-log/std",
+]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-link-adapter = { workspace = true }
+iceoryx2-link-backend = { workspace = true }
+iceoryx2-log = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }

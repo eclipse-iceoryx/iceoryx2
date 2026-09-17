@@ -99,12 +99,12 @@ impl ServiceDescription {
         self.settings.id()
     }
 
-    /// The settings half.
+    /// The service settings.
     pub fn settings(&self) -> &ServiceSettings {
         &self.settings
     }
 
-    /// The types half, what crosses.
+    /// The service types.
     pub fn types(&self) -> &ServiceTypes {
         &self.types
     }

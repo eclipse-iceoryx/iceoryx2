@@ -11,5 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod fake_bus;
+mod fake_middleware;
 
 pub(crate) use fake_bus::FakeBusFixture;
+pub(crate) use fake_middleware::FakeMiddlewareFixture;

@@ -66,6 +66,8 @@
 //!
 //! * A new carrier implements the contract of `iceoryx2-link-carrier` and
 //!   runs under the tunnel.
+//! * A new adapter implements the contract of `iceoryx2-link-adapter` and
+//!   runs under the gateway, with a mapping and a translator.
 //! * A new kind of backend implements [`Backend`](iceoryx2_link_backend::Backend)
 //!   itself.
 //!

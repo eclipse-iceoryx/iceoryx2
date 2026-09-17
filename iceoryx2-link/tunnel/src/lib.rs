@@ -13,8 +13,7 @@
 //! The tunnel, the backend to another `iceoryx2` system over a carrier.
 //!
 //! [`Tunnel`] runs over a `Carrier`, the mechanism reaching the peers on
-//! the opposing side. It is a backend a `Link` runs, the carrier crate
-//! holds what a mechanism implements to be one.
+//! the opposing side. It is one of the backends a `Link` runs.
 //!
 //! ```ignore
 //! let tunnel = Tunnel::new(carrier, &config);

@@ -16,4 +16,5 @@ extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
 pub mod fake_bus_tests;
+pub mod fake_middleware_tests;
 mod fixture;

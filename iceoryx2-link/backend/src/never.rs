@@ -13,7 +13,8 @@
 /// A type without values, so code over it can never run.
 ///
 /// Fills an associated type an implementer has nothing for, e.g. the relay
-/// of a pattern a backend does not bridge.
+/// of a pattern a backend does not bridge or the endpoints that a middleware
+/// does not support.
 // TODO(#1979): replace with the never type `!` once it is stabilized.
 #[derive(Debug, Clone, Copy)]
 pub enum Never {}
