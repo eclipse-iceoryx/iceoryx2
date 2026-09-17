@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Public, serializable configuration for the ROS 2 gateway backend.
-
+use iceoryx2_log::{fail, origin};
 use serde::{Deserialize, Serialize};
 
 use crate::rcl;
@@ -20,19 +19,33 @@ pub use crate::NameError;
 
 /// A ROS 2 topic name, e.g. `/Camera/FrontRight`, validated against the ROS 2
 /// topic naming rules.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct TopicName(rcl::TopicName);
 
 impl TopicName {
     /// Creates a topic name, validating it against the ROS 2 topic naming rules.
     pub fn new(topic: &str) -> Result<Self, NameError> {
-        Ok(Self(rcl::TopicName::new(topic)?))
+        let origin = origin!("TopicName::new");
+
+        let topic = fail!(
+            from origin,
+            when rcl::TopicName::new(topic),
+            "Invalid ROS 2 topic name '{}'", topic
+        );
+
+        Ok(Self(topic))
     }
 
     /// The topic name as a string slice.
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl core::fmt::Display for TopicName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -70,7 +83,14 @@ pub struct TypeName(rcl::TypeName);
 
 impl TypeName {
     pub fn new(type_name: &str) -> Result<Self, NameError> {
-        Ok(Self(rcl::TypeName::new(type_name)?))
+        let origin = origin!("TypeName::new");
+
+        let type_name = fail!(
+            from origin,
+            when rcl::TypeName::new(type_name),
+            "Invalid ROS 2 type name '{}'", type_name
+        );
+        Ok(Self(type_name))
     }
 
     /// The type name as a string slice.
@@ -106,8 +126,8 @@ impl From<rcl::TypeName> for TypeName {
     }
 }
 
-/// Configuration for the `Ros2Backend`.
-#[derive(Debug, Default, Serialize, Deserialize)]
+/// Configuration for the `Ros2Adapter`.
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     /// Message types whose typesupport is resolved during backend creation.
     /// Types left out are resolved on first use instead.
@@ -116,4 +136,20 @@ pub struct Config {
     /// and thus fails quickly on misconfiguration.
     #[serde(default)]
     pub preload_types: Vec<TypeName>,
+    /// Whether the gateway's node publishes its log output on `/rosout`.
+    #[serde(default = "rosout_default")]
+    pub rosout: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            preload_types: Vec::new(),
+            rosout: rosout_default(),
+        }
+    }
+}
+
+fn rosout_default() -> bool {
+    true
 }

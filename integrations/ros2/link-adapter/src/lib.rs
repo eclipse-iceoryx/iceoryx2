@@ -12,6 +12,7 @@
 
 #![deny(unsafe_code)]
 
+pub mod config;
 pub mod qos;
 
 #[allow(unsafe_code)]
@@ -19,6 +20,7 @@ pub(crate) mod rcl;
 #[allow(unsafe_code)]
 pub(crate) mod typesupport;
 
+pub use config::{Config, TopicName, TypeName};
 pub use qos::QosProfile;
 
 /// The reason a string failed ROS 2 name validation.
