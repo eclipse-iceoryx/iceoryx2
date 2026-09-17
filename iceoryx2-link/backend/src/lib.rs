@@ -77,6 +77,7 @@
 
 extern crate alloc;
 
+mod allow_list;
 mod backend;
 pub mod diagnostic;
 mod never;
@@ -86,6 +87,7 @@ pub mod resolver;
 pub mod service_description;
 pub mod wire;
 
+pub use allow_list::AllowList;
 pub use backend::{Announcement, Backend, OnRemote, Refusal, RemoteDescription, RemoteId};
 pub use never::Never;
 pub use reactive::{Reactive, WakeHandle, WakeService};

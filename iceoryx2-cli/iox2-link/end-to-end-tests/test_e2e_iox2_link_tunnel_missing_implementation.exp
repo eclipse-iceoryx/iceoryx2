@@ -1,0 +1,49 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 10
+
+exec cargo build --bin iox2 --bin iox2-link 2>@1
+
+# Installed commands are found by their name alone, build outputs carry the
+# build type as a suffix.
+set env(PATH) "${REPO_ROOT}/target/debug:$env(PATH)"
+
+#### Test
+
+spawn iox2 link tunnel missing
+set id_iox2 $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_iox2 "Command not found: missing"
+expect -i $id_iox2 eof
+
+set exit_code [lindex [wait -i $id_iox2] 3]
+if { $exit_code != 1 } {
+    puts "${C_RED}Test failed!${C_OFF}"
+    puts "${C_YELLOW}Expected exit code:${C_OFF} 1"
+    puts "${C_YELLOW}Actual:${C_OFF} ${exit_code}"
+    exit 1
+}
+
+show_test_passed

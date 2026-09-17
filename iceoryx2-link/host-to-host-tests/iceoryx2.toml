@@ -1,0 +1,8 @@
+# The iceoryx2 configuration of both hosts under test.
+#
+# A ping published before the tunnel has bridged its service is delivered
+# from the history once the bridge's subscriber arrives, and a service the
+# tunnel mirrors takes the same history from these defaults.
+
+[defaults.publish-subscribe]
+publisher-history-size = 10

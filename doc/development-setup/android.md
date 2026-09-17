@@ -164,12 +164,12 @@ adb push target/x86_64-linux-android/debug/examples/service_types_local_pubsub /
 adb shell /data/local/tmp/service_types_local_pubsub
 ```
 
-In order to build the `iceoryx2-integrations-zenoh-gateway-backend` the `CC`
+In order to build the `iceoryx2-integrations-zenoh-link-carrier` the `CC`
 environment variable must point to `clang` from the Android NDK:
 
 ```bash
 export CC=/opt/android/android-ndk-r29/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android35-clang
-cargo build --target x86_64-linux-android --manifest-path integrations/zenoh/Cargo.toml --package iceoryx2-integrations-zenoh-gateway-backend
+cargo build --target x86_64-linux-android --manifest-path integrations/zenoh/Cargo.toml --package iceoryx2-integrations-zenoh-link-carrier
 ```
 
 In order to make the gateway functional, more work is required.

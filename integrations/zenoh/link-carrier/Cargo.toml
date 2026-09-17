@@ -1,0 +1,32 @@
+[package]
+name = "iceoryx2-integrations-zenoh-link-carrier"
+description = "iceoryx2-integrations: tunnel carrier for Zenoh"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[[test]]
+name = "main"
+harness = false
+
+[dependencies]
+iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-cal = { workspace = true, features = ["std"] }
+iceoryx2-log = { workspace = true, features = ["std"] }
+iceoryx2-bb-elementary = { workspace = true, features = ["std"] }
+iceoryx2-link-backend = { workspace = true, features = ["std"] }
+iceoryx2-link-carrier = { workspace = true, features = ["std"] }
+
+flume = { workspace = true }
+postcard = { workspace = true }
+zenoh = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing-macros = { workspace = true, features = ["std"] }
+iceoryx2-link-conformance-tests = { workspace = true, features = ["std"] }

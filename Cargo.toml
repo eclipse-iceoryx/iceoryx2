@@ -92,6 +92,7 @@ members = [
     "iceoryx2-link/conformance-tests",
     "iceoryx2-link/conformance-tests/tests-common",
     "iceoryx2-link/conformance-tests/tests-nostd",
+    "iceoryx2-link/host-to-host-tests",
 
     "iceoryx2-userland/record-and-replay",
 
@@ -171,6 +172,7 @@ iceoryx2-link-carrier = { version = "0.9.999", path = "iceoryx2-link/carrier", d
 iceoryx2-link-tunnel = { version = "0.9.999", path = "iceoryx2-link/tunnel", default-features = false }
 iceoryx2-link-gateway = { version = "0.9.999", path = "iceoryx2-link/gateway", default-features = false }
 iceoryx2-link-conformance-tests = { version = "0.9.999", path = "iceoryx2-link/conformance-tests" }
+iceoryx2-link-host-to-host-tests = { version = "0.9.999", path = "iceoryx2-link/host-to-host-tests" }
 iceoryx2-userland-record-and-replay = { version = "0.9.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################

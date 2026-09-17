@@ -1525,61 +1525,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-gateway"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-gateway-backend",
- "iceoryx2-log",
- "iceoryx2-services-discovery",
-]
-
-[[package]]
-name = "iceoryx2-gateway-backend"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "postcard",
- "serde",
-]
-
-[[package]]
-name = "iceoryx2-gateway-conformance-tests"
-version = "0.9.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-gateway",
- "iceoryx2-gateway-backend",
- "iceoryx2-services-discovery",
-]
-
-[[package]]
-name = "iceoryx2-integrations-zenoh-gateway-backend"
+name = "iceoryx2-integrations-zenoh-link-carrier"
 version = "0.9.999"
 dependencies = [
  "flume 0.12.0",
  "iceoryx2",
- "iceoryx2-bb-concurrency",
- "iceoryx2-bb-posix",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
  "iceoryx2-cal",
- "iceoryx2-gateway",
- "iceoryx2-gateway-backend",
- "iceoryx2-gateway-conformance-tests",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-link-conformance-tests",
  "iceoryx2-log",
  "postcard",
- "serde",
  "zenoh",
 ]
 
 [[package]]
-name = "iceoryx2-integrations-zenoh-gateway-cli"
+name = "iceoryx2-integrations-zenoh-link-tunnel-cli"
 version = "0.9.999"
 dependencies = [
  "anyhow",
@@ -1588,10 +1552,94 @@ dependencies = [
  "human-panic",
  "iceoryx2",
  "iceoryx2-cli",
- "iceoryx2-gateway",
- "iceoryx2-integrations-zenoh-gateway-backend",
+ "iceoryx2-integrations-zenoh-link-carrier",
+ "iceoryx2-link",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-tunnel",
  "iceoryx2-log",
  "zenoh",
+]
+
+[[package]]
+name = "iceoryx2-link"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-adapter"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+]
+
+[[package]]
+name = "iceoryx2-link-backend"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-log",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-link-carrier"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-link",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-link-gateway",
+ "iceoryx2-link-tunnel",
+]
+
+[[package]]
+name = "iceoryx2-link-gateway"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-tunnel"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-log",
 ]
 
 [[package]]

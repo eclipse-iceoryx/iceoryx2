@@ -1619,6 +1619,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-link-host-to-host-tests"
+version = "0.9.999"
+dependencies = [
+ "clap",
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-posix",
+ "iceoryx2-log",
+]
+
+[[package]]
 name = "iceoryx2-link-testing"
 version = "0.9.999"
 dependencies = [

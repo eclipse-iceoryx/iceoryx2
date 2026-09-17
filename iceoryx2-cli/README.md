@@ -83,60 +83,67 @@ Commands:
   details  Show node details
 ```
 
-## Gateway
+## Link
 
-The `iox2 gateway` sub-command bridges `iceoryx2` instances running on
-different hosts or networks. `iox2-gateway` itself does not implement any
-transport; it discovers and delegates to backend-specific binaries named
-`iox2-gateway-<backend>`, which must be installed separately.
+> [!IMPORTANT]
+> The link is currently a prototype and requires validation in real
+> deployments. Only recommended for experimentation in development
+> deployments.
+>
+> If encountering issues, create an issue to help us converge to stability.
+
+The `iox2 link` sub-command extends `iceoryx2` services across the boundary of
+a shared memory domain. `iox2-link` itself implements no backend; it groups
+the implementations by backend and delegates to binaries named
+`iox2-link-<backend>-<implementation>`, which are installed separately.
 
 ```console
-$ iox2 gateway --help
-Launch a gateway between iceoryx2 instances.
+$ iox2 link --help
+Launch a link extending iceoryx2 services across a boundary.
 
-Usage: iox2 gateway [OPTIONS]
+Usage: iox2 link <COMMAND>
 
 Options:
-  -l, --list     List all installed gateway backends
-  -p, --paths    Display paths that will be checked for gateway backends
   -h, --help     Print help
   -V, --version  Print version
 
 Commands:
-  ...            See installed gateway backends with --list
+  tunnel   Launch a tunnel to other iceoryx2 systems over a carrier.
+  gateway  Launch a gateway to another middleware over an adapter.
 ```
 
-### Backends
+### Implementations
 
-Available backends:
+* **Tunnel over Zenoh**, `cargo install iceoryx2-integrations-zenoh-link-tunnel-cli`
+* **Gateway to ROS 2**, built from source inside a sourced ROS 2 environment,
+  see `integrations/ros2/link-gateway-cli`
 
-* **Zenoh** — `cargo install iceoryx2-integrations-zenoh-gateway-cli`
-
-Once installed, a backend is discovered automatically:
+Once installed, an implementation is listed under its backend:
 
 ```console
-$ iox2 gateway --list
+$ iox2 link tunnel --list
 Discovered Commands:
   zenoh
 ```
 
-Invoke a backend by name; any additional arguments are forwarded to the
-backend binary:
+Invoke an implementation by name; any additional arguments are forwarded to
+its binary:
 
 ```console
-$ iox2 gateway zenoh --help
-Launch an iceoryx2 gateway using Zenoh as the transport.
+$ iox2 link tunnel zenoh --help
+Launch an iceoryx2 tunnel to other iceoryx2 systems over zenoh.
 
-Usage: iox2 gateway zenoh [OPTIONS]
+Usage: iox2 link tunnel zenoh [OPTIONS]
 
 Options:
-  -z, --zenoh-config <PATH>          Path to a zenoh configuration file
-  -d, --discovery-service <DISCOVERY_SERVICE>
-                                     Name of a service providing discovery updates to connect to
-      --poll <RATE>                  Poll for discovery updates and samples at the provided rate in milliseconds [default: 100]
-      --reactive                     Reactively process discovery updates and samples
-  -h, --help                         Print help
-  -V, --version                      Print version
+  -z, --zenoh-config <PATH>       Path to a zenoh configuration file
+  -a, --allow <SERVICE>           Bridge iceoryx2 services whose names match this wildcard pattern, where '*' matches zero or more characters and '?' matches one. Repeatable. When omitted, all services are bridged.
+      --poll <RATE>               Polling rate in milliseconds for discovery and sample propagation (defaults to 100ms when no other wake source is given; otherwise must be set explicitly to enable polling)
+      --reactive                  Wake the tunnel when the peers have new data
+      --listener <EVENT_SERVICE>  Additionally wake the tunnel when the named iceoryx2 event service fires (repeatable)
+      --monitor                   Report what every bridge moved after each propagation, at trace level
+  -h, --help                      Print help
+  -V, --version                   Print version
 ```
 
 ## Extending

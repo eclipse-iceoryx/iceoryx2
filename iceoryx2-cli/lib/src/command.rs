@@ -17,7 +17,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Command, ExitStatus, Stdio};
 
 #[cfg(windows)]
 const PATH_ENV_VAR_SEPARATOR: char = ';';
@@ -28,6 +28,9 @@ const COMMAND_EXT: &str = "exe";
 const PATH_ENV_VAR_SEPARATOR: char = ':';
 #[cfg(not(windows))]
 const COMMAND_EXT: &str = "";
+
+/// Separates the segments of a command's name, e.g. `iox2-link-tunnel-zenoh`.
+const NAME_SEPARATOR: char = '-';
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CommandType {
@@ -120,6 +123,14 @@ where
             )
         })?;
 
+        if command_name.contains(NAME_SEPARATOR) {
+            return Err(anyhow!(
+                "Not a direct {} command: {}",
+                prefix.trim_end_matches(NAME_SEPARATOR),
+                file_stem
+            ));
+        }
+
         let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
         if extension == COMMAND_EXT {
             Ok(command_name.to_string())
@@ -157,8 +168,7 @@ where
                                     && let Some(build_type) =
                                         path.file_name().and_then(|os_str| os_str.to_str())
                                 {
-                                    const NAME_SEPARATOR: &str = "-";
-                                    command_name.push_str(NAME_SEPARATOR);
+                                    command_name.push(NAME_SEPARATOR);
                                     command_name.push_str(build_type);
                                 }
 
@@ -183,6 +193,9 @@ where
         Ok(PathsList { build, install })
     }
 
+    /// The commands directly under `prefix`, executables named `prefix`
+    /// followed by a single name segment. A command nested deeper is found
+    /// through the command it is nested under.
     pub fn commands_with_prefix(prefix: &str) -> Result<Vec<CommandInfo>> {
         let search_paths = Self::paths_for_prefix(prefix).context("Failed to list paths")?;
         let mut commands = Vec::new();
@@ -210,25 +223,59 @@ where
 }
 
 pub trait CommandExecutor {
-    fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()>;
+    /// Runs the command to completion and returns its exit status.
+    fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<ExitStatus>;
 }
 
 pub struct ExternalCommandExecutor;
 
-impl CommandExecutor for ExternalCommandExecutor {
-    fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()> {
+impl ExternalCommandExecutor {
+    fn command(command_info: &CommandInfo, args: Option<&[String]>) -> Command {
         let mut command = Command::new(&command_info.path);
         command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
         if let Some(arguments) = args {
             command.args(arguments);
         }
         command
-            .status()
-            .with_context(|| format!("Failed to execute command: {:?}", command_info.path))?;
-        Ok(())
+    }
+
+    /// Hands this process over to the command, so its exit status and the
+    /// signals sent to this process come from the command. Returns only when
+    /// the command could not be started.
+    #[cfg(unix)]
+    pub fn replace(command_info: &CommandInfo, args: Option<&[String]>) -> anyhow::Error {
+        use std::os::unix::process::CommandExt;
+
+        let error = Self::command(command_info, args).exec();
+        anyhow!(
+            "Failed to execute command {:?}: {}",
+            command_info.path,
+            error
+        )
+    }
+
+    /// Runs the command and exits with its exit status, so the status is the
+    /// from the command. Returns only when the command could not be started.
+    #[cfg(not(unix))]
+    pub fn replace(command_info: &CommandInfo, args: Option<&[String]>) -> anyhow::Error {
+        match Self::execute(command_info, args) {
+            Ok(status) => std::process::exit(status.code().unwrap_or(1)),
+            Err(error) => error,
+        }
     }
 }
 
+impl CommandExecutor for ExternalCommandExecutor {
+    fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<ExitStatus> {
+        Self::command(command_info, args)
+            .status()
+            .with_context(|| format!("Failed to execute command: {:?}", command_info.path))
+    }
+}
+
+/// Runs the command `command_name` found under `prefix` in place of this
+/// process. Returns only when the command is not found or could not be
+/// started.
 pub fn execute<E: Environment>(
     prefix: &str,
     command_name: &str,
@@ -242,7 +289,7 @@ pub fn execute<E: Environment>(
         .find(|command| command.name == command_name)
         .ok_or_else(|| anyhow!("Command not found: {}", command_name))?;
 
-    ExternalCommandExecutor::execute(&command, args)
+    Err(ExternalCommandExecutor::replace(&command, args))
 }
 
 pub fn list<E: Environment>(prefix: &str) -> Result<()> {
@@ -289,6 +336,7 @@ mod tests {
     const FOO_COMMAND: &str = "Xt7bK9pL";
     const BAR_COMMAND: &str = "m3Qf8RzN";
     const BAZ_COMMAND: &str = "P5hJ2wAc";
+    const NESTED_COMMAND: &str = "Qw4Er7Ty";
 
     fn create_noop_executable(file_path: &std::path::Path) -> std::io::Result<()> {
         use std::process::Command;
@@ -362,6 +410,14 @@ mod tests {
             create_file!(temp_path, format!("{}{}", PREFIX, BAR_COMMAND));
             create_file!(temp_path, format!("{}{}.d", PREFIX, BAR_COMMAND));
             create_file!(temp_path, format!("{}{}.exe", PREFIX, BAR_COMMAND));
+            create_file!(
+                temp_path,
+                format!("{}{}-{}", PREFIX, FOO_COMMAND, NESTED_COMMAND)
+            );
+            create_file!(
+                temp_path,
+                format!("{}{}-{}.exe", PREFIX, FOO_COMMAND, NESTED_COMMAND)
+            );
             create_file!(temp_path, BAZ_COMMAND);
             create_file!(temp_path, format!("{}.d", BAZ_COMMAND));
             create_file!(temp_path, format!("{}.exe", BAZ_COMMAND));
@@ -399,6 +455,28 @@ mod tests {
         assert_that!(
             commands,
             not_contains_match | command | command.name == BAZ_COMMAND
+        );
+    }
+
+    #[test]
+    fn a_nested_command_is_listed_only_under_the_command_it_nests_in() {
+        let _test_env = TestEnv::setup();
+
+        let top_level = ExternalCommandFinder::<HostEnvironment>::commands_with_prefix(PREFIX)
+            .expect("Failed to retrieve commands");
+        let nested = ExternalCommandFinder::<HostEnvironment>::commands_with_prefix(&format!(
+            "{}{}-",
+            PREFIX, FOO_COMMAND
+        ))
+        .expect("Failed to retrieve nested commands");
+
+        assert_that!(
+            top_level,
+            not_contains_match | command | command.name.contains(NESTED_COMMAND)
+        );
+        assert_that!(
+            nested,
+            contains_match | command | command.name == NESTED_COMMAND
         );
     }
 

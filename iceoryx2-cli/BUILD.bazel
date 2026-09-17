@@ -141,4 +141,26 @@ rust_binary(
     ],
 )
 
+rust_binary(
+    name = "iox2-link",
+    srcs = glob(["iox2-link/src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":iceoryx2-cli",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-bb/print:iceoryx2-bb-print",
+        "@crate_index//:anyhow",
+        "@crate_index//:better-panic",
+        "@crate_index//:clap",
+        "@crate_index//:human-panic",
+    ],
+)
+
 # TODO: [349] add tests

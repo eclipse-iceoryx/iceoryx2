@@ -31,7 +31,7 @@ set id_iox2 $spawn_id
 
 expect_output_from $id_iox2 "Discovered Commands:"
 expect_output_from $id_iox2 "config-debug"
-expect_output_from $id_iox2 "gateway-debug"
+expect_output_from $id_iox2 "link-debug"
 expect_output_from $id_iox2 "node-debug"
 expect_output_from $id_iox2 "service-debug"
 
