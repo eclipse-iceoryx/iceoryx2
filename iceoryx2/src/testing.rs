@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::identifiers::{UniqueNodeId, UniqueServiceId};
+use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueServiceId};
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
@@ -18,7 +18,6 @@ use crate::service::config_scheme::{
     dynamic_config_storage_config, node_details_path, port_tag_config, service_tag_config,
 };
 use crate::service::dynamic_config::DynamicConfig;
-use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::service_hash::ServiceHash;
 use crate::service::static_config;
 use crate::{
@@ -38,6 +37,30 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptDoesExistError, NamedConceptRemoveError};
 use iceoryx2_cal::static_storage::StaticStorageCreateError;
+
+pub fn static_config_name(service_hash: &ServiceHash) -> FileName {
+    crate::service::naming_scheme::static_config_name(service_hash)
+}
+
+pub fn dynamic_config_name(service_id: UniqueServiceId) -> FileName {
+    crate::service::naming_scheme::dynamic_config_name(service_id)
+}
+
+pub fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
+    crate::service::naming_scheme::event_concept_name(listener_id)
+}
+
+pub fn connection_name(sender_port_id: u128, receiver_port_id: u128) -> FileName {
+    crate::service::naming_scheme::connection_name(sender_port_id, receiver_port_id)
+}
+
+pub fn data_segment_name(port_id_value: u128) -> FileName {
+    crate::service::naming_scheme::data_segment_name(port_id_value)
+}
+
+pub fn blackboard_name(service_id: UniqueServiceId) -> FileName {
+    crate::service::naming_scheme::blackboard_name(service_id)
+}
 
 pub fn generate_service_name() -> ServiceName {
     ServiceName::new(&format!("tests_{}", UniqueSystemId::new().unwrap().value())).unwrap()
