@@ -44,4 +44,3 @@ mod offers;
 
 pub use carrier::{AnnouncementError, CreationError, ZenohCarrier};
 pub use channel::{ChannelError, Error as ChannelSendError, ZenohChannel};
-pub use keys::channels_of;

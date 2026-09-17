@@ -16,11 +16,12 @@ use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_testing::instantiate_conformance_tests;
-use iceoryx2_integrations_zenoh_link_carrier::{ZenohCarrier, channels_of};
+use iceoryx2_integrations_zenoh_link_carrier::ZenohCarrier;
 use iceoryx2_link_conformance_tests::fixture::{CarrierFixture, TunnelFixture, TunnelLinkFixture};
 use iceoryx2_link_conformance_tests::parameters::{
     AnyName, Event, FixedSizePayload, PublishSubscribe,
 };
+use zenoh::key_expr::OwnedKeyExpr;
 use zenoh::sample::Locality;
 use zenoh::session::ZenohId;
 use zenoh::{Session, Wait};
@@ -30,6 +31,16 @@ use zenoh::{Session, Wait};
 const SCOUTING_DELAY_MS: u64 = 50;
 /// The pause between two looks at the sessions' peers and matching status.
 const POLL_PERIOD: Duration = Duration::from_millis(10);
+
+/// The key a session's probe subscriber listens on while syncing.
+fn probe_key(hash: &ServiceHash, session: &Session) -> OwnedKeyExpr {
+    OwnedKeyExpr::try_from(format!(
+        "iox2/test/probe/{}/{}",
+        hash.as_str(),
+        session.zid()
+    ))
+    .expect("the probe key is well formed")
+}
 
 fn config() -> zenoh::Config {
     let mut config = zenoh::Config::default();
@@ -75,21 +86,55 @@ impl CarrierFixture for ZenohFixture {
         ZenohCarrier::open(session).expect("the carrier is created")
     }
 
-    /// Every carrier's session is connected to every other one, and sees a
-    /// remote subscriber on the service's channels from its own side.
+    /// Waits until every session knows every other one's subscription to
+    /// the channel of the service `hash`.
+    ///
+    /// Zenoh delivers a frame only to the subscribers a session already
+    /// knows of, and a new subscription takes a moment to reach the other
+    /// sessions. A scenario should open its channels first and then call
+    /// this, which ensures the channels are discovered by all sessions
+    /// in the scenario.
+    ///
+    /// The check uses probes. Every session declares a subscriber on a key
+    /// of its own, later than the channel subscriber it already has, and
+    /// every other session declares a publisher on that key. Zenoh passes
+    /// subscriptions on in the order they were made, so once every probe
+    /// publisher matches, the channel subscribers can be assumed to have
+    /// matched as well.
     fn sync(&self, hash: &ServiceHash, timeout: Duration) -> bool {
         let started = Instant::now();
-        let publishers: Vec<_> = self
+
+        // One probe subscriber per session for `hash`.
+        let _subscribers: Vec<_> = self
             .sessions
             .iter()
             .map(|session| {
                 session
-                    .declare_publisher(channels_of(hash))
-                    .allowed_destination(Locality::Remote)
+                    .declare_subscriber(probe_key(hash, session))
+                    .allowed_origin(Locality::Remote)
                     .wait()
-                    .expect("the probe publisher is declared")
+                    .expect("the probe subscriber is declared")
             })
             .collect();
+
+        // And one probe publisher per session for `hash`.
+        let publishers: Vec<_> = self
+            .sessions
+            .iter()
+            .flat_map(|from| {
+                self.sessions
+                    .iter()
+                    .filter(move |to| to.zid() != from.zid())
+                    .map(move |to| {
+                        from.declare_publisher(probe_key(hash, to))
+                            .allowed_destination(Locality::Remote)
+                            .wait()
+                            .expect("the probe publisher is declared")
+                    })
+            })
+            .collect();
+
+        // Wait until every probe publisher is matched.
         loop {
             let matched = publishers.iter().all(|publisher| {
                 publisher
@@ -98,12 +143,14 @@ impl CarrierFixture for ZenohFixture {
                     .expect("the matching status is read")
                     .matching()
             });
+
             if self.is_meshed() && matched {
                 return true;
             }
             if started.elapsed() >= timeout {
                 return false;
             }
+
             std::thread::sleep(POLL_PERIOD);
         }
     }
