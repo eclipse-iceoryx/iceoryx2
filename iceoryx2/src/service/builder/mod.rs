@@ -197,7 +197,7 @@ struct DynamicConfigCreationArgs {
 }
 
 type StaticServiceResources<ServiceType> = (
-    StaticConfig<ServiceType>,
+    StaticConfig,
     <ServiceType as service::Service>::StaticStorage,
 );
 
@@ -219,10 +219,7 @@ impl<S: Service> Builder<S> {
         self,
     ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_request_response::<S::ServiceNameHasher>(
-                &self.name,
-                self.shared_node.config(),
-            ),
+            StaticConfig::new_request_response::<S>(&self.name, self.shared_node.config()),
             self.shared_node,
         )
         .request_response::<RequestPayload, ResponsePayload>()
@@ -234,10 +231,7 @@ impl<S: Service> Builder<S> {
         self,
     ) -> publish_subscribe::Builder<PayloadType, (), S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
-                &self.name,
-                self.shared_node.config(),
-            ),
+            StaticConfig::new_publish_subscribe::<S>(&self.name, self.shared_node.config()),
             self.shared_node,
         )
         .publish_subscribe()
@@ -247,7 +241,7 @@ impl<S: Service> Builder<S> {
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     pub fn event(self) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, self.shared_node.config()),
+            StaticConfig::new_event::<S>(&self.name, self.shared_node.config()),
             self.shared_node,
         )
         .event()
@@ -261,10 +255,7 @@ impl<S: Service> Builder<S> {
         self,
     ) -> blackboard::Creator<KeyType, S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_blackboard::<S::ServiceNameHasher>(
-                &self.name,
-                self.shared_node.config(),
-            ),
+            StaticConfig::new_blackboard::<S>(&self.name, self.shared_node.config()),
             self.shared_node,
         )
         .blackboard_creator()
@@ -278,10 +269,7 @@ impl<S: Service> Builder<S> {
         self,
     ) -> blackboard::Opener<KeyType, S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_blackboard::<S::ServiceNameHasher>(
-                &self.name,
-                self.shared_node.config(),
-            ),
+            StaticConfig::new_blackboard::<S>(&self.name, self.shared_node.config()),
             self.shared_node,
         )
         .blackboard_opener()
@@ -291,7 +279,7 @@ impl<S: Service> Builder<S> {
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
-    pub(crate) service_config: StaticConfig<ServiceType>,
+    pub(crate) service_config: StaticConfig,
     pub(crate) shared_node: SharedNode<ServiceType>,
     _phantom_data: PhantomData<ServiceType>,
 }
@@ -300,10 +288,7 @@ type DynamicConfigStorage<S> =
     <S as service::Service>::DynamicStorage<DynamicConfig<<S as service::Service>::Bag>>;
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
-    fn new(
-        service_config: StaticConfig<ServiceType>,
-        shared_node: SharedNode<ServiceType>,
-    ) -> Self {
+    fn new(service_config: StaticConfig, shared_node: SharedNode<ServiceType>) -> Self {
         Self {
             service_config,
             shared_node,
@@ -480,12 +465,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn open<
         ErrorType: From<ServiceOpenError> + From<ServiceState>,
         R: service::ServiceResource,
-        FA: FnMut() -> Result<
-            Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>,
-            ServiceState,
-        >,
-        F1: FnMut(&StaticConfig<ServiceType>) -> Result<(), ErrorType>,
-        F2: FnMut(&StaticConfig<ServiceType>) -> Result<R, ServiceOpenError>,
+        FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
+        F1: FnMut(&StaticConfig) -> Result<(), ErrorType>,
+        F2: FnMut(&StaticConfig) -> Result<R, ServiceOpenError>,
     >(
         &self,
         msg: &str,
@@ -657,17 +639,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     #[allow(clippy::too_many_arguments)] // not public API, generic function to consolidate extremely complex service create algorithm in one place
     fn create<
         R: service::ServiceResource,
-        FA: FnMut() -> Result<
-            Option<(StaticConfig<ServiceType>, ServiceType::StaticStorage)>,
-            ServiceState,
-        >,
-        F1: FnMut(&mut StaticConfig<ServiceType>) -> Result<(), ServiceCreateError>,
-        F2: FnMut(&StaticConfig<ServiceType>) -> DynamicConfigCreationArgs,
-        F3: FnMut(&StaticConfig<ServiceType>) -> Result<R, ServiceCreateError>,
+        FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
+        F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
+        F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
+        F3: FnMut(&StaticConfig) -> Result<R, ServiceCreateError>,
         F4: FnMut(&R),
-        F5: FnMut(
-            &mut StaticConfig<ServiceType>,
-        ) -> Result<UniqueServiceId, UniqueIdGeneratorGenerateError>,
+        F5: FnMut(&mut StaticConfig) -> Result<UniqueServiceId, UniqueIdGeneratorGenerateError>,
     >(
         &self,
         msg: &str,
@@ -867,7 +844,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             "{} since it is not possible to read the services underlying static details. Is the service accessible? [{e:?}]", msg);
                 }
 
-                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig<ServiceType>>(unsafe {
+                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 

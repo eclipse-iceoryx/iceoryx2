@@ -442,7 +442,7 @@ pub struct ServiceDynamicDetails<S: Service> {
 pub struct ServiceDetails<S: Service> {
     /// The static configuration of the [`Service`] that never changes during the [`Service`]
     /// lifetime.
-    pub static_details: StaticConfig<S>,
+    pub static_details: StaticConfig,
     /// The dynamic configuration of the [`Service`] that can conaints runtime information.
     pub dynamic_details: Option<ServiceDynamicDetails<S>>,
 }
@@ -452,7 +452,7 @@ pub struct ServiceDetails<S: Service> {
 pub struct ServiceState<S: Service, R: ServiceResource> {
     pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig<S::Bag>>,
     pub(crate) additional_resource: R,
-    pub(crate) static_config: StaticConfig<S>,
+    pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: SharedNode<S>,
 
     // IMPORTANT: The static service config must be removed last since it contains the details about all
@@ -498,7 +498,7 @@ impl<S: Service, R: ServiceResource> Abandonable for SharedServiceState<S, R> {
 }
 
 impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
-    pub(crate) fn static_config(&self) -> &StaticConfig<S> {
+    pub(crate) fn static_config(&self) -> &StaticConfig {
         &self.state.static_config
     }
 
@@ -517,7 +517,7 @@ impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
 
 impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
-        static_config: StaticConfig<S>,
+        static_config: StaticConfig,
         shared_node: SharedNode<S>,
         dynamic_storage: S::DynamicStorage<DynamicConfig<S::Bag>>,
         static_storage: S::StaticStorage,
@@ -706,7 +706,7 @@ pub mod internal {
         ///
         #[doc(hidden)]
         unsafe fn __internal_remove_service(
-            service_config: &StaticConfig<S>,
+            service_config: &StaticConfig,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveError> {
             let origin = "Service::remove()";
@@ -1149,7 +1149,7 @@ pub fn __internal_details<S: Service>(
 fn read_static_service_config<S: Service>(
     config: &config::Config,
     service_hash: &ServiceHash,
-) -> Result<Option<StaticConfig<S>>, ServiceDetailsError> {
+) -> Result<Option<StaticConfig>, ServiceDetailsError> {
     let msg = "Unable to acquire service details";
     let origin = "Service::details()";
     let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
@@ -1198,16 +1198,15 @@ fn read_static_service_config<S: Service>(
         }
     }
 
-    let service_config = match S::ConfigSerializer::deserialize::<StaticConfig<S>>(unsafe {
-        content.as_mut_vec()
-    }) {
-        Ok(service_config) => service_config,
-        Err(e) => {
-            fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
+    let service_config =
+        match S::ConfigSerializer::deserialize::<StaticConfig>(unsafe { content.as_mut_vec() }) {
+            Ok(service_config) => service_config,
+            Err(e) => {
+                fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
                     "{} since the static service info \"{}\" could not be deserialized ({:?}).",
                        msg, name, e );
-        }
-    };
+            }
+        };
 
     if service_hash != service_config.service_hash() {
         fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,

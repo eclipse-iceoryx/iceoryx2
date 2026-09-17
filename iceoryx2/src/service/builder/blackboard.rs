@@ -544,7 +544,7 @@ impl<
                 "{} without entries. At least one key-value pair is required.", msg);
         }
 
-        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
+        let generate_dynamic_config = |service_config: &StaticConfig| {
             let blackboard_config = service_config.blackboard();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_writers: blackboard_config.max_writers,
@@ -698,7 +698,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig<ServiceType>,
+        existing_service_config: &StaticConfig,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), BlackboardOpenError> {
         let required_service_config = &self.builder.config.base.service_config;

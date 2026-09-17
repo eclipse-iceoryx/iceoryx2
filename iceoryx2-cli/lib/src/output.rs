@@ -144,10 +144,7 @@ where
             IceoryxNodeState::Alive(view) => NodeDescriptor {
                 state: NodeState::Alive,
                 id: NodeIdString::from(view.id()),
-                pid: view
-                    .id()
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
+                pid: view.id().pid::<T>().map_or(None, |v| Some(v.value())),
                 executable: view
                     .details()
                     .as_ref()
@@ -160,10 +157,7 @@ where
             IceoryxNodeState::Dead(view) => NodeDescriptor {
                 state: NodeState::Dead,
                 id: NodeIdString::from(view.id()),
-                pid: view
-                    .id()
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
+                pid: view.id().pid::<T>().map_or(None, |v| Some(v.value())),
                 executable: view
                     .details()
                     .as_ref()
@@ -176,18 +170,14 @@ where
             IceoryxNodeState::Inaccessible(node_id) => NodeDescriptor {
                 state: NodeState::Inaccessible,
                 id: NodeIdString::from(node_id),
-                pid: node_id
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
+                pid: node_id.pid::<T>().map_or(None, |v| Some(v.value())),
                 executable: None,
                 name: None,
             },
             IceoryxNodeState::Undefined(node_id) => NodeDescriptor {
                 state: NodeState::Undefined,
                 id: NodeIdString::from(node_id),
-                pid: node_id
-                    .pid::<T>()
-                    .map_or_else(|_| None, |v| Some(v.value())),
+                pid: node_id.pid::<T>().map_or(None, |v| Some(v.value())),
                 executable: None,
                 name: None,
             },

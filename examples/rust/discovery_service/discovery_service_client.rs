@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let service = node
         .service_builder(service_name())
-        .request_response::<(), [StaticConfig<Service>]>()
+        .request_response::<(), [StaticConfig]>()
         .open_or_create()?;
 
     let client = service.client_builder().create()?;

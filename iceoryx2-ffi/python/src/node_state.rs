@@ -44,6 +44,12 @@ impl NodeDetails {
     }
 
     #[getter]
+    /// Returns the `ProcessId` of the `Node`s owner process.
+    pub fn process_id(&self) -> u32 {
+        self.0.process_id().value() as _
+    }
+
+    #[getter]
     /// Returns a reference of the `NodeName`.
     pub fn name(&self) -> NodeName {
         NodeName(self.0.name().clone())

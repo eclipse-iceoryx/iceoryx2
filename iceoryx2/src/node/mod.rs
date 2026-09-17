@@ -174,6 +174,7 @@ use iceoryx2_bb_posix::mutex::MutexBuilder;
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
+use iceoryx2_bb_posix::process::ProcessId;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
@@ -318,6 +319,7 @@ enum NodeReadPortTagsFailure {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
     executable: FileName,
+    process: ProcessId,
     name: NodeName,
     config: Config,
 }
@@ -329,7 +331,9 @@ impl NodeDetails {
     }
 
     fn new(node_name: &Option<NodeName>, config: &Config) -> Self {
-        let executable = match Process::from_self().executable() {
+        let process = Process::from_self();
+
+        let executable = match process.executable() {
             Ok(n) => n.file_name(),
             Err(e) => {
                 debug!(from "NodeDetails::new()", "Unable to acquire executable name of the Node's process ({:?}).", e);
@@ -340,6 +344,7 @@ impl NodeDetails {
 
         Self {
             executable,
+            process: process.id(),
             name: if let Some(name) = node_name {
                 name.clone()
             } else {
@@ -352,6 +357,11 @@ impl NodeDetails {
     /// Returns the executable [`FileName`] of the [`Node`]s owner process.
     pub fn executable(&self) -> &FileName {
         &self.executable
+    }
+
+    /// Returns the [`ProcessId`] of the [`Node`]s owner process.
+    pub fn process_id(&self) -> ProcessId {
+        self.process
     }
 
     /// Returns the [`NodeName`]. Multiple [`Node`]s are allowed to have the same [`NodeName`], it

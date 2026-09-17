@@ -17,8 +17,8 @@ pub mod publish_subscribe;
 pub mod request_response;
 pub(crate) mod type_definition;
 
+use core::fmt::Debug;
 use core::ptr::NonNull;
-use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
@@ -37,7 +37,7 @@ use crate::{
 
 pub unsafe fn remove_stale_service_resources<ServiceType: service::Service>(
     config: &config::Config,
-    static_config: &StaticConfig<ServiceType>,
+    static_config: &StaticConfig,
 ) -> Result<(), RemoveStaleResourcesError> {
     match static_config.messaging_pattern() {
         MessagingPattern::Blackboard(_) => unsafe {
@@ -65,21 +65,20 @@ enum_gen! {
 /// are left
 pub trait ServiceResource: Abandonable + Debug + Send {
     type Config;
-    type ServiceType: service::Service;
 
     fn create(
-        static_config: &StaticConfig<Self::ServiceType>,
+        static_config: &StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, ServiceCreateError>;
 
     fn open(
-        static_config: &StaticConfig<Self::ServiceType>,
+        static_config: &StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, ServiceOpenError>;
 
     unsafe fn remove_stale_resources(
         config: &config::Config,
-        static_config: &StaticConfig<Self::ServiceType>,
+        static_config: &StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError>;
 
     /// Acquires the ownership of the additional resources. When the objects go out of scope the
@@ -88,55 +87,34 @@ pub trait ServiceResource: Abandonable + Debug + Send {
 }
 
 #[derive(Debug)]
-pub struct NoResource<ServiceType: service::Service> {
-    _service: PhantomData<ServiceType>,
-}
-impl<Service: service::Service> ServiceResource for NoResource<Service> {
+pub struct NoResource;
+impl ServiceResource for NoResource {
     type Config = ();
-    type ServiceType = Service;
 
     fn create(
-        _static_config: &StaticConfig<Service>,
+        _static_config: &StaticConfig,
         _resource_config: &Self::Config,
     ) -> Result<Self, ServiceCreateError> {
-        Ok(Self {
-            _service: PhantomData,
-        })
+        Ok(Self {})
     }
 
     fn open(
-        _static_config: &StaticConfig<Service>,
+        _static_config: &StaticConfig,
         _resource_config: &Self::Config,
     ) -> Result<Self, ServiceOpenError> {
-        Ok(Self {
-            _service: PhantomData,
-        })
+        Ok(Self {})
     }
 
     fn acquire_ownership(&self) {}
 
     unsafe fn remove_stale_resources(
         _config: &config::Config,
-        _static_config: &StaticConfig<Service>,
+        _static_config: &StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {
         Ok(())
     }
 }
 
-impl<Service: service::Service> Abandonable for NoResource<Service> {
+impl Abandonable for NoResource {
     unsafe fn abandon_in_place(_this: NonNull<Self>) {}
-}
-
-impl<Service: service::Service> Default for NoResource<Service> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<Service: service::Service> NoResource<Service> {
-    pub fn new() -> Self {
-        Self {
-            _service: PhantomData,
-        }
-    }
 }

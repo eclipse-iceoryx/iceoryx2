@@ -122,7 +122,7 @@ pub struct Listener<Service: service::Service> {
     listener: Service::ArcThreadSafetyPolicy<
         <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
     >,
-    service_state: SharedServiceState<Service, NoResource<Service>>,
+    service_state: SharedServiceState<Service, NoResource>,
     listener_details: &'static ListenerDetails,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
@@ -189,7 +189,7 @@ impl<Service: service::Service> Drop for Listener<Service> {
 
 impl<Service: service::Service> Listener<Service> {
     pub(crate) fn new(
-        service: SharedServiceState<Service, NoResource<Service>>,
+        service: SharedServiceState<Service, NoResource>,
         config: ListenerConfig,
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";

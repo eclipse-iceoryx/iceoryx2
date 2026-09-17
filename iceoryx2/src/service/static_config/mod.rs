@@ -30,13 +30,10 @@ pub mod messaging_pattern;
 
 pub mod blackboard;
 
-use core::marker::PhantomData;
-
 use alloc::format;
 
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::hash::Hash;
 use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};
@@ -55,21 +52,19 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 #[repr(C)]
-pub struct StaticConfig<ServiceType: service::Service> {
+pub struct StaticConfig {
     iceoryx2_version: PackageVersion,
     service_hash: ServiceHash,
     service_name: ServiceName,
     pub(crate) unique_service_id: UniqueServiceId,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
-    #[serde(skip)]
-    _service: PhantomData<ServiceType>,
 }
 
-unsafe impl<ServiceType: service::Service> ZeroCopySend for StaticConfig<ServiceType> {}
+unsafe impl ZeroCopySend for StaticConfig {}
 
-impl<ServiceType: service::Service> StaticConfig<ServiceType> {
-    pub(crate) fn new_request_response<Hasher: Hash>(
+impl StaticConfig {
+    pub(crate) fn new_request_response<ServiceType: service::Service>(
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Self {
@@ -77,7 +72,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
             MessagingPattern::RequestResponse(request_response::StaticConfig::new(config));
         Self {
             iceoryx2_version: PackageVersion::get(),
-            service_hash: ServiceHash::new::<Hasher>(
+            service_hash: ServiceHash::new::<ServiceType::ServiceNameHasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
@@ -85,18 +80,17 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
-            _service: PhantomData,
         }
     }
 
-    pub(crate) fn new_event<Hasher: Hash>(
+    pub(crate) fn new_event<ServiceType: service::Service>(
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
             iceoryx2_version: PackageVersion::get(),
-            service_hash: ServiceHash::new::<Hasher>(
+            service_hash: ServiceHash::new::<ServiceType::ServiceNameHasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
@@ -104,11 +98,10 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
-            _service: PhantomData,
         }
     }
 
-    pub(crate) fn new_publish_subscribe<Hasher: Hash>(
+    pub(crate) fn new_publish_subscribe<ServiceType: service::Service>(
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Self {
@@ -116,7 +109,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
             iceoryx2_version: PackageVersion::get(),
-            service_hash: ServiceHash::new::<Hasher>(
+            service_hash: ServiceHash::new::<ServiceType::ServiceNameHasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
@@ -124,18 +117,17 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
-            _service: PhantomData,
         }
     }
 
-    pub(crate) fn new_blackboard<Hasher: Hash>(
+    pub(crate) fn new_blackboard<ServiceType: service::Service>(
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Self {
         let messaging_pattern = MessagingPattern::Blackboard(blackboard::StaticConfig::new(config));
         Self {
             iceoryx2_version: PackageVersion::get(),
-            service_hash: ServiceHash::new::<Hasher>(
+            service_hash: ServiceHash::new::<ServiceType::ServiceNameHasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
@@ -143,7 +135,6 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
-            _service: PhantomData,
         }
     }
 
@@ -177,7 +168,7 @@ impl<ServiceType: service::Service> StaticConfig<ServiceType> {
         &self.messaging_pattern
     }
 
-    pub(crate) fn has_same_messaging_pattern(&self, rhs: &StaticConfig<ServiceType>) -> bool {
+    pub(crate) fn has_same_messaging_pattern(&self, rhs: &StaticConfig) -> bool {
         self.messaging_pattern
             .is_same_pattern(&rhs.messaging_pattern)
     }

@@ -719,7 +719,7 @@ impl<
     fn verify_service_configuration(
         &self,
         msg: &str,
-        existing_service_config: &StaticConfig<ServiceType>,
+        existing_service_config: &StaticConfig,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), RequestResponseOpenError> {
         let required_service_config = &self.base.service_config;
@@ -881,7 +881,7 @@ impl<
     > {
         let msg = "Unable to create request response service";
 
-        let generate_dynamic_config = |service_config: &StaticConfig<ServiceType>| {
+        let generate_dynamic_config = |service_config: &StaticConfig| {
             let reqres_config = service_config.request_response();
             let dynamic_config_setting = DynamicConfigSettings {
                 number_of_clients: reqres_config.max_clients,
