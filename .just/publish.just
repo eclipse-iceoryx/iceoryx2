@@ -180,12 +180,13 @@ _publish-dispatch workspace *flags:
         echo "  all             publish all workspaces in order"
         echo ""
         echo "Flags:"
-        echo "  --dry-run          simulate publishing (requires Rust >= 1.90)"
-        echo "  --allow-dirty      allow dirty working directory"
-        echo "  --sanity-checks    run sanity checks only"
-        echo "  --list             list crates to publish"
-        echo "  --no-verify        skip build verification during publishing"
-        echo "  --registry <name>  publish to a custom registry configured in ~/.cargo/config.toml"
+        echo "  --dry-run               simulate publishing (requires Rust >= 1.90)"
+        echo "  --allow-dirty           allow dirty working directory"
+        echo "  --sanity-checks         run sanity checks only"
+        echo "  --list                  list crates to publish"
+        echo "  --no-verify             skip build verification during publishing"
+        echo "  --check-owner <name>    check if user name is owner on all crates to publish"
+        echo "  --registry <name>       publish to a custom registry configured in ~/.cargo/config.toml"
         exit 1
     fi
 

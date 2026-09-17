@@ -50,13 +50,14 @@ release blog-article.
 
 ## 1: Check Manual Steps
 
+* Scan licenses of third-party crates (doc/eclipse-ip-due-diligence.md)
 * Test if QNX builds and runs with the current codebase
 * Test if Yocto builds and runs with the current codebase
-* check if the new features are marked as done, e.g. `README.md`, `ROADMAP.md`,
+* Check if the new features are marked as done, e.g. `README.md`, `ROADMAP.md`,
   etc.
-* grep for 'planned'
-* verify to be on the right branch, e.g. 'main' or 'release-x.y'
-* check the code examples in the documentation:
+* Grep for 'planned'
+* Verify to be on the right branch, e.g. 'main' or 'release-x.y'
+* Check the code examples in the documentation:
     * `$GIT_ROOT$/README.MD`
     * [iceoryx2 book](https://ekxide.github.io/iceoryx2-book/main/)
         * examples in "Getting Started" section

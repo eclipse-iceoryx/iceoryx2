@@ -108,8 +108,8 @@ A verification script may be run to ensure the feature is properly omitted
 or propagated to dependencies:
 
 ```console
-just verify std-propagation iceoryx2    # specific crate
-just verify std-propagation workspace   # entire workspace
+just verify iceoryx2 std-propagation    # specific crate
+just verify all std-propagation         # all workspaces
 ```
 
 ## Building `iceoryx2`
