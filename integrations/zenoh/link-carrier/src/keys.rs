@@ -37,11 +37,6 @@ pub fn offer(hash: &ServiceHash, fingerprint: &Fingerprint, peer: &PeerId) -> Ow
     ))
 }
 
-/// The key matching the service's channels under every description.
-pub fn channels_of(hash: &ServiceHash) -> OwnedKeyExpr {
-    key(format!("{NAMESPACE}/{VERSION}/channel/{}/*", hash.as_str()))
-}
-
 /// Recovers hash, fingerprint and peer from a key built by [`offer`].
 pub fn parse_offer(key: &keyexpr) -> Option<(ServiceHash, Fingerprint, PeerId)> {
     let mut segments = key.as_str().rsplit('/');
