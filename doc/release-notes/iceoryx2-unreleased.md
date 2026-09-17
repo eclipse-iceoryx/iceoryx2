@@ -290,7 +290,7 @@
     let my_str = StaticString::<CAPACITY>::new();
     my_str.push_bytes(b"hello");
     
-    let mut_str_slice = my_str.as_bytes(); // Compiler Error
+    let mut_str_slice = my_str.as_mut_bytes(); // Compiler Error
     my_str.deref_mut()[0] = b'b'; // Compiler Error
     ```
 
