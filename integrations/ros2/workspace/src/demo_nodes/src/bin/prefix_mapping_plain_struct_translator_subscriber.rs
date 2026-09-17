@@ -18,7 +18,7 @@
 //! ```bash
 //! ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
 //! # in other shells:
-//! #   cargo run --bin iox2-gateway-ros2 -- \
+//! #   cargo run --bin iox2-link-gateway-ros2 -- \
 //! #       --allow /cmd_vel \
 //! #       --translator PlainStruct
 //! #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"

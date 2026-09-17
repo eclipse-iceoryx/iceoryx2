@@ -42,7 +42,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_publisher
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2
+#   cargo run --bin iox2-link-gateway-ros2
 #   ros2 run demo_nodes_cpp listener
 ```
 
@@ -54,7 +54,7 @@ explicitly told about instead of mirroring the entire graph:
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_subscriber
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- --allow /chatter
+#   cargo run --bin iox2-link-gateway-ros2 -- --allow /chatter
 #   ros2 run demo_nodes_cpp talker
 ```
 
@@ -66,7 +66,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_publisher
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- --translator PlainStruct
+#   cargo run --bin iox2-link-gateway-ros2 -- --translator PlainStruct
 #   ros2 topic echo /cmd_vel
 ```
 
@@ -76,7 +76,7 @@ Inbound (ROS 2 → iceoryx2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- \
+#   cargo run --bin iox2-link-gateway-ros2 -- \
 #       --allow /cmd_vel \
 #       --translator PlainStruct
 #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
@@ -94,7 +94,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_publisher
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
+#   cargo run --bin iox2-link-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
 #   ros2 run demo_nodes_cpp listener
 ```
 
@@ -104,7 +104,7 @@ Inbound (ROS 2 → iceoryx2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_subscriber
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
+#   cargo run --bin iox2-link-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml
 #   ros2 run demo_nodes_cpp talker
 ```
 
@@ -122,7 +122,7 @@ Outbound (iceoryx2 → ROS 2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_plain_struct_translator_publisher
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- \
+#   cargo run --bin iox2-link-gateway-ros2 -- \
 #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
 #       --translator PlainStruct
 #   ros2 topic echo /cmd_vel
@@ -134,7 +134,7 @@ Inbound (ROS 2 → iceoryx2):
 source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 static_mapping_plain_struct_translator_subscriber
 # in other shells:
-#   cargo run --bin iox2-gateway-ros2 -- \
+#   cargo run --bin iox2-link-gateway-ros2 -- \
 #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
 #       --translator PlainStruct
 #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"

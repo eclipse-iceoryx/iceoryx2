@@ -23,20 +23,20 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_cmdvel.toml
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-gateway-ros2 2>@1
+    --bin iox2-link-gateway-ros2 2>@1
 
 #### Test
 
 set timeout 30
 
-# The mapping pairs the example's service `CmdVel` with the ROS 2 topic
-# `/cmd_vel` and doubles as the wire-side discovery allowlist.
+set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-gateway-ros2 -- \
+    --bin iox2-link-gateway-ros2 -- \
     --static-mapping ${MAPPING} \
-    --translator PlainStruct
+    --translator PlainStruct --monitor
 set id_gateway $spawn_id
-expect_output_from $id_gateway "Local Discovery via Tracker"
+unset env(IOX2_LOG_LEVEL)
+expect_output_from $id_gateway "Gateway started"
 
 spawn ros2 run demo_nodes_iceoryx2 \
     static_mapping_plain_struct_translator_subscriber
@@ -48,11 +48,9 @@ set id_publisher $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_gateway "Opening bridge"
-expect_output_from $id_gateway "Ingested PublishSubscribe"
+expect_output_from $id_gateway "Opened PublishSubscribe bridge of CmdVel"
+expect_output_from $id_gateway "PublishSubscribe bridge of CmdVel moved"
 
-# The ROS 2 message arrives as the native struct, having been transcoded from
-# CDR by the gateway.
 expect_output_from $id_subscriber "x: 0.5"
 
 #### Shutdown

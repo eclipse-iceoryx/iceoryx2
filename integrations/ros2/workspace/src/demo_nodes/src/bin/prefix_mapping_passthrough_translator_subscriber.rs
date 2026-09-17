@@ -18,7 +18,7 @@
 //! ```bash
 //! ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_subscriber
 //! # in other shells:
-//! #   cargo run --bin iox2-gateway-ros2 -- --allow /chatter
+//! #   cargo run --bin iox2-link-gateway-ros2 -- --allow /chatter
 //! #   ros2 run demo_nodes_cpp talker
 //! ```
 
