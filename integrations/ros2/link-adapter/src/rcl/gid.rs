@@ -9,11 +9,20 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+use r2r_rcl::{RMW_GID_STORAGE_SIZE, rmw_gid_t};
 
-pub(crate) mod error;
-pub(crate) mod gid;
-pub(crate) mod names;
+/// Wraps the RMW identifier of an endpoint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Gid([u8; RMW_GID_STORAGE_SIZE as usize]);
 
-pub(crate) use error::RclError;
-pub(crate) use gid::Gid;
-pub(crate) use names::*;
+impl Gid {
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<&rmw_gid_t> for Gid {
+    fn from(gid: &rmw_gid_t) -> Self {
+        Self(gid.data)
+    }
+}

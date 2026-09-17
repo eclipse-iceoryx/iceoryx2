@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Named representation of the `rcl_ret_t` error codes.
-
 use r2r_rcl::{
     RCL_RET_ALREADY_INIT, RCL_RET_ALREADY_SHUTDOWN, RCL_RET_BAD_ALLOC, RCL_RET_CLIENT_INVALID,
     RCL_RET_CLIENT_TAKE_FAILED, RCL_RET_ERROR, RCL_RET_EVENT_INVALID, RCL_RET_EVENT_TAKE_FAILED,

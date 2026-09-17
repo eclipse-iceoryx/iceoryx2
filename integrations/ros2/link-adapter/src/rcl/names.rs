@@ -10,15 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Validated ROS 2 names. Each type checks the relevant ROS 2 naming rules on
-//! construction and holds the result as a C string, so an instance is a proof
-//! that the contained string is a legal name of that kind, ready to hand to rcl
-//! across the FFI boundary.
-
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, origin};
 
 use crate::NameError;
 
@@ -43,26 +38,29 @@ fn all_segments_valid(path: &str) -> bool {
 
 /// Checks a string against the ROS 2 node name grammar: a single name token.
 fn validate_node(name: &str) -> Result<(), NameError> {
+    let origin = origin!("validate_node");
     if name.is_empty() {
-        return Err(NameError::Empty);
+        fail!(from origin, with NameError::Empty, "A node name is empty");
     }
     if !is_valid_token(name) {
-        return Err(NameError::InvalidToken);
+        fail!(from origin, with NameError::InvalidToken, "Node name '{}' is not a name token", name);
     }
     Ok(())
 }
 
 /// Checks a string against the ROS 2 namespace grammar: the root (`""` or `/`),
 /// or an absolute `/`-separated path of name tokens.
+#[allow(dead_code)]
 fn validate_namespace(namespace: &str) -> Result<(), NameError> {
+    let origin = origin!("validate_namespace");
     if namespace.is_empty() || namespace == "/" {
         return Ok(());
     }
-    let path = namespace
-        .strip_prefix('/')
-        .ok_or(NameError::NoLeadingSlash)?;
+    let Some(path) = namespace.strip_prefix('/') else {
+        fail!(from origin, with NameError::NoLeadingSlash, "Namespace '{}' does not start with '/'", namespace);
+    };
     if !all_segments_valid(path) {
-        return Err(NameError::InvalidToken);
+        fail!(from origin, with NameError::InvalidToken, "Namespace '{}' has a segment that is not a name token", namespace);
     }
     Ok(())
 }
@@ -70,12 +68,13 @@ fn validate_namespace(namespace: &str) -> Result<(), NameError> {
 /// Checks a string against the ROS 2 topic name grammar: a non-empty,
 /// `/`-separated path of name tokens, either absolute or relative.
 fn validate_topic(topic: &str) -> Result<(), NameError> {
+    let origin = origin!("validate_topic");
     if topic.is_empty() {
-        return Err(NameError::Empty);
+        fail!(from origin, with NameError::Empty, "A topic name is empty");
     }
     let path = topic.strip_prefix('/').unwrap_or(topic);
     if path.is_empty() || !all_segments_valid(path) {
-        return Err(NameError::InvalidToken);
+        fail!(from origin, with NameError::InvalidToken, "Topic name '{}' has a segment that is not a name token", topic);
     }
     Ok(())
 }
@@ -83,8 +82,9 @@ fn validate_topic(topic: &str) -> Result<(), NameError> {
 /// Checks a string against the ROS 2 type name grammar: `package/msg/Message`,
 /// where `package` and `Message` are each a valid name token.
 fn validate_type(type_name: &str) -> Result<(), NameError> {
+    let origin = origin!("validate_type");
     if type_name.is_empty() {
-        return Err(NameError::Empty);
+        fail!(from origin, with NameError::Empty, "A type name is empty");
     }
     let mut segments = type_name.split('/');
     let well_formed = matches!(
@@ -93,7 +93,7 @@ fn validate_type(type_name: &str) -> Result<(), NameError> {
             if is_valid_token(package) && is_valid_token(message)
     );
     if !well_formed {
-        return Err(NameError::InvalidToken);
+        fail!(from origin, with NameError::InvalidToken, "Type name '{}' is not of the form package/msg/Message", type_name);
     }
     Ok(())
 }
@@ -103,7 +103,7 @@ fn owned(name: &str) -> Cow<'static, CStr> {
     Cow::Owned(CString::new(name).expect("a validated ROS 2 name contains no interior nul byte"))
 }
 
-/// A ROS 2 node name: a single name token.
+/// A ROS 2 node name.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct NodeName(Cow<'static, CStr>);
 
@@ -114,8 +114,9 @@ impl NodeName {
     /// - Be non-empty
     /// - Start with a letter or underscore
     /// - Contain only ASCII alphanumeric characters or underscores
+    #[allow(dead_code)]
     pub fn new(name: &str) -> Result<Self, NameError> {
-        let origin = "NodeName::new";
+        let origin = origin!("NodeName::new");
 
         fail!(from origin,
             when validate_node(name),
@@ -131,6 +132,7 @@ impl NodeName {
     /// # Safety
     ///
     /// The caller must guarantee `name` is a well-formed ROS 2 node name.
+    #[allow(dead_code)]
     pub unsafe fn new_unchecked(name: &str) -> Self {
         Self(owned(name))
     }
@@ -165,8 +167,9 @@ impl NodeNamespace {
     /// A valid namespace is either:
     /// - An empty string or "/" (representing the root namespace)
     /// - An absolute path starting with '/' followed by valid name tokens separated by '/'
+    #[allow(dead_code)]
     pub fn new(namespace: &str) -> Result<Self, NameError> {
-        let origin = "Namespace::new";
+        let origin = origin!("Namespace::new");
 
         fail!(from origin,
             when validate_namespace(namespace),
@@ -182,6 +185,7 @@ impl NodeNamespace {
     /// # Safety
     ///
     /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
+    #[allow(dead_code)]
     pub unsafe fn new_unchecked(namespace: &str) -> Self {
         Self(owned(namespace))
     }
@@ -191,6 +195,7 @@ impl NodeNamespace {
     /// # Safety
     ///
     /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
+    #[allow(dead_code)]
     pub const unsafe fn from_c_str_static_unchecked(namespace: &'static CStr) -> Self {
         Self(Cow::Borrowed(namespace))
     }
@@ -202,7 +207,7 @@ impl NodeNamespace {
 
 /// A ROS 2 topic name: a non-empty, `/`-separated path of name tokens, either
 /// absolute (leading `/`) or relative.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct TopicName(Cow<'static, CStr>);
 
 impl TopicName {
@@ -216,7 +221,7 @@ impl TopicName {
     /// - Start with a letter or underscore
     /// - Contain only ASCII alphanumeric characters or underscores
     pub fn new(topic: &str) -> Result<Self, NameError> {
-        let origin = "TopicName::new";
+        let origin = origin!("TopicName::new");
 
         fail!(from origin,
             when validate_topic(topic),
@@ -281,7 +286,7 @@ impl TypeName {
     /// A valid type name has the form `package/msg/Message`, where `package`
     /// and `Message` are each a valid name token.
     pub fn new(type_name: &str) -> Result<Self, NameError> {
-        let origin = "TypeName::new";
+        let origin = origin!("TypeName::new");
 
         fail!(from origin,
             when validate_type(type_name),
