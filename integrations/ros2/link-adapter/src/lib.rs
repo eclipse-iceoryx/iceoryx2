@@ -12,8 +12,12 @@
 
 #![deny(unsafe_code)]
 
+pub mod qos;
+
 #[allow(unsafe_code)]
 pub(crate) mod rcl;
+
+pub use qos::QosProfile;
 
 /// The reason a string failed ROS 2 name validation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

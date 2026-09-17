@@ -1,12 +1,12 @@
-# Standalone workspace: building the ros2 crates requires a sourced ROS 2
-# environment, which the surrounding `integrations` and `sdk` workspaces must
-# not depend on.
+# Made a standalone workspace to exclude from cargo builds of all integrations
+# because the crates need a sourced ROS 2 environment to build.
 [workspace]
 resolver = "2"
 members = [
     "interop",
     "link-adapter",
 ]
+# Exclude the colcon workspace because its `ament_cargo` packages are built by colcon.
 exclude = [
     "workspace",
 ]
@@ -37,6 +37,7 @@ iceoryx2-integrations-ros2-gateway-backend = { version = "0.10.999", path = "gat
 iceoryx2-integrations-ros2-interop = { version = "0.10.999", path = "interop" }
 iceoryx2-integrations-ros2-link-adapter = { version = "0.10.999", path = "link-adapter" }
 iceoryx2-log = { version = "0.10.999", path = "../../iceoryx2-log/log/", features = ["std"] }
+iceoryx2-link-backend = { version = "0.10.999", path = "../../iceoryx2-link/backend", features = ["std"] }
 iceoryx2-gateway = { version = "0.10.999", path = "../../iceoryx2-gateway/gateway", features = ["std"] }
 iceoryx2-gateway-backend = { version = "0.10.999", path = "../../iceoryx2-gateway/backend", features = ["std"] }
 

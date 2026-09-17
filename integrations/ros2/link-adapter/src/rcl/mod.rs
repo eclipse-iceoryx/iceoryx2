@@ -13,6 +13,7 @@
 pub(crate) mod error;
 pub(crate) mod gid;
 pub(crate) mod names;
+pub(crate) mod qos;
 
 pub(crate) use error::RclError;
 pub(crate) use gid::Gid;

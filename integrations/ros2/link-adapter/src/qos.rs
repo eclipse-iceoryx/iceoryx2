@@ -12,7 +12,7 @@
 
 use core::time::Duration;
 
-use iceoryx2_gateway_backend::types::service_description::PublishSubscribeSettings;
+use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
@@ -57,6 +57,49 @@ pub struct QosProfile {
     pub liveliness: Liveliness,
     #[serde(with = "duration_string", skip_serializing_if = "Option::is_none")]
     pub liveliness_lease_duration: Option<Duration>,
+}
+
+impl QosProfile {
+    /// Whether the QoS the graph reports for an endpoint matches this
+    /// profile.
+    ///
+    /// The graph reports concrete policies, so this profile's system
+    /// defaults are resolved before comparing. History is left out as the
+    /// graph does not report it.
+    pub fn admits(&self, listed: &QosProfile) -> bool {
+        let resolved = self.resolved();
+        resolved.reliability == listed.reliability
+            && resolved.durability == listed.durability
+            && resolved.liveliness == listed.liveliness
+            && resolved.deadline == listed.deadline
+            && resolved.lifespan == listed.lifespan
+            && resolved.liveliness_lease_duration == listed.liveliness_lease_duration
+    }
+
+    /// This profile with every system default replaced by the policy of
+    /// the ROS 2 default profile it stands for.
+    fn resolved(&self) -> QosProfile {
+        let default = QosProfile::default();
+        QosProfile {
+            history: match self.history {
+                History::SystemDefault => default.history,
+                history => history,
+            },
+            reliability: match self.reliability {
+                Reliability::SystemDefault => default.reliability,
+                reliability => reliability,
+            },
+            durability: match self.durability {
+                Durability::SystemDefault => default.durability,
+                durability => durability,
+            },
+            liveliness: match self.liveliness {
+                Liveliness::SystemDefault => Liveliness::Automatic,
+                liveliness => liveliness,
+            },
+            ..self.clone()
+        }
+    }
 }
 
 impl Default for QosProfile {
@@ -128,6 +171,7 @@ impl From<&QosProfile> for PublishSubscribeSettings {
 mod duration_string {
     use core::time::Duration;
 
+    use iceoryx2_log::{fail, origin};
     use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(
@@ -143,27 +187,55 @@ mod duration_string {
     pub fn deserialize<'de, D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Option<Duration>, D::Error> {
-        Option::<String>::deserialize(deserializer)?
-            .map(|string| parse(&string).map_err(serde::de::Error::custom))
-            .transpose()
+        let origin = origin!("deserialize");
+
+        let string = fail!(
+            from origin,
+            when Option::<String>::deserialize(deserializer),
+            "Failed to deserialize a duration"
+        );
+        match string {
+            Some(string) => {
+                let duration = fail!(
+                    from origin,
+                    when parse(&string).map_err(serde::de::Error::custom),
+                    "Failed to parse duration '{}'", string
+                );
+                Ok(Some(duration))
+            }
+            None => Ok(None),
+        }
     }
 
     fn parse(string: &str) -> Result<Duration, String> {
-        let unit_start = string
-            .find(|c: char| !c.is_ascii_digit())
-            .ok_or_else(|| format!("missing unit in duration '{string}'"))?;
+        let origin = origin!("parse");
+        let Some(unit_start) = string.find(|c: char| !c.is_ascii_digit()) else {
+            fail!(
+                from origin,
+                with format!("missing unit in duration '{string}'"),
+                "Missing unit in duration '{}'", string
+            );
+        };
         let (value, unit) = string.split_at(unit_start);
-        let value: u64 = value
-            .parse()
-            .map_err(|_| format!("invalid value in duration '{string}'"))?;
+        let Ok(value) = value.parse::<u64>() else {
+            fail!(
+                from origin,
+                with format!("invalid value in duration '{string}'"),
+                "Invalid value in duration '{}'", string
+            );
+        };
         match unit {
             "ns" => Ok(Duration::from_nanos(value)),
             "us" => Ok(Duration::from_micros(value)),
             "ms" => Ok(Duration::from_millis(value)),
             "s" => Ok(Duration::from_secs(value)),
-            _ => Err(format!(
-                "unsupported unit '{unit}' in duration '{string}' (use ns, us, ms or s)"
-            )),
+            _ => {
+                fail!(
+                    from origin,
+                    with format!("unsupported unit '{unit}' in duration '{string}' (use ns, us, ms or s)"),
+                    "Unsupported unit '{}' in duration '{}'", unit, string
+                );
+            }
         }
     }
 
@@ -205,5 +277,42 @@ mod duration_string {
             assert_eq!(format(&Duration::from_secs(2)), "2s");
             assert_eq!(format(&Duration::from_nanos(1_000_500)), "1000500ns");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A profile as the graph reports it, no history and the liveliness
+    /// resolved.
+    fn listed(qos: QosProfile) -> QosProfile {
+        QosProfile {
+            history: History::SystemDefault,
+            liveliness: Liveliness::Automatic,
+            ..qos
+        }
+    }
+
+    #[test]
+    fn a_profile_matches_its_own_listing() {
+        let profile = QosProfile {
+            history: History::KeepLast(3),
+            durability: Durability::TransientLocal,
+            ..QosProfile::default()
+        };
+
+        assert!(profile.admits(&listed(profile.clone())));
+    }
+
+    #[test]
+    fn a_profile_does_not_match_a_listing_of_another_exchanged_policy() {
+        let profile = QosProfile::default();
+        let best_effort = QosProfile {
+            reliability: Reliability::BestEffort,
+            ..QosProfile::default()
+        };
+
+        assert!(!profile.admits(&listed(best_effort)));
     }
 }

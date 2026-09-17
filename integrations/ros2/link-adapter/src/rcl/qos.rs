@@ -29,11 +29,18 @@ const INFINITE: rmw_time_s = rmw_time_s {
     nsec: 854775807,
 };
 
+/// The depth of the ROS 2 default profile, `rmw_qos_profile_default`.
+const DEFAULT_DEPTH: usize = 10;
+
 /// Applies a QosProfile onto the rcl representation.
+///
+/// A system default history is applied as keep last ten to match the ROS 2
+/// default profile.
 pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
     match profile.history {
         History::SystemDefault => {
-            qos.history = rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT;
+            qos.history = rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_KEEP_LAST;
+            qos.depth = DEFAULT_DEPTH;
         }
         History::KeepLast(depth) => {
             qos.history = rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_KEEP_LAST;
@@ -145,5 +152,23 @@ mod tests {
     fn default_profile_matches_rmw_default() {
         let rmw_default = unsafe { rcl_publisher_get_default_options() }.qos;
         assert_eq!(parse(&rmw_default), QosProfile::default());
+    }
+
+    #[test]
+    fn a_system_default_history_applies_the_default_depth() {
+        let profile = QosProfile {
+            history: History::SystemDefault,
+            ..QosProfile::default()
+        };
+        let mut qos = unsafe { rcl_publisher_get_default_options() }.qos;
+        qos.depth = 0;
+
+        apply(&profile, &mut qos);
+
+        assert_eq!(
+            qos.history,
+            rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_KEEP_LAST
+        );
+        assert_eq!(qos.depth, DEFAULT_DEPTH);
     }
 }
