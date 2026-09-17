@@ -21,3 +21,8 @@ iceoryx2-log = { workspace = true }
 libloading = { workspace = true }
 r2r_rcl = { workspace = true }
 serde = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+
+toml = { workspace = true }

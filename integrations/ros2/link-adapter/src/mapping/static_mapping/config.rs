@@ -10,145 +10,89 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Configuration schema of a [`StaticMapping`](super::StaticMapping).
-//!
-//! The configuration types are serde-compatible and can be loaded from
-//! any format serde supports. In TOML, each entry is a `[[mapping]]`
-//! table:
-//!
-//! ```toml
-//! [[mapping]]
-//! iceoryx2.service_name = "CmdVel"
-//! iceoryx2.payload_type = "geometry_msgs/msg/Twist"
-//! ros2.topic = "/cmd_vel"
-//! ros2.type = "geometry_msgs/msg/Twist"
-//! ...
-//! ```
-//!
-//! Names and types are required. The `settings` and `qos` tables are optional
-//! and fall back to the iceoryx2 and ROS 2 defaults when unset.
-//!
-//! ## `iceoryx2` (local service)
-//!
-//! | Field          | Value                       |
-//! |----------------|-----------------------------|
-//! | `service_name` | string (required)           |
-//! | `payload_type` | string (required)           |
-//! | `settings`     | table, see below (optional) |
-//!
-//! ## `iceoryx2.settings` (local service settings)
-//!
-//! | Field                             | Value   |
-//! |-----------------------------------|---------|
-//! | `max_subscribers`                 | integer |
-//! | `max_publishers`                  | integer |
-//! | `max_nodes`                       | integer |
-//! | `history_size`                    | integer |
-//! | `subscriber_max_buffer_size`      | integer |
-//! | `subscriber_max_borrowed_samples` | integer |
-//! | `safe_overflow`                   | boolean |
-//!
-//! ## `ros2` (remote topic)
-//!
-//! | Field   | Value                       |
-//! |---------|-----------------------------|
-//! | `topic` | string (required)           |
-//! | `type`  | string (required)           |
-//! | `qos`   | table, see below (optional) |
-//!
-//! ## `ros2.qos` (endpoint QoS)
-//!
-//! | Policy                      | Value                                                |
-//! |-----------------------------|------------------------------------------------------|
-//! | `history`                   | `"SystemDefault"`, `"KeepAll"`, `{ KeepLast = <n> }` |
-//! | `reliability`               | `"SystemDefault"`, `"Reliable"`, `"BestEffort"`      |
-//! | `durability`                | `"SystemDefault"`, `"Volatile"`, `"TransientLocal"`  |
-//! | `liveliness`                | `"SystemDefault"`, `"Automatic"`, `"ManualByTopic"`  |
-//! | `deadline`                  | duration                                             |
-//! | `lifespan`                  | duration                                             |
-//! | `liveliness_lease_duration` | duration                                             |
-//!
-//! Durations are strings of the form `"<value><unit>"` (units `ns`, `us`,
-//! `ms`, `s`), e.g. `"500ms"`; unset means no bound.
-
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_gateway_backend::types::service_description::{
-    PortSettings, PublishSubscribeSettings,
-};
+use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{TopicName, TypeName};
 use crate::qos::QosProfile;
 
-/// The iceoryx2 half of an [`Entry`]: the local service and its
-/// settings. Omitted settings let the gateway apply its local defaults; a
-/// partial `settings` table fills the rest from the iceoryx2 defaults.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IceoryxSettings {
     pub service_name: ServiceName,
     pub payload_type: String,
-    // Custom serialization to make the PortSettings enum transparent.
-    #[serde(
-        default = "port_settings_inline::local_defaults",
-        skip_serializing_if = "port_settings_inline::is_local_defaults",
-        with = "port_settings_inline"
-    )]
-    pub settings: PortSettings<PublishSubscribeSettings>,
+    /// Defaults to `iceoryx2` defaults if omitted.
+    #[serde(default = "default_settings")]
+    pub settings: PublishSubscribeSettings,
 }
 
-/// The ROS 2 half of an [`Entry`]: the topic, its message type and
-/// the QoS of the gateway's endpoints.
+fn default_settings() -> PublishSubscribeSettings {
+    PublishSubscribeSettings::from_config(&iceoryx2::config::Config::default())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RosSettings {
     pub topic: TopicName,
     #[serde(rename = "type")]
     pub type_name: TypeName,
+    /// The QoS of the topic either to be used by local endpoints or compared
+    /// against remote endpoints for consistency.
+    /// DDS does not exchange history, so it is not checked against
+    /// remote endpoints.
     #[serde(default)]
     pub qos: QosProfile,
 }
 
-/// One iceoryx2 service ↔ ROS 2 topic pairing. Both sides are applied
-/// verbatim; nothing is derived and no cross-side compatibility is checked.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry {
     pub iceoryx2: IceoryxSettings,
     pub ros2: RosSettings,
 }
 
-/// Serializable list of [`Entry`]s, one per bridged service.
+/// Configuration schema of a [`StaticMapping`](super::StaticMapping).
+///
+/// One entry per service and topic pair, loadable from any format serde
+/// supports. e.g. In TOML (showing every field):
+///
+/// ```toml
+/// [[mapping]]
+/// iceoryx2.service_name = "CmdVel"
+/// iceoryx2.payload_type = "geometry_msgs/msg/Twist"
+/// iceoryx2.settings.max_publishers = 1
+/// iceoryx2.settings.max_subscribers = 4
+/// iceoryx2.settings.max_nodes = 8
+/// iceoryx2.settings.history_size = 0
+/// iceoryx2.settings.subscriber_max_buffer_size = 2
+/// iceoryx2.settings.subscriber_max_borrowed_samples = 2
+/// iceoryx2.settings.safe_overflow = true
+/// ros2.topic = "/cmd_vel"
+/// ros2.type = "geometry_msgs/msg/Twist"
+/// ros2.qos.history = { KeepLast = 10 }
+/// ros2.qos.reliability = "Reliable"
+/// ros2.qos.durability = "Volatile"
+/// ros2.qos.liveliness = "Automatic"
+/// ros2.qos.deadline = "100ms"
+/// ros2.qos.lifespan = "1s"
+/// ros2.qos.liveliness_lease_duration = "500ms"
+/// ```
+///
+/// Names and types are required. The `settings` table is optional as a
+/// whole and takes the `iceoryx2` configuration's defaults when omitted.
+/// Every `qos` field is optional on its own and takes the ROS 2 system
+/// default when omitted.
+///
+/// Possible QoS values are:
+///
+/// * `history`: `"SystemDefault"`, `"KeepAll"` or `{ KeepLast = <n> }`
+/// * `reliability`: `"SystemDefault"`, `"Reliable"` or `"BestEffort"`
+/// * `durability`: `"SystemDefault"`, `"Volatile"` or `"TransientLocal"`
+/// * `liveliness`: `"SystemDefault"`, `"Automatic"` or `"ManualByTopic"`
+/// * `deadline`, `lifespan`, `liveliness_lease_duration`: a duration such
+///   as `"500ms"`, in `ns`, `us`, `ms` or `s`. If omitted, the policy is
+///   unbound.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Config {
     /// Serialized as `mapping`: entries appear as `[[mapping]]` in TOML.
     #[serde(default, rename = "mapping")]
     pub entries: Vec<Entry>,
-}
-
-mod port_settings_inline {
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    use super::PortSettings;
-
-    pub fn serialize<S: Serializer, T: Serialize>(
-        settings: &PortSettings<T>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error> {
-        match settings {
-            PortSettings::Value(value) => value.serialize(serializer),
-            PortSettings::LocalDefaults => serializer.serialize_unit(),
-        }
-    }
-
-    pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
-        deserializer: D,
-    ) -> Result<PortSettings<T>, D::Error> {
-        T::deserialize(deserializer).map(PortSettings::Value)
-    }
-
-    pub fn local_defaults<T>() -> PortSettings<T> {
-        PortSettings::LocalDefaults
-    }
-
-    pub fn is_local_defaults<T>(settings: &PortSettings<T>) -> bool {
-        matches!(settings, PortSettings::LocalDefaults)
-    }
 }

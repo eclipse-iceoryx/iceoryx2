@@ -10,36 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! A [`Mapping`] that uses an explicit lookup table that pairs iceoryx2
-//! services and settings with ROS 2 topics and QoS. Allows for full control
-//! over settings and qos on both sides.
-//!
-//! For a zero-configuration alternative see
-//! [`PrefixMapping`](crate::mapping::PrefixMapping).
-//!
-//! Each [`Entry`] pairs one service with one topic. Both endpoints are
-//! configured exactly as defined. Nothing is derived and no compatibility
-//! of settings on both sides is checked.
-//!
-//! Services or topics without an entry are not bridged.
-
 pub mod config;
-
 pub use config::{Config, Entry, IceoryxSettings, RosSettings};
 
 use std::collections::HashMap;
 
-use iceoryx2::service::Service;
-use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_gateway_backend::traits::Mapping;
-use iceoryx2_gateway_backend::types::service_description::{
-    PatternDescription, PublishSubscribeDescription, ServiceDescription, TypeDescription,
-};
-use iceoryx2_log::{fail, warn};
+use iceoryx2_link_adapter::Mapping;
+use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
+use iceoryx2_link_backend::service_description::{Identified, PatternSettings, ServiceSettings};
+use iceoryx2_log::{fail, origin};
 
 use crate::config::{TopicName, TypeName};
-use crate::mapping::TopicDescription;
-use crate::ros_header::RosHeader;
+use crate::endpoint_description::TopicSettings;
+use crate::qos::QosProfile;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -55,8 +38,42 @@ impl core::fmt::Display for CreationError {
 
 impl core::error::Error for CreationError {}
 
-/// A [`Mapping`] defined entirely by configuration: each [`Entry`]
-/// pairs one iceoryx2 service with one ROS 2 topic.
+/// Mismatch between settings or QoS profiles.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Mismatch {
+    /// A local service has other settings than its entry defines.
+    Settings {
+        entry: PublishSubscribeSettings,
+        local: PublishSubscribeSettings,
+    },
+    /// A topic's endpoint has another QoS than its entry defines, as per
+    /// what DDS provides.
+    Qos {
+        entry: QosProfile,
+        listed: QosProfile,
+    },
+}
+
+impl core::fmt::Display for Mismatch {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Mismatch::Settings { entry, local } => {
+                write!(f, "has the settings {local:?}, its entry defines {entry:?}")
+            }
+            Mismatch::Qos { entry, listed } => {
+                write!(f, "has the QoS {listed:?}, its entry defines {entry:?}")
+            }
+        }
+    }
+}
+
+impl core::error::Error for Mismatch {}
+
+/// Maps services to topics according to a static configuration.
+///
+/// Each entry pairs a service with a topic and defines the settings of the
+/// one and the QoS of the other, see [`Config`] for the schema. A service
+/// or topic that no entry names is considered out-of-scope.
 #[derive(Debug, Default)]
 pub struct StaticMapping {
     entries: Vec<Entry>,
@@ -68,7 +85,7 @@ impl StaticMapping {
     /// Builds the mapping, rejecting configs where a service name or topic
     /// appears in more than one entry.
     pub fn new(config: Config) -> Result<Self, CreationError> {
-        let origin = "StaticMapping::new";
+        let origin = origin!("StaticMapping::new");
 
         let mut by_service = HashMap::new();
         let mut by_topic = HashMap::new();
@@ -98,71 +115,197 @@ impl StaticMapping {
         })
     }
 
-    /// The message types of the topics mapped by this instance.
+    /// The message types of the topics covered by configuration.
     pub fn type_names(&self) -> Vec<TypeName> {
         self.entries
             .iter()
             .map(|entry| entry.ros2.type_name.clone())
             .collect()
     }
-
-    /// The entry mapping the service specified by `description`, if present.
-    fn entry(&self, description: &ServiceDescription) -> Option<&Entry> {
-        if !matches!(description.pattern, PatternDescription::PublishSubscribe(_)) {
-            return None;
-        }
-        self.by_service
-            .get(description.name.as_str())
-            .map(|&index| &self.entries[index])
-    }
 }
 
 impl Mapping for StaticMapping {
-    type EndpointDescription = TopicDescription;
+    type EndpointSettings = TopicSettings;
+    type Error = Mismatch;
 
-    fn remote(&self, service_description: &ServiceDescription) -> Option<TopicDescription> {
-        let entry = self.entry(service_description)?;
+    fn local(&self, remote: &TopicSettings) -> Result<Option<ServiceSettings>, Mismatch> {
+        let origin = origin!("StaticMapping::local");
 
-        Some(TopicDescription {
-            topic: entry.ros2.topic.clone(),
-            type_name: entry.ros2.type_name.clone(),
-            qos: entry.ros2.qos.clone(),
-        })
+        let Some(&index) = self.by_topic.get(&remote.topic) else {
+            return Ok(None);
+        };
+
+        let entry = &self.entries[index];
+        if !entry.ros2.qos.admits(&remote.qos) {
+            fail!(
+                from origin,
+                with Mismatch::Qos { entry: entry.ros2.qos.clone(), listed: remote.qos.clone() },
+                "Topic '{}' has the QoS {:?}, its entry defines {:?}",
+                remote.topic, remote.qos, entry.ros2.qos
+            );
+        }
+
+        Ok(Some(ServiceSettings::new(
+            entry.iceoryx2.service_name,
+            PatternSettings::PublishSubscribe(entry.iceoryx2.settings.clone()),
+        )))
     }
 
-    fn local<S: Service>(
-        &self,
-        topic_description: &TopicDescription,
-    ) -> Option<ServiceDescription> {
-        let Some(entry) = self
-            .by_topic
-            .get(&topic_description.topic)
-            .map(|&index| &self.entries[index])
-        else {
-            warn!(
-                "Topic '{}' has no static mapping entry and will not be bridged",
-                topic_description.topic.as_str()
+    fn remote(&self, local: &ServiceSettings) -> Result<Option<TopicSettings>, Mismatch> {
+        let origin = origin!("StaticMapping::remote");
+
+        let PatternSettings::PublishSubscribe(settings) = &local.pattern else {
+            return Ok(None);
+        };
+        let Some(&index) = self.by_service.get(local.id().as_str()) else {
+            return Ok(None);
+        };
+
+        let entry = &self.entries[index];
+        if *settings != entry.iceoryx2.settings {
+            fail!(
+                from origin,
+                with Mismatch::Settings { entry: entry.iceoryx2.settings.clone(), local: settings.clone() },
+                "Service '{}' has the settings {:?}, its entry defines {:?}",
+                local.id(), settings, entry.iceoryx2.settings
             );
-            return None;
-        };
+        }
 
-        // The payload is a dynamically-sized CDR stream carrying the
-        // configured type name.
-        let payload = TypeDescription {
-            variant: TypeVariant::Dynamic,
-            type_name: entry.iceoryx2.payload_type.clone(),
-            size: 1,
-            alignment: 1,
-        };
-        let user_header = TypeDescription::from(&RosHeader::type_detail());
+        Ok(Some(TopicSettings {
+            topic: entry.ros2.topic.clone(),
+            qos: entry.ros2.qos.clone(),
+        }))
+    }
+}
 
-        Some(ServiceDescription::new::<S>(
-            entry.iceoryx2.service_name,
-            PatternDescription::PublishSubscribe(PublishSubscribeDescription {
-                payload,
-                user_header,
-                settings: entry.iceoryx2.settings.clone(),
-            }),
-        ))
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use iceoryx2::service::service_name::ServiceName;
+    use iceoryx2_bb_testing::assert_that;
+
+    use crate::qos::{History, Liveliness, Reliability};
+
+    const SERVICE: &str = "static/chatter";
+    const TOPIC: &str = "/chatter";
+    const TYPE: &str = "std_msgs/msg/String";
+
+    fn settings() -> PublishSubscribeSettings {
+        PublishSubscribeSettings::from_config(&iceoryx2::config::Config::default())
+    }
+
+    fn other_settings() -> PublishSubscribeSettings {
+        let mut settings = settings();
+        settings.max_publishers += 1;
+        settings
+    }
+
+    fn other_qos() -> QosProfile {
+        QosProfile {
+            reliability: Reliability::BestEffort,
+            ..QosProfile::default()
+        }
+    }
+
+    /// A profile as the graph reports it, no history and the liveliness
+    /// resolved.
+    fn listed(qos: QosProfile) -> QosProfile {
+        QosProfile {
+            history: History::SystemDefault,
+            liveliness: Liveliness::Automatic,
+            ..qos
+        }
+    }
+
+    fn service_settings(settings: PublishSubscribeSettings) -> ServiceSettings {
+        ServiceSettings::new(
+            ServiceName::new(SERVICE).expect("a valid service name"),
+            PatternSettings::PublishSubscribe(settings),
+        )
+    }
+
+    fn topic_settings(qos: QosProfile) -> TopicSettings {
+        TopicSettings {
+            topic: TopicName::new(TOPIC).expect("a valid topic name"),
+            qos,
+        }
+    }
+
+    fn mapping() -> StaticMapping {
+        StaticMapping::new(Config {
+            entries: vec![Entry {
+                iceoryx2: IceoryxSettings {
+                    service_name: ServiceName::new(SERVICE).expect("a valid service name"),
+                    payload_type: TYPE.to_string(),
+                    settings: settings(),
+                },
+                ros2: RosSettings {
+                    topic: TopicName::new(TOPIC).expect("a valid topic name"),
+                    type_name: TypeName::new(TYPE).expect("a valid type name"),
+                    qos: QosProfile::default(),
+                },
+            }],
+        })
+        .expect("a valid config")
+    }
+
+    #[test]
+    fn a_topic_with_the_entrys_qos_maps_to_its_service() {
+        let sut = mapping();
+
+        let local = sut.local(&topic_settings(listed(QosProfile::default())));
+
+        assert_that!(local, eq Ok(Some(service_settings(settings()))));
+    }
+
+    #[test]
+    fn a_topic_with_another_qos_is_refused() {
+        let sut = mapping();
+
+        let local = sut.local(&topic_settings(listed(other_qos())));
+
+        assert_that!(
+            local,
+            eq Err(Mismatch::Qos {
+                entry: QosProfile::default(),
+                listed: listed(other_qos()),
+            })
+        );
+    }
+
+    #[test]
+    fn a_service_with_the_entrys_settings_maps_to_its_topic() {
+        let sut = mapping();
+
+        let remote = sut.remote(&service_settings(settings()));
+
+        assert_that!(remote, eq Ok(Some(topic_settings(QosProfile::default()))));
+    }
+
+    #[test]
+    fn a_service_with_other_settings_is_refused() {
+        let sut = mapping();
+
+        let remote = sut.remote(&service_settings(other_settings()));
+
+        assert_that!(remote, eq Err(Mismatch::Settings { entry: settings(), local: other_settings() }));
+    }
+
+    #[test]
+    fn what_no_entry_covers_is_out_of_scope() {
+        let sut = mapping();
+
+        let local = sut.local(&TopicSettings {
+            topic: TopicName::new("/elsewhere").expect("a valid topic name"),
+            qos: QosProfile::default(),
+        });
+        let remote = sut.remote(&ServiceSettings::new(
+            ServiceName::new("static/elsewhere").expect("a valid service name"),
+            PatternSettings::PublishSubscribe(settings()),
+        ));
+
+        assert_that!(local, eq Ok(None));
+        assert_that!(remote, eq Ok(None));
     }
 }
