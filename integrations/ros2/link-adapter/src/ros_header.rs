@@ -20,7 +20,7 @@ impl From<MessageInfo> for RosHeader {
         // buffer (24 bytes on Humble); the DDS GUID occupies only the leading 16
         // bytes, the rest is unused.
         let mut gid = [0u8; DDS_GUID_LEN];
-        gid.copy_from_slice(&info.gid[..DDS_GUID_LEN]);
+        gid.copy_from_slice(&info.gid.as_bytes()[..DDS_GUID_LEN]);
         Self {
             gid,
             source_timestamp_ns: info.source_timestamp_ns,

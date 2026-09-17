@@ -396,11 +396,22 @@ version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
+ "iceoryx2-integrations-ros2-interop",
+ "iceoryx2-link-adapter",
  "iceoryx2-link-backend",
  "iceoryx2-log",
  "libloading",
  "r2r_rcl",
  "serde",
+]
+
+[[package]]
+name = "iceoryx2-link-adapter"
+version = "0.10.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
 ]
 
 [[package]]

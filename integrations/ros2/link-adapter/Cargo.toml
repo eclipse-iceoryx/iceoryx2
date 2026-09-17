@@ -13,6 +13,8 @@ version = { workspace = true }
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-integrations-ros2-interop = { workspace = true }
+iceoryx2-link-adapter = { workspace = true }
 iceoryx2-link-backend = { workspace = true }
 iceoryx2-log = { workspace = true }
 
