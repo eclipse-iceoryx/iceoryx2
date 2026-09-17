@@ -66,13 +66,6 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-ffi-c                                  \
     iceoryx2-ffi-macros                             \
     iceoryx2-ffi-python                             \
-    iceoryx2-gateway-backend            \
-    iceoryx2-gateway                    \
-    iceoryx2-gateway-conformance-tests  \
-    iceoryx2-gateway-testing                        \
-    iceoryx2-gateway-host-to-host-tests             \
-    iceoryx2-gateway-conformance-tests-common       \
-    iceoryx2-gateway-conformance-tests-nostd        \
     iceoryx2-link-testing                           \
     iceoryx2-link-host-to-host-tests                \
     iceoryx2-link-conformance-tests-common          \

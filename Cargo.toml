@@ -74,13 +74,6 @@ members = [
 
     "iceoryx2-services/discovery",
 
-    "iceoryx2-gateway/gateway",
-    "iceoryx2-gateway/backend",
-    "iceoryx2-gateway/testing",
-    "iceoryx2-gateway/conformance-tests",
-    "iceoryx2-gateway/conformance-tests/tests-common",
-    "iceoryx2-gateway/conformance-tests/tests-nostd",
-    "iceoryx2-gateway/host-to-host-tests",
 
     "iceoryx2-link/link",
     "iceoryx2-link/adapter",
@@ -162,10 +155,6 @@ iceoryx2-ffi-c = { version = "0.10.999", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.10.999", path = "iceoryx2-ffi/python" }
 iceoryx2-ffi-macros = { version = "0.10.999", path = "iceoryx2-ffi/ffi-macros" }
 iceoryx2-services-discovery = { version = "0.10.999", path = "iceoryx2-services/discovery", default-features = false }
-iceoryx2-gateway = { version = "0.10.999", path = "iceoryx2-gateway/gateway", default-features = false }
-iceoryx2-gateway-backend = { version = "0.10.999", path = "iceoryx2-gateway/backend", default-features = false }
-iceoryx2-gateway-host-to-host-tests = { version = "0.10.999", path = "iceoryx2-gateway/host-to-host-tests" }
-iceoryx2-gateway-conformance-tests = { version = "0.10.999", path = "iceoryx2-gateway/conformance-tests" }
 iceoryx2-link = { version = "0.10.999", path = "iceoryx2-link/link", default-features = false }
 iceoryx2-link-adapter = { version = "0.10.999", path = "iceoryx2-link/adapter", default-features = false }
 iceoryx2-link-backend = { version = "0.10.999", path = "iceoryx2-link/backend", default-features = false }
@@ -213,9 +202,6 @@ iceoryx2-conformance-tests-common = { path = "iceoryx2/conformance-tests/tests-c
 iceoryx2-conformance-tests-nostd = { path = "iceoryx2/conformance-tests/tests-nostd"}
 iceoryx2-tests-common = { path = "iceoryx2/tests-common" }
 iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
-iceoryx2-gateway-testing = { path = "iceoryx2-gateway/testing", default-features = false }
-iceoryx2-gateway-conformance-tests-common = { path = "iceoryx2-gateway/conformance-tests/tests-common", default-features = false }
-iceoryx2-gateway-conformance-tests-nostd = { path = "iceoryx2-gateway/conformance-tests/tests-nostd" }
 iceoryx2-link-testing = { path = "iceoryx2-link/testing", default-features = false }
 iceoryx2-link-conformance-tests-common = { path = "iceoryx2-link/conformance-tests/tests-common", default-features = false }
 iceoryx2-link-conformance-tests-nostd = { path = "iceoryx2-link/conformance-tests/tests-nostd" }
