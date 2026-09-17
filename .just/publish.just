@@ -128,15 +128,19 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2-gateway-backend                \
     iceoryx2-gateway-conformance-tests`
 
-INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := `echo \
-    iceoryx2-integrations-ros2-interop         \
-    iceoryx2-integrations-ros2-gateway-backend`
+INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := ""
 
 INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
-    iceoryx2                                \
-    iceoryx2-log                            \
-    iceoryx2-gateway                        \
-    iceoryx2-gateway-backend`
+    iceoryx2                                   \
+    iceoryx2-bb-concurrency                    \
+    iceoryx2-bb-testing                        \
+    iceoryx2-cli                               \
+    iceoryx2-gateway                           \
+    iceoryx2-gateway-backend                   \
+    iceoryx2-integrations-ros2-gateway-backend \
+    iceoryx2-integrations-ros2-gateway-cli     \
+    iceoryx2-integrations-ros2-interop         \
+    iceoryx2-log`
 
 [private]
 _publish-dispatch workspace *flags:
@@ -469,6 +473,10 @@ _publish-dry-run workspace allow_dirty no_verify registry:
         REGISTRY_FLAG="--registry {{ registry }}"
     fi
 
+    if [ -z "$(just _publish-crates-to-publish "{{ workspace }}")" ]; then
+        echo "Nothing to publish in '{{ workspace }}'."
+        exit 0
+    fi
     echo "Publishing '{{ workspace }}' (dry-run)..."
     cargo publish --dry-run --workspace \
         $MANIFEST_FLAG $REGISTRY_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $NO_VERIFY_FLAG
@@ -497,6 +505,10 @@ _publish-run workspace allow_dirty no_verify registry:
         REGISTRY_FLAG="--registry {{ registry }}"
     fi
 
+    if [ -z "$(just _publish-crates-to-publish "{{ workspace }}")" ]; then
+        echo "Nothing to publish in '{{ workspace }}'."
+        exit 0
+    fi
     echo "Publishing '{{ workspace }}'..."
     cargo publish --workspace $MANIFEST_FLAG $REGISTRY_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $NO_VERIFY_FLAG
     echo "Done."
