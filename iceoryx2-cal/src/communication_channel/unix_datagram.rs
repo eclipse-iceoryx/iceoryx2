@@ -20,6 +20,7 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 use iceoryx2_bb_posix::{
     directory::*, file::*, system_configuration::SystemInfo, unix_datagram_socket::*,
 };
@@ -109,7 +110,7 @@ impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
 
         let full_path = cfg.path_for(name);
 
-        match File::does_exist(&full_path) {
+        match UnixDatagramReceiver::does_exist(&full_path) {
             Ok(true) => Ok(true),
             Ok(false) => Ok(false),
             Err(v) => {
@@ -125,6 +126,20 @@ impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
     ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
         let msg = "Unable to list all communication_channel::unix_datagram";
         let origin = "communication_channel::unix_datagram::Channel::list_cfg()";
+
+        match Directory::does_exist(&config.path_hint) {
+            Ok(true) => (),
+            Ok(false) => return Ok(vec![]),
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{} due to insufficient permissions to read the storage directory.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{} due to an internal failure while checking the existance of the storage directory \"{}\". [{e:?}]", 
+                    msg, config.path_hint);
+            }
+        }
 
         let directory = fail!(from origin, when Directory::new(&config.path_hint),
             map DirectoryOpenError::InsufficientPermissions => NamedConceptListError::InsufficientPermissions,

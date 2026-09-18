@@ -543,16 +543,8 @@ impl Directory {
     /// Returns true if a directory already exists, otherwise false
     pub fn does_exist(path: &Path) -> Result<bool, MetadataFromPathError> {
         let origin = "Directory::does_exist()";
-        let msg = format!("Unable to determine if \"{path}\" does exist");
-
-        match Metadata::from_path(path) {
-            Ok(v) => Ok(v.file_type() == FileType::Directory),
-            Err(MetadataFromPathError::DoesNotExist) => Ok(false),
-            Err(e) => {
-                fail!(from origin, with e,
-                    "{msg} since the metadata could not be acquired. [{e:?}]");
-            }
-        }
+        let msg = format!("Unable to determine if directory \"{path}\" does exist");
+        Metadata::does_exist(path, origin, &msg, FileType::Directory)
     }
 
     fn acquire_metadata(

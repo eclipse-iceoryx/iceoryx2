@@ -23,6 +23,7 @@ use crate::user::Uid;
 use alloc::format;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::path::{Path, SemanticString};
+use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix::{Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
@@ -34,6 +35,7 @@ enum_gen! { MetadataFromPathError
     PathPrefixIsNotADirectory,
     DataOverflowInStatStruct,
     LoopInSymbolicLinks,
+    MaxSupportedPathLengthExceeded,
     UnknownError(i32)
 }
 
@@ -70,11 +72,54 @@ impl Metadata {
                 Errno::ENOENT => (DoesNotExist, "{} since the path does not exist.", msg),
                 Errno::ENOTDIR => (PathPrefixIsNotADirectory, "{} since the path prefix is not a directory.", msg),
                 Errno::EOVERFLOW => (DataOverflowInStatStruct, "{} since certain properties like size would cause an overflow in the underlying stat struct.", msg),
+                Errno::ENAMETOOLONG => (MaxSupportedPathLengthExceeded, "{} since the path length is longer than the maximum path name length.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             );
         }
 
         Ok(Metadata::create(&buffer))
+    }
+
+    pub(crate) fn does_exist(
+        path: &Path,
+        origin: &str,
+        msg: &str,
+        file_type: FileType,
+    ) -> Result<bool, MetadataFromPathError> {
+        if unsafe { posix::access(path.as_c_str(), posix::F_OK) } == -1 {
+            match Errno::get() {
+                Errno::ENOENT => return Ok(false),
+                Errno::EACCES => {
+                    fail!(from origin, with MetadataFromPathError::InsufficientPermissions,
+                        "{msg} due to insufficient permissions.");
+                }
+                Errno::ELOOP => {
+                    fail!(from origin, with MetadataFromPathError::LoopInSymbolicLinks,
+                        "{msg} since there is a loop in the symbolic links.");
+                }
+                Errno::ENAMETOOLONG => {
+                    fail!(from origin, with MetadataFromPathError::MaxSupportedPathLengthExceeded,
+                        "{msg} since the path length is longer than the maximum supported path name length.");
+                }
+                Errno::ENOTDIR => {
+                    fail!(from origin, with MetadataFromPathError::PathPrefixIsNotADirectory,
+                        "{msg} since components of the path are not a directory.");
+                }
+                e => {
+                    fail!(from origin, with MetadataFromPathError::UnknownError(e as i32),
+                        "{msg} due to an unknown error. [{e:?}]");
+                }
+            }
+        }
+
+        match Metadata::from_path(path) {
+            Ok(v) => Ok(v.file_type() == file_type),
+            Err(MetadataFromPathError::DoesNotExist) => Ok(false),
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the metadata could not be acquired. [{e:?}]");
+            }
+        }
     }
 
     pub fn number_of_links(&self) -> u64 {

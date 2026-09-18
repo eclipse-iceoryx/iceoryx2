@@ -143,6 +143,8 @@ use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::SynchronousMultiplexing;
+use crate::file_type::FileType;
+use crate::metadata::{Metadata, MetadataFromPathError};
 use crate::socket_ancillary::*;
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
@@ -191,7 +193,7 @@ enum_gen! {
   mapping:
     UnixDatagramSetSocketOptionError,
     UnixDatagramCreationError,
-    FileAccessError,
+    MetadataFromPathError,
     FileRemoveError
 }
 
@@ -796,7 +798,7 @@ impl UnixDatagramReceiver {
             socket: fail!(from config, when UnixDatagramSocket::new(&config.name), "{}.", msg),
         };
 
-        let does_file_exist = fail!(from new_socket, when File::does_exist(&config.name), "Unable to determine if socket exists.");
+        let does_file_exist = fail!(from new_socket, when Self::does_exist(&config.name), "Unable to determine if socket exists.");
 
         if config.creation_mode == CreationMode::PurgeAndCreate && does_file_exist {
             fail!(from new_socket, when File::remove(&config.name), "{} since the already existing socket could not be removed.", msg);
@@ -813,6 +815,12 @@ impl UnixDatagramReceiver {
 
         trace!(from new_socket, "created and listening");
         Ok(new_socket)
+    }
+
+    pub fn does_exist(file_path: &FilePath) -> Result<bool, MetadataFromPathError> {
+        let origin = "UnixDatagramReceiver::does_exist()";
+        let msg = format!("Unable to determine if unix datagram socket \"{file_path}\" exists");
+        Metadata::does_exist(&file_path.into(), origin, &msg, FileType::Socket)
     }
 
     /// Returns the name of the socket

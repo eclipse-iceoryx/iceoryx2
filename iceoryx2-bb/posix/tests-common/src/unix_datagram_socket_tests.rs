@@ -374,7 +374,7 @@ pub fn abandoning_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
     let close_result = unsafe { posix::close(fd) };
     let errno = Errno::get();
 
-    assert_that!(File::does_exist(&socket_name).unwrap(), eq true);
+    assert_that!(UnixDatagramReceiver::does_exist(&socket_name).unwrap(), eq true);
     assert_that!(close_result, eq - 1);
     assert_that!(errno, eq Errno::EBADF);
 
@@ -402,7 +402,7 @@ pub fn abandoning_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_f
     let close_result = unsafe { posix::close(fd) };
     let errno = Errno::get();
 
-    assert_that!(File::does_exist(&socket_name).unwrap(), eq true);
+    assert_that!(UnixDatagramReceiver::does_exist(&socket_name).unwrap(), eq true);
     assert_that!(close_result, eq - 1);
     assert_that!(errno, eq Errno::EBADF);
 

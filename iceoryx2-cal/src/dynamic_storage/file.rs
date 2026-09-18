@@ -32,7 +32,6 @@ use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
-use iceoryx2_bb_posix::file::FileAccessError;
 use iceoryx2_bb_posix::file::FileBuilder;
 use iceoryx2_bb_posix::file::FileCreationError;
 use iceoryx2_bb_posix::file::FileOpenError;
@@ -44,6 +43,7 @@ use iceoryx2_bb_posix::memory_mapping::MappingBehavior;
 use iceoryx2_bb_posix::memory_mapping::MappingPermission;
 use iceoryx2_bb_posix::memory_mapping::MemoryMapping;
 use iceoryx2_bb_posix::memory_mapping::MemoryMappingBuilder;
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{fail, trace};
@@ -547,7 +547,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptMgmt for Storage<T> {
         let full_name = cfg.path_for(name);
         match File::does_exist(&full_name) {
             Ok(v) => Ok(v),
-            Err(FileAccessError::InsufficientPermissions) => {
+            Err(MetadataFromPathError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
                     "{msg} with the name {name} due to insufficient permissions.");
             }
@@ -561,6 +561,21 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptMgmt for Storage<T> {
     fn list_cfg(cfg: &Self::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let origin = "dynamic_storage::File::list_cfg()";
         let msg = "Unable to list all dynamic storages";
+
+        match Directory::does_exist(&cfg.path) {
+            Ok(true) => (),
+            Ok(false) => return Ok(vec![]),
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{} due to insufficient permissions to read the storage directory.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{} due to an internal failure while checking the existance of the storage directory \"{}\". [{e:?}]", 
+                    msg, cfg.path);
+            }
+        }
+
         let directory = match Directory::new(&cfg.path) {
             Ok(d) => d,
             Err(DirectoryOpenError::InsufficientPermissions) => {

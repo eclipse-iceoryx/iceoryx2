@@ -32,6 +32,7 @@
 * [#1813](https://github.com/eclipse-iceoryx/iceoryx2/issues/1813) Add API to deliver events to specific listener only
 * [#1960](https://github.com/eclipse-iceoryx/iceoryx2/issues/1960) Key zenoh tunnel traffic by service description fingerprint so that hosts with differing descriptions of a service do not exchange samples
 * [#1995](https://github.com/eclipse-iceoryx/iceoryx2/issues/1995) Add convenience functions to POSIX structs
+* [#1999](https://github.com/eclipse-iceoryx/iceoryx2/issues/1999) Reduce logger noise in discovery
 
 ### Bugfixes
 
