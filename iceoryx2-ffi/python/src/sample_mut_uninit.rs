@@ -51,9 +51,9 @@ pub(crate) enum SampleMutUninitType {
 ///  * `Publisher.loan_slice_uninit`,
 ///  * `Publisher.loan_flatbuffer`
 ///
-/// It stores the payload that will be sent
-/// to every connected `Subscriber`. If the `SampleMut` is not sent
-/// it will release the loaned memory when going out of scope.
+/// It stores the uninitialized payload. It must be initialized and converted into a
+/// `SampleMut` with `SampleMutUninit.write_payload` or `SampleMutUninit.assume_init`
+/// before it can be sent. Otherwise the loaned memory is released when going out of scope.
 pub struct SampleMutUninit {
     pub(crate) value: Parc<SampleMutUninitType>,
     pub(crate) payload_type_details: TypeStorage,

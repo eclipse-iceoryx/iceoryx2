@@ -46,11 +46,10 @@ pub(crate) enum ResponseMutUninitType {
 ///  * `ActiveRequest.loan_slice_uninit`,
 ///  * `ActiveRequest.loan_flatbuffer`
 ///
-/// It stores the payload of the response that will be sent to the corresponding
-/// `PendingResponse` of the `Client`.
-///
-/// If the `ResponseMutUninit` is not sent it will reelase the loaned memory when going out of
-/// scope.
+/// It stores the uninitialized payload of the response. It must be initialized and converted
+/// into a `ResponseMut` with `ResponseMutUninit.write_payload` or
+/// `ResponseMutUninit.assume_init` before it can be sent. Otherwise the loaned memory is
+/// released when going out of scope.
 pub struct ResponseMutUninit {
     pub(crate) value: Parc<ResponseMutUninitType>,
     pub(crate) response_payload_type_details: TypeStorage,
