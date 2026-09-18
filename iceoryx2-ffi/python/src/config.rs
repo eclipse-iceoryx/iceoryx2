@@ -19,7 +19,7 @@ use crate::parc::Parc;
 use crate::path::Path;
 use pyo3::prelude::*;
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// All configurable settings of a `Node`.
 pub struct Node(Parc<iceoryx2::config::Config>);
 
@@ -130,7 +130,7 @@ impl Node {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// All configurable settings of a `Service`.
 pub struct Service(Parc<iceoryx2::config::Config>);
 
@@ -245,7 +245,7 @@ impl Service {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct PublishSubscribe(Parc<iceoryx2::config::Config>);
@@ -442,7 +442,7 @@ impl PublishSubscribe {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the event messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct Event(Parc<iceoryx2::config::Config>);
@@ -623,7 +623,7 @@ impl Event {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the request response messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct RequestResponse(Parc<iceoryx2::config::Config>);
@@ -942,7 +942,7 @@ impl RequestResponse {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// The global settings
 pub struct Global(Parc<iceoryx2::config::Config>);
 
@@ -1014,7 +1014,7 @@ impl Global {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 pub struct Defaults(Parc<iceoryx2::config::Config>);
@@ -1050,7 +1050,7 @@ impl Defaults {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the blackboard messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct Blackboard(Parc<iceoryx2::config::Config>);
@@ -1087,7 +1087,7 @@ impl Blackboard {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
