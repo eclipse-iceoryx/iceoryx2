@@ -60,6 +60,9 @@ html_css_files = [
     'theme.css',
     'custom.css',
 ]
+html_js_files = [
+    'theme-transitions.js',
+]
 
 html_theme_options = {
     "top_of_page_buttons": [],
