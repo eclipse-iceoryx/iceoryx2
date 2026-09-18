@@ -153,6 +153,11 @@ input.sidebar-search:focus {
 /* Theme toggle and mobile header */
 .theme-toggle { color: var(--ix-muted); transition: color 0.2s; }
 .theme-toggle:hover { color: var(--ix-ice); }
+/* theme-transitions.js sets this class while the theme is switched */
+html.ix-theme-switching,
+html.ix-theme-switching *,
+html.ix-theme-switching *::before,
+html.ix-theme-switching *::after { transition: none !important; }
 .mobile-header {
   background: var(--ix-header-bg);
   border-bottom: 1px solid var(--ix-line);

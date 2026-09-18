@@ -5,7 +5,7 @@
 
 # Project Configuration
 PROJECT_NAME                    = "iceoryx2"
-PROJECT_BRIEF                   = "C++ Language Bindings"
+PROJECT_BRIEF                   = "C++ Bindings"
 OUTPUT_DIRECTORY                = "./target"
 
 # HTML Generation
@@ -15,7 +15,8 @@ HTML_OUTPUT                     = html
 # Doxygen Awesome CSS Theme
 HTML_EXTRA_STYLESHEET           = target/deps/doxygen-awesome/doxygen-awesome.css \
                                   target/deps/doxygen-awesome/doxygen-awesome-sidebar-only.css \
-                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                                  ../doxygen/theme.css
 
 HTML_EXTRA_FILES                = target/deps/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
                                   target/deps/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
@@ -23,7 +24,7 @@ HTML_EXTRA_FILES                = target/deps/doxygen-awesome/doxygen-awesome-da
                                   target/deps/doxygen-awesome/doxygen-awesome-interactive-toc.js \
                                   target/deps/doxygen-awesome/doxygen-awesome-tabs.js
 
-HTML_HEADER                     = header.html
+HTML_HEADER                     = ../doxygen/header.html
 HTML_COLORSTYLE                 = LIGHT
 HTML_DYNAMIC_MENUS              = YES
 GENERATE_TREEVIEW               = YES
@@ -46,6 +47,7 @@ MACRO_EXPANSION                 = YES
 EXPAND_ONLY_PREDEF              = NO
 ENABLE_PREPROCESSING            = YES
 PREDEFINED                     += DOXYGEN_MACRO_FIX
+PREDEFINED                     += IOX2_FEATURE_FLATBUFFERS=1
 
 # Input Configuration
 INPUT                           = "../../../iceoryx2-cxx/include" \
