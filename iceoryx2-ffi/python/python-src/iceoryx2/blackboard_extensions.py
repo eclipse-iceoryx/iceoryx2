@@ -203,7 +203,7 @@ def get(self: EntryHandle) -> BlackboardValue:
 
 
 def is_up_to_date(self: EntryHandle, value: BlackboardValue) -> bool:
-    """Checks if `value` is up-to-date."""
+    """Checks if ``value`` is up-to-date."""
     return self.__is_up_to_date(value._generation_counter)
 
 

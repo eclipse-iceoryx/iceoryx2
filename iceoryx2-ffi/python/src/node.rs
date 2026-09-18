@@ -141,7 +141,7 @@ impl Node {
         }
     }
 
-    /// Waits for a given `cycle_time`.
+    /// Waits for a given ``cycle_time``.
     /// On failure it emits a `NodeWaitFailure`.
     pub fn wait(&self, cycle_time: &Duration, py: Python<'_>) -> PyResult<()> {
         py.detach(move || {

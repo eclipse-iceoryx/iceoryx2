@@ -41,7 +41,7 @@ impl TypeDetail {
     }
 
     /// Defines the `TypeVariant` of the defined type. `TypeVariant.FixedSize` if the type has
-    /// always the same size like an `uint64_t` or `TypeVariant.Dynamic` when it is a dynamic
+    /// always the same size like an `ctypes.c_uint64` or `TypeVariant.Dynamic` when it is a dynamic
     /// array or vector
     pub fn type_variant(&self, value: &TypeVariant) -> Self {
         let mut this = self.0;

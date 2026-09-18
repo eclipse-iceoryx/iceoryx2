@@ -18,7 +18,7 @@ use pyo3::prelude::*;
 #[pyclass(str = "{0:?}")]
 /// Represents a FileDescriptor in a POSIX system. Contains always a value greater or equal zero,
 /// a valid file descriptor. It takes the ownership of the provided file descriptor and calls
-/// `posix::close` on destruction.
+/// ``posix::close`` on destruction.
 pub struct FileDescriptor(pub(crate) Arc<iceoryx2::prelude::FileDescriptor>);
 
 impl iceoryx2::prelude::FileDescriptorBased for FileDescriptor {
@@ -33,7 +33,7 @@ impl iceoryx2::prelude::SynchronousMultiplexing for FileDescriptor {}
 impl FileDescriptor {
     #[staticmethod]
     /// Creates a FileDescriptor which does not hold the ownership of the file descriptor and will
-    /// not call `posix::close` on destruction.
+    /// not call ``posix::close`` on destruction.
     pub fn non_owning_new(value: i32) -> Option<FileDescriptor> {
         iceoryx2::prelude::FileDescriptor::non_owning_new(value).map(|v| Self(Arc::new(v)))
     }

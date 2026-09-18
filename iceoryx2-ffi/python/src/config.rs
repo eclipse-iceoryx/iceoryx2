@@ -141,8 +141,8 @@ impl Service {
     }
 
     #[getter]
-    /// A list of directories where iceoryx2 will look for `.fbs` flatbuffer schemas. If no path is
-    /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
+    /// A list of directories where iceoryx2 will look for ``.fbs`` flatbuffer schemas. If no path
+    /// is provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
     /// the flatbuffer schemas.
     pub fn flatbuffer_schema_path(&self) -> Option<Path> {
         self.0
@@ -529,7 +529,7 @@ impl Event {
 
     #[getter]
     /// Defines the event id value that is emitted after a new notifier was created. If it is
-    /// not set then `usize::MAX` is returned
+    /// not set then ``usize::MAX`` is returned
     pub fn get_notifier_created_event(&self) -> usize {
         self.0
             .lock()

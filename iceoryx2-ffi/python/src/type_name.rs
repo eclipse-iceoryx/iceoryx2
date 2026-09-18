@@ -22,7 +22,7 @@ pub struct TypeName(pub(crate) iceoryx2::service::static_config::message_type_de
 #[pymethods]
 impl TypeName {
     #[staticmethod]
-    /// Creates a new `TypeName`. If the provided `name` exceeds the maximum supported length
+    /// Creates a new `TypeName`. If the provided ``name`` exceeds the maximum supported length
     /// it emits an `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self(
@@ -40,7 +40,7 @@ impl TypeName {
     }
 
     #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
-    /// Returns the underlying `String` of the `TypeName`
+    /// Returns the underlying `str` of the `TypeName`
     pub fn to_string(&self) -> String {
         self.0.to_string()
     }

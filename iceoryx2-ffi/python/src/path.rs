@@ -25,7 +25,7 @@ pub struct Path(pub(crate) iceoryx2::prelude::Path);
 #[pymethods]
 impl Path {
     #[staticmethod]
-    /// Creates a new `Path` when the provided `name` contains a valid path, otherwise it emits a
+    /// Creates a new `Path` when the provided ``name`` contains a valid path, otherwise it emits a
     /// `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self(
@@ -40,7 +40,7 @@ impl Path {
         iceoryx2::prelude::Path::max_len()
     }
 
-    /// Converts the `Path` into a `String`
+    /// Converts the `Path` into a `str`
     #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
     pub fn to_string(&self) -> String {
         self.0.to_string()

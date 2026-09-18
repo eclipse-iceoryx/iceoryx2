@@ -104,7 +104,7 @@ impl PortFactorySubscriber {
 
 #[pymethods]
 impl PortFactorySubscriber {
-    /// Defines the buffer size of the `Subscriber`. Smallest possible value is `1`.
+    /// Defines the buffer size of the `Subscriber`. Smallest possible value is ``1``.
     pub fn buffer_size(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -122,7 +122,7 @@ impl PortFactorySubscriber {
     }
 
     /// Defines the amount of requested history samples. By default the value defined with the
-    /// service's `history_size` is used
+    /// service's ``history_size`` is used
     pub fn history_request(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {

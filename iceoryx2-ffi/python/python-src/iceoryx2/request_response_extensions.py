@@ -353,7 +353,7 @@ def loan_slice_uninit_response(
 
 
 def loan_flatbuffer_request(self: Client) -> RequestMutUninit:
-    """Loans/allocates a `RequestMutUninit` from the underlying data segment of the `Client` with an integrated `FlatbufferBuilder`."""
+    """Loans/allocates a `RequestMutUninit` from the underlying data segment of the `Client` with an integrated flatbuffer builder."""
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
@@ -366,7 +366,7 @@ def loan_flatbuffer_request(self: Client) -> RequestMutUninit:
 
 
 def loan_flatbuffer_response(self: Client) -> ResponseMutUninit:
-    """Loans/allocates a `ResponseMutUninit` from the underlying data segment of the `Client` with an integrated `FlatbufferBuilder`."""
+    """Loans/allocates a `ResponseMutUninit` from the underlying data segment of the `Client` with an integrated flatbuffer builder."""
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
@@ -382,7 +382,7 @@ _request_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
 
 
 def flatbuffer_builder_request(self: RequestMutUninit) -> flatbuffers.Builder:
-    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
+    """Returns the flatbuffer builder to produce the data that shall be sent."""
     key = id(self)
     builder = _request_mut_uninit_dict.get(key)
     if builder is None:
@@ -395,7 +395,7 @@ _response_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
 
 
 def flatbuffer_builder_response(self: ResponseMutUninit) -> flatbuffers.Builder:
-    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
+    """Returns the flatbuffer builder to produce the data that shall be sent."""
     key = id(self)
     builder = _response_mut_uninit_dict.get(key)
     if builder is None:

@@ -327,8 +327,8 @@ impl WaitSet {
     /// Waits until an event arrives on the `WaitSet`, then collects the events corresponding
     /// `WaitSetAttachmentId` in a vector and returns it.
     ///
-    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user with `WaitSetRunResult.Interrupt` or
+    /// If an interrupt- (`signal.SIGINT`) or a termination-signal (`signal.SIGTERM`) was received,
+    /// it will exit the loop and inform the user with `WaitSetRunResult.Interrupt` or
     /// `WaitSetRunResult.TerminationRequest`.
     ///
     /// **Important:** The `WaitSet` only reports that an attachment is ready; it
@@ -371,8 +371,8 @@ impl WaitSet {
     /// Waits until an event arrives on the `WaitSet` or the provided timeout has passed, then
     /// collects the events corresponding `WaitSetAttachmentId` in a vector and returns it.
     ///
-    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user with `WaitSetRunResult.Interrupt` or
+    /// If an interrupt- (`signal.SIGINT`) or a termination-signal (`signal.SIGTERM`) was received,
+    /// it will exit the loop and inform the user with `WaitSetRunResult.Interrupt` or
     /// `WaitSetRunResult.TerminationRequest`.
     ///
     /// **Important:** The `WaitSet` only reports that an attachment is ready; it

@@ -243,7 +243,7 @@ def initial_reserved_memory(
 
 
 def loan_flatbuffer(self: Publisher) -> SampleMutUninit:
-    """Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`  with an integrated `FlatbufferBuilder`."""
+    """Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`  with an integrated flatbuffer builder."""
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
@@ -259,7 +259,7 @@ _sample_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
 
 
 def flatbuffer_builder(self: SampleMutUninit) -> flatbuffers.Builder:
-    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
+    """Returns the flatbuffer builder to produce the data that shall be sent."""
     key = id(self)
     builder = _sample_mut_uninit_dict.get(key)
     if builder is None:

@@ -44,7 +44,7 @@ impl NodeDetails {
     }
 
     #[getter]
-    /// Returns the `ProcessId` of the `Node`'s owner process.
+    /// Returns the process id of the `Node`'s owner process.
     pub fn process_id(&self) -> u32 {
         self.0.process_id().value() as _
     }

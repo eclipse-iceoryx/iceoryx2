@@ -16,9 +16,9 @@ use pyo3::prelude::*;
 #[derive(PartialEq, Clone, Debug)]
 /// States why the `WaitSet.wait_and_process` method returned.
 pub enum WaitSetRunResult {
-    /// A termination signal `SIGTERM` was received.
+    /// A termination signal `signal.SIGTERM` was received.
     TerminationRequest,
-    /// An interrupt signal `SIGINT` was received.
+    /// An interrupt signal `signal.SIGINT` was received.
     Interrupt,
     /// The users callback returned `CallbackProgression.Stop`.
     StopRequest,

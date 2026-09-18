@@ -131,7 +131,7 @@ impl PortFactoryPublisher {
     }
 
     /// Reduces the preallocated `SampleMut` count.
-    /// The return value is clamped between `1` and the worst case
+    /// The return value is clamped between ``1`` and the worst case
     /// preallocated `SampleMut` count required
     /// to guarantee that the `Publisher` always has a `SampleMut` to loan
     /// and send.

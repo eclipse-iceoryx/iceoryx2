@@ -16,14 +16,14 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
-/// Relocatable (inter-process shared memory compatible) `SemanticString` implementation for
+/// Relocatable (inter-process shared memory compatible) ``SemanticString`` implementation for
 /// `AttributeValue`.
 pub struct AttributeValue(pub(crate) iceoryx2::service::attribute::AttributeValue);
 
 #[pymethods]
 impl AttributeValue {
     #[staticmethod]
-    /// Creates a new `AttributeValue` when the provided `value` does not exceed
+    /// Creates a new `AttributeValue` when the provided ``value`` does not exceed
     /// `AttributeValue.max_len()`, otherwise it emits a `SemanticStringError`.
     pub fn new(value: &str) -> PyResult<Self> {
         Ok(Self(
@@ -38,7 +38,7 @@ impl AttributeValue {
         iceoryx2::service::attribute::AttributeValue::max_len()
     }
 
-    /// Converts the `AttributeValue` into a `String`
+    /// Converts the `AttributeValue` into a `str`
     #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
     pub fn to_string(&self) -> String {
         self.0.to_string()

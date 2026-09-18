@@ -139,7 +139,7 @@ impl PortFactoryServer {
     }
 
     /// Reduces the preallocated `ResponseMut` count.
-    /// The return value is clamped between `1` and the worst case
+    /// The return value is clamped between ``1`` and the worst case
     /// preallocated `ResponseMut` count required
     /// to guarantee that the `Server` always has a `ResponseMut` to loan
     /// and send.

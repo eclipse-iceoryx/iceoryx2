@@ -85,8 +85,8 @@ impl ServiceBuilderEvent {
         }
     }
 
-    /// If the `Service` is created it set the greatest supported `NodeId` value
-    /// If an existing `Service` is opened it defines the value size the `NodeId`
+    /// If the `Service` is created it set the greatest supported `EventId` value
+    /// If an existing `Service` is opened it defines the value size the `EventId`
     /// must at least support.
     pub fn event_id_max_value(&self, value: usize) -> Self {
         match &self.0 {

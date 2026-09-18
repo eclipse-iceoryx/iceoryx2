@@ -138,7 +138,7 @@ impl PortFactoryClient {
     }
 
     /// Reduces the preallocated `RequestMut` count.
-    /// The return value is clamped between `1` and the worst case
+    /// The return value is clamped between ``1`` and the worst case
     /// preallocated `RequestMut` count required
     /// to guarantee that the `Client` always has a `RequestMut` to loan
     /// and send.
@@ -238,7 +238,7 @@ impl PortFactoryClient {
         }
     }
 
-    /// Defines the maximal active requests the `Client` can send. Smallest possible value is `1`.
+    /// Defines the maximal active requests the `Client` can send. Smallest possible value is ``1``.
     pub fn max_active_requests(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
