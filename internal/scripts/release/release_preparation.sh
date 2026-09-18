@@ -265,9 +265,11 @@ if [[ ${SELECTION} == ${YES} ]]; then
 
     echo -e "Shall I run those build commands to update the lock files?"
     echo -e "  cargo:  cargo build --all-targets"
-    echo -e "          cd integration"
+    echo -e "          cd integrations/zenoh"
     echo -e "          cargo build --all-targets"
-    echo -e "          cd .."
+    echo -e "          cd ../ros2"
+    echo -e "          cargo build --all-targets || true"
+    echo -e "          cd ../.."
     echo -e "  bazel:  bazelisk build //..."
     echo -e "  python: poetry --project iceoryx2-ffi/python build-into-venv"
     show_default_selector
@@ -278,9 +280,11 @@ if [[ ${SELECTION} == ${YES} ]]; then
         echo -e "${C_BLUE}###########################${C_OFF}"
         echo -e ""
         cargo build --all-targets --workspace
-        cd integrations
+        cd integrations/zenoh
         cargo build --all-targets --workspace
-        cd ..
+        cd ../ros2
+        cargo build --all-targets --workspace || true
+        cd ../..
 
         echo -e ""
         echo -e "${C_BLUE}#################################${C_OFF}"
