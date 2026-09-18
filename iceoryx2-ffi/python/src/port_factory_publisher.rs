@@ -112,8 +112,8 @@ impl PortFactoryPublisher {
         self.payload_type_details.clone().value
     }
 
-    /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher.loan` or
-    /// `Publisher.loan_uninit` in parallel.
+    /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher.loan_uninit` or
+    /// `Publisher.loan_slice_uninit` in parallel.
     pub fn max_loaned_samples(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {

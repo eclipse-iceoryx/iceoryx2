@@ -34,7 +34,7 @@ impl WaitSetBuilder {
     }
 
     /// Defines the `SignalHandlingMode` for the `WaitSet`. It affects the
-    /// `WaitSet.wait_and_process` and `WaitSet.wait_and_process_once` calls
+    /// `WaitSet.wait_and_process` and `WaitSet.wait_and_process_with_timeout` calls
     /// that returns any received `Signal` via its `WaitSetRunResult` return value.
     pub fn signal_handling_mode(&mut self, value: &SignalHandlingMode) -> Self {
         let this = self.0.clone();

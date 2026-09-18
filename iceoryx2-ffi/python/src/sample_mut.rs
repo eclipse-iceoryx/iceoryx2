@@ -41,9 +41,9 @@ pub(crate) enum SampleMutType {
 }
 
 #[pyclass]
-/// Acquired by a `Publisher` via
-///  * `Publisher.loan`,
-///  * `Publisher.loan_slice`
+/// Acquired by initializing a `SampleMutUninit` via
+///  * `SampleMutUninit.write_payload`,
+///  * `SampleMutUninit.assume_init`
 ///
 /// It stores the payload that will be sent
 /// to every connected `Subscriber`. If the `SampleMut` is not sent
