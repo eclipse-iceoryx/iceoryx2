@@ -31,7 +31,7 @@ impl Default for AttributeSpecifier {
 #[pymethods]
 impl AttributeSpecifier {
     #[staticmethod]
-    /// Creates a new empty set of `Attribute`s
+    /// Creates a new empty `Attribute` set
     pub fn new() -> Self {
         Self(iceoryx2::service::attribute::AttributeSpecifier::new())
     }

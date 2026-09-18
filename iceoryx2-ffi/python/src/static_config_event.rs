@@ -24,14 +24,15 @@ pub struct StaticConfigEvent(pub(crate) iceoryx2::service::static_config::event:
 impl StaticConfigEvent {
     #[getter]
     /// Returns the deadline of the service. If no new notification is signaled from any
-    /// `Notifier` after the given deadline, it is rated as an error and all `Listener`s that are
-    /// attached to a `WaitSet` are woken up and notified about the missed
+    /// `Notifier` after the given deadline, it is rated as an error and every `Listener` that is
+    /// attached to a `WaitSet` is woken up and notified about the missed
     pub fn deadline(&self) -> Option<Duration> {
         self.0.deadline().map(Duration)
     }
 
     #[getter]
-    /// Returns the maximum supported amount of `Node`s that can open the `Service` in parallel.
+    /// Returns the maximum supported amount of `Node` instances that can open the `Service`
+    /// in parallel.
     pub fn max_nodes(&self) -> usize {
         self.0.max_nodes()
     }

@@ -53,7 +53,7 @@ unsafe impl Send for ServiceBuilderBlackboardCreatorType {}
 unsafe impl Send for ServiceBuilderBlackboardOpenerType {}
 
 #[pyclass]
-/// Builder to create new `MessagingPattern::Blackboard` based `Service`s
+/// Builder to create a new `MessagingPattern::Blackboard` based `Service`
 pub struct ServiceBuilderBlackboardCreator {
     pub(crate) value: Parc<ServiceBuilderBlackboardCreatorType>,
     pub key_type_storage: TypeStorage,
@@ -151,7 +151,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
-    /// Defines how many `Reader`s shall be supported at most.
+    /// Defines how many `Reader` ports shall be supported at most.
     pub fn max_readers(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -167,7 +167,7 @@ impl ServiceBuilderBlackboardCreator {
         }
     }
 
-    /// Defines how many `Node`s shall be able to open the `Service` in parallel.
+    /// Defines how many `Node` instances shall be able to open the `Service` in parallel.
     pub fn max_nodes(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
@@ -283,7 +283,7 @@ impl ServiceBuilderBlackboardCreator {
 }
 
 #[pyclass]
-/// Builder to open new `MessagingPattern::Blackboard` based `Service`s
+/// Builder to open a new `MessagingPattern::Blackboard` based `Service`
 pub struct ServiceBuilderBlackboardOpener {
     pub(crate) value: Parc<ServiceBuilderBlackboardOpenerType>,
     pub key_type_details: TypeStorage,
@@ -381,7 +381,7 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
-    /// Defines how many `Reader`s must be at least supported.
+    /// Defines how many `Reader` ports must be at least supported.
     pub fn max_readers(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {
@@ -397,7 +397,7 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
-    /// Defines how many `Node`s must be at least supported.
+    /// Defines how many `Node` instances must be at least supported.
     pub fn max_nodes(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardOpenerType::Ipc(v) => {

@@ -131,7 +131,7 @@ impl PortFactoryBlackboard {
     }
 
     #[getter]
-    /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
+    /// Returns a list of all `NodeState` of every `Node` which has opened the `Service`.
     pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => {
@@ -193,7 +193,7 @@ impl PortFactoryBlackboard {
         PortFactoryReader::new(self.value.clone(), self.key_type_storage.clone())
     }
 
-    /// Removes the stale system resources of all dead `Node`s connected to this service.
+    /// Removes the stale system resources of every dead `Node` connected to this service.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions or it
     /// is currently being cleaned up by another process then the `Node` is skipped.
@@ -207,7 +207,7 @@ impl PortFactoryBlackboard {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s connected to this service.
+    /// Removes the stale system resources of every dead `Node` connected to this service.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then the
     /// `Node` is skipped. If it is currently being cleaned up by another process then the

@@ -28,7 +28,7 @@ impl ResponseHeader {
     }
 
     #[getter]
-    /// Returns how many elements are stored inside the `Response`s payload.
+    /// Returns how many elements are stored inside the `Response`'s payload.
     pub fn number_of_elements(&self) -> u64 {
         self.0.number_of_elements()
     }

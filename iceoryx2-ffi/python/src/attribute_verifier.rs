@@ -32,7 +32,7 @@ impl Default for AttributeVerifier {
 #[pymethods]
 impl AttributeVerifier {
     #[staticmethod]
-    /// Creates a new empty set of `Attribute`s
+    /// Creates a new empty `Attribute` set
     pub fn new() -> Self {
         Self(iceoryx2::service::attribute::AttributeVerifier::new())
     }

@@ -137,15 +137,15 @@ impl PortFactoryClient {
         self.response_header_type_details.clone().value
     }
 
-    /// Reduces the number of preallocated `RequestMut`s.
-    /// The return value is clamped between `1` and the worst case number of
-    /// preallocated `RequestMut`s required
-    /// to guarantee that the `Client` never runs out of `RequestMut`s to loan
+    /// Reduces the preallocated `RequestMut` count.
+    /// The return value is clamped between `1` and the worst case
+    /// preallocated `RequestMut` count required
+    /// to guarantee that the `Client` always has a `RequestMut` to loan
     /// and send.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated `RequestMut`s, iceoryx2 can
+    /// If the user reduces the preallocated `RequestMut` count, iceoryx2 can
     /// no longer guarantee, that the `Client` can always loan a `RequestMut`
     /// to send.
     pub fn override_request_preallocation(&self, value: usize) -> Self {

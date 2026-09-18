@@ -77,7 +77,7 @@ impl Node {
     }
 
     #[staticmethod]
-    /// Returns a list of `NodeState`s of all `Node`s under a provided config.
+    /// Returns the `NodeState` of every `Node` under a provided config.
     /// On failure it emits a `NodeListFailure`.
     pub fn list(service_type: &ServiceType, config: &Config) -> PyResult<Vec<NodeState>> {
         let mut states = vec![];
@@ -194,8 +194,8 @@ impl Node {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
-    /// removed from all registered `Service`s.
+    /// Removes the stale system resources of every dead `Node`. A dead `Node` is also
+    /// removed from every registered `Service`.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then
     /// the `Node` is skipped.
@@ -206,8 +206,8 @@ impl Node {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
-    /// removed from all registered `Service`s.
+    /// Removes the stale system resources of every dead `Node`. A dead `Node` is also
+    /// removed from every registered `Service`.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then the
     /// `Node` is skipped. If it is currently being cleaned up by another process then the

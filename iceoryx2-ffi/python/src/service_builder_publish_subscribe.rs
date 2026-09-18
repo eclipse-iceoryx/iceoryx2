@@ -46,7 +46,7 @@ pub(crate) enum ServiceBuilderPublishSubscribeType {
 }
 
 #[pyclass]
-/// Builder to create new `MessagingPattern::PublishSubscribe` based `Service`s
+/// Builder to create a new `MessagingPattern::PublishSubscribe` based `Service`
 pub struct ServiceBuilderPublishSubscribe {
     pub(crate) value: ServiceBuilderPublishSubscribeType,
     pub payload_type_details: TypeStorage,
@@ -163,7 +163,7 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
-    /// If the `Service` is created it defines how many `Sample`s a
+    /// If the `Service` is created it defines the `Sample` count a
     /// `Subscriber` can borrow at most in parallel. If an existing
     /// `Service` is opened it defines the minimum required.
     pub fn subscriber_max_borrowed_samples(&self, value: usize) -> Self {
@@ -251,8 +251,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
-    /// If the `Service` is created it defines how many `Node`s shall be able to open it in
-    /// parallel. If an existing `Service` is opened it defines how many `Node`s must be at
+    /// If the `Service` is created it defines how many `Node` instances shall be able to open it in
+    /// parallel. If an existing `Service` is opened it defines how many `Node` instances must be at
     /// least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.value {

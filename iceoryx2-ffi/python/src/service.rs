@@ -22,7 +22,7 @@ use crate::{
 };
 
 #[pyclass]
-/// Builder to create or open `Service`s
+/// Builder to create or open a `Service`
 pub struct Service(());
 
 #[pymethods]

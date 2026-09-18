@@ -34,7 +34,7 @@ pub struct ServiceDetails(pub(crate) ServiceDetailsType);
 
 #[pymethods]
 impl ServiceDetails {
-    /// A list of all `Node`s that are registered at the `Service`
+    /// A list of every `Node` that is registered at the `Service`
     pub fn nodes(&self) -> Vec<NodeState> {
         let mut ret_val = vec![];
         match &self.0 {
@@ -107,7 +107,7 @@ impl ServiceDetails {
         }
     }
 
-    /// Returns the `Service`s underlying `MessagingPattern`.
+    /// Returns the `Service`'s underlying `MessagingPattern`.
     pub fn messaging_pattern(&self) -> MessagingPattern {
         match &self.0 {
             ServiceDetailsType::Ipc(v) => {

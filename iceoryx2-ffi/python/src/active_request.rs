@@ -87,7 +87,7 @@ impl ActiveRequest {
     }
 
     #[getter]
-    /// Returns `True` until the `PendingResponse` goes out of scope on the `Client`s side
+    /// Returns `True` until the `PendingResponse` goes out of scope on the `Client`'s side
     /// indicating that the `Client` no longer receives the `ResponseMut`.
     pub fn is_connected(&self) -> bool {
         match &*self.value.lock() {

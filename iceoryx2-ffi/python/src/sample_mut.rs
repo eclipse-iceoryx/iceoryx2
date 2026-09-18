@@ -46,7 +46,7 @@ pub(crate) enum SampleMutType {
 ///  * `Publisher::loan_slice()`
 ///
 /// It stores the payload that will be sent
-/// to all connected `Subscriber`s. If the `SampleMut` is not sent
+/// to every connected `Subscriber`. If the `SampleMut` is not sent
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMut {
     pub(crate) value: Parc<SampleMutType>,
@@ -127,10 +127,10 @@ impl SampleMut {
         }
     }
 
-    /// Send a previously loaned `Publisher::loan_uninit()` `SampleMut` to all connected
-    /// `Subscriber`s of the service.
+    /// Send a previously loaned `Publisher::loan_uninit()` `SampleMut` to every connected
+    /// `Subscriber` of the service.
     ///
-    /// On success the number of `Subscriber`s that received
+    /// On success the number of `Subscriber` ports that received
     /// the data is returned, otherwise a `SendError` is emitted describing the failure.
     pub fn send(&self) -> PyResult<usize> {
         match &mut *self.value.lock() {

@@ -65,7 +65,7 @@ impl Notifier {
 
     /// Notifies all `Listener` connected to the service with the default
     /// event id provided on creation.
-    /// Returns on success the number of `Listener`s that were notified otherwise it emits
+    /// Returns on success the number of `Listener` ports that were notified otherwise it emits
     /// `NotifierNotifyError`.
     pub fn notify(&self) -> PyResult<usize> {
         match &*self.0.lock() {
@@ -81,7 +81,7 @@ impl Notifier {
     }
 
     /// Notifies all `Listener` connected to the service with a custom `EventId`.
-    /// Returns on success the number of `Listener`s that were notified otherwise it returns
+    /// Returns on success the number of `Listener` ports that were notified otherwise it returns
     /// `NotifierNotifyError`.
     pub fn notify_with_custom_event_id(&self, event_id: &EventId) -> PyResult<usize> {
         match &*self.0.lock() {

@@ -52,14 +52,14 @@ impl StaticConfigRequestResponse {
     }
 
     #[getter]
-    /// Returns true if fire and forget `RequestMut`s can be sent from the `Client`, otherwise
+    /// Returns true if a fire and forget `RequestMut` can be sent from the `Client`, otherwise
     /// false.
     pub fn does_support_fire_and_forget_requests(&self) -> bool {
         self.0.does_support_fire_and_forget_requests()
     }
 
     #[getter]
-    /// Returns the maximum number of borrowed `Response`s a `Client` can hold in parallel per
+    /// Returns the maximum borrowed `Response` count a `Client` can hold in parallel per
     /// `PendingResponse`
     pub fn max_borrowed_responses_per_pending_response(&self) -> usize {
         self.0.max_borrowed_responses_per_pending_response()
@@ -96,7 +96,7 @@ impl StaticConfigRequestResponse {
     }
 
     #[getter]
-    /// Returns the maximum number of supported `Node`s for the `Service`.
+    /// Returns the maximum number of supported `Node` instances for the `Service`.
     pub fn max_nodes(&self) -> usize {
         self.0.max_nodes()
     }

@@ -138,15 +138,15 @@ impl PortFactoryServer {
         self.response_header_type_details.clone().value
     }
 
-    /// Reduces the number of preallocated `ResponseMut`s.
-    /// The return value is clamped between `1` and the worst case number of
-    /// preallocated `ResponseMut`s required
-    /// to guarantee that the `Server` never runs out of `ResponseMut`s to loan
+    /// Reduces the preallocated `ResponseMut` count.
+    /// The return value is clamped between `1` and the worst case
+    /// preallocated `ResponseMut` count required
+    /// to guarantee that the `Server` always has a `ResponseMut` to loan
     /// and send.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated `ResponseMut`s, iceoryx2 can
+    /// If the user reduces the preallocated `ResponseMut` count, iceoryx2 can
     /// no longer guarantee, that the `Server` can always loan a `ResponseMut`
     /// to send.
     pub fn override_response_preallocation(&self, value: usize) -> Self {

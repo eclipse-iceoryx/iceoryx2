@@ -44,7 +44,7 @@ impl Listener {
         }
     }
 
-    /// Non-blocking wait for new events. Collects all `EventActivation`s that were received
+    /// Non-blocking wait for new events. Collects every `EventActivation` that was received
     /// and returns them.
     /// On error it emits `ListenerWaitError`.
     pub fn try_wait(&self) -> PyResult<Vec<EventActivation>> {
@@ -64,7 +64,7 @@ impl Listener {
     }
 
     /// Blocking wait for new events until the provided timeout has passed. Unblocks as soon
-    /// as an event was received and then collects all `EventActivation`s that were received
+    /// as an event was received and then collects every `EventActivation` that was received
     /// and returns them.
     /// On error it emits `ListenerWaitError`.
     pub fn timed_wait(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
@@ -86,7 +86,7 @@ impl Listener {
     }
 
     /// Blocking wait for new events. Unblocks as soon
-    /// as an event was received and then collects all `EventActivation`s that were received
+    /// as an event was received and then collects every `EventActivation` that was received
     /// and returns them.
     /// On error it emits `ListenerWaitError`.
     pub fn blocking_wait(&self, py: Python<'_>) -> PyResult<Vec<EventActivation>> {

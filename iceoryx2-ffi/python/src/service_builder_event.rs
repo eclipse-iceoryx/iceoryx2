@@ -28,7 +28,7 @@ pub(crate) enum ServiceBuilderEventType {
 }
 
 #[pyclass]
-/// Builder to create new `MessagingPattern::Event` based `Service`s
+/// Builder to create a new `MessagingPattern::Event` based `Service`
 pub struct ServiceBuilderEvent(pub(crate) ServiceBuilderEventType);
 
 #[pymethods]
@@ -67,9 +67,9 @@ impl ServiceBuilderEvent {
         }
     }
 
-    /// If the `Service` is created it defines how many `Node`s shall be able to open it in
-    /// parallel. If an existing `Service` is opened it defines how many `Node`s must be at least
-    /// supported.
+    /// If the `Service` is created it defines how many `Node` instances shall be able to open it in
+    /// parallel. If an existing `Service` is opened it defines how many `Node` instances must be at
+    /// least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {

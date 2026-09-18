@@ -257,38 +257,38 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of supported `Subscriber`s
+    /// The maximum amount of supported `Subscriber` ports
     pub fn max_subscribers(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_subscribers
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Subscriber`s
+    /// Set the maximum amount of supported `Subscriber` ports
     pub fn set_max_subscribers(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_subscribers = value
     }
 
     #[getter]
-    /// The maximum amount of supported `Publisher`s
+    /// The maximum amount of supported `Publisher` ports
     pub fn max_publishers(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_publishers
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Publisher`s
+    /// Set the maximum amount of supported `Publisher` ports
     pub fn set_max_publishers(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_publishers = value
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// The maximum amount of supported `Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s.
+    /// Set the maximum amount of supported `Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_nodes = value
     }
@@ -314,7 +314,7 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of `Sample`s a `Subscriber` can hold at the same time.
+    /// The maximum `Sample` count a `Subscriber` can hold at the same time.
     pub fn subscriber_max_borrowed_samples(&self) -> usize {
         self.0
             .lock()
@@ -324,7 +324,7 @@ impl PublishSubscribe {
     }
 
     #[setter]
-    /// Set the maximum amount of `Sample`s a `Subscriber` can hold at the same time.
+    /// Set the maximum `Sample` count a `Subscriber` can hold at the same time.
     pub fn set_subscriber_max_borrowed_samples(&self, value: usize) {
         self.0
             .lock()
@@ -334,7 +334,7 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of `SampleMut`s a `Publisher` can loan at the same time.
+    /// The maximum `SampleMut` count a `Publisher` can loan at the same time.
     pub fn publisher_max_loaned_samples(&self) -> usize {
         self.0
             .lock()
@@ -344,7 +344,7 @@ impl PublishSubscribe {
     }
 
     #[setter]
-    /// The maximum amount of `SampleMut`s a `Publisher` can loan at the same time.
+    /// The maximum `SampleMut` count a `Publisher` can loan at the same time.
     pub fn set_publisher_max_loaned_samples(&self, value: usize) {
         self.0
             .lock()
@@ -397,7 +397,7 @@ impl PublishSubscribe {
 
     #[getter]
     /// If safe overflow is deactivated it defines the deliver strategy of the
-    /// `Publisher` when the `Subscriber`s buffer is full.
+    /// `Publisher` when the `Subscriber`'s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         self.0
             .lock()
@@ -422,7 +422,7 @@ impl PublishSubscribe {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Publisher`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `Sample`s.
+    /// still contains an unconsumed `Sample`.
     pub fn subscriber_expired_connection_buffer(&self) -> usize {
         self.0
             .lock()
@@ -478,14 +478,14 @@ impl Event {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// The maximum amount of supported `Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.event.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s.
+    /// Set the maximum amount of supported `Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.event.max_nodes = value
     }
@@ -675,7 +675,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum of `ActiveRequest`s a `Server` can hold in
+    /// The maximum `ActiveRequest` count a `Server` can hold in
     /// parallel per `Client`.
     pub fn max_active_requests_per_client(&self) -> usize {
         self.0
@@ -686,7 +686,7 @@ impl RequestResponse {
     }
 
     #[setter]
-    /// Set the maximum of `ActiveRequest`s a `Server` can hold in
+    /// Set the maximum `ActiveRequest` count a `Server` can hold in
     /// parallel per `Client`.
     pub fn set_max_active_requests_per_client(&self, value: usize) {
         self.0
@@ -697,7 +697,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum buffer size for `Response`s for a
+    /// The maximum `Response` buffer size for a
     /// `PendingResponse`.
     pub fn max_response_buffer_size(&self) -> usize {
         self.0
@@ -708,7 +708,7 @@ impl RequestResponse {
     }
 
     #[setter]
-    /// Set the maximum buffer size for `Response`s for a
+    /// Set the maximum `Response` buffer size for a
     /// `PendingResponse`.
     pub fn set_max_response_buffer_size(&self, value: usize) {
         self.0
@@ -743,14 +743,14 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines
+    /// The maximum amount of supported `Node` instances. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.request_response.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s. Defines
+    /// Set the maximum amount of supported `Node` instances. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.request_response.max_nodes = value
@@ -865,7 +865,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Server`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `Response`s.
+    /// still contains an unconsumed `Response`.
     pub fn client_expired_connection_buffer(&self) -> usize {
         self.0
             .lock()
@@ -879,7 +879,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Server`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `Response`s.
+    /// still contains an unconsumed `Response`.
     pub fn set_client_expired_connection_buffer(&self, value: usize) {
         self.0
             .lock()
@@ -893,7 +893,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Client`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `ActiveRequest`s.
+    /// still contains an unconsumed `ActiveRequest`.
     pub fn server_expired_connection_buffer(&self) -> usize {
         self.0
             .lock()
@@ -907,7 +907,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Client`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `ActiveRequest`s.
+    /// still contains an unconsumed `ActiveRequest`.
     pub fn set_server_expired_connection_buffer(&self, value: usize) {
         self.0
             .lock()
@@ -917,10 +917,10 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Allows the `Server` to receive `RequestMut`s of `Client`s that are not interested in a
+    /// Allows the `Server` to receive a `RequestMut` from a `Client` that is not interested in a
     /// `Response`, meaning that the `Server` will receive the `RequestMut` despite the
     /// corresponding `PendingResponse` already went out-of-scope. So any `Response` sent by the
-    /// `Server` would not be received by the corresponding `Client`s `PendingResponse`.
+    /// `Server` would not be received by the corresponding `Client`'s `PendingResponse`.
     ///
     /// Consider enabling this feature if you do not want to loose any `RequestMut`.
     pub fn enable_fire_and_forget_requests(&self) -> bool {
@@ -1062,26 +1062,26 @@ impl Blackboard {
     }
 
     #[getter]
-    /// The maximum amount of supported `Reader`s
+    /// The maximum amount of supported `Reader` ports
     pub fn max_readers(&self) -> usize {
         self.0.lock().defaults.blackboard.max_readers
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Reader`s
+    /// Set the maximum amount of supported `Reader` ports
     pub fn set_max_readers(&self, value: usize) {
         self.0.lock().defaults.blackboard.max_readers = value
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// The maximum amount of supported `Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.blackboard.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s.
+    /// Set the maximum amount of supported `Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.blackboard.max_nodes = value
     }

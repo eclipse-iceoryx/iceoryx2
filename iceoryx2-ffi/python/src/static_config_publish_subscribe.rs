@@ -24,7 +24,8 @@ pub struct StaticConfigPublishSubscribe(
 #[pymethods]
 impl StaticConfigPublishSubscribe {
     #[getter]
-    /// Returns the maximum supported amount of `Node`s that can open the `Service` in parallel.
+    /// Returns the maximum supported amount of `Node` instances that can open the `Service`
+    /// in parallel.
     pub fn max_nodes(&self) -> usize {
         self.0.max_nodes()
     }

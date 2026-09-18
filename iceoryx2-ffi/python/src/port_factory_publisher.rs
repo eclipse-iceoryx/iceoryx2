@@ -130,15 +130,15 @@ impl PortFactoryPublisher {
         }
     }
 
-    /// Reduces the number of preallocated `SampleMut`s.
-    /// The return value is clamped between `1` and the worst case number of
-    /// preallocated `SampleMut`s required
-    /// to guarantee that the `Publisher` never runs out of `SampleMut`s to loan
+    /// Reduces the preallocated `SampleMut` count.
+    /// The return value is clamped between `1` and the worst case
+    /// preallocated `SampleMut` count required
+    /// to guarantee that the `Publisher` always has a `SampleMut` to loan
     /// and send.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated `SampleMut`s, iceoryx2 can
+    /// If the user reduces the preallocated `SampleMut` count, iceoryx2 can
     /// no longer guarantee, that the `Publisher` can always loan a `SampleMut`
     /// to send.
     pub fn override_sample_preallocation(&self, value: usize) -> Self {

@@ -135,7 +135,7 @@ impl RequestMut {
         }
     }
 
-    /// Sends the `RequestMut` to all connected `Server`s of the `Service`.
+    /// Sends the `RequestMut` to every connected `Server` of the `Service`.
     pub fn send(&self) -> PyResult<PendingResponse> {
         match &mut *self.value.lock() {
             RequestMutType::Ipc(v) => {

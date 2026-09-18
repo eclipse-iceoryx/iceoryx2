@@ -113,7 +113,7 @@ impl Client {
 
     #[getter]
     /// Returns the strategy the `Client` follows when a `RequestMut` cannot be delivered
-    /// if the `Server`s buffer is full.
+    /// if the `Server`'s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         match &*self.value.lock() {
             ClientType::Ipc(Some(v)) => v.backpressure_strategy().into(),
