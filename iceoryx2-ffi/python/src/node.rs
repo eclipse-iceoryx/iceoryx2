@@ -173,7 +173,7 @@ impl Node {
     ///
     /// # Safety
     ///
-    ///  * No other process shall use the service.
+    /// No other process shall continue to use the service.
     ///
     pub fn force_remove_service(
         &self,
