@@ -52,6 +52,7 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ptr::NonNull;
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
@@ -279,6 +280,20 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
     fn list_cfg(config: &Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let msg = "Unable to list all storages";
         let origin = "static_storage::File::list_cfg()";
+
+        match Directory::does_exist(&config.path) {
+            Ok(true) => (),
+            Ok(false) => return Ok(vec![]),
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{} due to insufficient permissions to read the storage directory.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{} due to an internal failure while checking the existance of the storage directory \"{}\". [{e:?}]", 
+                    msg, config.path);
+            }
+        }
 
         let directory = match Directory::new(&config.path) {
             Ok(directory) => directory,

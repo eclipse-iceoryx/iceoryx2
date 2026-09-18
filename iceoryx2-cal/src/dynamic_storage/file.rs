@@ -44,6 +44,7 @@ use iceoryx2_bb_posix::memory_mapping::MappingBehavior;
 use iceoryx2_bb_posix::memory_mapping::MappingPermission;
 use iceoryx2_bb_posix::memory_mapping::MemoryMapping;
 use iceoryx2_bb_posix::memory_mapping::MemoryMappingBuilder;
+use iceoryx2_bb_posix::metadata::MetadataFromPathError;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{fail, trace};
@@ -561,6 +562,21 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptMgmt for Storage<T> {
     fn list_cfg(cfg: &Self::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let origin = "dynamic_storage::File::list_cfg()";
         let msg = "Unable to list all dynamic storages";
+
+        match Directory::does_exist(&cfg.path) {
+            Ok(true) => (),
+            Ok(false) => return Ok(vec![]),
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{} due to insufficient permissions to read the storage directory.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{} due to an internal failure while checking the existance of the storage directory \"{}\". [{e:?}]", 
+                    msg, cfg.path);
+            }
+        }
+
         let directory = match Directory::new(&cfg.path) {
             Ok(d) => d,
             Err(DirectoryOpenError::InsufficientPermissions) => {
