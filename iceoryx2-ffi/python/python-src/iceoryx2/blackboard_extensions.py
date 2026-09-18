@@ -18,6 +18,8 @@ from typing import Any, Callable, Type, TypeVar
 from ._iceoryx2 import *
 from .type_name import get_type_name
 
+__all__ = ["BlackboardKey", "BlackboardValue"]
+
 K = TypeVar("K", bound=ctypes.Structure)
 V = TypeVar("V", bound=ctypes.Structure)
 

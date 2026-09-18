@@ -22,6 +22,8 @@ from .flatbuffer import Flatbuffer
 from .slice import Slice
 from .type_name import get_type_name
 
+__all__: list[str] = []
+
 ReqT = TypeVar("ReqT", bound=ctypes.Structure)
 ResT = TypeVar("ResT", bound=ctypes.Structure)
 
