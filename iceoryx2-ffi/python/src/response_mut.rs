@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
@@ -56,8 +57,8 @@ impl ResponseMut {
     #[getter]
     pub fn __slice_len(&self) -> usize {
         match &*self.value.lock() {
-            ResponseMutType::Ipc(Some(v)) => v.payload().len(),
-            ResponseMutType::Local(Some(v)) => v.payload().len(),
+            ResponseMutType::Ipc(Some(v)) => v.header().number_of_elements() as usize,
+            ResponseMutType::Local(Some(v)) => v.header().number_of_elements() as usize,
             _ => fatal_panic!(from "RequestMut::__slice_len()",
                 "Accessing a released response mut."),
         }
