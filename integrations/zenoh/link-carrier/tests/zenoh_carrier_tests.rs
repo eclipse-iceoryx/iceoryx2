@@ -10,11 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use core::time::Duration;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::Instant;
 
 use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 use iceoryx2_integrations_zenoh_link_carrier::ZenohCarrier;
 use iceoryx2_link_conformance_tests::fixture::{CarrierFixture, TunnelFixture, TunnelLinkFixture};
@@ -34,7 +35,7 @@ const POLL_PERIOD: Duration = Duration::from_millis(10);
 
 /// The key used to probe propagation of discovery updates between zenoh
 /// sessions.
-fn probe_key(hash: &ServiceHash, session: &Session, sync_id: u128) -> OwnedKeyExpr {
+fn probe_key(hash: &ServiceHash, session: &Session, sync_id: usize) -> OwnedKeyExpr {
     OwnedKeyExpr::try_from(format!(
         "iox2/test/probe/{}/{}/{}",
         hash.as_str(),
@@ -56,9 +57,15 @@ fn config() -> zenoh::Config {
 /// A zenoh mesh on this host and the sessions of the carriers on it.
 struct ZenohFixture {
     sessions: Vec<Session>,
+    syncs: AtomicUsize,
 }
 
 impl ZenohFixture {
+    /// Get the next unique id for synchronization operations.
+    fn next_sync_id(&self) -> usize {
+        self.syncs.fetch_add(1, Ordering::Relaxed)
+    }
+
     /// Whether every carrier's session lists every other one as a peer.
     fn is_meshed(&self) -> bool {
         self.sessions.iter().all(|session| {
@@ -77,6 +84,7 @@ impl CarrierFixture for ZenohFixture {
     fn new() -> Self {
         Self {
             sessions: Vec::new(),
+            syncs: AtomicUsize::new(0),
         }
     }
 
@@ -98,12 +106,7 @@ impl CarrierFixture for ZenohFixture {
     /// as well.
     fn sync(&self, hash: &ServiceHash, timeout: Duration) -> bool {
         let started = Instant::now();
-
-        // Identify the sync call by timestamp.
-        let sync_id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("the clock is past the epoch")
-            .as_nanos();
+        let sync_id = self.next_sync_id();
 
         // One probe subscriber per session for `hash`.
         let _subscribers: Vec<_> = self
