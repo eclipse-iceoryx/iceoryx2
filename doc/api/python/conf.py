@@ -26,10 +26,13 @@ extensions = [
     'sphinx.ext.intersphinx',
 ]
 
+# a name in single backticks is a link to the python object of that name
 default_role = 'py:obj'
 
+# references to the python standard library link to the python documentation
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
+# a reference that does not resolve is a warning and fails the build
 nitpicky = True
 nitpick_ignore_regex = [
     # type variables in the signatures of the extension modules
@@ -37,6 +40,9 @@ nitpick_ignore_regex = [
     # flatbuffers does not publish an inventory to link against
     (r'py:class', r'flatbuffers\.builder\.Builder'),
 ]
+
+# the navigation lists members without their class prefix
+toc_object_entries_show_parents = 'hide'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
