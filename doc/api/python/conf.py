@@ -30,6 +30,14 @@ default_role = 'py:obj'
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
+nitpicky = True
+nitpick_ignore_regex = [
+    # type variables in the signatures of the extension modules
+    (r'py:(class|obj)', r'iceoryx2\.\w+\.(K|V|T|ReqT|ResT)'),
+    # flatbuffers does not publish an inventory to link against
+    (r'py:class', r'flatbuffers\.builder\.Builder'),
+]
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
