@@ -25,9 +25,9 @@ use windows_sys::Win32::{
         closesocket,
     },
     Storage::FileSystem::{
-        FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN, FILE_CURRENT, FILE_END,
-        FlushFileBuffers, GetFileAttributesA, INVALID_FILE_ATTRIBUTES, ReadFile, RemoveDirectoryA,
-        SetEndOfFile, SetFilePointerEx, WriteFile,
+        FILE_ATTRIBUTE_READONLY, FILE_BEGIN, FILE_CURRENT, FILE_END, FlushFileBuffers,
+        GetFileAttributesA, INVALID_FILE_ATTRIBUTES, ReadFile, RemoveDirectoryA, SetEndOfFile,
+        SetFilePointerEx, WriteFile,
     },
     System::{
         Diagnostics::ToolHelp::{
@@ -320,13 +320,9 @@ pub unsafe fn access(pathname: *const c_char, mode: int) -> int {
         if HandleTranslator::get_instance().contains_uds(pathname) {
             return 0;
         }
+        Errno::set(Errno::ENOENT);
         -1
     } else {
-        if mode == F_OK && attributes & FILE_ATTRIBUTE_DIRECTORY != 0 {
-            Errno::set(Errno::ENOENT);
-            return -1;
-        }
-
         if mode == W_OK && attributes & FILE_ATTRIBUTE_READONLY != 0 {
             Errno::set(Errno::EACCES);
             return -1;
