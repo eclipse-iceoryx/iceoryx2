@@ -331,7 +331,8 @@ pub fn termination_requested_with_terminate_works() {
 
     let _test = TestFixture::new();
 
-    assert_that!(!SignalHandler::termination_requested(), eq true);
+    // reset signal for test
+    SignalHandler::last_signal();
     assert_that!(Process::from_self().send_signal(Signal::Terminate), is_ok);
 
     assert_that!(
@@ -348,7 +349,8 @@ pub fn termination_requested_with_interrupt_works() {
 
     let _test = TestFixture::new();
 
-    assert_that!(SignalHandler::termination_requested(), eq false);
+    // reset signal for test
+    SignalHandler::last_signal();
     assert_that!(Process::from_self().send_signal(Signal::Interrupt), is_ok);
 
     assert_that!(
