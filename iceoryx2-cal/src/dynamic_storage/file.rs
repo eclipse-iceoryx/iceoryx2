@@ -32,7 +32,6 @@ use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
-use iceoryx2_bb_posix::file::FileAccessError;
 use iceoryx2_bb_posix::file::FileBuilder;
 use iceoryx2_bb_posix::file::FileCreationError;
 use iceoryx2_bb_posix::file::FileOpenError;
@@ -548,7 +547,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptMgmt for Storage<T> {
         let full_name = cfg.path_for(name);
         match File::does_exist(&full_name) {
             Ok(v) => Ok(v),
-            Err(FileAccessError::InsufficientPermissions) => {
+            Err(MetadataFromPathError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
                     "{msg} with the name {name} due to insufficient permissions.");
             }

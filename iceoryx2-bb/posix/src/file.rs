@@ -63,9 +63,12 @@ use iceoryx2_pal_posix::*;
 
 pub use crate::creation_mode::CreationMode;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
+use crate::file_type::FileType;
 use crate::group::Gid;
 use crate::group::GroupError;
 use crate::memory_mapping::MemoryMappingCreationError;
+use crate::metadata::Metadata;
+use crate::metadata::MetadataFromPathError;
 use crate::ownership::OwnershipBuilder;
 use crate::user::{Uid, UserError};
 pub use crate::{access_mode::AccessMode, permission::*};
@@ -95,14 +98,6 @@ enum_gen! { FileRemoveError
     UnknownError(i32)
 }
 
-enum_gen! { FileAccessError
-  entry:
-    LoopInSymbolicLinks,
-    MaxSupportedPathLengthExceeded,
-    InsufficientPermissions,
-    UnknownError(i32)
-}
-
 enum_gen! { FileCreationError
   entry:
     InsufficientPermissions,
@@ -127,8 +122,8 @@ enum_gen! { FileCreationError
     FileSetOwnerError,
     FileTruncateError,
     FileSetPermissionError,
-    FileAccessError,
-    FileRemoveError
+    FileRemoveError,
+    MetadataFromPathError
 }
 
 enum_gen! { FileOpenError
@@ -257,7 +252,7 @@ enum_gen! {
   generalization:
     Create <= FileCreationError,
     Write <= FileSyncError; FileWriteError; FileTruncateError; FileRemoveError,
-    Read <= FileOffsetError; FileReadError; FileOpenError; FileAccessError,
+    Read <= FileOffsetError; FileReadError; FileOpenError; MetadataFromPathError,
     Credentials <= FileSetOwnerError; FileSetPermissionError,
     Stat <= FileStatError
 }
@@ -929,20 +924,10 @@ impl File {
     }
 
     /// Returns true if `path` exists, otherwise false.
-    pub fn does_exist(path: &FilePath) -> Result<bool, FileAccessError> {
-        let msg = "Unable to determine if file";
-        if unsafe { posix::access(path.as_c_str(), posix::F_OK) } == 0 {
-            return Ok(true);
-        }
-
-        handle_errno!(FileAccessError, from "File::does_exist",
-            success Errno::ENOENT => false,
-            Errno::ELOOP => (LoopInSymbolicLinks, "{} \"{}\" exists since a loop exists in the symbolic links.", msg, path),
-            Errno::ENAMETOOLONG => (MaxSupportedPathLengthExceeded, "{} \"{}\" exists since it is longer than the maximum path name length", msg, path),
-            Errno::EACCES => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
-            Errno::EPERM => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
-            v => (UnknownError(v as i32), "{} \"{}\" exists caused by an unknown error ({}).", msg, path, v)
-        );
+    pub fn does_exist(path: &FilePath) -> Result<bool, MetadataFromPathError> {
+        let origin = "File::does_exist()";
+        let msg = format!("Unable to determine if file \"{path}\" does exist");
+        Metadata::does_exist(&path.into(), origin, &msg, FileType::File)
     }
 
     /// Deletes the file managed by self

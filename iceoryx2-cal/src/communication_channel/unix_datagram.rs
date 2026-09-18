@@ -110,7 +110,7 @@ impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
 
         let full_path = cfg.path_for(name);
 
-        match File::does_exist(&full_path) {
+        match UnixDatagramReceiver::does_exist(&full_path) {
             Ok(true) => Ok(true),
             Ok(false) => Ok(false),
             Err(v) => {

@@ -343,7 +343,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
         let does_exist = || match File::does_exist(&adjusted_path) {
             Ok(file) => Ok(file),
-            Err(FileAccessError::InsufficientPermissions) => {
+            Err(MetadataFromPathError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
                         "{} due to insufficient permissions to verify the existence of the underlying file.", msg);
             }
