@@ -88,12 +88,16 @@ pub mod carrier_propagation {
         let mut fixture = F::new();
 
         // === SETUP ===
-        // Peer A sends before peer B has the channel open.
+        // Two peers, only peer A opens the channel.
         let mut a = fixture.carrier();
         let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
 
         let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
+        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
+
+        // === SEND ===
+        // Peer A sends before peer B has the channel open.
         channel_a
             .send(frame(b"fra", b"me"))
             .expect("sending succeeds");
