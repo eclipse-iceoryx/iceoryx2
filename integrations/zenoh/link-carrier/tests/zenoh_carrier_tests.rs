@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use core::time::Duration;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
@@ -32,11 +32,13 @@ const SCOUTING_DELAY_MS: u64 = 50;
 /// The pause between two looks at the sessions' peers and matching status.
 const POLL_PERIOD: Duration = Duration::from_millis(10);
 
-/// The key a session's probe subscriber listens on while syncing.
-fn probe_key(hash: &ServiceHash, session: &Session) -> OwnedKeyExpr {
+/// The key used to probe propagation of discovery updates between zenoh
+/// sessions.
+fn probe_key(hash: &ServiceHash, session: &Session, sync_id: u128) -> OwnedKeyExpr {
     OwnedKeyExpr::try_from(format!(
-        "iox2/test/probe/{}/{}",
+        "iox2/test/probe/{}/{}/{}",
         hash.as_str(),
+        sync_id,
         session.zid()
     ))
     .expect("the probe key is well formed")
@@ -86,23 +88,22 @@ impl CarrierFixture for ZenohFixture {
         ZenohCarrier::open(session).expect("the carrier is created")
     }
 
-    /// Waits until every session knows every other one's subscription to
+    /// Waits until every session has seen the other sessions open or close
     /// the channel of the service `hash`.
     ///
-    /// Zenoh delivers a frame only to the subscribers a session already
-    /// knows of, and a new subscription takes a moment to reach the other
-    /// sessions. A scenario should open its channels first and then call
-    /// this, which ensures the channels are discovered by all sessions
-    /// in the scenario.
-    ///
-    /// The check uses probes. Every session declares a subscriber on a key
-    /// of its own, later than the channel subscriber it already has, and
-    /// every other session declares a publisher on that key. Zenoh passes
-    /// subscriptions on in the order they were made, so once every probe
-    /// publisher matches, the channel subscribers can be assumed to have
-    /// matched as well.
+    /// Declares a probe subscriber for each session and a corresponding
+    /// probe publisher in all other sessions. The assumption is that zenoh
+    /// delivers changes in order, so when the probes have matched, any
+    /// earlier opening or closing of a channel is assumed to have arrived
+    /// as well.
     fn sync(&self, hash: &ServiceHash, timeout: Duration) -> bool {
         let started = Instant::now();
+
+        // Identify the sync call by timestamp.
+        let sync_id = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("the clock is past the epoch")
+            .as_nanos();
 
         // One probe subscriber per session for `hash`.
         let _subscribers: Vec<_> = self
@@ -110,23 +111,24 @@ impl CarrierFixture for ZenohFixture {
             .iter()
             .map(|session| {
                 session
-                    .declare_subscriber(probe_key(hash, session))
+                    .declare_subscriber(probe_key(hash, session, sync_id))
                     .allowed_origin(Locality::Remote)
                     .wait()
                     .expect("the probe subscriber is declared")
             })
             .collect();
 
-        // And one probe publisher per session for `hash`.
+        // And in every session, one probe publisher for every other session.
         let publishers: Vec<_> = self
             .sessions
             .iter()
-            .flat_map(|from| {
+            .flat_map(|observer| {
                 self.sessions
                     .iter()
-                    .filter(move |to| to.zid() != from.zid())
-                    .map(move |to| {
-                        from.declare_publisher(probe_key(hash, to))
+                    .filter(move |observed| observed.zid() != observer.zid())
+                    .map(move |observed| {
+                        observer
+                            .declare_publisher(probe_key(hash, observed, sync_id))
                             .allowed_destination(Locality::Remote)
                             .wait()
                             .expect("the probe publisher is declared")

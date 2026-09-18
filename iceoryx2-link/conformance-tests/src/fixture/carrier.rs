@@ -25,8 +25,10 @@ pub trait CarrierFixture {
     /// A carrier on the mechanism, a new peer.
     fn carrier(&mut self) -> Self::Carrier;
 
-    /// Waits until the peers' channels of the service `hash` have
-    /// propagated through the mechanism, or `timeout` passes.
+    /// Waits until every peer has seen the opening or closure of the channel
+    /// for the service represented by `hash`.
+    ///
+    /// False if `timeout` elapses.
     fn sync(&self, _hash: &ServiceHash, _timeout: Duration) -> bool {
         true
     }
