@@ -28,7 +28,11 @@ T = TypeVar("T", bound=ctypes.Structure)
 
 
 def payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
-    """Returns the serialized flatbuffer data as bytes."""
+    """
+    Returns the serialized flatbuffer data as bytes.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__payload_type_details is not None
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
@@ -43,7 +47,11 @@ def payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
 
 
 def payload_root(self: Any) -> Any:
-    """Returns the root of the flatbuffer."""
+    """
+    Returns the root of the flatbuffer.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__payload_type_details is not None
     assert get_origin(self.__payload_type_details) is Flatbuffer
 

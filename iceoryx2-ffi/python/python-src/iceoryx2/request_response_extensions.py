@@ -211,7 +211,11 @@ def response_header(self: Any) -> Any:
 
 
 def request_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
-    """Returns the serialized flatbuffer data as bytes."""
+    """
+    Returns the serialized flatbuffer data as bytes.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__request_payload_type_details is not None
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
 
@@ -226,7 +230,11 @@ def request_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
 
 
 def response_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
-    """Returns the serialized flatbuffer data as bytes."""
+    """
+    Returns the serialized flatbuffer data as bytes.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__response_payload_type_details is not None
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
@@ -241,7 +249,11 @@ def response_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
 
 
 def request_payload_root(self: Any) -> Any:
-    """Returns the root of the flatbuffer."""
+    """
+    Returns the root of the flatbuffer.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__request_payload_type_details is not None
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
 
@@ -257,7 +269,11 @@ def request_payload_root(self: Any) -> Any:
 
 
 def response_payload_root(self: Any) -> Any:
-    """Returns the root of the flatbuffer."""
+    """
+    Returns the root of the flatbuffer.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__response_payload_type_details is not None
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
