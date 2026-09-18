@@ -120,9 +120,8 @@ _doc-python workspace:
 
     just _parse-workspace "{{workspace}}" > /dev/null
 
-    poetry --project {{justfile_directory()}}/iceoryx2-ffi/python install
-    poetry --project {{justfile_directory()}}/iceoryx2-ffi/python build-into-venv
     poetry --project {{justfile_directory()}}/doc/api/python install
+    poetry --project {{justfile_directory()}}/doc/api/python build-bindings
     poetry --project {{justfile_directory()}}/doc/api/python build-docs
 
     echo ""

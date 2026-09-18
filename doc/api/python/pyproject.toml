@@ -9,7 +9,8 @@ authors = [
 ]
 dependencies = [
     "sphinx (>=8.2.3,<9.0.0)",
-    "furo (>=2025.7.19,<2026.0.0)"
+    "furo (>=2025.7.19,<2026.0.0)",
+    "maturin (>=1.9.1,<2.0.0)"
 ]
 
 [build-system]
@@ -24,6 +25,9 @@ poethepoet = { version = "~0.35.0", extras = ["poetry_plugin"]}
 
 [tool.poe]
 poetry_command = ""
+
+[tool.poe.tasks.build-bindings]
+shell = "maturin develop --manifest-path ../../../iceoryx2-ffi/python/Cargo.toml --target-dir ../../../target/ff/python"
 
 [tool.poe.tasks.build-docs]
 shell = "sphinx-build -M html . target -W --keep-going"

@@ -10,10 +10,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import os, sys
-
-sys.path.insert(0, os.path.abspath('../../../iceoryx2-ffi/python/python-src/'))
-
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
