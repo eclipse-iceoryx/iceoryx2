@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 use crate::unique_server_id::UniqueServerId;
 
 #[pyclass(str = "{0:?}")]
-/// Response header used by `MessagingPattern::RequestResponse`
+/// Response header used by `MessagingPattern.RequestResponse`
 pub struct ResponseHeader(pub(crate) iceoryx2::service::header::request_response::ResponseHeader);
 
 #[pymethods]

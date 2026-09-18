@@ -41,7 +41,7 @@ pub fn set_log_level_from_env_or(value: LogLevel) {
 }
 
 #[pyfunction]
-/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with `LogLevel.Info`
 ///
 /// # Important
 ///

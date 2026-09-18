@@ -29,8 +29,8 @@ pub struct WaitSetAttachmentId(pub(crate) WaitSetAttachmentIdType);
 impl WaitSetAttachmentId {
     #[staticmethod]
     /// Creates an `WaitSetAttachmentId` from a `WaitSetGuard` that was returned via
-    /// `WaitSet::attach_interval()`, `WaitSet::attach_notification()` or
-    /// `WaitSet::attach_deadline()`.
+    /// `WaitSet.attach_interval`, `WaitSet.attach_notification` or
+    /// `WaitSet.attach_deadline`.
     pub fn from_guard(guard: &WaitSetGuard) -> Self {
         match &guard.0 {
             WaitSetGuardType::Ipc(guard) => WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(

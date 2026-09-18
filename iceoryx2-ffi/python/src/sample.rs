@@ -37,7 +37,7 @@ pub(crate) enum SampleType {
 
 #[pyclass]
 /// It stores the payload and is acquired by the `Subscriber` whenever
-/// it receives new data from a `Publisher` via `Subscriber::receive()`.
+/// it receives new data from a `Publisher` via `Subscriber.receive`.
 pub struct Sample {
     pub(crate) value: Parc<SampleType>,
     pub payload_type_details: TypeStorage,

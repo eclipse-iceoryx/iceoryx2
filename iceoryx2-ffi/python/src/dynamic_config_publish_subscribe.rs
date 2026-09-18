@@ -17,7 +17,7 @@ use crate::parc::Parc;
 use crate::port_factory_publish_subscribe::PortFactoryPublishSubscribeType;
 
 #[pyclass]
-/// The dynamic configuration of a `MessagingPattern::PublishSubscribe` service.
+/// The dynamic configuration of a `MessagingPattern.PublishSubscribe` service.
 /// Port counts reflect the current state of the service when accessed.
 /// The view keeps the service open while it is referenced.
 pub struct DynamicConfigPublishSubscribe(pub(crate) Parc<PortFactoryPublishSubscribeType>);

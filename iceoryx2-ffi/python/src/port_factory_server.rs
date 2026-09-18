@@ -47,7 +47,7 @@ pub(crate) enum PortFactoryServerType {
 }
 
 #[pyclass]
-/// Factory to create a new `Server` port/endpoint for `MessagingPattern::RequestResponse` based
+/// Factory to create a new `Server` port/endpoint for `MessagingPattern.RequestResponse` based
 /// communication.
 pub struct PortFactoryServer {
     factory: Parc<PortFactoryRequestResponseType>,
@@ -222,7 +222,7 @@ impl PortFactoryServer {
     }
 
     /// Sets the maximum slice length that a user can allocate with
-    /// `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
+    /// `ActiveRequest.loan_slice` or `ActiveRequest.loan_slice_uninit`.
     pub fn __initial_max_slice_len(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -240,9 +240,9 @@ impl PortFactoryServer {
     }
 
     /// Defines the allocation strategy that is used when the provided
-    /// `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
-    /// acquires more than max slice len in `ActiveRequest::loan_slice()` or
-    /// `ActiveRequest::loan_slice_uninit()`.
+    /// `PortFactoryServer.initial_max_slice_len` is exhausted. This happens when the user
+    /// acquires more than max slice len in `ActiveRequest.loan_slice` or
+    /// `ActiveRequest.loan_slice_uninit`.
     pub fn __allocation_strategy(&self, value: &AllocationStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {

@@ -53,7 +53,7 @@ unsafe impl Send for ServiceBuilderBlackboardCreatorType {}
 unsafe impl Send for ServiceBuilderBlackboardOpenerType {}
 
 #[pyclass]
-/// Builder to create a new `MessagingPattern::Blackboard` based `Service`
+/// Builder to create a new `MessagingPattern.Blackboard` based `Service`
 pub struct ServiceBuilderBlackboardCreator {
     pub(crate) value: Parc<ServiceBuilderBlackboardCreatorType>,
     pub key_type_storage: TypeStorage,
@@ -283,7 +283,7 @@ impl ServiceBuilderBlackboardCreator {
 }
 
 #[pyclass]
-/// Builder to open a new `MessagingPattern::Blackboard` based `Service`
+/// Builder to open a new `MessagingPattern.Blackboard` based `Service`
 pub struct ServiceBuilderBlackboardOpener {
     pub(crate) value: Parc<ServiceBuilderBlackboardOpenerType>,
     pub key_type_details: TypeStorage,

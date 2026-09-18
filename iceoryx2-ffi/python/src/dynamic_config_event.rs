@@ -17,7 +17,7 @@ use crate::parc::Parc;
 use crate::port_factory_event::PortFactoryEventType;
 
 #[pyclass]
-/// The dynamic configuration of a `MessagingPattern::Event` service.
+/// The dynamic configuration of a `MessagingPattern.Event` service.
 /// Port counts reflect the current state of the service when accessed.
 /// The view keeps the service open while it is referenced.
 pub struct DynamicConfigEvent(pub(crate) Parc<PortFactoryEventType>);

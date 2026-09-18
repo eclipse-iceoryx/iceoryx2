@@ -47,7 +47,7 @@ pub(crate) enum RequestMutUninitType {
 #[pyclass]
 /// A version of the `RequestMut` where the payload is not initialized which allows
 /// true zero copy usage. To send a `RequestMutUninit` it must be first initialized
-/// and converted into `RequestMut` with `RequestMutUninit::assume_init()`.
+/// and converted into `RequestMut` with `RequestMutUninit.assume_init`.
 pub struct RequestMutUninit {
     pub(crate) value: Parc<RequestMutUninitType>,
     pub(crate) request_payload_type_details: TypeStorage,

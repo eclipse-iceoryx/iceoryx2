@@ -44,7 +44,7 @@ pub(crate) enum PortFactoryPublisherType {
 }
 
 #[pyclass]
-/// Factory to create a new `Publisher` port/endpoint for `MessagingPattern::PublishSubscribe`
+/// Factory to create a new `Publisher` port/endpoint for `MessagingPattern.PublishSubscribe`
 /// based communication.
 pub struct PortFactoryPublisher {
     factory: Parc<PortFactoryPublishSubscribeType>,
@@ -112,8 +112,8 @@ impl PortFactoryPublisher {
         self.payload_type_details.clone().value
     }
 
-    /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher::loan()` or
-    /// `Publisher::loan_uninit()` in parallel.
+    /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher.loan` or
+    /// `Publisher.loan_uninit` in parallel.
     pub fn max_loaned_samples(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -194,7 +194,7 @@ impl PortFactoryPublisher {
     }
 
     /// Sets the maximum slice length that a user can allocate with
-    /// `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
+    /// `ActiveRequest.loan_slice` or `ActiveRequest.loan_slice_uninit`.
     pub fn __initial_max_slice_len(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -212,9 +212,9 @@ impl PortFactoryPublisher {
     }
 
     /// Defines the allocation strategy that is used when the provided
-    /// `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
-    /// acquires more than max slice len in `ActiveRequest::loan_slice()` or
-    /// `ActiveRequest::loan_slice_uninit()`.
+    /// `PortFactoryServer.initial_max_slice_len` is exhausted. This happens when the user
+    /// acquires more than max slice len in `ActiveRequest.loan_slice` or
+    /// `ActiveRequest.loan_slice_uninit`.
     pub fn __allocation_strategy(&self, value: &AllocationStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {

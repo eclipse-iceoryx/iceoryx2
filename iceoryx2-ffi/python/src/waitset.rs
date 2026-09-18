@@ -34,7 +34,7 @@ pub(crate) enum WaitSetType {
 
 #[pyclass]
 /// The `WaitSet` implements a reactor pattern and allows to wait on multiple events in one
-/// single call `WaitSet::wait_and_process()` until a interrupt or termination signal was received.
+/// single call `WaitSet.wait_and_process` until a interrupt or termination signal was received.
 ///
 /// The `Listener` can be attached as well as sockets or anything else that is a `FileDescriptor`.
 ///
@@ -44,9 +44,9 @@ pub struct WaitSet(pub(crate) Parc<WaitSetType>);
 #[pymethods]
 impl WaitSet {
     /// Attaches a `Listener` as notification to the `WaitSet`. Whenever an event is received on the
-    /// object the `WaitSet` informs the user in `WaitSet::wait_and_process()` to handle the event.
+    /// object the `WaitSet` informs the user in `WaitSet.wait_and_process` to handle the event.
     /// The object cannot be attached twice and the
-    /// `WaitSet::capacity()` is limited by the underlying implementation.
+    /// `WaitSet.capacity` is limited by the underlying implementation.
     pub fn attach_notification(&self, attachment: &Listener) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
             WaitSetType::Ipc(Some(v)) => {
@@ -111,9 +111,9 @@ impl WaitSet {
     }
 
     /// Attaches a `FileDescriptor` as notification to the `WaitSet`. Whenever an event is received on the
-    /// object the `WaitSet` informs the user in `WaitSet::wait_and_process()` to handle the event.
+    /// object the `WaitSet` informs the user in `WaitSet.wait_and_process` to handle the event.
     /// The object cannot be attached twice and the
-    /// `WaitSet::capacity()` is limited by the underlying implementation.
+    /// `WaitSet.capacity` is limited by the underlying implementation.
     pub fn attach_notification_fd(&self, attachment: &FileDescriptor) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
             WaitSetType::Ipc(Some(v)) => {
@@ -158,9 +158,9 @@ impl WaitSet {
     }
 
     /// Attaches a `Listener` as deadline to the `WaitSet`. Whenever the event is received or the
-    /// deadline is hit, the user is informed in `WaitSet::wait_and_process()`.
+    /// deadline is hit, the user is informed in `WaitSet.wait_and_process`.
     /// The object cannot be attached twice and the
-    /// `WaitSet::capacity()` is limited by the underlying implementation.
+    /// `WaitSet.capacity` is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the `WaitSet`.
     pub fn attach_deadline(
         &self,
@@ -230,9 +230,9 @@ impl WaitSet {
     }
 
     /// Attaches a `FileDescriptor` as deadline to the `WaitSet`. Whenever the event is received or
-    /// the deadline is hit, the user is informed in `WaitSet::wait_and_process()`.
+    /// the deadline is hit, the user is informed in `WaitSet.wait_and_process`.
     /// The object cannot be attached twice and the
-    /// `WaitSet::capacity()` is limited by the underlying implementation.
+    /// `WaitSet.capacity` is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the `WaitSet`.
     pub fn attach_deadline_fd(
         &self,
@@ -282,7 +282,7 @@ impl WaitSet {
     }
 
     /// Attaches a tick event to the `WaitSet`. Whenever the timeout is reached the `WaitSet`
-    /// informs the user in `WaitSet::wait_and_process()`.
+    /// informs the user in `WaitSet.wait_and_process`.
     pub fn attach_interval(&self, interval: &Duration) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
             WaitSetType::Ipc(Some(v)) => {
@@ -328,8 +328,8 @@ impl WaitSet {
     /// `WaitSetAttachmentId` in a vector and returns it.
     ///
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
-    /// [`WaitSetRunResult::TerminationRequest`].
+    /// the loop and inform the user with `WaitSetRunResult.Interrupt` or
+    /// `WaitSetRunResult.TerminationRequest`.
     ///
     /// **Important:** The `WaitSet` only reports that an attachment is ready; it
     /// does not consume the notification or data that caused the wake-up. If the
@@ -337,7 +337,7 @@ impl WaitSet {
     /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
     /// a busy loop and high CPU usage.
     ///
-    /// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+    /// For a `Listener`, consume pending notifications with `Listener.try_wait`.
     /// For a socket or another file-descriptor-based attachment, consume the pending
     /// data using its corresponding read or receive API.
     ///
@@ -372,8 +372,8 @@ impl WaitSet {
     /// collects the events corresponding `WaitSetAttachmentId` in a vector and returns it.
     ///
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
-    /// [`WaitSetRunResult::TerminationRequest`].
+    /// the loop and inform the user with `WaitSetRunResult.Interrupt` or
+    /// `WaitSetRunResult.TerminationRequest`.
     ///
     /// **Important:** The `WaitSet` only reports that an attachment is ready; it
     /// does not consume the notification or data that caused the wake-up. If the
@@ -381,7 +381,7 @@ impl WaitSet {
     /// ready and the `WaitSet` wakes up again immediately. Repeating this can cause
     /// a busy loop and high CPU usage.
     ///
-    /// For a `Listener`, consume pending notifications with `Listener::try_wait()`.
+    /// For a `Listener`, consume pending notifications with `Listener.try_wait`.
     /// For a socket or another file-descriptor-based attachment, consume the pending
     /// data using its corresponding read or receive API.
     ///

@@ -88,7 +88,7 @@ impl Subscriber {
     }
 
     /// Returns true if the `Subscriber` has samples in the buffer that can be received with
-    /// `Subscriber::receive`. Emits `ConnectionFailure` on error.
+    /// `Subscriber.receive`. Emits `ConnectionFailure` on error.
     pub fn has_samples(&self) -> PyResult<bool> {
         match &*self.value.lock() {
             SubscriberType::Ipc(Some(v)) => Ok(v

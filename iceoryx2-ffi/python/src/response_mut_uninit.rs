@@ -42,7 +42,7 @@ pub(crate) enum ResponseMutUninitType {
 
 #[pyclass]
 /// Acquired by a `ActiveRequest` with
-///  * `ActiveRequest::loan_uninit()`
+///  * `ActiveRequest.loan_uninit`
 ///
 /// It stores the payload of the response that will be sent to the corresponding
 /// `PendingResponse` of the `Client`.

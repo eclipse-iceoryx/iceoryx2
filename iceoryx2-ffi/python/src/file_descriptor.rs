@@ -39,7 +39,7 @@ impl FileDescriptor {
     }
 
     #[staticmethod]
-    /// Creates a new FileDescriptor. If the value is smaller than zero it returns [`None`].
+    /// Creates a new FileDescriptor. If the value is smaller than zero it returns `None`.
     pub fn new(value: i32) -> Option<FileDescriptor> {
         iceoryx2::prelude::FileDescriptor::new(value).map(|v| Self(Arc::new(v)))
     }

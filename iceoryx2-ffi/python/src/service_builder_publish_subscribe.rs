@@ -46,7 +46,7 @@ pub(crate) enum ServiceBuilderPublishSubscribeType {
 }
 
 #[pyclass]
-/// Builder to create a new `MessagingPattern::PublishSubscribe` based `Service`
+/// Builder to create a new `MessagingPattern.PublishSubscribe` based `Service`
 pub struct ServiceBuilderPublishSubscribe {
     pub(crate) value: ServiceBuilderPublishSubscribeType,
     pub payload_type_details: TypeStorage,

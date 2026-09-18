@@ -196,7 +196,7 @@ impl PendingResponse {
     /// Marks the connection state that the `Client` wants to gracefully
     /// disconnect. When the `Server` reads this, it can send the last `Response` and drop the
     /// corresponding `ActiveRequest` to terminate the
-    /// connection ensuring that no [`Response`] is lost on the `Client`
+    /// connection ensuring that no `Response` is lost on the `Client`
     /// side.
     pub fn set_disconnect_hint(&self) {
         match &*self.value.lock() {

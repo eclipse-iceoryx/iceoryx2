@@ -103,7 +103,7 @@ impl Node {
 
     #[getter]
     /// When true, the `NodeBuilder` checks for dead nodes and
-    /// cleans up all their stale resources whenever a new [`Node`](Node) is
+    /// cleans up all their stale resources whenever a new `Node` is
     /// created.
     pub fn cleanup_dead_nodes_on_creation(&self) -> bool {
         self.0.lock().global.node.cleanup_dead_nodes_on_creation

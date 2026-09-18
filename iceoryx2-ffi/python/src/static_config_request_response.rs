@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::message_type_details::MessageTypeDetails;
 
 #[pyclass]
-/// The static configuration of an `MessagingPattern::RequestResponse` based service. Contains all
+/// The static configuration of an `MessagingPattern.RequestResponse` based service. Contains all
 /// parameters that do not change during the lifetime of a `Service`.
 pub struct StaticConfigRequestResponse(
     pub(crate) iceoryx2::service::static_config::request_response::StaticConfig,

@@ -52,7 +52,7 @@ pub(crate) enum PortFactoryBlackboardType {
 }
 
 #[pyclass]
-/// The factory for `MessagingPattern::Blackboard`. It can acquire dynamic and static service
+/// The factory for `MessagingPattern.Blackboard`. It can acquire dynamic and static service
 /// information and create `Reader` or `Writer` ports.
 pub struct PortFactoryBlackboard {
     pub(crate) value: Parc<PortFactoryBlackboardType>,

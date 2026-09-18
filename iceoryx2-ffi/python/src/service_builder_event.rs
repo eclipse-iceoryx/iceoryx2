@@ -28,7 +28,7 @@ pub(crate) enum ServiceBuilderEventType {
 }
 
 #[pyclass]
-/// Builder to create a new `MessagingPattern::Event` based `Service`
+/// Builder to create a new `MessagingPattern.Event` based `Service`
 pub struct ServiceBuilderEvent(pub(crate) ServiceBuilderEventType);
 
 #[pymethods]

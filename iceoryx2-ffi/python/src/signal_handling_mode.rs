@@ -17,7 +17,7 @@ use pyo3::prelude::*;
 /// Defines how signals are handled by constructs that might register a custom
 /// `SignalHandler`
 pub enum SignalHandlingMode {
-    /// The signals `Signal::Interrupt` and `Signal::Terminate` are registered and
+    /// The signals `Signal.Interrupt` and `Signal.Terminate` are registered and
     /// handled. If such a `Signal` is received the user will be notified.
     HandleTerminationRequests,
     /// No signal handler will be registered.

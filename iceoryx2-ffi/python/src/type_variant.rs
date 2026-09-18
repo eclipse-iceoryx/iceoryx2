@@ -14,8 +14,8 @@ use pyo3::prelude::*;
 
 #[pyclass(skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
-/// Defines if the type is a slice with a runtime-size (`TypeVariant::Dynamic`)
-/// or if its a type that satisfies `Sized` (`TypeVariant::FixedSize`).
+/// Defines if the type is a slice with a runtime-size (`TypeVariant.Dynamic`)
+/// or if its a type that satisfies `Sized` (`TypeVariant.FixedSize`).
 pub enum TypeVariant {
     /// A fixed size type like `uint64_t`
     FixedSize,

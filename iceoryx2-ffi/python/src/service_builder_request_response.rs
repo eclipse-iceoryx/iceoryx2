@@ -52,7 +52,7 @@ pub(crate) enum ServiceBuilderRequestResponseType {
 }
 
 #[pyclass]
-/// Builder to create a new `MessagingPattern::RequestResponse` based `Service`
+/// Builder to create a new `MessagingPattern.RequestResponse` based `Service`
 pub struct ServiceBuilderRequestResponse {
     pub(crate) value: ServiceBuilderRequestResponseType,
     pub(crate) request_payload_type_details: TypeStorage,

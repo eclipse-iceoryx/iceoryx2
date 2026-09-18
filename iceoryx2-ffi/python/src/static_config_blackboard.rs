@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::type_detail::TypeDetail;
 
 #[pyclass]
-/// The static configuration of an `MessagingPattern::Blackboard` based `Service`. Contains
+/// The static configuration of an `MessagingPattern.Blackboard` based `Service`. Contains
 /// all parameters that do not change during the lifetime of a `Service`.
 pub struct StaticConfigBlackboard(
     pub(crate) iceoryx2::service::static_config::blackboard::StaticConfig,

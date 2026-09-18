@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::{duration::Duration, event_id::EventId};
 
 #[pyclass]
-/// The static configuration of an `MessagingPattern::Event`
+/// The static configuration of an `MessagingPattern.Event`
 /// based service. Contains all parameters that do not change during the lifetime of a
 /// `Service`.
 pub struct StaticConfigEvent(pub(crate) iceoryx2::service::static_config::event::StaticConfig);

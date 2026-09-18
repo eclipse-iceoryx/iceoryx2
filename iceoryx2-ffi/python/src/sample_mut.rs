@@ -42,8 +42,8 @@ pub(crate) enum SampleMutType {
 
 #[pyclass]
 /// Acquired by a `Publisher` via
-///  * `Publisher::loan()`,
-///  * `Publisher::loan_slice()`
+///  * `Publisher.loan`,
+///  * `Publisher.loan_slice`
 ///
 /// It stores the payload that will be sent
 /// to every connected `Subscriber`. If the `SampleMut` is not sent
@@ -127,7 +127,7 @@ impl SampleMut {
         }
     }
 
-    /// Send a previously loaned `Publisher::loan_uninit()` `SampleMut` to every connected
+    /// Send a previously loaned `Publisher.loan_uninit` `SampleMut` to every connected
     /// `Subscriber` of the service.
     ///
     /// On success the number of `Subscriber` ports that received

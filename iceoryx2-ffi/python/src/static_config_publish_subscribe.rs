@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::message_type_details::MessageTypeDetails;
 
 #[pyclass]
-/// The static configuration of an `MessagingPattern::PublishSubscribe` based `Service`. Contains
+/// The static configuration of an `MessagingPattern.PublishSubscribe` based `Service`. Contains
 /// all parameters that do not change during the lifetime of a `Service`.
 pub struct StaticConfigPublishSubscribe(
     pub(crate) iceoryx2::service::static_config::publish_subscribe::StaticConfig,
