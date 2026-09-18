@@ -1,0 +1,135 @@
+/*
+Copyright (c) 2026 Contributors to the Eclipse Foundation
+
+See the NOTICE file(s) distributed with this work for additional
+information regarding copyright ownership.
+
+This program and the accompanying materials are made available under the
+terms of the Apache Software License 2.0 which is available at
+https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+which is available at https://opensource.org/licenses/MIT.
+
+SPDX-License-Identifier: Apache-2.0 OR MIT
+*/
+
+/* iceoryx2 book palette on the variables of doxygen-awesome */
+html {
+  --primary-color: #0a8aa0;
+  --primary-dark-color: #0a7385;
+  --primary-light-color: #0a93ab;
+  --page-background-color: #f5f8fc;
+  --page-foreground-color: #0c1825;
+  --page-secondary-foreground-color: #46596b;
+  --separator-color: rgba(15, 55, 90, 0.12);
+  --side-nav-background: #eef3f9;
+  --code-background: #eef3f9;
+  --code-foreground: #33485a;
+  --fragment-background: #eef3f9;
+  --fragment-foreground: #33485a;
+  --fragment-keyword: #3a66cf;
+  --fragment-keywordtype: #0a7385;
+  --fragment-keywordflow: #3a66cf;
+  --fragment-token: #0e9b73;
+  --fragment-comment: #586a80;
+  --fragment-link: #0a7d91;
+  --fragment-preprocessor: #0a8aa0;
+  --fragment-linenumber-color: #586a80;
+  --fragment-linenumber-background: #e2eaf3;
+  --fragment-linenumber-border: rgba(15, 55, 90, 0.12);
+  --tablehead-background: #e2eaf3;
+  --blockquote-background: #fafcff;
+  --blockquote-foreground: #46596b;
+  --note-color: rgba(10, 138, 160, 0.08);
+  --note-color-dark: #0a8aa0;
+  --note-color-darker: #0a7385;
+  --ix-muted: #586a80;
+}
+
+/* doxygen-awesome applies dark mode by media query and by class */
+@media (prefers-color-scheme: dark) {
+  html:not(.light-mode) {
+    --primary-color: #2dd4e8;
+    --primary-dark-color: #16b8d4;
+    --primary-light-color: #7ff0ff;
+    --page-background-color: #060910;
+    --page-foreground-color: #eaf3f7;
+    --page-secondary-foreground-color: #9fb1bf;
+    --separator-color: rgba(150, 200, 230, 0.10);
+    --side-nav-background: #080d16;
+    --code-background: #0a111c;
+    --code-foreground: #c5d4e0;
+    --fragment-background: #0a111c;
+    --fragment-foreground: #c5d4e0;
+    --fragment-keyword: #5b8def;
+    --fragment-keywordtype: #2dd4e8;
+    --fragment-keywordflow: #5b8def;
+    --fragment-token: #6ff0c7;
+    --fragment-comment: #6b7d8c;
+    --fragment-link: #2dd4e8;
+    --fragment-preprocessor: #7ff0ff;
+    --fragment-linenumber-color: #6b7d8c;
+    --fragment-linenumber-background: #080d16;
+    --fragment-linenumber-border: rgba(150, 200, 230, 0.10);
+    --tablehead-background: #141d2d;
+    --blockquote-background: #0c1320;
+    --blockquote-foreground: #9fb1bf;
+    --note-color: rgba(45, 212, 232, 0.08);
+    --note-color-dark: #2dd4e8;
+    --note-color-darker: #7ff0ff;
+    --ix-muted: #6b7d8c;
+  }
+}
+
+html.dark-mode {
+  --primary-color: #2dd4e8;
+  --primary-dark-color: #16b8d4;
+  --primary-light-color: #7ff0ff;
+  --page-background-color: #060910;
+  --page-foreground-color: #eaf3f7;
+  --page-secondary-foreground-color: #9fb1bf;
+  --separator-color: rgba(150, 200, 230, 0.10);
+  --side-nav-background: #080d16;
+  --code-background: #0a111c;
+  --code-foreground: #c5d4e0;
+  --fragment-background: #0a111c;
+  --fragment-foreground: #c5d4e0;
+  --fragment-keyword: #5b8def;
+  --fragment-keywordtype: #2dd4e8;
+  --fragment-keywordflow: #5b8def;
+  --fragment-token: #6ff0c7;
+  --fragment-comment: #6b7d8c;
+  --fragment-link: #2dd4e8;
+  --fragment-preprocessor: #7ff0ff;
+  --fragment-linenumber-color: #6b7d8c;
+  --fragment-linenumber-background: #080d16;
+  --fragment-linenumber-border: rgba(150, 200, 230, 0.10);
+  --tablehead-background: #141d2d;
+  --blockquote-background: #0c1320;
+  --blockquote-foreground: #9fb1bf;
+  --note-color: rgba(45, 212, 232, 0.08);
+  --note-color-dark: #2dd4e8;
+  --note-color-darker: #7ff0ff;
+  --ix-muted: #6b7d8c;
+}
+
+/* Wordmark */
+#projectname {
+  font-weight: 700;
+  font-size: 1.32rem;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+#projectname .ix-two { color: var(--primary-color); }
+#projectbrief {
+  font-family: var(--font-family-monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ix-muted);
+  margin-top: 0.25rem;
+}
+
+/* doxygen-awesome resets the link weight for the navigation tree but not for the page outline */
+#page-nav ul.page-outline li a {
+  font-weight: normal;
+}

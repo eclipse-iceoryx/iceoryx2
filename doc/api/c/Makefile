@@ -1,7 +1,7 @@
 .PHONY: docs clean clean-all setup help deps
 
 # Configuration
-DOXYGEN_AWESOME_VERSION = v2.3.4
+DOXYGEN_AWESOME_VERSION = v2.5.0
 DOXYGEN_AWESOME_URL = https://github.com/jothepro/doxygen-awesome-css.git
 DOXYGEN_AWESOME_DIR = target/deps/doxygen-awesome
 
