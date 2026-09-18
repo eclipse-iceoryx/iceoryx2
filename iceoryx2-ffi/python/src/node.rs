@@ -59,7 +59,7 @@ impl Node {
     }
 
     #[getter]
-    /// Returns the `Config` that the `Node` will use to create any iceoryx2 entity.
+    /// Returns the `config.Config` that the `Node` will use to create any iceoryx2 entity.
     pub fn config(&self) -> Config {
         match &*self.0.lock() {
             NodeType::Ipc(node) => Config(Parc::new(node.config().clone())),

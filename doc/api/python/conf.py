@@ -41,3 +41,20 @@ html_css_files = [
     'custom.css',
 ]
 
+
+# -- Cross references --------------------------------------------------------
+
+def resolve_in_package(app, env, node, contnode):
+    """Resolves a reference from a submodule docstring relative to the package."""
+    if node.get('refdomain') != 'py' or node.get('py:module') == 'iceoryx2':
+        return None
+
+    node['py:module'] = 'iceoryx2'
+    node['py:class'] = None
+    return env.get_domain('py').resolve_xref(
+        env, node['refdoc'], app.builder, node['reftype'], node['reftarget'], node, contnode
+    )
+
+
+def setup(app):
+    app.connect('missing-reference', resolve_in_package)

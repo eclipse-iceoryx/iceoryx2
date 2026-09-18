@@ -52,8 +52,8 @@ impl NodeBuilder {
         Self(this)
     }
 
-    /// The `Config` that shall be used for the `Node`. If no `Config`
-    /// is specified the `config.global_config()` is used.
+    /// The `config.Config` that shall be used for the `Node`. If no `config.Config`
+    /// is specified the `config.global_config` is used.
     pub fn config(&mut self, config: &Config) -> Self {
         let this = self.0.clone();
         let this = this.config(&config.0.lock());

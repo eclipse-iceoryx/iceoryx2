@@ -56,7 +56,7 @@ impl NodeDetails {
     }
 
     #[getter]
-    /// Returns a reference to the `Config` the `Node` uses.
+    /// Returns a reference to the `config.Config` the `Node` uses.
     pub fn config(&self) -> Config {
         Config(Parc::new(self.0.config().clone()))
     }
