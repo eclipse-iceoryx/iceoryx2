@@ -75,7 +75,8 @@ impl ResponseMut {
     }
 
     #[getter]
-    /// Returns a pointer to the user header of the response.
+    /// Returns the address of the user header of the response as an `int`.
+    /// `ResponseMut.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             ResponseMutType::Ipc(Some(v)) => {
@@ -90,7 +91,8 @@ impl ResponseMut {
     }
 
     #[getter]
-    /// Returns a pointer to the payload of the response.
+    /// Returns the address of the payload of the response as an `int`.
+    /// `ResponseMut.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             ResponseMutType::Ipc(Some(v)) => v.payload_mut().as_mut_ptr() as usize,

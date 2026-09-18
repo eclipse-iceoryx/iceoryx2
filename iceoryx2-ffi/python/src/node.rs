@@ -59,7 +59,7 @@ impl Node {
     }
 
     #[getter]
-    /// Returns the `Config` that the `Node` will use to create any iceoryx2 entity.
+    /// Returns the `config.Config` that the `Node` will use to create any iceoryx2 entity.
     pub fn config(&self) -> Config {
         match &*self.0.lock() {
             NodeType::Ipc(node) => Config(Parc::new(node.config().clone())),
@@ -77,7 +77,7 @@ impl Node {
     }
 
     #[staticmethod]
-    /// Returns a list of `NodeState`s of all `Node`s under a provided config.
+    /// Returns the `NodeState` of every `Node` under a provided config.
     /// On failure it emits a `NodeListFailure`.
     pub fn list(service_type: &ServiceType, config: &Config) -> PyResult<Vec<NodeState>> {
         let mut states = vec![];
@@ -141,7 +141,7 @@ impl Node {
         }
     }
 
-    /// Waits for a given `cycle_time`.
+    /// Waits for a given ``cycle_time``.
     /// On failure it emits a `NodeWaitFailure`.
     pub fn wait(&self, cycle_time: &Duration, py: Python<'_>) -> PyResult<()> {
         py.detach(move || {
@@ -167,13 +167,13 @@ impl Node {
         }
     }
 
-    /// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
+    /// Removes a `Service` by force. This shall be used if the
     /// resources could not be removed in a previous run and now it is no longer possible to
     /// open the service.
     ///
     /// # Safety
     ///
-    ///  * No other process shall use the service.
+    /// No other process shall continue to use the service.
     ///
     pub fn force_remove_service(
         &self,
@@ -194,8 +194,8 @@ impl Node {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
-    /// removed from all registered `Service`s.
+    /// Removes the stale system resources of every dead `Node`. A dead `Node` is also
+    /// removed from every registered `Service`.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then
     /// the `Node` is skipped.
@@ -206,8 +206,8 @@ impl Node {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
-    /// removed from all registered `Service`s.
+    /// Removes the stale system resources of every dead `Node`. A dead `Node` is also
+    /// removed from every registered `Service`.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then the
     /// `Node` is skipped. If it is currently being cleaned up by another process then the

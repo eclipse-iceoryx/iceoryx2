@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 use crate::unique_server_id::UniqueServerId;
 
 #[pyclass(str = "{0:?}")]
-/// Response header used by `MessagingPattern::RequestResponse`
+/// Response header used by `MessagingPattern.RequestResponse`
 pub struct ResponseHeader(pub(crate) iceoryx2::service::header::request_response::ResponseHeader);
 
 #[pymethods]
@@ -28,7 +28,7 @@ impl ResponseHeader {
     }
 
     #[getter]
-    /// Returns how many elements are stored inside the `Response`s payload.
+    /// Returns how many elements are stored inside the `Response`'s payload.
     pub fn number_of_elements(&self) -> u64 {
         self.0.number_of_elements()
     }

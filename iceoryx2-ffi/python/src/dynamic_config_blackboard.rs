@@ -17,7 +17,7 @@ use crate::parc::Parc;
 use crate::port_factory_blackboard::PortFactoryBlackboardType;
 
 #[pyclass]
-/// The dynamic configuration of a `MessagingPattern::Blackboard` service.
+/// The dynamic configuration of a `MessagingPattern.Blackboard` service.
 /// Port counts reflect the current state of the service when accessed.
 /// The view keeps the service open while it is referenced.
 /// Explicitly deleting the blackboard factory invalidates the view; subsequent

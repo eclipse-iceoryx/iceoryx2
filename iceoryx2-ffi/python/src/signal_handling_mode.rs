@@ -15,10 +15,10 @@ use pyo3::prelude::*;
 #[pyclass(eq, eq_int, skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
 /// Defines how signals are handled by constructs that might register a custom
-/// `SignalHandler`
+/// ``SignalHandler``
 pub enum SignalHandlingMode {
-    /// The signals `Signal::Interrupt` and `Signal::Terminate` are registered and
-    /// handled. If such a `Signal` is received the user will be notified.
+    /// The signals `Signal.Interrupt` and `Signal.Terminate` are registered and
+    /// handled. If such a ``Signal`` is received the user will be notified.
     HandleTerminationRequests,
     /// No signal handler will be registered.
     Disabled,

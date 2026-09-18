@@ -120,6 +120,17 @@ use pyo3::wrap_pymodule;
 pub(crate) use service_type::IpcService;
 pub(crate) use service_type::LocalService;
 
+/// Registers a submodule of the package in `sys.modules` so that it can be imported under its
+/// dotted name.
+fn make_submodule_importable(py: Python<'_>, m: &Bound<'_, PyModule>, name: &str) -> PyResult<()> {
+    let qualified_name = format!("iceoryx2.{name}");
+    let submodule = m.getattr(name)?;
+    submodule.setattr("__name__", &qualified_name)?;
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item(&qualified_name, submodule)
+}
+
 /// iceoryx2 Python language bindings
 #[pymodule]
 fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -128,6 +139,8 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
+    make_submodule_importable(py, m, "config")?;
+
     m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level))?;
     m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level_from_env_or))?;
     m.add_wrapped(wrap_pyfunction!(

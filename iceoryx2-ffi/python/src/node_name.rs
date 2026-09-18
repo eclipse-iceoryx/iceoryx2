@@ -36,7 +36,7 @@ impl NodeName {
         iceoryx2::prelude::NodeName::max_len()
     }
 
-    /// Converts the `NodeName` into a `String`
+    /// Converts the `NodeName` into a `str`
     pub fn as_str(&self) -> String {
         self.0.as_str().to_string()
     }

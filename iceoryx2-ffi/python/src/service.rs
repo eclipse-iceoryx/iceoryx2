@@ -22,13 +22,13 @@ use crate::{
 };
 
 #[pyclass]
-/// Builder to create or open `Service`s
+/// Builder to create or open a `Service`
 pub struct Service(());
 
 #[pymethods]
 impl Service {
     #[staticmethod]
-    /// Checks if a service under a given `Config` does exist
+    /// Checks if a service under a given `config.Config` does exist
     pub fn does_exist(
         service_name: &ServiceName,
         config: &Config,
@@ -80,7 +80,7 @@ impl Service {
     }
 
     #[staticmethod]
-    /// Returns a list of all services created under a given `Config`.
+    /// Returns a list of all services created under a given `config.Config`.
     pub fn list(config: &Config, service_type: ServiceType) -> PyResult<Vec<ServiceDetails>> {
         use iceoryx2::service::Service;
         let mut ret_val = vec![];

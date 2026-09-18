@@ -33,12 +33,12 @@ pub(crate) enum ServiceBuilderType {
 }
 
 #[pyclass]
-/// Builder to create or open `Service`s
+/// Builder to create or open a `Service`
 pub struct ServiceBuilder(pub(crate) Parc<ServiceBuilderType>);
 
 #[pymethods]
 impl ServiceBuilder {
-    /// Create a new builder to create a `MessagingPattern::Event` `Service`.
+    /// Create a new builder to create a `MessagingPattern.Event` `Service`.
     pub fn event(&self) -> ServiceBuilderEvent {
         match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
@@ -52,7 +52,7 @@ impl ServiceBuilder {
         }
     }
 
-    /// Create a new builder to create a `MessagingPattern::PublishSubscribe` `Service`.
+    /// Create a new builder to create a `MessagingPattern.PublishSubscribe` `Service`.
     pub fn __publish_subscribe(&self) -> ServiceBuilderPublishSubscribe {
         match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
@@ -72,7 +72,7 @@ impl ServiceBuilder {
         }
     }
 
-    /// Create a new builder to create a `MessagingPattern::RequestResponse` `Service`.
+    /// Create a new builder to create a `MessagingPattern.RequestResponse` `Service`.
     pub fn __request_response(&self) -> ServiceBuilderRequestResponse {
         match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
@@ -94,7 +94,7 @@ impl ServiceBuilder {
         }
     }
 
-    /// Create a new builder to create a `MessagingPattern::Blackboard` `Service`.
+    /// Create a new builder to create a `MessagingPattern.Blackboard` `Service`.
     pub fn __blackboard_creator(&self) -> ServiceBuilderBlackboardCreator {
         match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {
@@ -112,7 +112,7 @@ impl ServiceBuilder {
         }
     }
 
-    /// Create a new builder to open a `MessagingPattern::Blackboard` `Service`.
+    /// Create a new builder to open a `MessagingPattern.Blackboard` `Service`.
     pub fn __blackboard_opener(&self) -> ServiceBuilderBlackboardOpener {
         match &*self.0.lock() {
             ServiceBuilderType::Ipc(v) => {

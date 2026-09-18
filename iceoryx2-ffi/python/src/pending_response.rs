@@ -44,9 +44,9 @@ pub(crate) enum PendingResponseType {
 
 #[pyclass]
 /// Represents an active connection to all `Server` that received the `RequestMut`. The
-/// `Client` can use it to receive the corresponding `Response`s.
+/// `Client` can use it to receive every corresponding `Response`.
 ///
-/// As soon as it goes out of scope, the connections are closed and the `Server`s are informed.
+/// As soon as it goes out of scope, the connections are closed and every `Server` is informed.
 pub struct PendingResponse {
     pub(crate) value: Parc<PendingResponseType>,
     pub(crate) request_payload_type_details: TypeStorage,
@@ -77,8 +77,8 @@ impl PendingResponse {
         self.response_header_type_details.clone().value
     }
 
-    /// Returns `True` until the `ActiveRequest` goes out of scope on the `Server`s side
-    /// indicating that the `Server` will no longer send `Response`s.
+    /// Returns `True` until the `ActiveRequest` goes out of scope on the `Server`'s side
+    /// indicating that the `Server` will no longer send a `Response`.
     /// It also returns `False` when there are no `Server`.
     #[getter]
     pub fn is_connected(&self) -> bool {
@@ -102,8 +102,9 @@ impl PendingResponse {
         }
     }
 
-    /// Returns a pointer to the user defined request header of the corresponding
-    /// `RequestMut`
+    /// Returns the address of the user defined request header of the corresponding
+    /// `RequestMut` as an `int`.
+    /// `PendingResponse.user_header` provides typed access.
     #[getter]
     pub fn user_header_ptr(&self) -> usize {
         match &*self.value.lock() {
@@ -118,8 +119,9 @@ impl PendingResponse {
         }
     }
 
-    /// Returns a pointer to the request payload of the corresponding
-    /// `RequestMut`
+    /// Returns the address of the request payload of the corresponding
+    /// `RequestMut` as an `int`.
+    /// `PendingResponse.payload` provides typed access.
     #[getter]
     pub fn payload_ptr(&self) -> usize {
         match &*self.value.lock() {
@@ -130,7 +132,7 @@ impl PendingResponse {
         }
     }
 
-    /// Returns how many `Server`s received the corresponding `RequestMut` initially.
+    /// Returns how many `Server` ports received the corresponding `RequestMut` initially.
     #[getter]
     pub fn number_of_server_connections(&self) -> usize {
         match &*self.value.lock() {
@@ -153,7 +155,7 @@ impl PendingResponse {
     }
 
     /// Releases the `PendingResponse` and signals the `Server` that the `Client` is no longer
-    /// interested in receiving any more `Response`s and terminates the connection.
+    /// interested in receiving another `Response` and terminates the connection.
     ///
     /// After this call the `PendingResponse` is no longer usable!
     pub fn delete(&mut self) {
@@ -167,7 +169,7 @@ impl PendingResponse {
         }
     }
 
-    /// Receives a `Response` from one of the `Server`s that received the `RequestMut`.
+    /// Receives a `Response` from a `Server` that received the `RequestMut`.
     pub fn receive(&self) -> PyResult<Option<Response>> {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => Ok(unsafe {
@@ -196,7 +198,7 @@ impl PendingResponse {
     /// Marks the connection state that the `Client` wants to gracefully
     /// disconnect. When the `Server` reads this, it can send the last `Response` and drop the
     /// corresponding `ActiveRequest` to terminate the
-    /// connection ensuring that no [`Response`] is lost on the `Client`
+    /// connection ensuring that no `Response` is lost on the `Client`
     /// side.
     pub fn set_disconnect_hint(&self) {
         match &*self.value.lock() {

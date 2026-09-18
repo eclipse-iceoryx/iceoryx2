@@ -52,7 +52,7 @@ pub(crate) enum ServiceBuilderRequestResponseType {
 }
 
 #[pyclass]
-/// Builder to create new `MessagingPattern::RequestResponse` based `Service`s
+/// Builder to create a new `MessagingPattern.RequestResponse` based `Service`
 pub struct ServiceBuilderRequestResponse {
     pub(crate) value: ServiceBuilderRequestResponseType,
     pub(crate) request_payload_type_details: TypeStorage,
@@ -316,7 +316,7 @@ impl ServiceBuilderRequestResponse {
     }
 
     /// If the `Service` is created it defines how many responses fit in the
-    /// `Clients`s buffer. If an existing `Service` is opened it defines the minimum required.
+    /// `Client`'s buffer. If an existing `Service` is opened it defines the minimum required.
     pub fn max_response_buffer_size(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -332,9 +332,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
-    /// If the `Service` is created it defines how many `Server`s shall
+    /// If the `Service` is created it defines how many `Server` ports shall
     /// be supported at most. If an existing `Service` is opened it defines how many
-    /// `Server`s must be at least supported.
+    /// `Server` ports must be at least supported.
     pub fn max_servers(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -350,9 +350,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
-    /// If the `Service` is created it defines how many `Client`s shall
+    /// If the `Service` is created it defines how many `Client` ports shall
     /// be supported at most. If an existing `Service` is opened it defines how many
-    /// `Client`s must be at least supported.
+    /// `Client` ports must be at least supported.
     pub fn max_clients(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -368,9 +368,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
-    /// If the `Service` is created it defines how many `Node`s shall
+    /// If the `Service` is created it defines how many `Node` instances shall
     /// be able to open it in parallel. If an existing `Service` is opened it defines how many
-    /// `Node`s must be at least supported.
+    /// `Node` instances must be at least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -386,7 +386,7 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
-    /// If the `Service` is created it defines how many `Response`s shall
+    /// If the `Service` is created it defines the `Response` count that shall
     /// be able to be borrowed in parallel per `PendingResponse`. If an
     /// existing `Service` is opened it defines how many borrows must be at least supported.
     pub fn max_borrowed_responses_per_pending_response(&self, value: usize) -> Self {

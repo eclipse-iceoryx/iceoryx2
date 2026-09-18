@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
-/// Relocatable (inter-process shared memory compatible) `SemanticString` implementation for
+/// Relocatable (inter-process shared memory compatible) ``SemanticString`` implementation for
 /// `FileName`. All modification operations ensure that never an
 /// invalid file or path name can be generated. All strings have a fixed size so that the maximum
 /// path or file name length the system supports can be stored.
@@ -25,7 +25,7 @@ pub struct FileName(pub(crate) iceoryx2::prelude::FileName);
 #[pymethods]
 impl FileName {
     #[staticmethod]
-    /// Creates a new `FileName` when the provided `name` contains a valid path to a file,
+    /// Creates a new `FileName` when the provided ``name`` contains a valid path to a file,
     /// otherwise it emits a `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self(
@@ -40,7 +40,7 @@ impl FileName {
         iceoryx2::prelude::FileName::max_len()
     }
 
-    /// Converts the `FileName` into a `String`
+    /// Converts the `FileName` into a `str`
     #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
     pub fn to_string(&self) -> String {
         self.0.to_string()

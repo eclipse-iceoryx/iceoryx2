@@ -17,7 +17,7 @@ use crate::parc::Parc;
 use crate::port_factory_request_response::PortFactoryRequestResponseType;
 
 #[pyclass]
-/// The dynamic configuration of a `MessagingPattern::RequestResponse` service.
+/// The dynamic configuration of a `MessagingPattern.RequestResponse` service.
 /// Port counts reflect the current state of the service when accessed.
 /// The view keeps the service open while it is referenced.
 pub struct DynamicConfigRequestResponse(pub(crate) Parc<PortFactoryRequestResponseType>);

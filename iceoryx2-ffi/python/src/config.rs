@@ -19,8 +19,8 @@ use crate::parc::Parc;
 use crate::path::Path;
 use pyo3::prelude::*;
 
-#[pyclass]
-/// All configurable settings of a `Node`.
+#[pyclass(module = "iceoryx2.config")]
+/// All configurable settings of a `iceoryx2.Node`.
 pub struct Node(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
@@ -103,7 +103,7 @@ impl Node {
 
     #[getter]
     /// When true, the `NodeBuilder` checks for dead nodes and
-    /// cleans up all their stale resources whenever a new [`Node`](Node) is
+    /// cleans up all their stale resources whenever a new `iceoryx2.Node` is
     /// created.
     pub fn cleanup_dead_nodes_on_creation(&self) -> bool {
         self.0.lock().global.node.cleanup_dead_nodes_on_creation
@@ -117,7 +117,7 @@ impl Node {
 
     #[getter]
     /// When true, the `NodeBuilder` checks for dead nodes and
-    /// cleans up all their stale resources whenever an existing `Node` is
+    /// cleans up all their stale resources whenever an existing `iceoryx2.Node` is
     /// going out of scope.
     pub fn cleanup_dead_nodes_on_destruction(&self) -> bool {
         self.0.lock().global.node.cleanup_dead_nodes_on_destruction
@@ -130,8 +130,8 @@ impl Node {
     }
 }
 
-#[pyclass]
-/// All configurable settings of a `Service`.
+#[pyclass(module = "iceoryx2.config")]
+/// All configurable settings of a `iceoryx2.Service`.
 pub struct Service(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
@@ -141,8 +141,8 @@ impl Service {
     }
 
     #[getter]
-    /// A list of directories where iceoryx2 will look for `.fbs` flatbuffer schemas. If no path is
-    /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
+    /// A list of directories where iceoryx2 will look for ``.fbs`` flatbuffer schemas. If no path
+    /// is provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
     /// the flatbuffer schemas.
     pub fn flatbuffer_schema_path(&self) -> Option<Path> {
         self.0
@@ -245,7 +245,7 @@ impl Service {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct PublishSubscribe(Parc<iceoryx2::config::Config>);
@@ -257,38 +257,38 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of supported `Subscriber`s
+    /// The maximum amount of supported `Subscriber` ports
     pub fn max_subscribers(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_subscribers
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Subscriber`s
+    /// Set the maximum amount of supported `Subscriber` ports
     pub fn set_max_subscribers(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_subscribers = value
     }
 
     #[getter]
-    /// The maximum amount of supported `Publisher`s
+    /// The maximum amount of supported `Publisher` ports
     pub fn max_publishers(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_publishers
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Publisher`s
+    /// Set the maximum amount of supported `Publisher` ports
     pub fn set_max_publishers(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_publishers = value
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s.
+    /// Set the maximum amount of supported `iceoryx2.Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_nodes = value
     }
@@ -314,7 +314,7 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of `Sample`s a `Subscriber` can hold at the same time.
+    /// The maximum `Sample` count a `Subscriber` can hold at the same time.
     pub fn subscriber_max_borrowed_samples(&self) -> usize {
         self.0
             .lock()
@@ -324,7 +324,7 @@ impl PublishSubscribe {
     }
 
     #[setter]
-    /// Set the maximum amount of `Sample`s a `Subscriber` can hold at the same time.
+    /// Set the maximum `Sample` count a `Subscriber` can hold at the same time.
     pub fn set_subscriber_max_borrowed_samples(&self, value: usize) {
         self.0
             .lock()
@@ -334,7 +334,7 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of `SampleMut`s a `Publisher` can loan at the same time.
+    /// The maximum `SampleMut` count a `Publisher` can loan at the same time.
     pub fn publisher_max_loaned_samples(&self) -> usize {
         self.0
             .lock()
@@ -344,7 +344,7 @@ impl PublishSubscribe {
     }
 
     #[setter]
-    /// The maximum amount of `SampleMut`s a `Publisher` can loan at the same time.
+    /// The maximum `SampleMut` count a `Publisher` can loan at the same time.
     pub fn set_publisher_max_loaned_samples(&self, value: usize) {
         self.0
             .lock()
@@ -397,7 +397,7 @@ impl PublishSubscribe {
 
     #[getter]
     /// If safe overflow is deactivated it defines the deliver strategy of the
-    /// `Publisher` when the `Subscriber`s buffer is full.
+    /// `Publisher` when the `Subscriber`'s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         self.0
             .lock()
@@ -422,7 +422,7 @@ impl PublishSubscribe {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Publisher`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `Sample`s.
+    /// still contains an unconsumed `Sample`.
     pub fn subscriber_expired_connection_buffer(&self) -> usize {
         self.0
             .lock()
@@ -442,7 +442,7 @@ impl PublishSubscribe {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the event messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct Event(Parc<iceoryx2::config::Config>);
@@ -478,14 +478,14 @@ impl Event {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.event.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s.
+    /// Set the maximum amount of supported `iceoryx2.Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.event.max_nodes = value
     }
@@ -529,7 +529,7 @@ impl Event {
 
     #[getter]
     /// Defines the event id value that is emitted after a new notifier was created. If it is
-    /// not set then `usize::MAX` is returned
+    /// not set then ``usize::MAX`` is returned
     pub fn get_notifier_created_event(&self) -> usize {
         self.0
             .lock()
@@ -623,7 +623,7 @@ impl Event {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the request response messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct RequestResponse(Parc<iceoryx2::config::Config>);
@@ -635,7 +635,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Defines if the request buffer of the `Service` safely overflows.
+    /// Defines if the request buffer of the `iceoryx2.Service` safely overflows.
     pub fn enable_safe_overflow_for_requests(&self) -> bool {
         self.0
             .lock()
@@ -655,7 +655,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Defines if the response buffer of the `Service` safely overflows.
+    /// Defines if the response buffer of the `iceoryx2.Service` safely overflows.
     pub fn enable_safe_overflow_for_responses(&self) -> bool {
         self.0
             .lock()
@@ -675,7 +675,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum of `ActiveRequest`s a `Server` can hold in
+    /// The maximum `ActiveRequest` count a `Server` can hold in
     /// parallel per `Client`.
     pub fn max_active_requests_per_client(&self) -> usize {
         self.0
@@ -686,7 +686,7 @@ impl RequestResponse {
     }
 
     #[setter]
-    /// Set the maximum of `ActiveRequest`s a `Server` can hold in
+    /// Set the maximum `ActiveRequest` count a `Server` can hold in
     /// parallel per `Client`.
     pub fn set_max_active_requests_per_client(&self, value: usize) {
         self.0
@@ -697,7 +697,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum buffer size for `Response`s for a
+    /// The maximum `Response` buffer size for a
     /// `PendingResponse`.
     pub fn max_response_buffer_size(&self) -> usize {
         self.0
@@ -708,7 +708,7 @@ impl RequestResponse {
     }
 
     #[setter]
-    /// Set the maximum buffer size for `Response`s for a
+    /// Set the maximum `Response` buffer size for a
     /// `PendingResponse`.
     pub fn set_max_response_buffer_size(&self, value: usize) {
         self.0
@@ -743,14 +743,14 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.request_response.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s. Defines
+    /// Set the maximum amount of supported `iceoryx2.Node` instances. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.request_response.max_nodes = value
@@ -865,7 +865,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Server`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `Response`s.
+    /// still contains an unconsumed `Response`.
     pub fn client_expired_connection_buffer(&self) -> usize {
         self.0
             .lock()
@@ -879,7 +879,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Server`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `Response`s.
+    /// still contains an unconsumed `Response`.
     pub fn set_client_expired_connection_buffer(&self, value: usize) {
         self.0
             .lock()
@@ -893,7 +893,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Client`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `ActiveRequest`s.
+    /// still contains an unconsumed `ActiveRequest`.
     pub fn server_expired_connection_buffer(&self) -> usize {
         self.0
             .lock()
@@ -907,7 +907,7 @@ impl RequestResponse {
     /// buffer that contains expired connections. An
     /// connection is expired when the `Client`
     /// disconnected from a service and the connection
-    /// still contains unconsumed `ActiveRequest`s.
+    /// still contains an unconsumed `ActiveRequest`.
     pub fn set_server_expired_connection_buffer(&self, value: usize) {
         self.0
             .lock()
@@ -917,10 +917,10 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Allows the `Server` to receive `RequestMut`s of `Client`s that are not interested in a
+    /// Allows the `Server` to receive a `RequestMut` from a `Client` that is not interested in a
     /// `Response`, meaning that the `Server` will receive the `RequestMut` despite the
     /// corresponding `PendingResponse` already went out-of-scope. So any `Response` sent by the
-    /// `Server` would not be received by the corresponding `Client`s `PendingResponse`.
+    /// `Server` would not be received by the corresponding `Client`'s `PendingResponse`.
     ///
     /// Consider enabling this feature if you do not want to loose any `RequestMut`.
     pub fn enable_fire_and_forget_requests(&self) -> bool {
@@ -942,7 +942,7 @@ impl RequestResponse {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// The global settings
 pub struct Global(Parc<iceoryx2::config::Config>);
 
@@ -1014,7 +1014,7 @@ impl Global {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 pub struct Defaults(Parc<iceoryx2::config::Config>);
@@ -1050,7 +1050,7 @@ impl Defaults {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Default settings for the blackboard messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 pub struct Blackboard(Parc<iceoryx2::config::Config>);
@@ -1062,32 +1062,32 @@ impl Blackboard {
     }
 
     #[getter]
-    /// The maximum amount of supported `Reader`s
+    /// The maximum amount of supported `Reader` ports
     pub fn max_readers(&self) -> usize {
         self.0.lock().defaults.blackboard.max_readers
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Reader`s
+    /// Set the maximum amount of supported `Reader` ports
     pub fn set_max_readers(&self, value: usize) {
         self.0.lock().defaults.blackboard.max_readers = value
     }
 
     #[getter]
-    /// The maximum amount of supported `Node`s. Defines indirectly how many
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.blackboard.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node`s.
+    /// Set the maximum amount of supported `iceoryx2.Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.blackboard.max_nodes = value
     }
 }
 
-#[pyclass]
+#[pyclass(module = "iceoryx2.config")]
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the

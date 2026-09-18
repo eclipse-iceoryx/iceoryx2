@@ -54,7 +54,7 @@ pub(crate) enum PortFactoryRequestResponseType {
 }
 
 #[pyclass]
-/// The factory for `MessagingPattern::RequestResponse`. It can acquire dynamic and static service
+/// The factory for `MessagingPattern.RequestResponse`. It can acquire dynamic and static service
 /// information and create `Client` or `Server` ports.
 pub struct PortFactoryRequestResponse {
     pub(crate) value: Parc<PortFactoryRequestResponseType>,
@@ -114,7 +114,7 @@ impl PortFactoryRequestResponse {
     }
 
     #[getter]
-    /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
+    /// Returns a list of all `NodeState` of every `Node` which has opened the `Service`.
     pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
         match &*self.value.lock() {
             PortFactoryRequestResponseType::Ipc(v) => {
@@ -163,7 +163,7 @@ impl PortFactoryRequestResponse {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s connected to this service.
+    /// Removes the stale system resources of every dead `Node` connected to this service.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions or it
     /// is currently being cleaned up by another process then the `Node` is skipped.
@@ -174,7 +174,7 @@ impl PortFactoryRequestResponse {
         }
     }
 
-    /// Removes the stale system resources of all dead `Node`s connected to this service.
+    /// Removes the stale system resources of every dead `Node` connected to this service.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then the
     /// `Node` is skipped. If it is currently being cleaned up by another process then the

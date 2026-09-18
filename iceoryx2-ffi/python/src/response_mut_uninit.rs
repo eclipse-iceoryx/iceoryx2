@@ -41,14 +41,15 @@ pub(crate) enum ResponseMutUninitType {
 }
 
 #[pyclass]
-/// Acquired by a `ActiveRequest` with
-///  * `ActiveRequest::loan_uninit()`
+/// Acquired by an `ActiveRequest` with
+///  * `ActiveRequest.loan_uninit`,
+///  * `ActiveRequest.loan_slice_uninit`,
+///  * `ActiveRequest.loan_flatbuffer`
 ///
-/// It stores the payload of the response that will be sent to the corresponding
-/// `PendingResponse` of the `Client`.
-///
-/// If the `ResponseMutUninit` is not sent it will reelase the loaned memory when going out of
-/// scope.
+/// It stores the uninitialized payload of the response. It must be initialized and converted
+/// into a `ResponseMut` with `ResponseMutUninit.write_payload` or
+/// `ResponseMutUninit.assume_init` before it can be sent. Otherwise the loaned memory is
+/// released when going out of scope.
 pub struct ResponseMutUninit {
     pub(crate) value: Parc<ResponseMutUninitType>,
     pub(crate) response_payload_type_details: TypeStorage,
@@ -190,7 +191,8 @@ impl ResponseMutUninit {
     }
 
     #[getter]
-    /// Returns a pointer to the user header of the response.
+    /// Returns the address of the user header of the response as an `int`.
+    /// `ResponseMutUninit.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             ResponseMutUninitType::Ipc(Some(v)) => {
@@ -205,7 +207,8 @@ impl ResponseMutUninit {
     }
 
     #[getter]
-    /// Returns a pointer to the payload of the response.
+    /// Returns the address of the payload of the response as an `int`.
+    /// `ResponseMutUninit.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             ResponseMutUninitType::Ipc(Some(v)) => v.payload_mut().as_mut_ptr() as usize,

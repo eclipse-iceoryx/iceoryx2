@@ -87,7 +87,7 @@ impl Publisher {
 
     #[getter]
     /// Returns the strategy the `Publisher` follows when a `SampleMut` cannot be delivered
-    /// since the `Subscriber`s buffer is full.
+    /// since the `Subscriber`'s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         match &*self.value.lock() {
             PublisherType::Ipc(Some(v)) => v.backpressure_strategy().into(),
@@ -150,10 +150,10 @@ impl Publisher {
         }
     }
 
-    /// Explicitly updates all connections to the `Subscriber`s. This is
+    /// Explicitly updates the connection to every `Subscriber`. This is
     /// required to be called whenever a new `Subscriber` connected to
-    /// the service. It is done implicitly whenever `SampleMut::send()` or
-    /// `Publisher::send_copy()` is called. When a `Subscriber` is connected
+    /// the service. It is done implicitly whenever `SampleMut.send` or
+    /// `Publisher.send_copy` is called. When a `Subscriber` is connected
     /// that requires a history this call will deliver it.
     pub fn update_connections(&self) -> PyResult<()> {
         match &*self.value.lock() {

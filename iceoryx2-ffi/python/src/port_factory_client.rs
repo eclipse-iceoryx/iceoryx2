@@ -46,7 +46,7 @@ pub(crate) enum PortFactoryClientType {
 }
 
 #[pyclass]
-/// Factory to create a new `Client` port/endpoint for `MessagingPattern::RequestResponse`
+/// Factory to create a new `Client` port/endpoint for `MessagingPattern.RequestResponse`
 /// based communication.
 pub struct PortFactoryClient {
     factory: Parc<PortFactoryRequestResponseType>,
@@ -137,15 +137,15 @@ impl PortFactoryClient {
         self.response_header_type_details.clone().value
     }
 
-    /// Reduces the number of preallocated `RequestMut`s.
-    /// The return value is clamped between `1` and the worst case number of
-    /// preallocated `RequestMut`s required
-    /// to guarantee that the `Client` never runs out of `RequestMut`s to loan
+    /// Reduces the preallocated `RequestMut` count.
+    /// The return value is clamped between ``1`` and the worst case
+    /// preallocated `RequestMut` count required
+    /// to guarantee that the `Client` always has a `RequestMut` to loan
     /// and send.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated `RequestMut`s, iceoryx2 can
+    /// If the user reduces the preallocated `RequestMut` count, iceoryx2 can
     /// no longer guarantee, that the `Client` can always loan a `RequestMut`
     /// to send.
     pub fn override_request_preallocation(&self, value: usize) -> Self {
@@ -202,7 +202,7 @@ impl PortFactoryClient {
     }
 
     /// Sets the maximum slice length that a user can allocate with
-    /// `Client::loan_slice()` or `Client::loan_slice_uninit()`.
+    /// `Client.loan_slice` or `Client.loan_slice_uninit`.
     pub fn __initial_max_slice_len(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -220,8 +220,8 @@ impl PortFactoryClient {
     }
 
     /// Defines the allocation strategy that is used when the provided
-    /// `PortFactoryClient::initial_max_slice_len()` is exhausted. This happens when the user
-    /// acquires more than max slice len in `Client::loan_slice()` or `Client::loan_slice_uninit()`.
+    /// `PortFactoryClient.initial_max_slice_len` is exhausted. This happens when the user
+    /// acquires more than max slice len in `Client.loan_slice` or `Client.loan_slice_uninit`.
     pub fn __allocation_strategy(&self, value: &AllocationStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -238,7 +238,7 @@ impl PortFactoryClient {
         }
     }
 
-    /// Defines the maximal active requests the `Client` can send. Smallest possible value is `1`.
+    /// Defines the maximal active requests the `Client` can send. Smallest possible value is ``1``.
     pub fn max_active_requests(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {

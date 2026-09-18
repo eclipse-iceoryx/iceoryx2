@@ -72,7 +72,8 @@ impl Response {
     }
 
     #[getter]
-    /// Returns a pointer to the user header of the response.
+    /// Returns the address of the user header of the response as an `int`.
+    /// `Response.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &*self.value.lock() {
             ResponseType::Ipc(Some(v)) => (v.user_header() as *const CustomHeaderMarker) as usize,
@@ -83,7 +84,8 @@ impl Response {
     }
 
     #[getter]
-    /// Returns a pointer to the payload of the response.
+    /// Returns the address of the payload of the response as an `int`.
+    /// `Response.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &*self.value.lock() {
             ResponseType::Ipc(Some(v)) => v.payload().as_ptr() as usize,

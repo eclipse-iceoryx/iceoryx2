@@ -14,13 +14,13 @@ use pyo3::prelude::*;
 
 #[pyclass(eq, eq_int, skip_from_py_object)]
 #[derive(PartialEq, Clone, Debug)]
-/// States why the `WaitSet::wait_and_process()` method returned.
+/// States why the `WaitSet.wait_and_process` method returned.
 pub enum WaitSetRunResult {
-    /// A termination signal `SIGTERM` was received.
+    /// A termination signal `signal.SIGTERM` was received.
     TerminationRequest,
-    /// An interrupt signal `SIGINT` was received.
+    /// An interrupt signal `signal.SIGINT` was received.
     Interrupt,
-    /// The users callback returned `CallbackProgression::Stop`.
+    /// The users callback returned `CallbackProgression.Stop`.
     StopRequest,
     /// All events were handled.
     AllEventsHandled,

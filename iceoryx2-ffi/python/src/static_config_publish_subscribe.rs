@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::message_type_details::MessageTypeDetails;
 
 #[pyclass]
-/// The static configuration of an `MessagingPattern::PublishSubscribe` based `Service`. Contains
+/// The static configuration of an `MessagingPattern.PublishSubscribe` based `Service`. Contains
 /// all parameters that do not change during the lifetime of a `Service`.
 pub struct StaticConfigPublishSubscribe(
     pub(crate) iceoryx2::service::static_config::publish_subscribe::StaticConfig,
@@ -24,7 +24,8 @@ pub struct StaticConfigPublishSubscribe(
 #[pymethods]
 impl StaticConfigPublishSubscribe {
     #[getter]
-    /// Returns the maximum supported amount of `Node`s that can open the `Service` in parallel.
+    /// Returns the maximum supported amount of `Node` instances that can open the `Service`
+    /// in parallel.
     pub fn max_nodes(&self) -> usize {
         self.0.max_nodes()
     }

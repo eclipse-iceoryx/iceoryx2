@@ -34,7 +34,7 @@ pub(crate) enum PortFactoryListenerType {
 }
 
 #[pyclass]
-/// Factory to create a new `Listener` port/endpoint for `MessagingPattern::Event` based
+/// Factory to create a new `Listener` port/endpoint for `MessagingPattern.Event` based
 /// communication.
 pub struct PortFactoryListener {
     // required to hold since the PortFactoryListener has a reference to it and thanks to the

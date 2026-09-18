@@ -99,7 +99,7 @@ impl Server {
     }
 
     #[getter]
-    /// Returns true if the `Server` has `RequestMut`s in its buffer.
+    /// Returns true if the `Server` has a `RequestMut` in its buffer.
     pub fn has_requests(&self) -> PyResult<bool> {
         match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => Ok(v
@@ -125,7 +125,7 @@ impl Server {
     }
 
     /// Receives a `RequestMut` that was sent by a `Client` and returns an `ActiveRequest`
-    /// which can be used to respond. If no `RequestMut`s were received it returns `None`.
+    /// which can be used to respond. If no `RequestMut` was received it returns `None`.
     pub fn receive(&self) -> PyResult<Option<ActiveRequest>> {
         match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => Ok(v
@@ -169,7 +169,7 @@ impl Server {
 
     #[getter]
     /// Returns the strategy the `Server` follows when a `ResponseMut` cannot be delivered
-    /// if the `Client`s buffer is full.
+    /// if the `Client`'s buffer is full.
     pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         match &*self.value.lock() {
             ServerType::Ipc(Some(v)) => v.backpressure_strategy().into(),

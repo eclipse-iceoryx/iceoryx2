@@ -18,6 +18,8 @@ from typing import Any, Callable, Type, TypeVar
 from ._iceoryx2 import *
 from .type_name import get_type_name
 
+__all__ = ["BlackboardKey", "BlackboardValue"]
+
 K = TypeVar("K", bound=ctypes.Structure)
 V = TypeVar("V", bound=ctypes.Structure)
 
@@ -203,7 +205,7 @@ def get(self: EntryHandle) -> BlackboardValue:
 
 
 def is_up_to_date(self: EntryHandle, value: BlackboardValue) -> bool:
-    """Checks if `value` is up-to-date."""
+    """Checks if ``value`` is up-to-date."""
     return self.__is_up_to_date(value._generation_counter)
 
 

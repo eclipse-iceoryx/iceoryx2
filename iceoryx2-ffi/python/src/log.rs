@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use crate::log_level::LogLevel;
 
 #[pyfunction]
-/// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
+/// Sets the current log level. This is ignored for external frameworks like ``log`` or ``tracing``.
 /// Here you have to use the log-level settings of that framework.
 ///
 /// # Important
@@ -41,7 +41,7 @@ pub fn set_log_level_from_env_or(value: LogLevel) {
 }
 
 #[pyfunction]
-/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with `LogLevel.Info`
 ///
 /// # Important
 ///

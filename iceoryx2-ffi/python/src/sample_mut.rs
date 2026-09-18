@@ -41,12 +41,12 @@ pub(crate) enum SampleMutType {
 }
 
 #[pyclass]
-/// Acquired by a `Publisher` via
-///  * `Publisher::loan()`,
-///  * `Publisher::loan_slice()`
+/// Acquired by initializing a `SampleMutUninit` via
+///  * `SampleMutUninit.write_payload`,
+///  * `SampleMutUninit.assume_init`
 ///
 /// It stores the payload that will be sent
-/// to all connected `Subscriber`s. If the `SampleMut` is not sent
+/// to every connected `Subscriber`. If the `SampleMut` is not sent
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMut {
     pub(crate) value: Parc<SampleMutType>,
@@ -88,7 +88,8 @@ impl SampleMut {
     }
 
     #[getter]
-    /// Returns a pointer to the user header.
+    /// Returns the address of the user header as an `int`.
+    /// `SampleMut.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             SampleMutType::Ipc(Some(v)) => {
@@ -103,7 +104,8 @@ impl SampleMut {
     }
 
     #[getter]
-    /// Returns a pointer to the payload.
+    /// Returns the address of the payload as an `int`.
+    /// `SampleMut.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             SampleMutType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
@@ -127,10 +129,10 @@ impl SampleMut {
         }
     }
 
-    /// Send a previously loaned `Publisher::loan_uninit()` `SampleMut` to all connected
-    /// `Subscriber`s of the service.
+    /// Send a previously loaned `Publisher.loan_uninit` `SampleMut` to every connected
+    /// `Subscriber` of the service.
     ///
-    /// On success the number of `Subscriber`s that received
+    /// On success the number of `Subscriber` ports that received
     /// the data is returned, otherwise a `SendError` is emitted describing the failure.
     pub fn send(&self) -> PyResult<usize> {
         match &mut *self.value.lock() {

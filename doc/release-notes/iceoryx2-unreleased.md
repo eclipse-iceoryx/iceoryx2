@@ -31,6 +31,7 @@
 * [#1798](https://github.com/eclipse-iceoryx/iceoryx2/issues/1798) Add support for musl 1.2.x
 * [#1813](https://github.com/eclipse-iceoryx/iceoryx2/issues/1813) Add API to deliver events to specific listener only
 * [#1960](https://github.com/eclipse-iceoryx/iceoryx2/issues/1960) Key zenoh tunnel traffic by service description fingerprint so that hosts with differing descriptions of a service do not exchange samples
+* [#1989](https://github.com/eclipse-iceoryx/iceoryx2/issues/1989) Make the python `iceoryx2.config` submodule importable
 * [#1995](https://github.com/eclipse-iceoryx/iceoryx2/issues/1995) Add convenience functions to POSIX structs
 * [#1999](https://github.com/eclipse-iceoryx/iceoryx2/issues/1999) Reduce logger noise in discovery
 
@@ -346,6 +347,17 @@
         type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemId;
         type Bag = iceoryx2_cal::bag::recommended::Recommended;
     }
+    ```
+
+1. The python package `iceoryx2` no longer exports internal helper functions
+   not intended for direct use
+
+    ```python
+    # old
+    sample = iox2.loan_uninit(publisher)
+
+    # new
+    sample = publisher.loan_uninit()
     ```
 
 <!-- markdownlint-enable MD013 -->

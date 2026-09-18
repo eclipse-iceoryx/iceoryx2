@@ -22,6 +22,8 @@ from .flatbuffer import Flatbuffer
 from .slice import Slice
 from .type_name import get_type_name
 
+__all__: list[str] = []
+
 ReqT = TypeVar("ReqT", bound=ctypes.Structure)
 ResT = TypeVar("ResT", bound=ctypes.Structure)
 
@@ -160,7 +162,12 @@ def set_response_header(
 
 
 def request_payload(self: Any) -> Any:
-    """Returns a `ctypes.POINTER` to the requests payload."""
+    """
+    Returns the payload of the request.
+
+    It is a `Slice` when the payload type is a `Slice`, otherwise a `ctypes.POINTER` to the
+    payload type.
+    """
     assert self.__request_payload_type_details is not None
     if get_origin(self.__request_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__request_payload_type_details)
@@ -174,7 +181,12 @@ def request_payload(self: Any) -> Any:
 
 
 def response_payload(self: Any) -> Any:
-    """Returns a `ctypes.POINTER` to the responses payload."""
+    """
+    Returns the payload of the response.
+
+    It is a `Slice` when the payload type is a `Slice`, otherwise a `ctypes.POINTER` to the
+    payload type.
+    """
     assert self.__response_payload_type_details is not None
     if get_origin(self.__response_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__response_payload_type_details)
@@ -209,7 +221,11 @@ def response_header(self: Any) -> Any:
 
 
 def request_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
-    """Returns the serialized flatbuffer data as bytes."""
+    """
+    Returns the serialized flatbuffer data as bytes.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__request_payload_type_details is not None
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
 
@@ -224,7 +240,11 @@ def request_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
 
 
 def response_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
-    """Returns the serialized flatbuffer data as bytes."""
+    """
+    Returns the serialized flatbuffer data as bytes.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__response_payload_type_details is not None
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
@@ -239,7 +259,11 @@ def response_payload_bytes(self: Any) -> Slice[ctypes.c_uint8]:
 
 
 def request_payload_root(self: Any) -> Any:
-    """Returns the root of the flatbuffer."""
+    """
+    Returns the root of the flatbuffer.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__request_payload_type_details is not None
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
 
@@ -255,7 +279,11 @@ def request_payload_root(self: Any) -> Any:
 
 
 def response_payload_root(self: Any) -> Any:
-    """Returns the root of the flatbuffer."""
+    """
+    Returns the root of the flatbuffer.
+
+    Only available when the payload type is a `Flatbuffer`.
+    """
     assert self.__response_payload_type_details is not None
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
@@ -353,7 +381,7 @@ def loan_slice_uninit_response(
 
 
 def loan_flatbuffer_request(self: Client) -> RequestMutUninit:
-    """Loans/allocates a `RequestMutUninit` from the underlying data segment of the `Client` with an integrated `FlatbufferBuilder`."""
+    """Loans/allocates a `RequestMutUninit` from the underlying data segment of the `Client` with an integrated flatbuffer builder."""
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
@@ -365,8 +393,8 @@ def loan_flatbuffer_request(self: Client) -> RequestMutUninit:
     return self.__loan_slice_uninit(1)
 
 
-def loan_flatbuffer_response(self: Client) -> ResponseMutUninit:
-    """Loans/allocates a `ResponseMutUninit` from the underlying data segment of the `Client` with an integrated `FlatbufferBuilder`."""
+def loan_flatbuffer_response(self: ActiveRequest) -> ResponseMutUninit:
+    """Loans/allocates a `ResponseMutUninit` from the underlying data segment of the `Server` with an integrated flatbuffer builder."""
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
@@ -382,7 +410,7 @@ _request_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
 
 
 def flatbuffer_builder_request(self: RequestMutUninit) -> flatbuffers.Builder:
-    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
+    """Returns the flatbuffer builder to produce the data that shall be sent."""
     key = id(self)
     builder = _request_mut_uninit_dict.get(key)
     if builder is None:
@@ -395,7 +423,7 @@ _response_mut_uninit_dict: dict[int, flatbuffers.Builder] = {}
 
 
 def flatbuffer_builder_response(self: ResponseMutUninit) -> flatbuffers.Builder:
-    """Returns the flatbuffers.Builder to produce the data that shall be sent."""
+    """Returns the flatbuffer builder to produce the data that shall be sent."""
     key = id(self)
     builder = _response_mut_uninit_dict.get(key)
     if builder is None:

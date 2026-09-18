@@ -38,13 +38,13 @@ pub struct NodeDetails(pub(crate) iceoryx2::node::NodeDetails);
 #[pymethods]
 impl NodeDetails {
     #[getter]
-    /// Returns the executable `FileName` of the `Node`s owner process.
+    /// Returns the executable `FileName` of the `Node`'s owner process.
     pub fn executable(&self) -> FileName {
         FileName(*self.0.executable())
     }
 
     #[getter]
-    /// Returns the `ProcessId` of the `Node`s owner process.
+    /// Returns the process id of the `Node`'s owner process.
     pub fn process_id(&self) -> u32 {
         self.0.process_id().value() as _
     }
@@ -56,7 +56,7 @@ impl NodeDetails {
     }
 
     #[getter]
-    /// Returns a reference to the `Config` the `Node` uses.
+    /// Returns a reference to the `config.Config` the `Node` uses.
     pub fn config(&self) -> Config {
         Config(Parc::new(self.0.config().clone()))
     }
@@ -166,9 +166,9 @@ impl DeadNodeView {
 #[derive(Clone)]
 /// Describes the state of a `Node`.
 pub enum NodeState {
-    /// The `Node`s process is still alive.
+    /// The `Node`'s process is still alive.
     Alive(AliveNodeView),
-    /// The `Node`s process died without cleaning up the `Node`s resources. Another process has
+    /// The `Node`'s process died without cleaning up the `Node`'s resources. Another process has
     /// now the responsibility to cleanup all the stale resources.
     Dead(DeadNodeView),
     /// The process does not have sufficient permissions to identify the `Node` as dead or alive.

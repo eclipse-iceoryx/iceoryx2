@@ -37,7 +37,7 @@ pub(crate) enum SampleType {
 
 #[pyclass]
 /// It stores the payload and is acquired by the `Subscriber` whenever
-/// it receives new data from a `Publisher` via `Subscriber::receive()`.
+/// it receives new data from a `Publisher` via `Subscriber.receive`.
 pub struct Sample {
     pub(crate) value: Parc<SampleType>,
     pub payload_type_details: TypeStorage,
@@ -78,7 +78,8 @@ impl Sample {
     }
 
     #[getter]
-    /// Returns a pointer to the user header.
+    /// Returns the address of the user header as an `int`.
+    /// `Sample.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             SampleType::Ipc(Some(v)) => (v.user_header() as *const CustomHeaderMarker) as usize,
@@ -89,7 +90,8 @@ impl Sample {
     }
 
     #[getter]
-    /// Returns a pointer to the payload.
+    /// Returns the address of the payload as an `int`.
+    /// `Sample.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             SampleType::Ipc(Some(v)) => (v.payload().as_ptr()) as usize,

@@ -47,7 +47,7 @@ pub(crate) enum RequestMutUninitType {
 #[pyclass]
 /// A version of the `RequestMut` where the payload is not initialized which allows
 /// true zero copy usage. To send a `RequestMutUninit` it must be first initialized
-/// and converted into `RequestMut` with `RequestMutUninit::assume_init()`.
+/// and converted into `RequestMut` with `RequestMutUninit.assume_init`.
 pub struct RequestMutUninit {
     pub(crate) value: Parc<RequestMutUninitType>,
     pub(crate) request_payload_type_details: TypeStorage,
@@ -205,7 +205,8 @@ impl RequestMutUninit {
     }
 
     #[getter]
-    /// Returns a pointer to the user defined request header.
+    /// Returns the address of the user defined request header as an `int`.
+    /// `RequestMutUninit.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             RequestMutUninitType::Ipc(Some(v)) => {
@@ -220,7 +221,8 @@ impl RequestMutUninit {
     }
 
     #[getter]
-    /// Returns a pointer to the user defined request payload.
+    /// Returns the address of the user defined request payload as an `int`.
+    /// `RequestMutUninit.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             RequestMutUninitType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,

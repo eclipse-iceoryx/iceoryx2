@@ -36,7 +36,7 @@ impl PortName {
         iceoryx2::prelude::PortName::max_len()
     }
 
-    /// Converts the `PortName` into a `String`
+    /// Converts the `PortName` into a `str`
     pub fn as_str(&self) -> String {
         self.0.as_str().to_string()
     }

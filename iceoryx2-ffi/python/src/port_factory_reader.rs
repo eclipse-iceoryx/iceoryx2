@@ -38,7 +38,7 @@ pub(crate) enum PortFactoryReaderType {
 }
 
 #[pyclass]
-/// Factory to create a new `Reader` port/endpoint for `MessagingPattern::Blackboard`
+/// Factory to create a new `Reader` port/endpoint for `MessagingPattern.Blackboard`
 /// based communication.
 pub struct PortFactoryReader {
     factory: Parc<PortFactoryBlackboardType>,

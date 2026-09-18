@@ -23,13 +23,13 @@ pub struct AttributeSet(pub(crate) iceoryx2::service::attribute::AttributeSet);
 #[pymethods]
 impl AttributeSet {
     #[getter]
-    /// Returns the number of `Attribute`s stored inside the `AttributeSet`.
+    /// Returns the `Attribute` count of the `AttributeSet`.
     pub fn number_of_attributes(&self) -> usize {
         self.0.number_of_attributes()
     }
 
     #[staticmethod]
-    /// Returns the maximum number of `Attribute`s the `AttributeSet` can hold.
+    /// Returns the maximum `Attribute` count the `AttributeSet` can hold.
     pub fn capacity() -> usize {
         iceoryx2::service::attribute::AttributeSet::capacity()
     }
@@ -46,7 +46,7 @@ impl AttributeSet {
     }
 
     #[getter]
-    /// Returns all `Attribute`s stored in the `AttributeSet`
+    /// Returns every `Attribute` stored in the `AttributeSet`
     pub fn values(&self) -> Vec<Attribute> {
         let mut ret_val = vec![];
         for value in &*self.0 {
