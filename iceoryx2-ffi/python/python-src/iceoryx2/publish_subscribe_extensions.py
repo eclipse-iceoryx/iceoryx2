@@ -243,7 +243,7 @@ def initial_reserved_memory(
 
 
 def loan_flatbuffer(self: Publisher) -> SampleMutUninit:
-    """Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`  with an integrated flatbuffer builder."""
+    """Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher` with an integrated flatbuffer builder."""
     assert get_origin(self.__payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is

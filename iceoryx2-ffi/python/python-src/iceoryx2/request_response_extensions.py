@@ -365,8 +365,8 @@ def loan_flatbuffer_request(self: Client) -> RequestMutUninit:
     return self.__loan_slice_uninit(1)
 
 
-def loan_flatbuffer_response(self: Client) -> ResponseMutUninit:
-    """Loans/allocates a `ResponseMutUninit` from the underlying data segment of the `Client` with an integrated flatbuffer builder."""
+def loan_flatbuffer_response(self: ActiveRequest) -> ResponseMutUninit:
+    """Loans/allocates a `ResponseMutUninit` from the underlying data segment of the `Server` with an integrated flatbuffer builder."""
     assert get_origin(self.__response_payload_type_details) is Flatbuffer
 
     # Loaning a slice of 1 byte is exactly what we need here. The flatbuffer builder is
