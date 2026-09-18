@@ -169,22 +169,44 @@ pub mod carrier_propagation {
         let mut fixture = F::new();
 
         // === SETUP ===
-        // Two peers with the same channel open, peer B closes its end.
+        // Two peers open a channel for the same service.
         let mut a = fixture.carrier();
         let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
 
         let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
-        let channel_b = b.open_channel(&descriptor).expect("channel opens");
-        drop(channel_b);
+        let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
+        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
 
         // === SEND ===
-        // A frame sent while B was closed is not waiting when B reopens.
+        // A frame sent while the second peer has its channel open arrives.
         channel_a
             .send(frame(b"fra", b"me"))
             .expect("sending succeeds");
+        expect_frame(&mut channel_b, b"frame");
 
+        // === CLOSE ===
+        // The second peer closes its channel.
+        drop(channel_b);
+        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
+
+        // === SEND ===
+        // A frame sent while the channel is closed.
+        channel_a
+            .send(frame(b"sec", b"ond"))
+            .expect("sending succeeds");
+
+        // === REOPEN ===
+        // The second peer reopens its channel.
         let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
-        assert_that!(receive(&mut channel_b), is_none);
+        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
+
+        // === SEND ===
+        // The next frame the second peer receives is one sent after it
+        // reopened, the frame sent while it was closed is not received.
+        channel_a
+            .send(frame(b"thi", b"rd"))
+            .expect("sending succeeds");
+        expect_frame(&mut channel_b, b"third");
     }
 }
