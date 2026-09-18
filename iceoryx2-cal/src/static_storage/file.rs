@@ -279,6 +279,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
     fn list_cfg(config: &Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let msg = "Unable to list all storages";
         let origin = "static_storage::File::list_cfg()";
+
         let directory = match Directory::new(&config.path) {
             Ok(directory) => directory,
             Err(DirectoryOpenError::InsufficientPermissions) => {

@@ -545,6 +545,32 @@ impl Directory {
         let origin = "Directory::does_exist()";
         let msg = format!("Unable to determine if \"{path}\" does exist");
 
+        if unsafe { posix::access(path.as_c_str(), posix::F_OK) } == -1 {
+            match Errno::get() {
+                Errno::ENOENT => return Ok(false),
+                Errno::EACCES => {
+                    fail!(from origin, with MetadataFromPathError::InsufficientPermissions,
+                        "{msg} due to insufficient permissions.");
+                }
+                Errno::ELOOP => {
+                    fail!(from origin, with MetadataFromPathError::LoopInSymbolicLinks,
+                        "{msg} since there is a loop in the symbolic links.");
+                }
+                Errno::ENAMETOOLONG => {
+                    fail!(from origin, with MetadataFromPathError::MaxSupportedPathLengthExceeded,
+                        "{msg} since the path length is longer than the maximum supported path name length.");
+                }
+                Errno::ENOTDIR => {
+                    fail!(from origin, with MetadataFromPathError::PathPrefixIsNotADirectory,
+                        "{msg} since components of the path are not a directory.");
+                }
+                e => {
+                    fail!(from origin, with MetadataFromPathError::UnknownError(e as i32),
+                        "{msg} due to an unknown error. [{e:?}]");
+                }
+            }
+        }
+
         match Metadata::from_path(path) {
             Ok(v) => Ok(v.file_type() == FileType::Directory),
             Err(MetadataFromPathError::DoesNotExist) => Ok(false),

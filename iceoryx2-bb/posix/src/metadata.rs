@@ -34,6 +34,7 @@ enum_gen! { MetadataFromPathError
     PathPrefixIsNotADirectory,
     DataOverflowInStatStruct,
     LoopInSymbolicLinks,
+    MaxSupportedPathLengthExceeded,
     UnknownError(i32)
 }
 
@@ -70,6 +71,7 @@ impl Metadata {
                 Errno::ENOENT => (DoesNotExist, "{} since the path does not exist.", msg),
                 Errno::ENOTDIR => (PathPrefixIsNotADirectory, "{} since the path prefix is not a directory.", msg),
                 Errno::EOVERFLOW => (DataOverflowInStatStruct, "{} since certain properties like size would cause an overflow in the underlying stat struct.", msg),
+                Errno::ENAMETOOLONG => (MaxSupportedPathLengthExceeded, "{} since the path length is longer than the maximum path name length.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             );
         }
