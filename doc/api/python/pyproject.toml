@@ -26,4 +26,4 @@ poethepoet = { version = "~0.35.0", extras = ["poetry_plugin"]}
 poetry_command = ""
 
 [tool.poe.tasks.build-docs]
-shell = "sphinx-build -M html . target"
+shell = "sphinx-build -M html . target -W --keep-going"
