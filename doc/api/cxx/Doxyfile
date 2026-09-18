@@ -46,6 +46,7 @@ MACRO_EXPANSION                 = YES
 EXPAND_ONLY_PREDEF              = NO
 ENABLE_PREPROCESSING            = YES
 PREDEFINED                     += DOXYGEN_MACRO_FIX
+PREDEFINED                     += IOX2_FEATURE_FLATBUFFERS=1
 
 # Input Configuration
 INPUT                           = "../../../iceoryx2-cxx/include" \
