@@ -20,7 +20,7 @@ use crate::path::Path;
 use pyo3::prelude::*;
 
 #[pyclass(module = "iceoryx2.config")]
-/// All configurable settings of a `Node`.
+/// All configurable settings of a `iceoryx2.Node`.
 pub struct Node(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
@@ -103,7 +103,7 @@ impl Node {
 
     #[getter]
     /// When true, the `NodeBuilder` checks for dead nodes and
-    /// cleans up all their stale resources whenever a new `Node` is
+    /// cleans up all their stale resources whenever a new `iceoryx2.Node` is
     /// created.
     pub fn cleanup_dead_nodes_on_creation(&self) -> bool {
         self.0.lock().global.node.cleanup_dead_nodes_on_creation
@@ -117,7 +117,7 @@ impl Node {
 
     #[getter]
     /// When true, the `NodeBuilder` checks for dead nodes and
-    /// cleans up all their stale resources whenever an existing `Node` is
+    /// cleans up all their stale resources whenever an existing `iceoryx2.Node` is
     /// going out of scope.
     pub fn cleanup_dead_nodes_on_destruction(&self) -> bool {
         self.0.lock().global.node.cleanup_dead_nodes_on_destruction
@@ -131,7 +131,7 @@ impl Node {
 }
 
 #[pyclass(module = "iceoryx2.config")]
-/// All configurable settings of a `Service`.
+/// All configurable settings of a `iceoryx2.Service`.
 pub struct Service(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
@@ -281,14 +281,14 @@ impl PublishSubscribe {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node` instances. Defines indirectly how many
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.publish_subscribe.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node` instances.
+    /// Set the maximum amount of supported `iceoryx2.Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.publish_subscribe.max_nodes = value
     }
@@ -478,14 +478,14 @@ impl Event {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node` instances. Defines indirectly how many
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.event.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node` instances.
+    /// Set the maximum amount of supported `iceoryx2.Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.event.max_nodes = value
     }
@@ -635,7 +635,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Defines if the request buffer of the `Service` safely overflows.
+    /// Defines if the request buffer of the `iceoryx2.Service` safely overflows.
     pub fn enable_safe_overflow_for_requests(&self) -> bool {
         self.0
             .lock()
@@ -655,7 +655,7 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Defines if the response buffer of the `Service` safely overflows.
+    /// Defines if the response buffer of the `iceoryx2.Service` safely overflows.
     pub fn enable_safe_overflow_for_responses(&self) -> bool {
         self.0
             .lock()
@@ -743,14 +743,14 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node` instances. Defines
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.request_response.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node` instances. Defines
+    /// Set the maximum amount of supported `iceoryx2.Node` instances. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.request_response.max_nodes = value
@@ -1074,14 +1074,14 @@ impl Blackboard {
     }
 
     #[getter]
-    /// The maximum amount of supported `Node` instances. Defines indirectly how many
+    /// The maximum amount of supported `iceoryx2.Node` instances. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
         self.0.lock().defaults.blackboard.max_nodes
     }
 
     #[setter]
-    /// Set the maximum amount of supported `Node` instances.
+    /// Set the maximum amount of supported `iceoryx2.Node` instances.
     pub fn set_max_nodes(&self, value: usize) {
         self.0.lock().defaults.blackboard.max_nodes = value
     }
