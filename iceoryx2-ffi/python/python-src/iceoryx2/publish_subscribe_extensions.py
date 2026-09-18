@@ -67,7 +67,12 @@ def payload_root(self: Any) -> Any:
 
 
 def payload(self: Any) -> Any:
-    """Returns a `ctypes.POINTER` to the payload."""
+    """
+    Returns the payload.
+
+    It is a `Slice` when the payload type is a `Slice`, otherwise a `ctypes.POINTER` to the
+    payload type.
+    """
     assert self.__payload_type_details is not None
     if get_origin(self.__payload_type_details) is Slice:
         (contained_type,) = get_args(self.__payload_type_details)

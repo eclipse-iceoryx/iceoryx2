@@ -102,8 +102,9 @@ impl PendingResponse {
         }
     }
 
-    /// Returns a pointer to the user defined request header of the corresponding
-    /// `RequestMut`
+    /// Returns the address of the user defined request header of the corresponding
+    /// `RequestMut` as an `int`.
+    /// `PendingResponse.user_header` provides typed access.
     #[getter]
     pub fn user_header_ptr(&self) -> usize {
         match &*self.value.lock() {
@@ -118,8 +119,9 @@ impl PendingResponse {
         }
     }
 
-    /// Returns a pointer to the request payload of the corresponding
-    /// `RequestMut`
+    /// Returns the address of the request payload of the corresponding
+    /// `RequestMut` as an `int`.
+    /// `PendingResponse.payload` provides typed access.
     #[getter]
     pub fn payload_ptr(&self) -> usize {
         match &*self.value.lock() {

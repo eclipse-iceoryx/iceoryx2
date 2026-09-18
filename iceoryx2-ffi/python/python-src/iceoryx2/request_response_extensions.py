@@ -162,7 +162,12 @@ def set_response_header(
 
 
 def request_payload(self: Any) -> Any:
-    """Returns a `ctypes.POINTER` to the requests payload."""
+    """
+    Returns the payload of the request.
+
+    It is a `Slice` when the payload type is a `Slice`, otherwise a `ctypes.POINTER` to the
+    payload type.
+    """
     assert self.__request_payload_type_details is not None
     if get_origin(self.__request_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__request_payload_type_details)
@@ -176,7 +181,12 @@ def request_payload(self: Any) -> Any:
 
 
 def response_payload(self: Any) -> Any:
-    """Returns a `ctypes.POINTER` to the responses payload."""
+    """
+    Returns the payload of the response.
+
+    It is a `Slice` when the payload type is a `Slice`, otherwise a `ctypes.POINTER` to the
+    payload type.
+    """
     assert self.__response_payload_type_details is not None
     if get_origin(self.__response_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__response_payload_type_details)

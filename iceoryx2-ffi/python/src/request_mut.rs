@@ -96,7 +96,8 @@ impl RequestMut {
     }
 
     #[getter]
-    /// Returns a pointer to the user defined request header.
+    /// Returns the address of the user defined request header as an `int`.
+    /// `RequestMut.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             RequestMutType::Ipc(Some(v)) => {
@@ -112,7 +113,8 @@ impl RequestMut {
     }
 
     #[getter]
-    /// Returns a pointer to the user defined request payload.
+    /// Returns the address of the user defined request payload as an `int`.
+    /// `RequestMut.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             RequestMutType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,

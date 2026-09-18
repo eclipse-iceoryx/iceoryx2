@@ -88,7 +88,8 @@ impl SampleMut {
     }
 
     #[getter]
-    /// Returns a pointer to the user header.
+    /// Returns the address of the user header as an `int`.
+    /// `SampleMut.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             SampleMutType::Ipc(Some(v)) => {
@@ -103,7 +104,8 @@ impl SampleMut {
     }
 
     #[getter]
-    /// Returns a pointer to the payload.
+    /// Returns the address of the payload as an `int`.
+    /// `SampleMut.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &mut *self.value.lock() {
             SampleMutType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,

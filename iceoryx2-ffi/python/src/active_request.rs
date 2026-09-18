@@ -99,7 +99,8 @@ impl ActiveRequest {
     }
 
     #[getter]
-    /// Returns a pointer to the payload of the received `RequestMut`.
+    /// Returns the address of the payload of the received `RequestMut` as an `int`.
+    /// `ActiveRequest.payload` provides typed access.
     pub fn payload_ptr(&self) -> usize {
         match &*self.value.lock() {
             ActiveRequestType::Ipc(Some(v)) => v.payload().as_ptr() as usize,
@@ -110,7 +111,8 @@ impl ActiveRequest {
     }
 
     #[getter]
-    /// Returns a pointer to the user_header of the received `RequestMut`
+    /// Returns the address of the user_header of the received `RequestMut` as an `int`.
+    /// `ActiveRequest.user_header` provides typed access.
     pub fn user_header_ptr(&self) -> usize {
         match &*self.value.lock() {
             ActiveRequestType::Ipc(Some(v)) => {
