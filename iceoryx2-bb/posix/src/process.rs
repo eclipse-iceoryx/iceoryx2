@@ -139,7 +139,7 @@ unsafe impl Zeroable for UniqueProcessId {}
 unsafe impl PlainOldDataWithoutPadding for UniqueProcessId {}
 
 /// Represents a process id.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ProcessId(posix::pid_t);
 
 impl ProcessId {
@@ -161,7 +161,7 @@ impl Display for ProcessId {
 }
 
 /// Represent a process in a POSIX system.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Process {
     pid: ProcessId,
 }

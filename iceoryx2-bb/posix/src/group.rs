@@ -125,7 +125,7 @@ impl GroupExt for GroupName {
 
 /// Contains additional details of the [`Group`] that might be not available on every platform or
 /// on every platform configuration.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GroupDetails {
     name: GroupName,
     members: Vec<UserName>,
@@ -143,7 +143,7 @@ impl GroupDetails {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Gid {
     gid: u32,
 }
@@ -200,7 +200,7 @@ impl Display for Gid {
 }
 
 /// Represents a group in a POSIX system
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Group {
     gid: Gid,
     details: Option<GroupDetails>,

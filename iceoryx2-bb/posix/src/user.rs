@@ -112,7 +112,7 @@ impl UserExt for UserName {
 
 /// Contains additional details of the [`User`] that might be not available on every platform or
 /// on every platform configuration.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UserDetails {
     gid: Gid,
     name: UserName,
@@ -148,7 +148,7 @@ impl UserDetails {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Uid {
     uid: u32,
 }
@@ -204,7 +204,7 @@ impl Display for Uid {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Represents a user in a POSIX system
 pub struct User {
     uid: Uid,
