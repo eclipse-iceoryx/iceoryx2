@@ -191,13 +191,22 @@ pub mod carrier_propagation {
         assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
 
         // === SEND ===
-        // A frame sent while the channel was closed is not waiting when the
-        // second peer reopens it.
+        // A frame sent while the channel is closed.
         channel_a
             .send(frame(b"sec", b"ond"))
             .expect("sending succeeds");
 
+        // === REOPEN ===
+        // The second peer reopens its channel.
         let mut channel_b = b.open_channel(&descriptor).expect("channel opens");
-        assert_that!(receive(&mut channel_b), is_none);
+        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
+
+        // === SEND ===
+        // The next frame the second peer receives is one sent after it
+        // reopened, the frame sent while it was closed is not received.
+        channel_a
+            .send(frame(b"thi", b"rd"))
+            .expect("sending succeeds");
+        expect_frame(&mut channel_b, b"third");
     }
 }
