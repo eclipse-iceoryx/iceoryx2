@@ -20,26 +20,26 @@ keywords = [
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
 rust-version = "1.89"
-version = "0.10.0"
+version = "0.10.999"
 
 [workspace.dependencies]
-iceoryx2-integrations-zenoh-link-carrier = { version = "0.10.0", path = "link-carrier" }
-iceoryx2-integrations-zenoh-link-tunnel-cli = { version = "0.10.0", path = "link-tunnel-cli" }
+iceoryx2-integrations-zenoh-link-carrier = { version = "0.10.999", path = "link-carrier" }
+iceoryx2-integrations-zenoh-link-tunnel-cli = { version = "0.10.999", path = "link-tunnel-cli" }
 
-iceoryx2 = { version = "0.10.0", path = "../../iceoryx2/" }
-iceoryx2-cli = { version = "0.10.0", path = "../../iceoryx2-cli/" }
-iceoryx2-cal = { version = "0.10.0", path = "../../iceoryx2-cal/" }
-iceoryx2-log = { version = "0.10.0", path = "../../iceoryx2-log/log/" }
-iceoryx2-bb-concurrency = { version = "0.10.0", path = "../../iceoryx2-bb/concurrency/" }
-iceoryx2-bb-elementary = { version = "0.10.0", path = "../../iceoryx2-bb/elementary/" }
-iceoryx2-bb-posix = { version = "0.10.0", path = "../../iceoryx2-bb/posix/" }
-iceoryx2-bb-testing = { version = "0.10.0", path = "../../iceoryx2-bb/testing/" }
-iceoryx2-bb-testing-macros = { version = "0.10.0", path = "../../iceoryx2-bb/testing-macros/" }
-iceoryx2-link = { version = "0.10.0", path = "../../iceoryx2-link/link" }
-iceoryx2-link-backend = { version = "0.10.0", path = "../../iceoryx2-link/backend" }
-iceoryx2-link-carrier = { version = "0.10.0", path = "../../iceoryx2-link/carrier" }
-iceoryx2-link-tunnel = { version = "0.10.0", path = "../../iceoryx2-link/tunnel" }
-iceoryx2-link-conformance-tests = { version = "0.10.0", path = "../../iceoryx2-link/conformance-tests" }
+iceoryx2 = { version = "0.10.999", path = "../../iceoryx2/" }
+iceoryx2-cli = { version = "0.10.999", path = "../../iceoryx2-cli/" }
+iceoryx2-cal = { version = "0.10.999", path = "../../iceoryx2-cal/" }
+iceoryx2-log = { version = "0.10.999", path = "../../iceoryx2-log/log/" }
+iceoryx2-bb-concurrency = { version = "0.10.999", path = "../../iceoryx2-bb/concurrency/" }
+iceoryx2-bb-elementary = { version = "0.10.999", path = "../../iceoryx2-bb/elementary/" }
+iceoryx2-bb-posix = { version = "0.10.999", path = "../../iceoryx2-bb/posix/" }
+iceoryx2-bb-testing = { version = "0.10.999", path = "../../iceoryx2-bb/testing/" }
+iceoryx2-bb-testing-macros = { version = "0.10.999", path = "../../iceoryx2-bb/testing-macros/" }
+iceoryx2-link = { version = "0.10.999", path = "../../iceoryx2-link/link" }
+iceoryx2-link-backend = { version = "0.10.999", path = "../../iceoryx2-link/backend" }
+iceoryx2-link-carrier = { version = "0.10.999", path = "../../iceoryx2-link/carrier" }
+iceoryx2-link-tunnel = { version = "0.10.999", path = "../../iceoryx2-link/tunnel" }
+iceoryx2-link-conformance-tests = { version = "0.10.999", path = "../../iceoryx2-link/conformance-tests" }
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }
