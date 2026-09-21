@@ -108,7 +108,6 @@ mod tests {
 
     use crate::testing::{description, descriptor, peer};
     use iceoryx2_link_backend::wire::sample::LoanableSample;
-    use iceoryx2_link_carrier::Frame;
     use iceoryx2_link_carrier::{Channel, Offer};
 
     const FIRST_PEER: u8 = 1;
@@ -129,7 +128,7 @@ mod tests {
 
     impl Channel for NoChannel {
         type Error = core::fmt::Error;
-        fn send(&mut self, _: Frame<'_>) -> Result<(), Self::Error> {
+        fn send(&mut self, _: &[u8], _: &[u8]) -> Result<(), Self::Error> {
             Ok(())
         }
         fn receive<L: LoanableSample>(

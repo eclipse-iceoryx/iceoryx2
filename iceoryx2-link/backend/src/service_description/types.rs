@@ -27,15 +27,6 @@ pub enum ServiceTypes {
 }
 
 impl ServiceTypes {
-    /// The size of the user header a frame of the service starts with,
-    /// zero for a pattern without one.
-    pub fn user_header_size(&self) -> usize {
-        match self {
-            ServiceTypes::PublishSubscribe(types) => types.user_header.size,
-            ServiceTypes::Event => 0,
-        }
-    }
-
     /// The publish-subscribe types. Panics on another pattern, the caller
     /// is responsible for ensuring the correct variant is provided.
     pub fn publish_subscribe(&self) -> &SampleTypes {

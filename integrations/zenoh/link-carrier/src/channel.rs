@@ -13,10 +13,11 @@
 use std::sync::{Arc, OnceLock};
 
 use iceoryx2_link_backend::WakeHandle;
-use iceoryx2_link_backend::wire::sample::{LoanableSample, WriteError};
-use iceoryx2_link_carrier::{Channel, Frame, ReceiveError};
+use iceoryx2_link_backend::wire::sample::LoanableSample;
+use iceoryx2_link_carrier::{Channel, ReceiveError, populate};
 use iceoryx2_log::{fail, origin};
 use zenoh::Wait;
+use zenoh::bytes::ZBytes;
 use zenoh::key_expr::OwnedKeyExpr;
 use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::qos::Reliability;
@@ -100,12 +101,14 @@ impl ZenohChannel {
 impl Channel for ZenohChannel {
     type Error = Error;
 
-    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error> {
+    fn send(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Error> {
         let origin = origin!("ZenohChannel::send");
-        let bytes = frame.to_bytes();
+        let mut bytes = ZBytes::writer();
+        bytes.append(ZBytes::from(header));
+        bytes.append(ZBytes::from(payload));
         fail!(
             from origin,
-            when self.publisher.put(bytes).wait(),
+            when self.publisher.put(bytes.finish()).wait(),
             with Error::Put,
             "Failed to put a frame"
         );
@@ -122,15 +125,9 @@ impl Channel for ZenohChannel {
             return Ok(None);
         };
         let bytes = sample.payload().to_bytes();
-        let frame = fail!(
-            from origin,
-            when Frame::split(&bytes, self.header_size),
-            with ReceiveError::Rejected(WriteError::Malformed),
-            "Dropped a frame of {} bytes shorter than the header", bytes.len()
-        );
         let sample = fail!(
             from origin,
-            when frame.write_into(loanable),
+            when populate(self.header_size, &bytes, loanable),
             to ReceiveError<Error>,
             "Dropped a frame of {} bytes", bytes.len()
         );

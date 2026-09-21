@@ -22,7 +22,6 @@ use iceoryx2_link_backend::wire::sample::{LoanableSample, payload_bytes, user_he
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
-use iceoryx2_link_carrier::Frame;
 use iceoryx2_link_carrier::{Carrier, Channel};
 
 /// Creates relays over a carrier.
@@ -71,7 +70,7 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     }
 }
 
-/// Moves publish-subscribe samples over a carrier channel as [`Frame`]s.
+/// Moves publish-subscribe samples over a carrier channel.
 pub struct Relay<S: Service, C: Channel> {
     channel: C,
     types: SampleTypes,
@@ -85,15 +84,14 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
     fn send(&mut self, sample: &Sample<S>) -> Result<(), Self::SendError> {
         let origin = origin!("Relay::send");
 
-        let frame = Frame {
-            // SAFETY: the sample belongs to the service this relay was
-            // built for, whose description states the user header size.
-            header: unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) },
-            payload: payload_bytes(sample.payload()),
-        };
+        // SAFETY: the sample belongs to the service this relay was built
+        // for, whose description states the user header size.
+        let header =
+            unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) };
+        let payload = payload_bytes(sample.payload());
         fail!(
             from origin,
-            when self.channel.send(frame),
+            when self.channel.send(header, payload),
             to SendError<C::Error>,
             "Failed to send a frame"
         );

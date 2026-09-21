@@ -18,8 +18,8 @@
 //! * [`Carrier`] for the mechanism. It announces what this side offers,
 //!   an [`Announcement`] at a time, lists what the peers offer, an
 //!   [`Offer`] per service per peer, and opens a channel per service.
-//! * [`Channel`] for one service's stream of bytes on it, over which
-//!   [`Frame`]s cross to and from every peer with that channel open.
+//! * [`Channel`] to propagate the bytes of a single service to peers
+//!   that have the same channel open.
 //!
 //! Frames are opaque bytes. Channels may be one stream per service or
 //! every service multiplexed over one connection, as long as a frame
@@ -57,26 +57,24 @@
 //!     }
 //!
 //!     fn open_channel(&mut self, descriptor: &ServiceDescriptor) -> Result<MyChannel, MyError> {
-//!         // Join the peers sharing this descriptor's byte stream. Keep
-//!         // descriptor.types.user_header_size() to split frames on receive.
+//!         // Join the peers sharing this descriptor's byte stream.
 //!     }
 //! }
 //!
 //! impl Channel for MyChannel {
 //!     type Error = MyError;
 //!
-//!     fn send(&mut self, frame: Frame<'_>) -> Result<(), MyError> {
-//!         // Send the header bytes followed by the payload bytes to every
-//!         // other peer with the channel open.
+//!     fn send(&mut self, header: &[u8], payload: &[u8]) -> Result<(), MyError> {
+//!         // Send the provided header and the payload to other peers who have
+//!         // the channel open.
 //!     }
 //!
 //!     fn receive<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, ReceiveError<MyError>> {
-//!         // Loan `loanable` for the pending frame's payload length, write
-//!         // the payload and the header, and return the loaned sample.
-//!         // Return None if nothing is pending. If `loanable` refuses a
-//!         // length, drop the frame and return the refusal. A frame held
-//!         // as bytes is split at the user header size and written with
-//!         // Frame::write_into.
+//!         // Acquire a loan from the provided `loanable` and write bytes
+//!         // received from the channel directly into it.
+//!         //
+//!         // If the loan is refused, drop the frame and return the refusal.
+//!         // Return None if there is nothing pending on the channel.
 //!     }
 //! }
 //! ```
@@ -88,13 +86,11 @@ extern crate alloc;
 mod announcement;
 mod carrier;
 mod channel;
-mod frame;
 mod offer;
 mod peer_id;
 
 pub use announcement::Announcement;
 pub use carrier::Carrier;
-pub use channel::{Channel, ReceiveError};
-pub use frame::{Frame, Malformed};
+pub use channel::{Channel, ReceiveError, header_size, populate};
 pub use offer::Offer;
 pub use peer_id::PeerId;

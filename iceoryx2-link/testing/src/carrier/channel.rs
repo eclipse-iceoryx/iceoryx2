@@ -11,11 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::collections::VecDeque;
+use alloc::vec::Vec;
 
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
-use iceoryx2_link_backend::wire::sample::{LoanableSample, WriteError};
-use iceoryx2_link_carrier::{Channel, ReceiveError};
-use iceoryx2_link_carrier::{Frame, PeerId};
+use iceoryx2_link_backend::wire::sample::LoanableSample;
+use iceoryx2_link_carrier::PeerId;
+use iceoryx2_link_carrier::{Channel, ReceiveError, header_size, populate};
 use iceoryx2_log::{fail, origin};
 
 use crate::carrier::{Error, FakeBus};
@@ -33,7 +34,7 @@ impl FakeChannel {
     pub(super) fn new(peer: PeerId, descriptor: ServiceDescriptor, bus: FakeBus) -> Self {
         Self {
             peer,
-            header_size: descriptor.types.user_header_size(),
+            header_size: header_size(&descriptor),
             descriptor,
             bus,
         }
@@ -43,9 +44,11 @@ impl FakeChannel {
 impl Channel for FakeChannel {
     type Error = Error;
 
-    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error> {
-        let frame = frame.to_bytes();
-        self.bus.state.deliver(&self.descriptor, self.peer, frame);
+    fn send(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Error> {
+        let mut bytes = Vec::with_capacity(header.len() + payload.len());
+        bytes.extend_from_slice(header);
+        bytes.extend_from_slice(payload);
+        self.bus.state.deliver(&self.descriptor, self.peer, bytes);
         Ok(())
     }
 
@@ -66,15 +69,9 @@ impl Channel for FakeChannel {
         let Some(bytes) = bytes else {
             return Ok(None);
         };
-        let frame = fail!(
-            from origin,
-            when Frame::split(&bytes, self.header_size),
-            with ReceiveError::Rejected(WriteError::Malformed),
-            "Dropped a frame of {} bytes shorter than the header", bytes.len()
-        );
         let sample = fail!(
             from origin,
-            when frame.write_into(loanable),
+            when populate(self.header_size, &bytes, loanable),
             to ReceiveError<Error>,
             "Dropped a frame of {} bytes", bytes.len()
         );

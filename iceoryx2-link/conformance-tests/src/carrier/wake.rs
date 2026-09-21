@@ -20,7 +20,6 @@ pub mod carrier_wake {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_backend::Reactive;
-    use iceoryx2_link_carrier::Frame;
     use iceoryx2_link_carrier::{Announcement, Carrier, Channel};
 
     use crate::fixture::CarrierFixture;
@@ -86,12 +85,7 @@ pub mod carrier_wake {
 
         // === SEND ===
         // A frame from peer A wakes peer B.
-        channel_a
-            .send(Frame {
-                header: &[],
-                payload: b"frame",
-            })
-            .expect("sending succeeds");
+        channel_a.send(&[], b"frame").expect("sending succeeds");
 
         retry(
             || match source.woken() {

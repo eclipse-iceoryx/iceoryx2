@@ -20,7 +20,6 @@ pub mod carrier_propagation {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_backend::wire::sample::WriteError;
-    use iceoryx2_link_carrier::Frame;
     use iceoryx2_link_carrier::{Carrier, Channel, ReceiveError};
 
     use crate::fixture::CarrierFixture;
@@ -30,10 +29,6 @@ pub mod carrier_propagation {
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const PAYLOAD: &str = "u64";
-
-    fn frame<'a>(header: &'a [u8], payload: &'a [u8]) -> Frame<'a> {
-        Frame { header, payload }
-    }
 
     /// The next frame split into its header and payload.
     fn receive<C: Channel>(channel: &mut C) -> Option<TakenMessage> {
@@ -75,7 +70,7 @@ pub mod carrier_propagation {
         // === SEND ===
         // A frame from A arrives at B and C, and never at A itself.
         channel_a
-            .send(frame(NO_HEADER_BYTES, PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         expect_frame(&mut channel_b, NO_HEADER_BYTES, PAYLOAD_BYTES);
@@ -103,7 +98,7 @@ pub mod carrier_propagation {
         // === SEND ===
         // Peer A sends before peer B has the channel open.
         channel_a
-            .send(frame(NO_HEADER_BYTES, PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         // === OPEN LATE ===
@@ -137,7 +132,7 @@ pub mod carrier_propagation {
         // === SEND ===
         // Different descriptors are different channels.
         channel_a
-            .send(frame(NO_HEADER_BYTES, PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         assert_that!(receive(&mut channel_b), is_none);
@@ -165,10 +160,10 @@ pub mod carrier_propagation {
         // === SEND ===
         // Two frames from A arrive at B in the order they were sent.
         channel_a
-            .send(frame(NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES)
             .expect("sending succeeds");
         channel_a
-            .send(frame(NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         expect_frame(&mut channel_b, NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES);
@@ -198,7 +193,7 @@ pub mod carrier_propagation {
         // === SEND ===
         // A frame sent while the second peer has its channel open arrives.
         channel_a
-            .send(frame(NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES)
             .expect("sending succeeds");
         expect_frame(&mut channel_b, NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES);
 
@@ -210,7 +205,7 @@ pub mod carrier_propagation {
         // === SEND ===
         // A frame sent while the channel is closed.
         channel_a
-            .send(frame(NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         // === REOPEN ===
@@ -222,7 +217,7 @@ pub mod carrier_propagation {
         // The next frame the second peer receives is one sent after it
         // reopened, the frame sent while it was closed is not received.
         channel_a
-            .send(frame(NO_HEADER_BYTES, THIRD_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, THIRD_PAYLOAD_BYTES)
             .expect("sending succeeds");
         expect_frame(&mut channel_b, NO_HEADER_BYTES, THIRD_PAYLOAD_BYTES);
     }
@@ -247,7 +242,7 @@ pub mod carrier_propagation {
 
         // === SEND ===
         channel_a
-            .send(frame(HEADER_BYTES, PAYLOAD_BYTES))
+            .send(HEADER_BYTES, PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         expect_frame(&mut channel_b, HEADER_BYTES, PAYLOAD_BYTES);
@@ -275,10 +270,10 @@ pub mod carrier_propagation {
         // === SEND ===
         // Two frames from A.
         channel_a
-            .send(frame(NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES)
             .expect("sending succeeds");
         channel_a
-            .send(frame(NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES))
+            .send(NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES)
             .expect("sending succeeds");
 
         // === REFUSE ===

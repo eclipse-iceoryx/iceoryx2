@@ -17,7 +17,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_backend::{Reactive, WakeHandle};
-use iceoryx2_link_carrier::{Announcement, Carrier, Offer, PeerId};
+use iceoryx2_link_carrier::{Announcement, Carrier, Offer, PeerId, header_size};
 use iceoryx2_log::{error, fail, origin, trace};
 use zenoh::liveliness::LivelinessToken;
 use zenoh::query::Queryable;
@@ -210,7 +210,7 @@ impl Carrier for ZenohCarrier {
             &self.session,
             key,
             self.wake.clone(),
-            descriptor.types.user_header_size(),
+            header_size(descriptor),
         )
     }
 }

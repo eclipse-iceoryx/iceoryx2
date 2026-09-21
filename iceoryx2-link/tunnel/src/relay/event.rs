@@ -22,7 +22,6 @@ use iceoryx2_link_backend::wire::sample::{LoanError, LoanableSample, WritableSam
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
-use iceoryx2_link_carrier::Frame;
 use iceoryx2_link_carrier::{Carrier, Channel};
 
 pub struct Builder<'a, S: Service, C: Carrier> {
@@ -68,7 +67,7 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     }
 }
 
-/// Moves event ids over a carrier channel as [`Frame`]s without a header.
+/// Moves event ids over a carrier channel.
 pub struct Relay<S: Service, C: Channel> {
     channel: C,
     _service: PhantomData<S>,
@@ -81,13 +80,9 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
     fn send(&mut self, id: EventId) -> Result<(), Self::SendError> {
         let origin = origin!("Relay::send");
 
-        let frame = Frame {
-            header: &[],
-            payload: &encode(id),
-        };
         fail!(
             from origin,
-            when self.channel.send(frame),
+            when self.channel.send(&[], &encode(id)),
             to SendError<C::Error>,
             "Failed to send a frame"
         );
