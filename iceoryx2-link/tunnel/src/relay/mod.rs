@@ -21,6 +21,7 @@ use iceoryx2_link_backend::relay::RelayFactory;
 use iceoryx2_link_backend::service_description::{
     EventDescription, PublishSubscribeDescription, ServiceDescriptor,
 };
+use iceoryx2_link_backend::wire::sample::WriteError;
 
 use iceoryx2_link_carrier::Carrier;
 
@@ -133,5 +134,15 @@ impl<E: Error> Error for ReceiveError<E> {}
 impl<E> From<E> for ReceiveError<E> {
     fn from(error: E) -> Self {
         Self::Channel(error)
+    }
+}
+
+impl<E> ReceiveError<E> {
+    /// The error a refused region amounts to.
+    pub(crate) fn from_refusal(refusal: WriteError) -> Self {
+        match refusal {
+            WriteError::Exhausted => Self::Loan,
+            WriteError::Malformed => Self::Malformed,
+        }
     }
 }

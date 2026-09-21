@@ -77,12 +77,12 @@
 //!         // form and the wire form laid out as the middleware has them.
 //!     }
 //!
-//!     fn take<D: Destination>(&mut self, into: &mut D) -> Result<bool, TakeError<MyError>> {
-//!         // Write the pending message's payload in its wire form and its
-//!         // header in the middleware's header form. Ask `into` for each
-//!         // region by its length before writing it. Return true, or false
-//!         // if nothing is pending. If `into` refuses a length, drop the
-//!         // message and return the refusal.
+//!     fn take<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, TakeError<MyError>> {
+//!         // Loan `loanable` for the pending message's payload length, write
+//!         // the payload in its wire form and the header in the
+//!         // middleware's header form, and return the loaned sample. Return
+//!         // None if nothing is pending. If `loanable` refuses a length, drop
+//!         // the message and return the refusal.
 //!     }
 //! }
 //!
@@ -104,19 +104,19 @@
 extern crate alloc;
 
 mod adapter;
-mod destination;
 mod endpoints;
 pub mod mapping;
-mod region;
 pub mod translator;
 
 pub use adapter::Adapter;
-pub use destination::Destination;
 pub use endpoints::{
     EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints,
 };
+pub use iceoryx2_link_backend::wire::sample::{
+    LoanError, LoanableSample, WritableSample, WriteError,
+};
+pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;
-pub use region::{Region, ResizeError};
 pub use translator::{
     HeaderTranscoder, NoTranscoder, Passthrough, PayloadTranscoder, PublishSubscribeTranslation,
     SampleTranscoder, SampleTranscoders, SampleTranscodings, TranscodeError, Transcoding,

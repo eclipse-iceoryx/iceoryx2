@@ -12,50 +12,42 @@
 
 use alloc::vec::Vec;
 
-/// Why a region could not take a length.
+/// A region cannot be provided for the requested length.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ResizeError {
-    /// The region has one length and this is not it.
-    NotResizable,
-    /// No sample of this length can exist for the service.
-    Malformed,
-    /// The region could not be backed, no sample could be loaned.
-    Exhausted,
-}
+pub struct UnsupportedLength;
 
-impl core::fmt::Display for ResizeError {
+impl core::fmt::Display for UnsupportedLength {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ResizeError::{self:?}")
+        write!(f, "UnsupportedLength")
     }
 }
 
-impl core::error::Error for ResizeError {}
+impl core::error::Error for UnsupportedLength {}
 
 /// A writable byte region whose length is set by its writer.
 pub trait Region {
-    /// The region at exactly `len` bytes.
-    fn for_length(&mut self, len: usize) -> Result<&mut [u8], ResizeError>;
+    /// Resize the region for `len` bytes.
+    fn for_length(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength>;
 }
 
 impl<R: Region + ?Sized> Region for &mut R {
-    fn for_length(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+    fn for_length(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
         (**self).for_length(len)
     }
 }
 
 impl Region for Vec<u8> {
-    fn for_length(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+    fn for_length(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
         self.resize(len, 0);
         Ok(self)
     }
 }
 
-/// A region of one length.
 impl Region for [u8] {
-    fn for_length(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+    fn for_length(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
         match len == self.len() {
             true => Ok(self),
-            false => Err(ResizeError::NotResizable),
+            false => Err(UnsupportedLength),
         }
     }
 }

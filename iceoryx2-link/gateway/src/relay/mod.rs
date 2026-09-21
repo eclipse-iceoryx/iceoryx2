@@ -20,7 +20,7 @@ use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRe
 use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
 
 use iceoryx2_link_adapter::{Adapter, EndpointDescription};
-use iceoryx2_link_adapter::{Mapping, ResizeError};
+use iceoryx2_link_adapter::{Mapping, UnsupportedLength, WriteError};
 use iceoryx2_link_adapter::{TranscodeError, Translator};
 
 pub struct Factory<'a, S, A, M: Mapping, T: Translator> {
@@ -123,12 +123,18 @@ pub enum ReceiveError {
     Loan,
 }
 
-impl From<ResizeError> for ReceiveError {
-    fn from(refusal: ResizeError) -> Self {
+impl From<WriteError> for ReceiveError {
+    fn from(refusal: WriteError) -> Self {
         match refusal {
-            ResizeError::NotResizable | ResizeError::Malformed => ReceiveError::Malformed,
-            ResizeError::Exhausted => ReceiveError::Loan,
+            WriteError::Malformed => ReceiveError::Malformed,
+            WriteError::Exhausted => ReceiveError::Loan,
         }
+    }
+}
+
+impl From<UnsupportedLength> for ReceiveError {
+    fn from(refusal: UnsupportedLength) -> Self {
+        WriteError::from(refusal).into()
     }
 }
 

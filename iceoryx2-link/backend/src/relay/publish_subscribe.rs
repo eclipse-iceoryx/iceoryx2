@@ -14,7 +14,8 @@ use core::error::Error;
 
 use iceoryx2::service::Service;
 
-use crate::wire::publish_subscribe::{LoanFn, Sample, SampleMut};
+use crate::wire::publish_subscribe::Sample;
+use crate::wire::sample::LoanableSample;
 
 /// Relays publish-subscribe payloads over the backend.
 pub trait PublishSubscribeRelay<S: Service> {
@@ -25,10 +26,10 @@ pub trait PublishSubscribeRelay<S: Service> {
     /// side.
     fn send(&mut self, sample: &Sample<S>) -> Result<(), Self::SendError>;
 
-    /// Receives one sample from the opposing side into a loan from the
-    /// local publisher, or `None` if nothing is pending.
-    fn receive<LoanError>(
+    /// Receives one sample from the opposing side into `loanable`, or `None`
+    /// if nothing is pending.
+    fn receive<L: LoanableSample>(
         &mut self,
-        loan: &mut LoanFn<'_, S, LoanError>,
-    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError>;
+        loanable: L,
+    ) -> Result<Option<L::Sample>, Self::ReceiveError>;
 }

@@ -21,8 +21,7 @@ pub use settings::{
     EventSettings, Identified, PatternSettings, PublishSubscribeSettings, ServiceSettings,
 };
 pub use types::{
-    InvalidSampleLayout, InvalidTypeDescription, PublishSubscribeTypes, ServiceTypes,
-    TypeDescription,
+    InvalidSampleLayout, InvalidTypeDescription, SampleTypes, ServiceTypes, TypeDescription,
 };
 
 use iceoryx2::config::Config;
@@ -46,7 +45,7 @@ impl ServiceDescription {
     pub fn compose_publish_subscribe<S: Service>(
         name: ServiceName,
         settings: PublishSubscribeSettings,
-        types: PublishSubscribeTypes,
+        types: SampleTypes,
     ) -> Self {
         Self::hashed::<S>(
             ServiceSettings::new(name, PatternSettings::PublishSubscribe(settings)),
@@ -144,7 +143,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                         subscriber_max_borrowed_samples: config.subscriber_max_borrowed_samples(),
                         safe_overflow: config.has_safe_overflow(),
                     }),
-                    ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+                    ServiceTypes::PublishSubscribe(SampleTypes {
                         payload: (&types.payload).into(),
                         user_header: (&types.user_header).into(),
                     }),
@@ -249,7 +248,7 @@ mod tests {
         );
         assert_that!(
             sut.types,
-            eq ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+            eq ServiceTypes::PublishSubscribe(SampleTypes {
                 payload: (&TypeDetail::new::<u64>(TypeVariant::FixedSize)).into(),
                 user_header: (&TypeDetail::new::<()>(TypeVariant::FixedSize)).into(),
             })

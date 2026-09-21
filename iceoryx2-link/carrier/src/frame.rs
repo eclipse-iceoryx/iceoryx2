@@ -12,8 +12,8 @@
 
 use alloc::vec::Vec;
 
-use iceoryx2_link_backend::service_description::PublishSubscribeTypes;
-use iceoryx2_link_backend::wire::publish_subscribe::fits;
+use iceoryx2_link_backend::service_description::SampleTypes;
+use iceoryx2_link_backend::wire::sample::{LoanableSample, WritableSample, WriteError, fits};
 use iceoryx2_log::{fail, origin};
 
 /// A publish-subscribe sample as it crosses a channel, the user header
@@ -32,7 +32,7 @@ impl<'a> Frame<'a> {
 
     /// The frame in `bytes`, malformed if header or payload do not fit
     /// the types.
-    pub fn parse(bytes: &'a [u8], types: &PublishSubscribeTypes) -> Result<Self, Malformed> {
+    pub fn parse(bytes: &'a [u8], types: &SampleTypes) -> Result<Self, Malformed> {
         let origin = origin!("Frame::parse");
         let header_size = types.user_header.size;
         if bytes.len() < header_size {
@@ -51,6 +51,26 @@ impl<'a> Frame<'a> {
             );
         }
         Ok(Self { header, payload })
+    }
+
+    /// Loans `into` for the payload and writes the frame into it.
+    pub fn write_into<L: LoanableSample>(&self, into: L) -> Result<L::Sample, WriteError> {
+        let origin = origin!("Frame::write_into");
+        let mut loaned = fail!(
+            from origin,
+            when into.loan(self.payload.len()),
+            to WriteError,
+            "A payload of {} bytes was refused", self.payload.len()
+        );
+        loaned.payload().copy_from_slice(self.payload);
+        let header = fail!(
+            from origin,
+            when loaned.header(self.header.len()),
+            to WriteError,
+            "A header of {} bytes was refused", self.header.len()
+        );
+        header.copy_from_slice(self.header);
+        Ok(loaned)
     }
 }
 
@@ -73,7 +93,7 @@ mod tests {
     use alloc::string::String;
     use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_backend::service_description::{PublishSubscribeTypes, TypeDescription};
+    use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 
     const HEADER_SIZE: usize = 2;
     const PAYLOAD_SIZE: usize = 3;
@@ -81,8 +101,8 @@ mod tests {
     const ALIGNMENT: usize = 1;
     const BYTES: [u8; 6] = [1, 2, 3, 4, 5, 6];
 
-    fn types(variant: TypeVariant, payload_size: usize) -> PublishSubscribeTypes {
-        PublishSubscribeTypes {
+    fn types(variant: TypeVariant, payload_size: usize) -> SampleTypes {
+        SampleTypes {
             payload: TypeDescription {
                 variant,
                 type_name: String::from("payload"),

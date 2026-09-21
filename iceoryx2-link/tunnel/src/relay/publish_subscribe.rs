@@ -15,11 +15,10 @@ use core::marker::PhantomData;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescriptor,
+    PublishSubscribeDescription, SampleTypes, ServiceDescriptor,
 };
-use iceoryx2_link_backend::wire::publish_subscribe::{
-    LoanFn, Sample, SampleMut, initialize_sample, payload_bytes, user_header_bytes,
-};
+use iceoryx2_link_backend::wire::publish_subscribe::Sample;
+use iceoryx2_link_backend::wire::sample::{LoanableSample, payload_bytes, user_header_bytes};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
@@ -75,7 +74,7 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
 /// Moves publish-subscribe samples over a carrier channel as [`Frame`]s.
 pub struct Relay<S: Service, C: Channel> {
     channel: C,
-    types: PublishSubscribeTypes,
+    types: SampleTypes,
     _service: PhantomData<S>,
 }
 
@@ -102,10 +101,10 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
         Ok(())
     }
 
-    fn receive<LoanError>(
+    fn receive<L: LoanableSample>(
         &mut self,
-        loan: &mut LoanFn<'_, S, LoanError>,
-    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
+        into: L,
+    ) -> Result<Option<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
         let received = fail!(
             from origin,
@@ -116,15 +115,16 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
                     with ReceiveError::Malformed,
                     "Received a frame that does not fit the service"
                 );
-                let sample = fail!(
-                    from origin,
-                    when loan(frame.payload.len()),
-                    with ReceiveError::Loan,
-                    "Failed to loan a sample for a received frame"
-                );
-                // SAFETY: the frame was checked against the description and
-                // the sample was loaned for the payload's size.
-                Ok(unsafe { initialize_sample(sample, frame.header, frame.payload) })
+                match frame.write_into(into) {
+                    Ok(loaned) => Ok(loaned),
+                    Err(refusal) => {
+                        fail!(
+                            from origin,
+                            with ReceiveError::from_refusal(refusal),
+                            "Failed to write a frame into the sample"
+                        );
+                    }
+                }
             }),
             to ReceiveError<C::Error>,
             "Failed to receive a frame"

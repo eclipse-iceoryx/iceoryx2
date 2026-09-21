@@ -12,13 +12,13 @@
 
 use core::error::Error;
 
-use crate::{Destination, ResizeError};
+use crate::{LoanError, LoanableSample, UnsupportedLength, WriteError};
 
 /// Why a take ended without a message written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TakeError<Failure> {
-    /// The destination refused the message, which is dropped.
-    Rejected(ResizeError),
+    /// The sample refused the message, which is dropped.
+    Rejected(WriteError),
     /// The endpoints failed.
     Failed(Failure),
 }
@@ -34,6 +34,18 @@ impl<Failure: core::fmt::Display> core::fmt::Display for TakeError<Failure> {
 
 impl<Failure: Error> Error for TakeError<Failure> {}
 
+impl<Failure> From<UnsupportedLength> for TakeError<Failure> {
+    fn from(refusal: UnsupportedLength) -> Self {
+        Self::Rejected(refusal.into())
+    }
+}
+
+impl<Failure> From<LoanError> for TakeError<Failure> {
+    fn from(refusal: LoanError) -> Self {
+        Self::Rejected(refusal.into())
+    }
+}
+
 /// The gateway's publisher and subscription on the middleware.
 pub trait PublishSubscribeEndpoints {
     type Failure: Error;
@@ -42,13 +54,16 @@ pub trait PublishSubscribeEndpoints {
     /// `payload` in its wire form.
     fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Failure>;
 
-    /// Takes the pending message if any, into `into`.
+    /// Takes the pending message if any, into `loanable`.
     ///
     /// The payload is written in the wire form and the header as the
     /// middleware's header form.
     ///
-    /// Returns whether a message was taken.
-    /// A message `into` refuses is taken and dropped, and the refusal
+    /// Returns the written sample, or `None` if nothing was pending.
+    /// A message `loanable` refuses is taken and dropped, and the refusal
     /// returned.
-    fn take<D: Destination>(&mut self, into: &mut D) -> Result<bool, TakeError<Self::Failure>>;
+    fn take<L: LoanableSample>(
+        &mut self,
+        loanable: L,
+    ) -> Result<Option<L::Sample>, TakeError<Self::Failure>>;
 }

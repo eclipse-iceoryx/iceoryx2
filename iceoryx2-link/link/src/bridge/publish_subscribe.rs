@@ -77,7 +77,7 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
 
         let ingested = fail!(
             from origin,
-            when self.ports.send(|loan| self.relay.receive(loan)),
+            when self.ports.send(|unloaned| self.relay.receive(unloaned)),
             with BridgeError::Ingestion,
             "Failed to ingest samples from the opposing side"
         );

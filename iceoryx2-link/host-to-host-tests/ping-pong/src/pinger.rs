@@ -139,6 +139,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         );
     }
 
+    // SAFETY: the user header and the payload were both populated above.
     let ping_sample = unsafe { ping_sample.assume_init() };
     ping_sample.send()?;
     ping_notifier.notify()?;

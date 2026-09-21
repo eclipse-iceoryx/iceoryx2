@@ -14,7 +14,7 @@ use iceoryx2::port::event_id::EventId;
 use iceoryx2_link_backend::Never;
 
 use super::{EventEndpoints, PublishSubscribeEndpoints, TakeError};
-use crate::Destination;
+use crate::LoanableSample;
 
 /// The endpoints of a pattern the middleware does not have.
 pub struct UnsupportedEndpoints(Never);
@@ -26,7 +26,10 @@ impl PublishSubscribeEndpoints for UnsupportedEndpoints {
         match self.0 {}
     }
 
-    fn take<D: Destination>(&mut self, _: &mut D) -> Result<bool, TakeError<Self::Failure>> {
+    fn take<L: LoanableSample>(
+        &mut self,
+        _: L,
+    ) -> Result<Option<L::Sample>, TakeError<Self::Failure>> {
         match self.0 {}
     }
 }

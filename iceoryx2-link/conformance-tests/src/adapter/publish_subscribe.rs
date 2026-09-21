@@ -32,11 +32,10 @@ pub mod adapter_publish_subscribe {
     /// Takes the pending message of endpoints whose messages have no
     /// header, as the suites' remote endpoints send them.
     fn take<E: PublishSubscribeEndpoints>(endpoints: &mut E) -> Option<Vec<u8>> {
-        let mut taken = Taken::default();
         endpoints
-            .take(&mut taken)
+            .take(Taken)
             .expect("taking succeeds")
-            .then_some(taken.payload)
+            .map(|taken| taken.payload)
     }
 
     #[conformance_test]

@@ -15,12 +15,10 @@ use alloc::string::String;
 use core::convert::Infallible;
 
 use iceoryx2_link_adapter::{
-    HeaderTranscoder, PayloadTranscoder, PublishSubscribeTranslation, Region, SampleTranscoders,
-    SampleTranscodings, TranscodeError, Translator,
+    HeaderTranscoder, LoanableSample, PayloadTranscoder, PublishSubscribeTranslation, Region,
+    SampleTranscoders, SampleTranscodings, TranscodeError, Translator, WritableSample,
 };
-use iceoryx2_link_backend::service_description::{
-    PublishSubscribeTypes, ServiceTypes, TypeDescription,
-};
+use iceoryx2_link_backend::service_description::{SampleTypes, ServiceTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
 use crate::adapter::FakeEndpointTypes;
@@ -70,12 +68,10 @@ impl Translator for FakeSwapTranslator {
 
 fn map_types(types: &ServiceTypes, name: fn(&str) -> String) -> ServiceTypes {
     match types {
-        ServiceTypes::PublishSubscribe(types) => {
-            ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
-                payload: map_type(&types.payload, name),
-                user_header: map_type(&types.user_header, name),
-            })
-        }
+        ServiceTypes::PublishSubscribe(types) => ServiceTypes::PublishSubscribe(SampleTypes {
+            payload: map_type(&types.payload, name),
+            user_header: map_type(&types.user_header, name),
+        }),
         ServiceTypes::Event => ServiceTypes::Event,
     }
 }
@@ -115,17 +111,21 @@ fn swap_words<R: Region>(bytes: &[u8], into: &mut R) -> Result<(), TranscodeErro
         Err(refusal) => {
             fail!(
                 from origin,
-                with TranscodeError::Rejected(refusal),
+                with TranscodeError::from(refusal),
                 "The region rejected the {} bytes to swap", bytes.len()
             );
         }
     };
+    swap_words_into(bytes, into);
+    Ok(())
+}
+
+fn swap_words_into(bytes: &[u8], into: &mut [u8]) {
     for (to, from) in into.chunks_mut(WORD).zip(bytes.chunks(WORD)) {
         for (to, from) in to.iter_mut().zip(from.iter().rev()) {
             *to = *from;
         }
     }
-    Ok(())
 }
 
 impl HeaderTranscoder for SwapHeader {
@@ -139,12 +139,25 @@ impl HeaderTranscoder for SwapHeader {
         swap_words(header, into)
     }
 
-    fn decode<R: Region>(
+    fn decode<W: WritableSample>(
         &self,
         wire: &[u8],
-        into: &mut R,
+        writable: &mut W,
     ) -> Result<(), TranscodeError<Self::Failure>> {
-        swap_words(wire, into)
+        let origin = origin!("SwapHeader::decode");
+
+        let into = match writable.header(wire.len()) {
+            Ok(into) => into,
+            Err(refusal) => {
+                fail!(
+                    from origin,
+                    with TranscodeError::from(refusal),
+                    "The sample rejected a header of {} bytes to swap", wire.len()
+                );
+            }
+        };
+        swap_words_into(wire, into);
+        Ok(())
     }
 }
 
@@ -159,12 +172,25 @@ impl PayloadTranscoder for SwapPayload {
         swap_words(payload, into)
     }
 
-    fn decode<R: Region>(
+    fn decode<L: LoanableSample>(
         &self,
         wire: &[u8],
-        into: &mut R,
-    ) -> Result<(), TranscodeError<Self::Failure>> {
-        swap_words(wire, into)
+        loanable: L,
+    ) -> Result<L::Sample, TranscodeError<Self::Failure>> {
+        let origin = origin!("SwapPayload::decode");
+
+        let mut writable = match loanable.loan(wire.len()) {
+            Ok(writable) => writable,
+            Err(refusal) => {
+                fail!(
+                    from origin,
+                    with TranscodeError::from(refusal),
+                    "The sample rejected the {} bytes to swap", wire.len()
+                );
+            }
+        };
+        swap_words_into(wire, writable.payload());
+        Ok(writable)
     }
 }
 
@@ -183,6 +209,7 @@ mod tests {
 
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_link_adapter::{LoanError, UnsupportedLength};
 
     const VALUE: u64 = 0x0102_0304_0506_0708;
 
@@ -194,11 +221,11 @@ mod tests {
             .expect("encoding succeeds");
         assert_that!(wire, eq swapped_bytes(VALUE).to_vec());
 
-        let mut local = Vec::new();
+        let mut local = Buffers::default();
         SwapHeader
             .decode(&wire, &mut local)
             .expect("decoding succeeds");
-        assert_that!(local, eq VALUE.to_ne_bytes().to_vec());
+        assert_that!(local.header, eq VALUE.to_ne_bytes().to_vec());
     }
 
     #[test]
@@ -209,17 +236,47 @@ mod tests {
             .expect("encoding succeeds");
         assert_that!(wire, eq swapped_bytes(VALUE).to_vec());
 
-        let mut local = Vec::new();
-        SwapPayload
-            .decode(&wire, &mut local)
+        let local = SwapPayload
+            .decode(&wire, Buffer)
             .expect("decoding succeeds");
-        assert_that!(local, eq VALUE.to_ne_bytes().to_vec());
+        assert_that!(local.payload, eq VALUE.to_ne_bytes().to_vec());
+    }
+
+    /// Buffers for a sample before its payload has a length.
+    struct Buffer;
+
+    impl LoanableSample for Buffer {
+        type Sample = Buffers;
+
+        fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+            Ok(Buffers {
+                header: Vec::new(),
+                payload: alloc::vec![0; payload_len],
+            })
+        }
+    }
+
+    /// Buffers for a loaned sample, the header sized by its writer.
+    #[derive(Default)]
+    struct Buffers {
+        header: Vec<u8>,
+        payload: Vec<u8>,
+    }
+
+    impl WritableSample for Buffers {
+        fn payload(&mut self) -> &mut [u8] {
+            &mut self.payload
+        }
+
+        fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
+            self.header.for_length(len)
+        }
     }
 
     #[test]
     fn the_type_names_round_trip() {
         let description = TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize));
-        let local = ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+        let local = ServiceTypes::PublishSubscribe(SampleTypes {
             payload: description.clone(),
             user_header: description,
         });

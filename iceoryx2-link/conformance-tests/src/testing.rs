@@ -34,10 +34,10 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
-use iceoryx2_link_adapter::{Destination, Region, ResizeError};
+use iceoryx2_link_adapter::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
-    ServiceTypes, TypeDescription,
+    PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
+    TypeDescription,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 
@@ -81,7 +81,7 @@ pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
     ServiceDescription::compose_publish_subscribe::<S>(
         *name,
         PublishSubscribeSettings::from_config(config),
-        PublishSubscribeTypes {
+        SampleTypes {
             payload: TypeDescription::from(&Payload::type_detail()),
             user_header: TypeDescription::from(&TypeDetail::new::<Header>(TypeVariant::FixedSize)),
         },
@@ -110,7 +110,7 @@ pub fn descriptor(name: &str, payload: &str) -> ServiceDescriptor {
 /// The types of a publish-subscribe service with `payload` as its
 /// payload type and no user header.
 pub fn types_of(payload: &str) -> ServiceTypes {
-    ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+    ServiceTypes::PublishSubscribe(SampleTypes {
         payload: TypeDescription {
             variant: TypeVariant::FixedSize,
             type_name: String::from(payload),
@@ -266,20 +266,32 @@ impl Default for WakeSource {
     }
 }
 
-/// A taken message held in memory, a destination for what endpoints
-/// writes.
-#[derive(Debug, Default)]
-pub struct Taken {
+/// A take into plain buffers, before its payload has a length.
+pub struct Taken;
+
+impl LoanableSample for Taken {
+    type Sample = TakenMessage;
+
+    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+        Ok(TakenMessage {
+            header: Vec::new(),
+            payload: vec![0; payload_len],
+        })
+    }
+}
+
+/// The buffers a take wrote.
+pub struct TakenMessage {
     pub header: Vec<u8>,
     pub payload: Vec<u8>,
 }
 
-impl Destination for Taken {
-    fn payload(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
-        self.payload.for_length(len)
+impl WritableSample for TakenMessage {
+    fn payload(&mut self) -> &mut [u8] {
+        &mut self.payload
     }
 
-    fn header(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
         self.header.for_length(len)
     }
 }
