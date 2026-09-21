@@ -478,7 +478,7 @@ export QNX_TOOLCHAIN="$HOME/qnx710"
 source $QNX_TOOLCHAIN/qnxsdp-env.sh
 
 export RUST_TOOLCHAIN="qnx710"
-cargo +${RUST_TOOLCHAIN} build --release --target x86_64-pc-nto-qnx710 --package benchmark-publish-subscribe --package benchmark-event --package benchmark-request-response --package benchmark-queue
+cargo +${RUST_TOOLCHAIN} build --release --target x86_64-pc-nto-qnx710 --package benchmark-publish-subscribe --package benchmark-publish-subscribe-flatbuffer --package benchmark-event --package benchmark-request-response --package benchmark-queue
 ```
 
 In order to execute the benchmarks on the emulated target, first start the
