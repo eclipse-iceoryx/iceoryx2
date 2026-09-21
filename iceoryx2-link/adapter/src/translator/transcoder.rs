@@ -12,37 +12,43 @@
 
 use core::error::Error;
 
-use crate::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample, WriteError};
+use crate::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
 
 /// Why a transcode ended without the region written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TranscodeError<Failure> {
-    /// The sample refused the length the transcoder needs.
-    Rejected(WriteError),
-    /// The transcoder failed.
-    Failed(Failure),
+pub enum TranscodeError<TranscoderError> {
+    /// The length the transcoder needs does not fit the service.
+    Malformed,
+    /// The local port had no free sample to write into.
+    Exhausted,
+    /// The transcoder failed with its own error.
+    Transcoder(TranscoderError),
 }
 
-impl<Failure: core::fmt::Display> core::fmt::Display for TranscodeError<Failure> {
+impl<TranscoderError: core::fmt::Display> core::fmt::Display for TranscodeError<TranscoderError> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Rejected(refusal) => write!(f, "TranscodeError::Rejected({refusal})"),
-            Self::Failed(error) => write!(f, "TranscodeError::Failed({error})"),
+            Self::Malformed => write!(f, "TranscodeError::Malformed"),
+            Self::Exhausted => write!(f, "TranscodeError::Exhausted"),
+            Self::Transcoder(error) => write!(f, "TranscodeError::Transcoder({error})"),
         }
     }
 }
 
-impl<Failure: Error> Error for TranscodeError<Failure> {}
+impl<TranscoderError: Error> Error for TranscodeError<TranscoderError> {}
 
-impl<Failure> From<UnsupportedLength> for TranscodeError<Failure> {
-    fn from(refusal: UnsupportedLength) -> Self {
-        Self::Rejected(refusal.into())
+impl<TranscoderError> From<UnsupportedLength> for TranscodeError<TranscoderError> {
+    fn from(_: UnsupportedLength) -> Self {
+        Self::Malformed
     }
 }
 
-impl<Failure> From<LoanError> for TranscodeError<Failure> {
+impl<TranscoderError> From<LoanError> for TranscodeError<TranscoderError> {
     fn from(refusal: LoanError) -> Self {
-        Self::Rejected(refusal.into())
+        match refusal {
+            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
+            LoanError::Exhausted => Self::Exhausted,
+        }
     }
 }
 

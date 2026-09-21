@@ -76,12 +76,12 @@
 //!     }
 //!
 //!     fn receive<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, SampleReceiveError<MyError>> {
-//!         // Acquire a loan from the provided `loanable` and write bytes
+//!         // Acquire a loan from the provided loanable and write bytes
 //!         // received from the channel directly into it.
 //!         //
 //!         // If the loan is refused, drop the bytes and return the refusal.
 //!         // Return None if there is nothing pending on the channel. Bytes
-//!         // already held in a buffer are written with `populate`.
+//!         // already held in a buffer are written with populate.
 //!     }
 //! }
 //!

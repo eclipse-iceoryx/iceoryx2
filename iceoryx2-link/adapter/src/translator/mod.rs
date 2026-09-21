@@ -39,20 +39,9 @@
 //!         local: &ServiceTypes,
 //!         remote: &MyEndpointTypes,
 //!     ) -> Result<PublishSubscribeTranslation<Self::Transcoder>, MyError> {
-//!         // State which regions the transcoder runs on, here the payload
-//!         // only:
-//!         let payload_only = SampleTranscodings {
-//!             header: Transcoding::Passthrough,
-//!             payload: Transcoding::Transcode,
-//!         };
-//!         Ok(PublishSubscribeTranslation::Transcode {
-//!             outbound: payload_only,
-//!             inbound: payload_only,
-//!             transcoder: SampleTranscoders {
-//!                 headers: NoHeader,
-//!                 payloads: MyPayloadTranscoder,
-//!             },
-//!         })
+//!         // The translation for a publish-subscribe service between the
+//!         // `ServiceTypes` shared by the local service and `EndpointTypes`
+//!         // communicated over the endpoint.
 //!     }
 //! }
 //! ```
@@ -68,17 +57,17 @@
 //!     type Failure = MyError;
 //!
 //!     fn encode<R: Region>(&self, payload: &[u8], into: &mut R) -> Result<(), TranscodeError<MyError>> {
-//!         let wire = into
-//!             .for_length(self.wire_length(payload))
-//!             .map_err(TranscodeError::Rejected)?;
-//!         self.write_wire_form(payload, wire).map_err(TranscodeError::Failed)
+//!         // Resize the region to the length required for the wire form and
+//!         // write the payload in wire form.
+//!         //
+//!         // Wrap failures in TranscodeError::Transcoder.
 //!     }
 //!
-//!     fn decode<R: Region>(&self, wire: &[u8], into: &mut R) -> Result<(), TranscodeError<MyError>> {
-//!         let payload = into
-//!             .for_length(self.local_length(wire)?)
-//!             .map_err(TranscodeError::Rejected)?;
-//!         self.write_local_form(wire, payload).map_err(TranscodeError::Failed)
+//!     fn decode<L: LoanableSample>(&self, wire: &[u8], loanable: L) -> Result<L::Sample, TranscodeError<MyError>> {
+//!         // Loan for the local form's length, write the local form of the
+//!         // wire bytes into the sample's payload and return the sample.
+//!         //
+//!         // Wrap failures in TranscodeError::Transcoder.
 //!     }
 //! }
 //! ```
@@ -110,8 +99,8 @@ pub trait Translator {
     /// The endpoint types a local service's data has.
     fn remote(&self, local: &ServiceTypes) -> Result<Self::EndpointTypes, Self::Error>;
 
-    /// How the samples of a publish-subscribe service are
-    /// converted between the local types and the endpoint's types.
+    /// The translation of a publish-subscribe service's samples between
+    /// the local types and the endpoint's types.
     fn publish_subscribe(
         &self,
         local: &ServiceTypes,

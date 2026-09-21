@@ -98,7 +98,7 @@ impl<S: Service, C: EventChannel> EventRelay<S> for Relay<S, C> {
                     "Received bytes that are not an event id"
                 );
             }
-            Err(EventReceiveError::Failed(error)) => {
+            Err(EventReceiveError::Channel(error)) => {
                 fail!(
                     from origin,
                     with ReceiveError::Channel(error),

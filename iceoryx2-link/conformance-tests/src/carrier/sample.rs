@@ -19,7 +19,6 @@ pub mod carrier_sample {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_link_backend::wire::sample::WriteError;
     use iceoryx2_link_carrier::{Carrier, SampleChannel, SampleReceiveError};
 
     use crate::fixture::CarrierFixture;
@@ -284,7 +283,7 @@ pub mod carrier_sample {
             || match channel_b.receive(UnloanedBuffers {
                 header_size: HEADER_BYTES.len(),
             }) {
-                Err(SampleReceiveError::Rejected(WriteError::Malformed)) => Ok(()),
+                Err(SampleReceiveError::Malformed) => Ok(()),
                 Err(_) => Err("an unexpected error"),
                 Ok(Some(_)) => Err("the short bytes were received"),
                 Ok(None) => Err("nothing arrived"),
@@ -330,7 +329,7 @@ pub mod carrier_sample {
         // The loan for the first sample is refused, so it is dropped.
         retry(
             || match channel_b.receive(NotLoanable) {
-                Err(SampleReceiveError::Rejected(WriteError::Malformed)) => Ok(()),
+                Err(SampleReceiveError::Malformed) => Ok(()),
                 Err(_) => Err("an unexpected error"),
                 Ok(Some(_)) => Err("a refused sample was received"),
                 Ok(None) => Err("no sample arrived"),

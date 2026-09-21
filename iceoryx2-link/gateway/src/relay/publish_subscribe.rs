@@ -137,10 +137,17 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: SampleTranscoder> PublishSubsc
         let pending = UnloanedPendingSample::new(&self.translation, loanable, &mut self.scratch);
         let taken = match self.endpoints.take(pending) {
             Ok(taken) => taken,
-            Err(TakeError::Rejected(refusal)) => {
-                fail!(from origin, with ReceiveError::from(refusal), "Rejected a message");
+            Err(TakeError::Malformed) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Malformed,
+                    "Took a message that does not fit the service"
+                );
             }
-            Err(TakeError::Failed(_)) => {
+            Err(TakeError::Exhausted) => {
+                fail!(from origin, with ReceiveError::Loan, "No sample to take into");
+            }
+            Err(TakeError::Endpoints(_)) => {
                 fail!(from origin, with ReceiveError::Endpoints, "Failed to take a message");
             }
         };

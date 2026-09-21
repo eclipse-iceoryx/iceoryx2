@@ -29,25 +29,25 @@ pub trait EventChannel {
 
 /// Reasons for receiving an id may fail.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EventReceiveError<Failure> {
+pub enum EventReceiveError<ChannelError> {
     /// The bytes are not an id, and are dropped.
     Malformed,
-    /// The channel failed.
-    Failed(Failure),
+    /// The channel failed with its own error.
+    Channel(ChannelError),
 }
 
-impl<Failure: core::fmt::Display> core::fmt::Display for EventReceiveError<Failure> {
+impl<ChannelError: core::fmt::Display> core::fmt::Display for EventReceiveError<ChannelError> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Malformed => write!(f, "EventReceiveError::Malformed"),
-            Self::Failed(error) => write!(f, "EventReceiveError::Failed({error})"),
+            Self::Channel(error) => write!(f, "EventReceiveError::Channel({error})"),
         }
     }
 }
 
-impl<Failure: Error> Error for EventReceiveError<Failure> {}
+impl<ChannelError: Error> Error for EventReceiveError<ChannelError> {}
 
-impl<Failure> From<NotAnEventId> for EventReceiveError<Failure> {
+impl<ChannelError> From<NotAnEventId> for EventReceiveError<ChannelError> {
     fn from(_: NotAnEventId) -> Self {
         Self::Malformed
     }

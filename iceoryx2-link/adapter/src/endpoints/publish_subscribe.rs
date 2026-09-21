@@ -12,37 +12,43 @@
 
 use core::error::Error;
 
-use crate::{LoanError, LoanableSample, UnsupportedLength, WriteError};
+use crate::{LoanError, LoanableSample, UnsupportedLength};
 
 /// Why a take ended without a message written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TakeError<Failure> {
-    /// The sample refused the message, which is dropped.
-    Rejected(WriteError),
-    /// The endpoints failed.
-    Failed(Failure),
+pub enum TakeError<EndpointsError> {
+    /// The message does not fit the service's header and payload sizes.
+    Malformed,
+    /// The local port had no free sample to write into.
+    Exhausted,
+    /// The endpoints failed with their own error.
+    Endpoints(EndpointsError),
 }
 
-impl<Failure: core::fmt::Display> core::fmt::Display for TakeError<Failure> {
+impl<EndpointsError: core::fmt::Display> core::fmt::Display for TakeError<EndpointsError> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Rejected(refusal) => write!(f, "TakeError::Rejected({refusal})"),
-            Self::Failed(error) => write!(f, "TakeError::Failed({error})"),
+            Self::Malformed => write!(f, "TakeError::Malformed"),
+            Self::Exhausted => write!(f, "TakeError::Exhausted"),
+            Self::Endpoints(error) => write!(f, "TakeError::Endpoints({error})"),
         }
     }
 }
 
-impl<Failure: Error> Error for TakeError<Failure> {}
+impl<EndpointsError: Error> Error for TakeError<EndpointsError> {}
 
-impl<Failure> From<UnsupportedLength> for TakeError<Failure> {
-    fn from(refusal: UnsupportedLength) -> Self {
-        Self::Rejected(refusal.into())
+impl<EndpointsError> From<UnsupportedLength> for TakeError<EndpointsError> {
+    fn from(_: UnsupportedLength) -> Self {
+        Self::Malformed
     }
 }
 
-impl<Failure> From<LoanError> for TakeError<Failure> {
+impl<EndpointsError> From<LoanError> for TakeError<EndpointsError> {
     fn from(refusal: LoanError) -> Self {
-        Self::Rejected(refusal.into())
+        match refusal {
+            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
+            LoanError::Exhausted => Self::Exhausted,
+        }
     }
 }
 

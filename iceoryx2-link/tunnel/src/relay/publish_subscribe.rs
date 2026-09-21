@@ -19,7 +19,7 @@ use iceoryx2_link_backend::service_description::{
 };
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
 use iceoryx2_link_backend::wire::sample::{LoanableSample, payload_bytes, user_header_bytes};
-use iceoryx2_link_carrier::{Carrier, SampleChannel};
+use iceoryx2_link_carrier::{Carrier, SampleChannel, SampleReceiveError};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
@@ -106,14 +106,21 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         let origin = origin!("Relay::receive");
         match self.channel.receive(loanable) {
             Ok(received) => Ok(received),
-            Err(iceoryx2_link_carrier::SampleReceiveError::Rejected(refusal)) => {
+            Err(SampleReceiveError::Malformed) => {
                 fail!(
                     from origin,
-                    with ReceiveError::from_refusal(refusal),
-                    "Rejected a sample"
+                    with ReceiveError::Malformed,
+                    "Received bytes that do not fit the service"
                 );
             }
-            Err(iceoryx2_link_carrier::SampleReceiveError::Failed(error)) => {
+            Err(SampleReceiveError::Exhausted) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Loan,
+                    "No sample to receive into"
+                );
+            }
+            Err(SampleReceiveError::Channel(error)) => {
                 fail!(
                     from origin,
                     with ReceiveError::Channel(error),

@@ -109,7 +109,9 @@ mod tests {
     use crate::testing::{description, descriptor, peer};
     use iceoryx2::port::event_id::EventId;
     use iceoryx2_link_backend::wire::sample::LoanableSample;
-    use iceoryx2_link_carrier::{EventChannel, EventReceiveError, Offer, SampleChannel};
+    use iceoryx2_link_carrier::{
+        EventChannel, EventReceiveError, Offer, SampleChannel, SampleReceiveError,
+    };
 
     const FIRST_PEER: u8 = 1;
     const SECOND_PEER: u8 = 2;
@@ -135,8 +137,7 @@ mod tests {
         fn receive<L: LoanableSample>(
             &mut self,
             _: L,
-        ) -> Result<Option<L::Sample>, iceoryx2_link_carrier::SampleReceiveError<Self::Error>>
-        {
+        ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
             Ok(None)
         }
     }

@@ -20,7 +20,7 @@ use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRe
 use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
 
 use iceoryx2_link_adapter::{Adapter, EndpointDescription};
-use iceoryx2_link_adapter::{Mapping, UnsupportedLength, WriteError};
+use iceoryx2_link_adapter::{Mapping, UnsupportedLength};
 use iceoryx2_link_adapter::{TranscodeError, Translator};
 
 pub struct Factory<'a, S, A, M: Mapping, T: Translator> {
@@ -123,26 +123,18 @@ pub enum ReceiveError {
     Loan,
 }
 
-impl From<WriteError> for ReceiveError {
-    fn from(refusal: WriteError) -> Self {
-        match refusal {
-            WriteError::Malformed => ReceiveError::Malformed,
-            WriteError::Exhausted => ReceiveError::Loan,
-        }
-    }
-}
-
 impl From<UnsupportedLength> for ReceiveError {
-    fn from(refusal: UnsupportedLength) -> Self {
-        WriteError::from(refusal).into()
+    fn from(_: UnsupportedLength) -> Self {
+        ReceiveError::Malformed
     }
 }
 
-impl<Failure> From<TranscodeError<Failure>> for ReceiveError {
-    fn from(error: TranscodeError<Failure>) -> Self {
+impl<TranscoderError> From<TranscodeError<TranscoderError>> for ReceiveError {
+    fn from(error: TranscodeError<TranscoderError>) -> Self {
         match error {
-            TranscodeError::Rejected(refusal) => ReceiveError::from(refusal),
-            TranscodeError::Failed(_) => ReceiveError::Transcode,
+            TranscodeError::Malformed => ReceiveError::Malformed,
+            TranscodeError::Exhausted => ReceiveError::Loan,
+            TranscodeError::Transcoder(_) => ReceiveError::Transcode,
         }
     }
 }

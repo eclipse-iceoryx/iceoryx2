@@ -73,16 +73,19 @@
 //!     type Failure = MyError;
 //!
 //!     fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), MyError> {
-//!         // Publish the message to every other endpoint, the header
-//!         // form and the wire form laid out as the middleware has them.
+//!         // Publish `header` and `payload` bytes in middleware form to all
+//!         // remote endpoints.
 //!     }
 //!
 //!     fn take<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, TakeError<MyError>> {
-//!         // Loan `loanable` for the pending message's payload length, write
-//!         // the payload in its wire form and the header in the
-//!         // middleware's header form, and return the loaned sample. Return
-//!         // None if nothing is pending. If `loanable` refuses a length, drop
-//!         // the message and return the refusal.
+//!         // Acquire a loan for the size of the incoming payload, then write
+//!         // the header and payload bytes in wire form into the provided
+//!         // regions. The bytes are translated automatically if configured.
+//!
+//!         // Return None if nothing is pending.
+//!         // If the loan or the header refuses a length, drop the message
+//!         // and return that error.
+//!         // Wrap endpoint errors in TakeError::Endpoints.
 //!     }
 //! }
 //!

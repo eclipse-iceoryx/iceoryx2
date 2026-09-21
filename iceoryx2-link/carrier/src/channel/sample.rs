@@ -35,27 +35,35 @@ pub trait SampleChannel {
 
 /// Reasons for receiving a sample may fail.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SampleReceiveError<Failure> {
-    /// The sample refused the bytes, which are dropped.
-    Rejected(WriteError),
-    /// The channel failed.
-    Failed(Failure),
+pub enum SampleReceiveError<ChannelError> {
+    /// The received bytes do not fit the service's header and payload
+    /// sizes. The bytes were dropped.
+    Malformed,
+    /// The local port had no free sample to write into. The bytes were
+    /// dropped.
+    Exhausted,
+    /// The channel failed with its own error.
+    Channel(ChannelError),
 }
 
-impl<Failure: core::fmt::Display> core::fmt::Display for SampleReceiveError<Failure> {
+impl<ChannelError: core::fmt::Display> core::fmt::Display for SampleReceiveError<ChannelError> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Rejected(refusal) => write!(f, "SampleReceiveError::Rejected({refusal})"),
-            Self::Failed(error) => write!(f, "SampleReceiveError::Failed({error})"),
+            Self::Malformed => write!(f, "SampleReceiveError::Malformed"),
+            Self::Exhausted => write!(f, "SampleReceiveError::Exhausted"),
+            Self::Channel(error) => write!(f, "SampleReceiveError::Channel({error})"),
         }
     }
 }
 
-impl<Failure: Error> Error for SampleReceiveError<Failure> {}
+impl<ChannelError: Error> Error for SampleReceiveError<ChannelError> {}
 
-impl<Failure> From<WriteError> for SampleReceiveError<Failure> {
+impl<ChannelError> From<WriteError> for SampleReceiveError<ChannelError> {
     fn from(refusal: WriteError) -> Self {
-        Self::Rejected(refusal)
+        match refusal {
+            WriteError::Malformed => Self::Malformed,
+            WriteError::Exhausted => Self::Exhausted,
+        }
     }
 }
 
