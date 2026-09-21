@@ -1,9 +1,10 @@
 # Benchmarks
 
 1. [Publish-Subscribe](#Publish-Subscribe)
-2. [Request-Response](#Request-Response)
-3. [Event](#Event)
-4. [Queue](#Queue)
+2. [FlatBuffers Publish-Subscribe](#FlatBuffers-Publish-Subscribe)
+3. [Request-Response](#Request-Response)
+4. [Event](#Event)
+5. [Queue](#Queue)
 
 ## Publish-Subscribe
 
@@ -22,6 +23,38 @@ For more benchmark configuration details, see
 
 ```sh
 cargo run --bin benchmark-publish-subscribe --release -- --help
+```
+
+## FlatBuffers Publish-Subscribe
+
+The benchmark quantifies the latency between a `Publisher` sending a FlatBuffer
+message and a `Subscriber` receiving it. The setup is identical to the
+[Publish-Subscribe](#Publish-Subscribe) benchmark, but instead of a plain byte
+slice the payload is an unbounded FlatBuffer vector that is built with the
+FlatBuffers API directly inside the data segment of the `Publisher`. Every
+iteration serializes a complete FlatBuffer and acquires its root on the
+receiving side, therefore the measured latency also contains the serialization
+and deserialization cost.
+
+```sh
+cargo run --bin benchmark-publish-subscribe-flatbuffer --release -- --bench-all
+```
+
+For more benchmark configuration details, see
+
+```sh
+cargo run --bin benchmark-publish-subscribe-flatbuffer --release -- --help
+```
+
+### Generate Code and Binary Schema
+
+The generated Rust code and the binary schema are already included in this
+benchmark. For completeness, the command used to generate them is documented
+below:
+
+```sh
+flatc -o benchmarks/publish-subscribe-flatbuffer/src --rust --schema --binary \
+    benchmarks/publish-subscribe-flatbuffer/src/payload_data.fbs
 ```
 
 ## Request-Response

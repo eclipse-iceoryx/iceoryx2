@@ -102,6 +102,7 @@ members = [
 
     "benchmarks/request-response",
     "benchmarks/publish-subscribe",
+    "benchmarks/publish-subscribe-flatbuffer",
     "benchmarks/event",
     "benchmarks/queue",
 
