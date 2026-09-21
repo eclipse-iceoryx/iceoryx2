@@ -12,6 +12,8 @@
 
 use core::error::Error;
 
+use iceoryx2_link_backend::relay::ReceiveOutcome;
+
 use crate::{LoanError, LoanableSample, UnsupportedLength};
 
 /// Why a take ended without a message written.
@@ -65,11 +67,15 @@ pub trait PublishSubscribeEndpoints {
     /// The payload is written in the wire form and the header as the
     /// middleware's header form.
     ///
-    /// Returns the written sample, or `None` if nothing was pending.
-    /// A message `loanable` refuses is taken and dropped, and the refusal
-    /// returned.
+    /// Return
+    /// * `ReceiveOutcome::Sample` with the written sample
+    /// * `ReceiveOutcome::Skipped` for a message taken but not for the link
+    /// * `ReceiveOutcome::Empty` if nothing is pending
+    /// * If the loan refuses the size, drop the incoming bytes and
+    ///   return the error provided
+    /// * `Endpoints` wrapping the endpoints' own errors
     fn take<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<Option<L::Sample>, TakeError<Self::Failure>>;
+    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>>;
 }

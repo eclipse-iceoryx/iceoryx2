@@ -13,7 +13,8 @@ use alloc::vec::Vec;
 
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_adapter::{
-    LoanableSample, PublishSubscribeEndpoints, TakeError, UnsupportedLength, WritableSample,
+    LoanableSample, PublishSubscribeEndpoints, ReceiveOutcome, TakeError, UnsupportedLength,
+    WritableSample,
 };
 use iceoryx2_log::{fail, origin};
 
@@ -70,11 +71,11 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
     fn take<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<Option<L::Sample>, TakeError<Self::Failure>> {
+    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
         let origin = origin!("FakeEndpoints::take");
 
         let Some(message) = self.middleware.receive(&self.name, self.id) else {
-            return Ok(None);
+            return Ok(ReceiveOutcome::Empty);
         };
         let (header, payload) = message.split_at(self.header_size.min(message.len()));
         let mut writable = match loanable.loan(payload.len()) {
@@ -93,7 +94,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
             when self.write(writable.header(header.len()), header),
             "Failed to take a message on {}", self.name
         );
-        Ok(Some(writable))
+        Ok(ReceiveOutcome::Sample(writable))
     }
 }
 

@@ -26,10 +26,21 @@ pub trait PublishSubscribeRelay<S: Service> {
     /// side.
     fn send(&mut self, sample: &Sample<S>) -> Result<(), Self::SendError>;
 
-    /// Receives one sample from the opposing side into `loanable`, or `None`
-    /// if nothing is pending.
+    /// Receives one sample from the opposing side into `loanable`.
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<Option<L::Sample>, Self::ReceiveError>;
+    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError>;
+}
+
+/// The outcome of receiving one sample.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReceiveOutcome<W> {
+    /// A sample was written.
+    Sample(W),
+    /// A sample was taken and dropped as one not meant for the link. More
+    /// may be pending.
+    Skipped,
+    /// Nothing was pending.
+    Empty,
 }

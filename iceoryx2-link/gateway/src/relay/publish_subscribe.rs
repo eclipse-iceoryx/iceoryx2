@@ -22,7 +22,7 @@ use iceoryx2_link_adapter::{
 use iceoryx2_link_adapter::{
     HeaderTranscoder, PayloadTranscoder, PublishSubscribeTranslation, SampleTranscoder, Translator,
 };
-use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeDescription, SampleTypes, ServiceDescription,
 };
@@ -131,7 +131,7 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: SampleTranscoder> PublishSubsc
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<Option<L::Sample>, Self::ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
 
         let pending = UnloanedPendingSample::new(&self.translation, loanable, &mut self.scratch);
@@ -151,15 +151,17 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: SampleTranscoder> PublishSubsc
                 fail!(from origin, with ReceiveError::Endpoints, "Failed to take a message");
             }
         };
-        let Some(pending) = taken else {
-            return Ok(None);
+        let pending = match taken {
+            ReceiveOutcome::Sample(pending) => pending,
+            ReceiveOutcome::Skipped => return Ok(ReceiveOutcome::Skipped),
+            ReceiveOutcome::Empty => return Ok(ReceiveOutcome::Empty),
         };
         let writable = fail!(
             from origin,
             when pending.into_sample(),
             "Failed to decode a message into a sample"
         );
-        Ok(Some(writable))
+        Ok(ReceiveOutcome::Sample(writable))
     }
 }
 
@@ -539,14 +541,14 @@ mod tests {
         fn take<L: LoanableSample>(
             &mut self,
             loanable: L,
-        ) -> Result<Option<L::Sample>, TakeError<Self::Failure>> {
+        ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
             let Some(message) = self.pending.take() else {
-                return Ok(None);
+                return Ok(ReceiveOutcome::Empty);
             };
             let mut writable = loanable.loan(message.payload.len())?;
             writable.payload().copy_from_slice(&message.payload);
             write(writable.header(message.header.len()), &message.header)?;
-            Ok(Some(writable))
+            Ok(ReceiveOutcome::Sample(writable))
         }
     }
 
@@ -736,10 +738,13 @@ mod tests {
         loan: &mut LoanFn<'_, local::Service, LoanError>,
     ) -> Result<Option<SampleMut<local::Service>>, ReceiveError> {
         let types = types();
-        let loaned = relay.receive(UnloanedSample::new(&types, loan))?;
+        let ReceiveOutcome::Sample(loaned) = relay.receive(UnloanedSample::new(&types, loan))?
+        else {
+            return Ok(None);
+        };
         // SAFETY: the stub endpoints populated both regions of the loaned
         // sample, the header and the payload.
-        Ok(loaned.map(|loaned| unsafe { loaned.into_sample().assume_init() }))
+        Ok(Some(unsafe { loaned.into_sample().assume_init() }))
     }
 
     fn header_of(sample: &SampleMut<local::Service>) -> [u8; SIZE] {

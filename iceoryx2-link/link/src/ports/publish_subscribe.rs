@@ -19,6 +19,7 @@ use iceoryx2::service::builder::publish_subscribe;
 use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_link_backend::relay::ReceiveOutcome;
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, TypeDescription,
 };
@@ -181,7 +182,7 @@ impl<S: Service> PublishSubscribePorts<S> {
         &mut self,
         mut ingest: impl FnMut(
             UnloanedSample<'_, '_, S, LoanError>,
-        ) -> Result<Option<LoanedSample<S>>, E>,
+        ) -> Result<ReceiveOutcome<LoanedSample<S>>, E>,
     ) -> Result<u64, SendError> {
         let origin = origin!("PublishSubscribePorts::send");
         let Self {
@@ -200,8 +201,10 @@ impl<S: Service> PublishSubscribePorts<S> {
                 with SendError::Ingestion,
                 "Failed to ingest a sample for {}", name
             );
-            let Some(loaned) = loaned else {
-                break;
+            let loaned = match loaned {
+                ReceiveOutcome::Sample(loaned) => loaned,
+                ReceiveOutcome::Skipped => continue,
+                ReceiveOutcome::Empty => break,
             };
 
             // SAFETY: The payload and header are populated by the relay.
@@ -381,7 +384,7 @@ mod tests {
         let published = sut
             .send(|unloaned| {
                 if ingested_once {
-                    return Ok::<_, ()>(None);
+                    return Ok::<_, ()>(ReceiveOutcome::Empty);
                 }
                 ingested_once = true;
                 // The header is zero sized, only the payload is written.
@@ -389,7 +392,7 @@ mod tests {
                     .loan(core::mem::size_of::<u64>())
                     .expect("one u64 fits");
                 loaned.payload().copy_from_slice(&INGESTED.to_ne_bytes());
-                Ok(Some(loaned))
+                Ok(ReceiveOutcome::Sample(loaned))
             })
             .expect("send succeeds");
         assert_that!(published, eq 1);

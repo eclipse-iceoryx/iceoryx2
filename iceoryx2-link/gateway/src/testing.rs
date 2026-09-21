@@ -23,8 +23,8 @@ use iceoryx2_link_backend::service_description::{
 
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
-    Adapter, EndpointDescription, LoanableSample, PublishSubscribeEndpoints, TakeError,
-    UnsupportedEndpoints,
+    Adapter, EndpointDescription, LoanableSample, PublishSubscribeEndpoints, ReceiveOutcome,
+    TakeError, UnsupportedEndpoints,
 };
 use iceoryx2_link_adapter::{NoTranscoder, PublishSubscribeTranslation, Translator};
 use iceoryx2_link_backend::service_description::Identified;
@@ -251,8 +251,8 @@ impl PublishSubscribeEndpoints for NoEndpoints {
     fn take<L: LoanableSample>(
         &mut self,
         _: L,
-    ) -> Result<Option<L::Sample>, TakeError<Self::Failure>> {
-        Ok(None)
+    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
+        Ok(ReceiveOutcome::Empty)
     }
 }
 

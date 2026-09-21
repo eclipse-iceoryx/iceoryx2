@@ -13,7 +13,7 @@
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeDescription, SampleTypes, ServiceDescriptor,
 };
@@ -102,10 +102,11 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<Option<L::Sample>, Self::ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
         match self.channel.receive(loanable) {
-            Ok(received) => Ok(received),
+            Ok(Some(writable)) => Ok(ReceiveOutcome::Sample(writable)),
+            Ok(None) => Ok(ReceiveOutcome::Empty),
             Err(SampleReceiveError::Malformed) => {
                 fail!(
                     from origin,

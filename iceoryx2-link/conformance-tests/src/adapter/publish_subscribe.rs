@@ -20,7 +20,7 @@ pub mod adapter_publish_subscribe {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_link_adapter::{Adapter, PublishSubscribeEndpoints};
+    use iceoryx2_link_adapter::{Adapter, PublishSubscribeEndpoints, ReceiveOutcome};
 
     use crate::testing::UnloanedBuffers;
 
@@ -32,10 +32,13 @@ pub mod adapter_publish_subscribe {
     /// Takes the pending message of endpoints whose messages have no
     /// header, as the suites' remote endpoints send them.
     fn take<E: PublishSubscribeEndpoints>(endpoints: &mut E) -> Option<Vec<u8>> {
-        endpoints
+        match endpoints
             .take(UnloanedBuffers { header_size: 0 })
             .expect("taking succeeds")
-            .map(|taken| taken.payload)
+        {
+            ReceiveOutcome::Sample(taken) => Some(taken.payload),
+            ReceiveOutcome::Skipped | ReceiveOutcome::Empty => None,
+        }
     }
 
     #[conformance_test]

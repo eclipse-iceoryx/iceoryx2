@@ -12,6 +12,7 @@
 
 use iceoryx2::port::event_id::EventId;
 use iceoryx2_link_backend::Never;
+use iceoryx2_link_backend::relay::ReceiveOutcome;
 
 use super::{EventEndpoints, PublishSubscribeEndpoints, TakeError};
 use crate::LoanableSample;
@@ -29,7 +30,7 @@ impl PublishSubscribeEndpoints for UnsupportedEndpoints {
     fn take<L: LoanableSample>(
         &mut self,
         _: L,
-    ) -> Result<Option<L::Sample>, TakeError<Self::Failure>> {
+    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
         match self.0 {}
     }
 }

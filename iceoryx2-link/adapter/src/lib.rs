@@ -77,15 +77,19 @@
 //!         // remote endpoints.
 //!     }
 //!
-//!     fn take<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, TakeError<MyError>> {
+//!     fn take<L: LoanableSample>(&mut self, loanable: L) -> Result<ReceiveOutcome<L::Sample>, TakeError<MyError>> {
 //!         // Acquire a loan for the size of the incoming payload, then write
 //!         // the header and payload bytes in wire form into the provided
 //!         // regions. The bytes are translated automatically if configured.
 //!
-//!         // Return None if nothing is pending.
-//!         // If the loan or the header refuses a length, drop the message
-//!         // and return that error.
-//!         // Wrap endpoint errors in TakeError::Endpoints.
+//!         // Return:
+//!         // * ReceiveOutcome::Sample with the written sample
+//!         // * ReceiveOutcome::Skipped for a message taken but skipped,
+//!         //   such as one the endpoints published themselves
+//!         // * ReceiveOutcome::Empty if nothing is pending
+//!         // * If the loan refuses the size, drop the incoming bytes and
+//!         //   return the error provided
+//!         // * TakeError::Endpoints wrapping the endpoints' own errors
 //!     }
 //! }
 //!
@@ -115,6 +119,7 @@ pub use adapter::Adapter;
 pub use endpoints::{
     EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints,
 };
+pub use iceoryx2_link_backend::relay::ReceiveOutcome;
 pub use iceoryx2_link_backend::wire::sample::{
     LoanError, LoanableSample, WritableSample, WriteError,
 };
