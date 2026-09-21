@@ -103,32 +103,25 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
 
     fn receive<L: LoanableSample>(
         &mut self,
-        into: L,
+        loanable: L,
     ) -> Result<Option<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
-        let received = fail!(
-            from origin,
-            when self.channel.receive(|bytes| {
-                let frame = fail!(
+        match self.channel.receive(loanable) {
+            Ok(received) => Ok(received),
+            Err(iceoryx2_link_carrier::ReceiveError::Rejected(refusal)) => {
+                fail!(
                     from origin,
-                    when Frame::parse(bytes, &self.types),
-                    with ReceiveError::Malformed,
-                    "Received a frame that does not fit the service"
+                    with ReceiveError::from_refusal(refusal),
+                    "Rejected a frame"
                 );
-                match frame.write_into(into) {
-                    Ok(loaned) => Ok(loaned),
-                    Err(refusal) => {
-                        fail!(
-                            from origin,
-                            with ReceiveError::from_refusal(refusal),
-                            "Failed to write a frame into the sample"
-                        );
-                    }
-                }
-            }),
-            to ReceiveError<C::Error>,
-            "Failed to receive a frame"
-        );
-        received.transpose()
+            }
+            Err(iceoryx2_link_carrier::ReceiveError::Failed(error)) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Channel(error),
+                    "Failed to receive a frame"
+                );
+            }
+        }
     }
 }

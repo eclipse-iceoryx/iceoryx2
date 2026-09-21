@@ -107,6 +107,7 @@ mod tests {
     use iceoryx2_bb_testing::assert_that;
 
     use crate::testing::{description, descriptor, peer};
+    use iceoryx2_link_backend::wire::sample::LoanableSample;
     use iceoryx2_link_carrier::Frame;
     use iceoryx2_link_carrier::{Channel, Offer};
 
@@ -131,7 +132,10 @@ mod tests {
         fn send(&mut self, _: Frame<'_>) -> Result<(), Self::Error> {
             Ok(())
         }
-        fn receive<R>(&mut self, _: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
+        fn receive<L: LoanableSample>(
+            &mut self,
+            _: L,
+        ) -> Result<Option<L::Sample>, iceoryx2_link_carrier::ReceiveError<Self::Error>> {
             Ok(None)
         }
     }

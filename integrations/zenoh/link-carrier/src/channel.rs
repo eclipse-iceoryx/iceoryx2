@@ -13,7 +13,8 @@
 use std::sync::{Arc, OnceLock};
 
 use iceoryx2_link_backend::WakeHandle;
-use iceoryx2_link_carrier::{Channel, Frame};
+use iceoryx2_link_backend::wire::sample::{LoanableSample, WriteError};
+use iceoryx2_link_carrier::{Channel, Frame, ReceiveError};
 use iceoryx2_log::{fail, origin};
 use zenoh::Wait;
 use zenoh::key_expr::OwnedKeyExpr;
@@ -57,6 +58,7 @@ impl core::error::Error for Error {}
 pub struct ZenohChannel {
     publisher: Publisher<'static>,
     subscriber: Subscriber<Inbox<Sample>>,
+    header_size: usize,
 }
 
 impl ZenohChannel {
@@ -64,6 +66,7 @@ impl ZenohChannel {
         session: &zenoh::Session,
         key: OwnedKeyExpr,
         wake: Arc<OnceLock<WakeHandle>>,
+        header_size: usize,
     ) -> Result<Self, ChannelError> {
         let origin = origin!("ZenohChannel::open");
         let publisher = fail!(
@@ -89,6 +92,7 @@ impl ZenohChannel {
         Ok(Self {
             publisher,
             subscriber,
+            header_size,
         })
     }
 }
@@ -108,10 +112,28 @@ impl Channel for ZenohChannel {
         Ok(())
     }
 
-    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
-        Ok(self.subscriber.handler().pop().map(|sample| {
-            let bytes = sample.payload().to_bytes();
-            on_frame(&bytes)
-        }))
+    fn receive<L: LoanableSample>(
+        &mut self,
+        loanable: L,
+    ) -> Result<Option<L::Sample>, ReceiveError<Self::Error>> {
+        let origin = origin!("ZenohChannel::receive");
+
+        let Some(sample) = self.subscriber.handler().pop() else {
+            return Ok(None);
+        };
+        let bytes = sample.payload().to_bytes();
+        let frame = fail!(
+            from origin,
+            when Frame::split(&bytes, self.header_size),
+            with ReceiveError::Rejected(WriteError::Malformed),
+            "Dropped a frame of {} bytes shorter than the header", bytes.len()
+        );
+        let sample = fail!(
+            from origin,
+            when frame.write_into(loanable),
+            to ReceiveError<Error>,
+            "Dropped a frame of {} bytes", bytes.len()
+        );
+        Ok(Some(sample))
     }
 }

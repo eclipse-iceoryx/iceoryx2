@@ -24,7 +24,7 @@ pub mod carrier_propagation {
     use iceoryx2_link_carrier::{Carrier, Channel};
 
     use crate::fixture::CarrierFixture;
-    use crate::testing::{descriptor, retry};
+    use crate::testing::{Taken, descriptor, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const PAYLOAD: &str = "u64";
@@ -33,10 +33,12 @@ pub mod carrier_propagation {
         Frame { header, payload }
     }
 
+    /// The next frame as one buffer, header then payload.
     fn receive<C: Channel>(channel: &mut C) -> Option<Vec<u8>> {
         channel
-            .receive(|frame| frame.to_vec())
+            .receive(Taken)
             .expect("receiving succeeds")
+            .map(|taken| [taken.header, taken.payload].concat())
     }
 
     fn expect_frame<C: Channel>(channel: &mut C, expected: &[u8]) {

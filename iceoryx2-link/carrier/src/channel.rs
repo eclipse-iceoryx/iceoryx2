@@ -12,6 +12,8 @@
 
 use core::error::Error;
 
+use iceoryx2_link_backend::wire::sample::{LoanableSample, WriteError};
+
 use crate::Frame;
 
 /// Carries the frames of one service in both directions.
@@ -21,7 +23,40 @@ pub trait Channel {
     /// Sends one frame to every peer on the channel.
     fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error>;
 
-    /// Hands the next pending frame to `on_frame`, or returns `None` if
-    /// nothing is pending.
-    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error>;
+    /// Receives the next pending frame into `loanable`, or returns `None`
+    /// if nothing is pending.
+    ///
+    /// The frame's header bytes go to the header and its payload bytes to
+    /// the payload. A frame `loanable` refuses is consumed and dropped, and
+    /// the refusal returned.
+    fn receive<L: LoanableSample>(
+        &mut self,
+        loanable: L,
+    ) -> Result<Option<L::Sample>, ReceiveError<Self::Error>>;
+}
+
+/// Why a receive ended without a frame written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReceiveError<Failure> {
+    /// The sample refused the frame, which is dropped.
+    Rejected(WriteError),
+    /// The channel failed.
+    Failed(Failure),
+}
+
+impl<Failure: core::fmt::Display> core::fmt::Display for ReceiveError<Failure> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Rejected(refusal) => write!(f, "ReceiveError::Rejected({refusal})"),
+            Self::Failed(error) => write!(f, "ReceiveError::Failed({error})"),
+        }
+    }
+}
+
+impl<Failure: Error> Error for ReceiveError<Failure> {}
+
+impl<Failure> From<WriteError> for ReceiveError<Failure> {
+    fn from(refusal: WriteError) -> Self {
+        Self::Rejected(refusal)
+    }
 }

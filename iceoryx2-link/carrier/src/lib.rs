@@ -57,7 +57,26 @@
 //!     }
 //!
 //!     fn open_channel(&mut self, descriptor: &ServiceDescriptor) -> Result<MyChannel, MyError> {
-//!         // Join the peers sharing this descriptor's byte stream.
+//!         // Join the peers sharing this descriptor's byte stream. Keep
+//!         // descriptor.types.user_header_size() to split frames on receive.
+//!     }
+//! }
+//!
+//! impl Channel for MyChannel {
+//!     type Error = MyError;
+//!
+//!     fn send(&mut self, frame: Frame<'_>) -> Result<(), MyError> {
+//!         // Send the header bytes followed by the payload bytes to every
+//!         // other peer with the channel open.
+//!     }
+//!
+//!     fn receive<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, ReceiveError<MyError>> {
+//!         // Loan `loanable` for the pending frame's payload length, write
+//!         // the payload and the header, and return the loaned sample.
+//!         // Return None if nothing is pending. If `loanable` refuses a
+//!         // length, drop the frame and return the refusal. A frame held
+//!         // as bytes is split at the user header size and written with
+//!         // Frame::write_into.
 //!     }
 //! }
 //! ```
@@ -75,7 +94,7 @@ mod peer_id;
 
 pub use announcement::Announcement;
 pub use carrier::Carrier;
-pub use channel::Channel;
+pub use channel::{Channel, ReceiveError};
 pub use frame::{Frame, Malformed};
 pub use offer::Offer;
 pub use peer_id::PeerId;

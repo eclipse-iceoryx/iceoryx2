@@ -206,7 +206,12 @@ impl Carrier for ZenohCarrier {
             "Failed to encode the descriptor of {}", descriptor.name
         );
         let key = keys::channel(&descriptor.hash, encoded.fingerprint());
-        ZenohChannel::open(&self.session, key, self.wake.clone())
+        ZenohChannel::open(
+            &self.session,
+            key,
+            self.wake.clone(),
+            descriptor.types.user_header_size(),
+        )
     }
 }
 

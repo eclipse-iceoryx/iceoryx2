@@ -16,7 +16,9 @@ use iceoryx2::port::event_id::EventId;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder};
 use iceoryx2_link_backend::service_description::{EventDescription, ServiceDescriptor};
-use iceoryx2_link_backend::wire::event::{decode, encode};
+use iceoryx2_link_backend::wire::UnsupportedLength;
+use iceoryx2_link_backend::wire::event::{SIZE, decode, encode};
+use iceoryx2_link_backend::wire::sample::{LoanError, LoanableSample, WritableSample};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
@@ -95,19 +97,66 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
 
     fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
-        let received = fail!(
-            from origin,
-            when self.channel.receive(|bytes| {
-                let id = fail!(
+        let received = match self.channel.receive(UnloanedEvent) {
+            Ok(received) => received,
+            Err(iceoryx2_link_carrier::ReceiveError::Rejected(_)) => {
+                fail!(
                     from origin,
-                    when decode(bytes).ok_or(ReceiveError::Malformed),
+                    with ReceiveError::Malformed,
                     "Received a frame that is not an event id"
                 );
-                Ok(id)
-            }),
-            to ReceiveError<C::Error>,
-            "Failed to receive a frame"
+            }
+            Err(iceoryx2_link_carrier::ReceiveError::Failed(error)) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Channel(error),
+                    "Failed to receive a frame"
+                );
+            }
+        };
+        let Some(event) = received else {
+            return Ok(None);
+        };
+        let id = fail!(
+            from origin,
+            when decode(&event.0).ok_or(ReceiveError::Malformed),
+            "Received a frame that is not an event id"
         );
-        received.transpose()
+        Ok(Some(id))
+    }
+}
+
+/// An event id frame before it has a length.
+struct UnloanedEvent;
+
+impl LoanableSample for UnloanedEvent {
+    type Sample = EventBytes;
+
+    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+        let origin = origin!("UnloanedEvent::loan");
+        if payload_len != SIZE {
+            fail!(
+                from origin,
+                with LoanError::Malformed,
+                "A frame of {} bytes is not an event id", payload_len
+            );
+        }
+        Ok(EventBytes([0; SIZE]))
+    }
+}
+
+/// The bytes of one event id, without a header.
+struct EventBytes([u8; SIZE]);
+
+impl WritableSample for EventBytes {
+    fn payload(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+
+    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
+        match len {
+            0 => Ok(&mut []),
+            _ => Err(UnsupportedLength),
+        }
     }
 }

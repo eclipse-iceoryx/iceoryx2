@@ -138,7 +138,6 @@ impl<E> From<E> for ReceiveError<E> {
 }
 
 impl<E> ReceiveError<E> {
-    /// The error a refused region amounts to.
     pub(crate) fn from_refusal(refusal: WriteError) -> Self {
         match refusal {
             WriteError::Exhausted => Self::Loan,

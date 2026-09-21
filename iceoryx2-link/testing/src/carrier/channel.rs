@@ -13,8 +13,10 @@
 use alloc::collections::VecDeque;
 
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
-use iceoryx2_link_carrier::Channel;
+use iceoryx2_link_backend::wire::sample::{LoanableSample, WriteError};
+use iceoryx2_link_carrier::{Channel, ReceiveError};
 use iceoryx2_link_carrier::{Frame, PeerId};
+use iceoryx2_log::{fail, origin};
 
 use crate::carrier::{Error, FakeBus};
 
@@ -23,6 +25,7 @@ use crate::carrier::{Error, FakeBus};
 pub struct FakeChannel {
     peer: PeerId,
     descriptor: ServiceDescriptor,
+    header_size: usize,
     bus: FakeBus,
 }
 
@@ -30,6 +33,7 @@ impl FakeChannel {
     pub(super) fn new(peer: PeerId, descriptor: ServiceDescriptor, bus: FakeBus) -> Self {
         Self {
             peer,
+            header_size: descriptor.types.user_header_size(),
             descriptor,
             bus,
         }
@@ -45,8 +49,13 @@ impl Channel for FakeChannel {
         Ok(())
     }
 
-    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
-        let frame = self
+    fn receive<L: LoanableSample>(
+        &mut self,
+        loanable: L,
+    ) -> Result<Option<L::Sample>, ReceiveError<Self::Error>> {
+        let origin = origin!("FakeChannel::receive");
+
+        let bytes = self
             .bus
             .state
             .inboxes
@@ -54,7 +63,22 @@ impl Channel for FakeChannel {
             .get_mut(&self.descriptor)
             .and_then(|inboxes| inboxes.get_mut(&self.peer))
             .and_then(VecDeque::pop_front);
-        Ok(frame.map(|frame| on_frame(&frame)))
+        let Some(bytes) = bytes else {
+            return Ok(None);
+        };
+        let frame = fail!(
+            from origin,
+            when Frame::split(&bytes, self.header_size),
+            with ReceiveError::Rejected(WriteError::Malformed),
+            "Dropped a frame of {} bytes shorter than the header", bytes.len()
+        );
+        let sample = fail!(
+            from origin,
+            when frame.write_into(loanable),
+            to ReceiveError<Error>,
+            "Dropped a frame of {} bytes", bytes.len()
+        );
+        Ok(Some(sample))
     }
 }
 
