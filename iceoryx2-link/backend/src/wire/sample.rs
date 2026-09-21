@@ -44,6 +44,9 @@ pub trait LoanableSample {
     /// The loaned sample with writable header and payload.
     type Sample: WritableSample;
 
+    /// The size of the header at the start of a frame it accepts.
+    fn header_size(&self) -> usize;
+
     /// Acquire a loan for the sample.
     ///
     /// Fails with

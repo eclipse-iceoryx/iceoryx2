@@ -122,6 +122,15 @@ pub fn types_of(payload: &str) -> ServiceTypes {
     })
 }
 
+/// A descriptor of the event service `name`.
+pub fn event_descriptor(name: &str) -> ServiceDescriptor {
+    ServiceDescriptor {
+        name: ServiceName::new(name).expect("valid service name"),
+        hash: hash(name),
+        types: ServiceTypes::Event,
+    }
+}
+
 /// A descriptor of the service `name` with `payload` as its payload type
 /// and a user header of `header_size` bytes.
 pub fn descriptor_with_header(name: &str, payload: &str, header_size: usize) -> ServiceDescriptor {
@@ -286,14 +295,21 @@ impl Default for WakeSource {
     }
 }
 
-/// A take into plain buffers, before its payload has a length.
-pub struct Taken;
+/// A stand-in for an unloaned sample that loans heap buffers instead of
+/// shared memory, so a writer can be tested without a port.
+pub struct UnloanedBuffers {
+    pub header_size: usize,
+}
 
-impl LoanableSample for Taken {
-    type Sample = TakenMessage;
+impl LoanableSample for UnloanedBuffers {
+    type Sample = LoanedBuffers;
+
+    fn header_size(&self) -> usize {
+        self.header_size
+    }
 
     fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
-        Ok(TakenMessage {
+        Ok(LoanedBuffers {
             header: Vec::new(),
             payload: vec![0; payload_len],
         })
@@ -304,20 +320,24 @@ impl LoanableSample for Taken {
 pub struct NotLoanable;
 
 impl LoanableSample for NotLoanable {
-    type Sample = TakenMessage;
+    type Sample = LoanedBuffers;
+
+    fn header_size(&self) -> usize {
+        0
+    }
 
     fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
         Err(LoanError::Malformed)
     }
 }
 
-/// The buffers a take wrote.
-pub struct TakenMessage {
+/// The heap buffers a writer wrote, to compare against what was sent.
+pub struct LoanedBuffers {
     pub header: Vec<u8>,
     pub payload: Vec<u8>,
 }
 
-impl WritableSample for TakenMessage {
+impl WritableSample for LoanedBuffers {
     fn payload(&mut self) -> &mut [u8] {
         &mut self.payload
     }

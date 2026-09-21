@@ -275,6 +275,10 @@ impl<'a, L: LoanableSample, X> UnloanedPendingSample<'a, L, X> {
 impl<'a, L: LoanableSample, X> LoanableSample for UnloanedPendingSample<'a, L, X> {
     type Sample = LoanedPendingSample<'a, L, X>;
 
+    fn header_size(&self) -> usize {
+        self.loanable.header_size()
+    }
+
     fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
         let Self {
             translation,

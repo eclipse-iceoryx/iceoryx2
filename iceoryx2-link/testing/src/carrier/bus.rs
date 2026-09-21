@@ -55,9 +55,9 @@ impl State {
         self.wake_others(from);
     }
 
-    /// Delivers a frame from `from` to every other peer with the channel
+    /// Delivers bytes from `from` to every other peer with the channel
     /// open, and wakes each of them.
-    pub(super) fn deliver(&self, descriptor: &ServiceDescriptor, from: PeerId, frame: Vec<u8>) {
+    pub(super) fn deliver(&self, descriptor: &ServiceDescriptor, from: PeerId, bytes: Vec<u8>) {
         let mut receivers = Vec::new();
         {
             let mut inboxes = self.inboxes.borrow_mut();
@@ -65,7 +65,7 @@ impl State {
                 return;
             };
             for (peer, inbox) in inboxes.iter_mut().filter(|(peer, _)| **peer != from) {
-                inbox.push_back(frame.clone());
+                inbox.push_back(bytes.clone());
                 receivers.push(*peer);
             }
         }
@@ -89,7 +89,7 @@ impl State {
 }
 
 /// A fake substitute for a communication mechanism. Every carrier
-/// joined to the same bus sees the others' announcements and frames.
+/// joined to the same bus sees the others' announcements and bytes.
 #[derive(Clone, Default)]
 pub struct FakeBus {
     pub(super) state: Rc<State>,

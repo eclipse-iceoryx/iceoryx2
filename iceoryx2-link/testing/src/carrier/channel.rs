@@ -13,20 +13,23 @@
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 
+use iceoryx2::port::event_id::EventId;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
+use iceoryx2_link_backend::wire::event::{decode, encode};
 use iceoryx2_link_backend::wire::sample::LoanableSample;
 use iceoryx2_link_carrier::PeerId;
-use iceoryx2_link_carrier::{Channel, ReceiveError, header_size, populate};
+use iceoryx2_link_carrier::{
+    EventChannel, EventReceiveError, SampleChannel, SampleReceiveError, populate,
+};
 use iceoryx2_log::{fail, origin};
 
 use crate::carrier::{Error, FakeBus};
 
-/// A channel over a [`FakeBus`]. Frames reach every other peer that has the
-/// channel open.
-pub struct FakeChannel {
+/// One peer's inbox on a [`FakeBus`] for one service. Bytes reach every
+/// other peer that has the channel open.
+pub(super) struct FakeChannel {
     peer: PeerId,
     descriptor: ServiceDescriptor,
-    header_size: usize,
     bus: FakeBus,
 }
 
@@ -34,48 +37,86 @@ impl FakeChannel {
     pub(super) fn new(peer: PeerId, descriptor: ServiceDescriptor, bus: FakeBus) -> Self {
         Self {
             peer,
-            header_size: header_size(&descriptor),
             descriptor,
             bus,
         }
     }
+
+    /// Delivers the bytes to every other peer with the channel open.
+    fn deliver(&self, bytes: &[&[u8]]) {
+        let mut joined = Vec::with_capacity(bytes.iter().map(|slice| slice.len()).sum());
+        for slice in bytes {
+            joined.extend_from_slice(slice);
+        }
+        self.bus.state.deliver(&self.descriptor, self.peer, joined);
+    }
+
+    /// The next pending bytes, if any.
+    fn pop(&self) -> Option<Vec<u8>> {
+        self.bus
+            .state
+            .inboxes
+            .borrow_mut()
+            .get_mut(&self.descriptor)
+            .and_then(|inboxes| inboxes.get_mut(&self.peer))
+            .and_then(VecDeque::pop_front)
+    }
 }
 
-impl Channel for FakeChannel {
+/// The samples of one service over a [`FakeBus`].
+pub struct FakeSampleChannel(pub(super) FakeChannel);
+
+impl SampleChannel for FakeSampleChannel {
     type Error = Error;
 
-    fn send(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Error> {
-        let mut bytes = Vec::with_capacity(header.len() + payload.len());
-        bytes.extend_from_slice(header);
-        bytes.extend_from_slice(payload);
-        self.bus.state.deliver(&self.descriptor, self.peer, bytes);
+    fn send(&mut self, bytes: &[&[u8]]) -> Result<(), Self::Error> {
+        self.0.deliver(bytes);
         Ok(())
     }
 
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<Option<L::Sample>, ReceiveError<Self::Error>> {
-        let origin = origin!("FakeChannel::receive");
+    ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
+        let origin = origin!("FakeSampleChannel::receive");
 
-        let bytes = self
-            .bus
-            .state
-            .inboxes
-            .borrow_mut()
-            .get_mut(&self.descriptor)
-            .and_then(|inboxes| inboxes.get_mut(&self.peer))
-            .and_then(VecDeque::pop_front);
-        let Some(bytes) = bytes else {
+        let Some(bytes) = self.0.pop() else {
             return Ok(None);
         };
         let sample = fail!(
             from origin,
-            when populate(self.header_size, &bytes, loanable),
-            to ReceiveError<Error>,
-            "Dropped a frame of {} bytes", bytes.len()
+            when populate(&bytes, loanable),
+            to SampleReceiveError<Error>,
+            "Dropped {} bytes", bytes.len()
         );
         Ok(Some(sample))
+    }
+}
+
+/// The ids of one event service over a [`FakeBus`].
+pub struct FakeEventChannel(pub(super) FakeChannel);
+
+impl EventChannel for FakeEventChannel {
+    type Error = Error;
+
+    fn send(&mut self, id: EventId) -> Result<(), Self::Error> {
+        self.0.deliver(&[&encode(id)]);
+        Ok(())
+    }
+
+    fn receive(&mut self) -> Result<Option<EventId>, EventReceiveError<Self::Error>> {
+        let origin = origin!("FakeEventChannel::receive");
+
+        let Some(bytes) = self.0.pop() else {
+            return Ok(None);
+        };
+        let id = fail!(
+            from origin,
+            when decode(&bytes),
+            to EventReceiveError<Error>,
+            "Dropped {} bytes that are not an event id", bytes.len()
+        );
+        Ok(Some(id))
     }
 }
 

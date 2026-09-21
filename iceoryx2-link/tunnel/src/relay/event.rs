@@ -16,13 +16,10 @@ use iceoryx2::port::event_id::EventId;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder};
 use iceoryx2_link_backend::service_description::{EventDescription, ServiceDescriptor};
-use iceoryx2_link_backend::wire::UnsupportedLength;
-use iceoryx2_link_backend::wire::event::{SIZE, decode, encode};
-use iceoryx2_link_backend::wire::sample::{LoanError, LoanableSample, WritableSample};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
-use iceoryx2_link_carrier::{Carrier, Channel};
+use iceoryx2_link_carrier::{Carrier, EventChannel, EventReceiveError};
 
 pub struct Builder<'a, S: Service, C: Carrier> {
     carrier: &'a mut C,
@@ -49,14 +46,14 @@ impl<'a, S: Service, C: Carrier> Builder<'a, S, C> {
 
 impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     type CreationError = CreationError<C::ChannelError>;
-    type Relay = Relay<S, C::Channel>;
+    type Relay = Relay<S, C::EventChannel>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = origin!("Builder::create");
 
         let channel = fail!(
             from origin,
-            when self.carrier.open_channel(self.descriptor),
+            when self.carrier.open_event_channel(self.descriptor),
             to CreationError<C::ChannelError>,
             "Failed to open the channel of service {}", self.description.name()
         );
@@ -68,12 +65,12 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
 }
 
 /// Moves event ids over a carrier channel.
-pub struct Relay<S: Service, C: Channel> {
+pub struct Relay<S: Service, C: EventChannel> {
     channel: C,
     _service: PhantomData<S>,
 }
 
-impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
+impl<S: Service, C: EventChannel> EventRelay<S> for Relay<S, C> {
     type SendError = SendError<C::Error>;
     type ReceiveError = ReceiveError<C::Error>;
 
@@ -82,9 +79,9 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
 
         fail!(
             from origin,
-            when self.channel.send(&[], &encode(id)),
+            when self.channel.send(id),
             to SendError<C::Error>,
-            "Failed to send a frame"
+            "Failed to send an event id"
         );
 
         Ok(())
@@ -92,66 +89,22 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
 
     fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
-        let received = match self.channel.receive(UnloanedEvent) {
-            Ok(received) => received,
-            Err(iceoryx2_link_carrier::ReceiveError::Rejected(_)) => {
+        match self.channel.receive() {
+            Ok(received) => Ok(received),
+            Err(EventReceiveError::Malformed) => {
                 fail!(
                     from origin,
                     with ReceiveError::Malformed,
-                    "Received a frame that is not an event id"
+                    "Received bytes that are not an event id"
                 );
             }
-            Err(iceoryx2_link_carrier::ReceiveError::Failed(error)) => {
+            Err(EventReceiveError::Failed(error)) => {
                 fail!(
                     from origin,
                     with ReceiveError::Channel(error),
-                    "Failed to receive a frame"
+                    "Failed to receive an event id"
                 );
             }
-        };
-        let Some(event) = received else {
-            return Ok(None);
-        };
-        let id = fail!(
-            from origin,
-            when decode(&event.0).ok_or(ReceiveError::Malformed),
-            "Received a frame that is not an event id"
-        );
-        Ok(Some(id))
-    }
-}
-
-/// An event id frame before it has a length.
-struct UnloanedEvent;
-
-impl LoanableSample for UnloanedEvent {
-    type Sample = EventBytes;
-
-    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
-        let origin = origin!("UnloanedEvent::loan");
-        if payload_len != SIZE {
-            fail!(
-                from origin,
-                with LoanError::Malformed,
-                "A frame of {} bytes is not an event id", payload_len
-            );
-        }
-        Ok(EventBytes([0; SIZE]))
-    }
-}
-
-/// The bytes of one event id, without a header.
-struct EventBytes([u8; SIZE]);
-
-impl WritableSample for EventBytes {
-    fn payload(&mut self) -> &mut [u8] {
-        &mut self.0
-    }
-
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        match len {
-            0 => Ok(&mut []),
-            _ => Err(UnsupportedLength),
         }
     }
 }

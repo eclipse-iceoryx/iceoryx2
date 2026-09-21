@@ -13,8 +13,6 @@
 use std::sync::{Arc, OnceLock};
 
 use iceoryx2_link_backend::WakeHandle;
-use iceoryx2_link_backend::wire::sample::LoanableSample;
-use iceoryx2_link_carrier::{Channel, ReceiveError, populate};
 use iceoryx2_log::{fail, origin};
 use zenoh::Wait;
 use zenoh::bytes::ZBytes;
@@ -25,7 +23,13 @@ use zenoh::sample::{Locality, Sample};
 
 use crate::inbox::Inbox;
 
-/// Frames a channel holds pending.
+mod event;
+mod sample;
+
+pub use event::ZenohEventChannel;
+pub use sample::ZenohSampleChannel;
+
+/// Samples a channel holds pending.
 const CAPACITY: usize = 64;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -55,11 +59,10 @@ impl core::fmt::Display for Error {
 
 impl core::error::Error for Error {}
 
-/// The frames of one service over zenoh.
-pub struct ZenohChannel {
+/// The zenoh publisher and subscriber one service's bytes cross on.
+pub(crate) struct ZenohChannel {
     publisher: Publisher<'static>,
     subscriber: Subscriber<Inbox<Sample>>,
-    header_size: usize,
 }
 
 impl ZenohChannel {
@@ -67,9 +70,9 @@ impl ZenohChannel {
         session: &zenoh::Session,
         key: OwnedKeyExpr,
         wake: Arc<OnceLock<WakeHandle>>,
-        header_size: usize,
     ) -> Result<Self, ChannelError> {
         let origin = origin!("ZenohChannel::open");
+
         let publisher = fail!(
             from origin,
             when session
@@ -90,47 +93,36 @@ impl ZenohChannel {
             with ChannelError::Subscriber,
             "Failed to declare the subscriber of {}", key
         );
+
         Ok(Self {
             publisher,
             subscriber,
-            header_size,
         })
     }
-}
 
-impl Channel for ZenohChannel {
-    type Error = Error;
+    /// Puts the bytes as one zenoh payload.
+    fn put(&self, bytes: &[&[u8]]) -> Result<(), Error> {
+        let origin = origin!("ZenohChannel::put");
 
-    fn send(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Error> {
-        let origin = origin!("ZenohChannel::send");
-        let mut bytes = ZBytes::writer();
-        bytes.append(ZBytes::from(header));
-        bytes.append(ZBytes::from(payload));
+        let mut concatenated = ZBytes::writer();
+        for slice in bytes {
+            concatenated.append(ZBytes::from(*slice));
+        }
         fail!(
             from origin,
-            when self.publisher.put(bytes.finish()).wait(),
+            when self.publisher.put(concatenated.finish()).wait(),
             with Error::Put,
-            "Failed to put a frame"
+            "Failed to put the bytes"
         );
+
         Ok(())
     }
 
-    fn receive<L: LoanableSample>(
-        &mut self,
-        loanable: L,
-    ) -> Result<Option<L::Sample>, ReceiveError<Self::Error>> {
-        let origin = origin!("ZenohChannel::receive");
-
-        let Some(sample) = self.subscriber.handler().pop() else {
-            return Ok(None);
-        };
-        let bytes = sample.payload().to_bytes();
-        let sample = fail!(
-            from origin,
-            when populate(self.header_size, &bytes, loanable),
-            to ReceiveError<Error>,
-            "Dropped a frame of {} bytes", bytes.len()
-        );
-        Ok(Some(sample))
+    /// The next pending bytes, if any.
+    fn pop(&self) -> Option<Vec<u8>> {
+        self.subscriber
+            .handler()
+            .pop()
+            .map(|sample| sample.payload().to_bytes().into_owned())
     }
 }

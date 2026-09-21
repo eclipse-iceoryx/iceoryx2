@@ -19,10 +19,10 @@ use iceoryx2_link_backend::service_description::{
 };
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
 use iceoryx2_link_backend::wire::sample::{LoanableSample, payload_bytes, user_header_bytes};
+use iceoryx2_link_carrier::{Carrier, SampleChannel};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
-use iceoryx2_link_carrier::{Carrier, Channel};
 
 /// Creates relays over a carrier.
 pub struct Builder<'a, S: Service, C: Carrier> {
@@ -50,14 +50,14 @@ impl<'a, S: Service, C: Carrier> Builder<'a, S, C> {
 
 impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     type CreationError = CreationError<C::ChannelError>;
-    type Relay = Relay<S, C::Channel>;
+    type Relay = Relay<S, C::SampleChannel>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = origin!("Builder::create");
 
         let channel = fail!(
             from origin,
-            when self.carrier.open_channel(self.descriptor),
+            when self.carrier.open_sample_channel(self.descriptor),
             to CreationError<C::ChannelError>,
             "Failed to open the channel of service {}", self.description.name()
         );
@@ -71,13 +71,13 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
 }
 
 /// Moves publish-subscribe samples over a carrier channel.
-pub struct Relay<S: Service, C: Channel> {
+pub struct Relay<S: Service, C: SampleChannel> {
     channel: C,
     types: SampleTypes,
     _service: PhantomData<S>,
 }
 
-impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
+impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
     type SendError = SendError<C::Error>;
     type ReceiveError = ReceiveError<C::Error>;
 
@@ -91,9 +91,9 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
         let payload = payload_bytes(sample.payload());
         fail!(
             from origin,
-            when self.channel.send(header, payload),
+            when self.channel.send(&[header, payload]),
             to SendError<C::Error>,
-            "Failed to send a frame"
+            "Failed to send a sample"
         );
 
         Ok(())
@@ -106,18 +106,18 @@ impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
         let origin = origin!("Relay::receive");
         match self.channel.receive(loanable) {
             Ok(received) => Ok(received),
-            Err(iceoryx2_link_carrier::ReceiveError::Rejected(refusal)) => {
+            Err(iceoryx2_link_carrier::SampleReceiveError::Rejected(refusal)) => {
                 fail!(
                     from origin,
                     with ReceiveError::from_refusal(refusal),
-                    "Rejected a frame"
+                    "Rejected a sample"
                 );
             }
-            Err(iceoryx2_link_carrier::ReceiveError::Failed(error)) => {
+            Err(iceoryx2_link_carrier::SampleReceiveError::Failed(error)) => {
                 fail!(
                     from origin,
                     with ReceiveError::Channel(error),
-                    "Failed to receive a frame"
+                    "Failed to receive a sample"
                 );
             }
         }

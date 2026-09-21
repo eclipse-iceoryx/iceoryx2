@@ -10,15 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
+mod event;
+mod sample;
 
-extern crate alloc;
-
-mod adapter;
-mod carrier;
-
-pub use adapter::{
-    FakeAdapter, FakeEndpointDescription, FakeEndpointSettings, FakeEndpointTypes, FakeEndpoints,
-    FakeMapping, FakeMiddleware, FakeSwapTranslator, SwapTranscoder, endpoint_of, swapped_bytes,
-};
-pub use carrier::{Error, FakeBus, FakeCarrier, FakeEventChannel, FakeSampleChannel};
+pub use event::{EventChannel, EventReceiveError};
+pub use sample::{SampleChannel, SampleReceiveError, populate};

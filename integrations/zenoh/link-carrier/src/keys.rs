@@ -46,7 +46,7 @@ pub fn parse_offer(key: &keyexpr) -> Option<(ServiceHash, Fingerprint, PeerId)> 
     Some((hash, fingerprint, peer))
 }
 
-/// The key the frames of the service cross on.
+/// The key the bytes of the service cross on.
 pub fn channel(hash: &ServiceHash, fingerprint: &Fingerprint) -> OwnedKeyExpr {
     key(format!(
         "{NAMESPACE}/{VERSION}/channel/{}/{}",

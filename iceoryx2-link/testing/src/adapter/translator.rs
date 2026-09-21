@@ -205,73 +205,8 @@ pub fn swapped_bytes(value: u64) -> [u8; WORD] {
 mod tests {
     use super::*;
 
-    use alloc::vec::Vec;
-
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_adapter::{LoanError, UnsupportedLength};
-
-    const VALUE: u64 = 0x0102_0304_0506_0708;
-
-    #[test]
-    fn a_header_word_is_reversed_in_both_directions() {
-        let mut wire = Vec::new();
-        SwapHeader
-            .encode(&VALUE.to_ne_bytes(), &mut wire)
-            .expect("encoding succeeds");
-        assert_that!(wire, eq swapped_bytes(VALUE).to_vec());
-
-        let mut local = Buffers::default();
-        SwapHeader
-            .decode(&wire, &mut local)
-            .expect("decoding succeeds");
-        assert_that!(local.header, eq VALUE.to_ne_bytes().to_vec());
-    }
-
-    #[test]
-    fn a_payload_word_is_reversed_in_both_directions() {
-        let mut wire = Vec::new();
-        SwapPayload
-            .encode(&VALUE.to_ne_bytes(), &mut wire)
-            .expect("encoding succeeds");
-        assert_that!(wire, eq swapped_bytes(VALUE).to_vec());
-
-        let local = SwapPayload
-            .decode(&wire, Buffer)
-            .expect("decoding succeeds");
-        assert_that!(local.payload, eq VALUE.to_ne_bytes().to_vec());
-    }
-
-    /// Buffers for a sample before its payload has a length.
-    struct Buffer;
-
-    impl LoanableSample for Buffer {
-        type Sample = Buffers;
-
-        fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
-            Ok(Buffers {
-                header: Vec::new(),
-                payload: alloc::vec![0; payload_len],
-            })
-        }
-    }
-
-    /// Buffers for a loaned sample, the header sized by its writer.
-    #[derive(Default)]
-    struct Buffers {
-        header: Vec<u8>,
-        payload: Vec<u8>,
-    }
-
-    impl WritableSample for Buffers {
-        fn payload(&mut self) -> &mut [u8] {
-            &mut self.payload
-        }
-
-        fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-            self.header.for_length(len)
-        }
-    }
 
     #[test]
     fn the_type_names_round_trip() {

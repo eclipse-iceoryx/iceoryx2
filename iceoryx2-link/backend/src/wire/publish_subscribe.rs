@@ -69,6 +69,10 @@ impl<'a, 'b, S: Service, E> UnloanedSample<'a, 'b, S, E> {
 impl<S: Service, E> LoanableSample for UnloanedSample<'_, '_, S, E> {
     type Sample = LoanedSample<S>;
 
+    fn header_size(&self) -> usize {
+        self.types.user_header.size
+    }
+
     fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
         let origin = origin!("UnloanedSample::loan");
 

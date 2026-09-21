@@ -22,7 +22,7 @@ pub mod adapter_publish_subscribe {
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_adapter::{Adapter, PublishSubscribeEndpoints};
 
-    use crate::testing::Taken;
+    use crate::testing::UnloanedBuffers;
 
     use crate::fixture::{AdapterFixture, MessageEndpoints};
     use crate::testing::retry;
@@ -33,7 +33,7 @@ pub mod adapter_publish_subscribe {
     /// header, as the suites' remote endpoints send them.
     fn take<E: PublishSubscribeEndpoints>(endpoints: &mut E) -> Option<Vec<u8>> {
         endpoints
-            .take(Taken)
+            .take(UnloanedBuffers { header_size: 0 })
             .expect("taking succeeds")
             .map(|taken| taken.payload)
     }

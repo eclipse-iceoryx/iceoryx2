@@ -15,7 +15,7 @@ use core::error::Error;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 
-use crate::{Announcement, Channel, Offer};
+use crate::{Announcement, EventChannel, Offer, SampleChannel};
 
 /// The abstraction over the communication mechanism connecting `iceoryx2`
 /// systems.
@@ -23,7 +23,8 @@ pub trait Carrier {
     type AnnouncementError: Error;
     type ListError: Error;
     type ChannelError: Error;
-    type Channel: Channel;
+    type SampleChannel: SampleChannel;
+    type EventChannel: EventChannel;
 
     /// Makes a change to this tunnel's offers visible to peers.
     fn announce(&mut self, announcement: Announcement) -> Result<(), Self::AnnouncementError>;
@@ -38,9 +39,15 @@ pub trait Carrier {
     /// Calls `callback` once for each offer of each peer.
     fn offers(&self, callback: &mut dyn FnMut(Offer)) -> Result<(), Self::ListError>;
 
-    /// The byte channel for the described service.
-    fn open_channel(
+    /// The channel carrying the described service's samples.
+    fn open_sample_channel(
         &mut self,
         descriptor: &ServiceDescriptor,
-    ) -> Result<Self::Channel, Self::ChannelError>;
+    ) -> Result<Self::SampleChannel, Self::ChannelError>;
+
+    /// The channel carrying the described event service's ids.
+    fn open_event_channel(
+        &mut self,
+        descriptor: &ServiceDescriptor,
+    ) -> Result<Self::EventChannel, Self::ChannelError>;
 }

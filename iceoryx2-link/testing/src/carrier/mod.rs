@@ -14,7 +14,8 @@ mod bus;
 mod channel;
 
 pub use bus::FakeBus;
-pub use channel::FakeChannel;
+use channel::FakeChannel;
+pub use channel::{FakeEventChannel, FakeSampleChannel};
 
 use alloc::collections::VecDeque;
 
@@ -52,7 +53,8 @@ impl Carrier for FakeCarrier {
     type AnnouncementError = Error;
     type ListError = Error;
     type ChannelError = Error;
-    type Channel = FakeChannel;
+    type SampleChannel = FakeSampleChannel;
+    type EventChannel = FakeEventChannel;
 
     fn announce(&mut self, announcement: Announcement) -> Result<(), Self::AnnouncementError> {
         self.bus.state.announce(self.peer, announcement);
@@ -76,10 +78,24 @@ impl Carrier for FakeCarrier {
         Ok(())
     }
 
-    fn open_channel(
+    fn open_sample_channel(
         &mut self,
         descriptor: &ServiceDescriptor,
-    ) -> Result<Self::Channel, Self::ChannelError> {
+    ) -> Result<Self::SampleChannel, Self::ChannelError> {
+        Ok(FakeSampleChannel(self.open(descriptor)))
+    }
+
+    fn open_event_channel(
+        &mut self,
+        descriptor: &ServiceDescriptor,
+    ) -> Result<Self::EventChannel, Self::ChannelError> {
+        Ok(FakeEventChannel(self.open(descriptor)))
+    }
+}
+
+impl FakeCarrier {
+    /// Opens this peer's inbox on the descriptor's channel.
+    fn open(&mut self, descriptor: &ServiceDescriptor) -> FakeChannel {
         self.bus
             .state
             .inboxes
@@ -87,11 +103,7 @@ impl Carrier for FakeCarrier {
             .entry(descriptor.clone())
             .or_default()
             .insert(self.peer, VecDeque::new());
-        Ok(FakeChannel::new(
-            self.peer,
-            descriptor.clone(),
-            self.bus.clone(),
-        ))
+        FakeChannel::new(self.peer, descriptor.clone(), self.bus.clone())
     }
 }
 

@@ -17,14 +17,14 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_backend::{Reactive, WakeHandle};
-use iceoryx2_link_carrier::{Announcement, Carrier, Offer, PeerId, header_size};
+use iceoryx2_link_carrier::{Announcement, Carrier, Offer, PeerId};
 use iceoryx2_log::{error, fail, origin, trace};
 use zenoh::liveliness::LivelinessToken;
 use zenoh::query::Queryable;
 use zenoh::sample::Locality;
 use zenoh::{Session, Wait};
 
-use crate::channel::{ChannelError, ZenohChannel};
+use crate::channel::{ChannelError, ZenohChannel, ZenohEventChannel, ZenohSampleChannel};
 use crate::fingerprint::Encoded;
 use crate::keys;
 use crate::offers::OfferTracker;
@@ -111,6 +111,7 @@ impl ZenohCarrier {
             with CreationError::Subscriber,
             "Failed to subscribe to the peers' offers"
         );
+
         Ok(Self {
             session,
             id,
@@ -131,10 +132,12 @@ impl Carrier for ZenohCarrier {
     type AnnouncementError = AnnouncementError;
     type ListError = core::convert::Infallible;
     type ChannelError = ChannelError;
-    type Channel = ZenohChannel;
+    type SampleChannel = ZenohSampleChannel;
+    type EventChannel = ZenohEventChannel;
 
     fn announce(&mut self, announcement: Announcement) -> Result<(), Self::AnnouncementError> {
         let origin = origin!("ZenohCarrier::announce");
+
         match announcement {
             Announcement::Offered { descriptor } => {
                 let encoded = fail!(
@@ -181,6 +184,7 @@ impl Carrier for ZenohCarrier {
                 self.announced.remove(&hash);
             }
         }
+
         Ok(())
     }
 
@@ -193,11 +197,25 @@ impl Carrier for ZenohCarrier {
         Ok(())
     }
 
-    fn open_channel(
+    fn open_sample_channel(
         &mut self,
         descriptor: &ServiceDescriptor,
-    ) -> Result<Self::Channel, Self::ChannelError> {
-        let origin = origin!("ZenohCarrier::open_channel");
+    ) -> Result<Self::SampleChannel, Self::ChannelError> {
+        Ok(ZenohSampleChannel(self.channel(descriptor)?))
+    }
+
+    fn open_event_channel(
+        &mut self,
+        descriptor: &ServiceDescriptor,
+    ) -> Result<Self::EventChannel, Self::ChannelError> {
+        Ok(ZenohEventChannel(self.channel(descriptor)?))
+    }
+}
+
+impl ZenohCarrier {
+    /// The channel keyed by the descriptor.
+    fn channel(&mut self, descriptor: &ServiceDescriptor) -> Result<ZenohChannel, ChannelError> {
+        let origin = origin!("ZenohCarrier::channel");
 
         let encoded = fail!(
             from origin,
@@ -205,13 +223,9 @@ impl Carrier for ZenohCarrier {
             with ChannelError::Publisher,
             "Failed to encode the descriptor of {}", descriptor.name
         );
+
         let key = keys::channel(&descriptor.hash, encoded.fingerprint());
-        ZenohChannel::open(
-            &self.session,
-            key,
-            self.wake.clone(),
-            header_size(descriptor),
-        )
+        ZenohChannel::open(&self.session, key, self.wake.clone())
     }
 }
 

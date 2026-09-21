@@ -25,7 +25,11 @@ instantiate_conformance_tests!(
     FakeBusFixture
 );
 instantiate_conformance_tests!(
-    iceoryx2_link_conformance_tests::carrier_propagation,
+    iceoryx2_link_conformance_tests::carrier_event,
+    FakeBusFixture
+);
+instantiate_conformance_tests!(
+    iceoryx2_link_conformance_tests::carrier_sample,
     FakeBusFixture
 );
 instantiate_conformance_tests!(
