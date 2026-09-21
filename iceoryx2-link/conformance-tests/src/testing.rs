@@ -13,6 +13,7 @@
 use alloc::collections::BTreeSet;
 use alloc::rc::Rc;
 use alloc::string::String;
+use alloc::vec;
 use alloc::vec::Vec;
 use core::time::Duration;
 
@@ -119,6 +120,25 @@ pub fn types_of(payload: &str) -> ServiceTypes {
         },
         user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
     })
+}
+
+/// A descriptor of the service `name` with `payload` as its payload type
+/// and a user header of `header_size` bytes.
+pub fn descriptor_with_header(name: &str, payload: &str, header_size: usize) -> ServiceDescriptor {
+    let ServiceTypes::PublishSubscribe(mut types) = types_of(payload) else {
+        unreachable!("types_of describes a publish-subscribe service");
+    };
+    types.user_header = TypeDescription {
+        variant: TypeVariant::FixedSize,
+        type_name: String::from("header"),
+        size: header_size,
+        alignment: 1,
+    };
+    ServiceDescriptor {
+        name: ServiceName::new(name).expect("valid service name"),
+        hash: hash(name),
+        types: ServiceTypes::PublishSubscribe(types),
+    }
 }
 
 /// A link filter rejecting only the service `name`, and whether it has
@@ -277,6 +297,17 @@ impl LoanableSample for Taken {
             header: Vec::new(),
             payload: vec![0; payload_len],
         })
+    }
+}
+
+/// Mocks a loan that is refused.
+pub struct NotLoanable;
+
+impl LoanableSample for NotLoanable {
+    type Sample = TakenMessage;
+
+    fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
+        Err(LoanError::Malformed)
     }
 }
 
