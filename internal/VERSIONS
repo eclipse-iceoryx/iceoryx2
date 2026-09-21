@@ -5,4 +5,4 @@
 CURRENT: 0.10.999
 
 # This version is set by the release_preparations.sh script
-PREVIOUS_RELEASE: 0.10.999
+PREVIOUS_RELEASE: 0.10.0
