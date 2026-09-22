@@ -224,7 +224,7 @@ impl<S: Service> PublishSubscribePorts<S> {
 
 /// Loans a sample holding `number_of_bytes` of payload.
 ///
-/// The `number_of_bytes` must must be a multiple of the payload size.
+/// The `number_of_bytes` must be a multiple of the payload size.
 fn loan<S: Service>(
     publisher: &Publisher<S>,
     payload: &TypeDescription,

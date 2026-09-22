@@ -44,14 +44,15 @@ pub trait LoanableSample {
     /// The loaned sample with writable header and payload.
     type Sample: WritableSample;
 
-    /// The size of the header at the start of a frame it accepts.
+    /// The size of the header.
     fn header_size(&self) -> usize;
 
     /// Acquire a loan for the sample.
     ///
-    /// Fails with
+    /// Fails with:
     ///
-    /// * `Malformed` if no sample of the service holds `payload_len` bytes,
+    /// * `Malformed` if no `payload_len` is an invalid length for a sample of
+    ///   this service
     /// * `Exhausted` if no sample could be loaned
     fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError>;
 }
