@@ -25,7 +25,7 @@ _test-e2e-dispatch what *flags:
             echo ""
             echo "Scope:"
             echo "  integrations-ros2           run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
-            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup ros2-workspace')"
+            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup integrations-ros2')"
             exit 1
             ;;
         integrations-ros2)
@@ -43,13 +43,10 @@ _test-e2e-dispatch what *flags:
 [private]
 _test-e2e-integrations-ros2:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -eo pipefail
 
-    if [ -z "${ROS_DISTRO:-}" ]; then
-        echo "Error: no sourced ROS 2 environment" >&2
-        echo "  Source your ROS 2 setup first, e.g.: source /opt/ros/jazzy/setup.bash" >&2
-        exit 1
-    fi
+    just _ros2-require-messages
+    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
 
     # Honor a caller-provided RMW (e.g. the CI matrix), defaulting to Fast DDS otherwise.
     export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
@@ -61,15 +58,11 @@ _test-e2e-integrations-ros2-examples:
     #!/usr/bin/env bash
     set -eo pipefail
 
-    if [ -z "${ROS_DISTRO:-}" ]; then
-        echo "Error: no sourced ROS 2 environment" >&2
-        echo "  Source your ROS 2 setup first, e.g.: source /opt/ros/jazzy/setup.bash" >&2
-        exit 1
-    fi
+    just _ros2-require-messages
 
     if [ ! -f "{{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}/setup.bash" ]; then
-        echo "Error: no built examples at {{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}" >&2
-        echo "  Build it first: just setup ros2-workspace" >&2
+        echo "Error: the ROS 2 examples are not built" >&2
+        echo "  Build them first: just setup integrations-ros2-examples" >&2
         exit 1
     fi
 

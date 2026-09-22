@@ -12,6 +12,7 @@
 
 import '.just/paths.just'
 import '.just/common.just'
+import '.just/ros2.just'
 import '.just/build.just'
 import '.just/test.just'
 import '.just/test-e2e.just'

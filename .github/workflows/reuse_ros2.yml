@@ -110,7 +110,7 @@ jobs:
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just setup ros2-workspace
+          just setup integrations-ros2
 
       - name: End-to-end test examples
         shell: bash

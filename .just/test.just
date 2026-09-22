@@ -211,7 +211,10 @@ _test-integrations-zenoh toolchain target_triplet profile has_nostd has_doc extr
 [private]
 _test-integrations-ros2 toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -eo pipefail
+
+    just _ros2-require-messages
+    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
 
     if [ "{{has_nostd}}" = "true" ]; then
         echo "Error: the ros2 workspace cannot be built with --no_std" >&2

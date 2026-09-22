@@ -122,7 +122,7 @@ _verify-dispatch what tool *flags:
 [private]
 _verify-clippy workspace target_triplet profile has_nostd extra_args:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -eo pipefail
 
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
@@ -130,6 +130,11 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
         if [ "$WS" != "sdk" ] && [ "{{has_nostd}}" = "true" ]; then
             echo "Error: the $WS workspace cannot be built with --no_std" >&2
             exit 1
+        fi
+
+        if [ "$WS" = "integrations-ros2" ]; then
+            just _ros2-require-messages
+            source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
         fi
 
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")

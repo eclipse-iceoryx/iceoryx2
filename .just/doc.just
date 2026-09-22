@@ -64,6 +64,10 @@ _doc-rust workspace:
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
+        if [ "$WS" = "integrations-ros2" ]; then
+            just _ros2-require-sourced
+        fi
+
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
         cargo doc --no-deps --workspace --profile dev-fast-build $MANIFEST_ARG
