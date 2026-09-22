@@ -1039,6 +1039,167 @@ pub mod service_event {
     }
 
     #[conformance_test]
+    pub fn notifying_with_foreign_listener_keys_using_default_event_id_results_in_error<
+        Sut: Service,
+    >() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let source_service = node
+            .service_builder(&generate_service_name())
+            .event()
+            .max_listeners(2)
+            .create()
+            .unwrap();
+        let _source_listener_a = source_service.listener_builder().create().unwrap();
+        let _source_listener_b = source_service.listener_builder().create().unwrap();
+        let source = source_service.notifier_builder().create().unwrap();
+        let target_service = node
+            .service_builder(&generate_service_name())
+            .event()
+            .max_listeners(1)
+            .event_id_max_value(10)
+            .create()
+            .unwrap();
+        let target_listener = target_service.listener_builder().create().unwrap();
+        let target = target_service.notifier_builder().create().unwrap();
+
+        let mut keys = vec![];
+        source.for_each_listener(|monofier, _| {
+            keys.push(monofier.listener_key());
+            CallbackProgression::Continue
+        });
+        assert_that!(keys.len(), eq 2);
+
+        // Cover both a foreign listener in an occupied slot and an out-of-bounds slot.
+        for key in keys {
+            assert_that!(
+                target.notify_single_listener_with_custom_event_id(&key, EventId::new(11)),
+                eq(Err(NotifierNotifyError::EventIdOutOfBounds))
+            );
+            assert_that!(
+                target.notify_single_listener(&key),
+                eq(Err(NotifierNotifyError::InvalidListenerKey))
+            );
+        }
+        target_listener
+            .try_wait(|event| panic!("Unexpected notification: {:?}", event))
+            .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn notifying_with_foreign_listener_keys_using_custom_event_id_results_in_error<
+        Sut: Service,
+    >() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let source_service = node
+            .service_builder(&generate_service_name())
+            .event()
+            .max_listeners(2)
+            .create()
+            .unwrap();
+        let _source_listener_a = source_service.listener_builder().create().unwrap();
+        let _source_listener_b = source_service.listener_builder().create().unwrap();
+        let source = source_service.notifier_builder().create().unwrap();
+        let target_service = node
+            .service_builder(&generate_service_name())
+            .event()
+            .max_listeners(1)
+            .event_id_max_value(10)
+            .create()
+            .unwrap();
+        let target_listener = target_service.listener_builder().create().unwrap();
+        let target = target_service.notifier_builder().create().unwrap();
+
+        let mut keys = vec![];
+        source.for_each_listener(|monofier, _| {
+            keys.push(monofier.listener_key());
+            CallbackProgression::Continue
+        });
+        assert_that!(keys.len(), eq 2);
+
+        // Cover both a foreign listener in an occupied slot and an out-of-bounds slot.
+        for key in keys {
+            assert_that!(
+                target.notify_single_listener_with_custom_event_id(&key, EventId::new(11)),
+                eq(Err(NotifierNotifyError::EventIdOutOfBounds))
+            );
+            assert_that!(
+                target.notify_single_listener_with_custom_event_id(&key, EventId::new(3)),
+                eq(Err(NotifierNotifyError::InvalidListenerKey))
+            );
+        }
+        target_listener
+            .try_wait(|event| panic!("Unexpected notification: {:?}", event))
+            .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn notifying_with_listener_key_after_slot_reuse_results_in_error<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&generate_service_name())
+            .event()
+            .max_listeners(1)
+            .create()
+            .unwrap();
+        let listener = service.listener_builder().create().unwrap();
+        let notifier = service.notifier_builder().create().unwrap();
+        let mut old_key = None;
+        notifier.for_each_listener(|monofier, _| {
+            old_key = Some(monofier.listener_key());
+            CallbackProgression::Stop
+        });
+        let old_key = old_key.unwrap();
+        drop(listener);
+        // With capacity one, the replacement must reuse the old listener's slot.
+        let replacement = service.listener_builder().create().unwrap();
+        assert_that!(
+            notifier.notify_single_listener(&old_key),
+            eq(Err(NotifierNotifyError::InvalidListenerKey))
+        );
+        assert_that!(
+            notifier.notify_single_listener_with_custom_event_id(&old_key, EventId::new(3)),
+            eq(Err(NotifierNotifyError::InvalidListenerKey))
+        );
+        replacement
+            .try_wait(|event| panic!("Unexpected notification: {:?}", event))
+            .unwrap();
+
+        let mut new_key = None;
+        notifier.for_each_listener(|monofier, _| {
+            new_key = Some(monofier.listener_key());
+            CallbackProgression::Stop
+        });
+        let new_key = new_key.unwrap();
+        for _ in 0..3 {
+            assert_that!(notifier.notify_single_listener(&new_key), is_ok);
+            let mut received_events = 0;
+            replacement
+                .try_wait(|event| {
+                    assert_that!(event.id, eq EventId::default());
+                    received_events += event.count;
+                })
+                .unwrap();
+            assert_that!(received_events, eq 1);
+
+            assert_that!(
+                notifier.notify_single_listener_with_custom_event_id(&new_key, EventId::new(3)),
+                is_ok
+            );
+            let mut received_events = 0;
+            replacement
+                .try_wait(|event| {
+                    assert_that!(event.id, eq EventId::new(3));
+                    received_events += event.count;
+                })
+                .unwrap();
+            assert_that!(received_events, eq 1);
+        }
+    }
+
+    #[conformance_test]
     pub fn notifying_with_outdated_listener_key_results_in_error<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
