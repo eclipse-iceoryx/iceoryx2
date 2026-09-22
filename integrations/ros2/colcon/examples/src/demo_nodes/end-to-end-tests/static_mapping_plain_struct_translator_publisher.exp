@@ -20,7 +20,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
-set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_cmdvel.toml
+set MAPPING integrations/ros2/colcon/examples/src/demo_nodes/static_mapping_cmdvel.toml
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-link-gateway-ros2 2>@1

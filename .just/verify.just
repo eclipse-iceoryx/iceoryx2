@@ -234,7 +234,7 @@ _verify-std-propagation-workspace workspace:
             integrations-ros2)
                 TOMLS=$(find ./integrations/ros2 -name "Cargo.toml" \
                     -not -path "*/target/*" \
-                    -not -path "./integrations/ros2/workspace/*" \
+                    -not -path "./integrations/ros2/colcon/*" \
                     | grep -v "^\./integrations/ros2/Cargo\.toml$" \
                     | sort)
                 ;;

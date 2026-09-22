@@ -11,7 +11,7 @@ publish = false
 
 [dependencies]
 cdr = { version = "0.2.4" }
-iceoryx2 = { path = "../../../../../iceoryx2", features = ["std"] }
-iceoryx2-integrations-ros2-interop = { path = "../../../interop" }
+iceoryx2 = { path = "../../../../../../iceoryx2", features = ["std"] }
+iceoryx2-integrations-ros2-interop = { path = "../../../../interop" }
 ros-env = { version = "0.2", features = ["serde"] }
 rosidl_runtime_rs = { version = "0.7" }

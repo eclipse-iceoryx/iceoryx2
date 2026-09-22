@@ -7,9 +7,9 @@ members = [
     "link-adapter",
     "link-gateway-cli",
 ]
-# Exclude the colcon workspace because its `ament_cargo` packages are built by colcon.
+# Exclude the colcon workspaces because their `ament_cargo` packages are built by colcon.
 exclude = [
-    "workspace",
+    "colcon",
 ]
 
 [workspace.package]

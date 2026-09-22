@@ -21,11 +21,11 @@ Conversely, the plain-struct translator shares the self-contained POD structs
 generated from ROS 2 messages via shared memory. The gateway serializes these
 to CDR at the boundary to ROS 2.
 
-See [ros2/workspace/README.md](../../README.md) for the build setup common to all examples.
+See [ros2/colcon/examples/README.md](../../README.md) for the build setup common to all examples.
 
 ## Building
 
-Ensure the pre-requisites described in [ros2/workspace/README.md](../../README.md)
+Ensure the pre-requisites described in [ros2/colcon/examples/README.md](../../README.md)
 are done and run, from the workspace root:
 
 ```bash

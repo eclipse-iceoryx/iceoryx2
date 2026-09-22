@@ -20,7 +20,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
-set MAPPING integrations/ros2/workspace/src/demo_nodes/static_mapping_chatter.toml
+set MAPPING integrations/ros2/colcon/examples/src/demo_nodes/static_mapping_chatter.toml
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-link-gateway-ros2 2>@1
@@ -37,27 +37,27 @@ unset env(IOX2_LOG_LEVEL)
 expect_output_from $id_gateway "Gateway started"
 
 spawn ros2 run demo_nodes_iceoryx2 \
-    static_mapping_passthrough_translator_subscriber
-set id_subscriber $spawn_id
-expect_output_from $id_subscriber "waiting for messages on Chatter"
-
-spawn ros2 topic pub -r 5 /chatter std_msgs/msg/String "{data: 'Hello from ROS 2'}"
+    static_mapping_passthrough_translator_publisher
 set id_publisher $spawn_id
+expect_output_from $id_publisher "Hello from iceoryx2"
+
+spawn ros2 topic echo /chatter std_msgs/msg/String
+set id_echo $spawn_id
 
 #### Test Assertion
 
 expect_output_from $id_gateway "Opened PublishSubscribe bridge of Chatter"
 expect_output_from $id_gateway "PublishSubscribe bridge of Chatter moved"
 
-expect_output_from $id_subscriber "received: \"Hello from ROS 2\""
+expect_output_from $id_echo "Hello from iceoryx2"
 
 #### Shutdown
 
+send -i $id_echo $SIGINT
+expect -i $id_echo eof
+
 send -i $id_publisher $SIGINT
 expect -i $id_publisher eof
-
-send -i $id_subscriber $SIGINT
-expect -i $id_subscriber eof
 
 send -i $id_gateway $SIGINT
 expect_output_from $id_gateway "Gateway stopped"

@@ -165,7 +165,8 @@ _setup-ros2-workspace:
     just _setup-ros2-example-message-crates
     just _setup-ros2-example-package
 
-    echo "✓ ros2 example workspace built at {{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}"
+    echo "✓ ros2 message crates built at {{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}"
+    echo "✓ ros2 examples built at {{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}"
 
 # Installs the cargo-aware colcon build tools.
 [private]
@@ -196,16 +197,20 @@ _setup-ros2-example-message-crates:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    REPOS="{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}/${ROS_DISTRO}.repos"
+    REPOS="{{INTEGRATIONS_ROS2_MESSAGES_WORKSPACE}}/${ROS_DISTRO}.repos"
     if [ ! -f "${REPOS}" ]; then
         echo "Error: no repository set for '${ROS_DISTRO}' at ${REPOS}" >&2
         exit 1
     fi
 
-    cd "{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}"
+    cd "{{INTEGRATIONS_ROS2_MESSAGES_WORKSPACE}}"
     vcs import --skip-existing src < "${REPOS}"
 
-    just _setup-ros2-colcon-build "--packages-up-to std_msgs geometry_msgs rosidl_generator_rs"
+    just _setup-ros2-colcon-build \
+        "{{INTEGRATIONS_ROS2_MESSAGES_WORKSPACE}}" \
+        "{{INTEGRATIONS_ROS2_MESSAGES_BUILD_BASE}}" \
+        "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}" \
+        "--packages-up-to std_msgs geometry_msgs rosidl_generator_rs"
 
 [private]
 _setup-ros2-example-package:
@@ -214,20 +219,24 @@ _setup-ros2-example-package:
 
     PACKAGE="demo_nodes_iceoryx2"
 
-    source "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}/setup.bash"
+    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
 
-    just _setup-ros2-colcon-build "--packages-select ${PACKAGE}"
+    just _setup-ros2-colcon-build \
+        "{{INTEGRATIONS_ROS2_EXAMPLES_WORKSPACE}}" \
+        "{{INTEGRATIONS_ROS2_EXAMPLES_BUILD_BASE}}" \
+        "{{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}" \
+        "--packages-select ${PACKAGE}"
 
-# Runs colcon from the workspace root, which is also where colcon-ros-cargo
-# writes the `.cargo/config.toml` to patch the message crate dependencies.
-# Build must be run from here.
+# Runs colcon from the root of `workspace`, which is also where
+# colcon-ros-cargo writes the `.cargo/config.toml` to patch the message crate
+# dependencies. Build must be run from here.
 [private]
-_setup-ros2-colcon-build *args:
+_setup-ros2-colcon-build workspace build_base install_base *args:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    cd "{{INTEGRATIONS_ROS2_EXAMPLE_WORKSPACE}}"
+    cd "{{workspace}}"
     colcon build \
-        --build-base "{{INTEGRATIONS_ROS2_EXAMPLE_BUILD_BASE}}" \
-        --install-base "{{INTEGRATIONS_ROS2_EXAMPLE_INSTALL_BASE}}" \
+        --build-base "{{build_base}}" \
+        --install-base "{{install_base}}" \
         {{args}}

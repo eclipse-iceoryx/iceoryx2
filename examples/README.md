@@ -113,6 +113,6 @@ These types are demonstrated in the complex data types example.
 > above. They live in the standalone workspace of their integration and may
 > have additional requirements and dependencies (e.g. ROS 2).
 
-| Name       | Integration                                            | Description                                                                                                                                                      |
-| ---------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| demo nodes | [ROS 2](../integrations/ros2/workspace/src/demo_nodes) | Native iceoryx2 publish-subscribe services bridged to ROS 2 by the gateway, covering the available service-to-topic mappings and payload translation strategies. |
+| Name       | Integration                                                  | Description                                                                                                                                                      |
+| ---------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| demo nodes | [ROS 2](../integrations/ros2/colcon/examples/src/demo_nodes) | Native iceoryx2 publish-subscribe services bridged to ROS 2 by the gateway, covering the available service-to-topic mappings and payload translation strategies. |
