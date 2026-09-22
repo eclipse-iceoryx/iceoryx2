@@ -51,6 +51,8 @@ getrandom = { version = "0.4" }
 human-panic = { version = "2.0.5" }
 libloading = { version = "0.8" }
 r2r_rcl = { version = "0.9.5" }
+ros-env = { version = "0.2" }
+rosidl_runtime_rs = { version = "0.7" }
 serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }
 toml = { version = "0.9.8", default-features = false, features = ["serde", "parse", "display"] }
 

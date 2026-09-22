@@ -27,7 +27,7 @@ use iceoryx2_link_conformance_tests::fixture::{
 };
 use iceoryx2_link_conformance_tests::parameters::PayloadShape;
 
-use super::WireForm;
+use super::TranslationUnderTest;
 
 /// The pause between two looks at the matching counts.
 pub const POLL_PERIOD: Duration = Duration::from_millis(10);
@@ -42,8 +42,10 @@ pub struct RemoteMessageEndpoints {
 impl RemoteMessageEndpoints {
     pub(super) fn new(peer: &PeerNode, description: TopicDescription, qos: QosProfile) -> Self {
         let EndpointDescription { settings, types } = &description;
+
         let publisher = peer.publisher(&settings.topic, &types.type_name, qos.clone());
         let subscription = peer.subscription(&settings.topic, &types.type_name, qos);
+
         Self {
             description,
             publisher,
@@ -102,15 +104,15 @@ impl MessageEndpoints<TopicSettings, TopicTypes> for RemoteMessageEndpoints {
     }
 }
 
-/// Remote endpoints on the topic a service maps to which propagates its
-/// payloads in the wire form `W`.
-pub struct RemotePayloadEndpoints<W> {
+/// Remote endpoints on the topic a service maps to that sends and receives
+/// payloads in the wire form of `T`.
+pub struct RemotePayloadEndpoints<T> {
     pub(super) service: ServiceDescription,
     pub(super) endpoints: RemoteMessageEndpoints,
-    pub(super) _wire_form: PhantomData<W>,
+    pub(super) _translator: PhantomData<T>,
 }
 
-impl<W: WireForm> DiscoverableEndpoints for RemotePayloadEndpoints<W> {
+impl<T: TranslationUnderTest> DiscoverableEndpoints for RemotePayloadEndpoints<T> {
     fn service(&self) -> &ServiceDescription {
         &self.service
     }
@@ -120,14 +122,16 @@ impl<W: WireForm> DiscoverableEndpoints for RemotePayloadEndpoints<W> {
     }
 }
 
-impl<W: WireForm> PayloadEndpoints<<W as PayloadShape>::Value> for RemotePayloadEndpoints<W> {
-    fn send_payload(&self, payload: <W as PayloadShape>::Value) {
-        self.endpoints.send_message(&W::encode(payload));
+impl<T: TranslationUnderTest> PayloadEndpoints<<T::Payload as PayloadShape>::Value>
+    for RemotePayloadEndpoints<T>
+{
+    fn send_payload(&self, payload: <T::Payload as PayloadShape>::Value) {
+        self.endpoints.send_message(&T::to_wire(payload));
     }
 
-    fn receive_payload(&self) -> Option<<W as PayloadShape>::Value> {
+    fn receive_payload(&self) -> Option<<T::Payload as PayloadShape>::Value> {
         self.endpoints
             .receive_message()
-            .map(|wire| W::decode(&wire))
+            .map(|wire| T::from_wire(&wire))
     }
 }

@@ -13,9 +13,13 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 use iceoryx2_integrations_ros2_link_adapter::ros_header::RosHeader;
 use iceoryx2_link_conformance_tests::fixture::GatewayLinkFixture;
-use iceoryx2_link_conformance_tests::parameters::PublishSubscribe;
+use iceoryx2_link_conformance_tests::parameters::{
+    FixedSizePayload, PublishSubscribe, SlicePayload,
+};
 
-use crate::fixture::{Passthrough, PlainStruct, PrefixMapped, Ros2Fixture, StaticMapped};
+use crate::fixture::{
+    Passthrough, PlainStruct, PrefixMapped, Ros2Fixture, StaticMapped, StringByte, UInt64,
+};
 
 type Ipc = iceoryx2::service::ipc::Service;
 type Local = iceoryx2::service::local::Service;
@@ -48,25 +52,25 @@ mod ipc {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<PrefixMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<PrefixMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
                 );
             }
@@ -81,25 +85,25 @@ mod ipc {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Ipc,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<StaticMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Ipc,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<StaticMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Ipc,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Ipc,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
                 );
             }
@@ -118,25 +122,25 @@ mod ipc {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<PrefixMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<PrefixMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Ipc,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
                 );
             }
@@ -151,25 +155,25 @@ mod ipc {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Ipc,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<StaticMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Ipc,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<StaticMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Ipc,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Ipc,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
                 );
             }
@@ -192,25 +196,25 @@ mod local {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Local,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<PrefixMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Local,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<PrefixMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Local,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Local,
-                    PublishSubscribe<PrefixMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
                 );
             }
@@ -225,25 +229,25 @@ mod local {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Local,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<StaticMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Local,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<StaticMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Local,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Local,
-                    PublishSubscribe<StaticMapped, PlainStruct, RosHeader>,
+                    PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
                 );
             }
@@ -262,25 +266,25 @@ mod local {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Local,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<PrefixMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Local,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<PrefixMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Local,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Local,
-                    PublishSubscribe<PrefixMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<PrefixMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
                 );
             }
@@ -295,25 +299,25 @@ mod local {
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_discovery,
                     Local,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<StaticMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
                     Local,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     Ros2Fixture<StaticMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_discovery,
                     Local,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
                 );
                 instantiate_conformance_tests!(
                     iceoryx2_link_conformance_tests::link_wake,
                     Local,
-                    PublishSubscribe<StaticMapped, Passthrough, RosHeader>,
+                    PublishSubscribe<StaticMapped, SlicePayload<StringByte>, RosHeader>,
                     GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
                 );
             }

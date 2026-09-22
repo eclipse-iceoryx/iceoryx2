@@ -10,14 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod payload;
 pub mod prefix_mapping;
 mod remote_endpoints;
+mod serialization;
 pub mod static_mapping;
-mod wire_form;
+mod translation;
 
+pub use payload::{StringByte, UInt64};
 pub use prefix_mapping::PrefixMapped;
 pub use static_mapping::StaticMapped;
-pub use wire_form::{Passthrough, PlainStruct};
+pub use translation::{Passthrough, PlainStruct};
 
 use core::marker::PhantomData;
 
@@ -33,27 +36,27 @@ use iceoryx2_link_adapter::{Mapping, Translator};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
 use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
+use rosidl_runtime_rs::RmwMessage;
 
 use remote_endpoints::{RemoteMessageEndpoints, RemotePayloadEndpoints};
-use wire_form::WireForm;
+use translation::TranslationUnderTest;
 
-/// A mapping under test, also the source of the names it covers.
+/// A mapping under test. It also names the services it covers.
 pub trait MappingUnderTest: PublishSubscribeName + 'static {
     type Mapping: Mapping<EndpointSettings = TopicSettings>;
 
-    /// The mapping, over services of the payload type `payload_type`.
+    /// The mapping for services with the payload type `payload_type`.
     fn mapping(payload_type: &str) -> Self::Mapping;
 }
 
-/// The ROS 2 graph, the adapters on it and a peer node holding the
-/// remote endpoints, the gateways mapping through `M` and translating
-/// through `W`.
-pub struct Ros2Fixture<M, W> {
+/// The fixture for the adapter and gateway suites on ROS 2, with the
+/// mapping `M` and the translation `T` under test.
+pub struct Ros2Fixture<M, T> {
     peer: PeerNode,
-    _under_test: PhantomData<(M, W)>,
+    _under_test: PhantomData<(M, T)>,
 }
 
-impl<M: MappingUnderTest, W: WireForm> AdapterFixture for Ros2Fixture<M, W> {
+impl<M: MappingUnderTest, T: TranslationUnderTest> AdapterFixture for Ros2Fixture<M, T> {
     type Adapter = Ros2Adapter;
     type RemoteEndpoints = RemoteMessageEndpoints;
 
@@ -75,9 +78,9 @@ impl<M: MappingUnderTest, W: WireForm> AdapterFixture for Ros2Fixture<M, W> {
     fn remote_endpoints(&mut self) -> RemoteMessageEndpoints {
         let topic = TopicName::new(&format!("/{}", generate_service_name().as_str()))
             .expect("a valid topic name");
-        // Transient local so that payloads sent before matching is complete
-        // are still received, on the gateway's endpoints too, they take the
-        // description's QoS.
+        // Transient local durability keeps messages sent before matching
+        // completes. The gateway's endpoints take the same QoS from the
+        // description.
         let qos = QosProfile {
             durability: Durability::TransientLocal,
             ..QosProfile::default()
@@ -88,29 +91,32 @@ impl<M: MappingUnderTest, W: WireForm> AdapterFixture for Ros2Fixture<M, W> {
                 qos: qos.clone(),
             },
             types: TopicTypes {
-                type_name: TypeName::new(W::TYPE_NAME).expect("a valid type name"),
+                type_name: TypeName::new(<T::Message as RmwMessage>::TYPE_NAME)
+                    .expect("a valid type name"),
             },
         };
         RemoteMessageEndpoints::new(&self.peer, description, qos)
     }
 }
 
-impl<S: Service, M: MappingUnderTest, W: WireForm> GatewayFixture<S> for Ros2Fixture<M, W> {
+impl<S: Service, M: MappingUnderTest, T: TranslationUnderTest> GatewayFixture<S>
+    for Ros2Fixture<M, T>
+{
     type Mapping = M::Mapping;
-    type Translator = W::Translator;
-    type RemoteEndpoints = RemotePayloadEndpoints<W>;
+    type Translator = T::Translator;
+    type RemoteEndpoints = RemotePayloadEndpoints<T>;
 
     fn mapping(&self) -> M::Mapping {
-        M::mapping(W::TYPE_NAME)
+        M::mapping(<T::Message as RmwMessage>::TYPE_NAME)
     }
 
-    fn translator(&self) -> W::Translator {
-        W::Translator::default()
+    fn translator(&self) -> T::Translator {
+        T::Translator::default()
     }
 
-    /// The topic and type the gateway's own mapping and translator take
-    /// the service to.
-    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> RemotePayloadEndpoints<W> {
+    /// Remote endpoints on topics and types the gateway maps and
+    /// translates `service` to.
+    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> RemotePayloadEndpoints<T> {
         let settings = <Self as GatewayFixture<S>>::mapping(self)
             .remote(service.settings())
             .expect("the mapping succeeds")
@@ -118,13 +124,15 @@ impl<S: Service, M: MappingUnderTest, W: WireForm> GatewayFixture<S> for Ros2Fix
         let types = <Self as GatewayFixture<S>>::translator(self)
             .remote(service.types())
             .expect("the translator covers the service");
+
         let qos = settings.qos.clone();
         let endpoints =
             RemoteMessageEndpoints::new(&self.peer, TopicDescription { settings, types }, qos);
+
         RemotePayloadEndpoints {
             service: service.clone(),
             endpoints,
-            _wire_form: PhantomData,
+            _translator: PhantomData,
         }
     }
 }
