@@ -33,16 +33,17 @@ use super::serialization;
 /// The pause between two looks at the matching counts.
 pub const POLL_PERIOD: Duration = Duration::from_millis(10);
 
-/// Remote endpoints on a topic, speaking the messages of the translator
-/// under test `T`.
-pub struct RemoteMessageEndpoints<T> {
+/// A remote peer's RCL endpoints on a topic that communicates the wire form
+/// of the types defined by the translator under test `T`. Required to
+/// support tests against remote [`MessageEndpoints`].
+pub struct RclEndpoints<T> {
     description: TopicDescription,
     publisher: RclPublisher,
     subscription: RclSubscription,
     _translator: PhantomData<T>,
 }
 
-impl<T> RemoteMessageEndpoints<T> {
+impl<T> RclEndpoints<T> {
     pub(super) fn new(peer: &PeerNode, description: TopicDescription, qos: QosProfile) -> Self {
         let EndpointDescription { settings, types } = &description;
 
@@ -58,9 +59,7 @@ impl<T> RemoteMessageEndpoints<T> {
     }
 }
 
-impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes>
-    for RemoteMessageEndpoints<T>
-{
+impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes> for RclEndpoints<T> {
     type Value = <T::Payload as PayloadShape>::Value;
 
     fn description(&self) -> &TopicDescription {
@@ -85,7 +84,6 @@ impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes>
             .expect("the peer publishes the message");
     }
 
-    /// The next message from another publisher than the peer's own.
     fn receive(&self) -> Option<Self::Value> {
         loop {
             let (message, info) = take_serialized(&self.subscription)?;
@@ -96,7 +94,7 @@ impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes>
     }
 
     /// Matched once the peer's publisher sees a subscription and its
-    /// subscription sees a publisher beyond the the peers own.
+    /// subscription sees a publisher beyond itself.
     fn sync(&self, timeout: Duration) -> bool {
         /// The peer's own endpoints match each other.
         const OWN: usize = 1;
@@ -124,14 +122,14 @@ impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes>
     }
 }
 
-/// Remote endpoints on the topic a service maps to, speaking its payloads
-/// as messages.
-pub struct RemotePayloadEndpoints<T> {
+/// [`RclEndpoints`] on the topic a local service maps to. Required to support
+/// tests against [`DiscoverableEndpoints`] and [`PayloadEndpoints`].
+pub struct MappedRclEndpoints<T> {
     pub(super) service: ServiceDescription,
-    pub(super) endpoints: RemoteMessageEndpoints<T>,
+    pub(super) endpoints: RclEndpoints<T>,
 }
 
-impl<T: TranslatorUnderTest> DiscoverableEndpoints for RemotePayloadEndpoints<T> {
+impl<T: TranslatorUnderTest> DiscoverableEndpoints for MappedRclEndpoints<T> {
     fn service(&self) -> &ServiceDescription {
         &self.service
     }
@@ -142,7 +140,7 @@ impl<T: TranslatorUnderTest> DiscoverableEndpoints for RemotePayloadEndpoints<T>
 }
 
 impl<T: TranslatorUnderTest> PayloadEndpoints<<T::Payload as PayloadShape>::Value>
-    for RemotePayloadEndpoints<T>
+    for MappedRclEndpoints<T>
 {
     fn send_payload(&self, payload: <T::Payload as PayloadShape>::Value) {
         self.endpoints.send(payload);

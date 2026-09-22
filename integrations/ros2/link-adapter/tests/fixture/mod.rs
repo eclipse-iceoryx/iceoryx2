@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod endpoints;
 mod mapping;
 mod payload;
-mod remote_endpoints;
 mod serialization;
 mod translation;
 
@@ -36,8 +36,8 @@ use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
 use rosidl_runtime_rs::RmwMessage;
 
+use endpoints::{MappedRclEndpoints, RclEndpoints};
 use mapping::MappingUnderTest;
-use remote_endpoints::{RemoteMessageEndpoints, RemotePayloadEndpoints};
 use translation::TranslatorUnderTest;
 
 /// The fixture for the adapter and gateway suites on ROS 2, with the
@@ -49,7 +49,7 @@ pub struct Ros2Fixture<M, T> {
 
 impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture<M, T> {
     type Adapter = Ros2Adapter;
-    type RemoteEndpoints = RemoteMessageEndpoints<T>;
+    type RemoteEndpoints = RclEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -66,7 +66,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
         Ros2Adapter::new(&config).expect("the adapter is created")
     }
 
-    fn remote_endpoints(&mut self) -> RemoteMessageEndpoints<T> {
+    fn remote_endpoints(&mut self) -> RclEndpoints<T> {
         let topic = TopicName::new(&format!("/{}", generate_service_name().as_str()))
             .expect("a valid topic name");
         // Transient local durability keeps messages sent before matching
@@ -86,7 +86,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
                     .expect("a valid type name"),
             },
         };
-        RemoteMessageEndpoints::new(&self.peer, description, qos)
+        RclEndpoints::new(&self.peer, description, qos)
     }
 }
 
@@ -95,7 +95,7 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
 {
     type Mapping = M::Mapping;
     type Translator = T::Translator;
-    type RemoteEndpoints = RemotePayloadEndpoints<T>;
+    type RemoteEndpoints = MappedRclEndpoints<T>;
 
     fn mapping(&self) -> M::Mapping {
         M::mapping(<T::Message as RmwMessage>::TYPE_NAME)
@@ -107,7 +107,7 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
 
     /// Remote endpoints on topics and types the gateway maps and
     /// translates `service` to.
-    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> RemotePayloadEndpoints<T> {
+    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> MappedRclEndpoints<T> {
         let settings = <Self as GatewayFixture<S>>::mapping(self)
             .remote(service.settings())
             .expect("the mapping succeeds")
@@ -117,10 +117,9 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
             .expect("the translator covers the service");
 
         let qos = settings.qos.clone();
-        let endpoints =
-            RemoteMessageEndpoints::new(&self.peer, TopicDescription { settings, types }, qos);
+        let endpoints = RclEndpoints::new(&self.peer, TopicDescription { settings, types }, qos);
 
-        RemotePayloadEndpoints {
+        MappedRclEndpoints {
             service: service.clone(),
             endpoints,
         }
