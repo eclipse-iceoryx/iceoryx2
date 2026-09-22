@@ -14,7 +14,7 @@ mod fixed_size;
 pub(crate) mod slice;
 
 pub use fixed_size::FixedSizePayload;
-pub use slice::SlicePayload;
+pub use slice::{SliceElement, SlicePayload};
 
 use core::fmt::Debug;
 

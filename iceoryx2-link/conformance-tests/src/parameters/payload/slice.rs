@@ -19,23 +19,30 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 use super::PayloadShape;
 
-/// A slice payload of `T` elements, one value the eight bytes of a
-/// number.
+/// A payload of `[T]` whose values are defined by `T`.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct SlicePayload<T>(PhantomData<T>);
 
-/// The elements a slice value holds, the bytes of a `u64`.
-pub(crate) const SLICE_LEN: usize = size_of::<u64>();
+/// An element type that defines the slices the suites send.
+pub trait SliceElement: ZeroCopySend + TypeName + Debug + Copy + PartialEq + 'static {
+    /// The slice the suites send for `n`. Different `n` give different slices.
+    fn slice(n: u64) -> Vec<Self>;
+}
 
-impl<T> PayloadShape for SlicePayload<T>
-where
-    T: ZeroCopySend + TypeName + Debug + Copy + PartialEq + From<u8> + 'static,
-{
+/// Raw bytes for backends without message types. The slice is the eight
+/// little endian bytes of `n`.
+impl SliceElement for u8 {
+    fn slice(n: u64) -> Vec<u8> {
+        n.to_le_bytes().to_vec()
+    }
+}
+
+impl<T: SliceElement> PayloadShape for SlicePayload<T> {
     type Type = [T];
     type Value = Vec<T>;
 
     fn value(n: u64) -> Vec<T> {
-        n.to_le_bytes().into_iter().map(T::from).collect()
+        T::slice(n)
     }
 
     fn type_detail() -> TypeDetail {

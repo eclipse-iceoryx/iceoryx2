@@ -14,19 +14,15 @@ use core::fmt::Debug;
 
 use iceoryx2::port::publisher::Publisher;
 use iceoryx2::port::subscriber::Subscriber;
+use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::service::Service;
 use iceoryx2::service::builder::publish_subscribe::Builder;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
-use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use crate::parameters::payload::slice::SLICE_LEN;
-use crate::parameters::{PublishSubscribePayload, SlicePayload};
+use crate::parameters::{PublishSubscribePayload, SliceElement, SlicePayload};
 
-impl<T> PublishSubscribePayload for SlicePayload<T>
-where
-    T: ZeroCopySend + TypeName + Debug + Copy + PartialEq + From<u8> + 'static,
-{
+impl<T: SliceElement> PublishSubscribePayload for SlicePayload<T> {
     fn create<S: Service, H: ZeroCopySend + Debug>(
         builder: Builder<[T], H, S>,
     ) -> PortFactory<S, [T], H> {
@@ -44,7 +40,7 @@ where
     ) -> Publisher<S, [T], H> {
         service
             .publisher_builder()
-            .initial_max_slice_len(SLICE_LEN)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .expect("publisher is created")
     }
