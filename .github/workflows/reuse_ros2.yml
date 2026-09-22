@@ -79,6 +79,24 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
+      - name: Install colcon build tools
+        shell: bash
+        run: just setup integrations-ros2-tools
+
+      - name: Restore ROS 2 message crates
+        id: ros2-messages
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # version: v5.0.1
+        with:
+          path: target/ros2/messages/install
+          key: ros2-messages-${{ inputs.ros-distro }}-${{ hashFiles(format('integrations/ros2/colcon/messages/{0}.repos', inputs.ros-distro)) }}
+
+      - name: Build ROS 2 message crates
+        if: steps.ros2-messages.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
+          just setup integrations-ros2-messages
+
       - name: Build workspace
         shell: bash
         run: |
@@ -106,11 +124,11 @@ jobs:
           echo "Using RMW: $RMW_IMPLEMENTATION"
           just test-e2e integrations-ros2
 
-      - name: Setup example workspace
+      - name: Build examples
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just setup integrations-ros2
+          just setup integrations-ros2-examples
 
       - name: End-to-end test examples
         shell: bash

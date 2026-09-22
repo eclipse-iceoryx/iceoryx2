@@ -208,6 +208,7 @@ _setup-integrations-ros2-messages:
     fi
 
     cd "{{INTEGRATIONS_ROS2_MESSAGES_WORKSPACE}}"
+    mkdir -p src
     vcs import --skip-existing src < "${REPOS}"
 
     just _setup-integrations-ros2-colcon-build \
