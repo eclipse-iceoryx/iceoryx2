@@ -17,8 +17,9 @@ use iceoryx2::port::event_id::EventId;
 use iceoryx2::service::Service;
 
 use crate::Never;
-use crate::relay::{EventRelay, PublishSubscribeRelay, RelayBuilder};
-use crate::wire::publish_subscribe::{LoanFn, Sample, SampleMut};
+use crate::relay::{EventRelay, PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
+use crate::wire::publish_subscribe::Sample;
+use crate::wire::sample::LoanableSample;
 
 /// The backend does not bridge the pattern.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,10 +44,10 @@ impl<S: Service> PublishSubscribeRelay<S> for UnsupportedRelay<S> {
         match self.0 {}
     }
 
-    fn receive<LoanError>(
+    fn receive<L: LoanableSample>(
         &mut self,
-        _: &mut LoanFn<'_, S, LoanError>,
-    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
+        _: L,
+    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
         match self.0 {}
     }
 }

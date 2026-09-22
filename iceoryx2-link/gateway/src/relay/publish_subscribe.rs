@@ -16,19 +16,18 @@ use core::marker::PhantomData;
 use iceoryx2::service::Service;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
-    Adapter, Destination, EndpointDescription, PublishSubscribeEndpoints, Region, ResizeError,
-    TakeError, Transcoding,
+    Adapter, EndpointDescription, LoanError, LoanableSample, PublishSubscribeEndpoints, Region,
+    TakeError, Transcoding, UnsupportedLength,
 };
 use iceoryx2_link_adapter::{
     HeaderTranscoder, PayloadTranscoder, PublishSubscribeTranslation, SampleTranscoder, Translator,
 };
-use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescription,
+    PublishSubscribeDescription, SampleTypes, ServiceDescription,
 };
-use iceoryx2_link_backend::wire::publish_subscribe::{
-    LoanFn, Sample, SampleMut, SampleMutUninit, fits, payload_bytes, regions_mut, user_header_bytes,
-};
+use iceoryx2_link_backend::wire::publish_subscribe::Sample;
+use iceoryx2_link_backend::wire::sample::{WritableSample, payload_bytes, user_header_bytes};
 use iceoryx2_log::{fail, fatal_panic, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
@@ -83,7 +82,7 @@ where
 pub struct Relay<S, E, X> {
     endpoints: E,
     translation: PublishSubscribeTranslation<X>,
-    types: PublishSubscribeTypes,
+    types: SampleTypes,
     scratch: Scratch,
     _service: PhantomData<S>,
 }
@@ -92,7 +91,7 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: SampleTranscoder> Relay<S, E, 
     pub(crate) fn new(
         endpoints: E,
         translation: PublishSubscribeTranslation<X>,
-        types: PublishSubscribeTypes,
+        types: SampleTypes,
     ) -> Self {
         Self {
             endpoints,
@@ -129,34 +128,40 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: SampleTranscoder> PublishSubsc
         Ok(())
     }
 
-    fn receive<LoanError>(
+    fn receive<L: LoanableSample>(
         &mut self,
-        loan: &mut LoanFn<'_, S, LoanError>,
-    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
+        loanable: L,
+    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
 
-        let mut pending =
-            PendingSample::new(&self.translation, &self.types, loan, &mut self.scratch);
-        let taken = match self.endpoints.take(&mut pending) {
+        let pending = UnloanedPendingSample::new(&self.translation, loanable, &mut self.scratch);
+        let taken = match self.endpoints.take(pending) {
             Ok(taken) => taken,
-            Err(TakeError::Rejected(refusal)) => {
-                fail!(from origin, with ReceiveError::from(refusal), "Rejected a message");
+            Err(TakeError::Malformed) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Malformed,
+                    "Took a message that does not fit the service"
+                );
             }
-            Err(TakeError::Failed(_)) => {
+            Err(TakeError::Exhausted) => {
+                fail!(from origin, with ReceiveError::Loan, "No sample to take into");
+            }
+            Err(TakeError::Endpoints(_)) => {
                 fail!(from origin, with ReceiveError::Endpoints, "Failed to take a message");
             }
         };
-        if !taken {
-            return Ok(None);
-        }
-        let sample = fail!(
+        let pending = match taken {
+            ReceiveOutcome::Sample(pending) => pending,
+            ReceiveOutcome::Skipped => return Ok(ReceiveOutcome::Skipped),
+            ReceiveOutcome::Empty => return Ok(ReceiveOutcome::Empty),
+        };
+        let writable = fail!(
             from origin,
             when pending.into_sample(),
             "Failed to decode a message into a sample"
         );
-        // SAFETY: every region was written through the destination, by the
-        // endpoints or the transcoder.
-        Ok(Some(unsafe { sample.assume_init() }))
+        Ok(ReceiveOutcome::Sample(writable))
     }
 }
 
@@ -180,7 +185,7 @@ struct PendingMessage<'a, X> {
 impl<'a, X> PendingMessage<'a, X> {
     fn new<S: Service>(
         translation: &'a PublishSubscribeTranslation<X>,
-        types: &'a PublishSubscribeTypes,
+        types: &'a SampleTypes,
         sample: &'a Sample<S>,
         scratch: &'a mut Scratch,
     ) -> Self {
@@ -247,87 +252,145 @@ impl<'a, X: SampleTranscoder> PendingMessage<'a, X> {
     }
 }
 
-/// A sample being assembled from a taken message.
+/// An [`UnloanedSample`][unloaned] with the translation applied to a taken
+/// message when populating the sample.
 ///
-/// The taken message is either moved directly into the sample, or into a
-/// scratch and then decoded into the sample.
-struct PendingSample<'a, 'b, S: Service, X, LoanError> {
+/// [`LoanableSample::loan`] consumes it and yields a
+/// [`LoanedPendingSample`]. A passthrough payload is loaned for right
+/// away, a transcoded one is written to a scratch buffer to be decoded.
+///
+/// [unloaned]: iceoryx2_link_backend::wire::publish_subscribe::UnloanedSample
+struct UnloanedPendingSample<'a, L: LoanableSample, X> {
     translation: &'a PublishSubscribeTranslation<X>,
-    loan: Loan<'a, 'b, S, LoanError>,
+    loanable: L,
     scratch: &'a mut Scratch,
 }
 
-impl<'a, 'b, S: Service, X, LoanError> PendingSample<'a, 'b, S, X, LoanError> {
+impl<'a, L: LoanableSample, X> UnloanedPendingSample<'a, L, X> {
     fn new(
         translation: &'a PublishSubscribeTranslation<X>,
-        types: &'a PublishSubscribeTypes,
-        loan: &'a mut LoanFn<'b, S, LoanError>,
+        loanable: L,
         scratch: &'a mut Scratch,
     ) -> Self {
         scratch.reset();
         Self {
             translation,
-            loan: Loan::new(types, loan),
+            loanable,
             scratch,
         }
     }
 }
 
-impl<S: Service, X, LoanError> Destination for PendingSample<'_, '_, S, X, LoanError> {
-    fn payload(&mut self, payload_size: usize) -> Result<&mut [u8], ResizeError> {
-        match self.translation.inbound().payload {
-            // Provide sample buffer directly.
-            Transcoding::Passthrough => self.loan.for_length(payload_size),
-            // Provide the scratch buffer.
-            Transcoding::Transcode => self.scratch.payload.for_length(payload_size),
-        }
+impl<'a, L: LoanableSample, X> LoanableSample for UnloanedPendingSample<'a, L, X> {
+    type Sample = LoanedPendingSample<'a, L, X>;
+
+    fn header_size(&self) -> usize {
+        self.loanable.header_size()
     }
 
-    fn header(&mut self, header_size: usize) -> Result<&mut [u8], ResizeError> {
-        match (self.translation.inbound().header, self.loan.header()) {
-            // Provide the header buffer of the sample.
-            (Transcoding::Passthrough, Some(header)) => header.for_length(header_size),
-            // Provide the scratch buffer, transcoded later or waiting for the
-            // sample.
-            _ => self.scratch.header.for_length(header_size),
-        }
-    }
-}
-
-impl<S: Service, X: SampleTranscoder, LoanError> PendingSample<'_, '_, S, X, LoanError> {
-    /// The sample with every region written, decoding what the take parked
-    /// in the scratch.
-    fn into_sample(self) -> Result<SampleMutUninit<S>, ReceiveError> {
-        let origin = origin!("PendingSample::into_sample");
-
-        let PendingSample {
+    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+        let Self {
             translation,
-            mut loan,
+            loanable,
             scratch,
         } = self;
 
-        // Transcode the payload.
-        if let PublishSubscribeTranslation::Transcode {
-            inbound,
-            transcoder,
-            ..
-        } = translation
-            && inbound.payload == Transcoding::Transcode
-        {
-            fail!(
-                from origin,
-                when transcoder.payloads().decode(&scratch.payload, &mut loan),
-                to ReceiveError,
-                "Failed to decode the payload of a message"
-            );
-        }
+        let loan = match translation.inbound().payload {
+            // Loan the sample and write the payload directly.
+            Transcoding::Passthrough => LoanState::Loaned(loanable.loan(payload_len)?),
+            // Write the payload to the scratch, the sample is loaned when
+            // the decode knows the local length.
+            Transcoding::Transcode => {
+                scratch.payload.resize(payload_len, 0);
+                LoanState::Deferred(loanable)
+            }
+        };
 
-        // Transcode the header or copy it out from the scratch.
-        let header_size = loan.header_size();
-        let mut sample = loan.into_sample();
-        // SAFETY: the header size is the service's, as its description
-        // states.
-        let (mut header, _) = unsafe { regions_mut(&mut sample, header_size) };
+        Ok(LoanedPendingSample {
+            translation,
+            loan,
+            scratch,
+        })
+    }
+}
+
+/// The state of the loan behind a taken payload.
+enum LoanState<L: LoanableSample> {
+    /// Taken for the payload as written.
+    Loaned(L::Sample),
+    /// Deferred until the decode knows the local payload length.
+    Deferred(L),
+}
+
+/// A [`LoanedSample`][loaned] with the translation applied to a taken message
+/// when populating the sample.
+///
+/// Produced by [`LoanableSample::loan`] on an [`UnloanedPendingSample`].
+///
+/// Once the header and the payload are written, can be converted to a
+/// populated sample with [`LoanedPendingSample::into_sample`].
+///
+/// [loaned]: iceoryx2_link_backend::wire::publish_subscribe::LoanedSample
+struct LoanedPendingSample<'a, L: LoanableSample, X> {
+    translation: &'a PublishSubscribeTranslation<X>,
+    loan: LoanState<L>,
+    scratch: &'a mut Scratch,
+}
+
+impl<L: LoanableSample, X> WritableSample for LoanedPendingSample<'_, L, X> {
+    fn payload(&mut self) -> &mut [u8] {
+        match self.loan {
+            LoanState::Loaned(ref mut writable) => writable.payload(),
+            LoanState::Deferred(_) => &mut self.scratch.payload,
+        }
+    }
+
+    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
+        match (self.translation.inbound().header, &mut self.loan) {
+            // Provide the sample's header directly.
+            (Transcoding::Passthrough, LoanState::Loaned(writable)) => writable.header(len),
+            // Provide the scratch buffer to decode into or store a header
+            // provided before the destination sample.
+            _ => self.scratch.header.for_length(len),
+        }
+    }
+}
+
+impl<L: LoanableSample, X: SampleTranscoder> LoanedPendingSample<'_, L, X> {
+    /// The loaned sample, decoding what the take parked in the scratch.
+    fn into_sample(self) -> Result<L::Sample, ReceiveError> {
+        let origin = origin!("LoanedPendingSample::into_sample");
+
+        let LoanedPendingSample {
+            translation,
+            loan,
+            scratch,
+        } = self;
+
+        // Acquire a writable loan for the sample.
+        let mut writable = match (loan, translation) {
+            (LoanState::Loaned(writable), _) => writable,
+            (
+                LoanState::Deferred(loanable),
+                PublishSubscribeTranslation::Transcode { transcoder, .. },
+            ) => {
+                fail!(
+                    from origin,
+                    when transcoder.payloads().decode(&scratch.payload, loanable),
+                    to ReceiveError,
+                    "Failed to decode the payload of a message"
+                )
+            }
+            (LoanState::Deferred(_), PublishSubscribeTranslation::Passthrough) => {
+                fatal_panic!(
+                    from origin,
+                    "A payload was deferred without a transcoder to decode it"
+                );
+            }
+        };
+
+        // Decode the header into the sample or populate the sample with
+        // a header prepared in the scratch.
         match translation {
             PublishSubscribeTranslation::Transcode {
                 inbound,
@@ -336,16 +399,17 @@ impl<S: Service, X: SampleTranscoder, LoanError> PendingSample<'_, '_, S, X, Loa
             } if inbound.header == Transcoding::Transcode => {
                 fail!(
                     from origin,
-                    when transcoder.headers().decode(&scratch.header, &mut header),
+                    when transcoder
+                        .headers()
+                        .decode(&scratch.header, &mut writable),
                     to ReceiveError,
                     "Failed to decode the header of a message"
                 );
             }
-            // Copy any header already prepared in the scratch buffer.
             _ if !scratch.header.is_empty() => {
                 let header = fail!(
                     from origin,
-                    when header.for_length(scratch.header.len()),
+                    when writable.header(scratch.header.len()),
                     to ReceiveError,
                     "A header of {} bytes does not fit the service", scratch.header.len()
                 );
@@ -354,96 +418,7 @@ impl<S: Service, X: SampleTranscoder, LoanError> PendingSample<'_, '_, S, X, Loa
             _ => {}
         }
 
-        Ok(sample)
-    }
-}
-
-/// A sample loaned once its payload has a length.
-struct Loan<'a, 'b, S: Service, LoanError> {
-    types: &'a PublishSubscribeTypes,
-    loan: &'a mut LoanFn<'b, S, LoanError>,
-    sample: Option<SampleMutUninit<S>>,
-}
-
-impl<'a, 'b, S: Service, LoanError> Loan<'a, 'b, S, LoanError> {
-    fn new(types: &'a PublishSubscribeTypes, loan: &'a mut LoanFn<'b, S, LoanError>) -> Self {
-        Self {
-            types,
-            loan,
-            sample: None,
-        }
-    }
-
-    fn header_size(&self) -> usize {
-        self.types.user_header.size
-    }
-
-    /// The header of the loaned sample, once loaned.
-    fn header(&mut self) -> Option<&mut [u8]> {
-        let header_size = self.header_size();
-        let sample = self.sample.as_mut()?;
-        // SAFETY: the header size is the service's, as its description
-        // states.
-        let (header, _) = unsafe { regions_mut(sample, header_size) };
-        Some(header)
-    }
-
-    /// The loaned sample. Panics unless a payload was written, a taken
-    /// message has one by contract.
-    fn into_sample(self) -> SampleMutUninit<S> {
-        let origin = origin!("Loan::into_sample");
-
-        let Some(sample) = self.sample else {
-            fatal_panic!(
-                from origin,
-                "No payload was written for a taken message, the endpoints or the transcoder broke its contract"
-            );
-        };
-        sample
-    }
-}
-
-impl<S: Service, LoanError> Region for Loan<'_, '_, S, LoanError> {
-    /// Loans the sample for `payload_size` bytes and hands out the payload.
-    fn for_length(&mut self, payload_size: usize) -> Result<&mut [u8], ResizeError> {
-        let origin = origin!("Loan::for_length");
-
-        let header_size = self.header_size();
-        let sample = match self.sample {
-            Some(ref mut sample) => sample,
-            None => {
-                if !fits(self.types, header_size, payload_size) {
-                    fail!(
-                        from origin,
-                        with ResizeError::Malformed,
-                        "A payload of {} bytes does not fit the service description", payload_size
-                    );
-                }
-                let sample = fail!(
-                    from origin,
-                    when (self.loan)(payload_size),
-                    with ResizeError::Exhausted,
-                    "Failed to loan a sample for a payload of {} bytes", payload_size
-                );
-                self.sample.insert(sample)
-            }
-        };
-
-        // SAFETY: the header size is the service's, as its description
-        // states.
-        let (_, payload) = unsafe { regions_mut(sample, header_size) };
-
-        // TODO: Resize the loaned sample instead, once slice samples can be
-        // resized through the publisher's allocation strategy.
-        if payload.len() != payload_size {
-            fail!(
-                from origin,
-                with ResizeError::NotResizable,
-                "The sample holds a payload of {} bytes, not {}", payload.len(), payload_size
-            );
-        }
-
-        Ok(payload)
+        Ok(writable)
     }
 }
 
@@ -479,7 +454,11 @@ mod tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_adapter::{SampleTranscodings, TranscodeError};
     use iceoryx2_link_backend::service_description::TypeDescription;
-    use iceoryx2_link_backend::wire::publish_subscribe::{Header, Payload, Publisher, Subscriber};
+    use iceoryx2_link_backend::wire::publish_subscribe::{
+        LoanFn, Publisher, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
+        payload_bytes_mut, user_header_bytes_mut,
+    };
+    use iceoryx2_link_backend::wire::sample::{Header, Payload, WritableSample};
 
     /// The header type of the service under test, behind the untyped marker.
     type HeaderType = u64;
@@ -515,22 +494,12 @@ mod tests {
         }
     }
 
-    /// What a take writes, and in which order.
-    #[derive(Default, Clone, Copy)]
-    enum Writes {
-        #[default]
-        PayloadThenHeader,
-        HeaderThenPayload,
-        HeaderOnly,
-    }
-
     /// Endpoints holding one pending message and every message published
     /// on them.
     #[derive(Default)]
     struct StubEndpoints {
         pending: Option<Message>,
         published: Vec<Message>,
-        writes: Writes,
     }
 
     impl StubEndpoints {
@@ -538,13 +507,6 @@ mod tests {
             Self {
                 pending: Some(message),
                 ..Self::default()
-            }
-        }
-
-        fn pending_written(message: Message, writes: Writes) -> Self {
-            Self {
-                writes,
-                ..Self::pending(message)
             }
         }
 
@@ -556,7 +518,7 @@ mod tests {
     }
 
     fn write(
-        region: Result<&mut [u8], ResizeError>,
+        region: Result<&mut [u8], UnsupportedLength>,
         bytes: &[u8],
     ) -> Result<(), TakeError<Infallible>> {
         match region {
@@ -564,7 +526,7 @@ mod tests {
                 into.copy_from_slice(bytes);
                 Ok(())
             }
-            Err(refusal) => Err(TakeError::Rejected(refusal)),
+            Err(refusal) => Err(refusal.into()),
         }
     }
 
@@ -576,24 +538,17 @@ mod tests {
             Ok(())
         }
 
-        fn take<D: Destination>(&mut self, into: &mut D) -> Result<bool, TakeError<Self::Failure>> {
+        fn take<L: LoanableSample>(
+            &mut self,
+            loanable: L,
+        ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
             let Some(message) = self.pending.take() else {
-                return Ok(false);
+                return Ok(ReceiveOutcome::Empty);
             };
-            match self.writes {
-                Writes::PayloadThenHeader => {
-                    write(into.payload(message.payload.len()), &message.payload)?;
-                    write(into.header(message.header.len()), &message.header)?;
-                }
-                Writes::HeaderThenPayload => {
-                    write(into.header(message.header.len()), &message.header)?;
-                    write(into.payload(message.payload.len()), &message.payload)?;
-                }
-                Writes::HeaderOnly => {
-                    write(into.header(message.header.len()), &message.header)?;
-                }
-            }
-            Ok(true)
+            let mut writable = loanable.loan(message.payload.len())?;
+            writable.payload().copy_from_slice(&message.payload);
+            write(writable.header(message.header.len()), &message.header)?;
+            Ok(ReceiveOutcome::Sample(writable))
         }
     }
 
@@ -602,13 +557,15 @@ mod tests {
     struct StubTranscoder;
 
     fn reversed<R: Region>(bytes: &[u8], into: &mut R) -> Result<(), TranscodeError<Infallible>> {
-        let into = into
-            .for_length(bytes.len())
-            .map_err(TranscodeError::Rejected)?;
+        let into = into.for_length(bytes.len())?;
+        reverse_into(bytes, into);
+        Ok(())
+    }
+
+    fn reverse_into(bytes: &[u8], into: &mut [u8]) {
         for (to, from) in into.iter_mut().zip(bytes.iter().rev()) {
             *to = *from;
         }
-        Ok(())
     }
 
     fn reversed_bytes(bytes: [u8; SIZE]) -> [u8; SIZE] {
@@ -625,19 +582,18 @@ mod tests {
             _: &[u8],
             into: &mut R,
         ) -> Result<(), TranscodeError<Self::Failure>> {
-            into.for_length(0).map_err(TranscodeError::Rejected)?;
+            into.for_length(0)?;
             Ok(())
         }
 
-        fn decode<R: Region>(
+        fn decode<W: WritableSample>(
             &self,
             _: &[u8],
-            into: &mut R,
+            writable: &mut W,
         ) -> Result<(), TranscodeError<Self::Failure>> {
-            let into = into
-                .for_length(DECODED_HEADER.len())
-                .map_err(TranscodeError::Rejected)?;
-            into.copy_from_slice(&DECODED_HEADER);
+            writable
+                .header(DECODED_HEADER.len())?
+                .copy_from_slice(&DECODED_HEADER);
             Ok(())
         }
     }
@@ -653,12 +609,14 @@ mod tests {
             reversed(payload, into)
         }
 
-        fn decode<R: Region>(
+        fn decode<L: LoanableSample>(
             &self,
             wire: &[u8],
-            into: &mut R,
-        ) -> Result<(), TranscodeError<Self::Failure>> {
-            reversed(wire, into)
+            loanable: L,
+        ) -> Result<L::Sample, TranscodeError<Self::Failure>> {
+            let mut writable = loanable.loan(wire.len())?;
+            reverse_into(wire, writable.payload());
+            Ok(writable)
         }
     }
 
@@ -685,8 +643,8 @@ mod tests {
         }
     }
 
-    fn types() -> PublishSubscribeTypes {
-        PublishSubscribeTypes {
+    fn types() -> SampleTypes {
+        SampleTypes {
             payload: TypeDescription::from(&TypeDetail::new::<PayloadType>(TypeVariant::FixedSize)),
             user_header: TypeDescription::from(&TypeDetail::new::<HeaderType>(
                 TypeVariant::FixedSize,
@@ -754,17 +712,16 @@ mod tests {
             &self,
             relay: &mut Relay<local::Service, StubEndpoints, StubTranscoder>,
         ) -> Result<Option<SampleMut<local::Service>>, ReceiveError> {
-            relay.receive(&mut |len| self.loan(len))
+            receive_into(relay, &mut |len| self.loan(len))
         }
 
         /// A received sample holding `header` and `payload`.
         fn sample(&self, header: &[u8; SIZE], payload: &[u8; SIZE]) -> Sample<local::Service> {
             let mut sample = self.loan(SIZE).expect("sample is loaned");
             // SAFETY: the header size is the service's.
-            let (into_header, into_payload) = unsafe { regions_mut(&mut sample, SIZE) };
-            into_header.copy_from_slice(header);
-            into_payload.copy_from_slice(payload);
-            // SAFETY: both regions were written.
+            unsafe { user_header_bytes_mut(&mut sample, SIZE) }.copy_from_slice(header);
+            payload_bytes_mut(&mut sample).copy_from_slice(payload);
+            // SAFETY: the header and the payload were both populated above.
             unsafe { sample.assume_init() }
                 .send()
                 .expect("sample is sent");
@@ -773,6 +730,21 @@ mod tests {
                 .expect("receive succeeds")
                 .expect("a sample is received")
         }
+    }
+
+    /// Receives through `relay` into a sample loaned with `loan`.
+    fn receive_into<LoanError>(
+        relay: &mut Relay<local::Service, StubEndpoints, StubTranscoder>,
+        loan: &mut LoanFn<'_, local::Service, LoanError>,
+    ) -> Result<Option<SampleMut<local::Service>>, ReceiveError> {
+        let types = types();
+        let ReceiveOutcome::Sample(loaned) = relay.receive(UnloanedSample::new(&types, loan))?
+        else {
+            return Ok(None);
+        };
+        // SAFETY: the stub endpoints populated both regions of the loaned
+        // sample, the header and the payload.
+        Ok(Some(unsafe { loaned.into_sample().assume_init() }))
     }
 
     fn header_of(sample: &SampleMut<local::Service>) -> [u8; SIZE] {
@@ -886,23 +858,6 @@ mod tests {
     }
 
     #[test]
-    fn a_header_written_before_the_payload_reaches_the_sample() {
-        let ports = Ports::open();
-        let mut relay = relay(
-            StubEndpoints::pending_written(message(&HEADER, &PAYLOAD), Writes::HeaderThenPayload),
-            PublishSubscribeTranslation::Passthrough,
-        );
-
-        let received = ports
-            .receive(&mut relay)
-            .expect("receive succeeds")
-            .expect("a message is received");
-
-        assert_that!(header_of(&received), eq HEADER);
-        assert_that!(payload_of(&received), eq PAYLOAD);
-    }
-
-    #[test]
     fn nothing_pending_is_nothing_received() {
         let ports = Ports::open();
         let mut relay = relay(
@@ -950,20 +905,8 @@ mod tests {
             PublishSubscribeTranslation::Passthrough,
         );
 
-        let received = relay.receive(&mut |_| -> Result<_, ()> { Err(()) }).err();
+        let received = receive_into(&mut relay, &mut |_| -> Result<_, ()> { Err(()) }).err();
 
         assert_that!(received, eq Some(ReceiveError::Loan));
-    }
-
-    #[test]
-    #[should_panic(expected = "No payload was written for a taken message")]
-    fn a_message_without_a_payload_is_a_contract_breach() {
-        let ports = Ports::open();
-        let mut relay = relay(
-            StubEndpoints::pending_written(message(&HEADER, &PAYLOAD), Writes::HeaderOnly),
-            PublishSubscribeTranslation::Passthrough,
-        );
-
-        let _ = ports.receive(&mut relay);
     }
 }

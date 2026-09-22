@@ -167,8 +167,9 @@ instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::carrier_discovery,
     ZenohFixture
 );
+instantiate_conformance_tests!(iceoryx2_link_conformance_tests::carrier_event, ZenohFixture);
 instantiate_conformance_tests!(
-    iceoryx2_link_conformance_tests::carrier_propagation,
+    iceoryx2_link_conformance_tests::carrier_sample,
     ZenohFixture
 );
 instantiate_conformance_tests!(iceoryx2_link_conformance_tests::carrier_wake, ZenohFixture);

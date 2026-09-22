@@ -16,12 +16,10 @@ use iceoryx2::port::event_id::EventId;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder};
 use iceoryx2_link_backend::service_description::{EventDescription, ServiceDescriptor};
-use iceoryx2_link_backend::wire::event::{decode, encode};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
-use iceoryx2_link_carrier::Frame;
-use iceoryx2_link_carrier::{Carrier, Channel};
+use iceoryx2_link_carrier::{Carrier, EventChannel, EventReceiveError};
 
 pub struct Builder<'a, S: Service, C: Carrier> {
     carrier: &'a mut C,
@@ -48,14 +46,14 @@ impl<'a, S: Service, C: Carrier> Builder<'a, S, C> {
 
 impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     type CreationError = CreationError<C::ChannelError>;
-    type Relay = Relay<S, C::Channel>;
+    type Relay = Relay<S, C::EventChannel>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = origin!("Builder::create");
 
         let channel = fail!(
             from origin,
-            when self.carrier.open_channel(self.descriptor),
+            when self.carrier.open_event_channel(self.descriptor),
             to CreationError<C::ChannelError>,
             "Failed to open the channel of service {}", self.description.name()
         );
@@ -66,28 +64,24 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     }
 }
 
-/// Moves event ids over a carrier channel as [`Frame`]s without a header.
-pub struct Relay<S: Service, C: Channel> {
+/// Moves event ids over a carrier channel.
+pub struct Relay<S: Service, C: EventChannel> {
     channel: C,
     _service: PhantomData<S>,
 }
 
-impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
+impl<S: Service, C: EventChannel> EventRelay<S> for Relay<S, C> {
     type SendError = SendError<C::Error>;
     type ReceiveError = ReceiveError<C::Error>;
 
     fn send(&mut self, id: EventId) -> Result<(), Self::SendError> {
         let origin = origin!("Relay::send");
 
-        let frame = Frame {
-            header: &[],
-            payload: &encode(id),
-        };
         fail!(
             from origin,
-            when self.channel.send(frame),
+            when self.channel.send(id),
             to SendError<C::Error>,
-            "Failed to send a frame"
+            "Failed to send an event id"
         );
 
         Ok(())
@@ -95,19 +89,22 @@ impl<S: Service, C: Channel> EventRelay<S> for Relay<S, C> {
 
     fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
-        let received = fail!(
-            from origin,
-            when self.channel.receive(|bytes| {
-                let id = fail!(
+        match self.channel.receive() {
+            Ok(received) => Ok(received),
+            Err(EventReceiveError::Malformed) => {
+                fail!(
                     from origin,
-                    when decode(bytes).ok_or(ReceiveError::Malformed),
-                    "Received a frame that is not an event id"
+                    with ReceiveError::Malformed,
+                    "Received bytes that are not an event id"
                 );
-                Ok(id)
-            }),
-            to ReceiveError<C::Error>,
-            "Failed to receive a frame"
-        );
-        received.transpose()
+            }
+            Err(EventReceiveError::Channel(error)) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Channel(error),
+                    "Failed to receive an event id"
+                );
+            }
+        }
     }
 }

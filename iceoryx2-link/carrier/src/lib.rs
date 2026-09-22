@@ -18,21 +18,22 @@
 //! * [`Carrier`] for the mechanism. It announces what this side offers,
 //!   an [`Announcement`] at a time, lists what the peers offer, an
 //!   [`Offer`] per service per peer, and opens a channel per service.
-//! * [`Channel`] for one service's stream of bytes on it, over which
-//!   [`Frame`]s cross to and from every peer with that channel open.
+//! * [`SampleChannel`] to propagate the samples of one service, and
+//!   [`EventChannel`] the ids of one event service, to peers that have the
+//!   same channel open.
 //!
-//! Frames are opaque bytes. Channels may be one stream per service or
-//! every service multiplexed over one connection, as long as a frame
-//! comes out on the channel it went in on.
+//! Channels carry opaque bytes. They may be one stream per service or
+//! every service multiplexed over one connection, as long as bytes come
+//! out on the channel they went in on.
 //!
 //! Every carrier must guarantee two things:
 //!
 //! * Announcements from one carrier reach every peer in the order they
 //!   were made.
-//! * A frame sent on a channel reaches every other peer with that
-//!   channel open, and no one else.
+//! * Bytes sent on a channel reach every other peer with that channel
+//!   open, and no one else.
 //!
-//! A carrier that can detect a peer's announcement or an arriving frame
+//! A carrier that can detect a peer's announcement or arriving bytes
 //! should also implement [`iceoryx2_link_backend::Reactive`] and signal
 //! the wake on detection.
 //!
@@ -41,7 +42,8 @@
 //!     type AnnouncementError = MyError;
 //!     type ListError = MyError;
 //!     type ChannelError = MyError;
-//!     type Channel = MyChannel;
+//!     type SampleChannel = MySampleChannel;
+//!     type EventChannel = MyEventChannel;
 //!
 //!     fn announce(&mut self, announcement: Announcement) -> Result<(), MyError> {
 //!         // Publish the offer or the withdrawal to the peers.
@@ -56,8 +58,44 @@
 //!         // Call back once per offer of every peer but this one.
 //!     }
 //!
-//!     fn open_channel(&mut self, descriptor: &ServiceDescriptor) -> Result<MyChannel, MyError> {
-//!         // Join the peers sharing this descriptor's byte stream.
+//!     fn open_sample_channel(&mut self, descriptor: &ServiceDescriptor) -> Result<MySampleChannel, MyError> {
+//!         // Join the peers sharing this descriptor's samples.
+//!     }
+//!
+//!     fn open_event_channel(&mut self, descriptor: &ServiceDescriptor) -> Result<MyEventChannel, MyError> {
+//!         // Join the peers sharing this descriptor's ids.
+//!     }
+//! }
+//!
+//! impl SampleChannel for MySampleChannel {
+//!     type Error = MyError;
+//!
+//!     fn send(&mut self, bytes: &[&[u8]]) -> Result<(), MyError> {
+//!         // Send the bytes, given as consecutive slices, to other peers who
+//!         // have the channel open, in whatever form the transport uses.
+//!     }
+//!
+//!     fn receive<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, SampleReceiveError<MyError>> {
+//!         // Acquire a loan from the provided loanable and write bytes
+//!         // received from the channel directly into it.
+//!         //
+//!         // If the loan is refused, drop the bytes and return the refusal.
+//!         // Return None if there is nothing pending on the channel. Bytes
+//!         // already held in a buffer are written with populate.
+//!     }
+//! }
+//!
+//! impl EventChannel for MyEventChannel {
+//!     type Error = MyError;
+//!
+//!     fn send(&mut self, id: EventId) -> Result<(), MyError> {
+//!         // Send wire::event::encode(id) to other peers who have the
+//!         // channel open.
+//!     }
+//!
+//!     fn receive(&mut self) -> Result<Option<EventId>, EventReceiveError<MyError>> {
+//!         // Decode the pending bytes with wire::event::decode. Return None
+//!         // if nothing is pending, Malformed if they are not an id.
 //!     }
 //! }
 //! ```
@@ -69,13 +107,11 @@ extern crate alloc;
 mod announcement;
 mod carrier;
 mod channel;
-mod frame;
 mod offer;
 mod peer_id;
 
 pub use announcement::Announcement;
 pub use carrier::Carrier;
-pub use channel::Channel;
-pub use frame::{Frame, Malformed};
+pub use channel::{EventChannel, EventReceiveError, SampleChannel, SampleReceiveError, populate};
 pub use offer::Offer;
 pub use peer_id::PeerId;

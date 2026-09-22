@@ -17,8 +17,7 @@ use iceoryx2::service::local;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
-    TypeDescription,
+    PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, TypeDescription,
 };
 
 use iceoryx2_link_carrier::PeerId;
@@ -39,7 +38,7 @@ pub(crate) fn description(name: &str, payload: &str) -> ServiceDescription {
     ServiceDescription::compose_publish_subscribe::<local::Service>(
         ServiceName::new(name).expect("valid service name"),
         PublishSubscribeSettings::from_config(&Config::default()),
-        PublishSubscribeTypes {
+        SampleTypes {
             payload: type_description.clone(),
             user_header: type_description,
         },

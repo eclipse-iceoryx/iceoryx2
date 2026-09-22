@@ -40,12 +40,12 @@ impl<'a, S: Service, C: Carrier> Factory<'a, S, C> {
 
 impl<'a, S: Service, C: Carrier> RelayFactory<S> for Factory<'a, S, C> {
     type RemoteDescription = ServiceDescriptor;
-    type PublishSubscribeRelay = publish_subscribe::Relay<S, C::Channel>;
+    type PublishSubscribeRelay = publish_subscribe::Relay<S, C::SampleChannel>;
     type PublishSubscribeBuilder<'b>
         = publish_subscribe::Builder<'b, S, C>
     where
         Self: 'b;
-    type EventRelay = event::Relay<S, C::Channel>;
+    type EventRelay = event::Relay<S, C::EventChannel>;
     type EventBuilder<'b>
         = event::Builder<'b, S, C>
     where

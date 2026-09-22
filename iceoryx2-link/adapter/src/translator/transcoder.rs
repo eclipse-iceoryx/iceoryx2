@@ -12,27 +12,45 @@
 
 use core::error::Error;
 
-use crate::{Region, ResizeError};
+use crate::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
 
 /// Why a transcode ended without the region written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TranscodeError<Failure> {
-    /// The region refused the length the transcoder needs.
-    Rejected(ResizeError),
-    /// The transcoder failed.
-    Failed(Failure),
+pub enum TranscodeError<TranscoderError> {
+    /// The length the transcoder needs does not fit the service.
+    Malformed,
+    /// The local port had no free sample to write into.
+    Exhausted,
+    /// The transcoder failed with its own error.
+    Transcoder(TranscoderError),
 }
 
-impl<Failure: core::fmt::Display> core::fmt::Display for TranscodeError<Failure> {
+impl<TranscoderError: core::fmt::Display> core::fmt::Display for TranscodeError<TranscoderError> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Rejected(refusal) => write!(f, "TranscodeError::Rejected({refusal})"),
-            Self::Failed(error) => write!(f, "TranscodeError::Failed({error})"),
+            Self::Malformed => write!(f, "TranscodeError::Malformed"),
+            Self::Exhausted => write!(f, "TranscodeError::Exhausted"),
+            Self::Transcoder(error) => write!(f, "TranscodeError::Transcoder({error})"),
         }
     }
 }
 
-impl<Failure: Error> Error for TranscodeError<Failure> {}
+impl<TranscoderError: Error> Error for TranscodeError<TranscoderError> {}
+
+impl<TranscoderError> From<UnsupportedLength> for TranscodeError<TranscoderError> {
+    fn from(_: UnsupportedLength) -> Self {
+        Self::Malformed
+    }
+}
+
+impl<TranscoderError> From<LoanError> for TranscodeError<TranscoderError> {
+    fn from(refusal: LoanError) -> Self {
+        match refusal {
+            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
+            LoanError::Exhausted => Self::Exhausted,
+        }
+    }
+}
 
 /// Whether one region of a sample is transcoded in one direction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,11 +74,11 @@ pub trait HeaderTranscoder {
     ) -> Result<(), TranscodeError<Self::Failure>>;
 
     /// Writes the local header from the middleware's header form into
-    /// `into`.
-    fn decode<R: Region>(
+    /// the header of `writable`.
+    fn decode<W: WritableSample>(
         &self,
         wire: &[u8],
-        into: &mut R,
+        writable: &mut W,
     ) -> Result<(), TranscodeError<Self::Failure>>;
 }
 
@@ -76,13 +94,13 @@ pub trait PayloadTranscoder {
         into: &mut R,
     ) -> Result<(), TranscodeError<Self::Failure>>;
 
-    /// Writes the local payload from the middleware's wire form into
-    /// `into`.
-    fn decode<R: Region>(
+    /// Loans `loanable` for the local payload's length and writes the
+    /// local payload from the middleware's wire form.
+    fn decode<L: LoanableSample>(
         &self,
         wire: &[u8],
-        into: &mut R,
-    ) -> Result<(), TranscodeError<Self::Failure>>;
+        loanable: L,
+    ) -> Result<L::Sample, TranscodeError<Self::Failure>>;
 }
 
 /// The transcoding of each region of a sample.
@@ -146,7 +164,11 @@ impl HeaderTranscoder for NoTranscoder {
         unreachable!("the translation passes the header through, it is never encoded")
     }
 
-    fn decode<R: Region>(&self, _: &[u8], _: &mut R) -> Result<(), TranscodeError<Self::Failure>> {
+    fn decode<W: WritableSample>(
+        &self,
+        _: &[u8],
+        _: &mut W,
+    ) -> Result<(), TranscodeError<Self::Failure>> {
         unreachable!("the translation passes the header through, it is never decoded")
     }
 }
@@ -158,7 +180,11 @@ impl PayloadTranscoder for NoTranscoder {
         unreachable!("the translation passes the payload through, it is never encoded")
     }
 
-    fn decode<R: Region>(&self, _: &[u8], _: &mut R) -> Result<(), TranscodeError<Self::Failure>> {
+    fn decode<L: LoanableSample>(
+        &self,
+        _: &[u8],
+        _: L,
+    ) -> Result<L::Sample, TranscodeError<Self::Failure>> {
         unreachable!("the translation passes the payload through, it is never decoded")
     }
 }

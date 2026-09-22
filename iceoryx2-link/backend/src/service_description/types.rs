@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 /// The types of a service's pattern.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ServiceTypes {
-    PublishSubscribe(PublishSubscribeTypes),
+    PublishSubscribe(SampleTypes),
     /// An event service has no types, a notification carries an id.
     Event,
 }
@@ -29,7 +29,7 @@ pub enum ServiceTypes {
 impl ServiceTypes {
     /// The publish-subscribe types. Panics on another pattern, the caller
     /// is responsible for ensuring the correct variant is provided.
-    pub fn publish_subscribe(&self) -> &PublishSubscribeTypes {
+    pub fn publish_subscribe(&self) -> &SampleTypes {
         let origin = origin!("ServiceTypes::publish_subscribe");
 
         match self {
@@ -42,18 +42,18 @@ impl ServiceTypes {
     }
 }
 
-/// The types of a publish-subscribe service's data.
+/// The types of a sample's header and payload.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct PublishSubscribeTypes {
+pub struct SampleTypes {
     pub payload: TypeDescription,
     pub user_header: TypeDescription,
 }
 
-impl PublishSubscribeTypes {
+impl SampleTypes {
     /// The type details of the payload and the user header, checked to
     /// compose with `iceoryx2`'s own header into a valid sample layout.
     pub fn type_details(&self) -> Result<(TypeDetail, TypeDetail), InvalidSampleLayout> {
-        let origin = origin!("PublishSubscribeTypes::type_details");
+        let origin = origin!("SampleTypes::type_details");
 
         let payload = match TypeDetail::try_from(&self.payload) {
             Ok(detail) => detail,
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn ordinary_types_compose_into_a_sample_layout() {
-        let types = PublishSubscribeTypes {
+        let types = SampleTypes {
             payload: TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize)),
             user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
         };
@@ -308,7 +308,7 @@ mod tests {
         const SIZE: usize = GIGABYTE;
         const ALIGNMENT: usize = core::mem::align_of::<u64>();
 
-        let types = PublishSubscribeTypes {
+        let types = SampleTypes {
             payload: described("large", SIZE, ALIGNMENT),
             user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
         };
@@ -327,7 +327,7 @@ mod tests {
             LARGEST_WITHIN_LAYOUT_BOUND,
         );
         assert_that!(TypeDetail::try_from(&payload).is_ok(), eq true);
-        let types = PublishSubscribeTypes {
+        let types = SampleTypes {
             payload,
             user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
         };
@@ -338,7 +338,7 @@ mod tests {
 
     #[test]
     fn an_invalid_payload_type_names_the_payload() {
-        let types = PublishSubscribeTypes {
+        let types = SampleTypes {
             payload: described("huge", FIRST_BEYOND_LAYOUT_BOUND, FIRST_BEYOND_LAYOUT_BOUND),
             user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
         };

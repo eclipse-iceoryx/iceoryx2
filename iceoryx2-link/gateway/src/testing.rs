@@ -23,13 +23,13 @@ use iceoryx2_link_backend::service_description::{
 
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
-    Adapter, Destination, EndpointDescription, PublishSubscribeEndpoints, TakeError,
-    UnsupportedEndpoints,
+    Adapter, EndpointDescription, LoanableSample, PublishSubscribeEndpoints, ReceiveOutcome,
+    TakeError, UnsupportedEndpoints,
 };
 use iceoryx2_link_adapter::{NoTranscoder, PublishSubscribeTranslation, Translator};
 use iceoryx2_link_backend::service_description::Identified;
 use iceoryx2_link_backend::service_description::{
-    PatternSettings, PublishSubscribeTypes, ServiceSettings, ServiceTypes,
+    PatternSettings, SampleTypes, ServiceSettings, ServiceTypes,
 };
 
 /// The settings of an endpoint, a name and the settings it was created
@@ -248,8 +248,11 @@ impl PublishSubscribeEndpoints for NoEndpoints {
         Ok(())
     }
 
-    fn take<D: Destination>(&mut self, _: &mut D) -> Result<bool, TakeError<Self::Failure>> {
-        Ok(false)
+    fn take<L: LoanableSample>(
+        &mut self,
+        _: L,
+    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
+        Ok(ReceiveOutcome::Empty)
     }
 }
 
@@ -303,7 +306,7 @@ pub(crate) fn types_of(payload: &str) -> ServiceTypes {
         size: 8,
         alignment: 8,
     };
-    ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+    ServiceTypes::PublishSubscribe(SampleTypes {
         payload: type_description.clone(),
         user_header: type_description,
     })

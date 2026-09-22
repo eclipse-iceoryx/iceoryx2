@@ -13,9 +13,9 @@
 use std::sync::{Arc, OnceLock};
 
 use iceoryx2_link_backend::WakeHandle;
-use iceoryx2_link_carrier::{Channel, Frame};
 use iceoryx2_log::{fail, origin};
 use zenoh::Wait;
+use zenoh::bytes::ZBytes;
 use zenoh::key_expr::OwnedKeyExpr;
 use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::qos::Reliability;
@@ -23,7 +23,13 @@ use zenoh::sample::{Locality, Sample};
 
 use crate::inbox::Inbox;
 
-/// Frames a channel holds pending.
+mod event;
+mod sample;
+
+pub use event::ZenohEventChannel;
+pub use sample::ZenohSampleChannel;
+
+/// Samples a channel holds pending.
 const CAPACITY: usize = 64;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -53,8 +59,8 @@ impl core::fmt::Display for Error {
 
 impl core::error::Error for Error {}
 
-/// The frames of one service over zenoh.
-pub struct ZenohChannel {
+/// The zenoh publisher and subscriber one service's bytes cross on.
+pub(crate) struct ZenohChannel {
     publisher: Publisher<'static>,
     subscriber: Subscriber<Inbox<Sample>>,
 }
@@ -66,6 +72,7 @@ impl ZenohChannel {
         wake: Arc<OnceLock<WakeHandle>>,
     ) -> Result<Self, ChannelError> {
         let origin = origin!("ZenohChannel::open");
+
         let publisher = fail!(
             from origin,
             when session
@@ -86,32 +93,36 @@ impl ZenohChannel {
             with ChannelError::Subscriber,
             "Failed to declare the subscriber of {}", key
         );
+
         Ok(Self {
             publisher,
             subscriber,
         })
     }
-}
 
-impl Channel for ZenohChannel {
-    type Error = Error;
+    /// Puts the bytes as one zenoh payload.
+    fn put(&self, bytes: &[&[u8]]) -> Result<(), Error> {
+        let origin = origin!("ZenohChannel::put");
 
-    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error> {
-        let origin = origin!("ZenohChannel::send");
-        let bytes = frame.to_bytes();
+        let mut concatenated = ZBytes::writer();
+        for slice in bytes {
+            concatenated.append(ZBytes::from(*slice));
+        }
         fail!(
             from origin,
-            when self.publisher.put(bytes).wait(),
+            when self.publisher.put(concatenated.finish()).wait(),
             with Error::Put,
-            "Failed to put a frame"
+            "Failed to put the bytes"
         );
+
         Ok(())
     }
 
-    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
-        Ok(self.subscriber.handler().pop().map(|sample| {
-            let bytes = sample.payload().to_bytes();
-            on_frame(&bytes)
-        }))
+    /// The next pending bytes, if any.
+    fn pop(&self) -> Option<Vec<u8>> {
+        self.subscriber
+            .handler()
+            .pop()
+            .map(|sample| sample.payload().to_bytes().into_owned())
     }
 }

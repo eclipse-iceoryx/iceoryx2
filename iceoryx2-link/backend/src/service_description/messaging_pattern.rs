@@ -13,8 +13,8 @@
 use core::ops::Deref;
 
 use crate::service_description::{
-    EventSettings, PatternSettings, PublishSubscribeSettings, PublishSubscribeTypes,
-    ServiceDescription, ServiceDescriptor, ServiceTypes,
+    EventSettings, PatternSettings, PublishSubscribeSettings, SampleTypes, ServiceDescription,
+    ServiceDescriptor, ServiceTypes,
 };
 
 /// A description seen as the pattern its halves are of, each arm giving
@@ -52,7 +52,7 @@ impl<'a> MessagingPattern<'a> {
 pub struct PublishSubscribeDescription<'a> {
     description: &'a ServiceDescription,
     settings: &'a PublishSubscribeSettings,
-    types: &'a PublishSubscribeTypes,
+    types: &'a SampleTypes,
 }
 
 impl<'a> PublishSubscribeDescription<'a> {
@@ -60,7 +60,7 @@ impl<'a> PublishSubscribeDescription<'a> {
         self.settings
     }
 
-    pub fn types(&self) -> &'a PublishSubscribeTypes {
+    pub fn types(&self) -> &'a SampleTypes {
         self.types
     }
 

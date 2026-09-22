@@ -11,16 +11,23 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::collections::VecDeque;
+use alloc::vec::Vec;
 
+use iceoryx2::port::event_id::EventId;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
-use iceoryx2_link_carrier::Channel;
-use iceoryx2_link_carrier::{Frame, PeerId};
+use iceoryx2_link_backend::wire::event::{decode, encode};
+use iceoryx2_link_backend::wire::sample::LoanableSample;
+use iceoryx2_link_carrier::PeerId;
+use iceoryx2_link_carrier::{
+    EventChannel, EventReceiveError, SampleChannel, SampleReceiveError, populate,
+};
+use iceoryx2_log::{fail, origin};
 
 use crate::carrier::{Error, FakeBus};
 
-/// A channel over a [`FakeBus`]. Frames reach every other peer that has the
-/// channel open.
-pub struct FakeChannel {
+/// One peer's inbox on a [`FakeBus`] for one service. Bytes reach every
+/// other peer that has the channel open.
+pub(super) struct FakeChannel {
     peer: PeerId,
     descriptor: ServiceDescriptor,
     bus: FakeBus,
@@ -34,27 +41,82 @@ impl FakeChannel {
             bus,
         }
     }
-}
 
-impl Channel for FakeChannel {
-    type Error = Error;
-
-    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error> {
-        let frame = frame.to_bytes();
-        self.bus.state.deliver(&self.descriptor, self.peer, frame);
-        Ok(())
+    /// Delivers the bytes to every other peer with the channel open.
+    fn deliver(&self, bytes: &[&[u8]]) {
+        let mut joined = Vec::with_capacity(bytes.iter().map(|slice| slice.len()).sum());
+        for slice in bytes {
+            joined.extend_from_slice(slice);
+        }
+        self.bus.state.deliver(&self.descriptor, self.peer, joined);
     }
 
-    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
-        let frame = self
-            .bus
+    /// The next pending bytes, if any.
+    fn pop(&self) -> Option<Vec<u8>> {
+        self.bus
             .state
             .inboxes
             .borrow_mut()
             .get_mut(&self.descriptor)
             .and_then(|inboxes| inboxes.get_mut(&self.peer))
-            .and_then(VecDeque::pop_front);
-        Ok(frame.map(|frame| on_frame(&frame)))
+            .and_then(VecDeque::pop_front)
+    }
+}
+
+/// The samples of one service over a [`FakeBus`].
+pub struct FakeSampleChannel(pub(super) FakeChannel);
+
+impl SampleChannel for FakeSampleChannel {
+    type Error = Error;
+
+    fn send(&mut self, bytes: &[&[u8]]) -> Result<(), Self::Error> {
+        self.0.deliver(bytes);
+        Ok(())
+    }
+
+    fn receive<L: LoanableSample>(
+        &mut self,
+        loanable: L,
+    ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
+        let origin = origin!("FakeSampleChannel::receive");
+
+        let Some(bytes) = self.0.pop() else {
+            return Ok(None);
+        };
+        let sample = fail!(
+            from origin,
+            when populate(&bytes, loanable),
+            to SampleReceiveError<Error>,
+            "Dropped {} bytes", bytes.len()
+        );
+        Ok(Some(sample))
+    }
+}
+
+/// The ids of one event service over a [`FakeBus`].
+pub struct FakeEventChannel(pub(super) FakeChannel);
+
+impl EventChannel for FakeEventChannel {
+    type Error = Error;
+
+    fn send(&mut self, id: EventId) -> Result<(), Self::Error> {
+        self.0.deliver(&[&encode(id)]);
+        Ok(())
+    }
+
+    fn receive(&mut self) -> Result<Option<EventId>, EventReceiveError<Self::Error>> {
+        let origin = origin!("FakeEventChannel::receive");
+
+        let Some(bytes) = self.0.pop() else {
+            return Ok(None);
+        };
+        let id = fail!(
+            from origin,
+            when decode(&bytes),
+            to EventReceiveError<Error>,
+            "Dropped {} bytes that are not an event id", bytes.len()
+        );
+        Ok(Some(id))
     }
 }
 

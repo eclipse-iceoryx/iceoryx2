@@ -34,8 +34,8 @@ pub trait Adapter {
     }
 
     /// Calls `callback` once for each description remote endpoints are
-    /// listed under, before returning. The gateway's own endpoints alone are
-    /// not listed.
+    /// listed under, before returning. The gateway's own endpoints alone
+    /// should not be listed.
     #[allow(clippy::type_complexity)] // the description is spelled out so an implementer sees both of its halves
     fn endpoints(
         &self,

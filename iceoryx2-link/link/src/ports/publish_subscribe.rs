@@ -19,12 +19,14 @@ use iceoryx2::service::builder::publish_subscribe;
 use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_link_backend::relay::ReceiveOutcome;
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, PublishSubscribeTypes, TypeDescription,
+    PublishSubscribeSettings, SampleTypes, TypeDescription,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::{
-    Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
+    LoanedSample, Publisher, Sample, SampleMutUninit, Subscriber, UnloanedSample,
 };
+use iceoryx2_link_backend::wire::sample::{Header, Payload};
 use iceoryx2_log::{fail, origin};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -76,7 +78,7 @@ impl core::error::Error for ReceiveError {}
 #[derive(Debug)]
 pub(crate) struct PublishSubscribePorts<S: Service> {
     name: ServiceName,
-    payload: TypeDescription,
+    types: SampleTypes,
     publisher: Publisher<S>,
     subscriber: Subscriber<S>,
 }
@@ -86,7 +88,7 @@ impl<S: Service> PublishSubscribePorts<S> {
         node: &Node<S>,
         name: &ServiceName,
         settings: &PublishSubscribeSettings,
-        types: &PublishSubscribeTypes,
+        types: &SampleTypes,
     ) -> Result<Self, CreationError> {
         let origin = origin!("PublishSubscribePorts::open");
         let (payload, user_header) = fail!(
@@ -130,7 +132,7 @@ impl<S: Service> PublishSubscribePorts<S> {
 
         Ok(Self {
             name: *name,
-            payload: types.payload.clone(),
+            types: types.clone(),
             publisher,
             subscriber,
         })
@@ -173,65 +175,81 @@ impl<S: Service> PublishSubscribePorts<S> {
         Ok(received)
     }
 
-    /// Publishes every sample `ingest` fills into a loan, until it has
-    /// nothing more.
+    /// Publishes every sample `ingest` writes, until it has nothing more.
     ///
     /// Returns the number of samples published.
     pub(crate) fn send<E>(
         &mut self,
-        mut ingest: impl for<'a> FnMut(
-            &'a mut LoanFn<'a, S, LoanError>,
-        ) -> Result<Option<SampleMut<S>>, E>,
+        mut ingest: impl FnMut(
+            UnloanedSample<'_, '_, S, LoanError>,
+        ) -> Result<ReceiveOutcome<LoanedSample<S>>, E>,
     ) -> Result<u64, SendError> {
         let origin = origin!("PublishSubscribePorts::send");
+        let Self {
+            name,
+            types,
+            publisher,
+            ..
+        } = self;
+
+        let mut loan = |number_of_bytes| loan(publisher, &types.payload, name, number_of_bytes);
         let mut sent = 0;
         loop {
-            let sample = fail!(
+            let loaned = fail!(
                 from origin,
-                when ingest(&mut |number_of_bytes| self.loan(number_of_bytes)),
+                when ingest(UnloanedSample::new(types, &mut loan)),
                 with SendError::Ingestion,
-                "Failed to ingest a sample for {}", self.name
+                "Failed to ingest a sample for {}", name
             );
-            let Some(sample) = sample else {
-                break;
+            let loaned = match loaned {
+                ReceiveOutcome::Sample(loaned) => loaned,
+                ReceiveOutcome::Skipped => continue,
+                ReceiveOutcome::Empty => break,
             };
+
+            // SAFETY: The payload and header are populated by the relay.
+            let sample = unsafe { loaned.into_sample().assume_init() };
             fail!(
                 from origin,
                 when sample.send(),
                 with SendError::Delivery,
-                "Failed to send a sample of {}", self.name
+                "Failed to send a sample of {}", name
             );
             sent += 1;
         }
-        Ok(sent)
-    }
 
-    /// Loans a sample holding `number_of_bytes` of payload, which must be
-    /// whole elements of the payload type.
-    fn loan(
-        &self,
-        number_of_bytes: usize,
-    ) -> Result<iceoryx2_link_backend::wire::publish_subscribe::SampleMutUninit<S>, LoanError> {
-        let origin = origin!("PublishSubscribePorts::loan");
-        let Some(number_of_elements) = number_of_elements(&self.payload, number_of_bytes) else {
-            fail!(
-                from origin,
-                with LoanError::InternalFailure,
-                "A loan of {} bytes does not hold whole elements of {}", number_of_bytes, self.name
-            );
-        };
-        // SAFETY: the publisher was created for the untyped payload marker
-        // with this service's real type details.
-        let sample = fail!(
-            from origin,
-            when unsafe { self.publisher.loan_custom_payload(number_of_elements) },
-            "Failed to loan a sample of {}", self.name
-        );
-        Ok(sample)
+        Ok(sent)
     }
 }
 
-/// The number of payload elements `number_of_bytes` holds, if whole.
+/// Loans a sample holding `number_of_bytes` of payload.
+///
+/// The `number_of_bytes` must must be a multiple of the payload size.
+fn loan<S: Service>(
+    publisher: &Publisher<S>,
+    payload: &TypeDescription,
+    name: &ServiceName,
+    number_of_bytes: usize,
+) -> Result<SampleMutUninit<S>, LoanError> {
+    let origin = origin!("PublishSubscribePorts::loan");
+    let Some(number_of_elements) = number_of_elements(payload, number_of_bytes) else {
+        fail!(
+            from origin,
+            with LoanError::InternalFailure,
+            "A loan of {} bytes does not hold whole elements of {}", number_of_bytes, name
+        );
+    };
+    // SAFETY: the publisher was created for the untyped payload marker
+    // with this service's real type details.
+    let sample = fail!(
+        from origin,
+        when unsafe { publisher.loan_custom_payload(number_of_elements) },
+        "Failed to loan a sample of {}", name
+    );
+    Ok(sample)
+}
+
+/// The number of payload elements `number_of_bytes` holds.
 fn number_of_elements(payload: &TypeDescription, number_of_bytes: usize) -> Option<usize> {
     match payload.variant {
         TypeVariant::FixedSize => (number_of_bytes == payload.size).then_some(1),
@@ -268,6 +286,7 @@ mod tests {
     use iceoryx2_link_backend::service_description::{
         PatternSettings, ServiceDescription, ServiceTypes,
     };
+    use iceoryx2_link_backend::wire::sample::{LoanableSample, WritableSample};
 
     const ALIGNMENT: usize = 1;
 
@@ -350,7 +369,7 @@ mod tests {
         let propagated = sut
             .receive(link_node.id(), |sample| {
                 received.push(u64::from_ne_bytes(
-                    iceoryx2_link_backend::wire::publish_subscribe::payload_bytes(sample.payload())
+                    iceoryx2_link_backend::wire::sample::payload_bytes(sample.payload())
                         .try_into()
                         .expect("payload is a u64"),
                 ));
@@ -363,22 +382,17 @@ mod tests {
         // Into the local system: the ports ingest, the app receives.
         let mut ingested_once = false;
         let published = sut
-            .send(|loan| {
+            .send(|unloaned| {
                 if ingested_once {
-                    return Ok::<_, ()>(None);
+                    return Ok::<_, ()>(ReceiveOutcome::Empty);
                 }
                 ingested_once = true;
-                let sample = loan(core::mem::size_of::<u64>()).expect("loan succeeds");
-                // SAFETY: the loan holds exactly one u64 and the header is
-                // zero sized.
-                let sample = unsafe {
-                    iceoryx2_link_backend::wire::publish_subscribe::initialize_sample(
-                        sample,
-                        &[],
-                        &INGESTED.to_ne_bytes(),
-                    )
-                };
-                Ok(Some(sample))
+                // The header is zero sized, only the payload is written.
+                let mut loaned = unloaned
+                    .loan(core::mem::size_of::<u64>())
+                    .expect("one u64 fits");
+                loaned.payload().copy_from_slice(&INGESTED.to_ne_bytes());
+                Ok(ReceiveOutcome::Sample(loaned))
             })
             .expect("send succeeds");
         assert_that!(published, eq 1);

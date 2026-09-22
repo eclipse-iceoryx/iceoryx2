@@ -10,18 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::error::Error;
+mod event;
+mod sample;
 
-use crate::Frame;
-
-/// Carries the frames of one service in both directions.
-pub trait Channel {
-    type Error: Error;
-
-    /// Sends one frame to every peer on the channel.
-    fn send(&mut self, frame: Frame<'_>) -> Result<(), Self::Error>;
-
-    /// Hands the next pending frame to `on_frame`, or returns `None` if
-    /// nothing is pending.
-    fn receive<R>(&mut self, on_frame: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error>;
-}
+pub use event::{EventChannel, EventReceiveError};
+pub use sample::{SampleChannel, SampleReceiveError, populate};

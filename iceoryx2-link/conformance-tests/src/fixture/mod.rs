@@ -63,7 +63,7 @@
 //!
 //! ```ignore
 //! instantiate_conformance_tests!(
-//!     iceoryx2_link_conformance_tests::carrier_propagation,
+//!     iceoryx2_link_conformance_tests::carrier_sample,
 //!     MyCarrierFixture
 //! );
 //! instantiate_conformance_tests!(

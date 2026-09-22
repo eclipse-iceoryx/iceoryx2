@@ -20,8 +20,7 @@ pub mod carrier_wake {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_backend::Reactive;
-    use iceoryx2_link_carrier::Frame;
-    use iceoryx2_link_carrier::{Announcement, Carrier, Channel};
+    use iceoryx2_link_carrier::{Announcement, Carrier, SampleChannel};
 
     use crate::fixture::CarrierFixture;
     use crate::testing::{WakeSource, descriptor, retry};
@@ -64,11 +63,12 @@ pub mod carrier_wake {
     }
 
     #[conformance_test]
-    pub fn a_peer_is_woken_by_a_frame<F: CarrierFixture>()
+    pub fn a_peer_is_woken_by_a_sample<F: CarrierFixture>()
     where
         F::Carrier: Reactive,
     {
-        const SERVICE: &str = "carrier/wake/frame";
+        const SERVICE: &str = "carrier/wake/sample";
+        const PAYLOAD_BYTES: &[u8] = b"payload";
 
         let mut fixture = F::new();
 
@@ -77,21 +77,16 @@ pub mod carrier_wake {
         let mut a = fixture.carrier();
         let mut b = fixture.carrier();
         let descriptor = descriptor(SERVICE, PAYLOAD);
-        let mut channel_a = a.open_channel(&descriptor).expect("channel opens");
-        let _channel_b = b.open_channel(&descriptor).expect("channel opens");
+        let mut channel_a = a.open_sample_channel(&descriptor).expect("channel opens");
+        let _channel_b = b.open_sample_channel(&descriptor).expect("channel opens");
         assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
         let source = WakeSource::new();
         b.attach(source.wake.clone());
         assert_that_not_woken(&source);
 
         // === SEND ===
-        // A frame from peer A wakes peer B.
-        channel_a
-            .send(Frame {
-                header: &[],
-                payload: b"frame",
-            })
-            .expect("sending succeeds");
+        // A sample from peer A wakes peer B.
+        channel_a.send(&[PAYLOAD_BYTES]).expect("sending succeeds");
 
         retry(
             || match source.woken() {
@@ -100,7 +95,7 @@ pub mod carrier_wake {
             },
             TIMEOUT,
         )
-        .expect("the frame wakes the peer");
+        .expect("the sample wakes the peer");
     }
 
     fn assert_that_not_woken(source: &WakeSource) {

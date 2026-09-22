@@ -12,7 +12,10 @@
 use alloc::vec::Vec;
 
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_link_adapter::{Destination, PublishSubscribeEndpoints, ResizeError, TakeError};
+use iceoryx2_link_adapter::{
+    LoanableSample, PublishSubscribeEndpoints, ReceiveOutcome, TakeError, UnsupportedLength,
+    WritableSample,
+};
 use iceoryx2_log::{fail, origin};
 
 use crate::adapter::Error;
@@ -65,31 +68,40 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
         Ok(())
     }
 
-    fn take<D: Destination>(&mut self, into: &mut D) -> Result<bool, TakeError<Self::Failure>> {
+    fn take<L: LoanableSample>(
+        &mut self,
+        loanable: L,
+    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
         let origin = origin!("FakeEndpoints::take");
 
         let Some(message) = self.middleware.receive(&self.name, self.id) else {
-            return Ok(false);
+            return Ok(ReceiveOutcome::Empty);
         };
         let (header, payload) = message.split_at(self.header_size.min(message.len()));
+        let mut writable = match loanable.loan(payload.len()) {
+            Ok(writable) => writable,
+            Err(refusal) => {
+                fail!(
+                    from origin,
+                    with TakeError::from(refusal),
+                    "Dropped a message of {} bytes on {}", payload.len(), self.name
+                );
+            }
+        };
+        writable.payload().copy_from_slice(payload);
         fail!(
             from origin,
-            when self.write(into.payload(payload.len()), payload),
+            when self.write(writable.header(header.len()), header),
             "Failed to take a message on {}", self.name
         );
-        fail!(
-            from origin,
-            when self.write(into.header(header.len()), header),
-            "Failed to take a message on {}", self.name
-        );
-        Ok(true)
+        Ok(ReceiveOutcome::Sample(writable))
     }
 }
 
 impl FakeEndpoints {
     fn write(
         &self,
-        region: Result<&mut [u8], ResizeError>,
+        region: Result<&mut [u8], UnsupportedLength>,
         bytes: &[u8],
     ) -> Result<(), TakeError<Error>> {
         let origin = origin!("FakeEndpoints::take");
@@ -102,7 +114,7 @@ impl FakeEndpoints {
             Err(refusal) => {
                 fail!(
                     from origin,
-                    with TakeError::Rejected(refusal),
+                    with TakeError::from(refusal),
                     "Dropped a message of {} bytes on {}", bytes.len(), self.name
                 );
             }

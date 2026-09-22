@@ -83,6 +83,7 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
                     );
                 }
 
+                // SAFETY: the user header and the payload were both populated above.
                 let pong_sample = unsafe { pong_sample.assume_init() };
                 pong_sample.send().unwrap();
                 pong_notifier.notify().unwrap();

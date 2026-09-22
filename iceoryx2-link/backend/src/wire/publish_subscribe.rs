@@ -10,19 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::mem::MaybeUninit;
-
 use iceoryx2::service::Service;
-use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
-use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_log::{fail, origin};
 
-use crate::service_description::PublishSubscribeTypes;
-
-/// The untyped user header as it passes through a relay.
-pub type Header = CustomHeaderMarker;
-/// The untyped payload as it passes through a relay.
-pub type Payload = [CustomPayloadMarker];
-pub type PayloadUninit = [MaybeUninit<CustomPayloadMarker>];
+use crate::service_description::SampleTypes;
+use crate::wire::UnsupportedLength;
+use crate::wire::sample::{
+    Header, LoanError, LoanableSample, Payload, PayloadUninit, WritableSample, fits,
+};
 
 pub type Sample<S> = iceoryx2::sample::Sample<S, Payload, Header>;
 pub type SampleMut<S> = iceoryx2::sample_mut::SampleMut<S, Payload, Header>;
@@ -33,85 +28,118 @@ pub type Publisher<S> = iceoryx2::port::publisher::Publisher<S, Payload, Header>
 pub type Subscriber<S> = iceoryx2::port::subscriber::Subscriber<S, Payload, Header>;
 
 /// Loans an uninitialized sample of the given payload size from the
-/// local publisher, so a relay can receive directly into shared memory.
-pub type LoanFn<'a, S, LoanError> = dyn FnMut(usize) -> Result<SampleMutUninit<S>, LoanError> + 'a;
+/// local publisher.
+pub type LoanFn<'a, S, E> = dyn FnMut(usize) -> Result<SampleMutUninit<S>, E> + 'a;
 
-/// Views a sample's user header as bytes.
+/// Views a loaned sample's user header as writable bytes.
 ///
 /// # Safety
 ///
 /// `size` must be the user header size of the service the sample belongs
 /// to, as its description states.
-pub unsafe fn user_header_bytes(user_header: &Header, size: usize) -> &[u8] {
-    unsafe { core::slice::from_raw_parts(user_header as *const Header as *const u8, size) }
+pub unsafe fn user_header_bytes_mut<S: Service>(
+    sample: &mut SampleMutUninit<S>,
+    size: usize,
+) -> &mut [u8] {
+    unsafe {
+        core::slice::from_raw_parts_mut(sample.user_header_mut() as *mut Header as *mut u8, size)
+    }
 }
 
-/// Views a sample's payload as bytes.
-pub fn payload_bytes(payload: &Payload) -> &[u8] {
+/// Views a loaned sample's payload as writable bytes.
+pub fn payload_bytes_mut<S: Service>(sample: &mut SampleMutUninit<S>) -> &mut [u8] {
+    let payload = sample.payload_mut();
     // SAFETY: the payload marker is one byte with no padding, so a slice
     // of markers is a slice of bytes of the same length.
-    unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) }
+    unsafe { core::slice::from_raw_parts_mut(payload.as_mut_ptr() as *mut u8, payload.len()) }
 }
 
-/// Whether a header and a payload of these lengths fit a sample of the
-/// described service, the precondition of [`initialize_sample`] and of
-/// writing into [`regions_mut`].
-pub fn fits(types: &PublishSubscribeTypes, header: usize, payload: usize) -> bool {
-    if header != types.user_header.size {
-        return false;
-    }
-    let size = types.payload.size;
-    match types.payload.variant {
-        TypeVariant::FixedSize => payload == size,
-        TypeVariant::Dynamic => size > 0 && payload.is_multiple_of(size),
+/// A sample for a given type that is not yet loaned.
+pub struct UnloanedSample<'a, 'b, S: Service, E> {
+    types: &'a SampleTypes,
+    loan: &'a mut LoanFn<'b, S, E>,
+}
+
+impl<'a, 'b, S: Service, E> UnloanedSample<'a, 'b, S, E> {
+    pub fn new(types: &'a SampleTypes, loan: &'a mut LoanFn<'b, S, E>) -> Self {
+        Self { types, loan }
     }
 }
 
-/// The user header and the payload of a loaned sample as writable bytes.
-///
-/// # Safety
-///
-/// `header` must be the user header size of the service the sample
-/// belongs to, as its description states.
-pub unsafe fn regions_mut<S: Service>(
-    sample: &mut SampleMutUninit<S>,
-    header_size: usize,
-) -> (&mut [u8], &mut [u8]) {
-    unsafe {
-        let header = core::slice::from_raw_parts_mut(
-            sample.user_header_mut() as *mut Header as *mut u8,
+impl<S: Service, E> LoanableSample for UnloanedSample<'_, '_, S, E> {
+    type Sample = LoanedSample<S>;
+
+    fn header_size(&self) -> usize {
+        self.types.user_header.size
+    }
+
+    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+        let origin = origin!("UnloanedSample::loan");
+
+        let header_size = self.types.user_header.size;
+        if !fits(self.types, header_size, payload_len) {
+            fail!(
+                from origin,
+                with LoanError::Malformed,
+                "A payload of {} bytes does not fit the service description", payload_len
+            );
+        }
+        let mut sample = fail!(
+            from origin,
+            when (self.loan)(payload_len),
+            with LoanError::Exhausted,
+            "Failed to loan a sample for a payload of {} bytes", payload_len
+        );
+
+        // TODO: Resize the loaned sample instead, once slice samples can be
+        // resized through the publisher's allocation strategy.
+        let payload = payload_bytes_mut(&mut sample);
+        if payload.len() != payload_len {
+            fail!(
+                from origin,
+                with LoanError::NotResizable,
+                "The sample holds a payload of {} bytes, not {}", payload.len(), payload_len
+            );
+        }
+
+        Ok(LoanedSample {
             header_size,
-        );
-        let payload = sample.payload_mut();
-        let payload =
-            core::slice::from_raw_parts_mut(payload.as_mut_ptr() as *mut u8, payload.len());
-        (header, payload)
+            sample,
+        })
     }
 }
 
-/// Initializes a loaned sample from user header and payload bytes.
+/// A sample loaned for a given payload type.
 ///
-/// # Safety
-///
-/// `user_header` must be exactly the user header size of the service the
-/// sample belongs to, and `payload` must not exceed the sample's payload.
-pub unsafe fn initialize_sample<S: Service>(
-    mut sample: SampleMutUninit<S>,
-    user_header: &[u8],
-    payload: &[u8],
-) -> SampleMut<S> {
-    debug_assert!(payload.len() <= sample.payload_mut().len());
-    unsafe {
-        core::ptr::copy_nonoverlapping(
-            user_header.as_ptr(),
-            sample.user_header_mut() as *mut Header as *mut u8,
-            user_header.len(),
-        );
-        core::ptr::copy_nonoverlapping(
-            payload.as_ptr(),
-            sample.payload_mut().as_mut_ptr() as *mut u8,
-            payload.len(),
-        );
-        sample.assume_init()
+/// Produced by [`LoanableSample::loan`] on an [`UnloanedSample`].
+pub struct LoanedSample<S: Service> {
+    header_size: usize,
+    sample: SampleMutUninit<S>,
+}
+
+impl<S: Service> LoanedSample<S> {
+    pub fn into_sample(self) -> SampleMutUninit<S> {
+        self.sample
+    }
+}
+
+impl<S: Service> WritableSample for LoanedSample<S> {
+    fn payload(&mut self) -> &mut [u8] {
+        payload_bytes_mut(&mut self.sample)
+    }
+
+    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
+        let origin = origin!("LoanedSample::header");
+
+        if len != self.header_size {
+            fail!(
+                from origin,
+                with UnsupportedLength,
+                "A header of {} bytes does not fit the service description", len
+            );
+        }
+        // SAFETY: the header size is the service's, as its description
+        // states.
+        Ok(unsafe { user_header_bytes_mut(&mut self.sample, len) })
     }
 }

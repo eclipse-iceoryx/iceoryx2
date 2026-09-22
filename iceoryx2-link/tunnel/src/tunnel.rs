@@ -49,8 +49,8 @@ impl<S: Service, C: Carrier> Backend<S> for Tunnel<C> {
         = &'a Resolver
     where
         Self: 'a;
-    type PublishSubscribeRelay = relay::publish_subscribe::Relay<S, C::Channel>;
-    type EventRelay = relay::event::Relay<S, C::Channel>;
+    type PublishSubscribeRelay = relay::publish_subscribe::Relay<S, C::SampleChannel>;
+    type EventRelay = relay::event::Relay<S, C::EventChannel>;
     type RelayFactory<'a>
         = Factory<'a, S, C>
     where
@@ -107,8 +107,11 @@ mod tests {
     use iceoryx2_bb_testing::assert_that;
 
     use crate::testing::{description, descriptor, peer};
-    use iceoryx2_link_carrier::Frame;
-    use iceoryx2_link_carrier::{Channel, Offer};
+    use iceoryx2::port::event_id::EventId;
+    use iceoryx2_link_backend::wire::sample::LoanableSample;
+    use iceoryx2_link_carrier::{
+        EventChannel, EventReceiveError, Offer, SampleChannel, SampleReceiveError,
+    };
 
     const FIRST_PEER: u8 = 1;
     const SECOND_PEER: u8 = 2;
@@ -126,12 +129,25 @@ mod tests {
 
     struct NoChannel;
 
-    impl Channel for NoChannel {
+    impl SampleChannel for NoChannel {
         type Error = core::fmt::Error;
-        fn send(&mut self, _: Frame<'_>) -> Result<(), Self::Error> {
+        fn send(&mut self, _: &[&[u8]]) -> Result<(), Self::Error> {
             Ok(())
         }
-        fn receive<R>(&mut self, _: impl FnOnce(&[u8]) -> R) -> Result<Option<R>, Self::Error> {
+        fn receive<L: LoanableSample>(
+            &mut self,
+            _: L,
+        ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
+            Ok(None)
+        }
+    }
+
+    impl EventChannel for NoChannel {
+        type Error = core::fmt::Error;
+        fn send(&mut self, _: EventId) -> Result<(), Self::Error> {
+            Ok(())
+        }
+        fn receive(&mut self) -> Result<Option<EventId>, EventReceiveError<Self::Error>> {
             Ok(None)
         }
     }
@@ -140,7 +156,8 @@ mod tests {
         type AnnouncementError = core::fmt::Error;
         type ListError = core::fmt::Error;
         type ChannelError = core::fmt::Error;
-        type Channel = NoChannel;
+        type SampleChannel = NoChannel;
+        type EventChannel = NoChannel;
 
         fn announce(
             &mut self,
@@ -161,10 +178,17 @@ mod tests {
             Ok(())
         }
 
-        fn open_channel(
+        fn open_sample_channel(
             &mut self,
             _: &ServiceDescriptor,
-        ) -> Result<Self::Channel, Self::ChannelError> {
+        ) -> Result<Self::SampleChannel, Self::ChannelError> {
+            Ok(NoChannel)
+        }
+
+        fn open_event_channel(
+            &mut self,
+            _: &ServiceDescriptor,
+        ) -> Result<Self::EventChannel, Self::ChannelError> {
             Ok(NoChannel)
         }
     }

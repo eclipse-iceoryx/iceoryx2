@@ -13,6 +13,7 @@
 use alloc::collections::BTreeSet;
 use alloc::rc::Rc;
 use alloc::string::String;
+use alloc::vec;
 use alloc::vec::Vec;
 use core::time::Duration;
 
@@ -34,10 +35,10 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
-use iceoryx2_link_adapter::{Destination, Region, ResizeError};
+use iceoryx2_link_adapter::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, PublishSubscribeTypes, ServiceDescription, ServiceDescriptor,
-    ServiceTypes, TypeDescription,
+    PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
+    TypeDescription,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 
@@ -81,7 +82,7 @@ pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
     ServiceDescription::compose_publish_subscribe::<S>(
         *name,
         PublishSubscribeSettings::from_config(config),
-        PublishSubscribeTypes {
+        SampleTypes {
             payload: TypeDescription::from(&Payload::type_detail()),
             user_header: TypeDescription::from(&TypeDetail::new::<Header>(TypeVariant::FixedSize)),
         },
@@ -110,7 +111,7 @@ pub fn descriptor(name: &str, payload: &str) -> ServiceDescriptor {
 /// The types of a publish-subscribe service with `payload` as its
 /// payload type and no user header.
 pub fn types_of(payload: &str) -> ServiceTypes {
-    ServiceTypes::PublishSubscribe(PublishSubscribeTypes {
+    ServiceTypes::PublishSubscribe(SampleTypes {
         payload: TypeDescription {
             variant: TypeVariant::FixedSize,
             type_name: String::from(payload),
@@ -119,6 +120,34 @@ pub fn types_of(payload: &str) -> ServiceTypes {
         },
         user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
     })
+}
+
+/// A descriptor of the event service `name`.
+pub fn event_descriptor(name: &str) -> ServiceDescriptor {
+    ServiceDescriptor {
+        name: ServiceName::new(name).expect("valid service name"),
+        hash: hash(name),
+        types: ServiceTypes::Event,
+    }
+}
+
+/// A descriptor of the service `name` with `payload` as its payload type
+/// and a user header of `header_size` bytes.
+pub fn descriptor_with_header(name: &str, payload: &str, header_size: usize) -> ServiceDescriptor {
+    let ServiceTypes::PublishSubscribe(mut types) = types_of(payload) else {
+        unreachable!("types_of describes a publish-subscribe service");
+    };
+    types.user_header = TypeDescription {
+        variant: TypeVariant::FixedSize,
+        type_name: String::from("header"),
+        size: header_size,
+        alignment: 1,
+    };
+    ServiceDescriptor {
+        name: ServiceName::new(name).expect("valid service name"),
+        hash: hash(name),
+        types: ServiceTypes::PublishSubscribe(types),
+    }
 }
 
 /// A link filter rejecting only the service `name`, and whether it has
@@ -266,20 +295,54 @@ impl Default for WakeSource {
     }
 }
 
-/// A taken message held in memory, a destination for what endpoints
-/// writes.
-#[derive(Debug, Default)]
-pub struct Taken {
+/// A stand-in for an unloaned sample that loans heap buffers instead of
+/// shared memory, so a writer can be tested without a port.
+pub struct UnloanedBuffers {
+    pub header_size: usize,
+}
+
+impl LoanableSample for UnloanedBuffers {
+    type Sample = LoanedBuffers;
+
+    fn header_size(&self) -> usize {
+        self.header_size
+    }
+
+    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+        Ok(LoanedBuffers {
+            header: Vec::new(),
+            payload: vec![0; payload_len],
+        })
+    }
+}
+
+/// Mocks a loan that is refused.
+pub struct NotLoanable;
+
+impl LoanableSample for NotLoanable {
+    type Sample = LoanedBuffers;
+
+    fn header_size(&self) -> usize {
+        0
+    }
+
+    fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
+        Err(LoanError::Malformed)
+    }
+}
+
+/// The heap buffers a writer wrote, to compare against what was sent.
+pub struct LoanedBuffers {
     pub header: Vec<u8>,
     pub payload: Vec<u8>,
 }
 
-impl Destination for Taken {
-    fn payload(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
-        self.payload.for_length(len)
+impl WritableSample for LoanedBuffers {
+    fn payload(&mut self) -> &mut [u8] {
+        &mut self.payload
     }
 
-    fn header(&mut self, len: usize) -> Result<&mut [u8], ResizeError> {
+    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
         self.header.for_length(len)
     }
 }

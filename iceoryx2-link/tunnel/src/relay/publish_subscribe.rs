@@ -13,18 +13,16 @@
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder};
+use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeDescription, PublishSubscribeTypes, ServiceDescriptor,
+    PublishSubscribeDescription, SampleTypes, ServiceDescriptor,
 };
-use iceoryx2_link_backend::wire::publish_subscribe::{
-    LoanFn, Sample, SampleMut, initialize_sample, payload_bytes, user_header_bytes,
-};
+use iceoryx2_link_backend::wire::publish_subscribe::Sample;
+use iceoryx2_link_backend::wire::sample::{LoanableSample, payload_bytes, user_header_bytes};
+use iceoryx2_link_carrier::{Carrier, SampleChannel, SampleReceiveError};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
-use iceoryx2_link_carrier::Frame;
-use iceoryx2_link_carrier::{Carrier, Channel};
 
 /// Creates relays over a carrier.
 pub struct Builder<'a, S: Service, C: Carrier> {
@@ -52,14 +50,14 @@ impl<'a, S: Service, C: Carrier> Builder<'a, S, C> {
 
 impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     type CreationError = CreationError<C::ChannelError>;
-    type Relay = Relay<S, C::Channel>;
+    type Relay = Relay<S, C::SampleChannel>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = origin!("Builder::create");
 
         let channel = fail!(
             from origin,
-            when self.carrier.open_channel(self.descriptor),
+            when self.carrier.open_sample_channel(self.descriptor),
             to CreationError<C::ChannelError>,
             "Failed to open the channel of service {}", self.description.name()
         );
@@ -72,63 +70,64 @@ impl<S: Service, C: Carrier> RelayBuilder for Builder<'_, S, C> {
     }
 }
 
-/// Moves publish-subscribe samples over a carrier channel as [`Frame`]s.
-pub struct Relay<S: Service, C: Channel> {
+/// Moves publish-subscribe samples over a carrier channel.
+pub struct Relay<S: Service, C: SampleChannel> {
     channel: C,
-    types: PublishSubscribeTypes,
+    types: SampleTypes,
     _service: PhantomData<S>,
 }
 
-impl<S: Service, C: Channel> PublishSubscribeRelay<S> for Relay<S, C> {
+impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
     type SendError = SendError<C::Error>;
     type ReceiveError = ReceiveError<C::Error>;
 
     fn send(&mut self, sample: &Sample<S>) -> Result<(), Self::SendError> {
         let origin = origin!("Relay::send");
 
-        let frame = Frame {
-            // SAFETY: the sample belongs to the service this relay was
-            // built for, whose description states the user header size.
-            header: unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) },
-            payload: payload_bytes(sample.payload()),
-        };
+        // SAFETY: the sample belongs to the service this relay was built
+        // for, whose description states the user header size.
+        let header =
+            unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) };
+        let payload = payload_bytes(sample.payload());
         fail!(
             from origin,
-            when self.channel.send(frame),
+            when self.channel.send(&[header, payload]),
             to SendError<C::Error>,
-            "Failed to send a frame"
+            "Failed to send a sample"
         );
 
         Ok(())
     }
 
-    fn receive<LoanError>(
+    fn receive<L: LoanableSample>(
         &mut self,
-        loan: &mut LoanFn<'_, S, LoanError>,
-    ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
+        loanable: L,
+    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
-        let received = fail!(
-            from origin,
-            when self.channel.receive(|bytes| {
-                let frame = fail!(
+        match self.channel.receive(loanable) {
+            Ok(Some(writable)) => Ok(ReceiveOutcome::Sample(writable)),
+            Ok(None) => Ok(ReceiveOutcome::Empty),
+            Err(SampleReceiveError::Malformed) => {
+                fail!(
                     from origin,
-                    when Frame::parse(bytes, &self.types),
                     with ReceiveError::Malformed,
-                    "Received a frame that does not fit the service"
+                    "Received bytes that do not fit the service"
                 );
-                let sample = fail!(
+            }
+            Err(SampleReceiveError::Exhausted) => {
+                fail!(
                     from origin,
-                    when loan(frame.payload.len()),
                     with ReceiveError::Loan,
-                    "Failed to loan a sample for a received frame"
+                    "No sample to receive into"
                 );
-                // SAFETY: the frame was checked against the description and
-                // the sample was loaned for the payload's size.
-                Ok(unsafe { initialize_sample(sample, frame.header, frame.payload) })
-            }),
-            to ReceiveError<C::Error>,
-            "Failed to receive a frame"
-        );
-        received.transpose()
+            }
+            Err(SampleReceiveError::Channel(error)) => {
+                fail!(
+                    from origin,
+                    with ReceiveError::Channel(error),
+                    "Failed to receive a sample"
+                );
+            }
+        }
     }
 }
