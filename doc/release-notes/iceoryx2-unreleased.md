@@ -15,6 +15,7 @@
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
+* [#2014](https://github.com/eclipse-iceoryx/iceoryx2/issues/2014) Add a publish-subscribe latency benchmark using ROS 2 middleware
 
 ### Bugfixes
 
