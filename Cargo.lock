@@ -158,6 +158,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "benchmark-publish-subscribe-flatbuffer"
+version = "0.10.999"
+dependencies = [
+ "clap",
+ "flatbuffers",
+ "iceoryx2",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix",
+]
+
+[[package]]
 name = "benchmark-queue"
 version = "0.10.999"
 dependencies = [

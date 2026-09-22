@@ -277,6 +277,7 @@ filegroup(
     ]) + [
         "//benchmarks/event:all_srcs",
         "//benchmarks/publish-subscribe:all_srcs",
+        "//benchmarks/publish-subscribe-flatbuffer:all_srcs",
         "//benchmarks/queue:all_srcs",
         "//benchmarks/request-response:all_srcs",
         "//component-tests/rust:all_srcs",

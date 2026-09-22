@@ -58,6 +58,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
 SDK_CRATES_TO_IGNORE := `echo \
     benchmark-event                                 \
     benchmark-publish-subscribe                     \
+    benchmark-publish-subscribe-flatbuffer          \
     benchmark-request-response                      \
     benchmark-queue                                 \
     component-tests_rust                            \
