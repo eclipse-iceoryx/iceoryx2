@@ -87,7 +87,7 @@ jobs:
         id: ros2-messages
         uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # version: v5.0.1
         with:
-          path: target/ros2/messages/install
+          path: integrations/ros2/target/${{ inputs.ros-distro }}/colcon/messages/install
           key: ros2-messages-${{ inputs.ros-distro }}-${{ hashFiles(format('integrations/ros2/colcon/messages/{0}.repos', inputs.ros-distro)) }}
 
       - name: Build ROS 2 message crates

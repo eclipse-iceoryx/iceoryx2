@@ -64,8 +64,9 @@ root within the distrobox:
 just setup integrations-ros2
 ```
 
-This installs the colcon build tools, generates the message crates into
-`target/ros2/messages` and builds the examples into `target/ros2/examples`.
+This installs the colcon build tools, generates the message crates and
+builds the examples. Everything the ros2 workspace builds is placed in
+`integrations/ros2/target/<distro>`.
 
 The setup only runs inside a container. It installs the colcon build tools
 into the system Python. The script will not install anything if not within

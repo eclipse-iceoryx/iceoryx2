@@ -18,13 +18,14 @@ INTEGRATIONS_DIR := justfile_directory() / "integrations"
 INTEGRATIONS_ZENOH_DIR := INTEGRATIONS_DIR / "zenoh"
 INTEGRATIONS_ROS2_DIR := INTEGRATIONS_DIR / "ros2"
 
-# The colcon workspaces, the message crates generated from the ROS 2 message
-# definitions and the examples overlaying them. Build artifacts are placed in
-# `target/`.
+# One target directory per distribution, mirroring the source layout.
 INTEGRATIONS_ROS2_COLCON_DIR := INTEGRATIONS_ROS2_DIR / "colcon"
+INTEGRATIONS_ROS2_TARGET_DIR := INTEGRATIONS_ROS2_DIR / "target" / "${ROS_DISTRO}"
+INTEGRATIONS_ROS2_CARGO_TARGET_DIR := INTEGRATIONS_ROS2_TARGET_DIR / "cargo"
 INTEGRATIONS_ROS2_MESSAGES_WORKSPACE := INTEGRATIONS_ROS2_COLCON_DIR / "messages"
-INTEGRATIONS_ROS2_MESSAGES_BUILD_BASE := justfile_directory() / "target" / "ros2" / "messages" / "build"
-INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE := justfile_directory() / "target" / "ros2" / "messages" / "install"
+INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR := INTEGRATIONS_ROS2_TARGET_DIR / "colcon" / "messages"
+INTEGRATIONS_ROS2_MESSAGES_SOURCES := INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR / "src"
+INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE := INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR / "install"
 INTEGRATIONS_ROS2_EXAMPLES_WORKSPACE := INTEGRATIONS_ROS2_COLCON_DIR / "examples"
-INTEGRATIONS_ROS2_EXAMPLES_BUILD_BASE := justfile_directory() / "target" / "ros2" / "examples" / "build"
-INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE := justfile_directory() / "target" / "ros2" / "examples" / "install"
+INTEGRATIONS_ROS2_EXAMPLES_TARGET_DIR := INTEGRATIONS_ROS2_TARGET_DIR / "colcon" / "examples"
+INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE := INTEGRATIONS_ROS2_EXAMPLES_TARGET_DIR / "install"

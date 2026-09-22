@@ -64,19 +64,21 @@ _doc-rust workspace:
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
+        TARGET_DIR_ARG=""
         if [ "$WS" = "integrations-ros2" ]; then
             just _ros2-require-sourced
+            TARGET_DIR_ARG="--target-dir {{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
         fi
 
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
-        cargo doc --no-deps --workspace --profile dev-fast-build $MANIFEST_ARG
+        cargo doc --no-deps --workspace --profile dev-fast-build $MANIFEST_ARG $TARGET_DIR_ARG
 
         echo ""
         case "$WS" in
             sdk)          echo "Available at: {{justfile_directory()}}/target/doc/" ;;
             integrations-zenoh) echo "Available at: {{INTEGRATIONS_ZENOH_DIR}}/target/doc/" ;;
-            integrations-ros2)  echo "Available at: {{INTEGRATIONS_ROS2_DIR}}/target/doc/" ;;
+            integrations-ros2)  echo "Available at: {{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}/doc/" ;;
         esac
     done
 

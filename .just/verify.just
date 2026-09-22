@@ -132,9 +132,11 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
             exit 1
         fi
 
+        TARGET_DIR_ARG=""
         if [ "$WS" = "integrations-ros2" ]; then
             just _ros2-require-messages
             source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+            TARGET_DIR_ARG="--target-dir {{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
         fi
 
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
@@ -156,7 +158,7 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
                 -- -D warnings
         else
             echo "Running clippy for '$WS' (std {{profile}})..."
-            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings
+            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG $TARGET_DIR_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings
         fi
     done
 

@@ -207,14 +207,12 @@ _setup-integrations-ros2-messages:
         exit 1
     fi
 
-    cd "{{INTEGRATIONS_ROS2_MESSAGES_WORKSPACE}}"
-    mkdir -p src
-    vcs import --skip-existing src < "${REPOS}"
+    mkdir -p "{{INTEGRATIONS_ROS2_MESSAGES_SOURCES}}"
+    vcs import --skip-existing "{{INTEGRATIONS_ROS2_MESSAGES_SOURCES}}" < "${REPOS}"
 
     just _setup-integrations-ros2-colcon-build \
-        "{{INTEGRATIONS_ROS2_MESSAGES_WORKSPACE}}" \
-        "{{INTEGRATIONS_ROS2_MESSAGES_BUILD_BASE}}" \
-        "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}" \
+        "{{INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR}}" \
+        "{{INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR}}" \
         "--packages-up-to std_msgs geometry_msgs rosidl_generator_rs"
 
     echo "✓ ros2 message crates built at {{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}"
@@ -232,20 +230,20 @@ _setup-integrations-ros2-examples:
 
     just _setup-integrations-ros2-colcon-build \
         "{{INTEGRATIONS_ROS2_EXAMPLES_WORKSPACE}}" \
-        "{{INTEGRATIONS_ROS2_EXAMPLES_BUILD_BASE}}" \
-        "{{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}" \
+        "{{INTEGRATIONS_ROS2_EXAMPLES_TARGET_DIR}}" \
         "--packages-select ${PACKAGE}"
 
     echo "✓ ros2 examples built at {{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}"
 
-# Builds `workspace` with colcon from its root.
+# Builds `workspace` with colcon from its root, placing everything colcon
+# writes under `target`.
 [private]
-_setup-integrations-ros2-colcon-build workspace build_base install_base *args:
+_setup-integrations-ros2-colcon-build workspace target *args:
     #!/usr/bin/env bash
     set -euo pipefail
 
     cd "{{workspace}}"
-    colcon build \
-        --build-base "{{build_base}}" \
-        --install-base "{{install_base}}" \
+    colcon --log-base "{{target}}/log" build \
+        --build-base "{{target}}/build" \
+        --install-base "{{target}}/install" \
         {{args}}

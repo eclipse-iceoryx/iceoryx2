@@ -9,13 +9,12 @@ All commands assume a **sourced ROS 2 environment**, e.g. inside the development
 distrobox (see [../../README.md](../../README.md)), and are run from this
 directory.
 
-## Prerequisites
-
-Build the [message workspace](../messages/README.md) and source its
-`install/setup.bash`.
-
 ## Building
 
 ```bash
-colcon build --packages-select demo_nodes_iceoryx2
+just setup integrations-ros2-examples
 ```
+
+This builds the examples on top of the [message workspace](../messages/README.md)
+into `../../target/<distro>/colcon/examples`. Source its `install/setup.bash`
+to run them with `ros2 run`.

@@ -15,20 +15,12 @@ All commands assume a **sourced ROS 2 environment**, e.g. inside the development
 distrobox (see [../../README.md](../../README.md)), and are run from this
 directory. `<distro>` is your ROS 2 distribution (`jazzy` or `humble`).
 
-## Prerequisites
-
-Ensure the following cargo extensions for colcon are installed:
-
-```bash
-pip install colcon-cargo colcon-ros-cargo vcstool
-cargo install cargo-ament-build
-```
-
 ## Building
 
 ```bash
-vcs import src < <distro>.repos
-colcon build --packages-up-to std_msgs geometry_msgs rosidl_generator_rs
+just setup integrations-ros2-messages
 ```
 
-Source `install/setup.bash` afterwards to make the crates available.
+This imports the message definitions of `<distro>.repos` and builds the
+crates into `../../target/<distro>/colcon/messages`, a colcon workspace of
+its own. Source its `install/setup.bash` to make the crates available.

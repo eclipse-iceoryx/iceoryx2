@@ -197,6 +197,7 @@ _build-integrations-ros2 toolchain target_triplet profile has_nostd has_tests ex
 
     just _ros2-require-messages
     source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
 
     if [ "{{has_nostd}}" = "true" ]; then
         echo "Error: the ros2 workspace cannot be built with --no_std" >&2

@@ -47,6 +47,7 @@ _test-e2e-integrations-ros2:
 
     just _ros2-require-messages
     source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
 
     # Honor a caller-provided RMW (e.g. the CI matrix), defaulting to Fast DDS otherwise.
     export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
@@ -72,6 +73,7 @@ _test-e2e-integrations-ros2-examples:
     # Puts the example nodes on the path of `ros2 run`, so the tests themselves
     # stay free of any workspace knowledge.
     source "{{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}/setup.bash"
+    export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
 
     just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_EXAMPLES_WORKSPACE}}"
 
