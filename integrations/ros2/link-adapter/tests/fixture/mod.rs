@@ -10,16 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod mapping;
 mod payload;
-pub mod prefix_mapping;
 mod remote_endpoints;
 mod serialization;
-pub mod static_mapping;
 mod translation;
 
+pub use mapping::{PrefixMapped, StaticMapped};
 pub use payload::{StringByte, UInt64};
-pub use prefix_mapping::PrefixMapped;
-pub use static_mapping::StaticMapped;
 pub use translation::{Passthrough, PlainStruct};
 
 use core::marker::PhantomData;
@@ -32,22 +30,15 @@ use iceoryx2_integrations_ros2_link_adapter::{
     Config, QosProfile, Ros2Adapter, TopicDescription, TopicName, TopicSettings, TopicTypes,
     TypeName,
 };
-use iceoryx2_link_adapter::{Mapping, Translator};
+use iceoryx2_link_adapter::Mapping;
+use iceoryx2_link_adapter::Translator;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
-use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
 use rosidl_runtime_rs::RmwMessage;
 
+use mapping::MappingUnderTest;
 use remote_endpoints::{RemoteMessageEndpoints, RemotePayloadEndpoints};
 use translation::TranslationUnderTest;
-
-/// A mapping under test. It also names the services it covers.
-pub trait MappingUnderTest: PublishSubscribeName + 'static {
-    type Mapping: Mapping<EndpointSettings = TopicSettings>;
-
-    /// The mapping for services with the payload type `payload_type`.
-    fn mapping(payload_type: &str) -> Self::Mapping;
-}
 
 /// The fixture for the adapter and gateway suites on ROS 2, with the
 /// mapping `M` and the translation `T` under test.

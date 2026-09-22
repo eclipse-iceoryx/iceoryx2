@@ -18,7 +18,7 @@ use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
 use super::MappingUnderTest;
 
 /// The prefix of the services the prefix mapping covers.
-pub const SERVICE_PREFIX: &str = "ros2://topics";
+const SERVICE_PREFIX: &str = "ros2://topics";
 
 /// Tests the prefix mapping with an allow list admitting every topic.
 pub struct PrefixMapped;
