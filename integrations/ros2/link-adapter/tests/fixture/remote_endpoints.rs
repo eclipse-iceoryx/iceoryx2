@@ -27,19 +27,22 @@ use iceoryx2_link_conformance_tests::fixture::{
 };
 use iceoryx2_link_conformance_tests::parameters::PayloadShape;
 
-use super::TranslationUnderTest;
+use super::TranslatorUnderTest;
+use super::serialization;
 
 /// The pause between two looks at the matching counts.
 pub const POLL_PERIOD: Duration = Duration::from_millis(10);
 
-/// Remote endpoints on a topic propagating messages in wire form.
-pub struct RemoteMessageEndpoints {
+/// Remote endpoints on a topic, speaking the messages of the translator
+/// under test `T`.
+pub struct RemoteMessageEndpoints<T> {
     description: TopicDescription,
     publisher: RclPublisher,
     subscription: RclSubscription,
+    _translator: PhantomData<T>,
 }
 
-impl RemoteMessageEndpoints {
+impl<T> RemoteMessageEndpoints<T> {
     pub(super) fn new(peer: &PeerNode, description: TopicDescription, qos: QosProfile) -> Self {
         let EndpointDescription { settings, types } = &description;
 
@@ -50,27 +53,44 @@ impl RemoteMessageEndpoints {
             description,
             publisher,
             subscription,
+            _translator: PhantomData,
         }
     }
 }
 
-impl MessageEndpoints<TopicSettings, TopicTypes> for RemoteMessageEndpoints {
+impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes>
+    for RemoteMessageEndpoints<T>
+{
+    type Value = <T::Payload as PayloadShape>::Value;
+
     fn description(&self) -> &TopicDescription {
         &self.description
     }
 
-    fn send_message(&self, message: &[u8]) {
+    fn value(&self, n: u64) -> Self::Value {
+        <T::Payload as PayloadShape>::value(n)
+    }
+
+    fn encode(&self, value: &Self::Value) -> Vec<u8> {
+        serialization::serialize(&T::Message::from(value.clone()))
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Self::Value {
+        serialization::deserialize::<T::Message>(bytes).into()
+    }
+
+    fn send(&self, value: Self::Value) {
         self.publisher
-            .publish(message)
+            .publish(&self.encode(&value))
             .expect("the peer publishes the message");
     }
 
     /// The next message from another publisher than the peer's own.
-    fn receive_message(&self) -> Option<Vec<u8>> {
+    fn receive(&self) -> Option<Self::Value> {
         loop {
             let (message, info) = take_serialized(&self.subscription)?;
             if info.gid != *self.publisher.gid() {
-                return Some(message);
+                return Some(self.decode(&message));
             }
         }
     }
@@ -104,15 +124,14 @@ impl MessageEndpoints<TopicSettings, TopicTypes> for RemoteMessageEndpoints {
     }
 }
 
-/// Remote endpoints on the topic a service maps to that sends and receives
-/// payloads in the wire form of `T`.
+/// Remote endpoints on the topic a service maps to, speaking its payloads
+/// as messages.
 pub struct RemotePayloadEndpoints<T> {
     pub(super) service: ServiceDescription,
-    pub(super) endpoints: RemoteMessageEndpoints,
-    pub(super) _translator: PhantomData<T>,
+    pub(super) endpoints: RemoteMessageEndpoints<T>,
 }
 
-impl<T: TranslationUnderTest> DiscoverableEndpoints for RemotePayloadEndpoints<T> {
+impl<T: TranslatorUnderTest> DiscoverableEndpoints for RemotePayloadEndpoints<T> {
     fn service(&self) -> &ServiceDescription {
         &self.service
     }
@@ -122,16 +141,14 @@ impl<T: TranslationUnderTest> DiscoverableEndpoints for RemotePayloadEndpoints<T
     }
 }
 
-impl<T: TranslationUnderTest> PayloadEndpoints<<T::Payload as PayloadShape>::Value>
+impl<T: TranslatorUnderTest> PayloadEndpoints<<T::Payload as PayloadShape>::Value>
     for RemotePayloadEndpoints<T>
 {
     fn send_payload(&self, payload: <T::Payload as PayloadShape>::Value) {
-        self.endpoints.send_message(&T::to_wire(payload));
+        self.endpoints.send(payload);
     }
 
     fn receive_payload(&self) -> Option<<T::Payload as PayloadShape>::Value> {
-        self.endpoints
-            .receive_message()
-            .map(|wire| T::from_wire(&wire))
+        self.endpoints.receive()
     }
 }

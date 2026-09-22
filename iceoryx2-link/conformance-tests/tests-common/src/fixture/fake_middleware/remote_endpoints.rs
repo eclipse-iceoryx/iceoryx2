@@ -25,8 +25,7 @@ use iceoryx2_link_testing::{
 
 use super::wire_form::{Header, Payload, WireForm};
 
-/// The endpoint `service` maps to, its types as `T` has the middleware
-/// name them.
+/// The endpoint `service` maps to.
 pub(crate) fn endpoint_for<T: WireForm>(service: &ServiceDescription) -> FakeEndpointDescription {
     EndpointDescription {
         types: T::default()
@@ -61,16 +60,31 @@ pub(crate) struct RemoteMessageEndpoints {
     pub(crate) remote: FakeEndpoints,
 }
 
+/// The fake middleware carries any bytes so a message is its own value.
 impl MessageEndpoints<FakeEndpointSettings, FakeEndpointTypes> for RemoteMessageEndpoints {
+    type Value = Vec<u8>;
+
     fn description(&self) -> &FakeEndpointDescription {
         &self.description
     }
 
-    fn send_message(&self, message: &[u8]) {
-        self.remote.send(message);
+    fn value(&self, n: u64) -> Vec<u8> {
+        n.to_le_bytes().to_vec()
     }
 
-    fn receive_message(&self) -> Option<Vec<u8>> {
+    fn encode(&self, value: &Vec<u8>) -> Vec<u8> {
+        value.clone()
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Vec<u8> {
+        bytes.to_vec()
+    }
+
+    fn send(&self, value: Vec<u8>) {
+        self.remote.send(&value);
+    }
+
+    fn receive(&self) -> Option<Vec<u8>> {
         self.remote.receive()
     }
 }

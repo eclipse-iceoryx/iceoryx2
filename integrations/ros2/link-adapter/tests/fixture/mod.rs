@@ -17,7 +17,7 @@ mod serialization;
 mod translation;
 
 pub use mapping::{PrefixMapped, StaticMapped};
-pub use payload::{StringByte, UInt64};
+pub use payload::{SerializedString, UInt64};
 pub use translation::{Passthrough, PlainStruct};
 
 use core::marker::PhantomData;
@@ -38,18 +38,18 @@ use rosidl_runtime_rs::RmwMessage;
 
 use mapping::MappingUnderTest;
 use remote_endpoints::{RemoteMessageEndpoints, RemotePayloadEndpoints};
-use translation::TranslationUnderTest;
+use translation::TranslatorUnderTest;
 
 /// The fixture for the adapter and gateway suites on ROS 2, with the
-/// mapping `M` and the translation `T` under test.
+/// mapping `M` and the translator `T` under test.
 pub struct Ros2Fixture<M, T> {
     peer: PeerNode,
     _under_test: PhantomData<(M, T)>,
 }
 
-impl<M: MappingUnderTest, T: TranslationUnderTest> AdapterFixture for Ros2Fixture<M, T> {
+impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture<M, T> {
     type Adapter = Ros2Adapter;
-    type RemoteEndpoints = RemoteMessageEndpoints;
+    type RemoteEndpoints = RemoteMessageEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -66,7 +66,7 @@ impl<M: MappingUnderTest, T: TranslationUnderTest> AdapterFixture for Ros2Fixtur
         Ros2Adapter::new(&config).expect("the adapter is created")
     }
 
-    fn remote_endpoints(&mut self) -> RemoteMessageEndpoints {
+    fn remote_endpoints(&mut self) -> RemoteMessageEndpoints<T> {
         let topic = TopicName::new(&format!("/{}", generate_service_name().as_str()))
             .expect("a valid topic name");
         // Transient local durability keeps messages sent before matching
@@ -90,7 +90,7 @@ impl<M: MappingUnderTest, T: TranslationUnderTest> AdapterFixture for Ros2Fixtur
     }
 }
 
-impl<S: Service, M: MappingUnderTest, T: TranslationUnderTest> GatewayFixture<S>
+impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
     for Ros2Fixture<M, T>
 {
     type Mapping = M::Mapping;
@@ -123,7 +123,6 @@ impl<S: Service, M: MappingUnderTest, T: TranslationUnderTest> GatewayFixture<S>
         RemotePayloadEndpoints {
             service: service.clone(),
             endpoints,
-            _translator: PhantomData,
         }
     }
 }

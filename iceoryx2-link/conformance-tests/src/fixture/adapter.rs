@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::vec::Vec;
+use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2_link_adapter::{Adapter, EndpointDescription};
@@ -35,17 +36,30 @@ pub trait AdapterFixture {
     fn remote_endpoints(&mut self) -> Self::RemoteEndpoints;
 }
 
-/// Remote endpoints speaking the middleware's messages, bytes in its
-/// form.
+/// Remote endpoints speaking the middleware's messages as values, and
+/// encoding them as the bytes the gateway's endpoints handle.
 pub trait MessageEndpoints<S, T> {
+    /// The value of a message.
+    type Value: Clone + PartialEq + Debug;
+
     /// The description of the endpoints.
     fn description(&self) -> &EndpointDescription<S, T>;
 
-    /// Sends a message.
-    fn send_message(&self, message: &[u8]);
+    /// The value the suites send for `n`. Different `n` give different
+    /// values.
+    fn value(&self, n: u64) -> Self::Value;
 
-    /// The next message pending, if any.
-    fn receive_message(&self) -> Option<Vec<u8>>;
+    /// The bytes of a message carrying `value`.
+    fn encode(&self, value: &Self::Value) -> Vec<u8>;
+
+    /// The value the message `bytes` carries.
+    fn decode(&self, bytes: &[u8]) -> Self::Value;
+
+    /// Sends a message carrying `value`.
+    fn send(&self, value: Self::Value);
+
+    /// The value of the next message pending, if any.
+    fn receive(&self) -> Option<Self::Value>;
 
     /// Waits until the gateway's endpoints opened on the description are
     /// connected to these, or `timeout` passes. Immediate on a middleware

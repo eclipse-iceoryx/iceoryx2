@@ -28,6 +28,7 @@ pub mod adapter_publish_subscribe {
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);
+    const VALUE: u64 = 7;
 
     /// Takes the pending message of endpoints whose messages have no
     /// header, as the suites' remote endpoints send them.
@@ -49,19 +50,21 @@ pub mod adapter_publish_subscribe {
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
         let remote = fixture.remote_endpoints();
-        let mut endpoints = adapter
+        let mut own = adapter
             .publish_subscribe(remote.description())
-            .expect("endpoints open");
+            .expect("the adapter's endpoints open");
 
         // === PUBLISH ===
         assert_that!(remote.sync(TIMEOUT), eq true);
-        endpoints
-            .publish(&[], b"message")
-            .expect("publishing succeeds");
+
+        // Serialize the value to the wire form of the topic.
+        let value = remote.value(VALUE);
+        let message = remote.encode(&value);
+        own.publish(&[], &message).expect("publishing succeeds");
 
         retry(
-            || match remote.receive_message() {
-                Some(message) if message == b"message" => Ok(()),
+            || match remote.receive() {
+                Some(received) if received == value => Ok(()),
                 Some(_) => Err("an unexpected message arrived"),
                 None => Err("no message arrived"),
             },
@@ -78,17 +81,20 @@ pub mod adapter_publish_subscribe {
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
         let remote = fixture.remote_endpoints();
-        let mut endpoints = adapter
+        let mut own = adapter
             .publish_subscribe(remote.description())
-            .expect("endpoints open");
+            .expect("the adapter's endpoints open");
 
         // === SEND ===
         assert_that!(remote.sync(TIMEOUT), eq true);
-        remote.send_message(b"message");
 
+        let value = remote.value(VALUE);
+        remote.send(value.clone());
+
+        // Deserialize the value from the wire form of the topic.
         retry(
-            || match take(&mut endpoints) {
-                Some(message) if message == b"message" => Ok(()),
+            || match take(&mut own).map(|bytes| remote.decode(&bytes)) {
+                Some(received) if received == value => Ok(()),
                 Some(_) => Err("an unexpected message arrived"),
                 None => Err("no message arrived"),
             },
@@ -102,20 +108,21 @@ pub mod adapter_publish_subscribe {
         let mut fixture = F::new();
 
         // === SETUP ===
-        // Remote endpoints and the gateway's endpoints to match.
+        // The gateways endpoints and matching remote endpoints.
         let mut adapter = fixture.adapter();
         let remote = fixture.remote_endpoints();
-        let mut endpoints = adapter
+        let mut own = adapter
             .publish_subscribe(remote.description())
-            .expect("endpoints open");
+            .expect("the adapter's endpoints open");
 
         // === PUBLISH ===
-        // What the adapter publishes goes out, never back in.
+        // What the adapter publishes does not loop back.
         assert_that!(remote.sync(TIMEOUT), eq true);
-        endpoints
-            .publish(&[], b"message")
-            .expect("publishing succeeds");
 
-        assert_that!(take(&mut endpoints), is_none);
+        // Serialize the value to the wire form of the topic.
+        let message = remote.encode(&remote.value(VALUE));
+        own.publish(&[], &message).expect("publishing succeeds");
+
+        assert_that!(take(&mut own), is_none);
     }
 }
