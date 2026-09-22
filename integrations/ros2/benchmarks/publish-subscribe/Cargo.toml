@@ -1,0 +1,19 @@
+[package]
+name = "benchmark-ros2-publish-subscribe"
+description = "iceoryx2-integrations: [internal] benchmark for the ROS 2 publish-subscribe messaging pattern"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"] }
+iceoryx2-bb-posix = { workspace = true }
+
+clap = { workspace = true }
+r2r_rcl = { workspace = true }

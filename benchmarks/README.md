@@ -5,6 +5,7 @@
 3. [Request-Response](#Request-Response)
 4. [Event](#Event)
 5. [Queue](#Queue)
+6. [ROS 2 Publish-Subscribe](#ROS-2-Publish-Subscribe)
 
 ## Publish-Subscribe
 
@@ -141,3 +142,10 @@ For more benchmark configuration details, see
 ```sh
 cargo run --bin benchmark-queue --release -- --help
 ```
+
+## ROS 2 Publish-Subscribe
+
+The benchmark quantifies the latency between a `Publisher` sending a message and
+a `Subscription` receiving it, with ROS 2 as the middleware. It requires a
+sourced ROS 2 environment and therefore lives with the ROS 2 integrations, in
+[integrations/ros2/benchmarks/publish-subscribe](../integrations/ros2/benchmarks/publish-subscribe).

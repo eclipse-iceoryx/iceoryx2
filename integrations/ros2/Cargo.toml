@@ -4,6 +4,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "benchmarks/publish-subscribe",
     "gateway-backend",
     "gateway-cli",
     "interop",
@@ -35,6 +36,8 @@ version = "0.10.999"
 [workspace.dependencies]
 iceoryx2 = { version = "0.10.999", path = "../../iceoryx2/", features = ["std"] }
 iceoryx2-bb-concurrency = { version = "0.10.999", path = "../../iceoryx2-bb/concurrency/", features = ["std"] }
+iceoryx2-bb-loggers = { version = "0.10.999", path = "../../iceoryx2-bb/loggers/" }
+iceoryx2-bb-posix = { version = "0.10.999", path = "../../iceoryx2-bb/posix/", features = ["std"] }
 iceoryx2-bb-testing = { version = "0.10.999", path = "../../iceoryx2-bb/testing/", features = ["std"] }
 iceoryx2-cli = { version = "0.10.999", path = "../../iceoryx2-cli/" }
 iceoryx2-integrations-ros2-gateway-backend = { version = "0.10.999", path = "gateway-backend" }
