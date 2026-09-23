@@ -568,7 +568,8 @@ impl<Service: service::Service> Notifier<Service> {
 
         let listener_connections = self.listener_connections.lock();
 
-        if let Some(connection) = listener_connections.get(listener_key.connection_index)
+        if listener_key.connection_index < listener_connections.len()
+            && let Some(connection) = listener_connections.get(listener_key.connection_index)
             && connection.listener_id == listener_key.listener_id
         {
             match connection.notifier.notify(value) {
