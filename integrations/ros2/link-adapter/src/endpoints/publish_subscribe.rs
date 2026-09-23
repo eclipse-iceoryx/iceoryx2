@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_adapter::{LoanError, LoanableSample, ReceiveOutcome, TakeError, WritableSample};
+use iceoryx2_link_adapter::{SampleBytesRef, SampleLengths, TakeDestination, TakeOutcome};
 use iceoryx2_log::{fail, origin, warn};
 
 use crate::rcl::subscription::TakeError as RclTakeError;
@@ -21,10 +21,9 @@ use crate::ros_header::RosHeader;
 pub enum PublishSubscribeEndpointsError {
     Publish,
     Take,
-    /// The rmw rejected the loaned sample as the destination buffer.
-    SampleNotFilled,
-    /// The rmw took a message without requesting a buffer.
-    LoanNotUsed,
+    /// The rmw took the message without writing it into the memory it
+    /// was given.
+    NotWritten,
 }
 
 impl core::fmt::Display for PublishSubscribeEndpointsError {
@@ -54,21 +53,22 @@ impl PublishSubscribeEndpoints {
 impl iceoryx2_link_adapter::PublishSubscribeEndpoints for PublishSubscribeEndpoints {
     type Failure = PublishSubscribeEndpointsError;
 
-    /// ROS 2 carries no header, a header form is dropped with a warning.
-    fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Failure> {
+    /// Publishes the payload bytes of the provided sample. The header is not
+    /// published as ROS 2 cannot carry it.
+    fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
         let origin = origin!("PublishSubscribeEndpoints::publish");
 
-        if !header.is_empty() {
+        if !sample.header.is_empty() {
             warn!(
                 from origin,
                 "Received a header of {} bytes to publish. Publishing custom headers is unsupported by ROS 2 and should be handled in the translator. Dropping header.",
-                header.len()
+                sample.header.len()
             );
         }
 
         fail!(
             from origin,
-            when self.publisher.publish(payload),
+            when self.publisher.publish(sample.payload),
             with PublishSubscribeEndpointsError::Publish,
             "Failed to publish a message"
         );
@@ -76,92 +76,78 @@ impl iceoryx2_link_adapter::PublishSubscribeEndpoints for PublishSubscribeEndpoi
         Ok(())
     }
 
-    /// The rmw writes the serialized message directly into the payload region
-    /// provided by the `loanable`. The `loanable` automatically takes care
-    /// of translation if required.
+    /// Writes the received bytes into the provided destination.
     ///
-    /// The message info is copied into the header region as a [`RosHeader`].
-    fn take<L: LoanableSample>(
+    /// The payload location is populated with the received bytes in wire form.
+    /// The header location is populated with the corresponding message info
+    /// as a [`RosHeader`].
+    fn take<'a>(
         &mut self,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
+        destination: impl TakeDestination<'a>,
+    ) -> Result<TakeOutcome, Self::Failure> {
         let origin = origin!("PublishSubscribeEndpoints::take");
 
-        // Take the bytes in wire form directly into the region provided by
-        // the `loanable`.
-        let mut sample: Option<L::Sample> = None;
-        let mut refusal: Option<LoanError> = None;
-        let taken = self
-            .subscription
-            .take_into(|size| match loanable.loan(size) {
-                Ok(mut loaned) => {
-                    // Store the sample and provide the pointer to the payload
-                    // region for the RMW to write to.
-                    let pointer = loaned.payload().as_mut_ptr();
-                    sample = Some(loaned);
-                    Some(pointer)
-                }
-                Err(error) => {
-                    refusal = Some(error);
-                    None
-                }
-            });
-
-        // Retrieve the pointer to the written message info.
-        let info = match taken {
-            Ok(Some((_, info))) => info,
-            Ok(None) => return Ok(ReceiveOutcome::Empty),
-            Err(RclTakeError::LoanDeclined) => match refusal {
-                Some(refusal) => {
-                    fail!(
-                        from origin,
-                        with TakeError::from(refusal),
-                        "The sample refused a loan for the message"
-                    );
+        // Provide the payload location to the rmw as the buffer to write the
+        // serialized message.
+        let mut header_location = None;
+        let mut declined = false;
+        let taken = self.subscription.take_into(|size| {
+            let lengths = SampleLengths {
+                header: core::mem::size_of::<RosHeader>(),
+                payload: size,
+            };
+            match destination.for_lengths(lengths) {
+                Some(locations) => {
+                    header_location = Some(locations.header);
+                    Some(locations.payload.as_mut_ptr())
                 }
                 None => {
-                    fail!(
-                        from origin,
-                        with TakeError::Endpoints(PublishSubscribeEndpointsError::SampleNotFilled),
-                        "The rmw rejected the loaned sample as its buffer"
-                    );
+                    declined = true;
+                    None
                 }
-            },
+            }
+        });
+
+        let info = match taken {
+            Ok(Some((_, info))) => info,
+            Ok(None) => return Ok(TakeOutcome::Empty),
+            Err(RclTakeError::LoanDeclined) if declined => return Ok(TakeOutcome::Declined),
+            Err(RclTakeError::LoanDeclined) => {
+                fail!(
+                    from origin,
+                    with PublishSubscribeEndpointsError::NotWritten,
+                    "The rmw rejected the memory it was given for the message"
+                );
+            }
             Err(RclTakeError::Take) => {
                 fail!(
                     from origin,
-                    with TakeError::Endpoints(PublishSubscribeEndpointsError::Take),
+                    with PublishSubscribeEndpointsError::Take,
                     "The rmw failed to take a message"
                 );
             }
         };
-        let Some(mut sample) = sample else {
+        let Some(header_location) = header_location else {
             fail!(
                 from origin,
-                with TakeError::Endpoints(PublishSubscribeEndpointsError::LoanNotUsed),
-                "The rmw took a message without requesting a buffer"
+                with PublishSubscribeEndpointsError::NotWritten,
+                "The rmw took the message without asking for memory to write it into"
             );
         };
 
         // Own messages are skipped here, not via ignore_local_publications.
         // rmw_fastrtps seems to have a bug (?) that drops the message that
         // follows a skipped local one when taking serialized messages.
-        // TODO: Earlier opt-out, this wastes a loan.
+        // TODO: Earlier opt-out, this wastes the provided locations.
         if info.gid == *self.publisher.gid() {
-            return Ok(ReceiveOutcome::Skipped);
+            return Ok(TakeOutcome::Skipped);
         }
 
-        // Fill message info header.
+        // Copy the header into the destination.
         let header = RosHeader::from(info);
-        let region = fail!(
-            from origin,
-            when sample.header(core::mem::size_of::<RosHeader>()),
-            to TakeError<Self::Failure>,
-            "Rejected the header of a message"
-        );
-        region.copy_from_slice(bytes_of(&header));
+        header_location.copy_from_slice(bytes_of(&header));
 
-        Ok(ReceiveOutcome::Sample(sample))
+        Ok(TakeOutcome::Taken)
     }
 }
 

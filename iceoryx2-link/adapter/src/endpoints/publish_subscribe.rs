@@ -12,70 +12,48 @@
 
 use core::error::Error;
 
-use iceoryx2_link_backend::relay::ReceiveOutcome;
+use crate::{SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths};
 
-use crate::{LoanError, LoanableSample, UnsupportedLength};
+/// Where a taken sample's bytes are written.
+pub trait TakeDestination<'a> {
+    /// The locations for a sample of `lengths`.
+    ///
+    /// Returns `None` if the destination cannot honor the requested lengths.
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>>;
+}
 
-/// Why a take ended without a message written.
+impl<'a> TakeDestination<'a> for &'a mut SampleBytes {
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
+        self.header.resize(lengths.header, 0);
+        self.payload.resize(lengths.payload, 0);
+        Some(self.as_mut())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TakeError<EndpointsError> {
-    /// The message does not fit the service's header and payload sizes.
-    Malformed,
-    /// The local port had no free sample to write into.
-    Exhausted,
-    /// The endpoints failed with their own error.
-    Endpoints(EndpointsError),
-}
-
-impl<EndpointsError: core::fmt::Display> core::fmt::Display for TakeError<EndpointsError> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Malformed => write!(f, "TakeError::Malformed"),
-            Self::Exhausted => write!(f, "TakeError::Exhausted"),
-            Self::Endpoints(error) => write!(f, "TakeError::Endpoints({error})"),
-        }
-    }
-}
-
-impl<EndpointsError: Error> Error for TakeError<EndpointsError> {}
-
-impl<EndpointsError> From<UnsupportedLength> for TakeError<EndpointsError> {
-    fn from(_: UnsupportedLength) -> Self {
-        Self::Malformed
-    }
-}
-
-impl<EndpointsError> From<LoanError> for TakeError<EndpointsError> {
-    fn from(refusal: LoanError) -> Self {
-        match refusal {
-            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
-            LoanError::Exhausted => Self::Exhausted,
-        }
-    }
+pub enum TakeOutcome {
+    /// The sample was written into the destination.
+    Taken,
+    /// The destination declined the sample.
+    Declined,
+    /// A sample was taken and dropped as one not meant for the link. More
+    /// may be pending.
+    Skipped,
+    /// Nothing was pending.
+    Empty,
 }
 
 /// The gateway's publisher and subscription on the middleware.
 pub trait PublishSubscribeEndpoints {
     type Failure: Error;
 
-    /// Publishes a message, `header` in the middleware's header form and
-    /// `payload` in its wire form.
-    fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Failure>;
+    /// Publishes the bytes of a sample, provided in its wire form.
+    fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Failure>;
 
-    /// Takes the pending message if any, into `loanable`.
-    ///
-    /// The payload is written in the wire form and the header as the
-    /// middleware's header form.
-    ///
-    /// Return
-    /// * `ReceiveOutcome::Sample` with the written sample
-    /// * `ReceiveOutcome::Skipped` for a message taken but not for the link
-    /// * `ReceiveOutcome::Empty` if nothing is pending
-    /// * If the loan refuses the size, drop the incoming bytes and
-    ///   return the error provided
-    /// * `Endpoints` wrapping the endpoints' own errors
-    fn take<L: LoanableSample>(
+    /// Takes the pending sample, if any, in the middleware's wire form into
+    /// the locations `destination` provides for its lengths.
+    fn take<'a>(
         &mut self,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>>;
+        destination: impl TakeDestination<'a>,
+    ) -> Result<TakeOutcome, Self::Failure>;
 }

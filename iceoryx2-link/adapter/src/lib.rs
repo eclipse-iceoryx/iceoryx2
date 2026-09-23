@@ -72,24 +72,24 @@
 //! impl PublishSubscribeEndpoints for MyEndpoints {
 //!     type Failure = MyError;
 //!
-//!     fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), MyError> {
-//!         // Publish `header` and `payload` bytes in middleware form to all
+//!     fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), MyError> {
+//!         // Publish the header and payload bytes in middleware form to all
 //!         // remote endpoints.
 //!     }
 //!
-//!     fn take<L: LoanableSample>(&mut self, loanable: L) -> Result<ReceiveOutcome<L::Sample>, TakeError<MyError>> {
-//!         // Acquire a loan for the size of the incoming payload, then write
-//!         // the header and payload bytes in wire form into the provided
-//!         // regions. The bytes are translated automatically if configured.
+//!     fn take<'a>(&mut self, destination: impl TakeDestination<'a>) -> Result<TakeOutcome, MyError> {
+//!         // Acquire buffers for the required header and payload size from
+//!         // the provided `destination` and write their bytes in wire form
+//!         // into them.
 //!
 //!         // Return:
-//!         // * ReceiveOutcome::Sample with the written sample
-//!         // * ReceiveOutcome::Skipped for a message taken but skipped,
+//!         // * TakeOutcome::Taken if taken bytes are written to the
+//!         //   destination
+//!         // * TakeOutcome::Declined if the locations were declined and drop
+//!         //   the message
+//!         // * TakeOutcome::Skipped for a message taken but skipped,
 //!         //   such as one the endpoints published themselves
-//!         // * ReceiveOutcome::Empty if nothing is pending
-//!         // * If the loan refuses the size, drop the incoming bytes and
-//!         //   return the error provided
-//!         // * TakeError::Endpoints wrapping the endpoints' own errors
+//!         // * TakeOutcome::Empty if nothing is pending
 //!     }
 //! }
 //!
@@ -117,11 +117,13 @@ pub mod translator;
 
 pub use adapter::Adapter;
 pub use endpoints::{
-    EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints,
+    EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeDestination, TakeOutcome,
+    UnsupportedEndpoints,
 };
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
 pub use iceoryx2_link_backend::wire::sample::{
-    LoanError, LoanableSample, SampleBytes, SampleBytesRef, WritableSample,
+    LoanError, LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
+    WritableSample,
 };
 pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;

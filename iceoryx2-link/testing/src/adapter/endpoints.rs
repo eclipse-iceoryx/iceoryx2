@@ -13,10 +13,8 @@ use alloc::vec::Vec;
 
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_adapter::{
-    LoanableSample, PublishSubscribeEndpoints, ReceiveOutcome, TakeError, UnsupportedLength,
-    WritableSample,
+    PublishSubscribeEndpoints, SampleBytesRef, SampleLengths, TakeDestination, TakeOutcome,
 };
-use iceoryx2_log::{fail, origin};
 
 use crate::adapter::Error;
 use crate::adapter::middleware::FakeMiddleware;
@@ -61,64 +59,34 @@ impl FakeEndpoints {
 impl PublishSubscribeEndpoints for FakeEndpoints {
     type Failure = Error;
 
-    fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), Self::Failure> {
-        // The middleware's wire form, the header followed by the payload.
-        self.middleware
-            .publish(&self.name, self.id, &[header, payload].concat());
+    fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
+        self.middleware.publish(
+            &self.name,
+            self.id,
+            &[sample.header, sample.payload].concat(),
+        );
+
         Ok(())
     }
 
-    fn take<L: LoanableSample>(
+    fn take<'a>(
         &mut self,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
-        let origin = origin!("FakeEndpoints::take");
-
+        destination: impl TakeDestination<'a>,
+    ) -> Result<TakeOutcome, Self::Failure> {
         let Some(message) = self.middleware.receive(&self.name, self.id) else {
-            return Ok(ReceiveOutcome::Empty);
+            return Ok(TakeOutcome::Empty);
         };
         let (header, payload) = message.split_at(self.header_size.min(message.len()));
-        let mut writable = match loanable.loan(payload.len()) {
-            Ok(writable) => writable,
-            Err(refusal) => {
-                fail!(
-                    from origin,
-                    with TakeError::from(refusal),
-                    "Dropped a message of {} bytes on {}", payload.len(), self.name
-                );
-            }
+        let Some(locations) = destination.for_lengths(SampleLengths {
+            header: header.len(),
+            payload: payload.len(),
+        }) else {
+            return Ok(TakeOutcome::Declined);
         };
-        writable.payload().copy_from_slice(payload);
-        fail!(
-            from origin,
-            when self.write(writable.header(header.len()), header),
-            "Failed to take a message on {}", self.name
-        );
-        Ok(ReceiveOutcome::Sample(writable))
-    }
-}
+        locations.header.copy_from_slice(header);
+        locations.payload.copy_from_slice(payload);
 
-impl FakeEndpoints {
-    fn write(
-        &self,
-        region: Result<&mut [u8], UnsupportedLength>,
-        bytes: &[u8],
-    ) -> Result<(), TakeError<Error>> {
-        let origin = origin!("FakeEndpoints::take");
-
-        match region {
-            Ok(into) => {
-                into.copy_from_slice(bytes);
-                Ok(())
-            }
-            Err(refusal) => {
-                fail!(
-                    from origin,
-                    with TakeError::from(refusal),
-                    "Dropped a message of {} bytes on {}", bytes.len(), self.name
-                );
-            }
-        }
+        Ok(TakeOutcome::Taken)
     }
 }
 

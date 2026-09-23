@@ -38,11 +38,25 @@ pub type Header = CustomHeaderMarker;
 pub type Payload = [CustomPayloadMarker];
 pub type PayloadUninit = [MaybeUninit<CustomPayloadMarker>];
 
-/// Borrowed references to the bytes of a sample's header and payload.
+/// Reference to the bytes of a sample's header and payload.
 #[derive(Debug, Clone, Copy)]
 pub struct SampleBytesRef<'a> {
     pub header: &'a [u8],
     pub payload: &'a [u8],
+}
+
+/// The lengths of a sample's header and payload.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SampleLengths {
+    pub header: usize,
+    pub payload: usize,
+}
+
+/// Mutable reference to the bytes of a sample's header and payload.
+#[derive(Debug)]
+pub struct SampleBytesRefMut<'a> {
+    pub header: &'a mut [u8],
+    pub payload: &'a mut [u8],
 }
 
 /// The bytes of a sample's header and payload in heap buffers.
@@ -57,6 +71,13 @@ impl SampleBytes {
         SampleBytesRef {
             header: &self.header,
             payload: &self.payload,
+        }
+    }
+
+    pub fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
+        SampleBytesRefMut {
+            header: &mut self.header,
+            payload: &mut self.payload,
         }
     }
 }

@@ -20,25 +20,33 @@ pub mod adapter_publish_subscribe {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_link_adapter::{Adapter, PublishSubscribeEndpoints, ReceiveOutcome};
-
-    use crate::testing::UnloanedBuffers;
+    use iceoryx2_link_adapter::{
+        Adapter, PublishSubscribeEndpoints, SampleBytes, SampleBytesRef, TakeOutcome,
+    };
 
     use crate::fixture::{AdapterFixture, MessageEndpoints};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const VALUE: u64 = 7;
+    const NO_HEADER: &[u8] = &[];
 
-    /// Takes the pending message of endpoints whose messages have no
-    /// header, as the suites' remote endpoints send them.
+    /// Publishes a message without a header.
+    fn publish<E: PublishSubscribeEndpoints>(endpoints: &mut E, payload: &[u8]) {
+        endpoints
+            .publish(SampleBytesRef {
+                header: NO_HEADER,
+                payload,
+            })
+            .expect("publishing succeeds");
+    }
+
+    /// The payload of the pending message, if any.
     fn take<E: PublishSubscribeEndpoints>(endpoints: &mut E) -> Option<Vec<u8>> {
-        match endpoints
-            .take(UnloanedBuffers { header_size: 0 })
-            .expect("taking succeeds")
-        {
-            ReceiveOutcome::Sample(taken) => Some(taken.payload),
-            ReceiveOutcome::Skipped | ReceiveOutcome::Empty => None,
+        let mut bytes = SampleBytes::default();
+        match endpoints.take(&mut bytes).expect("taking succeeds") {
+            TakeOutcome::Taken => Some(bytes.payload),
+            TakeOutcome::Declined | TakeOutcome::Skipped | TakeOutcome::Empty => None,
         }
     }
 
@@ -60,7 +68,7 @@ pub mod adapter_publish_subscribe {
         // Serialize the value to the wire form of the topic.
         let value = remote.value(VALUE);
         let message = remote.encode(&value);
-        own.publish(&[], &message).expect("publishing succeeds");
+        publish(&mut own, &message);
 
         retry(
             || match remote.receive() {
@@ -121,7 +129,7 @@ pub mod adapter_publish_subscribe {
 
         // Serialize the value to the wire form of the topic.
         let message = remote.encode(&remote.value(VALUE));
-        own.publish(&[], &message).expect("publishing succeeds");
+        publish(&mut own, &message);
 
         assert_that!(take(&mut own), is_none);
     }
