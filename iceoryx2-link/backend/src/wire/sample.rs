@@ -24,6 +24,7 @@
 //!       nothing loaned                          the loan is returned
 //! ```
 
+use alloc::vec::Vec;
 use core::mem::MaybeUninit;
 
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
@@ -37,6 +38,29 @@ pub type Header = CustomHeaderMarker;
 /// The untyped payload as it passes through a relay.
 pub type Payload = [CustomPayloadMarker];
 pub type PayloadUninit = [MaybeUninit<CustomPayloadMarker>];
+
+/// Borrowed references to the bytes of a sample's header and payload.
+#[derive(Debug, Clone, Copy)]
+pub struct SampleBytesRef<'a> {
+    pub header: &'a [u8],
+    pub payload: &'a [u8],
+}
+
+/// The bytes of a sample's header and payload in heap buffers.
+#[derive(Debug, Default)]
+pub struct SampleBytes {
+    pub header: Vec<u8>,
+    pub payload: Vec<u8>,
+}
+
+impl SampleBytes {
+    pub fn as_ref(&self) -> SampleBytesRef<'_> {
+        SampleBytesRef {
+            header: &self.header,
+            payload: &self.payload,
+        }
+    }
+}
 
 /// Loans a sample for a payload length and provides a [`WritableSample`]
 /// that can be populated.
