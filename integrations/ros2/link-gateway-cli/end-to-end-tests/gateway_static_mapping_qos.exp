@@ -56,7 +56,7 @@ spawn cargo run --bin iox2-service -- publish QosProbe \
     --repetitions 0 --time-between-messages 500
 set id_publish $spawn_id
 
-expect_output_from $id_gateway "Opened PublishSubscribe bridge of QosProbe"
+expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"QosProbe\""
 
 #### Test Assertion
 

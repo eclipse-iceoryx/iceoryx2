@@ -53,12 +53,12 @@ spawn cargo run --bin iox2-service -- publish ros2://topics/chatter \
     --repetitions 0 --time-between-messages 200
 set id_publish $spawn_id
 
-expect_output_from $id_gateway "Opened PublishSubscribe bridge of ros2://topics/chatter"
+expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"ros2://topics/chatter\""
 
 spawn ros2 topic echo /chatter std_msgs/msg/String
 set id_echo $spawn_id
 
-expect_output_from $id_gateway "PublishSubscribe bridge of ros2://topics/chatter moved"
+expect_output_from $id_gateway "Relayed PublishSubscribe bridge of \"ros2://topics/chatter\""
 
 #### Test Assertion
 

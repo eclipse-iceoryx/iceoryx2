@@ -44,12 +44,12 @@ expect_output_from $id_publisher "send message"
 #### Test Assertion
 
 expect_outputs_from_any_order $id_tunnel {
-    {Opened PublishSubscribe bridge of EventBasedCommService}
-    {Opened Event bridge of EventBasedCommService}
+    {Opened PublishSubscribe bridge of "EventBasedCommService"}
+    {Opened Event bridge of "EventBasedCommService"}
 }
 expect_outputs_from_any_order $id_tunnel {
-    {PublishSubscribe bridge of EventBasedCommService moved}
-    {Event bridge of EventBasedCommService moved}
+    {Relayed PublishSubscribe bridge of "EventBasedCommService"}
+    {Relayed Event bridge of "EventBasedCommService"}
 }
 
 #### Shutdown

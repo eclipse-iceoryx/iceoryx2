@@ -40,8 +40,8 @@ expect_output_from $id_publisher "Send sample"
 
 #### Test Assertion
 
-expect_output_from $id_tunnel "Opened PublishSubscribe bridge of My/Funk/ServiceName"
-expect_output_from $id_tunnel "PublishSubscribe bridge of My/Funk/ServiceName moved"
+expect_output_from $id_tunnel "Opened PublishSubscribe bridge of \"My/Funk/ServiceName\""
+expect_output_from $id_tunnel "Relayed PublishSubscribe bridge of \"My/Funk/ServiceName\""
 
 #### Shutdown
 

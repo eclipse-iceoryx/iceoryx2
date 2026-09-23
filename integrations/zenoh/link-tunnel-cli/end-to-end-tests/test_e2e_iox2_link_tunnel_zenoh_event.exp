@@ -40,8 +40,8 @@ expect_output_from $id_notifier "Trigger event"
 
 #### Test Assertion
 
-expect_output_from $id_tunnel "Opened Event bridge of MyEventName"
-expect_output_from $id_tunnel "Event bridge of MyEventName moved"
+expect_output_from $id_tunnel "Opened Event bridge of \"MyEventName\""
+expect_output_from $id_tunnel "Relayed Event bridge of \"MyEventName\""
 
 #### Shutdown
 
