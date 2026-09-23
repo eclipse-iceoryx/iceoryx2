@@ -32,13 +32,24 @@ use iceoryx2_integrations_ros2_link_adapter::{
 };
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::Translator;
-use iceoryx2_link_backend::service_description::ServiceDescription;
+use iceoryx2_link_backend::service_description::{PublishSubscribeSettings, ServiceDescription};
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
 use rosidl_runtime_rs::RmwMessage;
 
 use endpoints::{MappedRclEndpoints, RclEndpoints};
 use mapping::MappingUnderTest;
 use translation::TranslatorUnderTest;
+
+/// The settings to use in all suites.
+pub const PUBLISH_SUBSCRIBE_SETTINGS: PublishSubscribeSettings = PublishSubscribeSettings {
+    max_subscribers: 8,
+    max_publishers: 2,
+    max_nodes: 20,
+    history_size: 5,
+    subscriber_max_buffer_size: 2,
+    subscriber_max_borrowed_samples: 2,
+    safe_overflow: true,
+};
 
 /// The fixture for the adapter and gateway suites on ROS 2, with the
 /// mapping `M` and the translator `T` under test.
@@ -61,8 +72,16 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
     fn config(&self) -> iceoryx2::config::Config {
         let mut config = generate_isolated_config();
 
-        // Keep history so samples are not lost to late matching.
-        config.defaults.publish_subscribe.publisher_history_size = 5;
+        let defaults = &mut config.defaults.publish_subscribe;
+        defaults.max_subscribers = PUBLISH_SUBSCRIBE_SETTINGS.max_subscribers;
+        defaults.max_publishers = PUBLISH_SUBSCRIBE_SETTINGS.max_publishers;
+        defaults.max_nodes = PUBLISH_SUBSCRIBE_SETTINGS.max_nodes;
+        defaults.publisher_history_size = PUBLISH_SUBSCRIBE_SETTINGS.history_size;
+        defaults.subscriber_max_buffer_size = PUBLISH_SUBSCRIBE_SETTINGS.subscriber_max_buffer_size;
+        defaults.subscriber_max_borrowed_samples =
+            PUBLISH_SUBSCRIBE_SETTINGS.subscriber_max_borrowed_samples;
+        defaults.enable_safe_overflow = PUBLISH_SUBSCRIBE_SETTINGS.safe_overflow;
+
         config
     }
 
