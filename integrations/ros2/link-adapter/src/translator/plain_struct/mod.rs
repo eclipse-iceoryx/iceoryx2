@@ -23,10 +23,9 @@ use iceoryx2_link_adapter::{
 use iceoryx2_link_backend::service_description::{SampleTypes, ServiceTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
-use super::{NoHeader, TranslationError, inbound_header};
+use super::{MirroredHeader, NoHeader, TranslationError, inbound_header};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
-use crate::ros_header::RosHeader;
 use crate::typesupport;
 
 /// The translator for services whose payload is the C struct rosidl
@@ -38,7 +37,10 @@ use crate::typesupport;
 /// alignment. The message must be a plain struct. Strings, sequences and
 /// other dynamically sized members are refused.
 #[derive(Debug, Default, Clone, Copy)]
-pub struct PlainStructTranslator;
+pub struct PlainStructTranslator {
+    /// The user header of the services mirroring topics.
+    pub header: MirroredHeader,
+}
 
 impl Translator for PlainStructTranslator {
     type EndpointTypes = TopicTypes;
@@ -61,7 +63,7 @@ impl Translator for PlainStructTranslator {
                 size: layout.size(),
                 alignment: layout.align(),
             },
-            user_header: TypeDescription::from(&RosHeader::type_detail()),
+            user_header: self.header.type_description(),
         }))
     }
 

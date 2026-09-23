@@ -20,7 +20,7 @@
 //! # in other shells:
 //! #   cargo run --bin iox2-link-gateway-ros2 -- \
 //! #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
-//! #       --translator PlainStruct
+//! #       --translator PlainStruct --ros-header
 //! #   ros2 topic echo /cmd_vel
 //! ```
 

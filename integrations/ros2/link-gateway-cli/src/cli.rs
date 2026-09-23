@@ -68,6 +68,13 @@ pub struct Cli {
 
     #[clap(
         long,
+        help = "Create the services mirroring ROS 2 topics with the RosHeader user header, \
+                which carries the ROS 2 message info of each sample."
+    )]
+    pub ros_header: bool,
+
+    #[clap(
+        long,
         value_name = "RATE",
         help = "Polling rate in milliseconds for discovery and sample propagation \
                 (defaults to 100ms when no other wake source is given; otherwise \

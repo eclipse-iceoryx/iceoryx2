@@ -20,7 +20,7 @@
 //! # in other shells:
 //! #   cargo run --bin iox2-link-gateway-ros2 -- \
 //! #       --allow /cmd_vel \
-//! #       --translator PlainStruct
+//! #       --translator PlainStruct --ros-header
 //! #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 //! ```
 

@@ -17,10 +17,9 @@ use iceoryx2_link_adapter::{
 use iceoryx2_link_backend::service_description::{SampleTypes, ServiceTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
-use super::{NoHeader, TranslationError, inbound_header};
+use super::{MirroredHeader, NoHeader, TranslationError, inbound_header};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
-use crate::ros_header::RosHeader;
 
 /// The translator for services whose payload is the CDR bytes of a ROS 2
 /// message.
@@ -29,7 +28,10 @@ use crate::ros_header::RosHeader;
 /// type e.g. `geometry_msgs/msg/Twist`. Applications serialize and
 /// deserialize the bytes themselves.
 #[derive(Debug, Default, Clone, Copy)]
-pub struct PassthroughTranslator;
+pub struct PassthroughTranslator {
+    /// The user header of the services mirroring topics.
+    pub header: MirroredHeader,
+}
 
 impl Translator for PassthroughTranslator {
     type EndpointTypes = TopicTypes;
@@ -39,7 +41,7 @@ impl Translator for PassthroughTranslator {
     fn local(&self, remote: &TopicTypes) -> Result<ServiceTypes, TranslationError> {
         Ok(ServiceTypes::PublishSubscribe(SampleTypes {
             payload: cdr_payload_type(remote.type_name.as_str()),
-            user_header: TypeDescription::from(&RosHeader::type_detail()),
+            user_header: self.header.type_description(),
         }))
     }
 
@@ -138,6 +140,8 @@ mod tests {
     use iceoryx2::service::static_config::message_type_details::TypeDetail;
     use iceoryx2_bb_testing::assert_that;
 
+    use crate::ros_header::RosHeader;
+
     const TYPE_NAME: &str = "std_msgs/msg/String";
 
     fn topic() -> TopicTypes {
@@ -162,8 +166,19 @@ mod tests {
     }
 
     #[test]
-    fn a_topic_is_mirrored_as_the_cdr_bytes_under_the_message_info() {
-        let sut = PassthroughTranslator;
+    fn a_topic_is_mirrored_as_the_cdr_bytes_without_a_header() {
+        let sut = PassthroughTranslator::default();
+
+        let local = sut.local(&topic());
+
+        assert_that!(local, eq Ok(service(cdr_payload_type(TYPE_NAME), no_user_header())));
+    }
+
+    #[test]
+    fn a_topic_is_mirrored_under_the_message_info_when_configured() {
+        let sut = PassthroughTranslator {
+            header: MirroredHeader::RosHeader,
+        };
 
         let local = sut.local(&topic());
 
@@ -172,7 +187,7 @@ mod tests {
 
     #[test]
     fn a_byte_slice_named_as_a_ros_type_maps_to_its_topic() {
-        let sut = PassthroughTranslator;
+        let sut = PassthroughTranslator::default();
 
         let remote = sut.remote(&service(cdr_payload_type(TYPE_NAME), no_user_header()));
 
@@ -181,7 +196,7 @@ mod tests {
 
     #[test]
     fn a_payload_that_is_not_the_cdr_bytes_is_refused() {
-        let sut = PassthroughTranslator;
+        let sut = PassthroughTranslator::default();
         let payload = TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize));
         let mut named = payload.clone();
         named.type_name = TYPE_NAME.to_string();
@@ -193,7 +208,7 @@ mod tests {
 
     #[test]
     fn the_payload_passes_through_and_the_header_is_encoded_to_nothing() {
-        let sut = PassthroughTranslator;
+        let sut = PassthroughTranslator::default();
 
         let translation = sut
             .publish_subscribe(
@@ -216,7 +231,7 @@ mod tests {
 
     #[test]
     fn a_service_without_a_header_has_it_transcoded_to_nothing_inbound() {
-        let sut = PassthroughTranslator;
+        let sut = PassthroughTranslator::default();
 
         let translation = sut
             .publish_subscribe(
@@ -233,7 +248,7 @@ mod tests {
 
     #[test]
     fn a_service_with_another_header_is_refused() {
-        let sut = PassthroughTranslator;
+        let sut = PassthroughTranslator::default();
         let header = TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize));
 
         let translation =

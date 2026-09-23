@@ -17,8 +17,9 @@ use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_integrations_ros2_link_adapter::mapping::static_mapping;
 use iceoryx2_integrations_ros2_link_adapter::{
-    AllowList, Config as AdapterConfig, PassthroughTranslator, PlainStructTranslator,
-    PrefixMapping, Ros2Adapter, StaticMapping, TopicSettings, TopicTypes, TypeName,
+    AllowList, Config as AdapterConfig, MirroredHeader, PassthroughTranslator,
+    PlainStructTranslator, PrefixMapping, Ros2Adapter, StaticMapping, TopicSettings, TopicTypes,
+    TypeName,
 };
 use iceoryx2_link::{Link, WakeCreationError};
 use iceoryx2_link_adapter::{Mapping, Translator};
@@ -69,6 +70,7 @@ pub fn create_gateway(
     cli: &Cli,
     iceoryx_config: &iceoryx2::config::Config,
 ) -> anyhow::Result<Box<dyn GatewayInstance>> {
+    let header = mirrored_header(cli);
     let gateway: Box<dyn GatewayInstance> = match (cli.mapping(), cli.translator) {
         (cli::Mapping::Prefix, cli::Translator::Passthrough) => {
             let config = fail!(
@@ -82,7 +84,7 @@ pub fn create_gateway(
                     iceoryx_config,
                     &config,
                     PrefixMapping::new(allowlist(cli)),
-                    PassthroughTranslator,
+                    PassthroughTranslator { header },
                     cli.monitor,
                 ),
                 "Failed to create the gateway"
@@ -100,7 +102,7 @@ pub fn create_gateway(
                     iceoryx_config,
                     &config,
                     PrefixMapping::new(allowlist(cli)),
-                    PlainStructTranslator,
+                    PlainStructTranslator { header },
                     cli.monitor,
                 ),
                 "Failed to create the gateway"
@@ -119,7 +121,7 @@ pub fn create_gateway(
                     iceoryx_config,
                     &config,
                     mapping,
-                    PassthroughTranslator,
+                    PassthroughTranslator { header },
                     cli.monitor
                 ),
                 "Failed to create the gateway"
@@ -138,7 +140,7 @@ pub fn create_gateway(
                     iceoryx_config,
                     &config,
                     mapping,
-                    PlainStructTranslator,
+                    PlainStructTranslator { header },
                     cli.monitor
                 ),
                 "Failed to create the gateway"
@@ -146,6 +148,15 @@ pub fn create_gateway(
         }
     };
     Ok(gateway)
+}
+
+/// The user header of mirrored services selected on the command line.
+fn mirrored_header(cli: &Cli) -> MirroredHeader {
+    if cli.ros_header {
+        MirroredHeader::RosHeader
+    } else {
+        MirroredHeader::None
+    }
 }
 
 fn create<M, T>(

@@ -31,7 +31,7 @@ set timeout 30
 
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-link-gateway-ros2 -- --static-mapping ${MAPPING} --monitor
+    --bin iox2-link-gateway-ros2 -- --static-mapping ${MAPPING} --ros-header --monitor
 set id_gateway $spawn_id
 unset env(IOX2_LOG_LEVEL)
 expect_output_from $id_gateway "Gateway started"

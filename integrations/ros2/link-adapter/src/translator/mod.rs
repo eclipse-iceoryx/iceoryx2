@@ -12,9 +12,9 @@
 
 //! The translators between local types and ROS 2 message types.
 //!
-//! ROS 2 has no user header. A mirrored topic gets the [`RosHeader`] to hold
-//! the message info of each taken message. A local service must carry that
-//! header if it requires that info, or none. No header is published to ROS 2.
+//! ROS 2 has no user header. A mirrored topic gets the [`MirroredHeader`]
+//! the translator is configured with, which is either empty or the
+//! [`RosHeader`] holding the message info of each taken message.
 
 pub mod passthrough;
 pub mod plain_struct;
@@ -22,6 +22,7 @@ pub mod plain_struct;
 pub use passthrough::PassthroughTranslator;
 pub use plain_struct::{CdrTranscoder, PlainStructTranslator, TranscodeFailure};
 
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_link_adapter::{
     HeaderTranscoder, Region, TranscodeError, Transcoding, WritableSample,
 };
@@ -29,6 +30,27 @@ use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
 use crate::ros_header::RosHeader;
+
+/// The user header to use for the services mirroring topics.
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+pub enum MirroredHeader {
+    /// No user header.
+    #[default]
+    None,
+    /// The [`RosHeader`] holding the message info.
+    RosHeader,
+}
+
+impl MirroredHeader {
+    pub(crate) fn type_description(self) -> TypeDescription {
+        match self {
+            MirroredHeader::None => {
+                TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize))
+            }
+            MirroredHeader::RosHeader => TypeDescription::from(&RosHeader::type_detail()),
+        }
+    }
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TranslationError {

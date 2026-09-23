@@ -18,7 +18,7 @@ mod translation;
 
 pub use mapping::{PrefixMapped, StaticMapped};
 pub use payload::{SerializedString, UInt64};
-pub use translation::{Passthrough, PlainStruct};
+pub use translation::{Passthrough, PassthroughWithHeader, PlainStruct, PlainStructWithHeader};
 
 use core::marker::PhantomData;
 
@@ -102,7 +102,7 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
     }
 
     fn translator(&self) -> T::Translator {
-        T::Translator::default()
+        T::translator()
     }
 
     /// Remote endpoints on topics and types the gateway maps and
