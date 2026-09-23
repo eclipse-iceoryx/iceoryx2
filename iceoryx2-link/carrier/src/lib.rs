@@ -70,18 +70,14 @@
 //! impl SampleChannel for MySampleChannel {
 //!     type Error = MyError;
 //!
-//!     fn send(&mut self, bytes: &[&[u8]]) -> Result<(), MyError> {
-//!         // Send the bytes, given as consecutive slices, to other peers who
-//!         // have the channel open, in whatever form the transport uses.
+//!     fn send(&mut self, sample: SampleBytesRef<'_>) -> Result<(), MyError> {
+//!         // Send the header then the payload to other peers who have the
+//!         // channel open, in whatever form the transport uses.
 //!     }
 //!
-//!     fn receive<L: LoanableSample>(&mut self, loanable: L) -> Result<Option<L::Sample>, SampleReceiveError<MyError>> {
-//!         // Acquire a loan from the provided loanable and write bytes
-//!         // received from the channel directly into it.
-//!         //
-//!         // If the loan is refused, drop the bytes and return the refusal.
-//!         // Return None if there is nothing pending on the channel. Bytes
-//!         // already held in a buffer are written with populate.
+//!     fn receive(&mut self) -> Result<Option<&[u8]>, MyError> {
+//!         // The bytes of the next pending sample, header then payload.
+//!         // Return None if nothing is pending.
 //!     }
 //! }
 //!
@@ -112,6 +108,6 @@ mod peer_id;
 
 pub use announcement::Announcement;
 pub use carrier::Carrier;
-pub use channel::{EventChannel, EventReceiveError, SampleChannel, SampleReceiveError, populate};
+pub use channel::{EventChannel, EventReceiveError, SampleChannel};
 pub use offer::Offer;
 pub use peer_id::PeerId;

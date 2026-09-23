@@ -17,29 +17,38 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod carrier_sample {
     use core::time::Duration;
 
+    use alloc::vec::Vec;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_link_adapter::SampleBytes;
-    use iceoryx2_link_carrier::{Carrier, SampleChannel, SampleReceiveError};
+
+    use iceoryx2_link_adapter::SampleBytesRef;
+    use iceoryx2_link_carrier::{Carrier, SampleChannel};
 
     use crate::fixture::CarrierFixture;
-    use crate::testing::{NotLoanable, UnloanedBuffers, descriptor, descriptor_with_header, retry};
+    use crate::testing::{descriptor, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const PAYLOAD: &str = "u64";
 
-    /// The next sample's bytes split into a header of `header_size` bytes
-    /// and its payload.
-    fn receive<C: SampleChannel>(channel: &mut C, header_size: usize) -> Option<SampleBytes> {
+    fn send<C: SampleChannel>(channel: &mut C, header: &[u8], payload: &[u8]) {
         channel
-            .receive(UnloanedBuffers { header_size })
+            .send(SampleBytesRef { header, payload })
+            .expect("sending succeeds");
+    }
+
+    /// The next sample's bytes, header then payload.
+    fn receive<C: SampleChannel>(channel: &mut C) -> Option<Vec<u8>> {
+        channel
+            .receive()
             .expect("receiving succeeds")
+            .map(<[u8]>::to_vec)
     }
 
     fn expect_sample<C: SampleChannel>(channel: &mut C, header: &[u8], payload: &[u8]) {
+        let expected = [header, payload].concat();
         retry(
-            || match receive(channel, header.len()) {
-                Some(taken) if taken.header == header && taken.payload == payload => Ok(()),
+            || match receive(channel) {
+                Some(bytes) if bytes == expected => Ok(()),
                 Some(_) => Err("an unexpected sample arrived"),
                 None => Err("no sample arrived"),
             },
@@ -70,13 +79,11 @@ pub mod carrier_sample {
 
         // === SEND ===
         // A sample from A arrives at B and C, and never at A itself.
-        channel_a
-            .send(&[NO_HEADER_BYTES, PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, PAYLOAD_BYTES);
 
         expect_sample(&mut channel_b, NO_HEADER_BYTES, PAYLOAD_BYTES);
         expect_sample(&mut channel_c, NO_HEADER_BYTES, PAYLOAD_BYTES);
-        assert_that!(receive(&mut channel_a, NO_HEADER_BYTES.len()), is_none);
+        assert_that!(receive(&mut channel_a), is_none);
     }
 
     #[conformance_test]
@@ -98,14 +105,12 @@ pub mod carrier_sample {
 
         // === SEND ===
         // Peer A sends before peer B has the channel open.
-        channel_a
-            .send(&[NO_HEADER_BYTES, PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, PAYLOAD_BYTES);
 
         // === OPEN LATE ===
         // Nothing is held for a peer that was not listening.
         let mut channel_b = b.open_sample_channel(&descriptor).expect("channel opens");
-        assert_that!(receive(&mut channel_b, NO_HEADER_BYTES.len()), is_none);
+        assert_that!(receive(&mut channel_b), is_none);
     }
 
     #[conformance_test]
@@ -132,11 +137,9 @@ pub mod carrier_sample {
 
         // === SEND ===
         // Different descriptors are different channels.
-        channel_a
-            .send(&[NO_HEADER_BYTES, PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, PAYLOAD_BYTES);
 
-        assert_that!(receive(&mut channel_b, NO_HEADER_BYTES.len()), is_none);
+        assert_that!(receive(&mut channel_b), is_none);
     }
 
     #[conformance_test]
@@ -160,12 +163,8 @@ pub mod carrier_sample {
 
         // === SEND ===
         // Two samples from A arrive at B in the order they were sent.
-        channel_a
-            .send(&[NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES])
-            .expect("sending succeeds");
-        channel_a
-            .send(&[NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES);
+        send(&mut channel_a, NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES);
 
         expect_sample(&mut channel_b, NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES);
         expect_sample(&mut channel_b, NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES);
@@ -193,9 +192,7 @@ pub mod carrier_sample {
 
         // === SEND ===
         // A sample sent while the second peer has its channel open arrives.
-        channel_a
-            .send(&[NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES);
         expect_sample(&mut channel_b, NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES);
 
         // === CLOSE ===
@@ -205,9 +202,7 @@ pub mod carrier_sample {
 
         // === SEND ===
         // A sample sent while the channel is closed.
-        channel_a
-            .send(&[NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES);
 
         // === REOPEN ===
         // The second peer reopens its channel.
@@ -217,91 +212,15 @@ pub mod carrier_sample {
         // === SEND ===
         // The next sample the second peer receives is one sent after it
         // reopened, the sample sent while it was closed is not received.
-        channel_a
-            .send(&[NO_HEADER_BYTES, THIRD_PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        send(&mut channel_a, NO_HEADER_BYTES, THIRD_PAYLOAD_BYTES);
         expect_sample(&mut channel_b, NO_HEADER_BYTES, THIRD_PAYLOAD_BYTES);
     }
 
     #[conformance_test]
-    pub fn header_and_payload_are_extracted_from_bytes<F: CarrierFixture>() {
+    pub fn header_precedes_payload_in_the_received_bytes<F: CarrierFixture>() {
         const SERVICE: &str = "carrier/samples/regions";
         const HEADER_BYTES: &[u8] = b"header";
         const PAYLOAD_BYTES: &[u8] = b"payload";
-
-        let mut fixture = F::new();
-
-        // === SETUP ===
-        // Two peers on a service whose user header is the header's size.
-        let mut a = fixture.carrier();
-        let mut b = fixture.carrier();
-        let descriptor = descriptor_with_header(SERVICE, PAYLOAD, HEADER_BYTES.len());
-
-        let mut channel_a = a.open_sample_channel(&descriptor).expect("channel opens");
-        let mut channel_b = b.open_sample_channel(&descriptor).expect("channel opens");
-        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
-
-        // === SEND ===
-        channel_a
-            .send(&[HEADER_BYTES, PAYLOAD_BYTES])
-            .expect("sending succeeds");
-
-        expect_sample(&mut channel_b, HEADER_BYTES, PAYLOAD_BYTES);
-    }
-
-    #[conformance_test]
-    pub fn bytes_shorter_than_the_header_are_dropped<F: CarrierFixture>() {
-        const SERVICE: &str = "carrier/samples/short";
-        const HEADER_BYTES: &[u8] = b"header";
-        const SHORT_BYTES: &[u8] = b"ab";
-        const PAYLOAD_BYTES: &[u8] = b"payload";
-
-        let mut fixture = F::new();
-
-        // === SETUP ===
-        // Two peers on a service whose user header is longer than the
-        // short bytes.
-        let mut a = fixture.carrier();
-        let mut b = fixture.carrier();
-        let descriptor = descriptor_with_header(SERVICE, PAYLOAD, HEADER_BYTES.len());
-
-        let mut channel_a = a.open_sample_channel(&descriptor).expect("channel opens");
-        let mut channel_b = b.open_sample_channel(&descriptor).expect("channel opens");
-        assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
-
-        // === SEND ===
-        // Bytes that cannot hold the header, then a whole sample.
-        channel_a.send(&[SHORT_BYTES]).expect("sending succeeds");
-        channel_a
-            .send(&[HEADER_BYTES, PAYLOAD_BYTES])
-            .expect("sending succeeds");
-
-        // === DROP ===
-        // The short bytes are reported as malformed and dropped.
-        retry(
-            || match channel_b.receive(UnloanedBuffers {
-                header_size: HEADER_BYTES.len(),
-            }) {
-                Err(SampleReceiveError::Malformed) => Ok(()),
-                Err(_) => Err("an unexpected error"),
-                Ok(Some(_)) => Err("the short bytes were received"),
-                Ok(None) => Err("nothing arrived"),
-            },
-            TIMEOUT,
-        )
-        .expect("the short bytes are dropped");
-
-        // === RECEIVE ===
-        // The whole sample arrives without issue.
-        expect_sample(&mut channel_b, HEADER_BYTES, PAYLOAD_BYTES);
-    }
-
-    #[conformance_test]
-    pub fn a_refused_sample_is_dropped<F: CarrierFixture>() {
-        const SERVICE: &str = "carrier/samples/refused";
-        const NO_HEADER_BYTES: &[u8] = &[];
-        const FIRST_PAYLOAD_BYTES: &[u8] = b"first payload";
-        const SECOND_PAYLOAD_BYTES: &[u8] = b"second payload";
 
         let mut fixture = F::new();
 
@@ -316,29 +235,10 @@ pub mod carrier_sample {
         assert_that!(fixture.sync(&descriptor.hash, TIMEOUT), eq true);
 
         // === SEND ===
-        // Two samples from A.
-        channel_a
-            .send(&[NO_HEADER_BYTES, FIRST_PAYLOAD_BYTES])
-            .expect("sending succeeds");
-        channel_a
-            .send(&[NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES])
-            .expect("sending succeeds");
+        // A sample with a header arrives as the header's bytes followed by
+        // the payload's.
+        send(&mut channel_a, HEADER_BYTES, PAYLOAD_BYTES);
 
-        // === REFUSE ===
-        // The loan for the first sample is refused, so it is dropped.
-        retry(
-            || match channel_b.receive(NotLoanable) {
-                Err(SampleReceiveError::Malformed) => Ok(()),
-                Err(_) => Err("an unexpected error"),
-                Ok(Some(_)) => Err("a refused sample was received"),
-                Ok(None) => Err("no sample arrived"),
-            },
-            TIMEOUT,
-        )
-        .expect("the first sample is refused");
-
-        // === RECEIVE ===
-        // The next sample arrives without issue.
-        expect_sample(&mut channel_b, NO_HEADER_BYTES, SECOND_PAYLOAD_BYTES);
+        expect_sample(&mut channel_b, HEADER_BYTES, PAYLOAD_BYTES);
     }
 }

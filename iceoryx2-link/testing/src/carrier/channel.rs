@@ -16,11 +16,9 @@ use alloc::vec::Vec;
 use iceoryx2::port::event_id::EventId;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_backend::wire::event::{decode, encode};
-use iceoryx2_link_backend::wire::sample::LoanableSample;
+use iceoryx2_link_backend::wire::sample::SampleBytesRef;
 use iceoryx2_link_carrier::PeerId;
-use iceoryx2_link_carrier::{
-    EventChannel, EventReceiveError, SampleChannel, SampleReceiveError, populate,
-};
+use iceoryx2_link_carrier::{EventChannel, EventReceiveError, SampleChannel};
 use iceoryx2_log::{fail, origin};
 
 use crate::carrier::{Error, FakeBus};
@@ -64,32 +62,37 @@ impl FakeChannel {
 }
 
 /// The samples of one service over a [`FakeBus`].
-pub struct FakeSampleChannel(pub(super) FakeChannel);
+pub struct FakeSampleChannel {
+    channel: FakeChannel,
+    /// The bytes last received, held until the next receive.
+    received: Vec<u8>,
+}
+
+impl FakeSampleChannel {
+    pub(super) fn new(channel: FakeChannel) -> Self {
+        Self {
+            channel,
+            received: Vec::new(),
+        }
+    }
+}
 
 impl SampleChannel for FakeSampleChannel {
     type Error = Error;
 
-    fn send(&mut self, bytes: &[&[u8]]) -> Result<(), Self::Error> {
-        self.0.deliver(bytes);
+    fn send(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Error> {
+        self.channel.deliver(&[sample.header, sample.payload]);
         Ok(())
     }
 
-    fn receive<L: LoanableSample>(
-        &mut self,
-        loanable: L,
-    ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
-        let origin = origin!("FakeSampleChannel::receive");
-
-        let Some(bytes) = self.0.pop() else {
-            return Ok(None);
-        };
-        let sample = fail!(
-            from origin,
-            when populate(&bytes, loanable),
-            to SampleReceiveError<Error>,
-            "Dropped {} bytes", bytes.len()
-        );
-        Ok(Some(sample))
+    fn receive(&mut self) -> Result<Option<&[u8]>, Self::Error> {
+        match self.channel.pop() {
+            Some(bytes) => {
+                self.received = bytes;
+                Ok(Some(&self.received))
+            }
+            None => Ok(None),
+        }
     }
 }
 

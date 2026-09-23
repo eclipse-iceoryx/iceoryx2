@@ -14,4 +14,4 @@ mod event;
 mod sample;
 
 pub use event::{EventChannel, EventReceiveError};
-pub use sample::{SampleChannel, SampleReceiveError, populate};
+pub use sample::SampleChannel;

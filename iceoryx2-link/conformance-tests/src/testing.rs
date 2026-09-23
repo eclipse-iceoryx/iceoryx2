@@ -131,25 +131,6 @@ pub fn event_descriptor(name: &str) -> ServiceDescriptor {
     }
 }
 
-/// A descriptor of the service `name` with `payload` as its payload type
-/// and a user header of `header_size` bytes.
-pub fn descriptor_with_header(name: &str, payload: &str, header_size: usize) -> ServiceDescriptor {
-    let ServiceTypes::PublishSubscribe(mut types) = types_of(payload) else {
-        unreachable!("types_of describes a publish-subscribe service");
-    };
-    types.user_header = TypeDescription {
-        variant: TypeVariant::FixedSize,
-        type_name: String::from("header"),
-        size: header_size,
-        alignment: 1,
-    };
-    ServiceDescriptor {
-        name: ServiceName::new(name).expect("valid service name"),
-        hash: hash(name),
-        types: ServiceTypes::PublishSubscribe(types),
-    }
-}
-
 /// A link filter rejecting only the service `name`, and whether it has
 /// rejected it yet, so a scenario knows the link got as far as deciding.
 pub fn rejecting(name: ServiceName) -> (impl Fn(&ServiceName) -> bool + 'static, Rc<Cell<bool>>) {

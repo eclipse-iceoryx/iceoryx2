@@ -108,10 +108,8 @@ mod tests {
 
     use crate::testing::{description, descriptor, peer};
     use iceoryx2::port::event_id::EventId;
-    use iceoryx2_link_backend::wire::sample::LoanableSample;
-    use iceoryx2_link_carrier::{
-        EventChannel, EventReceiveError, Offer, SampleChannel, SampleReceiveError,
-    };
+    use iceoryx2_link_backend::wire::sample::SampleBytesRef;
+    use iceoryx2_link_carrier::{EventChannel, EventReceiveError, Offer, SampleChannel};
 
     const FIRST_PEER: u8 = 1;
     const SECOND_PEER: u8 = 2;
@@ -131,13 +129,10 @@ mod tests {
 
     impl SampleChannel for NoChannel {
         type Error = core::fmt::Error;
-        fn send(&mut self, _: &[&[u8]]) -> Result<(), Self::Error> {
+        fn send(&mut self, _: SampleBytesRef<'_>) -> Result<(), Self::Error> {
             Ok(())
         }
-        fn receive<L: LoanableSample>(
-            &mut self,
-            _: L,
-        ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
+        fn receive(&mut self) -> Result<Option<&[u8]>, Self::Error> {
             Ok(None)
         }
     }

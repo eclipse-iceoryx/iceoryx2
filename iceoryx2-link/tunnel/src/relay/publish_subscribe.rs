@@ -18,8 +18,10 @@ use iceoryx2_link_backend::service_description::{
     PublishSubscribeDescription, SampleTypes, ServiceDescriptor,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
-use iceoryx2_link_backend::wire::sample::{LoanableSample, payload_bytes, user_header_bytes};
-use iceoryx2_link_carrier::{Carrier, SampleChannel, SampleReceiveError};
+use iceoryx2_link_backend::wire::sample::{
+    LoanError, LoanableSample, SampleBytesRef, WritableSample, payload_bytes, user_header_bytes,
+};
+use iceoryx2_link_carrier::{Carrier, SampleChannel};
 use iceoryx2_log::{fail, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
@@ -91,7 +93,7 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         let payload = payload_bytes(sample.payload());
         fail!(
             from origin,
-            when self.channel.send(&[header, payload]),
+            when self.channel.send(SampleBytesRef { header, payload }),
             to SendError<C::Error>,
             "Failed to send a sample"
         );
@@ -104,30 +106,205 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         loanable: L,
     ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
-        match self.channel.receive(loanable) {
-            Ok(Some(writable)) => Ok(ReceiveOutcome::Sample(writable)),
-            Ok(None) => Ok(ReceiveOutcome::Empty),
-            Err(SampleReceiveError::Malformed) => {
-                fail!(
-                    from origin,
-                    with ReceiveError::Malformed,
-                    "Received bytes that do not fit the service"
-                );
-            }
-            Err(SampleReceiveError::Exhausted) => {
+
+        let bytes = fail!(
+            from origin,
+            when self.channel.receive(),
+            to ReceiveError<C::Error>,
+            "Failed to receive a sample"
+        );
+        let Some(bytes) = bytes else {
+            return Ok(ReceiveOutcome::Empty);
+        };
+
+        let header_size = self.types.user_header.size;
+        if bytes.len() < header_size {
+            fail!(
+                from origin,
+                with ReceiveError::Malformed,
+                "Received fewer bytes than expected, {} bytes where the header size is {}", bytes.len(), header_size
+            );
+        }
+        let (header, payload) = bytes.split_at(header_size);
+
+        let mut writable = match loanable.loan(payload.len()) {
+            Ok(writable) => writable,
+            Err(LoanError::Exhausted) => {
                 fail!(
                     from origin,
                     with ReceiveError::Loan,
-                    "No sample to receive into"
+                    "The publisher has no free sample for the received bytes of size {}", bytes.len()
                 );
             }
-            Err(SampleReceiveError::Channel(error)) => {
+            Err(LoanError::Malformed | LoanError::NotResizable) => {
                 fail!(
                     from origin,
-                    with ReceiveError::Channel(error),
-                    "Failed to receive a sample"
+                    with ReceiveError::Malformed,
+                    "Received a payload of {} bytes, which the service does not support", payload.len()
                 );
             }
+        };
+        writable.header().copy_from_slice(header);
+        writable.payload().copy_from_slice(payload);
+
+        Ok(ReceiveOutcome::Sample(writable))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use alloc::collections::VecDeque;
+    use alloc::vec::Vec;
+    use core::convert::Infallible;
+
+    use iceoryx2::service::local;
+    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_link_backend::service_description::ServiceTypes;
+    use iceoryx2_link_backend::wire::sample::SampleBytes;
+
+    use crate::testing::description;
+
+    const SERVICE: &str = "tunnel/relay/publish_subscribe";
+    const PAYLOAD: &str = "u64";
+    /// The size of a header and of a payload alike, as `description` states.
+    const SIZE: usize = 8;
+    const HEADER: [u8; SIZE] = [0x11; SIZE];
+    const PAYLOAD_BYTES: [u8; SIZE] = [0x22; SIZE];
+
+    /// A channel holding the bytes pending for the relay.
+    #[derive(Default)]
+    struct StubChannel {
+        pending: VecDeque<Vec<u8>>,
+        received: Vec<u8>,
+    }
+
+    impl SampleChannel for StubChannel {
+        type Error = Infallible;
+
+        fn send(&mut self, _: SampleBytesRef<'_>) -> Result<(), Self::Error> {
+            Ok(())
         }
+
+        fn receive(&mut self) -> Result<Option<&[u8]>, Self::Error> {
+            match self.pending.pop_front() {
+                Some(bytes) => {
+                    self.received = bytes;
+                    Ok(Some(&self.received))
+                }
+                None => Ok(None),
+            }
+        }
+    }
+
+    /// Loans heap buffers with a header of the service's size.
+    struct Loanable;
+
+    impl LoanableSample for Loanable {
+        type Sample = SampleBytes;
+
+        fn header_size(&self) -> usize {
+            SIZE
+        }
+
+        fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+            Ok(SampleBytes {
+                header: alloc::vec![0; SIZE],
+                payload: alloc::vec![0; payload_len],
+            })
+        }
+    }
+
+    /// Refuses every loan with `refusal`.
+    struct Refusing(LoanError);
+
+    impl LoanableSample for Refusing {
+        type Sample = SampleBytes;
+
+        fn header_size(&self) -> usize {
+            SIZE
+        }
+
+        fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
+            Err(self.0)
+        }
+    }
+
+    fn relay(pending: &[&[u8]]) -> Relay<local::Service, StubChannel> {
+        let ServiceTypes::PublishSubscribe(types) = description(SERVICE, PAYLOAD).types().clone()
+        else {
+            unreachable!("description is publish-subscribe");
+        };
+        Relay {
+            channel: StubChannel {
+                pending: pending.iter().map(|bytes| bytes.to_vec()).collect(),
+                received: Vec::new(),
+            },
+            types,
+            _service: PhantomData,
+        }
+    }
+
+    #[test]
+    fn header_and_payload_are_split_from_the_received_bytes() {
+        let mut relay = relay(&[&[HEADER, PAYLOAD_BYTES].concat()]);
+
+        let outcome = relay.receive(Loanable).expect("receiving succeeds");
+
+        let ReceiveOutcome::Sample(sample) = outcome else {
+            panic!("a sample is received");
+        };
+        assert_that!(sample.header, eq HEADER);
+        assert_that!(sample.payload, eq PAYLOAD_BYTES);
+    }
+
+    #[test]
+    fn nothing_pending_is_empty() {
+        let mut relay = relay(&[]);
+
+        let outcome = relay.receive(Loanable).expect("receiving succeeds");
+
+        assert_that!(matches!(outcome, ReceiveOutcome::Empty), eq true);
+    }
+
+    #[test]
+    fn bytes_shorter_than_the_header_are_malformed() {
+        const SHORT: [u8; 2] = [0xAB; 2];
+        let mut relay = relay(&[&SHORT, &[HEADER, PAYLOAD_BYTES].concat()]);
+
+        let refusal = relay
+            .receive(Loanable)
+            .err()
+            .expect("the short bytes are refused");
+        assert_that!(matches!(refusal, ReceiveError::Malformed), eq true);
+
+        // The next sample is unaffected.
+        let outcome = relay.receive(Loanable).expect("receiving succeeds");
+        assert_that!(matches!(outcome, ReceiveOutcome::Sample(_)), eq true);
+    }
+
+    #[test]
+    fn a_payload_the_loan_calls_malformed_is_malformed() {
+        let mut relay = relay(&[&[HEADER, PAYLOAD_BYTES].concat()]);
+
+        let refusal = relay
+            .receive(Refusing(LoanError::Malformed))
+            .err()
+            .expect("the sample is refused");
+
+        assert_that!(matches!(refusal, ReceiveError::Malformed), eq true);
+    }
+
+    #[test]
+    fn an_exhausted_loan_is_reported_as_such() {
+        let mut relay = relay(&[&[HEADER, PAYLOAD_BYTES].concat()]);
+
+        let refusal = relay
+            .receive(Refusing(LoanError::Exhausted))
+            .err()
+            .expect("the sample is refused");
+
+        assert_that!(matches!(refusal, ReceiveError::Loan), eq true);
     }
 }

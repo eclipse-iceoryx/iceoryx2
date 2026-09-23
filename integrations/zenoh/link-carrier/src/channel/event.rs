@@ -24,19 +24,19 @@ impl EventChannel for ZenohEventChannel {
     type Error = Error;
 
     fn send(&mut self, id: EventId) -> Result<(), Self::Error> {
-        self.0.put(&[&encode(id)])
+        self.0.send(&[&encode(id)])
     }
 
     fn receive(&mut self) -> Result<Option<EventId>, EventReceiveError<Self::Error>> {
         let origin = origin!("ZenohEventChannel::receive");
 
-        let Some(bytes) = self.0.pop() else {
+        let Some(bytes) = self.0.receive() else {
             return Ok(None);
         };
 
         let id = fail!(
             from origin,
-            when decode(&bytes),
+            when decode(bytes),
             to EventReceiveError<Error>,
             "Dropped {} bytes that are not an event id", bytes.len()
         );

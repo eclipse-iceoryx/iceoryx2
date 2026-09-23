@@ -31,7 +31,6 @@ use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 
 use crate::service_description::SampleTypes;
-use crate::wire::UnsupportedLength;
 
 /// The untyped user header as it passes through a relay.
 pub type Header = CustomHeaderMarker;
@@ -119,38 +118,6 @@ impl WritableSample for SampleBytes {
         &mut self.payload
     }
 }
-
-/// Why a sample refused a write.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WriteError {
-    /// The bytes do not fit a sample of the service.
-    Malformed,
-    /// The port had no sample to give.
-    Exhausted,
-}
-
-impl From<UnsupportedLength> for WriteError {
-    fn from(_: UnsupportedLength) -> Self {
-        Self::Malformed
-    }
-}
-
-impl From<LoanError> for WriteError {
-    fn from(refusal: LoanError) -> Self {
-        match refusal {
-            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
-            LoanError::Exhausted => Self::Exhausted,
-        }
-    }
-}
-
-impl core::fmt::Display for WriteError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "WriteError::{self:?}")
-    }
-}
-
-impl core::error::Error for WriteError {}
 
 /// Whether a header and a payload of these lengths fit a sample of the
 /// described service.

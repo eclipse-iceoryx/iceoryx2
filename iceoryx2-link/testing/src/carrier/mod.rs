@@ -82,7 +82,7 @@ impl Carrier for FakeCarrier {
         &mut self,
         descriptor: &ServiceDescriptor,
     ) -> Result<Self::SampleChannel, Self::ChannelError> {
-        Ok(FakeSampleChannel(self.open(descriptor)))
+        Ok(FakeSampleChannel::new(self.open(descriptor)))
     }
 
     fn open_event_channel(

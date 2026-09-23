@@ -15,12 +15,45 @@ use std::sync::{Arc, OnceLock};
 use iceoryx2_link_backend::WakeHandle;
 use iceoryx2_log::{origin, warn};
 use zenoh::handlers::{Callback, IntoHandler};
+use zenoh::sample::Sample;
+
+/// The bytes provided by Zenoh from one read.
+///
+/// If not contiguous, the parts are reconstructed in a heap buffer to be
+/// referenced. Otherwise, the bytes are referenced directly from the buffer
+/// they were written to.
+pub(crate) enum ReceivedBytes {
+    Contiguous(Sample),
+    Joined(Vec<u8>),
+}
+
+impl ReceivedBytes {
+    pub(crate) fn bytes(&self) -> &[u8] {
+        match self {
+            Self::Contiguous(sample) => sample.payload().slices().next().unwrap_or(&[]),
+            Self::Joined(bytes) => bytes,
+        }
+    }
+}
+
+impl From<Sample> for ReceivedBytes {
+    fn from(sample: Sample) -> Self {
+        let fragmented = sample.payload().slices().nth(1).is_some();
+        match fragmented {
+            false => Self::Contiguous(sample),
+            true => Self::Joined(sample.payload().to_bytes().into_owned()),
+        }
+    }
+}
 
 /// A queue from zenoh's callback threads to the thread driving the
 /// carrier.
 pub(crate) struct Inbox<T> {
     sender: flume::Sender<T>,
     receiver: flume::Receiver<T>,
+    /// The recevied item at the head of the queue referenced by consumers on
+    /// consume.
+    head: Option<T>,
     /// Signalled on every push.
     wake: Arc<OnceLock<WakeHandle>>,
 }
@@ -32,11 +65,12 @@ impl<T> Inbox<T> {
         Self {
             sender,
             receiver,
+            head: None,
             wake,
         }
     }
 
-    /// A handle to push with.
+    /// The handle to push bytes into the inbox.
     pub(crate) fn sender(&self) -> Sender<T> {
         Sender {
             sender: self.sender.clone(),
@@ -44,9 +78,10 @@ impl<T> Inbox<T> {
         }
     }
 
-    /// The oldest item not popped yet, if any.
-    pub(crate) fn pop(&self) -> Option<T> {
-        self.receiver.try_recv().ok()
+    /// Advanced to the next item in the inbox.
+    pub(crate) fn next(&mut self) -> Option<&T> {
+        self.head = self.receiver.try_recv().ok();
+        self.head.as_ref()
     }
 }
 
@@ -71,11 +106,14 @@ impl<T> Sender<T> {
     }
 }
 
-impl<T: Send + 'static> IntoHandler<T> for Inbox<T> {
+impl<T: From<Sample> + Send + 'static> IntoHandler<Sample> for Inbox<T> {
     type Handler = Self;
 
-    fn into_handler(self) -> (Callback<T>, Self::Handler) {
+    fn into_handler(self) -> (Callback<Sample>, Self::Handler) {
         let sender = self.sender();
-        (Callback::from(move |item: T| sender.push(item)), self)
+        (
+            Callback::from(move |sample: Sample| sender.push(T::from(sample))),
+            self,
+        )
     }
 }

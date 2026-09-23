@@ -121,7 +121,7 @@ pub use endpoints::{
 };
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
 pub use iceoryx2_link_backend::wire::sample::{
-    LoanError, LoanableSample, SampleBytes, SampleBytesRef, WritableSample, WriteError,
+    LoanError, LoanableSample, SampleBytes, SampleBytesRef, WritableSample,
 };
 pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;
