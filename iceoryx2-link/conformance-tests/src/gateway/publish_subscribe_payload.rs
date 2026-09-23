@@ -46,7 +46,7 @@ pub mod gateway_publish_subscribe_payload {
             config,
             node,
             mut link,
-        } = side::<S, _>(|_| fixture.gateway());
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let service_name = X::service_name();
         let service = X::create_service::<(), _>(&node, &service_name);
         let publisher = X::create_publisher(&service);
@@ -115,7 +115,7 @@ pub mod gateway_publish_subscribe_payload {
             config,
             node,
             mut link,
-        } = side::<S, _>(|_| fixture.gateway());
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
             &X::service_name(),
             &config,

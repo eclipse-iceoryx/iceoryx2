@@ -175,10 +175,11 @@ pub struct Side<S: Service, B: Backend<S>> {
     pub link: Link<S, B>,
 }
 
-/// A fresh side, its link over the backend `backend` builds for its
-/// configuration.
-pub fn side<S: Service, B: Backend<S>>(backend: impl FnOnce(&Config) -> B) -> Side<S, B> {
-    let config = generate_isolated_config();
+/// Creates one side of a link using the provided config.
+pub fn side<S: Service, B: Backend<S>>(
+    config: Config,
+    backend: impl FnOnce(&Config) -> B,
+) -> Side<S, B> {
     let node = NodeBuilder::new()
         .config(&config)
         .create::<S>()

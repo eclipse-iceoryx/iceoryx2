@@ -45,8 +45,8 @@ pub mod tunnel_publish_subscribe {
 
         // === SETUP ===
         // Side B offers a service with a history size of its own.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let _service = X::create_service_with::<(), _>(&b.node, &service_name, |builder| {
             builder.history_size(HISTORY_SIZE)
@@ -82,8 +82,8 @@ pub mod tunnel_publish_subscribe {
 
         // === SETUP ===
         // Side B offers a service, side A mirrors it with B's types.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service = X::create_service::<(), _>(&b.node, &service_name);
         let hash = hash_of::<S>(&service_name);
@@ -147,8 +147,8 @@ pub mod tunnel_publish_subscribe {
         // === SETUP ===
         // A service offered on side A and mirrored on side B, with an
         // application on each side holding a publisher and a subscriber.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service_a = X::create_service::<(), _>(&a.node, &service_name);
         let hash = hash_of::<S>(&service_name);
@@ -230,8 +230,8 @@ pub mod tunnel_publish_subscribe {
         // Each side's application creates the service itself, with the same
         // types and its own history size. Neither side mirrors, each
         // exports its own.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service_a = X::create_service_with::<(), _>(&a.node, &service_name, |builder| {
             builder.history_size(HISTORY_SIZE_A)
@@ -288,8 +288,8 @@ pub mod tunnel_publish_subscribe {
         // === SETUP ===
         // Each side's application creates the service itself, with other
         // types. Both are bridged, on different channels.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service_a = X::create_service::<(), _>(&a.node, &service_name);
         let service_b = Y::create_service::<(), _>(&b.node, &service_name);

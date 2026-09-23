@@ -38,8 +38,8 @@ pub mod link_wake {
 
         // === SETUP ===
         // Two links over one mechanism, side B waiting on its listener.
-        let mut a = side::<S, _>(|config| fixture.backend(config));
-        let mut b = side::<S, _>(|config| fixture.backend(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.backend(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.backend(config));
         let listener = b.link.listener().expect("the listener is created");
         let mut woken = false;
         listener

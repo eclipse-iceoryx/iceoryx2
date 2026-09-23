@@ -14,6 +14,8 @@ use alloc::vec::Vec;
 use core::fmt::Debug;
 use core::time::Duration;
 
+use iceoryx2::config::Config;
+use iceoryx2::testing::generate_isolated_config;
 use iceoryx2_link_adapter::{Adapter, EndpointDescription};
 
 /// One middleware, the adapters on it, and the remote endpoints on it.
@@ -28,6 +30,11 @@ pub trait AdapterFixture {
 
     /// A fresh, isolated middleware.
     fn new() -> Self;
+
+    /// The configuration to use in the fixture.
+    fn config(&self) -> Config {
+        generate_isolated_config()
+    }
 
     /// An adapter on the middleware.
     fn adapter(&mut self) -> Self::Adapter;

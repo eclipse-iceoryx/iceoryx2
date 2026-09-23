@@ -12,7 +12,9 @@
 
 use core::time::Duration;
 
+use iceoryx2::config::Config;
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::testing::generate_isolated_config;
 use iceoryx2_link_carrier::Carrier;
 
 /// One communication mechanism and the carriers on it, each a peer.
@@ -21,6 +23,11 @@ pub trait CarrierFixture {
 
     /// A fresh, isolated mechanism.
     fn new() -> Self;
+
+    /// The configuration to use in the fixture.
+    fn config(&self) -> Config {
+        generate_isolated_config()
+    }
 
     /// A carrier on the mechanism, a new peer.
     fn carrier(&mut self) -> Self::Carrier;

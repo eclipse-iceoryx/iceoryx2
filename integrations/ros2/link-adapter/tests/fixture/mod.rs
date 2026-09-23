@@ -23,7 +23,7 @@ pub use translation::{Passthrough, PassthroughWithHeader, PlainStruct, PlainStru
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2::testing::generate_service_name;
+use iceoryx2::testing::{generate_isolated_config, generate_service_name};
 use iceoryx2_integrations_ros2_link_adapter::qos::Durability;
 use iceoryx2_integrations_ros2_link_adapter::testing::PeerNode;
 use iceoryx2_integrations_ros2_link_adapter::{
@@ -56,6 +56,14 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
             peer: PeerNode::new(),
             _under_test: PhantomData,
         }
+    }
+
+    fn config(&self) -> iceoryx2::config::Config {
+        let mut config = generate_isolated_config();
+
+        // Keep history so samples are not lost to late matching.
+        config.defaults.publish_subscribe.publisher_history_size = 5;
+        config
     }
 
     fn adapter(&mut self) -> Ros2Adapter {

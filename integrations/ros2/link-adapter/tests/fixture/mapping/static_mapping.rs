@@ -14,6 +14,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_integrations_ros2_link_adapter::mapping::static_mapping::{
     Config as StaticConfig, Entry, IceoryxSettings, RosSettings,
 };
+use iceoryx2_integrations_ros2_link_adapter::qos::Durability;
 use iceoryx2_integrations_ros2_link_adapter::{QosProfile, StaticMapping, TopicName, TypeName};
 use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
 use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
@@ -45,7 +46,12 @@ impl MappingUnderTest for StaticMapped {
                 ros2: RosSettings {
                     topic: TopicName::new(Self::TOPIC).expect("a valid topic name"),
                     type_name: TypeName::new(payload_type).expect("a valid type name"),
-                    qos: QosProfile::default(),
+                    // Transient local durability so messsages sent before matching completes
+                    // are kept.
+                    qos: QosProfile {
+                        durability: Durability::TransientLocal,
+                        ..QosProfile::default()
+                    },
                 },
             }],
         })

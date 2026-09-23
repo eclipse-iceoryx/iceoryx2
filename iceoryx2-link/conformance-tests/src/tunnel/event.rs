@@ -38,8 +38,8 @@ pub mod tunnel_event {
         // === SETUP ===
         // An event service on side A, bridged on both sides, a notifier
         // and a listener on each side.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service_a = X::create_service::<S>(&a.node, &service_name);
         let notifier_a = X::create_notifier(&service_a);

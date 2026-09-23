@@ -41,7 +41,7 @@ pub mod gateway_discovery {
         // the middleware.
         let Side {
             config, mut link, ..
-        } = side::<S, _>(|_| fixture.gateway());
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let remote = fixture.remote_endpoints_on(&X::describe::<S>(&X::service_name(), &config));
 
         // === MIRROR ===
@@ -69,7 +69,7 @@ pub mod gateway_discovery {
         // === SETUP ===
         // Remote endpoints on the middleware, and a link whose filter
         // rejects their service.
-        let Side { config, link, .. } = side::<S, _>(|_| fixture.gateway());
+        let Side { config, link, .. } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let service_name = X::service_name();
         let remote = fixture.remote_endpoints_on(&X::describe::<S>(&service_name, &config));
         let (filter, rejected) = rejecting(service_name);
@@ -106,7 +106,7 @@ pub mod gateway_discovery {
         // A remote endpoint mirrored by the link.
         let Side {
             config, mut link, ..
-        } = side::<S, _>(|_| fixture.gateway());
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let remote = fixture.remote_endpoints_on(&X::describe::<S>(&X::service_name(), &config));
         retry(
             || {
