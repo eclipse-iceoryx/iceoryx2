@@ -204,10 +204,6 @@ mod tests {
     impl LoanableSample for Loanable {
         type Sample = SampleBytes;
 
-        fn header_size(&self) -> usize {
-            SIZE
-        }
-
         fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
             Ok(SampleBytes {
                 header: alloc::vec![0; SIZE],
@@ -221,10 +217,6 @@ mod tests {
 
     impl LoanableSample for Refusing {
         type Sample = SampleBytes;
-
-        fn header_size(&self) -> usize {
-            SIZE
-        }
 
         fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
             Err(self.0)
