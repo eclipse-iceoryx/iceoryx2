@@ -22,5 +22,5 @@ just setup integrations-ros2-messages
 ```
 
 This imports the message definitions of `<distro>.repos` and builds the
-crates into `../../target/<distro>/colcon/messages`, a colcon workspace of
-its own. Source its `install/setup.bash` to make the crates available.
+crates into `../../target/<distro>/colcon/messages`.
+Source its `install/setup.bash` to make the crates available.

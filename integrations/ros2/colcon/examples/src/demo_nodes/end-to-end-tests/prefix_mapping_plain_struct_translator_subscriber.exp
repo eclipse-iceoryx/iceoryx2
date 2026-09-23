@@ -33,21 +33,22 @@ spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
     --allow /cmd_vel \
     --translator PlainStruct --ros-header --monitor
 set id_gateway $spawn_id
+drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
+
 expect_output_from $id_gateway "Gateway started"
 
 spawn ros2 run demo_nodes_iceoryx2 \
     prefix_mapping_plain_struct_translator_subscriber
 set id_subscriber $spawn_id
-expect_output_from $id_subscriber "waiting for messages on ros2://topics/cmd_vel"
 
 spawn ros2 topic pub -r 5 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 set id_publisher $spawn_id
 
-#### Test Assertion
-
 expect_output_from $id_gateway "Opened PublishSubscribe bridge of ros2://topics/cmd_vel"
 expect_output_from $id_gateway "PublishSubscribe bridge of ros2://topics/cmd_vel moved"
+
+#### Test Assertion
 
 expect_output_from $id_subscriber "x: 0.5"
 

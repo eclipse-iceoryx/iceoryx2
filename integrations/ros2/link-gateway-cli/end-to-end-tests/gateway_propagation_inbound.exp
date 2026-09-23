@@ -35,13 +35,14 @@ exec cargo build --manifest-path integrations/ros2/Cargo.toml \
 
 set timeout 30
 
-# The gateway at trace level, the bridge lines of the link are trace.
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-link-gateway-ros2 -- \
     --allow /chatter --monitor
 set id_gateway $spawn_id
+drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
+
 expect_output_from $id_gateway "Gateway started"
 
 spawn ros2 topic pub -r 5 /chatter std_msgs/msg/String "{data: hello}"

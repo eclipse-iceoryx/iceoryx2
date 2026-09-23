@@ -33,6 +33,12 @@ proc handle_timeout { EXPECTED_OUTPUT } {
     exit 1
 }
 
+# Discards the output of a process that no expect is waiting on. Otherwise
+# its terminal fills up causing the process to block on writing to it.
+proc drain_output { SPAWN_ID } {
+    expect_after -i ${SPAWN_ID} -re ".*\n" { exp_continue -continue_timer }
+}
+
 proc handle_end_of_file { EXPECTED_OUTPUT } {
     global C_RED C_YELLOW C_OFF
     puts "${C_RED}Test failed!${C_OFF}"
