@@ -16,8 +16,8 @@
 //!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   into_sample()
 //!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ the sample to send
 //!   │                  │                       │                  │
-//!   │  no memory yet   │                       │  payload()       │
-//!   │                  │                       │  header(len)     │
+//!   │  no memory yet   │                       │  header()        │
+//!   │                  │                       │  payload()       │
 //!   └──────────────────┘                       └──────────────────┘
 //!            │                                          │
 //!            ▼ dropped                                  ▼ dropped
@@ -103,11 +103,21 @@ impl core::error::Error for LoanError {}
 
 /// Provides the location to write a sample's header and payload.
 pub trait WritableSample {
+    /// The location into which the header bytes should be written.
+    fn header(&mut self) -> &mut [u8];
+
     /// The location into which the payload bytes should be written.
     fn payload(&mut self) -> &mut [u8];
+}
 
-    /// The location into which the header bytes should be written.
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength>;
+impl WritableSample for SampleBytes {
+    fn header(&mut self) -> &mut [u8] {
+        &mut self.header
+    }
+
+    fn payload(&mut self) -> &mut [u8] {
+        &mut self.payload
+    }
 }
 
 /// Why a sample refused a write.

@@ -14,7 +14,6 @@ use iceoryx2::service::Service;
 use iceoryx2_log::{fail, origin};
 
 use crate::service_description::SampleTypes;
-use crate::wire::UnsupportedLength;
 use crate::wire::sample::{
     Header, LoanError, LoanableSample, Payload, PayloadUninit, WritableSample, fits,
 };
@@ -124,22 +123,13 @@ impl<S: Service> LoanedSample<S> {
 }
 
 impl<S: Service> WritableSample for LoanedSample<S> {
-    fn payload(&mut self) -> &mut [u8] {
-        payload_bytes_mut(&mut self.sample)
+    fn header(&mut self) -> &mut [u8] {
+        // SAFETY: the header size for this service is provided by the
+        // services's own description.
+        unsafe { user_header_bytes_mut(&mut self.sample, self.header_size) }
     }
 
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        let origin = origin!("LoanedSample::header");
-
-        if len != self.header_size {
-            fail!(
-                from origin,
-                with UnsupportedLength,
-                "A header of {} bytes does not fit the service description", len
-            );
-        }
-        // SAFETY: the header size is the service's, as its description
-        // states.
-        Ok(unsafe { user_header_bytes_mut(&mut self.sample, len) })
+    fn payload(&mut self) -> &mut [u8] {
+        payload_bytes_mut(&mut self.sample)
     }
 }

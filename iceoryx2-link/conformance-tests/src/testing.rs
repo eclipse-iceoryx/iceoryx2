@@ -35,7 +35,7 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
-use iceoryx2_link_adapter::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
+use iceoryx2_link_adapter::{LoanError, LoanableSample, SampleBytes};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
     TypeDescription,
@@ -303,15 +303,15 @@ pub struct UnloanedBuffers {
 }
 
 impl LoanableSample for UnloanedBuffers {
-    type Sample = LoanedBuffers;
+    type Sample = SampleBytes;
 
     fn header_size(&self) -> usize {
         self.header_size
     }
 
     fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
-        Ok(LoanedBuffers {
-            header: Vec::new(),
+        Ok(SampleBytes {
+            header: vec![0; self.header_size],
             payload: vec![0; payload_len],
         })
     }
@@ -321,7 +321,7 @@ impl LoanableSample for UnloanedBuffers {
 pub struct NotLoanable;
 
 impl LoanableSample for NotLoanable {
-    type Sample = LoanedBuffers;
+    type Sample = SampleBytes;
 
     fn header_size(&self) -> usize {
         0
@@ -329,21 +329,5 @@ impl LoanableSample for NotLoanable {
 
     fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
         Err(LoanError::Malformed)
-    }
-}
-
-/// The heap buffers a writer wrote, to compare against what was sent.
-pub struct LoanedBuffers {
-    pub header: Vec<u8>,
-    pub payload: Vec<u8>,
-}
-
-impl WritableSample for LoanedBuffers {
-    fn payload(&mut self) -> &mut [u8] {
-        &mut self.payload
-    }
-
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        self.header.for_length(len)
     }
 }

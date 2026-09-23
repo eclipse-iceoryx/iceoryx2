@@ -19,19 +19,18 @@ pub mod carrier_sample {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_link_adapter::SampleBytes;
     use iceoryx2_link_carrier::{Carrier, SampleChannel, SampleReceiveError};
 
     use crate::fixture::CarrierFixture;
-    use crate::testing::{
-        LoanedBuffers, NotLoanable, UnloanedBuffers, descriptor, descriptor_with_header, retry,
-    };
+    use crate::testing::{NotLoanable, UnloanedBuffers, descriptor, descriptor_with_header, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const PAYLOAD: &str = "u64";
 
     /// The next sample's bytes split into a header of `header_size` bytes
     /// and its payload.
-    fn receive<C: SampleChannel>(channel: &mut C, header_size: usize) -> Option<LoanedBuffers> {
+    fn receive<C: SampleChannel>(channel: &mut C, header_size: usize) -> Option<SampleBytes> {
         channel
             .receive(UnloanedBuffers { header_size })
             .expect("receiving succeeds")
