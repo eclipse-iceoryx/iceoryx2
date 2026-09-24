@@ -949,14 +949,15 @@ TYPED_TEST(ServiceEventTest, stale_listener_key_is_rejected_after_slot_reuse) {
     auto service =
         node.service_builder(iox2::testing::generate_service_name()).event().max_listeners(1).create().value();
     auto notifier = service.notifier_builder().create().value();
-    auto first = bb::Optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().value());
     bb::Optional<ListenerKey> saved;
-    notifier.for_each_listener([&](auto mono, auto) -> auto {
-        saved = mono.listener_key();
-        return CallbackProgression::Stop;
-    });
+    {
+        auto first = service.listener_builder().create().value();
+        notifier.for_each_listener([&](auto mono, auto) -> auto {
+            saved = mono.listener_key();
+            return CallbackProgression::Stop;
+        });
+    }
     ASSERT_TRUE(saved.has_value());
-    first.reset();
     auto replacement = service.listener_builder().create().value();
     auto stale = notifier.notify_single_listener(*saved);
     ASSERT_FALSE(stale.has_value());
