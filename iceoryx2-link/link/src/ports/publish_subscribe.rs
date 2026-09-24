@@ -21,7 +21,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::relay::ReceiveOutcome;
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, SampleTypes, TypeDescription,
+    PublishSubscribeSettings, SampleTypes, TypeDescription, TypeIdentifier,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::{
     Publisher, Sample, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
@@ -101,13 +101,20 @@ impl<S: Service> PublishSubscribePorts<S> {
         // SAFETY: the type details come from a description of this exact
         // service and compose into a valid sample layout, so the untyped
         // markers stand in for the real types.
-        let builder = unsafe {
+        let mut builder = unsafe {
             node.service_builder(name)
                 .publish_subscribe::<Payload>()
                 .user_header::<Header>()
                 .__internal_set_user_header_type_details(&user_header)
                 .__internal_set_payload_type_details(&payload)
         };
+        // The schema of a flatbuffer payload is already in the description,
+        // read from the service itself, so there is no file to verify it
+        // against.
+        if let TypeIdentifier::Flatbuffer(_) = &types.payload.identifier {
+            // SAFETY: the description carries the schema the service stores.
+            builder = unsafe { builder.__internal_skip_type_definition_verification() };
+        }
         let service = fail!(
             from origin,
             when apply_settings(builder, settings).open_or_create(),
@@ -277,8 +284,10 @@ mod tests {
 
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::service::local;
+    use iceoryx2::service::marker::Flatbuffer;
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
+    use iceoryx2_bb_posix::testing::create_typed_file_with_content;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_backend::service_description::{
         PatternSettings, ServiceDescription, ServiceTypes, TypeIdentifier,
@@ -314,6 +323,47 @@ mod tests {
         assert_that!(number_of_elements(&payload, 0), eq Some(0));
         assert_that!(number_of_elements(&payload, 3 * ELEMENT_SIZE), eq Some(3));
         assert_that!(number_of_elements(&payload, ELEMENT_SIZE + ELEMENT_SIZE / 2), eq None);
+    }
+
+    #[test]
+    fn a_flatbuffer_service_opens_without_a_schema_file() {
+        const SCHEMA: &str = "the binary schema";
+
+        let config = generate_isolated_config();
+        let app_node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let link_node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let _app_service = app_node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().expect("the file has a path"))
+            .create()
+            .expect("service is created");
+
+        let static_config =
+            local::Service::details(&service_name, &config, MessagingPattern::PublishSubscribe)
+                .expect("details are readable")
+                .expect("service exists")
+                .static_details;
+        let description = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("carried pattern");
+        let PatternSettings::PublishSubscribe(settings) = &description.settings().pattern else {
+            panic!("a publish-subscribe service");
+        };
+        let ServiceTypes::PublishSubscribe(types) = &description.types() else {
+            panic!("a publish-subscribe service");
+        };
+
+        let sut = PublishSubscribePorts::open(&link_node, &service_name, settings, types);
+
+        assert_that!(sut.is_ok(), eq true);
     }
 
     #[test]

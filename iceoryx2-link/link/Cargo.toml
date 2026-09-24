@@ -29,4 +29,5 @@ iceoryx2-link-backend = { workspace = true }
 iceoryx2-log = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 iceoryx2-bb-testing = { workspace = true }
