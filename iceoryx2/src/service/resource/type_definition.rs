@@ -81,10 +81,20 @@ pub struct TypeDefinitionStorage<S: crate::service::Service> {
     pub path_hint: Path,
 }
 
+/// A schema provided instead of the one looked up under the type name.
+#[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
+pub enum SchemaOverride {
+    /// The file holding the schema, absolute or relative to the lookup path.
+    File(FilePath),
+    /// The schema itself.
+    Content(Vec<u8>),
+}
+
 #[derive(Debug)]
 pub struct TypeDefinition {
     pub use_type_definition: bool,
-    pub schema_path: Option<FilePath>,
+    pub override_schema: Option<SchemaOverride>,
     pub type_name: TypeName,
     pub skip_type_definition_verification: bool,
 }
@@ -104,7 +114,7 @@ impl TypeDefinition {
         let static_storage_config =
             Self::type_definition_static_storage_config::<S>(config, static_config);
 
-        let schema_file_content = self.read_schema_file(config)?;
+        let schema_file_content = self.schema_content(config)?;
 
         let static_storage = match
             <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).create(&schema_file_content) {
@@ -247,7 +257,7 @@ impl TypeDefinition {
         let static_storage_config =
             Self::type_definition_static_storage_config::<S>(config, static_config);
 
-        let required_schema_content = self.read_schema_file(config)?;
+        let required_schema_content = self.schema_content(config)?;
 
         let static_storage = match
                 <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
@@ -382,9 +392,14 @@ impl TypeDefinition {
         root
     }
 
-    fn read_schema_file(&self, config: &crate::config::Config) -> Result<Vec<u8>, SchemaPathError> {
+    fn schema_content(&self, config: &crate::config::Config) -> Result<Vec<u8>, SchemaPathError> {
         let msg = "Unable to read type definition schema file";
-        let schema_path = self.schema_path(config)?;
+        let file = match &self.override_schema {
+            Some(SchemaOverride::Content(bytes)) => return Ok(bytes.clone()),
+            Some(SchemaOverride::File(path)) => Some(path),
+            None => None,
+        };
+        let schema_path = self.schema_path(config, file)?;
 
         let file = match FileBuilder::new(&schema_path).open_existing(AccessMode::Read) {
             Ok(file) => file,
@@ -420,7 +435,11 @@ impl TypeDefinition {
         }
     }
 
-    fn schema_path(&self, config: &crate::config::Config) -> Result<FilePath, SchemaPathError> {
+    fn schema_path(
+        &self,
+        config: &crate::config::Config,
+        file: Option<&FilePath>,
+    ) -> Result<FilePath, SchemaPathError> {
         let msg = "Unable to acquire type definition schema path";
         let flatbuffer_schema_path = || -> Result<Path, SchemaPathError> {
             match config.global.service.flatbuffer_schema_path {
@@ -432,11 +451,11 @@ impl TypeDefinition {
             }
         };
 
-        match self.schema_path {
-            Some(file_path) if file_path.path().is_absolute() => Ok(file_path),
+        match file {
+            Some(file_path) if file_path.path().is_absolute() => Ok(*file_path),
             Some(file_path) => {
                 let mut path = flatbuffer_schema_path()?;
-                path.add_path_entry(&file_path.into()).unwrap();
+                path.add_path_entry(&(*file_path).into()).unwrap();
                 unsafe { Ok(FilePath::new_unchecked(path.as_bytes())) }
             }
             None => {

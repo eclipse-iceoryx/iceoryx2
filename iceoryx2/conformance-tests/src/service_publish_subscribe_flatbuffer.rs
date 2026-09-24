@@ -1027,4 +1027,62 @@ pub mod service_publish_subscribe_flatbuffer {
 
         assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
     }
+
+    fn flatbuffer_type_detail() -> TypeDetail {
+        TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, "iox2::Flatbuffer", 1, 1)
+            .unwrap()
+    }
+
+    #[conformance_test]
+    pub fn create_with_schema_bytes_stores_them<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .create()
+                .unwrap()
+        };
+
+        let type_definition = sut.type_definition().unwrap();
+        let mut buffer = vec![0u8; type_definition.len() as usize];
+        type_definition.read(&mut buffer).unwrap();
+        assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
+    }
+
+    #[conformance_test]
+    pub fn open_with_schema_bytes_verifies_them<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let _sut_create = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let same = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .open()
+        };
+        let other = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(ALT_SCHEMA.as_bytes())
+                .open()
+        };
+
+        assert_that!(same, is_ok);
+        assert_that!(other.err(), eq Some(PublishSubscribeOpenError::IncompatibleTypes));
+    }
 }
