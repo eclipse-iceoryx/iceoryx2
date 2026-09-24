@@ -24,8 +24,9 @@ pub mod service_publish_subscribe_flatbuffer {
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
     use iceoryx2::service::marker::CustomPayloadMarker;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::{Service, marker::Flatbuffer};
+    use iceoryx2::service::{__internal_payload_type_definition, Service, marker::Flatbuffer};
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::testing::*;
@@ -561,6 +562,54 @@ pub mod service_publish_subscribe_flatbuffer {
             .open();
 
         assert_that!(sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn payload_type_definition_is_read_from_the_static_config<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::PublishSubscribe,
+        )
+        .unwrap()
+        .unwrap();
+
+        let sut = __internal_payload_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(sut, eq Ok(Some(SCHEMA.as_bytes().to_vec())));
+    }
+
+    #[conformance_test]
+    pub fn a_payload_without_type_definition_has_none<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::PublishSubscribe,
+        )
+        .unwrap()
+        .unwrap();
+
+        let sut = __internal_payload_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(sut, eq Ok(None));
     }
 
     #[conformance_test]

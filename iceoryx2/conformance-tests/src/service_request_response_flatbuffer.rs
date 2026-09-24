@@ -23,8 +23,12 @@ pub mod service_request_response_flatbuffer {
         RequestResponseCreateError, RequestResponseOpenError,
     };
     use iceoryx2::service::marker::CustomPayloadMarker;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::{Service, marker::Flatbuffer};
+    use iceoryx2::service::{
+        __internal_request_type_definition, __internal_response_type_definition, Service,
+        marker::Flatbuffer,
+    };
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::testing::*;
@@ -637,6 +641,64 @@ pub mod service_request_response_flatbuffer {
             .create();
 
         assert_that!(sut.err(), eq Some(RequestResponseCreateError::UnableToAcquireTypeDefinition));
+    }
+
+    #[conformance_test]
+    pub fn request_type_definition_is_read_from_the_static_config<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, u64>()
+            .request_flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::RequestResponse,
+        )
+        .unwrap()
+        .unwrap();
+
+        let request =
+            __internal_request_type_definition::<Sut>(test.config(), &details.static_details);
+        let response =
+            __internal_response_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(request, eq Ok(Some(UNBOUND_DATA_SCHEMA.as_bytes().to_vec())));
+        assert_that!(response, eq Ok(None));
+    }
+
+    #[conformance_test]
+    pub fn response_type_definition_is_read_from_the_static_config<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<u64>>()
+            .response_flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::RequestResponse,
+        )
+        .unwrap()
+        .unwrap();
+
+        let request =
+            __internal_request_type_definition::<Sut>(test.config(), &details.static_details);
+        let response =
+            __internal_response_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(request, eq Ok(None));
+        assert_that!(response, eq Ok(Some(DATA_PROPS_SCHEMA.as_bytes().to_vec())));
     }
 
     #[conformance_test]
