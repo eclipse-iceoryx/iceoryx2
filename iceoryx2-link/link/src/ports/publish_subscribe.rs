@@ -350,7 +350,8 @@ mod tests {
                 .expect("details are readable")
                 .expect("service exists")
                 .static_details;
-        let description = ServiceDescription::try_from(&static_config).expect("carried pattern");
+        let description = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("carried pattern");
         let PatternSettings::PublishSubscribe(settings) = &description.settings().pattern else {
             panic!("a publish-subscribe service");
         };

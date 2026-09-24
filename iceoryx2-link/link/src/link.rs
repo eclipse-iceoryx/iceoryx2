@@ -127,7 +127,8 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
                     let config = &details.static_details;
                     let creation_id = config.unique_service_id().value();
                     if !update.seen(config.service_hash(), creation_id)
-                        && let Ok(description) = ServiceDescription::try_from(config)
+                        && let Ok(description) =
+                            ServiceDescription::load::<S>(node.config(), config)
                     {
                         update.insert(creation_id, description);
                     }
