@@ -26,11 +26,12 @@ pub use types::{
 };
 
 use iceoryx2::config::Config;
-use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as StaticPattern;
+use iceoryx2::service::{__internal_payload_type_definition, Service, ServiceDetailsError};
+use iceoryx2_log::{fail, origin};
 
 /// A service's [`StaticConfig`] as hash, settings and types.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -116,24 +117,51 @@ impl ServiceDescription {
 }
 
 /// The [`StaticConfig`] has a messaging pattern the link does not carry.
+/// Why a static config cannot be described.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub struct UnsupportedPattern;
+pub enum DescriptionError {
+    /// The service has a messaging pattern the link does not carry.
+    UnsupportedPattern,
+    /// The service's details could not be read from its static resources.
+    ServiceDetails(ServiceDetailsError),
+}
 
-impl core::fmt::Display for UnsupportedPattern {
+impl core::fmt::Display for DescriptionError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "UnsupportedPattern")
+        write!(f, "DescriptionError::{self:?}")
     }
 }
 
-impl core::error::Error for UnsupportedPattern {}
+impl core::error::Error for DescriptionError {}
 
-impl TryFrom<&StaticConfig> for ServiceDescription {
-    type Error = UnsupportedPattern;
+impl From<ServiceDetailsError> for DescriptionError {
+    fn from(error: ServiceDetailsError) -> Self {
+        Self::ServiceDetails(error)
+    }
+}
 
-    fn try_from(static_config: &StaticConfig) -> Result<Self, Self::Error> {
+impl ServiceDescription {
+    /// The description of the service of `static_config` in the system
+    /// `node_config` configures.
+    pub fn load<S: Service>(
+        node_config: &Config,
+        static_config: &StaticConfig,
+    ) -> Result<Self, DescriptionError> {
+        let origin = origin!("ServiceDescription::load");
+
         let (pattern, types) = match static_config.messaging_pattern() {
             StaticPattern::PublishSubscribe(config) => {
                 let types = config.message_type_details();
+                let schema = fail!(
+                    from origin,
+                    when __internal_payload_type_definition::<S>(node_config, static_config),
+                    to DescriptionError,
+                    "Failed to read the type definition of {}", static_config.name()
+                );
+                let mut payload = TypeDescription::from(&types.payload);
+                if let Some(schema) = schema {
+                    payload.identifier = TypeIdentifier::Flatbuffer(Schema::new(schema));
+                }
                 (
                     PatternSettings::PublishSubscribe(PublishSubscribeSettings {
                         max_subscribers: config.max_subscribers(),
@@ -145,7 +173,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                         safe_overflow: config.has_safe_overflow(),
                     }),
                     ServiceTypes::PublishSubscribe(SampleTypes {
-                        payload: (&types.payload).into(),
+                        payload,
                         user_header: (&types.user_header).into(),
                     }),
                 )
@@ -163,7 +191,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                 }),
                 ServiceTypes::Event,
             ),
-            _ => return Err(UnsupportedPattern),
+            _ => return Err(DescriptionError::UnsupportedPattern),
         };
 
         Ok(Self {
@@ -181,10 +209,12 @@ mod tests {
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::event_id::EventId;
     use iceoryx2::service::local;
+    use iceoryx2::service::marker::Flatbuffer;
     use iceoryx2::service::messaging_pattern::MessagingPattern as Pattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_elementary::alignment::Alignment;
+    use iceoryx2_bb_posix::testing::create_typed_file_with_content;
     use iceoryx2_bb_testing::assert_that;
 
     /// The static config of the service `name` of `pattern` in the
@@ -232,7 +262,8 @@ mod tests {
 
         let static_config =
             static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
-        let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+        let sut = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
 
         assert_that!(sut.name(), eq service_name);
         assert_that!(sut.hash, eq * static_config.service_hash());
@@ -277,11 +308,44 @@ mod tests {
 
         let static_config =
             static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
-        let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+        let sut = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
 
         let types = sut.types.publish_subscribe();
         assert_that!(types.payload.alignment, eq PAYLOAD_ALIGNMENT);
         assert_that!(types.type_details(), is_ok);
+    }
+
+    #[test]
+    fn a_flatbuffer_payload_is_identified_by_its_schema() {
+        const SCHEMA: &str = "the binary schema";
+
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().expect("the file has a path"))
+            .create()
+            .expect("service is created");
+
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
+        let sut = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
+
+        let ServiceTypes::PublishSubscribe(types) = sut.types else {
+            panic!("a publish-subscribe service");
+        };
+        assert_that!(
+            types.payload.identifier,
+            eq TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.as_bytes().to_vec()))
+        );
     }
 
     #[test]
@@ -315,7 +379,8 @@ mod tests {
 
         let static_config =
             static_config_of::<local::Service>(&service_name, &config, Pattern::Event);
-        let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+        let sut = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
 
         assert_that!(sut.name(), eq service_name);
         assert_that!(sut.hash, eq * static_config.service_hash());
@@ -351,7 +416,8 @@ mod tests {
 
         let static_config =
             static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
-        let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+        let described = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
         let PatternSettings::PublishSubscribe(settings) = described.settings.pattern else {
             panic!("a publish-subscribe service");
         };
