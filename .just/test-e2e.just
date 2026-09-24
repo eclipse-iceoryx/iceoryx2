@@ -25,7 +25,7 @@ _test-e2e-dispatch what *flags:
             echo ""
             echo "Scope:"
             echo "  integrations-ros2           run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
-            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup integrations-ros2')"
+            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup integrations-ros2-examples')"
             exit 1
             ;;
         integrations-ros2)
@@ -59,8 +59,6 @@ _test-e2e-integrations-ros2:
 _test-e2e-integrations-ros2-examples:
     #!/usr/bin/env bash
     set -eo pipefail
-
-    just _ros2-require-messages
 
     if [ ! -f "{{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}/setup.bash" ]; then
         echo "Error: the ROS 2 examples are not built" >&2

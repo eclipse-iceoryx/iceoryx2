@@ -27,7 +27,7 @@ _setup-dispatch what:
             echo "  integrations-ros2           setup the ros2 environment and examples (all of the below)"
             echo "  integrations-ros2-tools     install the colcon build tools for cargo packages"
             echo "  integrations-ros2-messages  build the ros2 message crates (requires a sourced ROS 2 env)"
-            echo "  integrations-ros2-examples  build the ros2 examples (requires the message crates)"
+            echo "  integrations-ros2-examples  build the ros2 examples (requires a sourced ROS 2 env)"
             exit 1
             ;;
         all) just _setup-all ;;
@@ -217,14 +217,11 @@ _setup-integrations-ros2-messages:
 
     echo "✓ ros2 message crates built at {{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}"
 
-# Builds the examples on top of the message crates.
+# Builds the examples as ROS 2 packages.
 [private]
 _setup-integrations-ros2-examples:
     #!/usr/bin/env bash
     set -eo pipefail
-
-    just _ros2-require-messages
-    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
 
     PACKAGE="demo_nodes_iceoryx2"
 
