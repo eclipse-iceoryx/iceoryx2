@@ -18,7 +18,7 @@ use iceoryx2_link_adapter::{
     LocalTypes, Region, SampleBytesRef, SampleShape, SampleTranscoders, TranscodeError, Transcoder,
     Translator,
 };
-use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
+use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
 use iceoryx2_log::{fail, origin};
 
 /// The prefix of a type name on the middleware, its data byte-swapped.
@@ -62,8 +62,12 @@ fn map_types(types: &SampleTypes, name: fn(&str) -> String) -> SampleTypes {
 }
 
 fn map_type(description: &TypeDescription, name: fn(&str) -> String) -> TypeDescription {
+    let identifier = match &description.identifier {
+        TypeIdentifier::Name(current) => TypeIdentifier::Name(name(current)),
+        other => other.clone(),
+    };
     TypeDescription {
-        type_name: name(&description.type_name),
+        identifier,
         ..description.clone()
     }
 }

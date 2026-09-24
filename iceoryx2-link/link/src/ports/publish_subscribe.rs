@@ -281,7 +281,7 @@ mod tests {
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_backend::service_description::{
-        PatternSettings, ServiceDescription, ServiceTypes,
+        PatternSettings, ServiceDescription, ServiceTypes, TypeIdentifier,
     };
     use iceoryx2_link_backend::wire::sample::{LoanableSample, WritableSample};
 
@@ -290,7 +290,7 @@ mod tests {
     fn payload(variant: TypeVariant, size: usize) -> TypeDescription {
         TypeDescription {
             variant,
-            type_name: "test_type".into(),
+            identifier: TypeIdentifier::Name("test_type".into()),
             size,
             alignment: ALIGNMENT,
         }
