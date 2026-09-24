@@ -17,7 +17,7 @@
 use core::marker::PhantomData;
 
 use crate::config::Config;
-use crate::service::resource::type_definition::TypeDefinition;
+use crate::service::resource::type_definition::{SchemaOverride, TypeDefinition};
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -412,7 +412,7 @@ pub struct Builder<
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
     override_user_header_type: Option<TypeDetail>,
-    flatbuffer_schema_path: Option<FilePath>,
+    override_schema: Option<SchemaOverride>,
     type_definition_name_hint: TypeName,
     skip_type_definition_verification: bool,
     verify: Verify,
@@ -432,7 +432,7 @@ impl<
             override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
-            flatbuffer_schema_path: self.flatbuffer_schema_path,
+            override_schema: self.override_schema.clone(),
             type_definition_name_hint: self.type_definition_name_hint,
             verify: self.verify,
             skip_type_definition_verification: self.skip_type_definition_verification,
@@ -469,7 +469,7 @@ impl<
             override_alignment: None,
             override_payload_type: None,
             override_user_header_type: None,
-            flatbuffer_schema_path: None,
+            override_schema: None,
             type_definition_name_hint: TypeName::new::<Payload>(),
             skip_type_definition_verification: false,
             _data: PhantomData,
@@ -741,7 +741,7 @@ impl<
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
-        if let Some(schema_path) = &self.flatbuffer_schema_path
+        if let Some(SchemaOverride::File(schema_path)) = &self.override_schema
             && !is_binary_flatbuffer_schema(&schema_path.file_name())
         {
             fail!(from self,
@@ -780,7 +780,7 @@ impl<
                     &PublishSubscribeResourceConfig::<ServiceType> {
                         type_definition: TypeDefinition {
                             use_type_definition: self.has_flatbuffer_payload(),
-                            schema_path: self.flatbuffer_schema_path,
+                            override_schema: self.override_schema.clone(),
                             type_name: self.type_definition_name_hint,
                             skip_type_definition_verification: false,
                         },
@@ -809,7 +809,7 @@ impl<
     > {
         let msg = "Unable to open publish subscribe service";
 
-        if let Some(schema_path) = &self.flatbuffer_schema_path
+        if let Some(SchemaOverride::File(schema_path)) = &self.override_schema
             && !is_binary_flatbuffer_schema(&schema_path.file_name())
         {
             fail!(from self,
@@ -830,7 +830,7 @@ impl<
                     &PublishSubscribeResourceConfig::<ServiceType> {
                         type_definition: TypeDefinition {
                             use_type_definition: self.has_flatbuffer_payload(),
-                            schema_path: self.flatbuffer_schema_path,
+                            override_schema: self.override_schema.clone(),
                             type_name: self.type_definition_name_hint,
                             skip_type_definition_verification: self
                                 .skip_type_definition_verification,
@@ -890,7 +890,13 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
 
     #[doc(hidden)]
     pub unsafe fn __internal_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.flatbuffer_schema_path = Some(*path);
+        self.override_schema = Some(SchemaOverride::File(*path));
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
+        self.override_schema = Some(SchemaOverride::Content(schema.to_vec()));
         self
     }
 
@@ -1018,7 +1024,7 @@ impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Ser
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.flatbuffer_schema_path = Some(*path);
+        self.override_schema = Some(SchemaOverride::File(*path));
         self
     }
 }
