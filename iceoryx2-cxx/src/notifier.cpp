@@ -86,9 +86,10 @@ void Notifier<S>::for_each_listener(
     auto trampoline = [](iox2_callback_context context,
                          iox2_monofier_ptr monofier,
                          iox2_listener_details_ptr details) -> iox2_callback_progression_e {
-        auto* cb =
+        auto* callback_context =
             internal::ctx_cast<bb::StaticFunction<CallbackProgression(MonofierView, ListenerDetailsView)>>(context);
-        return bb::into<iox2_callback_progression_e>(cb->value()(MonofierView(monofier), ListenerDetailsView(details)));
+        return bb::into<iox2_callback_progression_e>(
+            callback_context->value()(MonofierView(monofier), ListenerDetailsView(details)));
     };
     iox2_notifier_for_each_listener(&m_handle, trampoline, &ctx);
 }
