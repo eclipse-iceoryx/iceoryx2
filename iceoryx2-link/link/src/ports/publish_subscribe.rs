@@ -108,12 +108,10 @@ impl<S: Service> PublishSubscribePorts<S> {
                 .__internal_set_user_header_type_details(&user_header)
                 .__internal_set_payload_type_details(&payload)
         };
-        // The schema of a flatbuffer payload is already in the description,
-        // read from the service itself, so there is no file to verify it
-        // against.
-        if let TypeIdentifier::Flatbuffer(_) = &types.payload.identifier {
-            // SAFETY: the description carries the schema the service stores.
-            builder = unsafe { builder.__internal_skip_type_definition_verification() };
+        // A flatbuffer payload's schema is stored on create and verified on open.
+        if let TypeIdentifier::Flatbuffer(schema) = &types.payload.identifier {
+            // SAFETY: the schema describes the payload the type details name.
+            builder = unsafe { builder.__internal_flatbuffer_schema(schema.bytes()) };
         }
         let service = fail!(
             from origin,
@@ -283,12 +281,15 @@ mod tests {
     use super::*;
 
     use iceoryx2::node::NodeBuilder;
+    use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::local;
     use iceoryx2::service::marker::Flatbuffer;
     use iceoryx2::service::messaging_pattern::MessagingPattern;
+    use iceoryx2::service::static_config::message_type_details::TypeDetail;
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_posix::testing::create_typed_file_with_content;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_link_backend::service_description::Schema;
     use iceoryx2_link_backend::service_description::{
         PatternSettings, ServiceDescription, ServiceTypes, TypeIdentifier,
     };
@@ -364,6 +365,53 @@ mod tests {
         let sut = PublishSubscribePorts::open(&link_node, &service_name, settings, types);
 
         assert_that!(sut.is_ok(), eq true);
+    }
+
+    #[test]
+    fn a_flatbuffer_service_is_created_from_the_described_schema() {
+        const SCHEMA: &str = "the binary schema";
+        const OTHER_SCHEMA: &str = "another binary schema";
+
+        let config = generate_isolated_config();
+        let link_node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let app_node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let service_name = generate_service_name();
+        let flatbuffer = TypeDetail::new::<Flatbuffer<u64>>(TypeVariant::FixedSize);
+        let types = SampleTypes {
+            payload: TypeDescription {
+                variant: flatbuffer.variant(),
+                identifier: TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.as_bytes().to_vec())),
+                size: flatbuffer.size(),
+                alignment: flatbuffer.alignment(),
+            },
+            user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
+        };
+        let settings = PublishSubscribeSettings::from_config(&config);
+
+        let _sut = PublishSubscribePorts::open(&link_node, &service_name, &settings, &types)
+            .expect("the service is created");
+
+        let same_schema = create_typed_file_with_content(SCHEMA, "bfbs");
+        let same = app_node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(same_schema.path().expect("the file has a path"))
+            .open();
+        assert_that!(same.is_ok(), eq true);
+
+        let other_schema = create_typed_file_with_content(OTHER_SCHEMA, "bfbs");
+        let other = app_node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(other_schema.path().expect("the file has a path"))
+            .open();
+        assert_that!(other.err(), eq Some(PublishSubscribeOpenError::IncompatibleTypes));
     }
 
     #[test]
