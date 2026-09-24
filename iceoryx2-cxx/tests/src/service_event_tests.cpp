@@ -790,6 +790,90 @@ TYPED_TEST(ServiceEventTest, listener_details_are_correct) {
     ASSERT_THAT(counter, Eq(1));
 }
 
+TYPED_TEST(ServiceEventTest, notifier_can_target_listener_and_retain_key) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).event().max_listeners(2).event_id_max_value(8).create().value();
+    auto notifier = service.notifier_builder().create().value();
+    auto first = bb::Optional<Listener<SERVICE_TYPE>>(
+        service.listener_builder().name(PortName::create("first").value()).create().value());
+    auto second = bb::Optional<Listener<SERVICE_TYPE>>(
+        service.listener_builder().name(PortName::create("second").value()).create().value());
+    bb::Optional<ListenerKey> saved;
+    size_t visits = 0;
+    notifier.for_each_listener([&](auto mono, auto details) {
+        ++visits;
+        if (details.listener_name().to_string() == first->name().to_string()) {
+            auto key = mono.listener_key();
+            saved = key; // copy is independently owned
+            EXPECT_TRUE(mono.notify_with_custom_event_id(EventId(3)).has_value());
+            return CallbackProgression::Stop;
+        }
+        return CallbackProgression::Continue;
+    });
+    ASSERT_TRUE(saved.has_value());
+    ASSERT_THAT(visits, Eq(1));
+    ASSERT_THAT(first->try_wait([&](auto event) { EXPECT_THAT(event.id(), Eq(EventId(3))); }).value(), Eq(1));
+    ASSERT_THAT(second->try_wait([](auto) { }).value(), Eq(0));
+
+    notifier.for_each_listener([&](auto mono, auto details) {
+        if (details.listener_name().to_string() == first->name().to_string()) {
+            EXPECT_TRUE(mono.notify().has_value());
+            return CallbackProgression::Stop;
+        }
+        return CallbackProgression::Continue;
+    });
+    ASSERT_THAT(first->try_wait([&](auto event) { EXPECT_THAT(event.id(), Eq(EventId(0))); }).value(), Eq(1));
+    ASSERT_THAT(second->try_wait([](auto) { }).value(), Eq(0));
+
+    auto copy = *saved;
+    EXPECT_TRUE(notifier.notify_single_listener(copy).has_value());
+    ASSERT_THAT(first->try_wait([&](auto event) { EXPECT_THAT(event.id(), Eq(EventId(0))); }).value(), Eq(1));
+    ASSERT_THAT(second->try_wait([](auto) { }).value(), Eq(0));
+    EXPECT_TRUE(notifier.notify_single_listener_with_custom_event_id(copy, EventId(4)).has_value());
+    ASSERT_THAT(first->try_wait([&](auto event) { EXPECT_THAT(event.id(), Eq(EventId(4))); }).value(), Eq(1));
+    ASSERT_THAT(second->try_wait([](auto) { }).value(), Eq(0));
+    auto out_of_bounds = notifier.notify_single_listener_with_custom_event_id(copy, EventId(9));
+    ASSERT_FALSE(out_of_bounds.has_value());
+    EXPECT_THAT(out_of_bounds.error(), Eq(NotifierNotifyError::EventIdOutOfBounds));
+
+    auto foreign_service = node.service_builder(iox2::testing::generate_service_name()).event().create().value();
+    auto foreign_notifier = foreign_service.notifier_builder().create().value();
+    auto foreign = foreign_notifier.notify_single_listener(copy);
+    ASSERT_FALSE(foreign.has_value());
+    EXPECT_THAT(foreign.error(), Eq(NotifierNotifyError::InvalidListenerKey));
+
+    first.reset();
+    first = bb::Optional<Listener<SERVICE_TYPE>>(
+        service.listener_builder().name(PortName::create("replacement").value()).create().value());
+    auto stale = notifier.notify_single_listener(copy);
+    ASSERT_FALSE(stale.has_value());
+    EXPECT_THAT(stale.error(), Eq(NotifierNotifyError::InvalidListenerKey));
+    ASSERT_THAT(first->try_wait([](auto) { }).value(), Eq(0));
+}
+
+TYPED_TEST(ServiceEventTest, notifier_iteration_continues_and_empty_iteration_is_safe) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(iox2::testing::generate_service_name()).event().max_listeners(3).create().value();
+    auto notifier = service.notifier_builder().create().value();
+    size_t visits = 0;
+    notifier.for_each_listener([&](auto, auto) {
+        ++visits;
+        return CallbackProgression::Continue;
+    });
+    EXPECT_THAT(visits, Eq(0));
+    auto first = service.listener_builder().create().value();
+    auto second = service.listener_builder().create().value();
+    notifier.for_each_listener([&](auto, auto) {
+        ++visits;
+        return CallbackProgression::Continue;
+    });
+    EXPECT_THAT(visits, Eq(2));
+}
+
 TYPED_TEST(ServiceEventTest, only_max_notifiers_can_be_created) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
