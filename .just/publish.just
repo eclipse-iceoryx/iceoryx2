@@ -136,8 +136,11 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
 INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := ""
 
 INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
+    benchmark-ros2-publish-subscribe           \
     iceoryx2                                   \
     iceoryx2-bb-concurrency                    \
+    iceoryx2-bb-loggers                        \
+    iceoryx2-bb-posix                          \
     iceoryx2-bb-testing                        \
     iceoryx2-cli                               \
     iceoryx2-gateway                           \
