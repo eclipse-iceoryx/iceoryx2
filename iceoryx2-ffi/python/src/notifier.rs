@@ -170,8 +170,8 @@ impl Notifier {
         }.map_err(|e| NotifierNotifyError::new_err(format!("{e:?}")))
     }
 
-    /// Calls `callback(monofier, details)` for each connected listener.
-    /// Return `CallbackProgression.Continue` to continue or `Stop` to finish.
+    /// Calls ``callback(monofier, details)`` for each connected listener.
+    /// Return `CallbackProgression.Continue` to continue or `CallbackProgression.Stop` to finish.
     /// Other return values raise `TypeError`. Callback exceptions propagate
     /// unchanged after cleanup; notifications already sent are not rolled back.
     ///

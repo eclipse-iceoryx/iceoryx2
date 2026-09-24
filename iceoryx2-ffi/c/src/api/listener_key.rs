@@ -18,12 +18,12 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 /// Storage for an owned listener key.
 #[repr(C)]
-#[repr(align(8))] // alignment of Option<ListenerKey>
+#[repr(align(8))]
 pub struct iox2_listener_key_storage_t {
-    internal: [u8; 32], // size of Option<ListenerKey>
+    // Capacity for Option<ListenerKey>; its layout varies by target.
+    // The FFI macro checks that storage size and alignment are sufficient.
+    internal: [u8; 32],
 }
-
-const _: () = assert!(core::mem::size_of::<Option<ListenerKey>>() == 32);
 
 /// An owned, retainable key identifying a listener connection. Clone it before
 /// sharing ownership and drop every owned copy with `iox2_listener_key_drop`.

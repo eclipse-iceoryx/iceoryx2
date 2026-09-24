@@ -19,8 +19,7 @@ ListenerKey::ListenerKey(iox2_listener_key_h handle)
     : m_handle { handle } {
 }
 
-ListenerKey::ListenerKey(const ListenerKey& rhs)
-    : m_handle { nullptr } {
+ListenerKey::ListenerKey(const ListenerKey& rhs) {
     if (rhs.m_handle != nullptr) {
         iox2_listener_key_clone(&rhs.m_handle, nullptr, &m_handle);
     }

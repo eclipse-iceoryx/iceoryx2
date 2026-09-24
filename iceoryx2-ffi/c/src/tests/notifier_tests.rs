@@ -38,7 +38,8 @@ mod service_builder {
             let name = iox2_listener_details_listener_name(details);
             let mut len = 0;
             let chars = iox2_port_name_as_chars(name, &mut len);
-            let name = core::str::from_utf8(core::slice::from_raw_parts(chars, len)).unwrap();
+            let name =
+                core::str::from_utf8(core::slice::from_raw_parts(chars.cast::<u8>(), len)).unwrap();
             if name == context.target_name {
                 iox2_monofier_listener_key(monofier, context.key_storage, &mut context.key);
                 context.notify_result = iox2_monofier_notify_with_custom_event_id(
