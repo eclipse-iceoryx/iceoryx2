@@ -18,7 +18,7 @@ use layout::layout_of;
 
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_adapter::{LocalTypes, SampleShape, SampleTranscoders, Translator};
-use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
+use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
 use iceoryx2_log::{fail, origin};
 
 use super::{EmptyHeader, MirroredHeader, TranslationError, mirrored_header};
@@ -57,7 +57,7 @@ impl Translator<SampleShape> for PlainStructTranslator {
         Ok(SampleTypes {
             payload: TypeDescription {
                 variant: TypeVariant::FixedSize,
-                type_name: remote.type_name.as_str().to_string(),
+                identifier: TypeIdentifier::Name(remote.type_name.as_str().to_string()),
                 size: layout.size(),
                 alignment: layout.align(),
             },
@@ -68,11 +68,18 @@ impl Translator<SampleShape> for PlainStructTranslator {
     fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<TopicTypes, Self::Error> {
         let origin = origin!("PlainStructTranslator::remote");
 
+        let TypeIdentifier::Name(payload_name) = &local.payload.identifier else {
+            fail!(
+                from origin,
+                with TranslationError::InvalidTypeName,
+                "Payload '{}' is not named after a ROS 2 type", local.payload.identifier.type_name()
+            );
+        };
         let type_name = fail!(
             from origin,
-            when TypeName::new(&local.payload.type_name),
+            when TypeName::new(payload_name),
             with TranslationError::InvalidTypeName,
-            "Payload type '{}' is not a ROS 2 type name", local.payload.type_name
+            "Payload type '{}' is not a ROS 2 type name", payload_name
         );
 
         Ok(TopicTypes { type_name })
@@ -100,7 +107,7 @@ impl Translator<SampleShape> for PlainStructTranslator {
                 from origin,
                 with TranslationError::LayoutMismatch,
                 "Payload '{}' ({} bytes, align {}) is not the C struct of ROS 2 type '{}' ({} bytes, align {})",
-                local.payload.type_name, local.payload.size, local.payload.alignment,
+                local.payload.identifier.type_name(), local.payload.size, local.payload.alignment,
                 type_name, layout.size(), layout.align()
             );
         }
@@ -116,7 +123,7 @@ impl Translator<SampleShape> for PlainStructTranslator {
         let header = fail!(
             from origin,
             when mirrored_header(local),
-            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.type_name
+            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.identifier.type_name()
         );
 
         // The payload is CDR on the wire in both directions.

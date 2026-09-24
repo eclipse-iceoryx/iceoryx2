@@ -21,7 +21,8 @@ pub use settings::{
     EventSettings, Identified, PatternSettings, PublishSubscribeSettings, ServiceSettings,
 };
 pub use types::{
-    InvalidSampleLayout, InvalidTypeDescription, SampleTypes, ServiceTypes, TypeDescription,
+    InvalidSampleLayout, InvalidTypeDescription, SampleTypes, Schema, ServiceTypes,
+    TypeDescription, TypeIdentifier,
 };
 
 use iceoryx2::config::Config;

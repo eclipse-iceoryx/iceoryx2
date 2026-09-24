@@ -128,7 +128,7 @@ fn mirrored_header(types: &SampleTypes) -> Result<MirroredHeader, TranslationErr
         fail!(
             from origin,
             with TranslationError::UnsupportedHeader,
-            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.type_name
+            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.identifier.type_name()
         );
     }
 }

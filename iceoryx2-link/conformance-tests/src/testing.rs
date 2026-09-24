@@ -38,7 +38,7 @@ use crate::parameters::{PayloadShape, PublishSubscribeService};
 use iceoryx2_link_adapter::{LoanError, LoanableSample, SampleBytes};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
-    TypeDescription,
+    TypeDescription, TypeIdentifier,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 
@@ -114,7 +114,7 @@ pub fn types_of(payload: &str) -> ServiceTypes {
     ServiceTypes::PublishSubscribe(SampleTypes {
         payload: TypeDescription {
             variant: TypeVariant::FixedSize,
-            type_name: String::from(payload),
+            identifier: TypeIdentifier::Name(String::from(payload)),
             size: 8,
             alignment: 8,
         },
