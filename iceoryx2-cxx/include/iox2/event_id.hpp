@@ -36,6 +36,7 @@ class EventId {
   private:
     template <ServiceType>
     friend class Notifier;
+    friend class MonofierView;
     template <ServiceType>
     friend class PortFactoryNotifier;
     template <ServiceType>

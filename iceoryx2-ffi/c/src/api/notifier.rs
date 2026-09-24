@@ -13,16 +13,19 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, c_size_t, iox2_event_id_t,
-    iox2_port_name_ptr, iox2_service_type_e, iox2_unique_notifier_id_h, iox2_unique_notifier_id_t,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, c_size_t, iox2_callback_context,
+    iox2_callback_progression_e, iox2_event_id_t, iox2_listener_details_ptr, iox2_listener_key_h,
+    iox2_listener_key_h_ref, iox2_listener_key_t, iox2_port_name_ptr, iox2_service_type_e,
+    iox2_unique_notifier_id_h, iox2_unique_notifier_id_t,
 };
 
-use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
+use crate::api::listener_key::init_listener_key;
+use iceoryx2::port::notifier::{Monofier, Notifier, NotifierNotifyError};
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use core::ffi::{c_char, c_int};
+use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
@@ -52,6 +55,23 @@ impl IntoCInt for NotifierNotifyError {
         }) as c_int
     }
 }
+
+/// A non-owning view which is valid only for the duration of one iteration callback.
+#[repr(C)]
+pub struct iox2_monofier_t {
+    service_type: iox2_service_type_e,
+    value: *const c_void,
+}
+pub type iox2_monofier_ptr = *const iox2_monofier_t;
+
+/// Called for each connected listener. Both view pointers expire when the
+/// callback returns. The callback may copy the key and notify via the monofier,
+/// but must not destroy or move the originating notifier.
+pub type iox2_notifier_for_each_listener_callback = extern "C" fn(
+    iox2_callback_context,
+    iox2_monofier_ptr,
+    iox2_listener_details_ptr,
+) -> iox2_callback_progression_e;
 
 pub(super) union NotifierUnion {
     ipc: ManuallyDrop<Notifier<crate::IpcService>>,
@@ -353,6 +373,206 @@ pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
         }
     }
     IOX2_OK
+}
+
+/// Iterates over connected listeners. The callback may use the monofier to
+/// notify the current listener and may retain a cloned listener key. Its
+/// monofier and details views expire when the callback returns.
+///
+/// # Safety
+/// `notifier_handle` and `callback` must be valid. During the call, including
+/// callbacks, no other thread may access, destroy, or move the notifier.
+/// Callbacks must not mutate the notifier, including via its other C operations; use the supplied
+/// monofier for immediate notification instead. The context must remain valid
+/// for the duration of every callback. The views must not be used after their
+/// callback returns. The callback must not unwind across the C ABI and the
+/// views may only be used on the calling callback thread.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_notifier_for_each_listener(
+    notifier_handle: iox2_notifier_h_ref,
+    callback: iox2_notifier_for_each_listener_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    notifier_handle.assert_non_null();
+    unsafe {
+        let notifier = &*notifier_handle.as_type();
+        match notifier.service_type {
+            iox2_service_type_e::IPC => {
+                notifier
+                    .value
+                    .as_ref()
+                    .ipc
+                    .for_each_listener(|mono, details| {
+                        let view = iox2_monofier_t {
+                            service_type: iox2_service_type_e::IPC,
+                            value: mono as *const _ as *const c_void,
+                        };
+                        callback(callback_ctx, &view, details).into()
+                    })
+            }
+            iox2_service_type_e::LOCAL => {
+                notifier
+                    .value
+                    .as_ref()
+                    .local
+                    .for_each_listener(|mono, details| {
+                        let view = iox2_monofier_t {
+                            service_type: iox2_service_type_e::LOCAL,
+                            value: mono as *const _ as *const c_void,
+                        };
+                        callback(callback_ctx, &view, details).into()
+                    })
+            }
+        }
+    }
+}
+
+/// Copies the callback-scoped monofier's key into an owned handle. The result
+/// remains usable after the callback, subject to listener and notifier lifetime.
+/// If `key_struct_ptr` is null, storage is allocated on the heap; otherwise
+/// it must point to uninitialized storage kept alive until the key is dropped.
+///
+/// # Safety
+/// `monofier` must be a live view supplied to the current callback and
+/// `key_handle_ptr` must point to writable output storage.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_monofier_listener_key(
+    monofier: iox2_monofier_ptr,
+    key_struct_ptr: *mut iox2_listener_key_t,
+    key_handle_ptr: *mut iox2_listener_key_h,
+) {
+    debug_assert!(!monofier.is_null());
+    unsafe {
+        let view = &*monofier;
+        let value = match view.service_type {
+            iox2_service_type_e::IPC => {
+                (&*(view.value as *const Monofier<'_, crate::IpcService>)).listener_key()
+            }
+            iox2_service_type_e::LOCAL => {
+                (&*(view.value as *const Monofier<'_, crate::LocalService>)).listener_key()
+            }
+        };
+        init_listener_key(value, key_struct_ptr, key_handle_ptr);
+    }
+}
+
+/// Notifies the listener represented by a callback-scoped monofier.
+///
+/// # Safety
+/// `monofier` must be a live view supplied to the current callback. The
+/// originating notifier must remain alive throughout this call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_monofier_notify(monofier: iox2_monofier_ptr) -> c_int {
+    debug_assert!(!monofier.is_null());
+    unsafe {
+        let view = &*monofier;
+        let result = match view.service_type {
+            iox2_service_type_e::IPC => {
+                (&*(view.value as *const Monofier<'_, crate::IpcService>)).notify()
+            }
+            iox2_service_type_e::LOCAL => {
+                (&*(view.value as *const Monofier<'_, crate::LocalService>)).notify()
+            }
+        };
+        result.map_or_else(IntoCInt::into_c_int, |_| IOX2_OK)
+    }
+}
+
+/// Notifies the current listener with a custom event id.
+///
+/// # Safety
+/// Same requirements as `iox2_monofier_notify`; `custom_event_id_ptr` must
+/// point to a valid event id.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_monofier_notify_with_custom_event_id(
+    monofier: iox2_monofier_ptr,
+    custom_event_id_ptr: *const iox2_event_id_t,
+) -> c_int {
+    debug_assert!(!monofier.is_null());
+    debug_assert!(!custom_event_id_ptr.is_null());
+    unsafe {
+        let view = &*monofier;
+        let event_id = (*custom_event_id_ptr).into();
+        let result = match view.service_type {
+            iox2_service_type_e::IPC => (&*(view.value as *const Monofier<'_, crate::IpcService>))
+                .notify_with_custom_event_id(event_id),
+            iox2_service_type_e::LOCAL => (&*(view.value
+                as *const Monofier<'_, crate::LocalService>))
+                .notify_with_custom_event_id(event_id),
+        };
+        result.map_or_else(IntoCInt::into_c_int, |_| IOX2_OK)
+    }
+}
+
+/// Notifies only the listener named by `key` with the default event id.
+///
+/// # Safety
+/// `notifier_handle` and `key` must be live. No other thread may access,
+/// destroy, or move the notifier during this call; do not concurrently destroy
+/// or mutate this key handle. A key from another notifier is invalid unless it
+/// identifies the same connection in that notifier.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_notifier_notify_single_listener(
+    notifier_handle: iox2_notifier_h_ref,
+    key: iox2_listener_key_h_ref,
+) -> c_int {
+    notifier_handle.assert_non_null();
+    key.assert_non_null();
+    unsafe {
+        let notifier = &*notifier_handle.as_type();
+        let result = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier
+                .value
+                .as_ref()
+                .ipc
+                .notify_single_listener((*key.as_type()).value.as_ref()),
+            iox2_service_type_e::LOCAL => notifier
+                .value
+                .as_ref()
+                .local
+                .notify_single_listener((*key.as_type()).value.as_ref()),
+        };
+        result.map_or_else(IntoCInt::into_c_int, |_| IOX2_OK)
+    }
+}
+
+/// Notifies only the listener named by `key` with `custom_event_id_ptr`.
+///
+/// # Safety
+/// Same requirements as `iox2_notifier_notify_single_listener`;
+/// `custom_event_id_ptr` must point to a valid event id.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_notifier_notify_single_listener_with_custom_event_id(
+    notifier_handle: iox2_notifier_h_ref,
+    key: iox2_listener_key_h_ref,
+    custom_event_id_ptr: *const iox2_event_id_t,
+) -> c_int {
+    notifier_handle.assert_non_null();
+    key.assert_non_null();
+    debug_assert!(!custom_event_id_ptr.is_null());
+    unsafe {
+        let notifier = &*notifier_handle.as_type();
+        let event_id = (*custom_event_id_ptr).into();
+        let result = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier
+                .value
+                .as_ref()
+                .ipc
+                .notify_single_listener_with_custom_event_id(
+                    (*key.as_type()).value.as_ref(),
+                    event_id,
+                ),
+            iox2_service_type_e::LOCAL => notifier
+                .value
+                .as_ref()
+                .local
+                .notify_single_listener_with_custom_event_id(
+                    (*key.as_type()).value.as_ref(),
+                    event_id,
+                ),
+        };
+        result.map_or_else(IntoCInt::into_c_int, |_| IOX2_OK)
+    }
 }
 
 /// This function needs to be called to destroy the notifier!
