@@ -24,7 +24,8 @@ use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::static_storage::StaticStorage;
 use iceoryx2_log::{fail, warn};
 
-const PAYLOAD_TYPE_DEFINITION: FileName = unsafe { FileName::new_unchecked_const(b"payload") };
+pub(crate) const PAYLOAD_TYPE_DEFINITION: FileName =
+    unsafe { FileName::new_unchecked_const(b"payload") };
 
 pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
     pub(crate) type_definition: TypeDefinition,

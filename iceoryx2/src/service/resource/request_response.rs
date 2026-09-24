@@ -29,8 +29,10 @@ use crate::{
     },
 };
 
-const REQUEST_TYPE_DEFINITION: FileName = unsafe { FileName::new_unchecked_const(b"request") };
-const RESPONSE_TYPE_DEFINITION: FileName = unsafe { FileName::new_unchecked_const(b"response") };
+pub(crate) const REQUEST_TYPE_DEFINITION: FileName =
+    unsafe { FileName::new_unchecked_const(b"request") };
+pub(crate) const RESPONSE_TYPE_DEFINITION: FileName =
+    unsafe { FileName::new_unchecked_const(b"response") };
 
 pub struct RequestResponseResourceConfig<ServiceType: service::Service> {
     pub(crate) request: TypeDefinition,

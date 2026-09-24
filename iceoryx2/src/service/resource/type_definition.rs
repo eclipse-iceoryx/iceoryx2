@@ -13,6 +13,7 @@
 extern crate alloc;
 
 use crate::service::{
+    ServiceDetailsError,
     builder::{ServiceCreateError, ServiceOpenError},
     resource::RemoveStaleResourcesError,
 };
@@ -174,6 +175,58 @@ impl TypeDefinition {
             storage: static_storage,
             path_hint: *static_storage_config.get_path_hint(),
         }))
+    }
+
+    pub(crate) fn read_storage<S: crate::service::Service>(
+        name: &FileName,
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<Vec<u8>, ServiceDetailsError> {
+        let origin = "TypeDefinition::read_storage()";
+        let msg = "Unable to read type definition storage";
+
+        let static_storage_config =
+            Self::type_definition_static_storage_config::<S>(config, static_config);
+
+        let static_storage = match
+                <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
+                    Ok(static_storage) => static_storage,
+                    Err(StaticStorageOpenError::InsufficientPermissions) => {
+                        fail!(from origin, with ServiceDetailsError::InsufficientPermissions,
+                            "{msg} since the type definition could not be opened due to insufficient permissions.");
+                    }
+                    Err(StaticStorageOpenError::Interrupt) => {
+                        fail!(from origin, with ServiceDetailsError::Interrupt,
+                            "{msg} since the operation was interrupted by a signal.");
+                    }
+                    Err(StaticStorageOpenError::InitializationNotYetFinalized)
+                    | Err(StaticStorageOpenError::DoesNotExist) => {
+                        fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
+                            "{msg} since the type definition file is not available.");
+                    }
+                    Err(e) => {
+                        fail!(from origin, with ServiceDetailsError::InternalError,
+                            "{msg} due to an internal failure while opening the type definition storage. [{e:?}]");
+                    }
+                };
+        static_storage.release_ownership();
+
+        let mut bytes = vec![0u8; static_storage.len() as usize];
+        match static_storage.read(&mut bytes) {
+            Ok(()) => Ok(bytes),
+            Err(StaticStorageReadError::Interrupt) => {
+                fail!(from origin, with ServiceDetailsError::Interrupt,
+                       "{msg} since the read operation was interrupted by a signal.");
+            }
+            Err(StaticStorageReadError::StaticStorageWasModified) => {
+                fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
+                        "{msg} since the type definition was modified after the service was created.");
+            }
+            Err(e) => {
+                fail!(from origin, with ServiceDetailsError::InternalError,
+                        "{msg} due to an internal failure while reading the type definition. [{e:?}]");
+            }
+        }
     }
 
     pub fn open_and_verify_storage<S: crate::service::Service>(
