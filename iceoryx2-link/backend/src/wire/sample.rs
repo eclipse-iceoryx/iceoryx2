@@ -15,8 +15,8 @@
 //! ```text
 //!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   as_mut()
 //!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ writable header and payload
-//!   │                  │                       │                  │   into_sample()
-//!   │  no memory yet   │                       │  a loan for the  │ ────────────────▶ convert into a sendable sample
+//!   │                  │                       │                  │   assume_init()
+//!   │  no memory yet   │                       │  a loan for the  │ ────────────────▶ the initialized, sendable sample
 //!   │                  │                       │  payload length  │
 //!   └──────────────────┘                       └──────────────────┘
 //!            │                                          │
@@ -87,7 +87,9 @@ impl SampleBytes {
 /// that can be populated.
 pub trait LoanableSample {
     /// The loaned sample with writable header and payload.
-    type WritableSample: WritableSample;
+    type WritableSample: WritableSample<InitializedSample = Self::InitializedSample>;
+    /// The loaned sample once its header and payload are written.
+    type InitializedSample;
 
     /// Acquire a loan for the sample.
     ///
@@ -121,14 +123,30 @@ impl core::error::Error for LoanError {}
 
 /// Provides the locations to write a sample's header and payload.
 pub trait WritableSample {
+    /// The sample once its header and payload are written.
+    type InitializedSample;
+
     /// The locations into which the header and the payload bytes should
     /// be written.
     fn as_mut(&mut self) -> SampleBytesRefMut<'_>;
+
+    /// The sample as initialized.
+    ///
+    /// # Safety
+    ///
+    /// The header and the payload must both have been written.
+    unsafe fn assume_init(self) -> Self::InitializedSample;
 }
 
 impl WritableSample for SampleBytes {
+    type InitializedSample = SampleBytes;
+
     fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
         SampleBytes::as_mut(self)
+    }
+
+    unsafe fn assume_init(self) -> SampleBytes {
+        self
     }
 }
 

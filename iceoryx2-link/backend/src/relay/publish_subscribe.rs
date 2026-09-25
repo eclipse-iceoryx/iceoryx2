@@ -30,7 +30,7 @@ pub trait PublishSubscribeRelay<S: Service> {
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, Self::ReceiveError>;
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, Self::ReceiveError>;
 }
 
 /// The outcome of receiving one sample.

@@ -68,6 +68,7 @@ impl<'a, 'b, S: Service, E> UnloanedSample<'a, 'b, S, E> {
 
 impl<S: Service, E> LoanableSample for UnloanedSample<'_, '_, S, E> {
     type WritableSample = LoanedSample<S>;
+    type InitializedSample = SampleMut<S>;
 
     fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
         let origin = origin!("UnloanedSample::loan");
@@ -113,13 +114,9 @@ pub struct LoanedSample<S: Service> {
     sample: SampleMutUninit<S>,
 }
 
-impl<S: Service> LoanedSample<S> {
-    pub fn into_sample(self) -> SampleMutUninit<S> {
-        self.sample
-    }
-}
-
 impl<S: Service> WritableSample for LoanedSample<S> {
+    type InitializedSample = SampleMut<S>;
+
     fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
         // SAFETY: the header size for this service is provided by the
         // service's own description.
@@ -136,5 +133,10 @@ impl<S: Service> WritableSample for LoanedSample<S> {
                 payload: &mut *payload,
             }
         }
+    }
+
+    unsafe fn assume_init(self) -> SampleMut<S> {
+        // SAFETY: the caller wrote the header and the payload.
+        unsafe { self.sample.assume_init() }
     }
 }

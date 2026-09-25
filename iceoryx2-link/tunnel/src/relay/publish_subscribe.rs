@@ -104,7 +104,7 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, Self::ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
 
         let bytes = fail!(
@@ -148,7 +148,8 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         regions.header.copy_from_slice(header);
         regions.payload.copy_from_slice(payload);
 
-        Ok(ReceiveOutcome::Sample(writable))
+        // SAFETY: the header and the payload were both copied in above.
+        Ok(ReceiveOutcome::Sample(unsafe { writable.assume_init() }))
     }
 }
 
@@ -204,6 +205,7 @@ mod tests {
 
     impl LoanableSample for Loanable {
         type WritableSample = SampleBytes;
+        type InitializedSample = SampleBytes;
 
         fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
             Ok(SampleBytes {
@@ -218,6 +220,7 @@ mod tests {
 
     impl LoanableSample for Refusing {
         type WritableSample = SampleBytes;
+        type InitializedSample = SampleBytes;
 
         fn loan(self, _: usize) -> Result<Self::WritableSample, LoanError> {
             Err(self.0)

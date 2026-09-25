@@ -173,7 +173,7 @@ impl<
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, Self::ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, Self::ReceiveError> {
         let header_size = self.types.user_header.size;
         match self.transcoders.for_samples() {
             SampleTranscoders::TranscodeNone => {
@@ -222,7 +222,7 @@ impl<
         endpoints: &mut E,
         header_size: usize,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
         let origin = origin!("Relay::receive_with_no_region_transcoded");
 
         let mut destination = LoanDestination::new(loanable, header_size);
@@ -233,7 +233,13 @@ impl<
             "Failed to take a message"
         );
         match outcome {
-            TakeOutcome::Taken => Ok(ReceiveOutcome::Sample(destination.sample())),
+            TakeOutcome::Taken => {
+                // SAFETY: the take wrote the header and the payload into the
+                // loaned sample.
+                Ok(ReceiveOutcome::Sample(unsafe {
+                    destination.sample().assume_init()
+                }))
+            }
             TakeOutcome::Declined => Err(destination.refusal()),
             TakeOutcome::Skipped => Ok(ReceiveOutcome::Skipped),
             TakeOutcome::Empty => Ok(ReceiveOutcome::Empty),
@@ -248,7 +254,7 @@ impl<
         header_size: usize,
         header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
         let origin = origin!("Relay::receive_with_header_transcoded");
 
         let mut destination = SplitDestination::new(loanable, &mut scratch.header);
@@ -273,7 +279,9 @@ impl<
             header_size,
         )?;
 
-        Ok(ReceiveOutcome::Sample(loaned))
+        // SAFETY: the header and the payload were both written into the
+        // loaned sample above.
+        Ok(ReceiveOutcome::Sample(unsafe { loaned.assume_init() }))
     }
 
     /// Takes a message into the scratch, then decodes the payload into the
@@ -284,7 +292,7 @@ impl<
         header_size: usize,
         payload_transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
         let origin = origin!("Relay::receive_with_payload_transcoded");
 
         let outcome = fail!(
@@ -309,7 +317,9 @@ impl<
         let mut loaned = Self::decode_payload(payload_transcoder, wire, loanable)?;
         Self::copy_header(wire, &mut loaned, header_size)?;
 
-        Ok(ReceiveOutcome::Sample(loaned))
+        // SAFETY: the header and the payload were both written into the
+        // loaned sample above.
+        Ok(ReceiveOutcome::Sample(unsafe { loaned.assume_init() }))
     }
 
     /// Takes a message into the scratch, then decodes the payload and the
@@ -321,7 +331,7 @@ impl<
         header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
         payload_transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::WritableSample>, ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
         let origin = origin!("Relay::receive_with_both_regions_transcoded");
 
         let outcome = fail!(
@@ -346,7 +356,9 @@ impl<
         let mut loaned = Self::decode_payload(payload_transcoder, wire, loanable)?;
         Self::decode_header(header_transcoder, wire, &mut loaned, header_size)?;
 
-        Ok(ReceiveOutcome::Sample(loaned))
+        // SAFETY: the header and the payload were both written into the
+        // loaned sample above.
+        Ok(ReceiveOutcome::Sample(unsafe { loaned.assume_init() }))
     }
 
     /// Encodes the `local` header into `scratch`.
@@ -895,13 +907,11 @@ mod tests {
         loan: &mut LoanFn<'_, local::Service, LoanError>,
     ) -> Result<Option<SampleMut<local::Service>>, ReceiveError> {
         let types = types();
-        let ReceiveOutcome::Sample(loaned) = relay.receive(UnloanedSample::new(&types, loan))?
+        let ReceiveOutcome::Sample(sample) = relay.receive(UnloanedSample::new(&types, loan))?
         else {
             return Ok(None);
         };
-        // SAFETY: the relay populated both regions of the loaned sample,
-        // the header and the payload.
-        Ok(Some(unsafe { loaned.into_sample().assume_init() }))
+        Ok(Some(sample))
     }
 
     fn header_of(sample: &SampleMut<local::Service>) -> [u8; SIZE] {

@@ -285,6 +285,7 @@ pub struct UnloanedBuffers {
 
 impl LoanableSample for UnloanedBuffers {
     type WritableSample = SampleBytes;
+    type InitializedSample = SampleBytes;
 
     fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
         Ok(SampleBytes {
@@ -299,6 +300,7 @@ pub struct NotLoanable;
 
 impl LoanableSample for NotLoanable {
     type WritableSample = SampleBytes;
+    type InitializedSample = SampleBytes;
 
     fn loan(self, _: usize) -> Result<Self::WritableSample, LoanError> {
         Err(LoanError::Malformed)
