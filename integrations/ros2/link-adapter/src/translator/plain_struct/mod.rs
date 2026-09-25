@@ -17,7 +17,7 @@ pub use cdr_transcoder::{CdrTranscoder, TranscodeFailure};
 use layout::layout_of;
 
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_link_adapter::{SampleTranscoders, Translator};
+use iceoryx2_link_adapter::{LocalTypes, SampleShape, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
@@ -40,12 +40,12 @@ pub struct PlainStructTranslator {
     pub header: MirroredHeader,
 }
 
-impl Translator for PlainStructTranslator {
+impl Translator<SampleShape> for PlainStructTranslator {
     type RemoteTypes = TopicTypes;
     type Transcoders = SampleTranscoders<EmptyHeader, CdrTranscoder>;
     type Error = TranslationError;
 
-    fn local(&self, remote: &TopicTypes) -> Result<SampleTypes, Self::Error> {
+    fn local(&self, remote: &TopicTypes) -> Result<LocalTypes<SampleShape>, Self::Error> {
         let origin = origin!("PlainStructTranslator::local");
 
         let layout = fail!(
@@ -65,7 +65,7 @@ impl Translator for PlainStructTranslator {
         })
     }
 
-    fn remote(&self, local: &SampleTypes) -> Result<TopicTypes, Self::Error> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<TopicTypes, Self::Error> {
         let origin = origin!("PlainStructTranslator::remote");
 
         let type_name = fail!(
@@ -80,7 +80,7 @@ impl Translator for PlainStructTranslator {
 
     fn transcoders(
         &self,
-        local: &SampleTypes,
+        local: &LocalTypes<SampleShape>,
         remote: &TopicTypes,
     ) -> Result<Self::Transcoders, Self::Error> {
         let origin = origin!("PlainStructTranslator::transcoders");

@@ -22,7 +22,7 @@ use iceoryx2_integrations_ros2_link_adapter::{
     TypeName,
 };
 use iceoryx2_link::{Link, WakeCreationError};
-use iceoryx2_link_adapter::{Mapping, Translator};
+use iceoryx2_link_adapter::{Mapping, SampleShape, TranscodesSamples, Translator};
 use iceoryx2_link_backend::WakeService;
 use iceoryx2_link_gateway::Gateway;
 use iceoryx2_log::{fail, info, warn};
@@ -44,7 +44,7 @@ pub trait GatewayInstance {
 impl<M, T> GatewayInstance for Ros2Gateway<M, T>
 where
     M: Mapping<EndpointSettings = TopicSettings>,
-    T: Translator<RemoteTypes = TopicTypes>,
+    T: Translator<SampleShape, RemoteTypes = TopicTypes, Transcoders: TranscodesSamples>,
 {
     fn node(&self) -> &Node<ipc::Service> {
         Link::node(self)
@@ -168,7 +168,7 @@ fn create<M, T>(
 ) -> anyhow::Result<Ros2Gateway<M, T>>
 where
     M: Mapping<EndpointSettings = TopicSettings>,
-    T: Translator<RemoteTypes = TopicTypes>,
+    T: Translator<SampleShape, RemoteTypes = TopicTypes, Transcoders: TranscodesSamples>,
 {
     let node = fail!(
         from ORIGIN,

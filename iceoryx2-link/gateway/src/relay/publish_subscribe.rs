@@ -20,7 +20,7 @@ use iceoryx2_link_adapter::{
     PublishSubscribeEndpoints, Region, SampleBytes, SampleBytesRef, SampleBytesRefMut,
     SampleLengths, TakeDestination, TakeOutcome, TranscodeError, Transcoder, UnsupportedLength,
 };
-use iceoryx2_link_adapter::{SampleTranscoders, TranscodesSamples, Translator};
+use iceoryx2_link_adapter::{SampleShape, SampleTranscoders, TranscodesSamples, Translator};
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{PublishSubscribeDescription, SampleTypes};
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
@@ -30,7 +30,7 @@ use iceoryx2_log::{fail, fatal_panic, origin};
 use crate::relay::{CreationError, ReceiveError, SendError};
 
 /// Creates relays over an adapter's endpoints.
-pub struct Builder<'a, S, A, M: Mapping, T: Translator> {
+pub struct Builder<'a, S, A, M: Mapping, T: Translator<SampleShape>> {
     pub(super) adapter: &'a mut A,
     pub(super) translator: &'a T,
     pub(super) publish_subscribe_description: PublishSubscribeDescription<'a>,
@@ -44,7 +44,7 @@ impl<S, A, M, T> RelayBuilder for Builder<'_, S, A, M, T>
 where
     S: Service,
     M: Mapping,
-    T: Translator,
+    T: Translator<SampleShape, Transcoders: TranscodesSamples>,
     A: Adapter<
             EndpointSettings = M::EndpointSettings,
             EndpointTypes = EndpointTypes<T::RemoteTypes>,
@@ -88,7 +88,7 @@ where
 
 /// Moves publish-subscribe samples over the gateway's endpoints,
 /// translating them on the way.
-pub struct Relay<S, E, X: Translator> {
+pub struct Relay<S, E, X: Translator<SampleShape>> {
     endpoints: E,
     transcoders: X::Transcoders,
     types: SampleTypes,
@@ -98,7 +98,12 @@ pub struct Relay<S, E, X: Translator> {
     _service: PhantomData<S>,
 }
 
-impl<S: Service, E: PublishSubscribeEndpoints, X: Translator> Relay<S, E, X> {
+impl<
+    S: Service,
+    E: PublishSubscribeEndpoints,
+    X: Translator<SampleShape, Transcoders: TranscodesSamples>,
+> Relay<S, E, X>
+{
     pub(crate) fn new(endpoints: E, transcoders: X::Transcoders, types: SampleTypes) -> Self {
         Self {
             endpoints,
@@ -110,8 +115,11 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: Translator> Relay<S, E, X> {
     }
 }
 
-impl<S: Service, E: PublishSubscribeEndpoints, X: Translator> PublishSubscribeRelay<S>
-    for Relay<S, E, X>
+impl<
+    S: Service,
+    E: PublishSubscribeEndpoints,
+    X: Translator<SampleShape, Transcoders: TranscodesSamples>,
+> PublishSubscribeRelay<S> for Relay<S, E, X>
 {
     type SendError = SendError;
     type ReceiveError = ReceiveError;
@@ -203,7 +211,12 @@ impl<S: Service, E: PublishSubscribeEndpoints, X: Translator> PublishSubscribeRe
     }
 }
 
-impl<S: Service, E: PublishSubscribeEndpoints, X: Translator> Relay<S, E, X> {
+impl<
+    S: Service,
+    E: PublishSubscribeEndpoints,
+    X: Translator<SampleShape, Transcoders: TranscodesSamples>,
+> Relay<S, E, X>
+{
     /// Takes a message straight into the loan.
     fn receive_with_no_region_transcoded<L: LoanableSample>(
         endpoints: &mut E,
@@ -615,6 +628,7 @@ mod tests {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_link_adapter::LocalTypes;
     use iceoryx2_link_backend::service_description::TypeDescription;
     use iceoryx2_link_backend::wire::publish_subscribe::{
         LoanFn, Publisher, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
@@ -764,22 +778,22 @@ mod tests {
     /// never calls it.
     struct StubTranslator;
 
-    impl Translator for StubTranslator {
+    impl Translator<SampleShape> for StubTranslator {
         type RemoteTypes = SampleTypes;
         type Transcoders = SampleTranscoders<StubHeader, StubPayload>;
         type Error = Infallible;
 
-        fn local(&self, remote: &SampleTypes) -> Result<SampleTypes, Infallible> {
+        fn local(&self, remote: &SampleTypes) -> Result<LocalTypes<SampleShape>, Infallible> {
             Ok(remote.clone())
         }
 
-        fn remote(&self, local: &SampleTypes) -> Result<SampleTypes, Infallible> {
+        fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<SampleTypes, Infallible> {
             Ok(local.clone())
         }
 
         fn transcoders(
             &self,
-            _: &SampleTypes,
+            _: &LocalTypes<SampleShape>,
             _: &SampleTypes,
         ) -> Result<Self::Transcoders, Infallible> {
             Ok(SampleTranscoders::TranscodeNone)

@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 
-use iceoryx2_link_adapter::{NoTranscoder, SampleTranscoders, Translator};
+use iceoryx2_link_adapter::{LocalTypes, NoTranscoder, SampleShape, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
@@ -31,19 +31,19 @@ pub struct PassthroughTranslator {
     pub header: MirroredHeader,
 }
 
-impl Translator for PassthroughTranslator {
+impl Translator<SampleShape> for PassthroughTranslator {
     type RemoteTypes = TopicTypes;
     type Transcoders = SampleTranscoders<EmptyHeader, NoTranscoder>;
     type Error = TranslationError;
 
-    fn local(&self, remote: &TopicTypes) -> Result<SampleTypes, TranslationError> {
+    fn local(&self, remote: &TopicTypes) -> Result<LocalTypes<SampleShape>, TranslationError> {
         Ok(SampleTypes {
             payload: cdr_payload_type(remote.type_name.as_str()),
             user_header: self.header.type_description(),
         })
     }
 
-    fn remote(&self, local: &SampleTypes) -> Result<TopicTypes, TranslationError> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<TopicTypes, TranslationError> {
         let origin = origin!("PassthroughTranslator::remote");
 
         // The payload's type name must be a ROS 2 message type.
@@ -70,7 +70,7 @@ impl Translator for PassthroughTranslator {
 
     fn transcoders(
         &self,
-        local: &SampleTypes,
+        local: &LocalTypes<SampleShape>,
         remote: &TopicTypes,
     ) -> Result<Self::Transcoders, TranslationError> {
         let origin = origin!("PassthroughTranslator::transcoders");

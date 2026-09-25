@@ -20,10 +20,10 @@ use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRe
 use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
 
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::Translator;
 use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
+use iceoryx2_link_adapter::{SampleShape, TranscodesSamples, Translator};
 
-pub struct Factory<'a, S, A, M: Mapping, T: Translator> {
+pub struct Factory<'a, S, A, M: Mapping, T: Translator<SampleShape>> {
     pub(crate) adapter: &'a mut A,
     pub(crate) translator: &'a T,
     pub(crate) _service: PhantomData<(S, M)>,
@@ -33,7 +33,7 @@ impl<S, A, M, T> RelayFactory<S> for Factory<'_, S, A, M, T>
 where
     S: Service,
     M: Mapping,
-    T: Translator,
+    T: Translator<SampleShape, Transcoders: TranscodesSamples>,
     A: Adapter<
             EndpointSettings = M::EndpointSettings,
             EndpointTypes = EndpointTypes<T::RemoteTypes>,

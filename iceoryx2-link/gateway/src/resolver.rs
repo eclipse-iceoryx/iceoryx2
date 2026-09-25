@@ -18,8 +18,8 @@ use iceoryx2_link_backend::service_description::{
 };
 
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::Translator;
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
+use iceoryx2_link_adapter::{SampleShape, Translator};
 
 /// Reasons why a service or remote endpoint is refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,7 +61,7 @@ pub struct Resolver<M, T> {
     pub(crate) translator: T,
 }
 
-impl<M: Mapping, T: Translator> Resolver<M, T> {
+impl<M: Mapping, T: Translator<SampleShape>> Resolver<M, T> {
     /// The middleware's types of an endpoint carrying a service of `types`.
     fn remote_types(
         &self,
@@ -154,7 +154,7 @@ impl<M: Mapping, T: Translator> Resolver<M, T> {
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator> resolver::Resolver<S> for Resolver<M, T> {
+impl<S: Service, M: Mapping, T: Translator<SampleShape>> resolver::Resolver<S> for Resolver<M, T> {
     type RemoteId = <M::EndpointSettings as Identified>::Id;
     type RemoteDescription =
         EndpointDescription<M::EndpointSettings, EndpointTypes<T::RemoteTypes>>;
@@ -237,7 +237,7 @@ mod tests {
     ) -> Resolution<StubEndpointDescription, Refusal<M::Error>>
     where
         M: Mapping<EndpointSettings = crate::testing::StubEndpointSettings>,
-        T: Translator<RemoteTypes = SampleTypes>,
+        T: Translator<SampleShape, RemoteTypes = SampleTypes>,
     {
         <Resolver<M, T> as resolver::Resolver<local::Service>>::resolve(sut, local, remotes.iter())
     }

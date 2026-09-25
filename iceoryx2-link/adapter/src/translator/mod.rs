@@ -9,29 +9,31 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
 //! A [`Translator`] maps local types to a middleware's types and chooses
-//! the transcoders converting samples between the two forms. The
-//! [`SampleTranscoders`] name the regions that are transcoded and the
-//! transcoder of each:
+//! the transcoders converting between the two forms, for data of one
+//! [`Shape`]. Samples have the [`SampleShape`], a header and a payload,
+//! and are converted by [`SampleTranscoders`], which name the regions that
+//! are transcoded and the transcoder of each:
 //!
 //! ```rust,ignore
-//! impl Translator for MyTranslator {
+//! impl Translator<SampleShape> for MyTranslator {
 //!     type RemoteTypes = MyMiddlewareTypes;
 //!     type Transcoders = SampleTranscoders<NoTranscoder, MyPayloadTranscoder>;
 //!     type Error = MyError;
 //!
-//!     fn local(&self, remote: &MyMiddlewareTypes) -> Result<SampleTypes, MyError> {
+//!     fn local(&self, remote: &MyMiddlewareTypes) -> Result<LocalTypes<SampleShape>, MyError> {
 //!         // The local types corresponding to the given remote types.
 //!     }
 //!
-//!     fn remote(&self, local: &SampleTypes) -> Result<MyMiddlewareTypes, MyError> {
+//!     fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<MyMiddlewareTypes, MyError> {
 //!         // The remote types corresponding to the local type stored in
 //!         // shared memory.
 //!     }
 //!
 //!     fn transcoders(
 //!         &self,
-//!         local: &SampleTypes,
+//!         local: &LocalTypes<SampleShape>,
 //!         remote: &MyMiddlewareTypes,
 //!     ) -> Result<Self::Transcoders, MyError> {
 //!         // Which regions are transcoded between the given pair of local
@@ -65,97 +67,44 @@
 //! }
 //! ```
 
+mod passthrough;
+mod sample;
 mod transcoder;
 
+pub use passthrough::Passthrough;
+pub use sample::{SampleShape, SampleTranscoders, TranscodesSamples};
 pub use transcoder::{NoTranscoder, TranscodeError, Transcoder};
 
-use core::convert::Infallible;
 use core::error::Error;
 
-use iceoryx2_link_backend::service_description::SampleTypes;
+/// One shape of data that a translator can translate.
+pub trait Shape {
+    /// The local types matching the shape of the data.
+    type LocalTypes: Clone + PartialEq;
+}
 
-use crate::SampleBytesRef;
+/// The local types of data with the shape `S`.
+pub type LocalTypes<S> = <S as Shape>::LocalTypes;
 
 /// Decides which local types correspond to a middleware's remote types and
-/// how the bytes of a sample are converted between the two forms.
-pub trait Translator {
-    /// The middleware's types of a sample.
+/// how the bytes are converted between the two forms for data of one
+/// [`Shape`].
+pub trait Translator<S: Shape> {
+    /// The middleware's types of the data.
     type RemoteTypes: Clone + PartialEq + 'static;
-    type Transcoders: TranscodesSamples;
+    type Transcoders;
     type Error: Error;
 
-    /// The local types of the samples the middleware carries with `remote`.
-    fn local(&self, remote: &Self::RemoteTypes) -> Result<SampleTypes, Self::Error>;
+    /// The local types of the data the middleware carries with `remote`.
+    fn local(&self, remote: &Self::RemoteTypes) -> Result<S::LocalTypes, Self::Error>;
 
-    /// The middleware's types of the samples with the local types `local`.
-    fn remote(&self, local: &SampleTypes) -> Result<Self::RemoteTypes, Self::Error>;
+    /// The middleware's types of the data with the local types `local`.
+    fn remote(&self, local: &S::LocalTypes) -> Result<Self::RemoteTypes, Self::Error>;
 
-    /// The transcoders converting samples between `local` and `remote`.
+    /// The transcoders converting the data between `local` and `remote`.
     fn transcoders(
         &self,
-        local: &SampleTypes,
+        local: &S::LocalTypes,
         remote: &Self::RemoteTypes,
     ) -> Result<Self::Transcoders, Self::Error>;
-}
-
-/// Which regions of a sample are transcoded between the local and the
-/// middleware form, and the transcoder(s) used.
-#[derive(Debug)]
-pub enum SampleTranscoders<H, P> {
-    /// Both regions pass through unchanged.
-    TranscodeNone,
-    /// The header is transcoded, the payload passes through.
-    TranscodeHeader(H),
-    /// The payload is transcoded, the header passes through.
-    TranscodePayload(P),
-    /// Both regions are transcoded.
-    TranscodeBoth(H, P),
-}
-
-/// The transcoders of a sample.
-pub trait TranscodesSamples {
-    type HeaderTranscoder: for<'a> Transcoder<SampleBytesRef<'a>>;
-    type PayloadTranscoder: for<'a> Transcoder<SampleBytesRef<'a>>;
-
-    fn for_samples(&self) -> &SampleTranscoders<Self::HeaderTranscoder, Self::PayloadTranscoder>;
-}
-
-impl<H, P> TranscodesSamples for SampleTranscoders<H, P>
-where
-    H: for<'a> Transcoder<SampleBytesRef<'a>>,
-    P: for<'a> Transcoder<SampleBytesRef<'a>>,
-{
-    type HeaderTranscoder = H;
-    type PayloadTranscoder = P;
-
-    fn for_samples(&self) -> &Self {
-        self
-    }
-}
-
-/// The translator of a middleware whose data already has local types,
-/// passing everything through unchanged.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Passthrough;
-
-impl Translator for Passthrough {
-    type RemoteTypes = SampleTypes;
-    type Transcoders = SampleTranscoders<NoTranscoder, NoTranscoder>;
-    type Error = Infallible;
-
-    fn local(&self, remote: &SampleTypes) -> Result<SampleTypes, Self::Error> {
-        Ok(remote.clone())
-    }
-
-    fn remote(&self, local: &SampleTypes) -> Result<SampleTypes, Self::Error> {
-        Ok(local.clone())
-    }
-
-    fn transcoders(
-        &self,
-        _: &SampleTypes,
-        _: &SampleTypes,
-    ) -> Result<Self::Transcoders, Self::Error> {
-        Ok(SampleTranscoders::TranscodeNone)
-    }
 }

@@ -26,7 +26,7 @@ use iceoryx2_link_adapter::{
     Adapter, EndpointDescription, EndpointTypes, PublishSubscribeEndpoints, SampleBytesRef,
     TakeDestination, TakeOutcome, UnsupportedEndpoints,
 };
-use iceoryx2_link_adapter::{NoTranscoder, SampleTranscoders, Translator};
+use iceoryx2_link_adapter::{LocalTypes, NoTranscoder, SampleShape, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::Identified;
 use iceoryx2_link_backend::service_description::{
     PatternSettings, SampleTypes, ServiceSettings, ServiceTypes,
@@ -201,26 +201,30 @@ fn refuses(types: &SampleTypes) -> bool {
     types.payload.type_name == "refused"
 }
 
-impl Translator for RefusingTranslator {
+impl Translator<SampleShape> for RefusingTranslator {
     type RemoteTypes = SampleTypes;
     type Transcoders = SampleTranscoders<NoTranscoder, NoTranscoder>;
     type Error = Refused;
 
-    fn local(&self, remote: &SampleTypes) -> Result<SampleTypes, Refused> {
+    fn local(&self, remote: &SampleTypes) -> Result<LocalTypes<SampleShape>, Refused> {
         match refuses(remote) {
             true => Err(Refused),
             false => Ok(remote.clone()),
         }
     }
 
-    fn remote(&self, local: &SampleTypes) -> Result<SampleTypes, Refused> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<SampleTypes, Refused> {
         match refuses(local) {
             true => Err(Refused),
             false => Ok(local.clone()),
         }
     }
 
-    fn transcoders(&self, _: &SampleTypes, _: &SampleTypes) -> Result<Self::Transcoders, Refused> {
+    fn transcoders(
+        &self,
+        _: &LocalTypes<SampleShape>,
+        _: &SampleTypes,
+    ) -> Result<Self::Transcoders, Refused> {
         Ok(SampleTranscoders::TranscodeNone)
     }
 }

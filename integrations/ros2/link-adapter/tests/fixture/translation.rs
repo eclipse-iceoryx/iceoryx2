@@ -13,7 +13,7 @@
 use iceoryx2_integrations_ros2_link_adapter::{
     MirroredHeader, PassthroughTranslator, PlainStructTranslator, TopicTypes,
 };
-use iceoryx2_link_adapter::Translator;
+use iceoryx2_link_adapter::{SampleShape, TranscodesSamples, Translator};
 use iceoryx2_link_conformance_tests::parameters::{
     FixedSizePayload, PayloadShape, PublishSubscribePayload,
 };
@@ -25,7 +25,7 @@ use super::payload::{SerializedString, UInt64};
 /// A translator under test with the payload and the ROS 2 message type it
 /// is tested with. A value of the payload converts to the message and back.
 pub trait TranslatorUnderTest {
-    type Translator: Translator<RemoteTypes = TopicTypes>;
+    type Translator: Translator<SampleShape, RemoteTypes = TopicTypes, Transcoders: TranscodesSamples>;
     type Payload: PublishSubscribePayload;
     type Message: RmwMessage
         + PartialEq

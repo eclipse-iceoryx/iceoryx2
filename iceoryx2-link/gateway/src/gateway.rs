@@ -21,18 +21,18 @@ use iceoryx2_link_backend::{Announcement, Backend, OnRemote, Reactive, WakeHandl
 use crate::relay::{self, Factory};
 use crate::resolver::Resolver;
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::Translator;
 use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
+use iceoryx2_link_adapter::{SampleShape, TranscodesSamples, Translator};
 use iceoryx2_link_backend::relay::UnsupportedRelay;
 
 /// A backend connecting `iceoryx2` to a middleware through an adapter,
 /// a mapping and a translator.
-pub struct Gateway<A, M: Mapping, T: Translator> {
+pub struct Gateway<A, M: Mapping, T: Translator<SampleShape>> {
     adapter: A,
     resolver: Resolver<M, T>,
 }
 
-impl<A, M: Mapping, T: Translator> Gateway<A, M, T> {
+impl<A, M: Mapping, T: Translator<SampleShape>> Gateway<A, M, T> {
     /// Creates a gateway over `adapter`, mapping with `mapping` and
     /// translating with `translator`.
     pub fn new(adapter: A, mapping: M, translator: T) -> Self {
@@ -50,7 +50,7 @@ impl<S, A, M, T> Backend<S> for Gateway<A, M, T>
 where
     S: Service,
     M: Mapping,
-    T: Translator,
+    T: Translator<SampleShape, Transcoders: TranscodesSamples>,
     A: Adapter<
             EndpointSettings = M::EndpointSettings,
             EndpointTypes = EndpointTypes<T::RemoteTypes>,
@@ -102,7 +102,7 @@ where
     }
 }
 
-impl<A: Adapter + Reactive, M: Mapping, T: Translator> Reactive for Gateway<A, M, T> {
+impl<A: Adapter + Reactive, M: Mapping, T: Translator<SampleShape>> Reactive for Gateway<A, M, T> {
     fn attach(&mut self, wake: WakeHandle) {
         self.adapter.attach(wake);
     }

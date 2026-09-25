@@ -15,7 +15,8 @@ use alloc::string::String;
 use core::convert::Infallible;
 
 use iceoryx2_link_adapter::{
-    Region, SampleBytesRef, SampleTranscoders, TranscodeError, Transcoder, Translator,
+    LocalTypes, Region, SampleBytesRef, SampleShape, SampleTranscoders, TranscodeError, Transcoder,
+    Translator,
 };
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
@@ -31,22 +32,22 @@ const WORD: usize = 8;
 #[derive(Debug, Default, Clone, Copy)]
 pub struct FakeSwapTranslator;
 
-impl Translator for FakeSwapTranslator {
+impl Translator<SampleShape> for FakeSwapTranslator {
     type RemoteTypes = SampleTypes;
     type Transcoders = SampleTranscoders<SwapHeader, SwapPayload>;
     type Error = Infallible;
 
-    fn local(&self, remote: &SampleTypes) -> Result<SampleTypes, Self::Error> {
+    fn local(&self, remote: &SampleTypes) -> Result<LocalTypes<SampleShape>, Self::Error> {
         Ok(map_types(remote, unswapped))
     }
 
-    fn remote(&self, local: &SampleTypes) -> Result<SampleTypes, Self::Error> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<SampleTypes, Self::Error> {
         Ok(map_types(local, swapped))
     }
 
     fn transcoders(
         &self,
-        _: &SampleTypes,
+        _: &LocalTypes<SampleShape>,
         _: &SampleTypes,
     ) -> Result<Self::Transcoders, Self::Error> {
         Ok(SampleTranscoders::TranscodeBoth(SwapHeader, SwapPayload))
