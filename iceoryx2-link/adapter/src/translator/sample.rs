@@ -13,7 +13,7 @@
 use iceoryx2_link_backend::service_description::SampleTypes;
 
 use super::{Shape, Transcoder};
-use crate::SampleBytesRef;
+use crate::{Never, SampleBytesRef};
 
 /// The shape of a sample with a header and a payload.
 #[derive(Debug, Clone, Copy)]
@@ -55,5 +55,14 @@ where
 
     fn for_samples(&self) -> &Self {
         self
+    }
+}
+
+impl TranscodesSamples for Never {
+    type HeaderTranscoder = Never;
+    type PayloadTranscoder = Never;
+
+    fn for_samples(&self) -> &SampleTranscoders<Never, Never> {
+        match *self {}
     }
 }

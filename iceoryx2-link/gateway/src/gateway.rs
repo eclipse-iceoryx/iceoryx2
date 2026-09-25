@@ -19,20 +19,20 @@ use iceoryx2_link_backend::service_description::Identified;
 use iceoryx2_link_backend::{Announcement, Backend, OnRemote, Reactive, WakeHandle};
 
 use crate::relay::{self, Factory};
-use crate::resolver::Resolver;
+use crate::resolver::{EndpointTypes, Resolver};
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
-use iceoryx2_link_adapter::{SampleShape, TranscodesSamples, Translator};
+use iceoryx2_link_adapter::Translators;
+use iceoryx2_link_adapter::{Adapter, EndpointDescription};
 use iceoryx2_link_backend::relay::UnsupportedRelay;
 
 /// A backend connecting `iceoryx2` to a middleware through an adapter,
 /// a mapping and a translator.
-pub struct Gateway<A, M: Mapping, T: Translator<SampleShape>> {
+pub struct Gateway<A, M: Mapping, T: Translators> {
     adapter: A,
     resolver: Resolver<M, T>,
 }
 
-impl<A, M: Mapping, T: Translator<SampleShape>> Gateway<A, M, T> {
+impl<A, M: Mapping, T: Translators> Gateway<A, M, T> {
     /// Creates a gateway over `adapter`, mapping with `mapping` and
     /// translating with `translator`.
     pub fn new(adapter: A, mapping: M, translator: T) -> Self {
@@ -50,24 +50,20 @@ impl<S, A, M, T> Backend<S> for Gateway<A, M, T>
 where
     S: Service,
     M: Mapping,
-    T: Translator<SampleShape, Transcoders: TranscodesSamples>,
-    A: Adapter<
-            EndpointSettings = M::EndpointSettings,
-            EndpointTypes = EndpointTypes<T::RemoteTypes>,
-        >,
+    T: Translators,
+    A: Adapter<EndpointSettings = M::EndpointSettings, EndpointTypes = EndpointTypes<T>>,
 {
     type ListError = A::ListError;
     type AnnouncementError = Infallible;
     type RemoteId = <M::EndpointSettings as Identified>::Id;
-    type RemoteDescription =
-        EndpointDescription<M::EndpointSettings, EndpointTypes<T::RemoteTypes>>;
+    type RemoteDescription = EndpointDescription<M::EndpointSettings, EndpointTypes<T>>;
     type Refusal = crate::resolver::Refusal<M::Error>;
     type Resolver<'a>
         = &'a Resolver<M, T>
     where
         Self: 'a;
     type PublishSubscribeRelay =
-        relay::publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T>;
+        relay::publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T::SampleTranslator>;
     type EventRelay = UnsupportedRelay<S>;
     type RelayFactory<'a>
         = Factory<'a, S, A, M, T>
@@ -102,7 +98,7 @@ where
     }
 }
 
-impl<A: Adapter + Reactive, M: Mapping, T: Translator<SampleShape>> Reactive for Gateway<A, M, T> {
+impl<A: Adapter + Reactive, M: Mapping, T: Translators> Reactive for Gateway<A, M, T> {
     fn attach(&mut self, wake: WakeHandle) {
         self.adapter.attach(wake);
     }

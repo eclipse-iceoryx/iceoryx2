@@ -12,9 +12,10 @@
 
 //! A [`Translator`] maps local types to a middleware's types and chooses
 //! the transcoders converting between the two forms, for data of one
-//! [`Shape`]. Samples have the [`SampleShape`], a header and a payload,
-//! and are converted by [`SampleTranscoders`], which name the regions that
-//! are transcoded and the transcoder of each:
+//! [`Shape`]. Samples have the [`SampleShape`], whose regions are a header
+//! and a payload, and are converted by [`SampleTranscoders`], which specifies
+//! which transcoders to use for each region. A region that is never transcoded
+//! has [`NoTranscoder`] as its transcoder:
 //!
 //! ```rust,ignore
 //! impl Translator<SampleShape> for MyTranslator {
@@ -44,9 +45,10 @@
 //! }
 //! ```
 //!
-//! A [`Transcoder`] converts the bytes of one region between local and
-//! middleware form. A translator that never transcodes a region names
-//! [`NoTranscoder`] as its transcoder:
+//! A middleware provides the [`Translators`] for the shapes it supports, with
+//! [`UnsupportedTranslator`] standing in for the shapes it does not carry.
+//! Each translator provides the [`Transcoder`]s for each region of the shape,
+//! which convert the bytes between the forms:
 //!
 //! ```rust,ignore
 //! impl<'a> Transcoder<SampleBytesRef<'a>> for MyPayloadTranscoder {
@@ -70,10 +72,12 @@
 mod passthrough;
 mod sample;
 mod transcoder;
+mod unsupported;
 
 pub use passthrough::Passthrough;
 pub use sample::{SampleShape, SampleTranscoders, TranscodesSamples};
 pub use transcoder::{NoTranscoder, TranscodeError, Transcoder};
+pub use unsupported::{UnsupportedShape, UnsupportedTranslator};
 
 use core::error::Error;
 
@@ -107,4 +111,20 @@ pub trait Translator<S: Shape> {
         local: &S::LocalTypes,
         remote: &Self::RemoteTypes,
     ) -> Result<Self::Transcoders, Self::Error>;
+}
+
+/// Defines the translators a specific middleware supports.
+pub trait Translators {
+    type SampleTranslator: Translator<SampleShape, Transcoders: TranscodesSamples>;
+
+    fn samples(&self) -> &Self::SampleTranslator;
+}
+
+/// A set of translators that supports sample translation.
+impl<T: Translator<SampleShape, Transcoders: TranscodesSamples>> Translators for T {
+    type SampleTranslator = T;
+
+    fn samples(&self) -> &T {
+        self
+    }
 }

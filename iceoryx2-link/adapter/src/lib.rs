@@ -130,5 +130,6 @@ pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;
 pub use translator::{
     LocalTypes, NoTranscoder, Passthrough, SampleShape, SampleTranscoders, Shape, TranscodeError,
-    Transcoder, TranscodesSamples, Translator,
+    Transcoder, TranscodesSamples, Translator, Translators, UnsupportedShape,
+    UnsupportedTranslator,
 };
