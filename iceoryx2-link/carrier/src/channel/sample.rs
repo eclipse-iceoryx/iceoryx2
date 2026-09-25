@@ -18,11 +18,10 @@ use iceoryx2_link_backend::wire::sample::SampleBytesRef;
 pub trait SampleChannel {
     type Error: Error;
 
-    /// Sends the bytes of one sample, header then payload, to every peer
-    /// connected to the channel.
+    /// Sends the bytes of one sample to every peer connected to the channel.
     fn send(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Error>;
 
-    /// The bytes of the next pending sample, header then payload, or
-    /// `None` if nothing is pending. Borrowed until the next call.
+    /// The concatenated bytes of the next pending sample, header then payload,
+    /// or `None` if nothing is pending.
     fn receive(&mut self) -> Result<Option<&[u8]>, Self::Error>;
 }

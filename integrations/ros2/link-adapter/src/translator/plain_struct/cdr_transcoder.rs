@@ -15,9 +15,7 @@ use std::rc::Rc;
 use core::alloc::Layout;
 use core::ffi::c_void;
 
-use iceoryx2_link_adapter::{
-    LoanableSample, PayloadTranscoder, Region, TranscodeError, WritableSample,
-};
+use iceoryx2_link_adapter::{Region, SampleBytesRef, TranscodeError, Transcoder};
 use iceoryx2_log::{fail, origin};
 use r2r_rcl::{
     RMW_RET_OK, rcutils_allocator_t, rcutils_get_default_allocator, rmw_deserialize, rmw_serialize,
@@ -52,17 +50,18 @@ pub struct CdrTranscoder {
     pub(super) layout: Layout,
 }
 
-impl PayloadTranscoder for CdrTranscoder {
-    type Failure = TranscodeFailure;
+impl<'a> Transcoder<SampleBytesRef<'a>> for CdrTranscoder {
+    type Error = TranscodeFailure;
 
     fn encode<R: Region>(
         &self,
-        payload: &[u8],
+        local: SampleBytesRef<'a>,
         into: &mut R,
-    ) -> Result<(), TranscodeError<Self::Failure>> {
+    ) -> Result<(), TranscodeError<Self::Error>> {
         let origin = origin!("CdrTranscoder::encode");
 
         // The payload is the C struct the rmw serializes from.
+        let payload = local.payload;
         if payload.len() != self.layout.size() {
             fail!(
                 from origin,
@@ -102,7 +101,7 @@ impl PayloadTranscoder for CdrTranscoder {
         fail!(
             from origin,
             when into.for_length(serialized.buffer_length),
-            to TranscodeError<Self::Failure>,
+            to TranscodeError<Self::Error>,
             "The payload region rejected the {} serialized bytes of type '{}'",
             serialized.buffer_length, self.type_name
         );
@@ -110,22 +109,22 @@ impl PayloadTranscoder for CdrTranscoder {
         Ok(())
     }
 
-    fn decode<L: LoanableSample>(
+    fn decode<R: Region>(
         &self,
-        wire: &[u8],
-        loanable: L,
-    ) -> Result<L::Sample, TranscodeError<Self::Failure>> {
+        wire: SampleBytesRef<'a>,
+        into: &mut R,
+    ) -> Result<(), TranscodeError<Self::Error>> {
         let origin = origin!("CdrTranscoder::decode");
 
-        // Loan a sample with the size and alignment of the C struct.
-        let mut sample = fail!(
+        // The region takes the size of the C struct.
+        let wire = wire.payload;
+        let destination = fail!(
             from origin,
-            when loanable.loan(self.layout.size()),
-            to TranscodeError<Self::Failure>,
-            "The sample rejected the {} bytes of type '{}'",
+            when into.for_length(self.layout.size()),
+            to TranscodeError<Self::Error>,
+            "The payload region rejected the {} bytes of type '{}'",
             self.layout.size(), self.type_name
         );
-        let destination = sample.payload();
         debug_assert!(
             (destination.as_ptr() as usize).is_multiple_of(self.layout.align()),
             "the payload must be aligned to the C struct"
@@ -153,7 +152,7 @@ impl PayloadTranscoder for CdrTranscoder {
             );
         }
 
-        Ok(sample)
+        Ok(())
     }
 }
 

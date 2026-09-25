@@ -15,7 +15,8 @@ use iceoryx2_log::{fail, origin};
 
 use crate::service_description::SampleTypes;
 use crate::wire::sample::{
-    Header, LoanError, LoanableSample, Payload, PayloadUninit, WritableSample, fits,
+    Header, LoanError, LoanableSample, Payload, PayloadUninit, SampleBytesRefMut, WritableSample,
+    fits,
 };
 
 pub type Sample<S> = iceoryx2::sample::Sample<S, Payload, Header>;
@@ -66,9 +67,9 @@ impl<'a, 'b, S: Service, E> UnloanedSample<'a, 'b, S, E> {
 }
 
 impl<S: Service, E> LoanableSample for UnloanedSample<'_, '_, S, E> {
-    type Sample = LoanedSample<S>;
+    type WritableSample = LoanedSample<S>;
 
-    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
         let origin = origin!("UnloanedSample::loan");
 
         let header_size = self.types.user_header.size;
@@ -119,13 +120,21 @@ impl<S: Service> LoanedSample<S> {
 }
 
 impl<S: Service> WritableSample for LoanedSample<S> {
-    fn header(&mut self) -> &mut [u8] {
+    fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
         // SAFETY: the header size for this service is provided by the
-        // services's own description.
-        unsafe { user_header_bytes_mut(&mut self.sample, self.header_size) }
-    }
+        // service's own description.
+        let header: *mut [u8] =
+            unsafe { user_header_bytes_mut(&mut self.sample, self.header_size) };
+        let payload: *mut [u8] = payload_bytes_mut(&mut self.sample);
 
-    fn payload(&mut self) -> &mut [u8] {
-        payload_bytes_mut(&mut self.sample)
+        // SAFETY: the header and the payload are disjoint regions of the
+        // sample, and the result borrows `self` for as long as they are held,
+        // so no other access to the sample can alias them.
+        unsafe {
+            SampleBytesRefMut {
+                header: &mut *header,
+                payload: &mut *payload,
+            }
+        }
     }
 }

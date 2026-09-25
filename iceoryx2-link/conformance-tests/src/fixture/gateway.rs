@@ -26,7 +26,7 @@ use crate::fixture::AdapterFixture;
 /// its services map to.
 pub trait GatewayFixture<S: Service>: AdapterFixture {
     type Mapping: Mapping<EndpointSettings = <Self::Adapter as Adapter>::EndpointSettings>;
-    type Translator: Translator<EndpointTypes = <Self::Adapter as Adapter>::EndpointTypes>;
+    type Translator: Translator<RemoteTypes = Self::SampleTypes>;
     /// Remote endpoints where a service maps to. A suite bounds them by
     /// what it needs of them.
     type RemoteEndpoints;

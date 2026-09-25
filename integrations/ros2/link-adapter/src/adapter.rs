@@ -13,7 +13,7 @@
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use iceoryx2_link_adapter::{Adapter, UnsupportedEndpoints};
+use iceoryx2_link_adapter::{Adapter, EndpointTypes, UnsupportedEndpoints};
 use iceoryx2_link_backend::{Reactive, WakeHandle};
 use iceoryx2_log::{fail, origin, warn};
 
@@ -122,7 +122,7 @@ impl Adapter for Ros2Adapter {
     type ListError = ListError;
     type OpenError = OpenError;
     type EndpointSettings = TopicSettings;
-    type EndpointTypes = TopicTypes;
+    type EndpointTypes = EndpointTypes<TopicTypes>;
     type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
@@ -184,9 +184,9 @@ impl Adapter for Ros2Adapter {
                     topic: topic.clone().into(),
                     qos: remote.qos.clone(),
                 },
-                types: TopicTypes {
+                types: EndpointTypes::PublishSubscribe(TopicTypes {
                     type_name: type_name.clone().into(),
-                },
+                }),
             });
         }
 
@@ -199,8 +199,16 @@ impl Adapter for Ros2Adapter {
     ) -> Result<Self::PublishSubscribeEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::publish_subscribe");
 
+        let EndpointTypes::PublishSubscribe(types) = &description.types else {
+            fail!(
+                from origin,
+                with OpenError::UnsupportedPattern,
+                "Topic '{}' is not a publish-subscribe endpoint", description.settings.topic.as_str()
+            );
+        };
+
         // Get the typesupport.
-        let type_name = description.types.type_name.as_str();
+        let type_name = types.type_name.as_str();
         let type_support = fail!(
             from origin,
             when typesupport::load(type_name),

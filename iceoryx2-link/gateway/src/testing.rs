@@ -23,10 +23,10 @@ use iceoryx2_link_backend::service_description::{
 
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
-    Adapter, EndpointDescription, LoanableSample, PublishSubscribeEndpoints, ReceiveOutcome,
-    TakeError, UnsupportedEndpoints,
+    Adapter, EndpointDescription, EndpointTypes, PublishSubscribeEndpoints, SampleBytesRef,
+    TakeDestination, TakeOutcome, UnsupportedEndpoints,
 };
-use iceoryx2_link_adapter::{NoTranscoder, PublishSubscribeTranslation, Translator};
+use iceoryx2_link_adapter::{NoTranscoder, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::Identified;
 use iceoryx2_link_backend::service_description::{
     PatternSettings, SampleTypes, ServiceSettings, ServiceTypes,
@@ -48,7 +48,8 @@ impl Identified for StubEndpointSettings {
     }
 }
 
-pub(crate) type StubEndpointDescription = EndpointDescription<StubEndpointSettings, ServiceTypes>;
+pub(crate) type StubEndpointDescription =
+    EndpointDescription<StubEndpointSettings, EndpointTypes<SampleTypes>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Refused;
@@ -196,38 +197,31 @@ impl Mapping for PartialMapping {
 /// in either direction.
 pub(crate) struct RefusingTranslator;
 
-fn refuses(types: &ServiceTypes) -> bool {
-    match types {
-        ServiceTypes::PublishSubscribe(types) => types.payload.type_name == "refused",
-        ServiceTypes::Event => false,
-    }
+fn refuses(types: &SampleTypes) -> bool {
+    types.payload.type_name == "refused"
 }
 
 impl Translator for RefusingTranslator {
-    type EndpointTypes = ServiceTypes;
+    type RemoteTypes = SampleTypes;
+    type Transcoders = SampleTranscoders<NoTranscoder, NoTranscoder>;
     type Error = Refused;
-    type Transcoder = NoTranscoder;
 
-    fn local(&self, remote: &ServiceTypes) -> Result<ServiceTypes, Refused> {
+    fn local(&self, remote: &SampleTypes) -> Result<SampleTypes, Refused> {
         match refuses(remote) {
             true => Err(Refused),
             false => Ok(remote.clone()),
         }
     }
 
-    fn remote(&self, local: &ServiceTypes) -> Result<ServiceTypes, Refused> {
+    fn remote(&self, local: &SampleTypes) -> Result<SampleTypes, Refused> {
         match refuses(local) {
             true => Err(Refused),
             false => Ok(local.clone()),
         }
     }
 
-    fn publish_subscribe(
-        &self,
-        _: &ServiceTypes,
-        _: &ServiceTypes,
-    ) -> Result<PublishSubscribeTranslation<NoTranscoder>, Refused> {
-        Ok(PublishSubscribeTranslation::Passthrough)
+    fn transcoders(&self, _: &SampleTypes, _: &SampleTypes) -> Result<Self::Transcoders, Refused> {
+        Ok(SampleTranscoders::TranscodeNone)
     }
 }
 
@@ -244,15 +238,12 @@ pub(crate) struct NoEndpoints;
 impl PublishSubscribeEndpoints for NoEndpoints {
     type Failure = core::fmt::Error;
 
-    fn publish(&mut self, _: &[u8], _: &[u8]) -> Result<(), Self::Failure> {
+    fn publish(&mut self, _: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
         Ok(())
     }
 
-    fn take<L: LoanableSample>(
-        &mut self,
-        _: L,
-    ) -> Result<ReceiveOutcome<L::Sample>, TakeError<Self::Failure>> {
-        Ok(ReceiveOutcome::Empty)
+    fn take<'a>(&mut self, _: impl TakeDestination<'a>) -> Result<TakeOutcome, Self::Failure> {
+        Ok(TakeOutcome::Empty)
     }
 }
 
@@ -260,7 +251,7 @@ impl Adapter for StubAdapter {
     type ListError = core::fmt::Error;
     type OpenError = core::fmt::Error;
     type EndpointSettings = StubEndpointSettings;
-    type EndpointTypes = ServiceTypes;
+    type EndpointTypes = EndpointTypes<SampleTypes>;
     type PublishSubscribeEndpoints = NoEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
@@ -299,17 +290,17 @@ pub(crate) fn settings(history_size: usize) -> PublishSubscribeSettings {
     settings
 }
 
-pub(crate) fn types_of(payload: &str) -> ServiceTypes {
+pub(crate) fn types_of(payload: &str) -> SampleTypes {
     let type_description = TypeDescription {
         variant: TypeVariant::FixedSize,
         type_name: String::from(payload),
         size: 8,
         alignment: 8,
     };
-    ServiceTypes::PublishSubscribe(SampleTypes {
+    SampleTypes {
         payload: type_description.clone(),
         user_header: type_description,
-    })
+    }
 }
 
 pub(crate) fn endpoint_of(
@@ -322,7 +313,7 @@ pub(crate) fn endpoint_of(
             name: ServiceName::new(name).expect("valid service name"),
             settings: settings(history_size),
         },
-        types: types_of(payload),
+        types: EndpointTypes::PublishSubscribe(types_of(payload)),
     }
 }
 
@@ -341,7 +332,7 @@ pub(crate) fn description_of(name: &str, history_size: usize, payload: &str) -> 
     let PatternSettings::PublishSubscribe(settings) = settings.pattern else {
         panic!("a publish-subscribe endpoint");
     };
-    let ServiceTypes::PublishSubscribe(types) = endpoint.types else {
+    let EndpointTypes::PublishSubscribe(types) = endpoint.types else {
         panic!("a publish-subscribe endpoint");
     };
     ServiceDescription::compose_publish_subscribe::<local::Service>(

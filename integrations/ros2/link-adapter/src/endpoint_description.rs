@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_adapter::EndpointDescription;
+use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::Identified;
 
 use crate::config::{TopicName, TypeName};
@@ -38,4 +38,4 @@ pub struct TopicTypes {
 }
 
 /// The description of a ROS 2 endpoint.
-pub type TopicDescription = EndpointDescription<TopicSettings, TopicTypes>;
+pub type TopicDescription = EndpointDescription<TopicSettings, EndpointTypes<TopicTypes>>;

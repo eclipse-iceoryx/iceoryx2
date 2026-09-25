@@ -10,9 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// The types used by the endpoint by messaging pattern.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EndpointTypes<SampleTypes> {
+    /// The sample type used by an endpoint for the publish-subscribe messaging
+    /// pattern.
+    PublishSubscribe(SampleTypes),
+    /// Events carry no types.
+    Event,
+}
+
 /// The middleware's description of an endpoint.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EndpointDescription<S, T> {
-    pub settings: S,
-    pub types: T,
+pub struct EndpointDescription<EndpointSettings, EndpointTypes> {
+    pub settings: EndpointSettings,
+    pub types: EndpointTypes,
 }

@@ -104,7 +104,7 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
     fn receive<L: LoanableSample>(
         &mut self,
         loanable: L,
-    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::WritableSample>, Self::ReceiveError> {
         let origin = origin!("Relay::receive");
 
         let bytes = fail!(
@@ -144,8 +144,9 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
                 );
             }
         };
-        writable.header().copy_from_slice(header);
-        writable.payload().copy_from_slice(payload);
+        let regions = writable.as_mut();
+        regions.header.copy_from_slice(header);
+        regions.payload.copy_from_slice(payload);
 
         Ok(ReceiveOutcome::Sample(writable))
     }
@@ -202,9 +203,9 @@ mod tests {
     struct Loanable;
 
     impl LoanableSample for Loanable {
-        type Sample = SampleBytes;
+        type WritableSample = SampleBytes;
 
-        fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+        fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
             Ok(SampleBytes {
                 header: alloc::vec![0; SIZE],
                 payload: alloc::vec![0; payload_len],
@@ -216,9 +217,9 @@ mod tests {
     struct Refusing(LoanError);
 
     impl LoanableSample for Refusing {
-        type Sample = SampleBytes;
+        type WritableSample = SampleBytes;
 
-        fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
+        fn loan(self, _: usize) -> Result<Self::WritableSample, LoanError> {
             Err(self.0)
         }
     }
@@ -267,8 +268,7 @@ mod tests {
 
         let refusal = relay
             .receive(Loanable)
-            .err()
-            .expect("the short bytes are refused");
+            .expect_err("the short bytes are refused");
         assert_that!(matches!(refusal, ReceiveError::Malformed), eq true);
 
         // The next sample is unaffected.
@@ -282,8 +282,7 @@ mod tests {
 
         let refusal = relay
             .receive(Refusing(LoanError::Malformed))
-            .err()
-            .expect("the sample is refused");
+            .expect_err("the sample is refused");
 
         assert_that!(matches!(refusal, ReceiveError::Malformed), eq true);
     }
@@ -294,8 +293,7 @@ mod tests {
 
         let refusal = relay
             .receive(Refusing(LoanError::Exhausted))
-            .err()
-            .expect("the sample is refused");
+            .expect_err("the sample is refused");
 
         assert_that!(matches!(refusal, ReceiveError::Loan), eq true);
     }

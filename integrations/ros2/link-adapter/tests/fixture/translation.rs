@@ -25,7 +25,7 @@ use super::payload::{SerializedString, UInt64};
 /// A translator under test with the payload and the ROS 2 message type it
 /// is tested with. A value of the payload converts to the message and back.
 pub trait TranslatorUnderTest {
-    type Translator: Translator<EndpointTypes = TopicTypes>;
+    type Translator: Translator<RemoteTypes = TopicTypes>;
     type Payload: PublishSubscribePayload;
     type Message: RmwMessage
         + PartialEq

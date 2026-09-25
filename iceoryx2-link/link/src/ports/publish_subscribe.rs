@@ -391,7 +391,10 @@ mod tests {
                 let mut loaned = unloaned
                     .loan(core::mem::size_of::<u64>())
                     .expect("one u64 fits");
-                loaned.payload().copy_from_slice(&INGESTED.to_ne_bytes());
+                loaned
+                    .as_mut()
+                    .payload
+                    .copy_from_slice(&INGESTED.to_ne_bytes());
                 Ok(ReceiveOutcome::Sample(loaned))
             })
             .expect("send succeeds");

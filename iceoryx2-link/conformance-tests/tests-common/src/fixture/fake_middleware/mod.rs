@@ -28,7 +28,7 @@ use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
 use iceoryx2_link_conformance_tests::parameters::FixedSizePayload;
 use iceoryx2_link_conformance_tests::testing::describe;
-use iceoryx2_link_testing::{FakeAdapter, FakeMapping, FakeMiddleware};
+use iceoryx2_link_testing::{FakeAdapter, FakeMapping, FakeMiddleware, FakeSampleTypes};
 
 /// A fake middleware whose data `T` translates, and its adapters
 /// and remote endpoints.
@@ -38,6 +38,7 @@ pub(crate) struct FakeMiddlewareFixture<T> {
 }
 
 impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
+    type SampleTypes = FakeSampleTypes;
     type Adapter = FakeAdapter;
     type RemoteEndpoints = RemoteMessageEndpoints;
 

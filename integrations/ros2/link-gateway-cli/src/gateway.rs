@@ -44,7 +44,7 @@ pub trait GatewayInstance {
 impl<M, T> GatewayInstance for Ros2Gateway<M, T>
 where
     M: Mapping<EndpointSettings = TopicSettings>,
-    T: Translator<EndpointTypes = TopicTypes>,
+    T: Translator<RemoteTypes = TopicTypes>,
 {
     fn node(&self) -> &Node<ipc::Service> {
         Link::node(self)
@@ -168,7 +168,7 @@ fn create<M, T>(
 ) -> anyhow::Result<Ros2Gateway<M, T>>
 where
     M: Mapping<EndpointSettings = TopicSettings>,
-    T: Translator<EndpointTypes = TopicTypes>,
+    T: Translator<RemoteTypes = TopicTypes>,
 {
     let node = fail!(
         from ORIGIN,

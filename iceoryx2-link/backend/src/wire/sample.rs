@@ -13,14 +13,15 @@
 //! Defines the state machine for loaning and populating a sample.
 //!
 //! ```text
-//!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   into_sample()
-//!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ the sample to send
-//!   │                  │                       │                  │
-//!   │  no memory yet   │                       │  header()        │
-//!   │                  │                       │  payload()       │
+//!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   as_mut()
+//!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ writable header and payload
+//!   │                  │                       │                  │   into_sample()
+//!   │  no memory yet   │                       │  a loan for the  │ ────────────────▶ convert into a sendable sample
+//!   │                  │                       │  payload length  │
 //!   └──────────────────┘                       └──────────────────┘
 //!            │                                          │
 //!            ▼ dropped                                  ▼ dropped
+//!
 //!       nothing loaned                          the loan is returned
 //! ```
 
@@ -86,7 +87,7 @@ impl SampleBytes {
 /// that can be populated.
 pub trait LoanableSample {
     /// The loaned sample with writable header and payload.
-    type Sample: WritableSample;
+    type WritableSample: WritableSample;
 
     /// Acquire a loan for the sample.
     ///
@@ -95,7 +96,7 @@ pub trait LoanableSample {
     /// * `Malformed` if no `payload_len` is an invalid length for a sample of
     ///   this service
     /// * `Exhausted` if no sample could be loaned
-    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError>;
+    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError>;
 }
 
 /// Why no sample was loaned.
@@ -118,22 +119,16 @@ impl core::fmt::Display for LoanError {
 
 impl core::error::Error for LoanError {}
 
-/// Provides the location to write a sample's header and payload.
+/// Provides the locations to write a sample's header and payload.
 pub trait WritableSample {
-    /// The location into which the header bytes should be written.
-    fn header(&mut self) -> &mut [u8];
-
-    /// The location into which the payload bytes should be written.
-    fn payload(&mut self) -> &mut [u8];
+    /// The locations into which the header and the payload bytes should
+    /// be written.
+    fn as_mut(&mut self) -> SampleBytesRefMut<'_>;
 }
 
 impl WritableSample for SampleBytes {
-    fn header(&mut self) -> &mut [u8] {
-        &mut self.header
-    }
-
-    fn payload(&mut self) -> &mut [u8] {
-        &mut self.payload
+    fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
+        SampleBytes::as_mut(self)
     }
 }
 

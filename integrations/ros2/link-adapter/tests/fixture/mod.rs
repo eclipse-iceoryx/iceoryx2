@@ -31,7 +31,7 @@ use iceoryx2_integrations_ros2_link_adapter::{
     TypeName,
 };
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::Translator;
+use iceoryx2_link_adapter::{EndpointTypes, Translator};
 use iceoryx2_link_backend::service_description::{PublishSubscribeSettings, ServiceDescription};
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
 use rosidl_runtime_rs::RmwMessage;
@@ -59,6 +59,7 @@ pub struct Ros2Fixture<M, T> {
 }
 
 impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture<M, T> {
+    type SampleTypes = TopicTypes;
     type Adapter = Ros2Adapter;
     type RemoteEndpoints = RclEndpoints<T>;
 
@@ -108,10 +109,10 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
                 topic,
                 qos: qos.clone(),
             },
-            types: TopicTypes {
+            types: EndpointTypes::PublishSubscribe(TopicTypes {
                 type_name: TypeName::new(<T::Message as RmwMessage>::TYPE_NAME)
                     .expect("a valid type name"),
-            },
+            }),
         };
         RclEndpoints::new(&self.peer, description, qos)
     }
@@ -139,9 +140,11 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
             .remote(service.settings())
             .expect("the mapping succeeds")
             .expect("the mapping covers the service");
-        let types = <Self as GatewayFixture<S>>::translator(self)
-            .remote(service.types())
-            .expect("the translator covers the service");
+        let types = EndpointTypes::PublishSubscribe(
+            <Self as GatewayFixture<S>>::translator(self)
+                .remote(service.types().publish_subscribe())
+                .expect("the translator covers the service"),
+        );
 
         let qos = settings.qos.clone();
         let endpoints = RclEndpoints::new(&self.peer, TopicDescription { settings, types }, qos);

@@ -9,103 +9,128 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-
-//! Decides which local types correspond to a middleware's types, and how
-//! the samples of a service are converted between the two forms, for
-//! each messaging pattern.
-//!
-//! The publish-subscribe translation is
-//! [`PublishSubscribeTranslation::Passthrough`] when the local form is
-//! already the middleware's. Otherwise it states for the header and for
-//! the payload, in each direction, whether the transcoder runs, and it
-//! provides the transcoder:
+//! A [`Translator`] maps local types to a middleware's types and chooses
+//! the transcoders converting samples between the two forms. The
+//! [`SampleTranscoders`] name the regions that are transcoded and the
+//! transcoder of each:
 //!
 //! ```rust,ignore
 //! impl Translator for MyTranslator {
-//!     type EndpointTypes = MyEndpointTypes;
+//!     type RemoteTypes = MyMiddlewareTypes;
+//!     type Transcoders = SampleTranscoders<NoTranscoder, MyPayloadTranscoder>;
 //!     type Error = MyError;
-//!     type Transcoder = SampleTranscoders<NoHeader, MyPayloadTranscoder>;
 //!
-//!     fn local(&self, remote: &MyEndpointTypes) -> Result<ServiceTypes, MyError> {
-//!         // The local types standing for the middleware's.
+//!     fn local(&self, remote: &MyMiddlewareTypes) -> Result<SampleTypes, MyError> {
+//!         // The local types corresponding to the given remote types.
 //!     }
 //!
-//!     fn remote(&self, local: &ServiceTypes) -> Result<MyEndpointTypes, MyError> {
-//!         // The middleware's types standing for the local ones.
+//!     fn remote(&self, local: &SampleTypes) -> Result<MyMiddlewareTypes, MyError> {
+//!         // The remote types corresponding to the local type stored in
+//!         // shared memory.
 //!     }
 //!
-//!     fn publish_subscribe(
+//!     fn transcoders(
 //!         &self,
-//!         local: &ServiceTypes,
-//!         remote: &MyEndpointTypes,
-//!     ) -> Result<PublishSubscribeTranslation<Self::Transcoder>, MyError> {
-//!         // The translation for a publish-subscribe service between the
-//!         // `ServiceTypes` shared by the local service and `EndpointTypes`
-//!         // communicated over the endpoint.
+//!         local: &SampleTypes,
+//!         remote: &MyMiddlewareTypes,
+//!     ) -> Result<Self::Transcoders, MyError> {
+//!         // Which regions are transcoded between the given pair of local
+//!         // and remote types, and by what. A region without a transcoder
+//!         // crosses unchanged.
+//!         Ok(SampleTranscoders::TranscodePayload(MyPayloadTranscoder))
 //!     }
 //! }
 //! ```
 //!
-//! A sample transcoder pairs a [`HeaderTranscoder`] with a
-//! [`PayloadTranscoder`] as [`SampleTranscoders`], one per region. A region's
-//! transcoder converts the bytes it is given into the region it is given.
-//! It first asks the region for the converted form's length, which the
-//! region may refuse, then writes:
+//! A [`Transcoder`] converts the bytes of one region between local and
+//! middleware form. A translator that never transcodes a region names
+//! [`NoTranscoder`] as its transcoder:
 //!
 //! ```rust,ignore
-//! impl PayloadTranscoder for MyPayloadTranscoder {
-//!     type Failure = MyError;
+//! impl<'a> Transcoder<SampleBytesRef<'a>> for MyPayloadTranscoder {
+//!     type Error = MyError;
 //!
-//!     fn encode<R: Region>(&self, payload: &[u8], into: &mut R) -> Result<(), TranscodeError<MyError>> {
-//!         // Resize the region to the length required for the wire form and
-//!         // write the payload in wire form.
+//!     fn encode<R: Region>(&self, local: SampleBytesRef<'a>, into: &mut R) -> Result<(), TranscodeError<MyError>> {
+//!         // Size the provided `into` region for the middleware form of the
+//!         // `local` payload and write it there.
 //!         //
-//!         // Wrap failures in TranscodeError::Transcoder.
+//!         // Return:
+//!         // * TranscodeError::Refused if `into` refuses the size
+//!         // * TranscodeError::Transcoder on the transcoder's own error
 //!     }
 //!
-//!     fn decode<L: LoanableSample>(&self, wire: &[u8], loanable: L) -> Result<L::Sample, TranscodeError<MyError>> {
-//!         // Loan for the local form's length, write the local form of the
-//!         // wire bytes into the sample's payload and return the sample.
-//!         //
-//!         // Wrap failures in TranscodeError::Transcoder.
+//!     fn decode<R: Region>(&self, wire: SampleBytesRef<'a>, into: &mut R) -> Result<(), TranscodeError<MyError>> {
+//!         // Same in the opposite direction.
 //!     }
 //! }
 //! ```
 
-mod publish_subscribe;
 mod transcoder;
 
-pub use publish_subscribe::PublishSubscribeTranslation;
-pub use transcoder::{
-    HeaderTranscoder, NoTranscoder, PayloadTranscoder, SampleTranscoder, SampleTranscoders,
-    SampleTranscodings, TranscodeError, Transcoding,
-};
+pub use transcoder::{NoTranscoder, TranscodeError, Transcoder};
 
+use core::convert::Infallible;
 use core::error::Error;
 
-use iceoryx2_link_backend::service_description::ServiceTypes;
+use iceoryx2_link_backend::service_description::SampleTypes;
 
-/// Decides which local types correspond to a middleware's types, and how
-/// the regions of a sample are converted between the two forms.
+use crate::SampleBytesRef;
+
+/// Decides which local types correspond to a middleware's remote types and
+/// how the bytes of a sample are converted between the two forms.
 pub trait Translator {
-    /// The middleware's types of an endpoint.
-    type EndpointTypes: Clone + PartialEq + 'static;
+    /// The middleware's types of a sample.
+    type RemoteTypes: Clone + PartialEq + 'static;
+    type Transcoders: TranscodesSamples;
     type Error: Error;
-    type Transcoder: SampleTranscoder;
 
-    /// The local types an endpoint's data has.
-    fn local(&self, remote: &Self::EndpointTypes) -> Result<ServiceTypes, Self::Error>;
+    /// The local types of the samples the middleware carries with `remote`.
+    fn local(&self, remote: &Self::RemoteTypes) -> Result<SampleTypes, Self::Error>;
 
-    /// The endpoint types a local service's data has.
-    fn remote(&self, local: &ServiceTypes) -> Result<Self::EndpointTypes, Self::Error>;
+    /// The middleware's types of the samples with the local types `local`.
+    fn remote(&self, local: &SampleTypes) -> Result<Self::RemoteTypes, Self::Error>;
 
-    /// The translation of a publish-subscribe service's samples between
-    /// the local types and the endpoint's types.
-    fn publish_subscribe(
+    /// The transcoders converting samples between `local` and `remote`.
+    fn transcoders(
         &self,
-        local: &ServiceTypes,
-        remote: &Self::EndpointTypes,
-    ) -> Result<PublishSubscribeTranslation<Self::Transcoder>, Self::Error>;
+        local: &SampleTypes,
+        remote: &Self::RemoteTypes,
+    ) -> Result<Self::Transcoders, Self::Error>;
+}
+
+/// Which regions of a sample are transcoded between the local and the
+/// middleware form, and the transcoder(s) used.
+#[derive(Debug)]
+pub enum SampleTranscoders<H, P> {
+    /// Both regions pass through unchanged.
+    TranscodeNone,
+    /// The header is transcoded, the payload passes through.
+    TranscodeHeader(H),
+    /// The payload is transcoded, the header passes through.
+    TranscodePayload(P),
+    /// Both regions are transcoded.
+    TranscodeBoth(H, P),
+}
+
+/// The transcoders of a sample.
+pub trait TranscodesSamples {
+    type HeaderTranscoder: for<'a> Transcoder<SampleBytesRef<'a>>;
+    type PayloadTranscoder: for<'a> Transcoder<SampleBytesRef<'a>>;
+
+    fn for_samples(&self) -> &SampleTranscoders<Self::HeaderTranscoder, Self::PayloadTranscoder>;
+}
+
+impl<H, P> TranscodesSamples for SampleTranscoders<H, P>
+where
+    H: for<'a> Transcoder<SampleBytesRef<'a>>,
+    P: for<'a> Transcoder<SampleBytesRef<'a>>,
+{
+    type HeaderTranscoder = H;
+    type PayloadTranscoder = P;
+
+    fn for_samples(&self) -> &Self {
+        self
+    }
 }
 
 /// The translator of a middleware whose data already has local types,
@@ -114,23 +139,23 @@ pub trait Translator {
 pub struct Passthrough;
 
 impl Translator for Passthrough {
-    type EndpointTypes = ServiceTypes;
-    type Error = core::convert::Infallible;
-    type Transcoder = NoTranscoder;
+    type RemoteTypes = SampleTypes;
+    type Transcoders = SampleTranscoders<NoTranscoder, NoTranscoder>;
+    type Error = Infallible;
 
-    fn local(&self, remote: &ServiceTypes) -> Result<ServiceTypes, Self::Error> {
+    fn local(&self, remote: &SampleTypes) -> Result<SampleTypes, Self::Error> {
         Ok(remote.clone())
     }
 
-    fn remote(&self, local: &ServiceTypes) -> Result<ServiceTypes, Self::Error> {
+    fn remote(&self, local: &SampleTypes) -> Result<SampleTypes, Self::Error> {
         Ok(local.clone())
     }
 
-    fn publish_subscribe(
+    fn transcoders(
         &self,
-        _: &ServiceTypes,
-        _: &ServiceTypes,
-    ) -> Result<PublishSubscribeTranslation<Self::Transcoder>, Self::Error> {
-        Ok(PublishSubscribeTranslation::Passthrough)
+        _: &SampleTypes,
+        _: &SampleTypes,
+    ) -> Result<Self::Transcoders, Self::Error> {
+        Ok(SampleTranscoders::TranscodeNone)
     }
 }

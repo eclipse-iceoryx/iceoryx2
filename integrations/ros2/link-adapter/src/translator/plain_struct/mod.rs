@@ -17,13 +17,11 @@ pub use cdr_transcoder::{CdrTranscoder, TranscodeFailure};
 use layout::layout_of;
 
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_link_adapter::{
-    PublishSubscribeTranslation, SampleTranscoders, SampleTranscodings, Transcoding, Translator,
-};
-use iceoryx2_link_backend::service_description::{SampleTypes, ServiceTypes, TypeDescription};
+use iceoryx2_link_adapter::{SampleTranscoders, Translator};
+use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
-use super::{MirroredHeader, NoHeader, TranslationError, inbound_header};
+use super::{EmptyHeader, MirroredHeader, TranslationError, mirrored_header};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
 use crate::typesupport;
@@ -43,11 +41,11 @@ pub struct PlainStructTranslator {
 }
 
 impl Translator for PlainStructTranslator {
-    type EndpointTypes = TopicTypes;
+    type RemoteTypes = TopicTypes;
+    type Transcoders = SampleTranscoders<EmptyHeader, CdrTranscoder>;
     type Error = TranslationError;
-    type Transcoder = SampleTranscoders<NoHeader, CdrTranscoder>;
 
-    fn local(&self, remote: &TopicTypes) -> Result<ServiceTypes, Self::Error> {
+    fn local(&self, remote: &TopicTypes) -> Result<SampleTypes, Self::Error> {
         let origin = origin!("PlainStructTranslator::local");
 
         let layout = fail!(
@@ -56,7 +54,7 @@ impl Translator for PlainStructTranslator {
             "Failed to lay out ROS 2 type '{}'", remote.type_name.as_str()
         );
 
-        Ok(ServiceTypes::PublishSubscribe(SampleTypes {
+        Ok(SampleTypes {
             payload: TypeDescription {
                 variant: TypeVariant::FixedSize,
                 type_name: remote.type_name.as_str().to_string(),
@@ -64,31 +62,28 @@ impl Translator for PlainStructTranslator {
                 alignment: layout.align(),
             },
             user_header: self.header.type_description(),
-        }))
+        })
     }
 
-    fn remote(&self, local: &ServiceTypes) -> Result<TopicTypes, Self::Error> {
+    fn remote(&self, local: &SampleTypes) -> Result<TopicTypes, Self::Error> {
         let origin = origin!("PlainStructTranslator::remote");
-        let types = local.publish_subscribe();
 
         let type_name = fail!(
             from origin,
-            when TypeName::new(&types.payload.type_name),
+            when TypeName::new(&local.payload.type_name),
             with TranslationError::InvalidTypeName,
-            "Payload type '{}' is not a ROS 2 type name", types.payload.type_name
+            "Payload type '{}' is not a ROS 2 type name", local.payload.type_name
         );
 
         Ok(TopicTypes { type_name })
     }
 
-    fn publish_subscribe(
+    fn transcoders(
         &self,
-        local: &ServiceTypes,
+        local: &SampleTypes,
         remote: &TopicTypes,
-    ) -> Result<PublishSubscribeTranslation<SampleTranscoders<NoHeader, CdrTranscoder>>, Self::Error>
-    {
-        let origin = origin!("PlainStructTranslator::translation");
-        let types = local.publish_subscribe();
+    ) -> Result<Self::Transcoders, Self::Error> {
+        let origin = origin!("PlainStructTranslator::transcoders");
 
         // The local payload must be the type's C struct.
         let type_name = remote.type_name.as_str();
@@ -97,15 +92,15 @@ impl Translator for PlainStructTranslator {
             when layout_of(type_name),
             "Failed to lay out ROS 2 type '{}'", type_name
         );
-        if types.payload.variant != TypeVariant::FixedSize
-            || types.payload.size != layout.size()
-            || types.payload.alignment != layout.align()
+        if local.payload.variant != TypeVariant::FixedSize
+            || local.payload.size != layout.size()
+            || local.payload.alignment != layout.align()
         {
             fail!(
                 from origin,
                 with TranslationError::LayoutMismatch,
                 "Payload '{}' ({} bytes, align {}) is not the C struct of ROS 2 type '{}' ({} bytes, align {})",
-                types.payload.type_name, types.payload.size, types.payload.alignment,
+                local.payload.type_name, local.payload.size, local.payload.alignment,
                 type_name, layout.size(), layout.align()
             );
         }
@@ -118,30 +113,21 @@ impl Translator for PlainStructTranslator {
             "Failed to load typesupport for type '{}'", type_name
         );
 
-        let inbound_header_transcoding = fail!(
+        let header = fail!(
             from origin,
-            when inbound_header(types),
-            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.type_name
+            when mirrored_header(local),
+            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.type_name
         );
 
-        // The payload is CDR on the wire in both directions, the outbound header is encoded to nothing.
-        Ok(PublishSubscribeTranslation::Transcode {
-            outbound: SampleTranscodings {
-                header: Transcoding::Transcode,
-                payload: Transcoding::Transcode,
-            },
-            inbound: SampleTranscodings {
-                header: inbound_header_transcoding,
-                payload: Transcoding::Transcode,
-            },
-            transcoder: SampleTranscoders {
-                headers: NoHeader,
-                payloads: CdrTranscoder {
-                    type_name: type_name.to_string(),
-                    type_support,
-                    layout,
-                },
-            },
+        // The payload is CDR on the wire in both directions.
+        let payload = CdrTranscoder {
+            type_name: type_name.to_string(),
+            type_support,
+            layout,
+        };
+        Ok(match header {
+            MirroredHeader::RosHeader => SampleTranscoders::TranscodePayload(payload),
+            MirroredHeader::None => SampleTranscoders::TranscodeBoth(EmptyHeader, payload),
         })
     }
 }

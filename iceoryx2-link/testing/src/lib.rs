@@ -18,7 +18,8 @@ mod adapter;
 mod carrier;
 
 pub use adapter::{
-    FakeAdapter, FakeEndpointDescription, FakeEndpointSettings, FakeEndpointTypes, FakeEndpoints,
-    FakeMapping, FakeMiddleware, FakeSwapTranslator, SwapTranscoder, endpoint_of, swapped_bytes,
+    FakeAdapter, FakeEndpointDescription, FakeEndpointSettings, FakeEndpoints, FakeMapping,
+    FakeMiddleware, FakeSampleTypes, FakeSwapTranslator, SwapHeader, SwapPayload, endpoint_of,
+    swapped_bytes,
 };
 pub use carrier::{Error, FakeBus, FakeCarrier, FakeEventChannel, FakeSampleChannel};

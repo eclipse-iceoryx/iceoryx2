@@ -28,8 +28,8 @@
 //!   service represents an endpoint. It may refuse either with a reason
 //!   of its own.
 //! * [`Translator`] decides which local types correspond to the
-//!   middleware's types, and whether the header and the payload of a
-//!   sample need converting on the way, and how.
+//!   middleware's types, and provides the transcoders that convert data
+//!   between the two forms.
 //!
 //! Every adapter guarantees two things.
 //!
@@ -47,7 +47,7 @@
 //!     type ListError = MyError;
 //!     type OpenError = MyError;
 //!     type EndpointSettings = MyEndpointSettings;
-//!     type EndpointTypes = MyEndpointTypes;
+//!     type EndpointTypes = EndpointTypes<MyMiddlewareTypes>;
 //!     type PublishSubscribeEndpoints = MyEndpoints;
 //!     type EventEndpoints = MyEventEndpoints;
 //!
@@ -117,9 +117,10 @@ pub mod translator;
 
 pub use adapter::Adapter;
 pub use endpoints::{
-    EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeDestination, TakeOutcome,
-    UnsupportedEndpoints,
+    EndpointDescription, EndpointTypes, EventEndpoints, PublishSubscribeEndpoints, TakeDestination,
+    TakeOutcome, UnsupportedEndpoints,
 };
+pub use iceoryx2_link_backend::Never;
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
 pub use iceoryx2_link_backend::wire::sample::{
     LoanError, LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
@@ -128,7 +129,6 @@ pub use iceoryx2_link_backend::wire::sample::{
 pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;
 pub use translator::{
-    HeaderTranscoder, NoTranscoder, Passthrough, PayloadTranscoder, PublishSubscribeTranslation,
-    SampleTranscoder, SampleTranscoders, SampleTranscodings, TranscodeError, Transcoding,
+    NoTranscoder, Passthrough, SampleTranscoders, TranscodeError, Transcoder, TranscodesSamples,
     Translator,
 };

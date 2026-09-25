@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_link_adapter::{SampleBytesRef, SampleLengths, TakeDestination, TakeOutcome};
-use iceoryx2_log::{fail, origin, warn};
+use iceoryx2_log::{fail, origin};
 
 use crate::rcl::subscription::TakeError as RclTakeError;
 use crate::rcl::{RclPublisher, RclSubscription};
@@ -53,18 +53,10 @@ impl PublishSubscribeEndpoints {
 impl iceoryx2_link_adapter::PublishSubscribeEndpoints for PublishSubscribeEndpoints {
     type Failure = PublishSubscribeEndpointsError;
 
-    /// Publishes the payload bytes of the provided sample. The header is not
-    /// published as ROS 2 cannot carry it.
+    /// Publishes the payload bytes of the provided sample. The header is
+    /// ignored as ROS 2 cannot carry it.
     fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
         let origin = origin!("PublishSubscribeEndpoints::publish");
-
-        if !sample.header.is_empty() {
-            warn!(
-                from origin,
-                "Received a header of {} bytes to publish. Publishing custom headers is unsupported by ROS 2 and should be handled in the translator. Dropping header.",
-                sample.header.len()
-            );
-        }
 
         fail!(
             from origin,

@@ -22,7 +22,7 @@ use crate::relay::{self, Factory};
 use crate::resolver::Resolver;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::Translator;
-use iceoryx2_link_adapter::{Adapter, EndpointDescription};
+use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::relay::UnsupportedRelay;
 
 /// A backend connecting `iceoryx2` to a middleware through an adapter,
@@ -51,19 +51,23 @@ where
     S: Service,
     M: Mapping,
     T: Translator,
-    A: Adapter<EndpointSettings = M::EndpointSettings, EndpointTypes = T::EndpointTypes>,
+    A: Adapter<
+            EndpointSettings = M::EndpointSettings,
+            EndpointTypes = EndpointTypes<T::RemoteTypes>,
+        >,
 {
     type ListError = A::ListError;
     type AnnouncementError = Infallible;
     type RemoteId = <M::EndpointSettings as Identified>::Id;
-    type RemoteDescription = EndpointDescription<M::EndpointSettings, T::EndpointTypes>;
+    type RemoteDescription =
+        EndpointDescription<M::EndpointSettings, EndpointTypes<T::RemoteTypes>>;
     type Refusal = crate::resolver::Refusal<M::Error>;
     type Resolver<'a>
         = &'a Resolver<M, T>
     where
         Self: 'a;
     type PublishSubscribeRelay =
-        relay::publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T::Transcoder>;
+        relay::publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T>;
     type EventRelay = UnsupportedRelay<S>;
     type RelayFactory<'a>
         = Factory<'a, S, A, M, T>

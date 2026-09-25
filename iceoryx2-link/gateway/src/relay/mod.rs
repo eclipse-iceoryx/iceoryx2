@@ -19,9 +19,9 @@ use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRelayBuilder};
 use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
 
-use iceoryx2_link_adapter::{Adapter, EndpointDescription};
-use iceoryx2_link_adapter::{Mapping, UnsupportedLength};
-use iceoryx2_link_adapter::{TranscodeError, Translator};
+use iceoryx2_link_adapter::Mapping;
+use iceoryx2_link_adapter::Translator;
+use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
 
 pub struct Factory<'a, S, A, M: Mapping, T: Translator> {
     pub(crate) adapter: &'a mut A,
@@ -34,11 +34,14 @@ where
     S: Service,
     M: Mapping,
     T: Translator,
-    A: Adapter<EndpointSettings = M::EndpointSettings, EndpointTypes = T::EndpointTypes>,
+    A: Adapter<
+            EndpointSettings = M::EndpointSettings,
+            EndpointTypes = EndpointTypes<T::RemoteTypes>,
+        >,
 {
-    type RemoteDescription = EndpointDescription<M::EndpointSettings, T::EndpointTypes>;
-    type PublishSubscribeRelay =
-        publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T::Transcoder>;
+    type RemoteDescription =
+        EndpointDescription<M::EndpointSettings, EndpointTypes<T::RemoteTypes>>;
+    type PublishSubscribeRelay = publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T>;
     type PublishSubscribeBuilder<'b>
         = publish_subscribe::Builder<'b, S, A, M, T>
     where
@@ -121,22 +124,6 @@ pub enum ReceiveError {
     Malformed,
     /// The local publisher could not provide a sample.
     Loan,
-}
-
-impl From<UnsupportedLength> for ReceiveError {
-    fn from(_: UnsupportedLength) -> Self {
-        ReceiveError::Malformed
-    }
-}
-
-impl<TranscoderError> From<TranscodeError<TranscoderError>> for ReceiveError {
-    fn from(error: TranscodeError<TranscoderError>) -> Self {
-        match error {
-            TranscodeError::Malformed => ReceiveError::Malformed,
-            TranscodeError::Exhausted => ReceiveError::Loan,
-            TranscodeError::Transcoder(_) => ReceiveError::Transcode,
-        }
-    }
 }
 
 impl core::fmt::Display for ReceiveError {

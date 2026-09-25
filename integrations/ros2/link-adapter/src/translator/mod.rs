@@ -22,10 +22,10 @@ pub mod plain_struct;
 pub use passthrough::PassthroughTranslator;
 pub use plain_struct::{CdrTranscoder, PlainStructTranslator, TranscodeFailure};
 
+use core::convert::Infallible;
+
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_link_adapter::{
-    HeaderTranscoder, Region, TranscodeError, Transcoding, WritableSample,
-};
+use iceoryx2_link_adapter::{Region, SampleBytesRef, TranscodeError, Transcoder};
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
@@ -39,6 +39,46 @@ pub enum MirroredHeader {
     None,
     /// The [`RosHeader`] holding the message info.
     RosHeader,
+}
+
+/// The header transcoder of a service without a user header. ROS 2
+/// carries no header, so both directions transcode to nothing.
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+pub struct EmptyHeader;
+
+impl<'a> Transcoder<SampleBytesRef<'a>> for EmptyHeader {
+    type Error = Infallible;
+
+    fn encode<R: Region>(
+        &self,
+        _: SampleBytesRef<'a>,
+        into: &mut R,
+    ) -> Result<(), TranscodeError<Self::Error>> {
+        let origin = origin!("EmptyHeader::encode");
+
+        empty_header(origin, into)
+    }
+
+    fn decode<R: Region>(
+        &self,
+        _: SampleBytesRef<'a>,
+        into: &mut R,
+    ) -> Result<(), TranscodeError<Self::Error>> {
+        let origin = origin!("EmptyHeader::decode");
+
+        empty_header(origin, into)
+    }
+}
+
+/// Transcodes a header to nothing.
+fn empty_header<R: Region>(origin: &str, into: &mut R) -> Result<(), TranscodeError<Infallible>> {
+    fail!(
+        from origin,
+        when into.for_length(0),
+        to TranscodeError<Infallible>,
+        "The header region rejected a length of 0"
+    );
+    Ok(())
 }
 
 impl MirroredHeader {
@@ -76,16 +116,14 @@ impl core::fmt::Display for TranslationError {
 
 impl core::error::Error for TranslationError {}
 
-/// How the inbound header reaches a local service of `types`. The
-/// [`RosHeader`] is taken as is since it is byte-accurate, no header is
-/// transcoded to nothing, any other header is unsupported.
-fn inbound_header(types: &SampleTypes) -> Result<Transcoding, TranslationError> {
-    let origin = origin!("inbound_header");
+/// The header of a local service of `types`.
+fn mirrored_header(types: &SampleTypes) -> Result<MirroredHeader, TranslationError> {
+    let origin = origin!("mirrored_header");
 
     if types.user_header == TypeDescription::from(&RosHeader::type_detail()) {
-        Ok(Transcoding::Passthrough)
+        Ok(MirroredHeader::RosHeader)
     } else if types.user_header.size == 0 {
-        Ok(Transcoding::Transcode)
+        Ok(MirroredHeader::None)
     } else {
         fail!(
             from origin,
@@ -93,57 +131,4 @@ fn inbound_header(types: &SampleTypes) -> Result<Transcoding, TranslationError> 
             "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.type_name
         );
     }
-}
-
-/// The header transcoder of ROS 2. Transcodes to nothing in both direction as
-/// ROS 2 carries no header.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct NoHeader;
-
-impl HeaderTranscoder for NoHeader {
-    type Failure = core::convert::Infallible;
-
-    fn encode<R: Region>(
-        &self,
-        _: &[u8],
-        into: &mut R,
-    ) -> Result<(), TranscodeError<Self::Failure>> {
-        let origin = origin!("NoHeader::encode");
-
-        fail!(
-            from origin,
-            when no_header(into),
-            "The header region rejected a length of 0"
-        );
-        Ok(())
-    }
-
-    fn decode<W: WritableSample>(
-        &self,
-        _: &[u8],
-        into: &mut W,
-    ) -> Result<(), TranscodeError<Self::Failure>> {
-        let origin = origin!("NoHeader::decode");
-
-        fail!(
-            from origin,
-            when into.header(0),
-            to TranscodeError<Self::Failure>,
-            "The sample's header rejected a length of 0"
-        );
-        Ok(())
-    }
-}
-
-/// Transcodes a header to nothing.
-fn no_header<R: Region, F>(into: &mut R) -> Result<(), TranscodeError<F>> {
-    let origin = origin!("no_header");
-
-    fail!(
-        from origin,
-        when into.for_length(0),
-        to TranscodeError<F>,
-        "The header region rejected a length of 0"
-    );
-    Ok(())
 }

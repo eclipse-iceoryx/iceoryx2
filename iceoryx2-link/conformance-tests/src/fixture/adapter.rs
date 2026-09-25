@@ -16,16 +16,18 @@ use core::time::Duration;
 
 use iceoryx2::config::Config;
 use iceoryx2::testing::generate_isolated_config;
-use iceoryx2_link_adapter::{Adapter, EndpointDescription};
+use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
 
 /// One middleware, the adapters on it, and the remote endpoints on it.
 pub trait AdapterFixture {
-    type Adapter: Adapter;
+    /// The middleware's types of a sample.
+    type SampleTypes: Clone + PartialEq + 'static;
+    type Adapter: Adapter<EndpointTypes = EndpointTypes<Self::SampleTypes>>;
     /// Remote endpoints of the middleware, speaking its messages, bytes
     /// in its form.
     type RemoteEndpoints: MessageEndpoints<
             <Self::Adapter as Adapter>::EndpointSettings,
-            <Self::Adapter as Adapter>::EndpointTypes,
+            EndpointTypes<Self::SampleTypes>,
         >;
 
     /// A fresh, isolated middleware.

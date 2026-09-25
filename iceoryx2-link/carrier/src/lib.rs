@@ -71,12 +71,14 @@
 //!     type Error = MyError;
 //!
 //!     fn send(&mut self, sample: SampleBytesRef<'_>) -> Result<(), MyError> {
-//!         // Send the header then the payload to other peers who have the
-//!         // channel open, in whatever form the transport uses.
+//!         // Send the header and payload bytes in order to other peers who
+//!         // have the channel open, in whatever form the transport uses.
 //!     }
 //!
 //!     fn receive(&mut self) -> Result<Option<&[u8]>, MyError> {
-//!         // The bytes of the next pending sample, header then payload.
+//!         // Provide received header a payload bytes, provided concatenated
+//!         // and in order.
+//!         //
 //!         // Return None if nothing is pending.
 //!     }
 //! }

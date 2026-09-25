@@ -10,14 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_link_adapter::{
-    NoTranscoder, PublishSubscribeTranslation, SampleTranscoders, SampleTranscodings, Transcoding,
-    Translator,
-};
-use iceoryx2_link_backend::service_description::{SampleTypes, ServiceTypes, TypeDescription};
+
+use iceoryx2_link_adapter::{NoTranscoder, SampleTranscoders, Translator};
+use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
-use super::{MirroredHeader, NoHeader, TranslationError, inbound_header};
+use super::{EmptyHeader, MirroredHeader, TranslationError, mirrored_header};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
 
@@ -34,91 +32,72 @@ pub struct PassthroughTranslator {
 }
 
 impl Translator for PassthroughTranslator {
-    type EndpointTypes = TopicTypes;
+    type RemoteTypes = TopicTypes;
+    type Transcoders = SampleTranscoders<EmptyHeader, NoTranscoder>;
     type Error = TranslationError;
-    type Transcoder = SampleTranscoders<NoHeader, NoTranscoder>;
 
-    fn local(&self, remote: &TopicTypes) -> Result<ServiceTypes, TranslationError> {
-        Ok(ServiceTypes::PublishSubscribe(SampleTypes {
+    fn local(&self, remote: &TopicTypes) -> Result<SampleTypes, TranslationError> {
+        Ok(SampleTypes {
             payload: cdr_payload_type(remote.type_name.as_str()),
             user_header: self.header.type_description(),
-        }))
+        })
     }
 
-    fn remote(&self, local: &ServiceTypes) -> Result<TopicTypes, TranslationError> {
+    fn remote(&self, local: &SampleTypes) -> Result<TopicTypes, TranslationError> {
         let origin = origin!("PassthroughTranslator::remote");
-
-        let types = local.publish_subscribe();
 
         // The payload's type name must be a ROS 2 message type.
         let type_name = fail!(
             from origin,
-            when TypeName::new(&types.payload.type_name),
+            when TypeName::new(&local.payload.type_name),
             with TranslationError::InvalidTypeName,
-            "Payload type '{}' is not a ROS 2 type name", types.payload.type_name
+            "Payload type '{}' is not a ROS 2 type name", local.payload.type_name
         );
 
         // The payload must be a byte slice under that name, not a struct.
-        if types.payload != cdr_payload_type(type_name.as_str()) {
+        if local.payload != cdr_payload_type(type_name.as_str()) {
             fail!(
                 from origin,
                 with TranslationError::LayoutMismatch,
                 "Payload '{}' ({:?}, {} bytes, align {}) is not the byte slice carrying the CDR of ROS 2 type '{}'",
-                types.payload.type_name, types.payload.variant, types.payload.size,
-                types.payload.alignment, type_name.as_str()
+                local.payload.type_name, local.payload.variant, local.payload.size,
+                local.payload.alignment, type_name.as_str()
             );
         }
 
         Ok(TopicTypes { type_name })
     }
 
-    fn publish_subscribe(
+    fn transcoders(
         &self,
-        local: &ServiceTypes,
+        local: &SampleTypes,
         remote: &TopicTypes,
-    ) -> Result<
-        PublishSubscribeTranslation<SampleTranscoders<NoHeader, NoTranscoder>>,
-        TranslationError,
-    > {
-        let origin = origin!("PassthroughTranslator::translation");
-
-        let types = local.publish_subscribe();
+    ) -> Result<Self::Transcoders, TranslationError> {
+        let origin = origin!("PassthroughTranslator::transcoders");
 
         // The payload must be the byte slice with topic's message type name.
-        if types.payload != cdr_payload_type(remote.type_name.as_str()) {
+        if local.payload != cdr_payload_type(remote.type_name.as_str()) {
             fail!(
                 from origin,
                 with TranslationError::LayoutMismatch,
                 "Payload '{}' is not the byte slice carrying the CDR of ROS 2 type '{}'",
-                types.payload.type_name, remote.type_name.as_str()
+                local.payload.type_name, remote.type_name.as_str()
             );
         }
 
-        // If the service declares its header to be a `RosHeader`, populate
-        // it. Otherwise, the `NoHeader` transcoder is used, which discards
-        // the incoming header details.
-        //
-        // Other header types are unsupported.
-        let inbound_header_transcoding = fail!(
+        // The header the service declares decides whether the taken
+        // message info is kept or dropped. Other header types are
+        // unsupported.
+        let header = fail!(
             from origin,
-            when inbound_header(types),
-            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.type_name
+            when mirrored_header(local),
+            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.type_name
         );
 
-        // The payload passes through, the outbound header is dropped.
-        Ok(PublishSubscribeTranslation::Transcode {
-            outbound: SampleTranscodings {
-                header: Transcoding::Transcode,
-                payload: Transcoding::Passthrough,
-            },
-            inbound: SampleTranscodings {
-                header: inbound_header_transcoding,
-                payload: Transcoding::Passthrough,
-            },
-            transcoder: SampleTranscoders {
-                headers: NoHeader,
-                payloads: NoTranscoder,
-            },
+        // The payload passes through.
+        Ok(match header {
+            MirroredHeader::RosHeader => SampleTranscoders::TranscodeNone,
+            MirroredHeader::None => SampleTranscoders::TranscodeHeader(EmptyHeader),
         })
     }
 }
@@ -150,11 +129,11 @@ mod tests {
         }
     }
 
-    fn service(payload: TypeDescription, user_header: TypeDescription) -> ServiceTypes {
-        ServiceTypes::PublishSubscribe(SampleTypes {
+    fn sample(payload: TypeDescription, user_header: TypeDescription) -> SampleTypes {
+        SampleTypes {
             payload,
             user_header,
-        })
+        }
     }
 
     fn ros_header() -> TypeDescription {
@@ -171,7 +150,7 @@ mod tests {
 
         let local = sut.local(&topic());
 
-        assert_that!(local, eq Ok(service(cdr_payload_type(TYPE_NAME), no_user_header())));
+        assert_that!(local, eq Ok(sample(cdr_payload_type(TYPE_NAME), no_user_header())));
     }
 
     #[test]
@@ -182,14 +161,14 @@ mod tests {
 
         let local = sut.local(&topic());
 
-        assert_that!(local, eq Ok(service(cdr_payload_type(TYPE_NAME), ros_header())));
+        assert_that!(local, eq Ok(sample(cdr_payload_type(TYPE_NAME), ros_header())));
     }
 
     #[test]
     fn a_byte_slice_named_as_a_ros_type_maps_to_its_topic() {
         let sut = PassthroughTranslator::default();
 
-        let remote = sut.remote(&service(cdr_payload_type(TYPE_NAME), no_user_header()));
+        let remote = sut.remote(&sample(cdr_payload_type(TYPE_NAME), no_user_header()));
 
         assert_that!(remote, eq Ok(topic()));
     }
@@ -201,49 +180,34 @@ mod tests {
         let mut named = payload.clone();
         named.type_name = TYPE_NAME.to_string();
 
-        let remote = sut.remote(&service(named, no_user_header()));
+        let remote = sut.remote(&sample(named, no_user_header()));
 
         assert_that!(remote, eq Err(TranslationError::LayoutMismatch));
     }
 
     #[test]
-    fn the_payload_passes_through_and_the_header_is_encoded_to_nothing() {
+    fn a_service_with_the_ros_header_passes_through() {
         let sut = PassthroughTranslator::default();
 
-        let translation = sut
-            .publish_subscribe(
-                &service(cdr_payload_type(TYPE_NAME), ros_header()),
-                &topic(),
-            )
+        let transcoders = sut
+            .transcoders(&sample(cdr_payload_type(TYPE_NAME), ros_header()), &topic())
             .expect("the service translates");
 
-        let PublishSubscribeTranslation::Transcode {
-            outbound, inbound, ..
-        } = translation
-        else {
-            panic!("the header is transcoded");
-        };
-        assert_that!(outbound.header, eq Transcoding::Transcode);
-        assert_that!(outbound.payload, eq Transcoding::Passthrough);
-        assert_that!(inbound.header, eq Transcoding::Passthrough);
-        assert_that!(inbound.payload, eq Transcoding::Passthrough);
+        assert_that!(matches!(transcoders, SampleTranscoders::TranscodeNone), eq true);
     }
 
     #[test]
-    fn a_service_without_a_header_has_it_transcoded_to_nothing_inbound() {
+    fn a_service_without_a_header_has_it_transcoded_to_nothing() {
         let sut = PassthroughTranslator::default();
 
-        let translation = sut
-            .publish_subscribe(
-                &service(cdr_payload_type(TYPE_NAME), no_user_header()),
+        let transcoders = sut
+            .transcoders(
+                &sample(cdr_payload_type(TYPE_NAME), no_user_header()),
                 &topic(),
             )
             .expect("the service translates");
 
-        let PublishSubscribeTranslation::Transcode { inbound, .. } = translation else {
-            panic!("the header is transcoded");
-        };
-        assert_that!(inbound.header, eq Transcoding::Transcode);
+        assert_that!(matches!(transcoders, SampleTranscoders::TranscodeHeader(EmptyHeader)), eq true);
     }
 
     #[test]
@@ -251,12 +215,11 @@ mod tests {
         let sut = PassthroughTranslator::default();
         let header = TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize));
 
-        let translation =
-            sut.publish_subscribe(&service(cdr_payload_type(TYPE_NAME), header), &topic());
+        let transcoders = sut.transcoders(&sample(cdr_payload_type(TYPE_NAME), header), &topic());
 
-        assert_that!(translation.is_err(), eq true);
+        assert_that!(transcoders.is_err(), eq true);
         assert_that!(
-            translation.err(),
+            transcoders.err(),
             eq Some(TranslationError::UnsupportedHeader)
         );
     }

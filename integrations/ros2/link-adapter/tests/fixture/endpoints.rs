@@ -20,7 +20,7 @@ use iceoryx2_integrations_ros2_link_adapter::testing::{
 use iceoryx2_integrations_ros2_link_adapter::{
     QosProfile, TopicDescription, TopicSettings, TopicTypes,
 };
-use iceoryx2_link_adapter::EndpointDescription;
+use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{
     DiscoverableEndpoints, MessageEndpoints, PayloadEndpoints,
@@ -46,6 +46,9 @@ pub struct RclEndpoints<T> {
 impl<T> RclEndpoints<T> {
     pub(super) fn new(peer: &PeerNode, description: TopicDescription, qos: QosProfile) -> Self {
         let EndpointDescription { settings, types } = &description;
+        let EndpointTypes::PublishSubscribe(types) = types else {
+            panic!("the fixture opens publish-subscribe endpoints only");
+        };
 
         let publisher = peer.publisher(&settings.topic, &types.type_name, qos.clone());
         let subscription = peer.subscription(&settings.topic, &types.type_name, qos);
@@ -59,7 +62,9 @@ impl<T> RclEndpoints<T> {
     }
 }
 
-impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, TopicTypes> for RclEndpoints<T> {
+impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, EndpointTypes<TopicTypes>>
+    for RclEndpoints<T>
+{
     type Value = <T::Payload as PayloadShape>::Value;
 
     fn description(&self) -> &TopicDescription {

@@ -13,24 +13,30 @@
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use iceoryx2_link_adapter::EndpointDescription;
+use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceTypes};
 use iceoryx2_link_conformance_tests::fixture::{
     DiscoverableEndpoints, MessageEndpoints, PayloadEndpoints, SampleEndpoints,
 };
 use iceoryx2_link_testing::{
-    FakeEndpointDescription, FakeEndpointSettings, FakeEndpointTypes, FakeEndpoints,
-    FakeMiddleware, endpoint_of,
+    FakeEndpointDescription, FakeEndpointSettings, FakeEndpoints, FakeMiddleware, FakeSampleTypes,
+    endpoint_of,
 };
 
 use super::wire_form::{Header, Payload, WireForm};
 
 /// The endpoint `service` maps to.
 pub(crate) fn endpoint_for<T: WireForm>(service: &ServiceDescription) -> FakeEndpointDescription {
+    let types = match service.types() {
+        ServiceTypes::PublishSubscribe(types) => EndpointTypes::PublishSubscribe(
+            T::default()
+                .remote(types)
+                .expect("the fake translators never fail"),
+        ),
+        ServiceTypes::Event => EndpointTypes::Event,
+    };
     EndpointDescription {
-        types: T::default()
-            .remote(service.types())
-            .expect("the fake translators never fail"),
+        types,
         ..endpoint_of(service)
     }
 }
@@ -61,7 +67,9 @@ pub(crate) struct RemoteMessageEndpoints {
 }
 
 /// The fake middleware carries any bytes so a message is its own value.
-impl MessageEndpoints<FakeEndpointSettings, FakeEndpointTypes> for RemoteMessageEndpoints {
+impl MessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+    for RemoteMessageEndpoints
+{
     type Value = Vec<u8>;
 
     fn description(&self) -> &FakeEndpointDescription {
