@@ -16,17 +16,17 @@
 //! bytes unmodified.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_publisher
+//! cargo run --manifest-path integrations/ros2/Cargo.toml --example passthrough_prefix_mapping_publisher
 //! # in other shells:
-//! #   cargo run --bin iox2-link-gateway-ros2 -- --ros-header
+//! #   cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --ros-header
 //! #   ros2 topic echo /chatter
 //! ```
 
 use core::time::Duration;
 
 use cdr::{CdrLe, Infinite};
-use demo_nodes_iceoryx2::StdMsgStringByte;
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_examples::passthrough_translator::StdMsgStringByte;
 use iceoryx2_integrations_ros2_interop::RosHeader;
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic

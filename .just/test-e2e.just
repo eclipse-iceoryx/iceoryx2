@@ -53,6 +53,7 @@ _test-e2e-integrations-ros2:
     export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
     just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_DIR}}/link-gateway-cli"
+    just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_DIR}}/examples"
 
 [private]
 _test-e2e-integrations-ros2-examples:

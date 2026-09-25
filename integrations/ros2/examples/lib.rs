@@ -9,3 +9,6 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
+pub mod passthrough_translator;
+pub mod plain_struct_translator;

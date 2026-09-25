@@ -3,6 +3,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "examples",
     "interop",
     "link-adapter",
     "link-gateway-cli",
@@ -46,6 +47,7 @@ iceoryx2-link-backend = { version = "0.10.999", path = "../../iceoryx2-link/back
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }
+cdr = { version = "0.2.4" }
 clap = { version = "4.6.1", features = ["derive"] }
 getrandom = { version = "0.4" }
 human-panic = { version = "2.0.5" }

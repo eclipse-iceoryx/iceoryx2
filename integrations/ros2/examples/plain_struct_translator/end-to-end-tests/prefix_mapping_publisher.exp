@@ -22,6 +22,8 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-link-gateway-ros2 2>@1
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    -p iceoryx2-integrations-ros2-examples --examples 2>@1
 
 #### Test
 
@@ -29,36 +31,35 @@ set timeout 30
 
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-link-gateway-ros2 -- \
-    --allow /cmd_vel \
-    --translator PlainStruct --ros-header --monitor
+    --bin iox2-link-gateway-ros2 -- --translator PlainStruct --ros-header --monitor
 set id_gateway $spawn_id
 drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
 
 expect_output_from $id_gateway "Gateway started"
 
-spawn ros2 run demo_nodes_iceoryx2 \
-    prefix_mapping_plain_struct_translator_subscriber
-set id_subscriber $spawn_id
-
-spawn ros2 topic pub -r 5 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    --example plain_struct_prefix_mapping_publisher
 set id_publisher $spawn_id
 
 expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"ros2://topics/cmd_vel\""
+
+spawn ros2 topic echo /cmd_vel
+set id_echo $spawn_id
+
 expect_output_from $id_gateway "Relayed PublishSubscribe bridge of \"ros2://topics/cmd_vel\""
 
 #### Test Assertion
 
-expect_output_from $id_subscriber "x: 0.5"
+expect_output_from $id_echo "x: 0.5"
 
 #### Shutdown
 
+send -i $id_echo $SIGINT
+expect -i $id_echo eof
+
 send -i $id_publisher $SIGINT
 expect -i $id_publisher eof
-
-send -i $id_subscriber $SIGINT
-expect -i $id_subscriber eof
 
 send -i $id_gateway $SIGINT
 expect_output_from $id_gateway "Gateway stopped"

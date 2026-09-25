@@ -80,3 +80,10 @@ just test integrations-ros2
 just test-e2e integrations-ros2
 just test-e2e integrations-ros2-examples
 ```
+
+## Examples
+
+* [`examples`](examples/README.md) shows how to propagate services to and from
+  ROS 2 via a gateway.
+* [`colcon/examples`](colcon/examples/README.md) shows how to build `iceoryx2`
+  applications using colcon.

@@ -16,21 +16,21 @@
 //! bytes unmodified.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_publisher
+//! cargo run --manifest-path integrations/ros2/Cargo.toml --example passthrough_static_mapping_publisher
 //! # in other shells:
-//! #   cargo run --bin iox2-link-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml --ros-header
+//! #   cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --static-mapping integrations/ros2/examples/passthrough_translator/static_mapping.toml --ros-header
 //! #   ros2 topic echo /chatter
 //! ```
 
 use core::time::Duration;
 
 use cdr::{CdrLe, Infinite};
-use demo_nodes_iceoryx2::StdMsgStringByte;
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_examples::passthrough_translator::StdMsgStringByte;
 use iceoryx2_integrations_ros2_interop::RosHeader;
 
 /// The iceoryx2 service paired with the ROS 2 topic `/chatter` in
-/// `static_mapping_chatter.toml`.
+/// `static_mapping.toml`.
 const SERVICE_NAME: &str = "Chatter";
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
