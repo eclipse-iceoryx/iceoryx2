@@ -103,7 +103,7 @@ impl core::error::Error for UniqueIdGeneratorDetailsError {}
 pub trait UniqueIdGenerator {
     /// Generates a [`UniqueId`] for a specific [`service::Service`].
     fn generate<Service: service::Service>(
-        entity: Entity,
+        entity: &Entity,
         config: &Config,
     ) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;
 
@@ -125,6 +125,8 @@ pub trait UniqueIdGenerator {
 }
 
 /// Identifies the kind of entity for which a unique ID can be generated.
+#[repr(C)]
+#[derive(Debug, PartialEq, Eq, Clone, ZeroCopySend)]
 pub enum Entity {
     /// Identifies a [`Node`](crate::node::Node)
     Node(NodeName),

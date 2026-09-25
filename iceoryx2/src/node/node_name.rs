@@ -13,6 +13,8 @@
 use alloc::format;
 
 use iceoryx2_bb_container::{semantic_string::SemanticStringError, string::*};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 use crate::constants::MAX_NODE_NAME_LENGTH;
@@ -22,7 +24,8 @@ use serde::{Deserialize, Serialize, de::Visitor};
 type NodeNameString = StaticString<MAX_NODE_NAME_LENGTH>;
 
 /// Represent the name for a [`crate::node::Node`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+#[repr(C)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default, ZeroCopySend)]
 pub struct NodeName {
     value: NodeNameString,
 }

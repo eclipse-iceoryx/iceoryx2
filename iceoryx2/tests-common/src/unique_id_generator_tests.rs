@@ -35,7 +35,7 @@ impl TestUniqueId {
 }
 impl UniqueIdGenerator for TestUniqueId {
     fn generate<Service: service::Service>(
-        _entity: Entity,
+        _entity: &Entity,
         _config: &Config,
     ) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
         Ok(unsafe { UniqueId::from_raw_id((TestUniqueId::new().value() as u128) << 64) })
@@ -52,7 +52,7 @@ fn unique_id_can_be_created_from_value() {
 #[test]
 fn pid_returns_error_when_not_implemented() {
     let config = Config::global_config();
-    let id = TestUniqueId::generate::<ipc::Service>(Entity::Client(PortName::new_empty()), config)
+    let id = TestUniqueId::generate::<ipc::Service>(&Entity::Client(PortName::new_empty()), config)
         .unwrap();
     let pid = TestUniqueId::pid(id);
     assert_that!(pid, is_err);
@@ -62,7 +62,7 @@ fn pid_returns_error_when_not_implemented() {
 #[test]
 fn creation_time_returns_error_when_not_implemented() {
     let config = Config::global_config();
-    let id = TestUniqueId::generate::<ipc::Service>(Entity::Client(PortName::new_empty()), config)
+    let id = TestUniqueId::generate::<ipc::Service>(&Entity::Client(PortName::new_empty()), config)
         .unwrap();
     let time = TestUniqueId::creation_time(id);
     assert_that!(time, is_err);

@@ -55,7 +55,7 @@ macro_rules! generate_id {
                 config: &Config
             ) -> Result<Self, UniqueIdGeneratorGenerateError> {
                 let id = fail!(from format!("{}::new()", stringify!($id_name)),
-                    when Service::UniqueId::generate::<Service>(Entity::$entity(name), config),
+                    when Service::UniqueId::generate::<Service>(&Entity::$entity(name), config),
                     with UniqueIdGeneratorGenerateError::GenerationError,
                     ": Unable to generate required {}.", stringify!($id_name));
                 Ok(Self(id))
@@ -185,7 +185,7 @@ impl UniqueServiceId {
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_publish_subscribe_service()",
-            when Service::UniqueId::generate::<Service>(Entity::PubSubService(*name), config),
+            when Service::UniqueId::generate::<Service>(&Entity::PubSubService(*name), config),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -198,7 +198,7 @@ impl UniqueServiceId {
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_request_response_service()",
-            when Service::UniqueId::generate::<Service>(Entity::ReqResService(*name), config),
+            when Service::UniqueId::generate::<Service>(&Entity::ReqResService(*name), config),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -211,7 +211,7 @@ impl UniqueServiceId {
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_event_service()",
-            when Service::UniqueId::generate::<Service>(Entity::EventService(*name), config),
+            when Service::UniqueId::generate::<Service>(&Entity::EventService(*name), config),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -224,7 +224,7 @@ impl UniqueServiceId {
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_blackboard_service()",
-            when Service::UniqueId::generate::<Service>(Entity::BlackboardService(*name), config),
+            when Service::UniqueId::generate::<Service>(&Entity::BlackboardService(*name), config),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -266,7 +266,7 @@ impl UniqueNodeId {
         config: &Config,
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(from "UniqueNodeId::new()",
-                when Service::UniqueId::generate::<Service>(Entity::Node(name), config),
+                when Service::UniqueId::generate::<Service>(&Entity::Node(name), config),
                 with UniqueIdGeneratorGenerateError::GenerationError,
                 "Unable to generate required UniqueNodeId.");
         Ok(Self(id))
