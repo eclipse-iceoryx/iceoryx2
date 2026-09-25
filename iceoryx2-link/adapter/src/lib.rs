@@ -28,8 +28,8 @@
 //!   service represents an endpoint. It may refuse either with a reason
 //!   of its own.
 //! * [`Translator`] decides which local types correspond to the
-//!   middleware's types, and whether the header and the payload of a
-//!   sample need converting on the way, and how.
+//!   middleware's types, and provides the transcoders that convert data
+//!   between the two forms.
 //!
 //! Every adapter guarantees two things.
 //!
@@ -47,7 +47,7 @@
 //!     type ListError = MyError;
 //!     type OpenError = MyError;
 //!     type EndpointSettings = MyEndpointSettings;
-//!     type EndpointTypes = MyEndpointTypes;
+//!     type EndpointTypes = EndpointTypes<MyMiddlewareTypes>;
 //!     type PublishSubscribeEndpoints = MyEndpoints;
 //!     type EventEndpoints = MyEventEndpoints;
 //!
@@ -72,24 +72,24 @@
 //! impl PublishSubscribeEndpoints for MyEndpoints {
 //!     type Failure = MyError;
 //!
-//!     fn publish(&mut self, header: &[u8], payload: &[u8]) -> Result<(), MyError> {
-//!         // Publish `header` and `payload` bytes in middleware form to all
+//!     fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), MyError> {
+//!         // Publish the header and payload bytes in middleware form to all
 //!         // remote endpoints.
 //!     }
 //!
-//!     fn take<L: LoanableSample>(&mut self, loanable: L) -> Result<ReceiveOutcome<L::Sample>, TakeError<MyError>> {
-//!         // Acquire a loan for the size of the incoming payload, then write
-//!         // the header and payload bytes in wire form into the provided
-//!         // regions. The bytes are translated automatically if configured.
+//!     fn take<'a>(&mut self, destination: impl TakeDestination<'a>) -> Result<TakeOutcome, MyError> {
+//!         // Acquire buffers for the required header and payload size from
+//!         // the provided `destination` and write their bytes in wire form
+//!         // into them.
 //!
 //!         // Return:
-//!         // * ReceiveOutcome::Sample with the written sample
-//!         // * ReceiveOutcome::Skipped for a message taken but skipped,
+//!         // * TakeOutcome::Taken if taken bytes are written to the
+//!         //   destination
+//!         // * TakeOutcome::Declined if the locations were declined and drop
+//!         //   the message
+//!         // * TakeOutcome::Skipped for a message taken but skipped,
 //!         //   such as one the endpoints published themselves
-//!         // * ReceiveOutcome::Empty if nothing is pending
-//!         // * If the loan refuses the size, drop the incoming bytes and
-//!         //   return the error provided
-//!         // * TakeError::Endpoints wrapping the endpoints' own errors
+//!         // * TakeOutcome::Empty if nothing is pending
 //!     }
 //! }
 //!
@@ -117,16 +117,19 @@ pub mod translator;
 
 pub use adapter::Adapter;
 pub use endpoints::{
-    EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, TakeError, UnsupportedEndpoints,
+    EndpointDescription, EndpointTypes, EventEndpoints, PublishSubscribeEndpoints, TakeDestination,
+    TakeOutcome, UnsupportedEndpoints,
 };
+pub use iceoryx2_link_backend::Never;
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
 pub use iceoryx2_link_backend::wire::sample::{
-    LoanError, LoanableSample, WritableSample, WriteError,
+    LoanError, LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
+    WritableSample,
 };
 pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;
 pub use translator::{
-    HeaderTranscoder, NoTranscoder, Passthrough, PayloadTranscoder, PublishSubscribeTranslation,
-    SampleTranscoder, SampleTranscoders, SampleTranscodings, TranscodeError, Transcoding,
-    Translator,
+    LocalTypes, NoTranscoder, Passthrough, SampleShape, SampleTranscoders, Shape, TranscodeError,
+    Transcoder, TranscodesSamples, Translator, Translators, UnsupportedShape,
+    UnsupportedTranslator,
 };

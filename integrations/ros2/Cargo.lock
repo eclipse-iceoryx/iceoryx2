@@ -27,6 +27,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ament_rs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68248386ad9d8f95d809309d97ae10ae5984818a563b30c13c9b44aa41f439da"
+dependencies = [
+ "itertools 0.14.0",
+ "walkdir",
+]
+
+[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -115,26 +125,6 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.71.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f58bf3d7db68cfbac37cfc485a8d711e87e064c3d0fe0435b92f7a407f9d6b3"
-dependencies = [
- "bitflags",
- "cexpr",
- "clang-sys",
- "itertools",
- "log",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex 1.3.0",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
@@ -142,7 +132,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "itertools",
+ "itertools 0.13.0",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -173,9 +163,9 @@ dependencies = [
 
 [[package]]
 name = "camino"
-version = "1.2.4"
+version = "1.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f2d30e4173c4026932d51d31d6b0613b1fd3014bf3f9f8943d4ba139c437ba0"
+checksum = "bbbad30e4b4c14a39e3cc8aed085a12a327257c316619c93581e017bc52be591"
 dependencies = [
  "serde_core",
 ]
@@ -201,6 +191,16 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "cargo_toml"
+version = "0.22.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374b7c592d9c00c1f4972ea58390ac6b18cbb6ab79011f3bdc90a0b82ca06b77"
+dependencies = [
+ "serde",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
@@ -241,9 +241,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.6.4"
+version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d91e0c145792ef73a6ad36d27c75ac09f1832222a3c209689d90f534685ee5b7"
+checksum = "aa8876b300ab35ba921adea3dfd70157a46249b33f95c9084ae5709785478946"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -251,9 +251,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.6.2"
+version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f09628afdcc538b57f3c6341e9c8e9970f18e4a481690a64974d7023bd33548b"
+checksum = "ec0797fb7aeb1406c84efac526901f7ec3ead2124f946b494e72879d4b54704d"
 dependencies = [
  "anstream",
  "anstyle",
@@ -263,21 +263,21 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.6.4"
+version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d012d2b9d65aca7f18f4d9878a045bc17899bba951561ba5ec3c2ba1eed9a061"
+checksum = "f9c751b79415d4e559e3d1fcf128e09e720eb673a06d26cf6f392d37d75b66e0"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn 3.0.3",
+ "syn 3.0.6",
 ]
 
 [[package]]
 name = "clap_lex"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
+checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
 name = "cobs"
@@ -513,7 +513,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "sysinfo",
- "toml 1.1.2+spec-1.1.0",
+ "toml 1.1.6+spec-1.1.0",
  "uuid",
 ]
 
@@ -702,6 +702,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-testing-macros"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2-bb-testing",
+ "iceoryx2-pal-print",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "iceoryx2-cal"
 version = "0.10.999"
 dependencies = [
@@ -754,46 +765,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-gateway"
+name = "iceoryx2-integrations-ros2-interop"
 version = "0.10.999"
 dependencies = [
  "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-gateway-backend",
- "iceoryx2-log",
- "iceoryx2-services-discovery",
 ]
 
 [[package]]
-name = "iceoryx2-gateway-backend"
+name = "iceoryx2-integrations-ros2-link-adapter"
 version = "0.10.999"
 dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "postcard",
- "serde",
-]
-
-[[package]]
-name = "iceoryx2-integrations-ros2-gateway-backend"
-version = "0.10.999"
-dependencies = [
- "getrandom",
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-testing",
- "iceoryx2-gateway",
- "iceoryx2-gateway-backend",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-integrations-ros2-interop",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-conformance-tests",
  "iceoryx2-log",
  "libloading",
  "r2r_rcl",
+ "ros-env",
+ "rosidl_runtime_rs",
  "serde",
  "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
-name = "iceoryx2-integrations-ros2-gateway-cli"
+name = "iceoryx2-integrations-ros2-link-gateway-cli"
 version = "0.10.999"
 dependencies = [
  "anyhow",
@@ -802,18 +802,95 @@ dependencies = [
  "human-panic",
  "iceoryx2",
  "iceoryx2-cli",
- "iceoryx2-gateway",
- "iceoryx2-gateway-backend",
- "iceoryx2-integrations-ros2-gateway-backend",
+ "iceoryx2-integrations-ros2-link-adapter",
+ "iceoryx2-link",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-gateway",
  "iceoryx2-log",
  "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
-name = "iceoryx2-integrations-ros2-interop"
+name = "iceoryx2-link"
 version = "0.10.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-adapter"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+]
+
+[[package]]
+name = "iceoryx2-link-backend"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-log",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-link-carrier"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-conformance-tests"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-link",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-link-gateway",
+ "iceoryx2-link-tunnel",
+]
+
+[[package]]
+name = "iceoryx2-link-gateway"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-link-tunnel"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-carrier",
+ "iceoryx2-log",
 ]
 
 [[package]]
@@ -840,7 +917,7 @@ version = "0.10.999"
 name = "iceoryx2-pal-os-api"
 version = "0.10.999"
 dependencies = [
- "bindgen 0.72.1",
+ "bindgen",
  "cc",
  "iceoryx2-pal-posix",
  "libc",
@@ -850,7 +927,7 @@ dependencies = [
 name = "iceoryx2-pal-posix"
 version = "0.10.999"
 dependencies = [
- "bindgen 0.72.1",
+ "bindgen",
  "cc",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
@@ -903,9 +980,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.14.0"
+version = "2.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
+checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown",
@@ -931,6 +1008,15 @@ name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -1136,11 +1222,11 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "r2r_common"
-version = "0.9.5"
+version = "0.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9838c2f88c9fd088f188eadbf9459371b1e576affd7b2df04c45cd1e44b79b99"
+checksum = "786a8b50036ed5d38a1dfbee73c711e270acd9a518b73351c66d541c1fa05422"
 dependencies = [
- "bindgen 0.71.1",
+ "bindgen",
  "os_str_bytes",
  "regex",
  "sha2",
@@ -1148,11 +1234,11 @@ dependencies = [
 
 [[package]]
 name = "r2r_rcl"
-version = "0.9.5"
+version = "0.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e5c208b2fbe64a00a42a70391f708298b6765769d39987286f4b7c82539561e"
+checksum = "7c0420d9ea790fe2b4f66f7a88c8a7901491075d2fed4037010b03173392a22a"
 dependencies = [
- "bindgen 0.71.1",
+ "bindgen",
  "paste",
  "r2r_common",
  "widestring",
@@ -1201,6 +1287,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ros-env"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b978241754c741234ae2b3e24076d8e599b7433deec3cdcc186b17a90a4166f"
+dependencies = [
+ "ament_rs",
+ "cargo_toml",
+ "rosidl_runtime_rs",
+]
+
+[[package]]
+name = "rosidl_runtime_rs"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76f1c3a806380f367275768d7fcd71a19d74af71183e304ca96264043399a544"
+dependencies = [
+ "cfg-if",
+ "rustflags",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1222,10 +1329,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustix"
-version = "1.1.4"
+name = "rustflags"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
+checksum = "a39e0e9135d7a7208ee80aa4e3e4b88f0f5ad7be92153ed70686c38a03db2e63"
+
+[[package]]
+name = "rustix"
+version = "1.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "891efababe418670775f199f0d233d84843c227a0949a883ce15b37c78d6629d"
 dependencies = [
  "bitflags",
  "errno",
@@ -1245,6 +1358,15 @@ name = "ryu"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
+
+[[package]]
+name = "same-file"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
+dependencies = [
+ "winapi-util",
+]
 
 [[package]]
 name = "semver"
@@ -1356,9 +1478,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "3.0.3"
+version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3"
+checksum = "8593e8e72159ed2257d083c7a454a85cbf854f37a0966d8d483aff8c8a3ebcee"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1454,6 +1576,7 @@ version = "0.9.12+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf92845e79fc2e2def6a5d828f0801e29a2f8acc037becc5ab08595c7d5e9863"
 dependencies = [
+ "indexmap",
  "serde_core",
  "serde_spanned",
  "toml_datetime 0.7.5+spec-1.1.0",
@@ -1464,9 +1587,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "1.1.2+spec-1.1.0"
+version = "1.1.6+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81f3d15e84cbcd896376e6730314d59fb5a87f31e4b038454184435cd57defee"
+checksum = "920602543f0911ab71da12c50d59701da54c196d1a2bf5cb4b75667f137a406a"
 dependencies = [
  "serde_core",
  "serde_spanned",
@@ -1503,9 +1626,9 @@ dependencies = [
 
 [[package]]
 name = "toml_writer"
-version = "1.1.1+spec-1.1.0"
+version = "1.1.2+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
+checksum = "7d56353a2a665ad0f41a421187180aab746c8c325620617ad883a99a1cbe66d2"
 
 [[package]]
 name = "typenum"
@@ -1533,9 +1656,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.24.0"
+version = "1.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf3923a6f5c4c6382e0b653c4117f48d631ea17f38ed86e2a828e6f7412f5239"
+checksum = "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce"
 dependencies = [
  "getrandom",
 ]
@@ -1545,6 +1668,16 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "walkdir"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b"
+dependencies = [
+ "same-file",
+ "winapi-util",
+]
 
 [[package]]
 name = "widestring"
@@ -1567,6 +1700,15 @@ name = "winapi-i686-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
+
+[[package]]
+name = "winapi-util"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
+dependencies = [
+ "windows-sys 0.61.2",
+]
 
 [[package]]
 name = "winapi-x86_64-pc-windows-gnu"
@@ -1846,9 +1988,9 @@ checksum = "0592e1c9d151f854e6fd382574c3a0855250e1d9b2f99d9281c6e6391af352f1"
 
 [[package]]
 name = "yaml_serde"
-version = "0.10.4"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08c7c1b1a6a7c8a6b2741a6c21a4f8918e51899b111cfa08d1288202656e3975"
+checksum = "33b729a08a9a6be689bbad3e2bf8015926db54b6622cc89c3a5f7dc174b9e918"
 dependencies = [
  "indexmap",
  "itoa",

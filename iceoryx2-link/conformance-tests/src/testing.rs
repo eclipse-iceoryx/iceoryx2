@@ -35,7 +35,7 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
-use iceoryx2_link_adapter::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
+use iceoryx2_link_adapter::{LoanError, LoanableSample, SampleBytes};
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
     TypeDescription,
@@ -131,25 +131,6 @@ pub fn event_descriptor(name: &str) -> ServiceDescriptor {
     }
 }
 
-/// A descriptor of the service `name` with `payload` as its payload type
-/// and a user header of `header_size` bytes.
-pub fn descriptor_with_header(name: &str, payload: &str, header_size: usize) -> ServiceDescriptor {
-    let ServiceTypes::PublishSubscribe(mut types) = types_of(payload) else {
-        unreachable!("types_of describes a publish-subscribe service");
-    };
-    types.user_header = TypeDescription {
-        variant: TypeVariant::FixedSize,
-        type_name: String::from("header"),
-        size: header_size,
-        alignment: 1,
-    };
-    ServiceDescriptor {
-        name: ServiceName::new(name).expect("valid service name"),
-        hash: hash(name),
-        types: ServiceTypes::PublishSubscribe(types),
-    }
-}
-
 /// A link filter rejecting only the service `name`, and whether it has
 /// rejected it yet, so a scenario knows the link got as far as deciding.
 pub fn rejecting(name: ServiceName) -> (impl Fn(&ServiceName) -> bool + 'static, Rc<Cell<bool>>) {
@@ -175,10 +156,11 @@ pub struct Side<S: Service, B: Backend<S>> {
     pub link: Link<S, B>,
 }
 
-/// A fresh side, its link over the backend `backend` builds for its
-/// configuration.
-pub fn side<S: Service, B: Backend<S>>(backend: impl FnOnce(&Config) -> B) -> Side<S, B> {
-    let config = generate_isolated_config();
+/// Creates one side of a link using the provided config.
+pub fn side<S: Service, B: Backend<S>>(
+    config: Config,
+    backend: impl FnOnce(&Config) -> B,
+) -> Side<S, B> {
     let node = NodeBuilder::new()
         .config(&config)
         .create::<S>()
@@ -302,15 +284,12 @@ pub struct UnloanedBuffers {
 }
 
 impl LoanableSample for UnloanedBuffers {
-    type Sample = LoanedBuffers;
+    type WritableSample = SampleBytes;
+    type InitializedSample = SampleBytes;
 
-    fn header_size(&self) -> usize {
-        self.header_size
-    }
-
-    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
-        Ok(LoanedBuffers {
-            header: Vec::new(),
+    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
+        Ok(SampleBytes {
+            header: vec![0; self.header_size],
             payload: vec![0; payload_len],
         })
     }
@@ -320,29 +299,10 @@ impl LoanableSample for UnloanedBuffers {
 pub struct NotLoanable;
 
 impl LoanableSample for NotLoanable {
-    type Sample = LoanedBuffers;
+    type WritableSample = SampleBytes;
+    type InitializedSample = SampleBytes;
 
-    fn header_size(&self) -> usize {
-        0
-    }
-
-    fn loan(self, _: usize) -> Result<Self::Sample, LoanError> {
+    fn loan(self, _: usize) -> Result<Self::WritableSample, LoanError> {
         Err(LoanError::Malformed)
-    }
-}
-
-/// The heap buffers a writer wrote, to compare against what was sent.
-pub struct LoanedBuffers {
-    pub header: Vec<u8>,
-    pub payload: Vec<u8>,
-}
-
-impl WritableSample for LoanedBuffers {
-    fn payload(&mut self) -> &mut [u8] {
-        &mut self.payload
-    }
-
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        self.header.for_length(len)
     }
 }

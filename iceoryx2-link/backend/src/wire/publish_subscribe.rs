@@ -14,9 +14,9 @@ use iceoryx2::service::Service;
 use iceoryx2_log::{fail, origin};
 
 use crate::service_description::SampleTypes;
-use crate::wire::UnsupportedLength;
 use crate::wire::sample::{
-    Header, LoanError, LoanableSample, Payload, PayloadUninit, WritableSample, fits,
+    Header, LoanError, LoanableSample, Payload, PayloadUninit, SampleBytesRefMut, WritableSample,
+    fits,
 };
 
 pub type Sample<S> = iceoryx2::sample::Sample<S, Payload, Header>;
@@ -67,13 +67,10 @@ impl<'a, 'b, S: Service, E> UnloanedSample<'a, 'b, S, E> {
 }
 
 impl<S: Service, E> LoanableSample for UnloanedSample<'_, '_, S, E> {
-    type Sample = LoanedSample<S>;
+    type WritableSample = LoanedSample<S>;
+    type InitializedSample = SampleMut<S>;
 
-    fn header_size(&self) -> usize {
-        self.types.user_header.size
-    }
-
-    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError> {
+    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
         let origin = origin!("UnloanedSample::loan");
 
         let header_size = self.types.user_header.size;
@@ -117,29 +114,29 @@ pub struct LoanedSample<S: Service> {
     sample: SampleMutUninit<S>,
 }
 
-impl<S: Service> LoanedSample<S> {
-    pub fn into_sample(self) -> SampleMutUninit<S> {
-        self.sample
-    }
-}
-
 impl<S: Service> WritableSample for LoanedSample<S> {
-    fn payload(&mut self) -> &mut [u8] {
-        payload_bytes_mut(&mut self.sample)
+    type InitializedSample = SampleMut<S>;
+
+    fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
+        // SAFETY: the header size for this service is provided by the
+        // service's own description.
+        let header: *mut [u8] =
+            unsafe { user_header_bytes_mut(&mut self.sample, self.header_size) };
+        let payload: *mut [u8] = payload_bytes_mut(&mut self.sample);
+
+        // SAFETY: the header and the payload are disjoint regions of the
+        // sample, and the result borrows `self` for as long as they are held,
+        // so no other access to the sample can alias them.
+        unsafe {
+            SampleBytesRefMut {
+                header: &mut *header,
+                payload: &mut *payload,
+            }
+        }
     }
 
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        let origin = origin!("LoanedSample::header");
-
-        if len != self.header_size {
-            fail!(
-                from origin,
-                with UnsupportedLength,
-                "A header of {} bytes does not fit the service description", len
-            );
-        }
-        // SAFETY: the header size is the service's, as its description
-        // states.
-        Ok(unsafe { user_header_bytes_mut(&mut self.sample, len) })
+    unsafe fn assume_init(self) -> SampleMut<S> {
+        // SAFETY: the caller wrote the header and the payload.
+        unsafe { self.sample.assume_init() }
     }
 }

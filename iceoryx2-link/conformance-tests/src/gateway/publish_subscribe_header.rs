@@ -53,7 +53,7 @@ pub mod gateway_publish_subscribe_header {
             config,
             node,
             mut link,
-        } = side::<S, _>(|_| fixture.gateway());
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
             &X::service_name(),
             &config,
@@ -114,7 +114,7 @@ pub mod gateway_publish_subscribe_header {
             config,
             node,
             mut link,
-        } = side::<S, _>(|_| fixture.gateway());
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
         let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
             &X::service_name(),
             &config,

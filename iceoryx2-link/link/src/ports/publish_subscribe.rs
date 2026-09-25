@@ -24,7 +24,7 @@ use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, TypeDescription,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::{
-    LoanedSample, Publisher, Sample, SampleMutUninit, Subscriber, UnloanedSample,
+    Publisher, Sample, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
 };
 use iceoryx2_link_backend::wire::sample::{Header, Payload};
 use iceoryx2_log::{fail, origin};
@@ -182,7 +182,7 @@ impl<S: Service> PublishSubscribePorts<S> {
         &mut self,
         mut ingest: impl FnMut(
             UnloanedSample<'_, '_, S, LoanError>,
-        ) -> Result<ReceiveOutcome<LoanedSample<S>>, E>,
+        ) -> Result<ReceiveOutcome<SampleMut<S>>, E>,
     ) -> Result<u64, SendError> {
         let origin = origin!("PublishSubscribePorts::send");
         let Self {
@@ -195,20 +195,17 @@ impl<S: Service> PublishSubscribePorts<S> {
         let mut loan = |number_of_bytes| loan(publisher, &types.payload, name, number_of_bytes);
         let mut sent = 0;
         loop {
-            let loaned = fail!(
+            let outcome = fail!(
                 from origin,
                 when ingest(UnloanedSample::new(types, &mut loan)),
                 with SendError::Ingestion,
                 "Failed to ingest a sample for {}", name
             );
-            let loaned = match loaned {
-                ReceiveOutcome::Sample(loaned) => loaned,
+            let sample = match outcome {
+                ReceiveOutcome::Sample(sample) => sample,
                 ReceiveOutcome::Skipped => continue,
                 ReceiveOutcome::Empty => break,
             };
-
-            // SAFETY: The payload and header are populated by the relay.
-            let sample = unsafe { loaned.into_sample().assume_init() };
             fail!(
                 from origin,
                 when sample.send(),
@@ -224,7 +221,7 @@ impl<S: Service> PublishSubscribePorts<S> {
 
 /// Loans a sample holding `number_of_bytes` of payload.
 ///
-/// The `number_of_bytes` must must be a multiple of the payload size.
+/// The `number_of_bytes` must be a multiple of the payload size.
 fn loan<S: Service>(
     publisher: &Publisher<S>,
     payload: &TypeDescription,
@@ -391,8 +388,14 @@ mod tests {
                 let mut loaned = unloaned
                     .loan(core::mem::size_of::<u64>())
                     .expect("one u64 fits");
-                loaned.payload().copy_from_slice(&INGESTED.to_ne_bytes());
-                Ok(ReceiveOutcome::Sample(loaned))
+                loaned
+                    .as_mut()
+                    .payload
+                    .copy_from_slice(&INGESTED.to_ne_bytes());
+
+                // SAFETY: the payload was written above and the header is
+                // zero sized.
+                Ok(ReceiveOutcome::Sample(unsafe { loaned.assume_init() }))
             })
             .expect("send succeeds");
         assert_that!(published, eq 1);

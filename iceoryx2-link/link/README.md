@@ -52,13 +52,13 @@ middleware.
         system
 ```
 
-A tunnel runs over a **carrier**. The carrier connects to the peers on the
-opposing side, announces which services this side offers, and moves bytes
-between the two. Services and data cross unchanged, both sides are
-`iceoryx2`.
+A tunnel runs over a **carrier**. The carrier connects to corresponding
+carriers on remote peers. The carrier announces services offered on its host,
+and moves the bytes of these services to remote carriers. Payload data is
+propagated in the exact form that it is stored in shared memory.
 
-A gateway runs over an **adapter**. The adapter connects to the other
-middleware, lists its endpoints (e.g. topics in ROS 2), opens them, and
-moves messages in that middleware's own format. Besides the adapter a
-gateway takes a mapping, which services and endpoints correspond, and a
-translator, how their types and data do.
+A gateway runs over an **adapter**. The adapter connects to another
+middleware, lists its endpoints (e.g. topics in ROS 2), connects to them, and
+moves messages in that middleware's own format. Besides the adapter, a
+gateway takes a mapping defining which services and endpoints correspond, and a
+translator defining how to translate between their types.

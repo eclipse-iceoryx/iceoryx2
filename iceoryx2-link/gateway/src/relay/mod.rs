@@ -19,11 +19,13 @@ use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRelayBuilder};
 use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
 
+use iceoryx2_link_adapter::Mapping;
+use iceoryx2_link_adapter::Translators;
 use iceoryx2_link_adapter::{Adapter, EndpointDescription};
-use iceoryx2_link_adapter::{Mapping, UnsupportedLength};
-use iceoryx2_link_adapter::{TranscodeError, Translator};
 
-pub struct Factory<'a, S, A, M: Mapping, T: Translator> {
+use crate::resolver::EndpointTypes;
+
+pub struct Factory<'a, S, A, M: Mapping, T: Translators> {
     pub(crate) adapter: &'a mut A,
     pub(crate) translator: &'a T,
     pub(crate) _service: PhantomData<(S, M)>,
@@ -33,14 +35,14 @@ impl<S, A, M, T> RelayFactory<S> for Factory<'_, S, A, M, T>
 where
     S: Service,
     M: Mapping,
-    T: Translator,
-    A: Adapter<EndpointSettings = M::EndpointSettings, EndpointTypes = T::EndpointTypes>,
+    T: Translators,
+    A: Adapter<EndpointSettings = M::EndpointSettings, EndpointTypes = EndpointTypes<T>>,
 {
-    type RemoteDescription = EndpointDescription<M::EndpointSettings, T::EndpointTypes>;
+    type RemoteDescription = EndpointDescription<M::EndpointSettings, EndpointTypes<T>>;
     type PublishSubscribeRelay =
-        publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T::Transcoder>;
+        publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T::SampleTranslator>;
     type PublishSubscribeBuilder<'b>
-        = publish_subscribe::Builder<'b, S, A, M, T>
+        = publish_subscribe::Builder<'b, S, A, M, T::SampleTranslator>
     where
         Self: 'b;
     type EventRelay = UnsupportedRelay<S>;
@@ -59,7 +61,7 @@ where
     {
         publish_subscribe::Builder {
             adapter: self.adapter,
-            translator: self.translator,
+            translator: self.translator.samples(),
             publish_subscribe_description,
             endpoint_description,
             _service: PhantomData,
@@ -121,22 +123,6 @@ pub enum ReceiveError {
     Malformed,
     /// The local publisher could not provide a sample.
     Loan,
-}
-
-impl From<UnsupportedLength> for ReceiveError {
-    fn from(_: UnsupportedLength) -> Self {
-        ReceiveError::Malformed
-    }
-}
-
-impl<TranscoderError> From<TranscodeError<TranscoderError>> for ReceiveError {
-    fn from(error: TranscodeError<TranscoderError>) -> Self {
-        match error {
-            TranscodeError::Malformed => ReceiveError::Malformed,
-            TranscodeError::Exhausted => ReceiveError::Loan,
-            TranscodeError::Transcoder(_) => ReceiveError::Transcode,
-        }
-    }
 }
 
 impl core::fmt::Display for ReceiveError {

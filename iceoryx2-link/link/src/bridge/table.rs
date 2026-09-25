@@ -71,14 +71,14 @@ impl<B: Bridged> BridgeTable<B> {
                 bridge.seen = epoch;
                 return Ok(());
             }
-            trace!(from origin, "Closing the {:?} bridge of {}, its resolution changed", bridge.pattern, bridge.name);
+            trace!(from origin, "Closing the {:?} bridge of \"{}\", its resolution changed", bridge.pattern, bridge.name);
             self.bridges.remove(&hash);
         }
         let pattern = description.settings().pattern.messaging_pattern();
         let bridged = fail!(
             from origin,
             when B::open(node, backend, description, remote),
-            "Failed to open the {:?} bridge of {}", pattern, description.name()
+            "Failed to open the {:?} bridge of \"{}\"", pattern, description.name()
         );
         let bridge = Bridge {
             bridged,
@@ -89,7 +89,7 @@ impl<B: Bridged> BridgeTable<B> {
             failure: None,
         };
 
-        trace!(from origin, "Opened {:?} bridge of {}", bridge.pattern, bridge.name);
+        trace!(from origin, "Opened {:?} bridge of \"{}\"", bridge.pattern, bridge.name);
 
         self.bridges.insert(hash, bridge);
         Ok(())
@@ -102,7 +102,7 @@ impl<B: Bridged> BridgeTable<B> {
         self.bridges.retain(|_, bridge| {
             let keep = bridge.seen == epoch;
             if !keep {
-                trace!(from origin, "Closing the {:?} bridge of {}", bridge.pattern, bridge.name);
+                trace!(from origin, "Closing the {:?} bridge of \"{}\"", bridge.pattern, bridge.name);
             }
             keep
         });
@@ -158,7 +158,7 @@ impl<B: Bridged> BridgeTable<B> {
             if outbound != 0 || inbound != 0 {
                 trace!(
                     from origin,
-                    "{:?} bridge of {} moved {} out, {} in",
+                    "Relayed {:?} bridge of \"{}\" ({} out, {} in)",
                     bridge.pattern, bridge.name, outbound, inbound
                 );
             }

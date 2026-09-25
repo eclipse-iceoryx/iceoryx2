@@ -26,6 +26,7 @@ pub mod adapter_wake {
     use crate::testing::{WakeSource, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
+    const VALUE: u64 = 7;
 
     #[conformance_test]
     pub fn an_adapter_is_woken_by_remote_endpoints_joining<F: AdapterFixture>()
@@ -67,9 +68,9 @@ pub mod adapter_wake {
         // wake after the join was heard.
         let mut adapter = fixture.adapter();
         let remote = fixture.remote_endpoints();
-        let _endpoint = adapter
+        let _own = adapter
             .publish_subscribe(remote.description())
-            .expect("endpoints open");
+            .expect("the adapter's endpoints open");
         let source = WakeSource::new();
         adapter.attach(source.wake.clone());
         assert_that_not_woken(&source);
@@ -77,7 +78,7 @@ pub mod adapter_wake {
         // === SEND ===
         // A message from the remote endpoints wakes the adapter.
         assert_that!(remote.sync(TIMEOUT), eq true);
-        remote.send_message(b"message");
+        remote.send(remote.value(VALUE));
 
         retry(
             || match source.woken() {

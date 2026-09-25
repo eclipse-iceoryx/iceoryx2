@@ -19,6 +19,7 @@ pub mod carrier_wake {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_link_adapter::SampleBytesRef;
     use iceoryx2_link_backend::Reactive;
     use iceoryx2_link_carrier::{Announcement, Carrier, SampleChannel};
 
@@ -86,7 +87,12 @@ pub mod carrier_wake {
 
         // === SEND ===
         // A sample from peer A wakes peer B.
-        channel_a.send(&[PAYLOAD_BYTES]).expect("sending succeeds");
+        channel_a
+            .send(SampleBytesRef {
+                header: &[],
+                payload: PAYLOAD_BYTES,
+            })
+            .expect("sending succeeds");
 
         retry(
             || match source.woken() {

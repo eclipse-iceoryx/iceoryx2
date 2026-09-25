@@ -10,9 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_backend::wire::sample::LoanableSample;
-use iceoryx2_link_carrier::{SampleChannel, SampleReceiveError, populate};
-use iceoryx2_log::{fail, origin};
+use iceoryx2_link_backend::wire::sample::SampleBytesRef;
+use iceoryx2_link_carrier::SampleChannel;
 
 use super::{Error, ZenohChannel};
 
@@ -22,27 +21,11 @@ pub struct ZenohSampleChannel(pub(crate) ZenohChannel);
 impl SampleChannel for ZenohSampleChannel {
     type Error = Error;
 
-    fn send(&mut self, bytes: &[&[u8]]) -> Result<(), Self::Error> {
-        self.0.put(bytes)
+    fn send(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Error> {
+        self.0.send(&[sample.header, sample.payload])
     }
 
-    fn receive<L: LoanableSample>(
-        &mut self,
-        loanable: L,
-    ) -> Result<Option<L::Sample>, SampleReceiveError<Self::Error>> {
-        let origin = origin!("ZenohSampleChannel::receive");
-
-        let Some(bytes) = self.0.pop() else {
-            return Ok(None);
-        };
-
-        let sample = fail!(
-            from origin,
-            when populate(&bytes, loanable),
-            to SampleReceiveError<Error>,
-            "Dropped {} bytes", bytes.len()
-        );
-
-        Ok(Some(sample))
+    fn receive(&mut self) -> Result<Option<&[u8]>, Self::Error> {
+        Ok(self.0.receive())
     }
 }

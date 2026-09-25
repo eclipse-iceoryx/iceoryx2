@@ -1,0 +1,37 @@
+[package]
+name = "iceoryx2-integrations-ros2-link-adapter"
+description = "iceoryx2-integrations: gateway adapter for ROS 2"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+autotests = false
+
+[[test]]
+name = "main"
+harness = false
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-log = { workspace = true }
+iceoryx2-link-adapter = { workspace = true }
+iceoryx2-link-backend = { workspace = true }
+iceoryx2-integrations-ros2-interop = { workspace = true }
+
+libloading = { workspace = true }
+r2r_rcl = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-link-conformance-tests = { workspace = true }
+
+ros-env = { workspace = true }
+rosidl_runtime_rs = { workspace = true }
+toml = { workspace = true }

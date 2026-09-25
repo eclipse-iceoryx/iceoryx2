@@ -13,24 +13,25 @@
 //! Defines the state machine for loaning and populating a sample.
 //!
 //! ```text
-//!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   into_sample()
-//!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ the sample to send
-//!   │                  │                       │                  │
-//!   │  no memory yet   │                       │  payload()       │
-//!   │                  │                       │  header(len)     │
+//!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   as_mut()
+//!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ writable header and payload
+//!   │                  │                       │                  │   assume_init()
+//!   │  no memory yet   │                       │  a loan for the  │ ────────────────▶ the initialized, sendable sample
+//!   │                  │                       │  payload length  │
 //!   └──────────────────┘                       └──────────────────┘
 //!            │                                          │
 //!            ▼ dropped                                  ▼ dropped
+//!
 //!       nothing loaned                          the loan is returned
 //! ```
 
+use alloc::vec::Vec;
 use core::mem::MaybeUninit;
 
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 
 use crate::service_description::SampleTypes;
-use crate::wire::UnsupportedLength;
 
 /// The untyped user header as it passes through a relay.
 pub type Header = CustomHeaderMarker;
@@ -38,22 +39,66 @@ pub type Header = CustomHeaderMarker;
 pub type Payload = [CustomPayloadMarker];
 pub type PayloadUninit = [MaybeUninit<CustomPayloadMarker>];
 
+/// Reference to the bytes of a sample's header and payload.
+#[derive(Debug, Clone, Copy)]
+pub struct SampleBytesRef<'a> {
+    pub header: &'a [u8],
+    pub payload: &'a [u8],
+}
+
+/// The lengths of a sample's header and payload.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SampleLengths {
+    pub header: usize,
+    pub payload: usize,
+}
+
+/// Mutable reference to the bytes of a sample's header and payload.
+#[derive(Debug)]
+pub struct SampleBytesRefMut<'a> {
+    pub header: &'a mut [u8],
+    pub payload: &'a mut [u8],
+}
+
+/// The bytes of a sample's header and payload in heap buffers.
+#[derive(Debug, Default)]
+pub struct SampleBytes {
+    pub header: Vec<u8>,
+    pub payload: Vec<u8>,
+}
+
+impl SampleBytes {
+    pub fn as_ref(&self) -> SampleBytesRef<'_> {
+        SampleBytesRef {
+            header: &self.header,
+            payload: &self.payload,
+        }
+    }
+
+    pub fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
+        SampleBytesRefMut {
+            header: &mut self.header,
+            payload: &mut self.payload,
+        }
+    }
+}
+
 /// Loans a sample for a payload length and provides a [`WritableSample`]
 /// that can be populated.
 pub trait LoanableSample {
     /// The loaned sample with writable header and payload.
-    type Sample: WritableSample;
-
-    /// The size of the header at the start of a frame it accepts.
-    fn header_size(&self) -> usize;
+    type WritableSample: WritableSample<InitializedSample = Self::InitializedSample>;
+    /// The loaned sample once its header and payload are written.
+    type InitializedSample;
 
     /// Acquire a loan for the sample.
     ///
-    /// Fails with
+    /// Fails with:
     ///
-    /// * `Malformed` if no sample of the service holds `payload_len` bytes,
+    /// * `Malformed` if no `payload_len` is an invalid length for a sample of
+    ///   this service
     /// * `Exhausted` if no sample could be loaned
-    fn loan(self, payload_len: usize) -> Result<Self::Sample, LoanError>;
+    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError>;
 }
 
 /// Why no sample was loaned.
@@ -76,46 +121,34 @@ impl core::fmt::Display for LoanError {
 
 impl core::error::Error for LoanError {}
 
-/// Provides the location to write a sample's header and payload.
+/// Provides the locations to write a sample's header and payload.
 pub trait WritableSample {
-    /// The location into which the payload bytes should be written.
-    fn payload(&mut self) -> &mut [u8];
+    /// The sample once its header and payload are written.
+    type InitializedSample;
 
-    /// The location into which the header bytes should be written.
-    fn header(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength>;
+    /// The locations into which the header and the payload bytes should
+    /// be written.
+    fn as_mut(&mut self) -> SampleBytesRefMut<'_>;
+
+    /// The sample as initialized.
+    ///
+    /// # Safety
+    ///
+    /// The header and the payload must both have been written.
+    unsafe fn assume_init(self) -> Self::InitializedSample;
 }
 
-/// Why a sample refused a write.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WriteError {
-    /// The bytes do not fit a sample of the service.
-    Malformed,
-    /// The port had no sample to give.
-    Exhausted,
-}
+impl WritableSample for SampleBytes {
+    type InitializedSample = SampleBytes;
 
-impl From<UnsupportedLength> for WriteError {
-    fn from(_: UnsupportedLength) -> Self {
-        Self::Malformed
+    fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
+        SampleBytes::as_mut(self)
+    }
+
+    unsafe fn assume_init(self) -> SampleBytes {
+        self
     }
 }
-
-impl From<LoanError> for WriteError {
-    fn from(refusal: LoanError) -> Self {
-        match refusal {
-            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
-            LoanError::Exhausted => Self::Exhausted,
-        }
-    }
-}
-
-impl core::fmt::Display for WriteError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "WriteError::{self:?}")
-    }
-}
-
-impl core::error::Error for WriteError {}
 
 /// Whether a header and a payload of these lengths fit a sample of the
 /// described service.

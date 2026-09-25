@@ -122,7 +122,7 @@ _verify-dispatch what tool *flags:
 [private]
 _verify-clippy workspace target_triplet profile has_nostd extra_args:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -eo pipefail
 
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
@@ -130,6 +130,13 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
         if [ "$WS" != "sdk" ] && [ "{{has_nostd}}" = "true" ]; then
             echo "Error: the $WS workspace cannot be built with --no_std" >&2
             exit 1
+        fi
+
+        TARGET_DIR_ARG=""
+        if [ "$WS" = "integrations-ros2" ]; then
+            just _ros2-require-messages
+            source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+            TARGET_DIR_ARG="--target-dir {{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
         fi
 
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
@@ -151,7 +158,7 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
                 -- -D warnings
         else
             echo "Running clippy for '$WS' (std {{profile}})..."
-            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings
+            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG $TARGET_DIR_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings
         fi
     done
 
@@ -234,7 +241,7 @@ _verify-std-propagation-workspace workspace:
             integrations-ros2)
                 TOMLS=$(find ./integrations/ros2 -name "Cargo.toml" \
                     -not -path "*/target/*" \
-                    -not -path "./integrations/ros2/workspace/*" \
+                    -not -path "./integrations/ros2/colcon/*" \
                     | grep -v "^\./integrations/ros2/Cargo\.toml$" \
                     | sort)
                 ;;

@@ -1,18 +1,15 @@
-# Standalone workspace: building the ros2 crates requires a sourced ROS 2
-# environment, which the surrounding `integrations` and `sdk` workspaces must
-# not depend on.
+# Made a standalone workspace to exclude from cargo builds of all integrations
+# because the crates need a sourced ROS 2 environment to build.
 [workspace]
 resolver = "2"
 members = [
-    "gateway-backend",
-    "gateway-cli",
     "interop",
+    "link-adapter",
+    "link-gateway-cli",
 ]
-# The examples are `ament_cargo` packages built individually by colcon, which
-# patches their dependencies in the install space; they are their own
-# standalone workspaces, not members of this one.
+# Exclude the colcon workspaces because their `ament_cargo` packages are built by colcon.
 exclude = [
-    "workspace",
+    "colcon",
 ]
 
 [workspace.package]
@@ -37,11 +34,15 @@ iceoryx2 = { version = "0.10.999", path = "../../iceoryx2/", features = ["std"] 
 iceoryx2-bb-concurrency = { version = "0.10.999", path = "../../iceoryx2-bb/concurrency/", features = ["std"] }
 iceoryx2-bb-testing = { version = "0.10.999", path = "../../iceoryx2-bb/testing/", features = ["std"] }
 iceoryx2-cli = { version = "0.10.999", path = "../../iceoryx2-cli/" }
-iceoryx2-integrations-ros2-gateway-backend = { version = "0.10.999", path = "gateway-backend" }
 iceoryx2-integrations-ros2-interop = { version = "0.10.999", path = "interop" }
+iceoryx2-integrations-ros2-link-adapter = { version = "0.10.999", path = "link-adapter" }
 iceoryx2-log = { version = "0.10.999", path = "../../iceoryx2-log/log/", features = ["std"] }
-iceoryx2-gateway = { version = "0.10.999", path = "../../iceoryx2-gateway/gateway", features = ["std"] }
-iceoryx2-gateway-backend = { version = "0.10.999", path = "../../iceoryx2-gateway/backend", features = ["std"] }
+iceoryx2-link-gateway = { version = "0.10.999", path = "../../iceoryx2-link/gateway", features = ["std"] }
+iceoryx2-link = { version = "0.10.999", path = "../../iceoryx2-link/link", features = ["std"] }
+iceoryx2-bb-testing-macros = { version = "0.10.999", path = "../../iceoryx2-bb/testing-macros/", features = ["std"] }
+iceoryx2-link-conformance-tests = { version = "0.10.999", path = "../../iceoryx2-link/conformance-tests", features = ["std"] }
+iceoryx2-link-adapter = { version = "0.10.999", path = "../../iceoryx2-link/adapter", features = ["std"] }
+iceoryx2-link-backend = { version = "0.10.999", path = "../../iceoryx2-link/backend", features = ["std"] }
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }
@@ -50,6 +51,8 @@ getrandom = { version = "0.4" }
 human-panic = { version = "2.0.5" }
 libloading = { version = "0.8" }
 r2r_rcl = { version = "0.9.5" }
+ros-env = { version = "0.2" }
+rosidl_runtime_rs = { version = "0.7" }
 serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }
 toml = { version = "0.9.8", default-features = false, features = ["serde", "parse", "display"] }
 

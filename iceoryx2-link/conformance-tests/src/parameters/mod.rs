@@ -103,7 +103,7 @@ pub mod payload;
 pub mod publish_subscribe;
 
 pub use event::{Event, EventName, EventService};
-pub use payload::{FixedSizePayload, PayloadShape, SlicePayload};
+pub use payload::{FixedSizePayload, PayloadShape, SliceElement, SlicePayload};
 pub(crate) use publish_subscribe::Foreign;
 pub use publish_subscribe::{
     Header, Payload, PublishSubscribe, PublishSubscribeName, PublishSubscribePayload,

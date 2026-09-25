@@ -15,7 +15,7 @@ use core::time::Duration;
 use iceoryx2::service::Service;
 use iceoryx2_link_adapter::Adapter;
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::Translator;
+use iceoryx2_link_adapter::{SampleShape, TranscodesSamples, Translator};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_gateway::Gateway;
 
@@ -26,7 +26,7 @@ use crate::fixture::AdapterFixture;
 /// its services map to.
 pub trait GatewayFixture<S: Service>: AdapterFixture {
     type Mapping: Mapping<EndpointSettings = <Self::Adapter as Adapter>::EndpointSettings>;
-    type Translator: Translator<EndpointTypes = <Self::Adapter as Adapter>::EndpointTypes>;
+    type Translator: Translator<SampleShape, RemoteTypes = Self::SampleTypes, Transcoders: TranscodesSamples>;
     /// Remote endpoints where a service maps to. A suite bounds them by
     /// what it needs of them.
     type RemoteEndpoints;

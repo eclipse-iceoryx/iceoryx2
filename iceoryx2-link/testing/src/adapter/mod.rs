@@ -17,15 +17,15 @@ mod middleware;
 mod translator;
 
 pub use endpoint_description::{
-    FakeEndpointDescription, FakeEndpointSettings, FakeEndpointTypes, endpoint_of, header_size,
+    FakeEndpointDescription, FakeEndpointSettings, FakeSampleTypes, endpoint_of, header_size,
 };
 pub use endpoints::FakeEndpoints;
 pub use mapping::FakeMapping;
 pub use middleware::FakeMiddleware;
-pub use translator::{FakeSwapTranslator, SwapTranscoder, swapped_bytes};
+pub use translator::{FakeSwapTranslator, SwapHeader, SwapPayload, swapped_bytes};
 
 use iceoryx2_bb_elementary::generation::Generation;
-use iceoryx2_link_adapter::{Adapter, UnsupportedEndpoints};
+use iceoryx2_link_adapter::{Adapter, EndpointTypes, UnsupportedEndpoints};
 use iceoryx2_link_backend::{Reactive, WakeHandle};
 use iceoryx2_log::{fail, origin};
 
@@ -60,7 +60,7 @@ impl Adapter for FakeAdapter {
     type ListError = Error;
     type OpenError = Error;
     type EndpointSettings = FakeEndpointSettings;
-    type EndpointTypes = FakeEndpointTypes;
+    type EndpointTypes = EndpointTypes<FakeSampleTypes>;
     type PublishSubscribeEndpoints = FakeEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 

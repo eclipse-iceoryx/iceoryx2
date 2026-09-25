@@ -47,7 +47,7 @@ impl<S: Service> PublishSubscribeRelay<S> for UnsupportedRelay<S> {
     fn receive<L: LoanableSample>(
         &mut self,
         _: L,
-    ) -> Result<ReceiveOutcome<L::Sample>, Self::ReceiveError> {
+    ) -> Result<ReceiveOutcome<L::InitializedSample>, Self::ReceiveError> {
         match self.0 {}
     }
 }

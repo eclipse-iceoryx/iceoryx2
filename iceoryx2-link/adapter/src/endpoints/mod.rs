@@ -15,7 +15,7 @@ mod event;
 mod publish_subscribe;
 mod unsupported;
 
-pub use endpoint_description::EndpointDescription;
+pub use endpoint_description::{EndpointDescription, EndpointTypes};
 pub use event::EventEndpoints;
-pub use publish_subscribe::{PublishSubscribeEndpoints, TakeError};
+pub use publish_subscribe::{PublishSubscribeEndpoints, TakeDestination, TakeOutcome};
 pub use unsupported::UnsupportedEndpoints;

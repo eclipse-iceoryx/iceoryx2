@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_adapter::{Passthrough, Translator};
-use iceoryx2_link_testing::{FakeEndpointTypes, FakeSwapTranslator, swapped_bytes};
+use iceoryx2_link_adapter::{Passthrough, SampleShape, TranscodesSamples, Translator};
+use iceoryx2_link_backend::service_description::SampleTypes;
+use iceoryx2_link_testing::{FakeSwapTranslator, swapped_bytes};
 
 /// The payload type every suite speaks through the fixtures.
 pub(crate) type Payload = u64;
@@ -27,7 +28,9 @@ pub(crate) type EncodedHeader = [u8; core::mem::size_of::<Header>()];
 
 /// The form the fake middleware carries data in, as the far application
 /// writes and reads it, paired with the translator that serves it.
-pub(crate) trait WireForm: Translator<EndpointTypes = FakeEndpointTypes> + Default {
+pub(crate) trait WireForm:
+    Translator<SampleShape, RemoteTypes = SampleTypes, Transcoders: TranscodesSamples> + Default
+{
     fn encode_payload(payload: Payload) -> EncodedPayload;
     fn decode_payload(encoded: EncodedPayload) -> Payload;
     fn encode_header(header: Header) -> EncodedHeader;

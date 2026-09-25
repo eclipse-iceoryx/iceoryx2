@@ -35,7 +35,8 @@ pub mod link_discovery {
 
         // === SETUP ===
         // One link and one application in the same local system.
-        let Side { node, mut link, .. } = side::<S, _>(|config| fixture.backend(config));
+        let Side { node, mut link, .. } =
+            side::<S, _>(fixture.config(), |config| fixture.backend(config));
 
         let service_name = X::service_name();
         let _service = X::create::<S>(&node, &service_name);
@@ -59,7 +60,8 @@ pub mod link_discovery {
         // === SETUP ===
         // One application in a local system, and a link whose filter
         // rejects its service.
-        let Side { node, link, .. } = side::<S, _>(|config| fixture.backend(config));
+        let Side { node, link, .. } =
+            side::<S, _>(fixture.config(), |config| fixture.backend(config));
 
         let service_name = X::service_name();
         let _service = X::create::<S>(&node, &service_name);
@@ -81,7 +83,8 @@ pub mod link_discovery {
 
         // === SETUP ===
         // One link and one application whose service is bridged.
-        let Side { node, mut link, .. } = side::<S, _>(|config| fixture.backend(config));
+        let Side { node, mut link, .. } =
+            side::<S, _>(fixture.config(), |config| fixture.backend(config));
 
         let service_name = X::service_name();
         let service = X::create::<S>(&node, &service_name);
@@ -118,7 +121,7 @@ pub mod link_discovery {
             config,
             node,
             mut link,
-        } = side::<S, _>(|config| fixture.backend(config));
+        } = side::<S, _>(fixture.config(), |config| fixture.backend(config));
 
         let service_name = X::service_name();
         let service = X::create::<S>(&node, &service_name);
@@ -155,7 +158,8 @@ pub mod link_discovery {
 
         // === SETUP ===
         // One link and one application whose service is bridged.
-        let Side { node, mut link, .. } = side::<S, _>(|config| fixture.backend(config));
+        let Side { node, mut link, .. } =
+            side::<S, _>(fixture.config(), |config| fixture.backend(config));
 
         let service_name = X::service_name();
         let service = X::create::<S>(&node, &service_name);

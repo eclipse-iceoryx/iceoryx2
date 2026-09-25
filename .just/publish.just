@@ -66,13 +66,6 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-ffi-c                                  \
     iceoryx2-ffi-macros                             \
     iceoryx2-ffi-python                             \
-    iceoryx2-gateway-backend            \
-    iceoryx2-gateway                    \
-    iceoryx2-gateway-conformance-tests  \
-    iceoryx2-gateway-testing                        \
-    iceoryx2-gateway-host-to-host-tests             \
-    iceoryx2-gateway-conformance-tests-common       \
-    iceoryx2-gateway-conformance-tests-nostd        \
     iceoryx2-link-testing                           \
     iceoryx2-link-host-to-host-tests                \
     iceoryx2-link-conformance-tests-common          \
@@ -136,15 +129,19 @@ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
 INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := ""
 
 INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
-    iceoryx2                                   \
-    iceoryx2-bb-concurrency                    \
-    iceoryx2-bb-testing                        \
-    iceoryx2-cli                               \
-    iceoryx2-gateway                           \
-    iceoryx2-gateway-backend                   \
-    iceoryx2-integrations-ros2-gateway-backend \
-    iceoryx2-integrations-ros2-gateway-cli     \
-    iceoryx2-integrations-ros2-interop         \
+    iceoryx2                                    \
+    iceoryx2-bb-concurrency                     \
+    iceoryx2-bb-testing                         \
+    iceoryx2-bb-testing-macros                  \
+    iceoryx2-cli                                \
+    iceoryx2-integrations-ros2-interop          \
+    iceoryx2-integrations-ros2-link-adapter     \
+    iceoryx2-integrations-ros2-link-gateway-cli \
+    iceoryx2-link                               \
+    iceoryx2-link-adapter                       \
+    iceoryx2-link-backend                       \
+    iceoryx2-link-conformance-tests             \
+    iceoryx2-link-gateway                       \
     iceoryx2-log`
 
 [private]

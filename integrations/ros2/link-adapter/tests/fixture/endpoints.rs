@@ -1,0 +1,157 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use core::marker::PhantomData;
+use core::time::Duration;
+use std::time::Instant;
+
+use iceoryx2_integrations_ros2_link_adapter::testing::{
+    PeerNode, RclPublisher, RclSubscription, take_serialized,
+};
+use iceoryx2_integrations_ros2_link_adapter::{
+    QosProfile, TopicDescription, TopicSettings, TopicTypes,
+};
+use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
+use iceoryx2_link_backend::service_description::ServiceDescription;
+use iceoryx2_link_conformance_tests::fixture::{
+    DiscoverableEndpoints, MessageEndpoints, PayloadEndpoints,
+};
+use iceoryx2_link_conformance_tests::parameters::PayloadShape;
+
+use super::TranslatorUnderTest;
+use super::serialization;
+
+/// The pause between two looks at the matching counts.
+pub const POLL_PERIOD: Duration = Duration::from_millis(10);
+
+/// A remote peer's RCL endpoints on a topic that communicates the wire form
+/// of the types defined by the translator under test `T`. Required to
+/// support tests against remote [`MessageEndpoints`].
+pub struct RclEndpoints<T> {
+    description: TopicDescription,
+    publisher: RclPublisher,
+    subscription: RclSubscription,
+    _translator: PhantomData<T>,
+}
+
+impl<T> RclEndpoints<T> {
+    pub(super) fn new(peer: &PeerNode, description: TopicDescription, qos: QosProfile) -> Self {
+        let EndpointDescription { settings, types } = &description;
+        let EndpointTypes::PublishSubscribe(types) = types else {
+            panic!("the fixture opens publish-subscribe endpoints only");
+        };
+
+        let publisher = peer.publisher(&settings.topic, &types.type_name, qos.clone());
+        let subscription = peer.subscription(&settings.topic, &types.type_name, qos);
+
+        Self {
+            description,
+            publisher,
+            subscription,
+            _translator: PhantomData,
+        }
+    }
+}
+
+impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, EndpointTypes<TopicTypes>>
+    for RclEndpoints<T>
+{
+    type Value = <T::Payload as PayloadShape>::Value;
+
+    fn description(&self) -> &TopicDescription {
+        &self.description
+    }
+
+    fn value(&self, n: u64) -> Self::Value {
+        <T::Payload as PayloadShape>::value(n)
+    }
+
+    fn encode(&self, value: &Self::Value) -> Vec<u8> {
+        serialization::serialize(&T::Message::from(value.clone()))
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Self::Value {
+        serialization::deserialize::<T::Message>(bytes).into()
+    }
+
+    fn send(&self, value: Self::Value) {
+        self.publisher
+            .publish(&self.encode(&value))
+            .expect("the peer publishes the message");
+    }
+
+    fn receive(&self) -> Option<Self::Value> {
+        loop {
+            let (message, info) = take_serialized(&self.subscription)?;
+            if info.gid != *self.publisher.gid() {
+                return Some(self.decode(&message));
+            }
+        }
+    }
+
+    /// Matched once the peer's publisher sees a subscription and its
+    /// subscription sees a publisher beyond itself.
+    fn sync(&self, timeout: Duration) -> bool {
+        /// The peer's own endpoints match each other.
+        const OWN: usize = 1;
+
+        let started = Instant::now();
+        loop {
+            let publisher_matched = self
+                .publisher
+                .subscription_count()
+                .expect("the subscription count is read")
+                > OWN;
+            let subscription_matched = self
+                .subscription
+                .publisher_count()
+                .expect("the publisher count is read")
+                > OWN;
+            if publisher_matched && subscription_matched {
+                return true;
+            }
+            if started.elapsed() >= timeout {
+                return false;
+            }
+            std::thread::sleep(POLL_PERIOD);
+        }
+    }
+}
+
+/// [`RclEndpoints`] on the topic a local service maps to. Required to support
+/// tests against [`DiscoverableEndpoints`] and [`PayloadEndpoints`].
+pub struct MappedRclEndpoints<T> {
+    pub(super) service: ServiceDescription,
+    pub(super) endpoints: RclEndpoints<T>,
+}
+
+impl<T: TranslatorUnderTest> DiscoverableEndpoints for MappedRclEndpoints<T> {
+    fn service(&self) -> &ServiceDescription {
+        &self.service
+    }
+
+    fn sync(&self, timeout: Duration) -> bool {
+        MessageEndpoints::sync(&self.endpoints, timeout)
+    }
+}
+
+impl<T: TranslatorUnderTest> PayloadEndpoints<<T::Payload as PayloadShape>::Value>
+    for MappedRclEndpoints<T>
+{
+    fn send_payload(&self, payload: <T::Payload as PayloadShape>::Value) {
+        self.endpoints.send(payload);
+    }
+
+    fn receive_payload(&self) -> Option<<T::Payload as PayloadShape>::Value> {
+        self.endpoints.receive()
+    }
+}

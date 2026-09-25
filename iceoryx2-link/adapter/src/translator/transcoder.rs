@@ -12,15 +12,15 @@
 
 use core::error::Error;
 
-use crate::{LoanError, LoanableSample, Region, UnsupportedLength, WritableSample};
+use core::convert::Infallible;
+
+use crate::{Never, Region, UnsupportedLength};
 
 /// Why a transcode ended without the region written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TranscodeError<TranscoderError> {
-    /// The length the transcoder needs does not fit the service.
-    Malformed,
-    /// The local port had no free sample to write into.
-    Exhausted,
+    /// The region refused the length the transcoder needs.
+    Refused,
     /// The transcoder failed with its own error.
     Transcoder(TranscoderError),
 }
@@ -28,8 +28,7 @@ pub enum TranscodeError<TranscoderError> {
 impl<TranscoderError: core::fmt::Display> core::fmt::Display for TranscodeError<TranscoderError> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Malformed => write!(f, "TranscodeError::Malformed"),
-            Self::Exhausted => write!(f, "TranscodeError::Exhausted"),
+            Self::Refused => write!(f, "TranscodeError::Refused"),
             Self::Transcoder(error) => write!(f, "TranscodeError::Transcoder({error})"),
         }
     }
@@ -39,165 +38,40 @@ impl<TranscoderError: Error> Error for TranscodeError<TranscoderError> {}
 
 impl<TranscoderError> From<UnsupportedLength> for TranscodeError<TranscoderError> {
     fn from(_: UnsupportedLength) -> Self {
-        Self::Malformed
+        Self::Refused
     }
 }
 
-impl<TranscoderError> From<LoanError> for TranscodeError<TranscoderError> {
-    fn from(refusal: LoanError) -> Self {
-        match refusal {
-            LoanError::Malformed | LoanError::NotResizable => Self::Malformed,
-            LoanError::Exhausted => Self::Exhausted,
-        }
-    }
-}
+/// Transcodes the provided bytes into the provided regions.
+pub trait Transcoder<BytesRef> {
+    type Error: Error;
 
-/// Whether one region of a sample is transcoded in one direction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Transcoding {
-    /// The local form is the middleware's, bytes cross unchanged.
-    Passthrough,
-    /// The transcoder converts.
-    Transcode,
-}
-
-/// Converts a sample's header between the local form and the
-/// middleware's header form.
-pub trait HeaderTranscoder {
-    type Failure: Error;
-
-    /// Writes the middleware's header form of a local header into `into`.
+    /// Writes the middleware's form of the region into `into`.
     fn encode<R: Region>(
         &self,
-        header: &[u8],
+        local: BytesRef,
         into: &mut R,
-    ) -> Result<(), TranscodeError<Self::Failure>>;
+    ) -> Result<(), TranscodeError<Self::Error>>;
 
-    /// Writes the local header from the middleware's header form into
-    /// the header of `writable`.
-    fn decode<W: WritableSample>(
+    /// Writes the local form of the region into `into`.
+    fn decode<R: Region>(
         &self,
-        wire: &[u8],
-        writable: &mut W,
-    ) -> Result<(), TranscodeError<Self::Failure>>;
-}
-
-/// Converts a sample's payload between the local form and the
-/// middleware's wire form.
-pub trait PayloadTranscoder {
-    type Failure: Error;
-
-    /// Writes the middleware's wire form of a local payload into `into`.
-    fn encode<R: Region>(
-        &self,
-        payload: &[u8],
+        wire: BytesRef,
         into: &mut R,
-    ) -> Result<(), TranscodeError<Self::Failure>>;
-
-    /// Loans `loanable` for the local payload's length and writes the
-    /// local payload from the middleware's wire form.
-    fn decode<L: LoanableSample>(
-        &self,
-        wire: &[u8],
-        loanable: L,
-    ) -> Result<L::Sample, TranscodeError<Self::Failure>>;
+    ) -> Result<(), TranscodeError<Self::Error>>;
 }
 
-/// The transcoding of each region of a sample.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SampleTranscodings {
-    pub header: Transcoding,
-    pub payload: Transcoding,
-}
+/// The transcoder of a region that passes through, never asked.
+pub type NoTranscoder = Never;
 
-impl SampleTranscodings {
-    /// Every region crosses unchanged.
-    pub const PASSTHROUGH: Self = Self {
-        header: Transcoding::Passthrough,
-        payload: Transcoding::Passthrough,
-    };
-    /// Every region is transcoded.
-    pub const TRANSCODE: Self = Self {
-        header: Transcoding::Transcode,
-        payload: Transcoding::Transcode,
-    };
-}
+impl<BytesRef> Transcoder<BytesRef> for NoTranscoder {
+    type Error = Infallible;
 
-/// Transcodes the regions of a sample.
-pub trait SampleTranscoder {
-    type HeaderTranscoder: HeaderTranscoder;
-    type PayloadTranscoder: PayloadTranscoder;
-
-    fn headers(&self) -> &Self::HeaderTranscoder;
-    fn payloads(&self) -> &Self::PayloadTranscoder;
-}
-
-/// A sample transcoder from one transcoder per region.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct SampleTranscoders<HeaderTranscoder, PayloadTranscoder> {
-    pub headers: HeaderTranscoder,
-    pub payloads: PayloadTranscoder,
-}
-
-impl<H: HeaderTranscoder, P: PayloadTranscoder> SampleTranscoder for SampleTranscoders<H, P> {
-    type HeaderTranscoder = H;
-    type PayloadTranscoder = P;
-
-    fn headers(&self) -> &H {
-        &self.headers
+    fn encode<R: Region>(&self, _: BytesRef, _: &mut R) -> Result<(), TranscodeError<Self::Error>> {
+        match *self {}
     }
 
-    fn payloads(&self) -> &P {
-        &self.payloads
-    }
-}
-
-/// The transcoder of a region the translation passes through, never
-/// asked.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct NoTranscoder;
-
-impl HeaderTranscoder for NoTranscoder {
-    type Failure = core::convert::Infallible;
-
-    fn encode<R: Region>(&self, _: &[u8], _: &mut R) -> Result<(), TranscodeError<Self::Failure>> {
-        unreachable!("the translation passes the header through, it is never encoded")
-    }
-
-    fn decode<W: WritableSample>(
-        &self,
-        _: &[u8],
-        _: &mut W,
-    ) -> Result<(), TranscodeError<Self::Failure>> {
-        unreachable!("the translation passes the header through, it is never decoded")
-    }
-}
-
-impl PayloadTranscoder for NoTranscoder {
-    type Failure = core::convert::Infallible;
-
-    fn encode<R: Region>(&self, _: &[u8], _: &mut R) -> Result<(), TranscodeError<Self::Failure>> {
-        unreachable!("the translation passes the payload through, it is never encoded")
-    }
-
-    fn decode<L: LoanableSample>(
-        &self,
-        _: &[u8],
-        _: L,
-    ) -> Result<L::Sample, TranscodeError<Self::Failure>> {
-        unreachable!("the translation passes the payload through, it is never decoded")
-    }
-}
-
-impl SampleTranscoder for NoTranscoder {
-    type HeaderTranscoder = NoTranscoder;
-    type PayloadTranscoder = NoTranscoder;
-
-    fn headers(&self) -> &NoTranscoder {
-        self
-    }
-
-    fn payloads(&self) -> &NoTranscoder {
-        self
+    fn decode<R: Region>(&self, _: BytesRef, _: &mut R) -> Result<(), TranscodeError<Self::Error>> {
+        match *self {}
     }
 }

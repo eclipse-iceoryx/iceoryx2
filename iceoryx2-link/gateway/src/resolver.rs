@@ -19,7 +19,7 @@ use iceoryx2_link_backend::service_description::{
 
 use iceoryx2_link_adapter::EndpointDescription;
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_adapter::Translator;
+use iceoryx2_link_adapter::{SampleShape, Translator, Translators};
 
 /// Reasons why a service or remote endpoint is refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +52,18 @@ impl<E: core::fmt::Display> core::fmt::Display for Refusal<E> {
     }
 }
 
+/// The middleware's type for a sample.
+pub(crate) type RemoteSampleTypes<T> =
+    <<T as Translators>::SampleTranslator as Translator<SampleShape>>::RemoteTypes;
+
+/// The middleware's types of an endpoint. Shadows the adapter's enum of
+/// the same name within the gateway, applied to the translators `T`.
+pub(crate) type EndpointTypes<T> = iceoryx2_link_adapter::EndpointTypes<RemoteSampleTypes<T>>;
+
+/// The error of the middleware's sample translator.
+type SampleTranslationError<T> =
+    <<T as Translators>::SampleTranslator as Translator<SampleShape>>::Error;
+
 /// Resolves services against the middleware's endpoints through a
 /// mapping and a translator. A local service is exported to the endpoint
 /// it maps to, the one endpoint mapping to a service nobody offers is
@@ -61,13 +73,39 @@ pub struct Resolver<M, T> {
     pub(crate) translator: T,
 }
 
-impl<M: Mapping, T: Translator> Resolver<M, T> {
+impl<M: Mapping, T: Translators> Resolver<M, T> {
+    /// The middleware's types of an endpoint carrying a service of `types`.
+    fn remote_types(
+        &self,
+        types: &ServiceTypes,
+    ) -> Result<EndpointTypes<T>, SampleTranslationError<T>> {
+        Ok(match types {
+            ServiceTypes::PublishSubscribe(types) => {
+                EndpointTypes::<T>::PublishSubscribe(self.translator.samples().remote(types)?)
+            }
+            ServiceTypes::Event => EndpointTypes::<T>::Event,
+        })
+    }
+
+    /// The local types of a service mirroring an endpoint of `types`.
+    fn local_types(
+        &self,
+        types: &EndpointTypes<T>,
+    ) -> Result<ServiceTypes, SampleTranslationError<T>> {
+        Ok(match types {
+            EndpointTypes::<T>::PublishSubscribe(types) => {
+                ServiceTypes::PublishSubscribe(self.translator.samples().local(types)?)
+            }
+            EndpointTypes::<T>::Event => ServiceTypes::Event,
+        })
+    }
+
     /// The endpoint a local service is exported to.
     #[allow(clippy::type_complexity)] // the resolution names the gateway's endpoint description in full
     fn export(
         &self,
         local: &ServiceDescription,
-    ) -> Resolution<EndpointDescription<M::EndpointSettings, T::EndpointTypes>, Refusal<M::Error>>
+    ) -> Resolution<EndpointDescription<M::EndpointSettings, EndpointTypes<T>>, Refusal<M::Error>>
     {
         if !bridged(local.types()) {
             return Resolution::Refused(Refusal::UnsupportedPattern);
@@ -82,7 +120,7 @@ impl<M: Mapping, T: Translator> Resolver<M, T> {
         {
             return Resolution::Refused(Refusal::LeadsElsewhere);
         }
-        let Ok(types) = self.translator.remote(local.types()) else {
+        let Ok(types) = self.remote_types(local.types()) else {
             return Resolution::Refused(Refusal::Untranslatable);
         };
         Resolution::Exported(EndpointDescription { settings, types })
@@ -93,8 +131,8 @@ impl<M: Mapping, T: Translator> Resolver<M, T> {
     #[allow(clippy::type_complexity)] // the resolution names the gateway's endpoint description in full
     fn import<S: Service>(
         &self,
-        remote: &EndpointDescription<M::EndpointSettings, T::EndpointTypes>,
-    ) -> Resolution<EndpointDescription<M::EndpointSettings, T::EndpointTypes>, Refusal<M::Error>>
+        remote: &EndpointDescription<M::EndpointSettings, EndpointTypes<T>>,
+    ) -> Resolution<EndpointDescription<M::EndpointSettings, EndpointTypes<T>>, Refusal<M::Error>>
     {
         let settings = match self.mapping.local(&remote.settings) {
             Ok(Some(settings)) => settings,
@@ -106,7 +144,7 @@ impl<M: Mapping, T: Translator> Resolver<M, T> {
         {
             return Resolution::Refused(Refusal::LeadsElsewhere);
         }
-        let Ok(types) = self.translator.local(&remote.types) else {
+        let Ok(types) = self.local_types(&remote.types) else {
             return Resolution::Refused(Refusal::Untranslatable);
         };
         if !bridged(&types) {
@@ -127,9 +165,9 @@ impl<M: Mapping, T: Translator> Resolver<M, T> {
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator> resolver::Resolver<S> for Resolver<M, T> {
+impl<S: Service, M: Mapping, T: Translators> resolver::Resolver<S> for Resolver<M, T> {
     type RemoteId = <M::EndpointSettings as Identified>::Id;
-    type RemoteDescription = EndpointDescription<M::EndpointSettings, T::EndpointTypes>;
+    type RemoteDescription = EndpointDescription<M::EndpointSettings, EndpointTypes<T>>;
     type Refusal = Refusal<M::Error>;
 
     fn service_hash(
@@ -182,14 +220,14 @@ mod tests {
 
     use iceoryx2::service::local;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_backend::service_description::ServiceSettings;
+    use iceoryx2_link_backend::service_description::{SampleTypes, ServiceSettings};
 
     use crate::testing::{
         DefiningMapping, IdentityMapping, PartialMapping, RedirectingMapping, Refused,
         RefusingTranslator, StubEndpointDescription, description, description_of, endpoint,
         endpoint_of, event, settings,
     };
-    use iceoryx2_link_adapter::Passthrough;
+    use iceoryx2_link_adapter::{EndpointTypes, Passthrough, TranscodesSamples};
 
     const HISTORY_SIZE: usize = 1;
     const OTHER_HISTORY_SIZE: usize = 2;
@@ -209,7 +247,7 @@ mod tests {
     ) -> Resolution<StubEndpointDescription, Refusal<M::Error>>
     where
         M: Mapping<EndpointSettings = crate::testing::StubEndpointSettings>,
-        T: Translator<EndpointTypes = ServiceTypes>,
+        T: Translator<SampleShape, RemoteTypes = SampleTypes, Transcoders: TranscodesSamples>,
     {
         <Resolver<M, T> as resolver::Resolver<local::Service>>::resolve(sut, local, remotes.iter())
     }
@@ -506,7 +544,7 @@ mod tests {
             translator: Passthrough,
         };
         let mut remote = endpoint(SERVICE, HISTORY_SIZE);
-        remote.types = ServiceTypes::Event;
+        remote.types = EndpointTypes::Event;
 
         let resolution = resolve(&sut, None, &[remote]);
 

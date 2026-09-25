@@ -26,6 +26,9 @@ pub trait LinkFixture<S: Service>: sealed::Sealed {
     /// A fresh, isolated mechanism.
     fn new() -> Self;
 
+    /// The configuration to use in the fixture.
+    fn config(&self) -> Config;
+
     /// A backend on the mechanism, for the local system configured by
     /// `config`.
     fn backend(&mut self, config: &Config) -> Self::Backend;
@@ -41,6 +44,10 @@ impl<S: Service, F: TunnelFixture> LinkFixture<S> for TunnelLinkFixture<F> {
         Self(F::new())
     }
 
+    fn config(&self) -> Config {
+        self.0.config()
+    }
+
     fn backend(&mut self, config: &Config) -> Self::Backend {
         self.0.tunnel(config)
     }
@@ -54,6 +61,10 @@ impl<S: Service, F: GatewayFixture<S>> LinkFixture<S> for GatewayLinkFixture<F> 
 
     fn new() -> Self {
         Self(F::new())
+    }
+
+    fn config(&self) -> Config {
+        self.0.config()
     }
 
     fn backend(&mut self, _: &Config) -> Self::Backend {

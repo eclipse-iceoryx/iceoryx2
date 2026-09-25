@@ -1,0 +1,17 @@
+# Built by colcon as an `ament_cargo` package (requires the colcon-cargo and
+# colcon-ros-cargo plugins).
+[workspace]
+
+[package]
+name = "demo_nodes_iceoryx2"
+description = "Native iceoryx2 example nodes bridged to ROS 2 by the gateway"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[dependencies]
+cdr = { version = "0.2.4" }
+iceoryx2 = { path = "../../../../../../iceoryx2", features = ["std"] }
+iceoryx2-integrations-ros2-interop = { path = "../../../../interop" }
+ros-env = { version = "0.2", features = ["serde"] }
+rosidl_runtime_rs = { version = "0.7" }

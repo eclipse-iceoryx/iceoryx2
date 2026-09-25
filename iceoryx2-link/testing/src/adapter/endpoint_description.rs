@@ -11,10 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_link_adapter::EndpointDescription;
+use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::Identified;
 use iceoryx2_link_backend::service_description::ServiceDescription;
-use iceoryx2_link_backend::service_description::{PatternSettings, ServiceTypes};
+use iceoryx2_link_backend::service_description::{PatternSettings, SampleTypes, ServiceTypes};
 
 /// The fake middleware's settings of an endpoint, its name and the
 /// settings it was created with.
@@ -32,12 +32,13 @@ impl Identified for FakeEndpointSettings {
     }
 }
 
-/// The fake middleware's types of an endpoint, the local
-/// types themselves, its data needing no translation.
-pub type FakeEndpointTypes = ServiceTypes;
+/// The fake middleware's types of a sample, the local types themselves,
+/// its data needing no translation.
+pub type FakeSampleTypes = SampleTypes;
 
 /// The fake middleware's description of an endpoint.
-pub type FakeEndpointDescription = EndpointDescription<FakeEndpointSettings, FakeEndpointTypes>;
+pub type FakeEndpointDescription =
+    EndpointDescription<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>;
 
 /// The endpoint a service maps to under the fake mapping.
 pub fn endpoint_of(description: &ServiceDescription) -> FakeEndpointDescription {
@@ -46,14 +47,17 @@ pub fn endpoint_of(description: &ServiceDescription) -> FakeEndpointDescription 
             name: description.name(),
             settings: description.settings().pattern.clone(),
         },
-        types: description.types().clone(),
+        types: match description.types() {
+            ServiceTypes::PublishSubscribe(types) => EndpointTypes::PublishSubscribe(types.clone()),
+            ServiceTypes::Event => EndpointTypes::Event,
+        },
     }
 }
 
 /// The size of the user header leading each message under `description`.
 pub fn header_size(description: &FakeEndpointDescription) -> usize {
     match &description.types {
-        ServiceTypes::PublishSubscribe(types) => types.user_header.size,
-        ServiceTypes::Event => 0,
+        EndpointTypes::PublishSubscribe(types) => types.user_header.size,
+        EndpointTypes::Event => 0,
     }
 }

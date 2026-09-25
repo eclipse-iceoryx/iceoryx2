@@ -19,9 +19,9 @@ use zenoh::bytes::ZBytes;
 use zenoh::key_expr::OwnedKeyExpr;
 use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::qos::Reliability;
-use zenoh::sample::{Locality, Sample};
+use zenoh::sample::Locality;
 
-use crate::inbox::Inbox;
+use crate::inbox::{Inbox, ReceivedBytes};
 
 mod event;
 mod sample;
@@ -62,7 +62,7 @@ impl core::error::Error for Error {}
 /// The zenoh publisher and subscriber one service's bytes cross on.
 pub(crate) struct ZenohChannel {
     publisher: Publisher<'static>,
-    subscriber: Subscriber<Inbox<Sample>>,
+    subscriber: Subscriber<Inbox<ReceivedBytes>>,
 }
 
 impl ZenohChannel {
@@ -100,9 +100,9 @@ impl ZenohChannel {
         })
     }
 
-    /// Puts the bytes as one zenoh payload.
-    fn put(&self, bytes: &[&[u8]]) -> Result<(), Error> {
-        let origin = origin!("ZenohChannel::put");
+    /// Sends the provided bytes as a unit over zenoh.
+    fn send(&self, bytes: &[&[u8]]) -> Result<(), Error> {
+        let origin = origin!("ZenohChannel::send");
 
         let mut concatenated = ZBytes::writer();
         for slice in bytes {
@@ -118,11 +118,11 @@ impl ZenohChannel {
         Ok(())
     }
 
-    /// The next pending bytes, if any.
-    fn pop(&self) -> Option<Vec<u8>> {
+    /// Receive a complete unit from zenoh.
+    fn receive(&mut self) -> Option<&[u8]> {
         self.subscriber
-            .handler()
-            .pop()
-            .map(|sample| sample.payload().to_bytes().into_owned())
+            .handler_mut()
+            .next()
+            .map(ReceivedBytes::bytes)
     }
 }

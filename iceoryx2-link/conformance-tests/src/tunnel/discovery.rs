@@ -39,8 +39,8 @@ pub mod tunnel_discovery {
         // === SETUP ===
         // Two sides tunnelled over one carrier, an application on side A
         // offering a service.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let _service = X::create::<S>(&a.node, &service_name);
         let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);
@@ -76,8 +76,8 @@ pub mod tunnel_discovery {
         // === SETUP ===
         // Two sides tunnelled over one carrier, an application on side A
         // offering two services.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let first_name = X::service_name();
         let second_name = X::service_name();
         let _first = X::create::<S>(&a.node, &first_name);
@@ -126,8 +126,8 @@ pub mod tunnel_discovery {
         // === SETUP ===
         // Two sides tunnelled over one carrier, an application on side A
         // offering a service and side B's filter rejecting it.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let _service = X::create::<S>(&a.node, &service_name);
         let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);
@@ -164,8 +164,8 @@ pub mod tunnel_discovery {
 
         // === SETUP ===
         // A service offered on side A and mirrored on side B.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service = X::create::<S>(&a.node, &service_name);
         let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);
@@ -212,9 +212,9 @@ pub mod tunnel_discovery {
 
         // === SETUP ===
         // Side A offers a service, sides B and C mirror it.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
-        let mut c = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut c = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service = X::create::<S>(&a.node, &service_name);
         let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);
@@ -266,8 +266,8 @@ pub mod tunnel_discovery {
         // === SETUP ===
         // A service offered on side A and mirrored on side B, where an
         // application opens a port on the mirror.
-        let mut a = side::<S, _>(|config| fixture.tunnel(config));
-        let mut b = side::<S, _>(|config| fixture.tunnel(config));
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
         let service_name = X::service_name();
         let service = X::create::<S>(&a.node, &service_name);
         let hash = ServiceHash::new::<S::ServiceNameHasher>(&service_name, X::PATTERN);

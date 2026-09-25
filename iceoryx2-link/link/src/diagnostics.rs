@@ -79,7 +79,7 @@ impl Diagnostics {
         let warn_failure = move |_: &ServiceHash, failure: &PropagationFailure| {
             error!(
                 from origin,
-                "Failed to propagate the {:?} bridge of {}, {}",
+                "Failed to propagate the {:?} bridge of \"{}\", {}",
                 failure.pattern, failure.name, failure.error
             );
         };
