@@ -65,6 +65,10 @@ fn run(tunnel: &mut ZenohTunnel, wake_sources: &WakeSources) -> anyhow::Result<(
         when wake_sources.attach(&waitset),
         "Failed to attach the wake sources"
     );
+
+    // Spin once to discover what exists already.
+    spin(tunnel);
+
     fail!(
         from ORIGIN,
         when waitset.wait_and_process(|_| {
