@@ -167,9 +167,6 @@ impl TryFrom<&TypeDescription> for TypeDetail {
         if !description.alignment.is_power_of_two() {
             return Err(InvalidTypeDescription::AlignmentNotPowerOfTwo);
         }
-        if !description.size.is_multiple_of(description.alignment) {
-            return Err(InvalidTypeDescription::SizeNotMultipleOfAlignment);
-        }
         if Layout::from_size_align(description.size, description.alignment).is_err() {
             return Err(InvalidTypeDescription::LayoutOverflow);
         }
@@ -244,7 +241,9 @@ mod tests {
     }
 
     #[test]
-    fn size_that_is_not_a_multiple_of_alignment_is_rejected() {
+    fn size_that_is_not_a_multiple_of_alignment_is_accepted() {
+        // When payload_alignment is overridden (e.g. alignment 16 on [u8] or u32),
+        // size does not need to divide alignment so long as Layout::from_size_align succeeds.
         const SIZE: usize = 6;
         const ALIGNMENT: usize = 4;
 
@@ -256,10 +255,17 @@ mod tests {
         };
 
         let result = TypeDetail::try_from(&description);
-        assert_that!(
-            result,
-            eq Err(InvalidTypeDescription::SizeNotMultipleOfAlignment)
-        );
+        assert_that!(result.is_ok(), eq true);
+    }
+
+    #[test]
+    fn type_detail_round_trips_with_custom_payload_alignment() {
+        let detail = TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, "u8", 1, 16)
+            .expect("valid parts");
+
+        let description = TypeDescription::from(&detail);
+        let round_tripped = TypeDetail::try_from(&description);
+        assert_that!(round_tripped, eq Ok(detail));
     }
 
     // No real type has these sizes, a description received from the
