@@ -31,19 +31,18 @@ pub struct Cli {
         value_name = "TOPIC",
         action = clap::ArgAction::Append,
         conflicts_with = "static_mapping",
-        help = "Bridge ROS 2 topics matching this wildcard pattern, where '*' matches zero or \
-                more characters and '?' matches one. Repeatable. When omitted, attempts to \
-                bridge all topics. ROS 2's own topics, /rosout and /parameter_events, are \
-                never bridged."
+        help = "Bridge the ROS 2 topics matching this wildcard pattern. '*' matches zero or \
+                more characters and '?' matches one. Repeatable. When omitted, the gateway \
+                attempts to bridge all topics except /rosout and /parameter_events."
     )]
     pub allow: Vec<String>,
 
     #[clap(
         long,
         value_name = "TOML",
-        help = "Specify a static mapping between iceoryx2 services and ROS 2 topics to use.\n\
-                If not set, prefix mapping is used: services with names in the form \
-                ros2://topics/{NAMESPACE}/{TOPIC} are mapped to topics /{NAMESPACE}/{TOPIC}."
+        help = "Map iceoryx2 services to ROS 2 topics as specified in this file. When \
+                omitted, services named ros2://topics/{NAMESPACE}/{TOPIC} are mapped to the \
+                topics /{NAMESPACE}/{TOPIC}."
     )]
     static_mapping: Option<PathBuf>,
 
@@ -52,9 +51,8 @@ pub struct Cli {
         value_name = "TYPE",
         action = clap::ArgAction::Append,
         conflicts_with = "static_mapping",
-        help = "Resolve typesupport for the given ROS 2 message type at startup rather than on \
-                first use, failing fast when it cannot be resolved. Repeatable. Not relevant \
-                for static mappings which instead preload types specified in the mapping."
+        help = "Load the typesupport of this ROS 2 message type at startup. The gateway fails \
+                to start when it cannot be loaded. Repeatable."
     )]
     pub preload_types: Vec<String>,
 
@@ -68,34 +66,39 @@ pub struct Cli {
 
     #[clap(
         long,
-        help = "Create the services mirroring ROS 2 topics with the RosHeader user header, \
-                which carries the ROS 2 message info of each sample."
+        help = "Create the services mirroring ROS 2 topics with the RosHeader user header. \
+                It carries the ROS 2 message info of each sample."
     )]
     pub ros_header: bool,
 
     #[clap(
         long,
         value_name = "RATE",
-        help = "Polling rate in milliseconds for discovery and sample propagation \
-                (defaults to 100ms when no other wake source is given; otherwise \
-                must be set explicitly to enable polling)"
+        help = "Wake the gateway every RATE milliseconds. Defaults to 100 when neither \
+                --reactive nor --listener is given."
     )]
     pub poll: Option<u64>,
 
-    #[clap(long, help = "Wake the gateway when ROS 2 has new data or endpoints")]
+    #[clap(long, help = "Wake the gateway when ROS 2 has new data or endpoints.")]
     pub reactive: bool,
 
     #[clap(
         long,
+        help = "Notify the event service named after a service whenever samples from ROS 2 \
+                were delivered to it."
+    )]
+    pub notify: bool,
+
+    #[clap(
+        long,
         value_name = "EVENT_SERVICE",
-        help = "Additionally wake the gateway when the named iceoryx2 event service fires \
-                (repeatable)"
+        help = "Wake the gateway when this iceoryx2 event service is notified. Repeatable."
     )]
     pub listener: Vec<String>,
 
     #[clap(
         long,
-        help = "Report what every bridge moved after each propagation, at trace level"
+        help = "Report what every bridge moved after each propagation at trace log level."
     )]
     pub monitor: bool,
 }
