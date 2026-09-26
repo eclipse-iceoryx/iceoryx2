@@ -67,7 +67,7 @@ The integrations require:
 * The cargo-aware colcon build tools, for the
   [colcon examples](colcon/examples/README.md)
 
-The linked READMEs describe how to set them up.
+The associated READMEs describe how to set them up.
 
 Inside a container, such as the development distrobox, all prerequisites can be
 set up with a single `just` recipe for convenience:
@@ -119,4 +119,5 @@ just test-e2e integrations-ros2-examples
 | Name                                         | Description                                                                                    |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | [gateway examples](examples/README.md)       | `iceoryx2` applications whose services are propagated to ROS 2 via a gateway.                  |
-| [colcon examples](colcon/examples/README.md) | `iceoryx2` applications packaged as ROS 2 packages, built with colcon and run with `ros2 run`. |
+| [colcon examples](colcon/examples/README.md) | `iceoryx2` applications packaged as ROS 2 packages built with colcon and run with `ros2 run`. |
+
