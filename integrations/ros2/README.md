@@ -60,25 +60,19 @@ ros2 run demo_nodes_cpp listener
 
 The integrations require:
 
-* A sourced ROS 2 distribution
-* The Rust message crates generated in the
-  [message workspace](colcon/messages/README.md), for the tests and the
-  [gateway examples](examples/README.md)
+* A sourced, up-to-date ROS 2 distribution, or an older one with the Rust
+  message crates generated in the [message workspace](colcon/messages/README.md)
 * The cargo-aware colcon build tools, for the
   [colcon examples](colcon/examples/README.md)
 
 The associated READMEs describe how to set them up.
 
-Inside a container, such as the development distrobox, all prerequisites can be
-set up with a single `just` recipe for convenience:
+Inside a container, such as the development distrobox, the colcon build tools
+can be installed with a `just` recipe for convenience:
 
 ```bash
-source /opt/ros/<distro>/setup.bash # if not using the distrobox
 just setup integrations-ros2
 ```
-
-It installs the colcon build tools and generates the message crates into
-`integrations/ros2/target/<distro>`.
 
 ## Building and Testing
 
@@ -89,7 +83,6 @@ With the plain commands, from the repository root:
 
 ```bash
 source /opt/ros/<distro>/setup.bash
-source integrations/ros2/colcon/messages/install/setup.bash
 cargo build --manifest-path integrations/ros2/Cargo.toml --workspace
 cargo nextest run --manifest-path integrations/ros2/Cargo.toml --workspace
 ```
@@ -101,8 +94,10 @@ just build integrations-ros2
 just test integrations-ros2
 ```
 
-The recipes source the message crates automatically from the install space
-`just setup integrations-ros2` creates in `integrations/ros2/target/<distro>`.
+On older installations, build the message crates in the
+[message workspace](colcon/messages/README.md) first. The plain commands then
+also need its install space sourced, while the `just` recipes source it
+automatically.
 
 In addition, the `just` recipes provide convenience commands to run the
 end-to-end tests:

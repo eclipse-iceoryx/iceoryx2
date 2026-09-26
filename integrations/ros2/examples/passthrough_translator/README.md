@@ -15,25 +15,19 @@ One publisher and subscriber pair per mapping:
 
 ## Building
 
-First, build the Rust message crates as described in the [message workspace
-README](../../colcon/messages/README.md). Building the examples requires your
-ROS 2 distribution and the install space of the message crates to be sourced.
-
-In the following, `<distro>` is your ROS 2 distribution (`jazzy` or `humble`).
-
-When the message crates were built with the plain `colcon` commands:
+Building the examples requires your ROS 2 distribution to be sourced. On
+up-to-date installations, it also provides the Rust crates of its message
+packages. In the following, `<distro>` is your ROS 2 distribution (`jazzy` or
+`humble`).
 
 ```sh
 source /opt/ros/<distro>/setup.bash
-source integrations/ros2/colcon/messages/install/setup.bash
 ```
 
-When they were built with `just setup integrations-ros2-messages`:
-
-```sh
-source /opt/ros/<distro>/setup.bash
-source integrations/ros2/target/<distro>/colcon/messages/install/setup.bash
-```
+On older installations that do not ship the Rust message crates, build them
+from source as described in the [message workspace
+README](../../colcon/messages/README.md) and additionally source its install
+space.
 
 Then build the examples and the gateway CLI:
 
@@ -44,8 +38,8 @@ cargo build --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway
 
 ## Running
 
-Run each command below in its own terminal. Each terminal must source your
-ROS 2 distribution and the install space of the message crates, as shown above.
+Run each command below in its own terminal. Each terminal must be sourced as
+for building.
 
 ### Prefix Mapping
 
