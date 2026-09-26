@@ -116,7 +116,7 @@ just test-e2e integrations-ros2-examples
 
 ## Examples
 
-* [`examples`](examples/README.md) shows how to propagate services to and from
-  ROS 2 via a gateway.
-* [`colcon/examples`](colcon/examples/README.md) shows how to build `iceoryx2`
-  applications using colcon.
+| Name                                         | Description                                                                                    |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [gateway examples](examples/README.md)       | `iceoryx2` applications whose services are propagated to ROS 2 via a gateway.                  |
+| [colcon examples](colcon/examples/README.md) | `iceoryx2` applications packaged as ROS 2 packages, built with colcon and run with `ros2 run`. |
