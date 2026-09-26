@@ -5,27 +5,44 @@ Illustrates how to package `iceoryx2` applications as `ament_cargo` packages.
 
 ## Building
 
-Ensure the pre-requisites described in [ros2/colcon/examples/README.md](../../README.md)
-are done and run, from the workspace root:
+First, ensure the prerequisites described in the
+[example workspace README](../../README.md) are installed.
+
+The package can be built with the plain `colcon` commands or, for convenience,
+with a `just` recipe. In the following, `<distro>` is your ROS 2 distribution
+(`jazzy` or `humble`).
+
+With the plain commands, from the example workspace
+(`integrations/ros2/colcon/examples`):
 
 ```bash
+source /opt/ros/<distro>/setup.bash
 colcon build --packages-select demo_nodes_iceoryx2
+source install/setup.bash
+```
+
+With `just`:
+
+```bash
+source /opt/ros/<distro>/setup.bash
+just setup integrations-ros2-examples
+# From the repository root
+source integrations/ros2/target/<distro>/colcon/examples/install/setup.bash
 ```
 
 ## Running
 
-Open two terminals and execute the following commands.
+Open two terminals, source the install space of the example workspace in each,
+and execute the following commands.
 
 ### Terminal 1
 
 ```bash
-source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 subscriber
 ```
 
 ### Terminal 2
 
 ```bash
-source <workspace>/install/setup.bash
 ros2 run demo_nodes_iceoryx2 publisher
 ```

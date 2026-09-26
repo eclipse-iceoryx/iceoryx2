@@ -11,16 +11,29 @@ generated messages of the sourced workspace.
 the crates are generated fresh from the message definitions imported by
 `<distro>.repos`.
 
-All commands assume a **sourced ROS 2 environment**, e.g. inside the development
-distrobox (see [../../README.md](../../README.md)), and are run from this
-directory. `<distro>` is your ROS 2 distribution (`jazzy` or `humble`).
-
 ## Building
 
+The crates can either be built with the plain `colcon` commands or with a
+provided `just` recipe for convenience. The install space of the built crates
+needs to be sourced before building or running any applications that depend on
+them. In the following, `<distro>` is your ROS 2 distribution (`jazzy` or
+`humble`).
+
+With the plain commands, from this directory:
+
 ```bash
-just setup integrations-ros2-messages
+source /opt/ros/<distro>/setup.bash
+mkdir -p src
+vcs import src < <distro>.repos
+colcon build --packages-up-to std_msgs geometry_msgs rosidl_generator_rs
+source install/setup.bash
 ```
 
-This imports the message definitions of `<distro>.repos` and builds the
-crates into `../../target/<distro>/colcon/messages`.
-Source its `install/setup.bash` to make the crates available.
+With `just`:
+
+```bash
+source /opt/ros/<distro>/setup.bash
+just setup integrations-ros2-messages
+# From the repository root
+source integrations/ros2/target/<distro>/colcon/messages/install/setup.bash
+```

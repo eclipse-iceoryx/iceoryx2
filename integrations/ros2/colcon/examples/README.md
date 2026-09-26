@@ -1,17 +1,25 @@
 # Example Workspace
 
-This directory contains a colcon workspace for example `iceoryx2` applications
-built as ROS 2 packages.
+This directory contains a colcon workspace of `iceoryx2` applications packaged
+as ROS 2 (`ament_cargo`) packages, showing how they are built with colcon and
+run with `ros2 run`. These exist to illustrate the setup for when wanting
+to integrate with the ROS 2 build system.
 
-All commands assume a **sourced ROS 2 environment**, e.g. inside the development
-distrobox (see [../../README.md](../../README.md)), and are run from this
-directory.
+## Prerequisites
 
-## Building
+Building `iceoryx2` applications as ROS 2 packages requires the cargo-aware
+colcon build tools:
 
 ```bash
-just setup integrations-ros2-examples
+pip install colcon-cargo colcon-ros-cargo
+cargo install cargo-ament-build
 ```
 
-This builds the examples into `../../target/<distro>/colcon/examples`. Source
-its `install/setup.bash` to run them with `ros2 run`.
+Inside a container, such as the development distrobox, the tools can also be
+installed with `just setup integrations-ros2-tools` for convenience.
+
+## Overview
+
+| Name                         | Description                                                |
+| ---------------------------- | ---------------------------------------------------------- |
+| [demo nodes](src/demo_nodes) | Minimal publisher and subscriber built as a ROS 2 package. |
