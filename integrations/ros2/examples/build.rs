@@ -42,9 +42,7 @@ fn main() {
     if !missing.is_empty() {
         panic!(
             "No generated Rust crate found for the ROS 2 message packages {missing:?} under \
-             AMENT_PREFIX_PATH. Build the message workspace with `just setup \
-             integrations-ros2-messages` and source \
-             integrations/ros2/target/<distro>/colcon/messages/install/setup.bash before building."
+             AMENT_PREFIX_PATH. Ensure an environment providing them is sourced before building."
         );
     }
 }
