@@ -59,6 +59,8 @@
 //!   admits by name, those it exports and the mirrors it creates alike.
 //! * [`Link::with_monitoring`] reports at trace level what every bridge
 //!   moved in each direction, once per propagation.
+//! * [`Link::with_notifications`] notifies the event service named after a
+//!   service whenever samples were delivered to it.
 //! * A failed cycle reports a [`DiscoveryError`] or a [`PropagateError`]
 //!   but leaves the link usable for the next cycle.
 //!

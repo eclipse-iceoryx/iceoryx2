@@ -18,6 +18,8 @@ pub mod tunnel_publish_subscribe {
     use core::time::Duration;
 
     use iceoryx2::service::Service;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
+    use iceoryx2::service::service_hash::ServiceHash;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
@@ -26,12 +28,13 @@ pub mod tunnel_publish_subscribe {
     use crate::parameters::Foreign as Y;
     use crate::parameters::{PayloadShape, PublishSubscribeService};
     use crate::testing::{
-        hash_of, history_size_of, payload_type_name, payload_type_of, retry, side,
+        hash_of, history_size_of, notifications_of, payload_type_name, payload_type_of, retry, side,
     };
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const SAMPLE_A: u64 = 1;
     const SAMPLE_B: u64 = 2;
+    const PROPAGATIONS: usize = 10;
 
     #[conformance_test]
     pub fn a_mirror_has_the_local_default_settings<
@@ -318,5 +321,169 @@ pub mod tunnel_publish_subscribe {
             b.link.propagate().expect("propagation succeeds");
         }
         assert_that!(Y::receive(&subscriber_b), is_none);
+    }
+
+    #[conformance_test]
+    pub fn a_delivery_notifies_the_event_service_named_after_the_service<
+        S: Service,
+        X: PublishSubscribeService,
+        F: TunnelFixture,
+    >() {
+        let sample = X::Payload::value(SAMPLE_A);
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // A service offered on side A and mirrored on side B, whose link
+        // notifies on delivery.
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        b.link = b.link.with_notifications();
+
+        let service_name = X::service_name();
+        let service_a = X::create_service::<(), _>(&a.node, &service_name);
+        let publisher_a = X::create_publisher(&service_a);
+        let hash = hash_of::<S>(&service_name);
+
+        a.link.discover().expect("discovery succeeds");
+        retry(
+            || {
+                b.link.discover().expect("discovery succeeds");
+                match b.link.bridges().contains(&hash) {
+                    true => Ok(()),
+                    false => Err("the service is not bridged on the opposing side"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the service is bridged on the opposing side");
+
+        // === JOIN ===
+        // Side B's application subscribes to the mirror and listens on the
+        // event service named after it.
+        let service_b = X::open_service::<(), _>(&b.node, &service_name);
+        let subscriber_b = X::create_subscriber(&service_b);
+
+        let event_b = b
+            .node
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .expect("the event service is created");
+        let listener_b = event_b
+            .listener_builder()
+            .create()
+            .expect("the listener is created");
+
+        assert_that!(fixture.sync(&hash, TIMEOUT), eq true);
+
+        // === A TO B ===
+        // The sample delivered on side B is announced on the event service.
+        X::send(&publisher_a, (), sample.clone());
+
+        retry(
+            || {
+                a.link.propagate().expect("propagation succeeds");
+                b.link.propagate().expect("propagation succeeds");
+                match notifications_of(&listener_b).is_empty() {
+                    false => Ok(()),
+                    true => Err("the event service was not notified"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the delivery is notified");
+
+        match X::receive(&subscriber_b) {
+            Some((_, payload)) => assert_that!(payload, eq sample),
+            None => panic!("the notified sample is not available"),
+        }
+    }
+
+    #[conformance_test]
+    pub fn a_delivery_notification_does_not_cross_to_the_opposing_side<
+        S: Service,
+        X: PublishSubscribeService,
+        F: TunnelFixture,
+    >() {
+        let sample = X::Payload::value(SAMPLE_A);
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // A service and the event service named after it offered on side A,
+        // both mirrored on side B, whose link notifies on delivery.
+        let mut a = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        let mut b = side::<S, _>(fixture.config(), |config| fixture.tunnel(config));
+        b.link = b.link.with_notifications();
+
+        let service_name = X::service_name();
+        let service_a = X::create_service::<(), _>(&a.node, &service_name);
+        let publisher_a = X::create_publisher(&service_a);
+        let hash = hash_of::<S>(&service_name);
+
+        let event_a = a
+            .node
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .expect("the event service is created");
+        let listener_a = event_a
+            .listener_builder()
+            .create()
+            .expect("the listener is created");
+        let event_hash =
+            ServiceHash::new::<S::ServiceNameHasher>(&service_name, MessagingPattern::Event);
+
+        a.link.discover().expect("discovery succeeds");
+        retry(
+            || {
+                b.link.discover().expect("discovery succeeds");
+                match b.link.bridges().contains(&hash) && b.link.bridges().contains(&event_hash) {
+                    true => Ok(()),
+                    false => Err("the services are not bridged on the opposing side"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the services are bridged on the opposing side");
+
+        // === JOIN ===
+        // Side B's application listens on the mirrored event service.
+        let event_b = b
+            .node
+            .service_builder(&service_name)
+            .event()
+            .open()
+            .expect("the event service is opened");
+        let listener_b = event_b
+            .listener_builder()
+            .create()
+            .expect("the listener is created");
+
+        assert_that!(fixture.sync(&hash, TIMEOUT), eq true);
+        assert_that!(fixture.sync(&event_hash, TIMEOUT), eq true);
+
+        // === A TO B ===
+        // The delivery notifies side B only. The link does not relay its own
+        // notification back to side A.
+        X::send(&publisher_a, (), sample);
+
+        retry(
+            || {
+                a.link.propagate().expect("propagation succeeds");
+                b.link.propagate().expect("propagation succeeds");
+                match notifications_of(&listener_b).is_empty() {
+                    false => Ok(()),
+                    true => Err("the event service was not notified"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the delivery is notified on side B");
+
+        for _ in 0..PROPAGATIONS {
+            b.link.propagate().expect("propagation succeeds");
+            a.link.propagate().expect("propagation succeeds");
+        }
+        assert_that!(notifications_of(&listener_a), is_empty);
     }
 }
