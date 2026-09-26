@@ -49,6 +49,12 @@ pub fn create_tunnel(
     } else {
         tunnel
     };
+    let tunnel = if cli.notify {
+        info!(from ORIGIN, "Notifying the event service named after each service with delivered samples");
+        tunnel.with_notifications()
+    } else {
+        tunnel
+    };
 
     // Bridge only the services the allow list admits, every one when none is given.
     if cli.allow.is_empty() {

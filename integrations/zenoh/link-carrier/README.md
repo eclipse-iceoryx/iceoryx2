@@ -33,6 +33,9 @@ let carrier = ZenohCarrier::create(zenoh::Config::default())?;
 let tunnel = Tunnel::new(carrier, &config);
 
 let mut link = Link::new(node, tunnel);
+// Enable notifications to the event service named after a service when
+// samples were delivered to it:
+// let mut link = Link::new(node, tunnel).with_notifications();
 let listener = link.listener()?;
 
 loop {

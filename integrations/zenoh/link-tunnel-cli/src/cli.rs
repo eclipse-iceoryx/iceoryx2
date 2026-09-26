@@ -26,7 +26,7 @@ pub struct Cli {
         short,
         long,
         value_name = "PATH",
-        help = "Path to a zenoh configuration file"
+        help = "Path to a zenoh configuration file."
     )]
     pub zenoh_config: Option<String>,
 
@@ -35,7 +35,7 @@ pub struct Cli {
         short = 'a',
         value_name = "SERVICE",
         action = clap::ArgAction::Append,
-        help = "Bridge iceoryx2 services whose names match this wildcard pattern, where '*' \
+        help = "Bridge the iceoryx2 services whose names match this wildcard pattern. '*' \
                 matches zero or more characters and '?' matches one. Repeatable. When omitted, \
                 all services are bridged."
     )]
@@ -44,25 +44,31 @@ pub struct Cli {
     #[clap(
         long,
         value_name = "RATE",
-        help = "Polling rate in milliseconds for discovery and sample propagation \
-                (defaults to 100ms when no other wake source is given; otherwise \
-                must be set explicitly to enable polling)"
+        help = "Wake the tunnel every RATE milliseconds. Defaults to 100 when neither \
+                --reactive nor --listener is given."
     )]
     pub poll: Option<u64>,
 
-    #[clap(long, help = "Wake the tunnel when the peers have new data")]
+    #[clap(long, help = "Wake the tunnel when the peers have new data.")]
     pub reactive: bool,
 
     #[clap(
         long,
+        help = "Notify the event service named after a service whenever samples from the peers \
+                were delivered to it."
+    )]
+    pub notify: bool,
+
+    #[clap(
+        long,
         value_name = "EVENT_SERVICE",
-        help = "Additionally wake the tunnel when the named iceoryx2 event service fires (repeatable)"
+        help = "Wake the tunnel when this iceoryx2 event service is notified. Repeatable."
     )]
     pub listener: Vec<String>,
 
     #[clap(
         long,
-        help = "Report what every bridge moved after each propagation, at trace level"
+        help = "Report what every bridge moved after each propagation at trace log level."
     )]
     pub monitor: bool,
 }
