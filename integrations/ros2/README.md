@@ -77,8 +77,8 @@ source /opt/ros/<distro>/setup.bash # if not using the distrobox
 just setup integrations-ros2
 ```
 
-It installs the colcon build tools, generates the message crates and builds
-the colcon examples, placing everything in `integrations/ros2/target/<distro>`.
+It installs the colcon build tools and generates the message crates into
+`integrations/ros2/target/<distro>`.
 
 ## Building and Testing
 
@@ -109,6 +109,8 @@ end-to-end tests:
 
 ```bash
 just test-e2e integrations-ros2
+
+just setup integrations-ros2-examples
 just test-e2e integrations-ros2-examples
 ```
 
