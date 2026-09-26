@@ -14,7 +14,7 @@ cargo install cargo-ament-build
 ```
 
 Inside a container, such as the development distrobox, the tools can also be
-installed with `just setup integrations-ros2-tools` for convenience.
+installed with `just setup integrations-ros2` for convenience.
 
 The package can be built with the plain `colcon` commands or, for convenience,
 with a `just` recipe. In the following, `<distro>` is your ROS 2 distribution

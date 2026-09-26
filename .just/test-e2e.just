@@ -45,8 +45,11 @@ _test-e2e-integrations-ros2:
     #!/usr/bin/env bash
     set -eo pipefail
 
-    just _ros2-require-messages
-    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    just _ros2-require-sourced
+    # Message crates built from source take precedence over the distribution's.
+    if [ -f "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash" ]; then
+        source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    fi
     export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
 
     # Honor a caller-provided RMW (e.g. the CI matrix), defaulting to Fast DDS otherwise.

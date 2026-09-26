@@ -45,8 +45,11 @@ jobs:
           # The RMW package name is the implementation name with '_' -> '-',
           # e.g. rmw_cyclonedds_cpp -> ros-<distro>-rmw-cyclonedds-cpp.
           RMW_PKG="ros-${{ inputs.ros-distro }}-$(echo '${{ inputs.rmw }}' | tr '_' '-')"
+          # The message packages the workspace builds against. Installing them
+          # upgrades them past a base image that predates their Rust crates.
+          MSG_PKGS="ros-${{ inputs.ros-distro }}-builtin-interfaces ros-${{ inputs.ros-distro }}-std-msgs ros-${{ inputs.ros-distro }}-geometry-msgs"
           apt-get update
-          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev expect ros-dev-tools python3-pip "$RMW_PKG"
+          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev expect ros-dev-tools python3-pip "$RMW_PKG" $MSG_PKGS
 
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0
@@ -79,23 +82,9 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
-      - name: Install colcon build tools
+      - name: Set up ROS 2 integrations
         shell: bash
-        run: just setup integrations-ros2-tools
-
-      - name: Restore ROS 2 message crates
-        id: ros2-messages
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # version: v5.0.1
-        with:
-          path: integrations/ros2/target/${{ inputs.ros-distro }}/colcon/messages/install
-          key: ros2-messages-${{ inputs.ros-distro }}-${{ hashFiles(format('integrations/ros2/colcon/messages/{0}.repos', inputs.ros-distro)) }}
-
-      - name: Build ROS 2 message crates
-        if: steps.ros2-messages.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just setup integrations-ros2-messages
+        run: just setup integrations-ros2
 
       - name: Build workspace
         shell: bash
