@@ -18,7 +18,7 @@ INTEGRATIONS_DIR := justfile_directory() / "integrations"
 INTEGRATIONS_ZENOH_DIR := INTEGRATIONS_DIR / "zenoh"
 INTEGRATIONS_ROS2_DIR := INTEGRATIONS_DIR / "ros2"
 
-# One target directory per distribution, mirroring the source layout.
+# One target directory per distribution.
 INTEGRATIONS_ROS2_COLCON_DIR := INTEGRATIONS_ROS2_DIR / "colcon"
 INTEGRATIONS_ROS2_TARGET_DIR := INTEGRATIONS_ROS2_DIR / "target" / "${ROS_DISTRO}"
 INTEGRATIONS_ROS2_CARGO_TARGET_DIR := INTEGRATIONS_ROS2_TARGET_DIR / "cargo"

@@ -1,6 +1,3 @@
-# Pairs the iceoryx2 service "Chatter" with the ROS 2 topic "/chatter",
-# with default QoS.
-
 [[mapping]]
 iceoryx2.service_name = "Chatter"
 iceoryx2.payload_type = "std_msgs/msg/String"

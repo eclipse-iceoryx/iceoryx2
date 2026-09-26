@@ -134,8 +134,11 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
 
         TARGET_DIR_ARG=""
         if [ "$WS" = "integrations-ros2" ]; then
-            just _ros2-require-messages
-            source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+            just _ros2-require-sourced
+            # Message crates built from source take precedence over the distribution's.
+            if [ -f "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash" ]; then
+                source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+            fi
             TARGET_DIR_ARG="--target-dir {{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
         fi
 

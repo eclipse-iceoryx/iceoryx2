@@ -1,0 +1,5 @@
+[[mapping]]
+iceoryx2.service_name = "CmdVel"
+iceoryx2.payload_type = "geometry_msgs/msg/Twist"
+ros2.topic = "/cmd_vel"
+ros2.type = "geometry_msgs/msg/Twist"

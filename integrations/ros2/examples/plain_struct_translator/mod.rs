@@ -10,28 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Applications whose services carry the C struct rosidl generates for a
+//! ROS 2 message, serialized by the gateway's plain-struct translator.
+
 use iceoryx2::prelude::*;
 use rosidl_runtime_rs::{Message, RmwMessage};
-
-/// The service payload is a byte slice holding the CDR-serialized message.
-/// The type name is taken from the IDL-generated struct to match the
-/// ROS side.
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct StdMsgStringByte(pub u8);
-
-unsafe impl ZeroCopySend for StdMsgStringByte {
-    unsafe fn type_name() -> &'static str {
-        <<ros_env::std_msgs::msg::String as Message>::RmwMsg as RmwMessage>::TYPE_NAME
-    }
-}
-
-/// Byte view of a CDR payload slice.
-pub fn as_bytes(payload: &[StdMsgStringByte]) -> &[u8] {
-    // SAFETY: StdMsgStringByte is #[repr(transparent)] over u8, so length and
-    // alignment carry over.
-    unsafe { core::slice::from_raw_parts(payload.as_ptr().cast::<u8>(), payload.len()) }
-}
 
 /// Shared-memory payload for `geometry_msgs/msg/Twist`.
 ///

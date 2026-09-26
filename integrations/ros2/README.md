@@ -18,12 +18,14 @@ ROS 2 distribution is defined in a `distrobox-<distro>.ini` manifest:
 | Jazzy              | `rmw_fastrtps_cpp`   | `distrobox-jazzy.ini`  | `iceoryx2-integrations-ros2-jazzy`  |
 | Humble             | `rmw_cyclonedds_cpp` | `distrobox-humble.ini` | `iceoryx2-integrations-ros2-humble` |
 
+In the following, `<distro>` is your ROS 2 distribution (`jazzy` or `humble`).
+
 With `podman` or `docker` installed on the host, replicate and enter a box with
-the manifest of the desired distribution, e.g.:
+the manifest of the desired distribution:
 
 ```bash
-distrobox assemble create --file integrations/ros2/distrobox-jazzy.ini
-distrobox enter iceoryx2-integrations-ros2-jazzy
+distrobox assemble create --file integrations/ros2/distrobox-<distro>.ini
+distrobox enter iceoryx2-integrations-ros2-<distro>
 ```
 
 Each box provides:
@@ -54,29 +56,63 @@ ros2 run demo_nodes_cpp talker
 ros2 run demo_nodes_cpp listener
 ```
 
-## Preparing the Workspace
+## Prerequisites
 
-The crates and examples use Rust message crates generated from the ROS 2
-message definitions. They can be built with `just` scripts from the repository
-root within the distrobox:
+The integrations require:
+
+* A sourced, up-to-date ROS 2 distribution, or an older one with the Rust
+  message crates generated in the [message workspace](colcon/messages/README.md)
+* The cargo-aware colcon build tools, for the
+  [colcon examples](colcon/examples/README.md)
+
+The associated READMEs describe how to set them up.
+
+Inside a container, such as the development distrobox, the colcon build tools
+can be installed with a `just` recipe for convenience:
 
 ```bash
 just setup integrations-ros2
 ```
 
-This installs the colcon build tools, generates the message crates and
-builds the examples. Everything the ros2 workspace builds is placed in
-`integrations/ros2/target/<distro>`.
-
-The setup only runs inside a container. It installs the colcon build tools
-into the system Python. The script will not install anything if not within
-a container.
-
 ## Building and Testing
+
+The workspace can be built and tested with plain `cargo` commands or, for
+convenience, with `just` recipes. Both require the prerequisites above.
+
+With the plain commands, from the repository root:
+
+```bash
+source /opt/ros/<distro>/setup.bash
+cargo build --manifest-path integrations/ros2/Cargo.toml --workspace
+cargo nextest run --manifest-path integrations/ros2/Cargo.toml --workspace
+```
+
+With `just`:
 
 ```bash
 just build integrations-ros2
 just test integrations-ros2
+```
+
+On older installations, build the message crates in the
+[message workspace](colcon/messages/README.md) first. The plain commands then
+also need its install space sourced, while the `just` recipes source it
+automatically.
+
+In addition, the `just` recipes provide convenience commands to run the
+end-to-end tests:
+
+```bash
 just test-e2e integrations-ros2
+
+just setup integrations-ros2-examples
 just test-e2e integrations-ros2-examples
 ```
+
+## Examples
+
+| Name                                         | Description                                                                                    |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [gateway examples](examples/README.md)       | `iceoryx2` applications whose services are propagated to ROS 2 via a gateway.                  |
+| [colcon examples](colcon/examples/README.md) | `iceoryx2` applications packaged as ROS 2 packages built with colcon and run with `ros2 run`. |
+

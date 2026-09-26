@@ -23,19 +23,3 @@ _ros2-require-sourced:
         echo "  Source your ROS 2 setup first, e.g.: source /opt/ros/jazzy/setup.bash" >&2
         exit 1
     fi
-
-# Fails unless a ROS 2 distribution is sourced and the message crates are
-# built. Recipes must source the message crates themselves from
-# `INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE`.
-[private]
-_ros2-require-messages:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    just _ros2-require-sourced
-
-    if [ ! -f "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash" ]; then
-        echo "Error: the ROS 2 message crates are not built" >&2
-        echo "  Build them first: just setup integrations-ros2-messages" >&2
-        exit 1
-    fi

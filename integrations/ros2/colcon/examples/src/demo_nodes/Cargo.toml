@@ -4,14 +4,18 @@
 
 [package]
 name = "demo_nodes_iceoryx2"
-description = "Native iceoryx2 example nodes bridged to ROS 2 by the gateway"
+description = "Minimal iceoryx2 applications built as a ROS 2 package"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
 
+[[bin]]
+name = "publisher"
+path = "src/bin/publisher.rs"
+
+[[bin]]
+name = "subscriber"
+path = "src/bin/subscriber.rs"
+
 [dependencies]
-cdr = { version = "0.2.4" }
 iceoryx2 = { path = "../../../../../../iceoryx2", features = ["std"] }
-iceoryx2-integrations-ros2-interop = { path = "../../../../interop" }
-ros-env = { version = "0.2", features = ["serde"] }
-rosidl_runtime_rs = { version = "0.7" }

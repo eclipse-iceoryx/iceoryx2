@@ -25,7 +25,7 @@ _test-e2e-dispatch what *flags:
             echo ""
             echo "Scope:"
             echo "  integrations-ros2           run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
-            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup integrations-ros2')"
+            echo "  integrations-ros2-examples  run end-to-end tests for the ros2 examples (requires 'just setup integrations-ros2-examples')"
             exit 1
             ;;
         integrations-ros2)
@@ -45,21 +45,23 @@ _test-e2e-integrations-ros2:
     #!/usr/bin/env bash
     set -eo pipefail
 
-    just _ros2-require-messages
-    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    just _ros2-require-sourced
+    # Message crates built from source take precedence over the distribution's.
+    if [ -f "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash" ]; then
+        source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    fi
     export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
 
     # Honor a caller-provided RMW (e.g. the CI matrix), defaulting to Fast DDS otherwise.
     export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
     just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_DIR}}/link-gateway-cli"
+    just _test-e2e-run-tests "{{INTEGRATIONS_ROS2_DIR}}/examples"
 
 [private]
 _test-e2e-integrations-ros2-examples:
     #!/usr/bin/env bash
     set -eo pipefail
-
-    just _ros2-require-messages
 
     if [ ! -f "{{INTEGRATIONS_ROS2_EXAMPLES_INSTALL_BASE}}/setup.bash" ]; then
         echo "Error: the ROS 2 examples are not built" >&2

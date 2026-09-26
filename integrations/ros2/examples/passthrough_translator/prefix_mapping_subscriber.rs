@@ -10,29 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Receives `geometry_msgs/msg/Twist` from the service prefix-mapped to the
-//! ROS 2 topic `/cmd_vel`. The application handles only the native
-//! [`Twist`] struct; the gateway's plain-struct translator does the CDR
+//! Receives `std_msgs/msg/String` as CDR bytes from the service
+//! prefix-mapped to the ROS 2 topic `/chatter` and prints it with the
+//! remote origin from the [`RosHeader`]. The application does its own
 //! (de)serialization.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
+//! cargo run --manifest-path integrations/ros2/Cargo.toml --example passthrough_prefix_mapping_subscriber
 //! # in other shells:
-//! #   cargo run --bin iox2-link-gateway-ros2 -- \
-//! #       --allow /cmd_vel \
-//! #       --translator PlainStruct --ros-header
-//! #   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
+//! #   cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --allow /chatter --ros-header
+//! #   ros2 run demo_nodes_cpp talker
 //! ```
 
 use core::time::Duration;
 
-use demo_nodes_iceoryx2::Twist;
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_examples::passthrough_translator::{StdMsgStringByte, as_bytes};
 use iceoryx2_integrations_ros2_interop::RosHeader;
 
 /// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
-/// `/cmd_vel`.
-const SERVICE_NAME: &str = "ros2://topics/cmd_vel";
+/// `/chatter`.
+const SERVICE_NAME: &str = "ros2://topics/chatter";
 
 const CYCLE_TIME: Duration = Duration::from_millis(100);
 
@@ -43,7 +41,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let service = node
         .service_builder(&SERVICE_NAME.try_into()?)
-        .publish_subscribe::<Twist>()
+        .publish_subscribe::<[StdMsgStringByte]>()
         .user_header::<RosHeader>()
         .open_or_create()?;
 
@@ -52,11 +50,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     coutln!("waiting for messages on {SERVICE_NAME}");
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
+            let message: ros_env::std_msgs::msg::String =
+                cdr::deserialize(as_bytes(sample.payload()))?;
             let header = sample.user_header();
 
             coutln!(
-                "received: {:?} (sequence: {}, timestamp: {} ns, gid: {:02x?})",
-                sample.payload(),
+                "received: \"{}\" (sequence: {}, timestamp: {} ns, gid: {:02x?})",
+                message.data,
                 header.sequence_number,
                 header.source_timestamp_ns,
                 header.gid

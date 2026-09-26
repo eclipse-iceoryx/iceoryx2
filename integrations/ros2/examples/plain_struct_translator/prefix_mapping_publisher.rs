@@ -10,29 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Publishes `geometry_msgs/msg/Twist` on the service statically mapped to
-//! the ROS 2 topic `/cmd_vel`. The application handles only the native
+//! Publishes `geometry_msgs/msg/Twist` on the service prefix-mapped to the
+//! ROS 2 topic `/cmd_vel`. The application handles only the native
 //! [`Twist`] struct; the gateway's plain-struct translator does the CDR
 //! (de)serialization.
 //!
 //! ```bash
-//! ros2 run demo_nodes_iceoryx2 static_mapping_plain_struct_translator_publisher
+//! cargo run --manifest-path integrations/ros2/Cargo.toml --example plain_struct_prefix_mapping_publisher
 //! # in other shells:
-//! #   cargo run --bin iox2-link-gateway-ros2 -- \
-//! #       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
-//! #       --translator PlainStruct --ros-header
+//! #   cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --translator PlainStruct --ros-header
 //! #   ros2 topic echo /cmd_vel
 //! ```
 
 use core::time::Duration;
 
-use demo_nodes_iceoryx2::Twist;
 use iceoryx2::prelude::*;
+use iceoryx2_integrations_ros2_examples::plain_struct_translator::Twist;
 use iceoryx2_integrations_ros2_interop::RosHeader;
 
-/// The iceoryx2 service paired with the ROS 2 topic `/cmd_vel` in
-/// `static_mapping_cmdvel.toml`.
-const SERVICE_NAME: &str = "CmdVel";
+/// The iceoryx2 service mapped by the name prefix to the ROS 2 topic
+/// `/cmd_vel`.
+const SERVICE_NAME: &str = "ros2://topics/cmd_vel";
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 

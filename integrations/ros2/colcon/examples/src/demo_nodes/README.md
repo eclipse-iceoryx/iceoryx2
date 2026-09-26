@@ -1,141 +1,56 @@
 # demo_nodes_iceoryx2
 
-Native iceoryx2 example nodes bridged to ROS 2 by the gateway, one
-publisher/subscriber pair per combination of service-to-topic mapping and
-payload translator:
-
-| Binary pair (`*_{publisher,subscriber}`)     | Mapping                                                                | Translator   |
-|----------------------------------------------|------------------------------------------------------------------------|--------------|
-| `prefix_mapping_passthrough_translator_*`    | `ros2://topics/` name prefix                                           | passthrough  |
-| `prefix_mapping_plain_struct_translator_*`   | `ros2://topics/` name prefix                                           | plain-struct |
-| `static_mapping_passthrough_translator_*`    | entries of [static_mapping_chatter.toml](static_mapping_chatter.toml)  | passthrough  |
-| `static_mapping_plain_struct_translator_*`   | entries of [static_mapping_cmdvel.toml](static_mapping_cmdvel.toml)    | plain-struct |
-
-Applications using the passthrough translator serialize paylaods to
-CDR themselves. The CDR-serialized payloads are shared with the gateway (and
-other applications) via shared memory. Other applications must deserialize
-the applications themselves. The gateway in passthrough mode however can
-forward the bytes directly to ROS 2.
-
-Conversely, the plain-struct translator shares the self-contained POD structs
-generated from ROS 2 messages via shared memory. The gateway serializes these
-to CDR at the boundary to ROS 2.
-
-See [ros2/colcon/examples/README.md](../../README.md) for the build setup common to all examples.
+Minimal `iceoryx2` applications built as a ROS 2 package with colcon.
+Illustrates how to package `iceoryx2` applications as `ament_cargo` packages.
 
 ## Building
 
-Ensure the pre-requisites described in [ros2/colcon/examples/README.md](../../README.md)
-are done and run, from the workspace root:
+Building `iceoryx2` applications as ROS 2 packages requires the cargo-aware
+colcon build tools. First, install them:
 
 ```bash
+pip install colcon-cargo colcon-ros-cargo
+cargo install cargo-ament-build
+```
+
+Inside a container, such as the development distrobox, the tools can also be
+installed with `just setup integrations-ros2` for convenience.
+
+The package can be built with the plain `colcon` commands or, for convenience,
+with a `just` recipe. In the following, `<distro>` is your ROS 2 distribution
+(`jazzy` or `humble`).
+
+With the plain commands, from the example workspace
+(`integrations/ros2/colcon/examples`):
+
+```bash
+source /opt/ros/<distro>/setup.bash
 colcon build --packages-select demo_nodes_iceoryx2
+source install/setup.bash
+```
+
+With `just`:
+
+```bash
+source /opt/ros/<distro>/setup.bash
+just setup integrations-ros2-examples
+# From the repository root
+source integrations/ros2/target/<distro>/colcon/examples/install/setup.bash
 ```
 
 ## Running
 
-### Prefix mapping + passthrough translator
+Open two terminals, source the install space of the example workspace in each,
+and execute the following commands.
 
-Outbound (iceoryx2 → ROS 2):
+### Terminal 1
 
 ```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_publisher
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- --ros-header
-#   ros2 run demo_nodes_cpp listener
+ros2 run demo_nodes_iceoryx2 subscriber
 ```
 
-Inbound (ROS 2 → iceoryx2), where the topic must be allowlisted for
-wire-side discovery, as the gateway only bridges ROS 2 topics it is
-explicitly told about instead of mirroring the entire graph:
+### Terminal 2
 
 ```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 prefix_mapping_passthrough_translator_subscriber
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- --allow /chatter --ros-header
-#   ros2 run demo_nodes_cpp talker
-```
-
-### Prefix mapping + plain-struct translator
-
-Outbound (iceoryx2 → ROS 2):
-
-```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_publisher
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- --translator PlainStruct --ros-header
-#   ros2 topic echo /cmd_vel
-```
-
-Inbound (ROS 2 → iceoryx2):
-
-```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 prefix_mapping_plain_struct_translator_subscriber
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- \
-#       --allow /cmd_vel \
-#       --translator PlainStruct --ros-header
-#   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
-```
-
-### Static mapping + passthrough translator
-
-Both directions run the gateway on the example's mapping file, which pairs
-the service `Chatter` with the topic `/chatter` and doubles as the
-wire-side discovery allowlist.
-
-Outbound (iceoryx2 → ROS 2):
-
-```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_publisher
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml --ros-header
-#   ros2 run demo_nodes_cpp listener
-```
-
-Inbound (ROS 2 → iceoryx2):
-
-```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 static_mapping_passthrough_translator_subscriber
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- --static-mapping workspace/src/demo_nodes/static_mapping_chatter.toml --ros-header
-#   ros2 run demo_nodes_cpp talker
-```
-
-### Static mapping + plain-struct translator
-
-Both directions run the gateway with the plain-struct translator on a
-separate mapping file, which pairs the service `CmdVel` with the topic
-`/cmd_vel`. Separate, because the translator admits fixed-size types only
-and fails resolution for `std_msgs/msg/String`, so the chatter entry must
-not be in scope.
-
-Outbound (iceoryx2 → ROS 2):
-
-```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 static_mapping_plain_struct_translator_publisher
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- \
-#       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
-#       --translator PlainStruct --ros-header
-#   ros2 topic echo /cmd_vel
-```
-
-Inbound (ROS 2 → iceoryx2):
-
-```bash
-source <workspace>/install/setup.bash
-ros2 run demo_nodes_iceoryx2 static_mapping_plain_struct_translator_subscriber
-# in other shells:
-#   cargo run --bin iox2-link-gateway-ros2 -- \
-#       --static-mapping workspace/src/demo_nodes/static_mapping_cmdvel.toml \
-#       --translator PlainStruct --ros-header
-#   ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
+ros2 run demo_nodes_iceoryx2 publisher
 ```

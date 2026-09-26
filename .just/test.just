@@ -213,8 +213,11 @@ _test-integrations-ros2 toolchain target_triplet profile has_nostd has_doc extra
     #!/usr/bin/env bash
     set -eo pipefail
 
-    just _ros2-require-messages
-    source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    just _ros2-require-sourced
+    # Message crates built from source take precedence over the distribution's.
+    if [ -f "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash" ]; then
+        source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
+    fi
     export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
 
     if [ "{{has_nostd}}" = "true" ]; then

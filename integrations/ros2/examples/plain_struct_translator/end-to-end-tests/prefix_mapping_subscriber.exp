@@ -20,10 +20,10 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
-set MAPPING integrations/ros2/colcon/examples/src/demo_nodes/static_mapping_chatter.toml
-
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-link-gateway-ros2 2>@1
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    -p iceoryx2-integrations-ros2-examples --examples 2>@1
 
 #### Test
 
@@ -31,26 +31,28 @@ set timeout 30
 
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    --bin iox2-link-gateway-ros2 -- --static-mapping ${MAPPING} --ros-header --monitor
+    --bin iox2-link-gateway-ros2 -- \
+    --allow /cmd_vel \
+    --translator PlainStruct --ros-header --monitor
 set id_gateway $spawn_id
 drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
 
 expect_output_from $id_gateway "Gateway started"
 
-spawn ros2 run demo_nodes_iceoryx2 \
-    static_mapping_passthrough_translator_subscriber
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    --example plain_struct_prefix_mapping_subscriber
 set id_subscriber $spawn_id
 
-spawn ros2 topic pub -r 5 /chatter std_msgs/msg/String "{data: 'Hello from ROS 2'}"
+spawn ros2 topic pub -r 5 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 set id_publisher $spawn_id
 
-expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"Chatter\""
-expect_output_from $id_gateway "Relayed PublishSubscribe bridge of \"Chatter\""
+expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"ros2://topics/cmd_vel\""
+expect_output_from $id_gateway "Relayed PublishSubscribe bridge of \"ros2://topics/cmd_vel\""
 
 #### Test Assertion
 
-expect_output_from $id_subscriber "received: \"Hello from ROS 2\""
+expect_output_from $id_subscriber "x: 0.5"
 
 #### Shutdown
 
