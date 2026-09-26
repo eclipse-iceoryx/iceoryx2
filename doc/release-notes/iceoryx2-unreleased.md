@@ -25,6 +25,7 @@
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
+* [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Allow `TypeDescription` to `TypeDetail` round-trip when payload alignment is overridden and does not divide element size
 
 ### Refactoring
 
