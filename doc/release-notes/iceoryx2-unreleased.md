@@ -24,6 +24,7 @@
 -->
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#1951](https://github.com/eclipse-iceoryx/iceoryx2/issues/1951) Resolve the `.shm_state` directory at runtime and store it in a per-user directory (`IOX2_SHM_STATE_DIRECTORY` override, `%APPDATA%\iceoryx2\shm\` on Windows, `$XDG_STATE_HOME/iceoryx2/shm/` or `$HOME/.local/state/iceoryx2/shm/` on macOS/FreeBSD, `TEMP_DIRECTORY` fallback) instead of a shared system-wide temporary directory
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 
 ### Refactoring

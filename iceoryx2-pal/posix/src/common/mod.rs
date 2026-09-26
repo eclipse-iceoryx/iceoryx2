@@ -13,6 +13,8 @@
 pub mod cpu_set_t;
 pub(crate) mod error_enum_generator;
 pub mod mem_zeroed_struct;
+#[cfg(any(target_os = "windows", target_os = "macos", target_os = "freebsd"))]
+pub(crate) mod shm_state_directory;
 pub mod sockaddr_in;
 pub(crate) mod string_operations;
 

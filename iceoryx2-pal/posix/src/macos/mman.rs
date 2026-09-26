@@ -22,7 +22,9 @@ use std::io::Write;
 use crate::posix::*;
 
 use super::macos_fd_translator::ShmFdTranslator;
-use super::settings::{MAX_PATH_LENGTH, SHM_STATE_DIRECTORY, SHM_STATE_SUFFIX};
+use super::settings::{
+    MAX_PATH_LENGTH, SHM_STATE_SUFFIX, create_shm_state_directory, shm_state_directory,
+};
 
 const SHM_MAX_NAME_LEN: usize = 33;
 
@@ -58,18 +60,19 @@ unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
 
 unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
     let name = unsafe { remove_leading_path_separator(name) };
+    let directory = shm_state_directory();
 
     let mut state_file_path = [0u8; MAX_PATH_LENGTH];
 
     // path
-    state_file_path[..SHM_STATE_DIRECTORY.len()].copy_from_slice(SHM_STATE_DIRECTORY);
+    state_file_path[..directory.len()].copy_from_slice(directory);
 
     // name
     let mut name_len = 0;
     for i in 0..usize::MAX {
         let c = unsafe { *(name.add(i) as *const u8) };
 
-        state_file_path[i + SHM_STATE_DIRECTORY.len()] = if c == b'/' { b'\\' } else { c };
+        state_file_path[i + directory.len()] = if c == b'/' { b'\\' } else { c };
         unsafe {
             if *(name.add(i)) == 0i8 {
                 name_len = i;
@@ -80,7 +83,7 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
 
     // suffix
     for i in 0..suffix.len() {
-        state_file_path[i + SHM_STATE_DIRECTORY.len() + name_len] = suffix[i];
+        state_file_path[i + directory.len() + name_len] = suffix[i];
     }
 
     state_file_path
@@ -186,6 +189,7 @@ unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
 }
 
 pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
+    create_shm_state_directory();
     let existing = unsafe { open_state_file(name) };
     if oflag & O_EXCL != 0 && existing.is_some() {
         if let Some((_, state_fd)) = existing {
@@ -287,7 +291,7 @@ unsafe fn trim_ascii(value: &[i8]) -> &[u8] {
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
-    let mut search_path = SHM_STATE_DIRECTORY.to_vec();
+    let mut search_path = shm_state_directory().to_vec();
     search_path.push(0);
     unsafe {
         let dir = opendir(search_path.as_ptr().cast());
