@@ -43,46 +43,104 @@ cargo build --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway
 
 ## Running
 
-Open a terminal for each command, sourced as for building, and execute the
-following commands.
+Run each command below in its own terminal. Each terminal must source your
+ROS 2 distribution and the install space of the message crates, as shown above.
 
-Outbound, from `iceoryx2` to ROS 2, with the prefix mapping:
+### Prefix Mapping
 
-### Terminal 1
+The prefix mapping pairs services named `ros2://topics/<topic>` with the topic
+`/<topic>`.
+
+#### Outbound
+
+From `iceoryx2` to ROS 2.
+
+##### Terminal 1: gateway
 
 ```sh
 cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --translator PlainStruct --ros-header
 ```
 
-### Terminal 2
+##### Terminal 2: `iceoryx2` publisher
 
 ```sh
 cargo run --manifest-path integrations/ros2/Cargo.toml --example plain_struct_prefix_mapping_publisher
 ```
 
-### Terminal 3
+##### Terminal 3: ROS 2 subscriber
 
 ```sh
 ros2 topic echo /cmd_vel geometry_msgs/msg/Twist
 ```
 
-Inbound, from ROS 2 to `iceoryx2`. With the prefix mapping, the topic needs
-to be explicitly allowed:
+#### Inbound
+
+From ROS 2 to `iceoryx2`. Allow only the example's topic with `--allow`, as the
+gateway otherwise mirrors every topic it discovers in the ROS 2 graph.
+
+##### Terminal 1: gateway
 
 ```sh
 cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --allow /cmd_vel --translator PlainStruct --ros-header
 ```
 
+##### Terminal 2: `iceoryx2` subscriber
+
 ```sh
 cargo run --manifest-path integrations/ros2/Cargo.toml --example plain_struct_prefix_mapping_subscriber
 ```
+
+##### Terminal 3: ROS 2 publisher
 
 ```sh
 ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 ```
 
-With the static mapping, the gateway uses a mapping configuration:
+### Static Mapping
+
+The static mapping pairs the services and topics listed in
+[`static_mapping.toml`](static_mapping.toml).
+
+#### Outbound
+
+From `iceoryx2` to ROS 2.
+
+##### Terminal 1: gateway
 
 ```sh
 cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --static-mapping integrations/ros2/examples/plain_struct_translator/static_mapping.toml --translator PlainStruct --ros-header
+```
+
+##### Terminal 2: `iceoryx2` publisher
+
+```sh
+cargo run --manifest-path integrations/ros2/Cargo.toml --example plain_struct_static_mapping_publisher
+```
+
+##### Terminal 3: ROS 2 subscriber
+
+```sh
+ros2 topic echo /cmd_vel geometry_msgs/msg/Twist
+```
+
+#### Inbound
+
+From ROS 2 to `iceoryx2`.
+
+##### Terminal 1: gateway
+
+```sh
+cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- --static-mapping integrations/ros2/examples/plain_struct_translator/static_mapping.toml --translator PlainStruct --ros-header
+```
+
+##### Terminal 2: `iceoryx2` subscriber
+
+```sh
+cargo run --manifest-path integrations/ros2/Cargo.toml --example plain_struct_static_mapping_subscriber
+```
+
+##### Terminal 3: ROS 2 publisher
+
+```sh
+ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 ```
