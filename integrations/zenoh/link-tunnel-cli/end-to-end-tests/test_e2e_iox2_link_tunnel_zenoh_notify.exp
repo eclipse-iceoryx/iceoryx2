@@ -1,0 +1,93 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 30
+
+set SERVICE "TunnelNotifyService"
+set DOMAIN_A "iox2_tunnel_notify_a_"
+set DOMAIN_B "iox2_tunnel_notify_b_"
+
+exec cargo build --example domains_publisher 2>@1
+exec cargo build --bin iox2-service 2>@1
+exec cargo build --manifest-path integrations/zenoh/Cargo.toml -p iceoryx2-integrations-zenoh-link-tunnel-cli 2>@1
+
+# Each domain is a separate iceoryx2 system on this host. A process uses the
+# domain of the config/iceoryx2.toml in its working directory.
+proc domain_dir { DOMAIN } {
+    set dir [exec mktemp -d]
+    file mkdir ${dir}/config
+    set config [open ${dir}/config/iceoryx2.toml w]
+    puts ${config} "\[global\]\nprefix = \"${DOMAIN}\""
+    close ${config}
+    return ${dir}
+}
+
+set DIR_A [domain_dir ${DOMAIN_A}]
+set DIR_B [domain_dir ${DOMAIN_B}]
+
+#### Test
+
+set env(IOX2_LOG_LEVEL) trace
+spawn sh -c "cd ${DIR_A} && exec cargo run --manifest-path ${REPO_ROOT}/integrations/zenoh/Cargo.toml \
+    --bin iox2-link-tunnel-zenoh"
+set id_tunnel_a $spawn_id
+drain_output $id_tunnel_a
+
+spawn sh -c "cd ${DIR_B} && exec cargo run --manifest-path ${REPO_ROOT}/integrations/zenoh/Cargo.toml \
+    --bin iox2-link-tunnel-zenoh -- --notify"
+set id_tunnel_b $spawn_id
+unset env(IOX2_LOG_LEVEL)
+
+expect_output_from $id_tunnel_b "Tunnel started"
+
+spawn sh -c "cd ${DIR_B} && exec cargo run --manifest-path ${REPO_ROOT}/Cargo.toml \
+    --bin iox2-service -- listen ${SERVICE} --repetitions 1"
+set id_listener $spawn_id
+
+spawn cargo run --example domains_publisher -- --domain ${DOMAIN_A} --service ${SERVICE}
+set id_publisher $spawn_id
+expect_output_from $id_publisher "Send sample"
+
+expect_output_from $id_tunnel_b "Opened PublishSubscribe bridge of \"${SERVICE}\""
+expect_output_from $id_tunnel_b "Created the notifier of \"${SERVICE}\""
+
+#### Test Assertion
+
+expect_output_from $id_listener "NotificationReceived"
+
+#### Shutdown
+
+expect -i $id_listener eof
+
+send -i $id_publisher $SIGINT
+expect -i $id_publisher eof
+
+send -i $id_tunnel_b $SIGINT
+expect_output_from $id_tunnel_b "Tunnel stopped"
+expect -i $id_tunnel_b eof
+
+send -i $id_tunnel_a $SIGINT
+expect -i $id_tunnel_a eof
+
+file delete -force ${DIR_A} ${DIR_B}
+
+show_test_passed
