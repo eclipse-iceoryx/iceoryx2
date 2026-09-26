@@ -160,7 +160,7 @@ unsafe fn trim_ascii(value: &[u8]) -> &[u8] {
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
-    let mut search_path = SHM_STATE_DIRECTORY.to_vec();
+    let mut search_path = shm_state_directory().to_vec();
     search_path.push(0);
     unsafe {
         let search_path = to_dir_search_string(search_path.as_ptr().cast());
@@ -203,6 +203,7 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
 
 pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     create_system_directories();
+    create_shm_state_directory();
     unsafe {
         let name = remove_leading_path_separator(name.cast());
         let handle: HANDLE = 0;
@@ -288,19 +289,20 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
 
 unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
     unsafe {
+        let directory = shm_state_directory();
         let name = remove_leading_path_separator(name);
 
         let mut state_file_path = [0u8; MAX_PATH_LENGTH];
 
         // path
-        state_file_path[..SHM_STATE_DIRECTORY.len()].copy_from_slice(SHM_STATE_DIRECTORY);
+        state_file_path[..directory.len()].copy_from_slice(directory);
 
         // name
         let mut name_len = 0;
         for i in 0..usize::MAX {
             let c = *(name.add(i) as *const u8);
 
-            state_file_path[i + SHM_STATE_DIRECTORY.len()] = if c == b'/' { b'\\' } else { c };
+            state_file_path[i + directory.len()] = if c == b'/' { b'\\' } else { c };
             if *(name.add(i)) == 0i8 {
                 name_len = i;
                 break;
@@ -309,7 +311,7 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
 
         // suffix
         for i in 0..suffix.len() {
-            state_file_path[i + SHM_STATE_DIRECTORY.len() + name_len] = suffix[i];
+            state_file_path[i + directory.len() + name_len] = suffix[i];
         }
 
         state_file_path
