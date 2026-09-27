@@ -71,6 +71,10 @@ fn run(gateway: &mut dyn GatewayInstance, wake_sources: &WakeSources) -> anyhow:
         when wake_sources.attach(&waitset),
         "Failed to attach the wake sources"
     );
+
+    // Spin once to discover what exists already.
+    gateway.spin();
+
     fail!(
         from ORIGIN,
         when waitset.wait_and_process(|_| {

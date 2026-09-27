@@ -85,7 +85,7 @@ pub fn create_gateway(
                     &config,
                     PrefixMapping::new(allowlist(cli)),
                     PassthroughTranslator { header },
-                    cli.monitor,
+                    cli,
                 ),
                 "Failed to create the gateway"
             ))
@@ -103,7 +103,7 @@ pub fn create_gateway(
                     &config,
                     PrefixMapping::new(allowlist(cli)),
                     PlainStructTranslator { header },
-                    cli.monitor,
+                    cli,
                 ),
                 "Failed to create the gateway"
             ))
@@ -122,7 +122,7 @@ pub fn create_gateway(
                     &config,
                     mapping,
                     PassthroughTranslator { header },
-                    cli.monitor
+                    cli
                 ),
                 "Failed to create the gateway"
             ))
@@ -141,7 +141,7 @@ pub fn create_gateway(
                     &config,
                     mapping,
                     PlainStructTranslator { header },
-                    cli.monitor
+                    cli
                 ),
                 "Failed to create the gateway"
             ))
@@ -164,7 +164,7 @@ fn create<M, T>(
     adapter_config: &AdapterConfig,
     mapping: M,
     translator: T,
-    monitor: bool,
+    cli: &Cli,
 ) -> anyhow::Result<Ros2Gateway<M, T>>
 where
     M: Mapping<EndpointSettings = TopicSettings>,
@@ -180,12 +180,16 @@ where
         when Ros2Adapter::new(adapter_config),
         "Failed to create the ROS 2 adapter"
     );
-    let gateway = Link::new(node, Gateway::new(adapter, mapping, translator));
-    if !monitor {
-        return Ok(gateway);
+    let mut gateway = Link::new(node, Gateway::new(adapter, mapping, translator));
+    if cli.monitor {
+        info!(from ORIGIN, "Monitoring what the bridges move");
+        gateway = gateway.with_monitoring();
     }
-    info!(from ORIGIN, "Monitoring what the bridges move");
-    Ok(gateway.with_monitoring())
+    if cli.notify {
+        info!(from ORIGIN, "Notifying the event service named after each service with delivered samples");
+        gateway = gateway.with_notifications();
+    }
+    Ok(gateway)
 }
 
 /// The adapter configuration for the prefix mapping. It preloads the types

@@ -18,13 +18,14 @@ pub mod gateway_publish_subscribe_payload {
     use core::time::Duration;
 
     use iceoryx2::service::Service;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
 
     use crate::fixture::{DiscoverableEndpoints, GatewayFixture, PayloadEndpoints};
 
     use crate::parameters::{Header, PayloadShape, PublishSubscribeService, Value};
-    use crate::testing::{Side, describe, retry, side};
+    use crate::testing::{Side, describe, notifications_of, retry, service_exists, side};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -166,5 +167,137 @@ pub mod gateway_publish_subscribe_payload {
             TIMEOUT,
         )
         .expect("the sample reaches the remote endpoints");
+    }
+
+    #[conformance_test]
+    pub fn a_delivery_notifies_the_event_service_named_after_the_service<
+        S: Service,
+        X: PublishSubscribeService,
+        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints + PayloadEndpoints<Value<X>>>,
+    >() {
+        let payload = X::Payload::value(7);
+
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // A local application subscribing to a bridged service and
+        // listening on the event service named after it.
+        let Side { config, node, link } = side::<S, _>(fixture.config(), |_| fixture.gateway());
+        let mut link = link.with_notifications();
+
+        let service_name = X::service_name();
+        let service = X::create_service::<(), _>(&node, &service_name);
+        let subscriber = X::create_subscriber(&service);
+
+        let event = node
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .expect("the event service is created");
+        let listener = event
+            .listener_builder()
+            .create()
+            .expect("the listener is created");
+
+        let description = describe::<S, X::Payload, ()>(&service_name, &config);
+        retry(
+            || {
+                link.discover().expect("discovery succeeds");
+                match link.bridges().contains(&description.hash()) {
+                    true => Ok(()),
+                    false => Err("the service is not bridged"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the service is bridged");
+
+        let remote = fixture.remote_endpoints_on(&description);
+        assert_that!(remote.sync(TIMEOUT), eq true);
+
+        assert_that!(notifications_of(&listener), is_empty);
+
+        // === REMOTE TO LOCAL ===
+        // The delivered sample is announced on the event service.
+        remote.send_payload(payload.clone());
+
+        retry(
+            || {
+                link.propagate().expect("propagation succeeds");
+                match notifications_of(&listener).is_empty() {
+                    false => Ok(()),
+                    true => Err("the event service was not notified"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the delivery is notified");
+
+        match X::receive(&subscriber) {
+            Some((_, received)) => assert_that!(received, eq payload),
+            None => panic!("the notified sample is not available"),
+        }
+    }
+
+    #[conformance_test]
+    pub fn a_link_without_notifications_creates_no_event_service<
+        S: Service,
+        X: PublishSubscribeService,
+        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints + PayloadEndpoints<Value<X>>>,
+    >() {
+        let payload = X::Payload::value(7);
+
+        let mut fixture = F::new();
+
+        // === SETUP ===
+        // A local application subscribing to a service bridged by a link
+        // without notifications.
+        let Side {
+            config,
+            node,
+            mut link,
+        } = side::<S, _>(fixture.config(), |_| fixture.gateway());
+
+        let service_name = X::service_name();
+        let service = X::create_service::<(), _>(&node, &service_name);
+        let subscriber = X::create_subscriber(&service);
+
+        let description = describe::<S, X::Payload, ()>(&service_name, &config);
+        retry(
+            || {
+                link.discover().expect("discovery succeeds");
+                match link.bridges().contains(&description.hash()) {
+                    true => Ok(()),
+                    false => Err("the service is not bridged"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the service is bridged");
+
+        let remote = fixture.remote_endpoints_on(&description);
+        assert_that!(remote.sync(TIMEOUT), eq true);
+
+        // === REMOTE TO LOCAL ===
+        // The sample is delivered without an event service being created.
+        remote.send_payload(payload.clone());
+
+        retry(
+            || {
+                link.propagate().expect("propagation succeeds");
+                match X::receive(&subscriber) {
+                    Some((_, received)) if received == payload => Ok(()),
+                    Some(_) => Err("an unexpected sample arrived locally"),
+                    None => Err("no sample arrived locally"),
+                }
+            },
+            TIMEOUT,
+        )
+        .expect("the message reaches the local application");
+
+        assert_that!(
+            service_exists::<S>(&service_name, &config, MessagingPattern::Event),
+            eq false
+        );
     }
 }

@@ -15,7 +15,6 @@ mod publish_subscribe;
 mod table;
 
 use core::ops::Deref;
-use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
@@ -104,7 +103,7 @@ trait Bridged: Sized {
     ) -> Result<Self, OpenError>;
 
     /// Moves what is pending in both directions.
-    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), BridgeError>;
+    fn propagate(&mut self, node: &Node<Self::Service>, notify: bool) -> Result<(), BridgeError>;
 
     /// What was moved since last taken.
     fn counters(&mut self) -> &mut Counters;
@@ -193,12 +192,13 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
     /// the failures are reported once each and counted in the error.
     pub(crate) fn propagate(
         &mut self,
-        own_node: &UniqueNodeId,
+        node: &Node<S>,
         monitoring: bool,
+        notify: bool,
     ) -> Result<(), PropagateError> {
         let origin = origin!("Bridges::propagate");
-        let publish_subscribe = self.publish_subscribe.propagate(own_node);
-        let event = self.event.propagate(own_node);
+        let publish_subscribe = self.publish_subscribe.propagate(node, notify);
+        let event = self.event.propagate(node, notify);
 
         let mut failed = self.diagnostics.failed_propagations();
         for (hash, failure) in self.publish_subscribe.failed().chain(self.event.failed()) {

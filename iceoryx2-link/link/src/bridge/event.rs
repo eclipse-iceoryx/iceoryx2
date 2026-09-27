@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{EventRelay, RelayBuilder, RelayFactory};
@@ -66,7 +65,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
 
     /// The link's own notifications never reach its listener, so nothing
     /// is filtered by node.
-    fn propagate(&mut self, _: &UniqueNodeId) -> Result<(), BridgeError> {
+    fn propagate(&mut self, _: &Node<S>, _: bool) -> Result<(), BridgeError> {
         let origin = origin!("EventBridge::propagate");
 
         let propagated = fail!(

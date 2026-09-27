@@ -98,6 +98,9 @@ let adapter = Ros2Adapter::new(&Config::default())?;
 let gateway = Gateway::new(adapter, mapping, translator);
 
 let mut link = Link::new(node, gateway);
+// Enable notifications to the event service named after a service when
+// samples were delivered to it:
+// let mut link = Link::new(node, gateway).with_notifications();
 let listener = link.listener()?;
 
 loop {

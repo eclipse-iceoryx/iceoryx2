@@ -55,6 +55,8 @@ pub struct Link<S: Service, B: Backend<S>> {
     filter: Box<dyn Fn(&ServiceName) -> bool>,
     /// Whether propagation reports counts of propagated data.
     monitoring: bool,
+    /// Whether propagation notifies the event services of delivered samples.
+    notifications: bool,
     /// A reactive link's wake service.
     wake: Option<Wake>,
     // Placed last on purpose, required for clean-up order.
@@ -72,6 +74,7 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
             bridges: Bridges::default(),
             filter: Box::new(|_| true),
             monitoring: false,
+            notifications: false,
             wake: None,
             node,
         }
@@ -87,6 +90,13 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
     /// Reports what every bridge moved each propagation at trace log level.
     pub fn with_monitoring(mut self) -> Self {
         self.monitoring = true;
+        self
+    }
+
+    /// Notifies the event service named after a service whenever samples
+    /// were delivered to it.
+    pub fn with_notifications(mut self) -> Self {
+        self.notifications = true;
         self
     }
 
@@ -206,7 +216,8 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
     /// Moves the samples and notifications pending on every bridge in both
     /// directions.
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        self.bridges.propagate(self.node.id(), self.monitoring)
+        self.bridges
+            .propagate(&self.node, self.monitoring, self.notifications)
     }
 
     /// The bridges the link currently holds.

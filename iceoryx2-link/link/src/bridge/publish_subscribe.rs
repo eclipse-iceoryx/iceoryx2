@@ -10,13 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
+use iceoryx2::port::event_id::EventId;
+use iceoryx2::port::notifier::Notifier;
 use iceoryx2::service::Service;
+use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, RelayBuilder, RelayFactory};
 use iceoryx2_link_backend::service_description::PublishSubscribeDescription;
 use iceoryx2_link_backend::{Backend, RemoteDescription};
-use iceoryx2_log::{fail, origin};
+use iceoryx2_log::{fail, origin, trace, warn};
 
 use crate::bridge::{BridgeError, Bridged, Counters, OpenError};
 use crate::ports::PublishSubscribePorts;
@@ -26,6 +28,7 @@ use crate::ports::PublishSubscribePorts;
 pub(super) struct PublishSubscribeBridge<S: Service, B: Backend<S>> {
     ports: PublishSubscribePorts<S>,
     relay: B::PublishSubscribeRelay,
+    notification: Notification<S>,
     counters: Counters,
 }
 
@@ -60,16 +63,17 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
         Ok(Self {
             ports,
             relay,
+            notification: Notification::new(description.name()),
             counters: Counters::default(),
         })
     }
 
-    fn propagate(&mut self, own_node: &UniqueNodeId) -> Result<(), BridgeError> {
+    fn propagate(&mut self, node: &Node<S>, notify: bool) -> Result<(), BridgeError> {
         let origin = origin!("PublishSubscribeBridge::propagate");
 
         let propagated = fail!(
             from origin,
-            when self.ports.receive(own_node, |sample| self.relay.send(&sample)),
+            when self.ports.receive(node.id(), |sample| self.relay.send(&sample)),
             with BridgeError::Propagation,
             "Failed to propagate samples"
         );
@@ -82,10 +86,81 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
             "Failed to ingest samples from the opposing side"
         );
         self.counters.inbound += ingested;
+
+        if notify && ingested != 0 {
+            self.notification.notify(node);
+        }
         Ok(())
     }
 
     fn counters(&mut self) -> &mut Counters {
         &mut self.counters
+    }
+}
+
+/// The notifier of the event service named after a publish-subscribe
+/// service, created on the first notification.
+enum Notification<S: Service> {
+    Pending(ServiceName),
+    Active(ServiceName, Notifier<S>),
+    Failed,
+}
+
+impl<S: Service> Notification<S> {
+    fn new(name: ServiceName) -> Self {
+        Self::Pending(name)
+    }
+
+    /// Notifies event services corresponding to the name of the publish-subscribe service.
+    fn notify(&mut self, node: &Node<S>) {
+        let origin = origin!("Notification::notify");
+
+        if let Self::Pending(name) = self {
+            let name = *name;
+            *self = match create_notifier(node, &name) {
+                Some(notifier) => {
+                    trace!(from origin, "Created the notifier of \"{}\"", name);
+                    Self::Active(name, notifier)
+                }
+                None => Self::Failed,
+            };
+        }
+
+        if let Self::Active(name, notifier) = self
+            && let Err(error) = notifier.__internal_notify(EventId::default(), true)
+        {
+            warn!(
+                from origin,
+                "Failed to notify \"{}\" of delivered samples: {:?}", name, error
+            );
+        }
+    }
+}
+
+/// Opens or creates the event service named `name` and a notifier on it.
+fn create_notifier<S: Service>(node: &Node<S>, name: &ServiceName) -> Option<Notifier<S>> {
+    let origin = origin!("Notification::create_notifier");
+
+    let service = match node.service_builder(name).event().open_or_create() {
+        Ok(service) => service,
+        Err(error) => {
+            warn!(
+                from origin,
+                "Failed to open or create the event service \"{}\": {:?}",
+                name, error
+            );
+            return None;
+        }
+    };
+    match service.notifier_builder().create() {
+        Ok(notifier) => Some(notifier),
+        Err(error) => {
+            warn!(
+                from origin,
+                "Failed to create the notifier of \"{}\": {:?}",
+                name, error
+            );
+            None
+        }
     }
 }
