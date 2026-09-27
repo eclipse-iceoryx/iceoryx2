@@ -145,6 +145,9 @@ impl From<&TypeDetail> for TypeDescription {
 pub enum InvalidTypeDescription {
     TypeNameTooLong,
     AlignmentNotPowerOfTwo,
+    #[deprecated(
+        note = "Payload alignment can be overridden to exceed element size; size is no longer required to be a multiple of alignment"
+    )]
     SizeNotMultipleOfAlignment,
     /// The size rounded up to the alignment exceeds what a layout may hold.
     LayoutOverflow,
@@ -166,9 +169,6 @@ impl TryFrom<&TypeDescription> for TypeDetail {
 
         if !description.alignment.is_power_of_two() {
             return Err(InvalidTypeDescription::AlignmentNotPowerOfTwo);
-        }
-        if !description.size.is_multiple_of(description.alignment) {
-            return Err(InvalidTypeDescription::SizeNotMultipleOfAlignment);
         }
         if Layout::from_size_align(description.size, description.alignment).is_err() {
             return Err(InvalidTypeDescription::LayoutOverflow);
@@ -210,6 +210,38 @@ mod tests {
     }
 
     #[test]
+    fn a_type_detail_with_an_overridden_region_alignment_round_trips() {
+        // `size` is the element size, `alignment` the payload region alignment,
+        // raised above the element alignment by `payload_alignment()`.
+        let dynamic_detail =
+            TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, "u8", 1, 16)
+                .expect("valid parts");
+
+        let round_tripped = TypeDetail::try_from(&TypeDescription::from(&dynamic_detail))
+            .expect("valid description");
+        assert_that!(round_tripped, eq dynamic_detail);
+
+        // Fixed-size type with overridden alignment where size does not divide alignment
+        let fixed_detail =
+            TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, "u32", 4, 16)
+                .expect("valid parts");
+
+        let round_tripped_fixed =
+            TypeDetail::try_from(&TypeDescription::from(&fixed_detail)).expect("valid description");
+        assert_that!(round_tripped_fixed, eq fixed_detail);
+
+        // A 12-byte type with 8-byte alignment (size is not a multiple of alignment: 12 % 8 == 4)
+        let non_multiple_detail =
+            TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, "test_12_8", 12, 8)
+                .expect("valid parts");
+
+        let round_tripped_non_mult =
+            TypeDetail::try_from(&TypeDescription::from(&non_multiple_detail))
+                .expect("valid description");
+        assert_that!(round_tripped_non_mult, eq non_multiple_detail);
+    }
+
+    #[test]
     fn overlong_type_name_is_rejected() {
         const SIZE: usize = 1;
         const ALIGNMENT: usize = 1;
@@ -241,25 +273,6 @@ mod tests {
             let result = TypeDetail::try_from(&description);
             assert_that!(result, eq Err(InvalidTypeDescription::AlignmentNotPowerOfTwo));
         }
-    }
-
-    #[test]
-    fn size_that_is_not_a_multiple_of_alignment_is_rejected() {
-        const SIZE: usize = 6;
-        const ALIGNMENT: usize = 4;
-
-        let description = TypeDescription {
-            variant: TypeVariant::FixedSize,
-            type_name: "test_type".into(),
-            size: SIZE,
-            alignment: ALIGNMENT,
-        };
-
-        let result = TypeDetail::try_from(&description);
-        assert_that!(
-            result,
-            eq Err(InvalidTypeDescription::SizeNotMultipleOfAlignment)
-        );
     }
 
     // No real type has these sizes, a description received from the

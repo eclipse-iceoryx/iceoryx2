@@ -256,6 +256,34 @@ mod tests {
     }
 
     #[test]
+    fn publish_subscribe_with_overridden_payload_alignment_is_described() {
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let service_name = generate_service_name();
+
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .payload_alignment(iceoryx2_bb_elementary::alignment::Alignment::new(16).unwrap())
+            .create()
+            .expect("service is created");
+
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
+        let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+
+        let ServiceTypes::PublishSubscribe(types) = &sut.types else {
+            panic!("a publish-subscribe service");
+        };
+
+        let result = types.type_details();
+        assert_that!(result.is_ok(), eq true);
+    }
+
+    #[test]
     fn event_static_config_is_described() {
         const MAX_NOTIFIERS: usize = 5;
         const MAX_LISTENERS: usize = 6;
