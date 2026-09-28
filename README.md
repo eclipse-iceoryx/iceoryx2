@@ -4,7 +4,7 @@
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx2/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx2?branch=main)
 [![Examples](https://img.shields.io/badge/Examples-gray)](examples/)
 [![FAQ](https://img.shields.io/badge/FAQ-gray)](FAQ.md)
-[![Gitter](https://badges.gitter.im/eclipse-iceoryx/iceoryx.svg)](https://gitter.im/eclipse/iceoryx)
+[![Discourse](https://img.shields.io/badge/Chat_on-Discourse-blue)](https://community.iceoryx.io/)
 [![Developer Meetup](https://img.shields.io/badge/Developer_Meetup-gray?style=social)](https://github.com/eclipse-iceoryx/iceoryx2/wiki/Developer-Meetup)
 [![Roadmap](https://img.shields.io/badge/Roadmap-gray)](ROADMAP.md)
 
