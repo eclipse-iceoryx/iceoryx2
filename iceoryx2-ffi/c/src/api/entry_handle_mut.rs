@@ -108,6 +108,44 @@ impl HandleToType for iox2_entry_handle_mut_h_ref {
 
 // BEGIN C API
 
+/// Copies the last committed value into the caller's buffer without creating a reader.
+///
+/// # Safety
+///
+/// * `handle` must refer to a valid handle obtained from `iox2_writer_entry`.
+/// * `value` must point to writable memory of at least `size` bytes with the given `alignment`.
+/// * `size` and `alignment` must match the entry's value type.
+/// * The handle must not be written to, loaned, or destroyed concurrently with this call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_entry_handle_mut_read(
+    handle: iox2_entry_handle_mut_h_ref,
+    value: *mut c_void,
+    size: usize,
+    alignment: usize,
+) {
+    handle.assert_non_null();
+    debug_assert!(!value.is_null());
+    unsafe {
+        let entry = &*handle.as_type();
+        match entry.service_type {
+            iox2_service_type_e::IPC => {
+                entry
+                    .value
+                    .as_ref()
+                    .ipc
+                    .__internal_read(value.cast(), size, alignment)
+            }
+            iox2_service_type_e::LOCAL => {
+                entry
+                    .value
+                    .as_ref()
+                    .local
+                    .__internal_read(value.cast(), size, alignment)
+            }
+        }
+    }
+}
+
 /// Consumes the `iox2_entry_handle_mut` and loans an uninitialized entry value that can be used to update without copy.
 ///
 /// # Safety

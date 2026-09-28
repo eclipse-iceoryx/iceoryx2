@@ -147,24 +147,34 @@ impl<B: BagFamily> DynamicConfig<B> {
     >(
         &self,
         node_id: &UniqueNodeId,
-        port_cleanup_callback: PortCleanup,
+        mut port_cleanup_callback: PortCleanup,
     ) -> DeregisterNodeState {
+        let mut failed = false;
+        let checked_cleanup = |port_id| {
+            let action = port_cleanup_callback(port_id);
+            if action == PortCleanupAction::SkipPort {
+                failed = true;
+            }
+            action
+        };
         unsafe {
             match self.messaging_pattern {
                 MessagingPattern::PublishSubscribe(ref v) => {
-                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                    v.remove_dead_node_id(node_id, checked_cleanup)
                 }
-                MessagingPattern::Event(ref v) => {
-                    v.remove_dead_node_id(node_id, port_cleanup_callback)
-                }
+                MessagingPattern::Event(ref v) => v.remove_dead_node_id(node_id, checked_cleanup),
                 MessagingPattern::RequestResponse(ref v) => {
-                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                    v.remove_dead_node_id(node_id, checked_cleanup)
                 }
                 MessagingPattern::Blackboard(ref v) => {
-                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                    v.remove_dead_node_id(node_id, checked_cleanup)
                 }
             };
 
+            // Keep the node registered while any port still needs cleanup.
+            if failed {
+                return DeregisterNodeState::HasOwners;
+            }
             match self.nodes.recover(
                 node_id.owner_id(),
                 |entry_node_id| {

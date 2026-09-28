@@ -710,6 +710,41 @@ TYPED_TEST(ServiceBlackboardTest, entry_value_can_still_be_used_after_every_prev
     auto new_entry_handle_mut = update_with_copy(std::move(entry_value_uninit), static_cast<uint32_t>(1));
 }
 
+TYPED_TEST(ServiceBlackboardTest, writer_can_read_retained_value_when_all_reader_slots_are_occupied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t INITIAL_VALUE = 17;
+    constexpr uint64_t RETAINED_VALUE = 23;
+    constexpr uint64_t NEW_VALUE = 42;
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .max_readers(1)
+                       .template add<uint64_t>(0, INITIAL_VALUE)
+                       .create()
+                       .value();
+    auto reader = service.reader_builder().create().value();
+    auto reader_entry = reader.template entry<uint64_t>(0).value();
+    ASSERT_FALSE(service.reader_builder().create().has_value());
+
+    {
+        auto writer = service.writer_builder().create().value();
+        auto entry = writer.template entry<uint64_t>(0).value();
+        EXPECT_THAT(entry.read(), Eq(INITIAL_VALUE));
+        entry.update_with_copy(RETAINED_VALUE);
+    }
+
+    auto writer = service.writer_builder().create().value();
+    auto entry = writer.template entry<uint64_t>(0).value();
+    const auto retained_value = entry.read();
+    EXPECT_THAT(retained_value, Eq(RETAINED_VALUE));
+    entry.update_with_copy(NEW_VALUE);
+    EXPECT_THAT(entry.read(), Eq(NEW_VALUE));
+    EXPECT_THAT(*reader_entry.get(), Eq(NEW_VALUE));
+    EXPECT_THAT(retained_value, Eq(RETAINED_VALUE));
+    EXPECT_THAT(service.dynamic_config().number_of_readers(), Eq(1));
+}
+
 TYPED_TEST(ServiceBlackboardTest, simple_communication_works_reader_created_first) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint16_t VALUE_1 = 1234;

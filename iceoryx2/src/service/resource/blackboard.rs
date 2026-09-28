@@ -27,7 +27,7 @@ use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::mem::MaybeUninit;
 use core::{fmt::Debug, ptr::NonNull};
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_container::vector::Vector;
@@ -191,6 +191,46 @@ impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceT
         unsafe {
             ServiceType::BlackboardPayload::abandon_in_place(NonNull::from_mut(&mut this.data))
         };
+    }
+}
+
+impl<ServiceType: service::Service> BlackboardResources<ServiceType> {
+    /// Releases entry producers left behind by a dead writer, preserving all values.
+    ///
+    /// # Safety
+    ///
+    /// The caller must hold the dead node's cleanup lock. The dead writer must still occupy
+    /// the service's only writer slot, preventing another writer from acquiring an entry.
+    pub(crate) unsafe fn recover_dead_writer(
+        config: &config::Config,
+        static_config: &StaticConfig,
+    ) -> Result<(), ()> {
+        let origin = "BlackboardResources::recover_dead_writer()";
+        let name = blackboard_name(static_config.unique_service_id());
+        let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(config);
+        unsafe {
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>>::__internal_set_type_name_in_config(
+                &mut mgmt_config, static_config.blackboard().type_details.type_name.as_str(),
+            );
+        }
+        let mgmt = <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>>::Builder::new(&name)
+            .config(&mgmt_config).has_ownership(false).open(AccessMode::ReadWrite)
+            .map_err(|error| {
+                error!(from origin, "Unable to recover entry producers since the management segment could not be opened. [{error:?}]");
+            })?;
+        let data = <ServiceType::BlackboardPayload as SharedMemory<
+            iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+        >>::Builder::new(&name).config(&blackboard_data_config::<ServiceType>(config))
+            .has_ownership(false).open(AccessMode::ReadWrite).map_err(|error| {
+                error!(from origin, "Unable to recover entry producers since the data segment could not be opened. [{error:?}]");
+            })?;
+        for entry in mgmt.get().entries.iter() {
+            let offset = entry.offset.load(Ordering::Relaxed);
+            let atomic = (data.payload_start_address() as u64 + offset)
+                as *const iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomicMgmt;
+            unsafe { (*atomic).__internal_recover_dead_producer() };
+        }
+        Ok(())
     }
 }
 
