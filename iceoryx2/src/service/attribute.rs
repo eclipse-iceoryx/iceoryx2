@@ -89,7 +89,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! let services = ipc::Service::list(Config::global_config(), |service| {
+//! ipc::Service::list(Config::global_config(), |service| {
+//!     let Ok(service) = service else {
+//!         return CallbackProgression::Stop;
+//!     };
 //!     println!("\n{:#?}", &service.static_details.attributes());
 //!     CallbackProgression::Continue
 //! })?;

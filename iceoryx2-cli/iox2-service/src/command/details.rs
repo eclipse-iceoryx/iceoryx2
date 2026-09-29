@@ -22,6 +22,9 @@ pub(crate) fn details(service_name: String, filter: OutputFilter, format: Format
     let mut error: Option<Error> = None;
 
     ipc::Service::list(Config::global_config(), |service| {
+        let Ok(service) = service else {
+            return CallbackProgression::Stop;
+        };
         if service_name == service.static_details.name().to_string() && filter.matches(&service) {
             match format.as_string(&ServiceDescription::from(&service)) {
                 Ok(output) => {

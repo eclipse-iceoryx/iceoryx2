@@ -34,6 +34,8 @@
 
 * [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Update dependencies in zenoh: rustls-webpki from 0.103.13 to 0.103.16, webpki-roots and webpki-roots-certs from 1.0.7 to 1.0.10
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
+* [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Report per-service discovery errors instead of silently skipping unreadable services
+
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
@@ -150,6 +152,20 @@
     link.propagate()?;
     let bridges = link.bridges();
     ```
+
+2. `Service::list` now passes `Result<ServiceDetails<Self>, ServiceListError>` to
+   its Rust callback. Successful details remain owned. Match the result and return
+   `CallbackProgression::Stop` on an error to propagate it, or `Continue` to accept
+   the error and continue discovery. Stopping on success still returns `Ok(())`.
+   The new `ServiceListError::FailedToAcquireServiceDetails` variant contains the
+   enumerated service hash and the original `ServiceDetailsError`.
+
+   Existing C/C++ list callbacks retain their signatures; the list function stops
+   and returns a specific error if service details cannot be acquired. Python
+   `Service.list` raises `ServiceListError` instead of returning a partial list.
+   CLI service listing and details commands exit unsuccessfully on discovery errors.
+   The discovery tracker and link keep existing entries on a failed scan and retry
+   on the next scan. Changes already observed before an error are not rolled back.
 
 2. The `WaitSetBuilder` can no longer be directly instantiated. First a `Node`
    must be created and this can return a `WaitSetBuilder`

@@ -22,6 +22,9 @@ pub(crate) fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut services = Vec::<ServiceDescriptor>::new();
 
     ipc::Service::list(Config::global_config(), |service| {
+        let Ok(service) = service else {
+            return CallbackProgression::Stop;
+        };
         if filter.matches(&service) {
             services.push(ServiceDescriptor::from(&service));
         }

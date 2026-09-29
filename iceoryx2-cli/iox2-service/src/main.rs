@@ -14,7 +14,7 @@ mod cli;
 mod command;
 mod filter;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
@@ -42,14 +42,11 @@ fn main() -> Result<()> {
                 }
             }
             Action::List(options) => {
-                if let Err(e) = command::list(options.filter, cli.format) {
-                    error!("failed to list services: {}", e);
-                }
+                command::list(options.filter, cli.format).context("failed to list services")?;
             }
             Action::Details(options) => {
-                if let Err(e) = command::details(options.service, options.filter, cli.format) {
-                    error!("failed to retrieve service details: {}", e);
-                }
+                command::details(options.service, options.filter, cli.format)
+                    .context("failed to retrieve service details")?;
             }
             Action::Publish(options) => {
                 if let Err(e) = command::publish(options, cli.format) {
