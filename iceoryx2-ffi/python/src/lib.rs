@@ -356,6 +356,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         py.get_type::<crate::error::ServiceDetailsError>(),
     )?;
     m.add(
+        "ServiceListError",
+        py.get_type::<crate::error::ServiceListError>(),
+    )?;
+    m.add(
         "SubscriberCreateError",
         py.get_type::<crate::error::SubscriberCreateError>(),
     )?;

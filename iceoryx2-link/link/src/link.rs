@@ -107,7 +107,10 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
 
     /// Runs one discovery cycle. Updates the discovery state from the local
     /// and the opposing side's listings, resolves what changed, opens and
-    /// closes bridges to match, and announces what is exported.
+    /// closes bridges to match, and announces what is exported. If the local
+    /// listing is incomplete, previously discovered services and bridges are
+    /// retained and no announcements are withdrawn. Services listed before
+    /// the error may still be added or refreshed on the next cycle.
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
         let origin = origin!("Link::discover");
         let Self {
@@ -122,7 +125,11 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
 
         // Update the state from the local services other nodes hold a port on.
         if let Some(mut update) = state.update_locals(Generation::Untracked) {
-            let listed = S::list(node.config(), |details| {
+            let listed = S::list(node.config(), |result| {
+                let details = match result {
+                    Ok(details) => details,
+                    Err(_) => return CallbackProgression::Stop,
+                };
                 if is_offered_by_others(&details, node.id()) {
                     let config = &details.static_details;
                     let creation_id = config.unique_service_id().value();
@@ -295,7 +302,8 @@ mod tests {
     /// holds a port on.
     fn offered(config: &Config, own_node: &UniqueNodeId) -> alloc::vec::Vec<ServiceName> {
         let mut offered = alloc::vec::Vec::new();
-        local::Service::list(config, |details| {
+        local::Service::list(config, |result| {
+            let details = result.expect("service details are available");
             if is_offered_by_others(&details, own_node) {
                 offered.push(*details.static_details.name());
             }
@@ -370,5 +378,244 @@ mod tests {
         drop(app_service);
 
         assert_that!(offered(&config, link_node.id()), len 0);
+    }
+}
+
+#[cfg(all(test, unix))]
+mod failed_listing_tests {
+    extern crate std;
+
+    use super::*;
+    use alloc::{format, string::String, vec, vec::Vec};
+    use core::convert::Infallible;
+    use std::{
+        fs,
+        os::unix::fs::PermissionsExt,
+        path::{Path, PathBuf},
+        rc::Rc,
+    };
+
+    use iceoryx2::config::Config;
+    use iceoryx2::node::NodeBuilder;
+    use iceoryx2::port::event_id::EventId;
+    use iceoryx2::service::ipc;
+    use iceoryx2::service::port_factory::PortFactory;
+    use iceoryx2::service::service_hash::ServiceHash;
+    use iceoryx2::testing::{generate_isolated_config, generate_service_name};
+    use iceoryx2_bb_concurrency::cell::RefCell;
+    use iceoryx2_link_backend::relay::{
+        EventRelay, RelayBuilder, RelayFactory, UnsupportedRelay, UnsupportedRelayBuilder,
+    };
+    use iceoryx2_link_backend::resolver::Resolver;
+    use iceoryx2_link_backend::service_description::{
+        EventDescription, PublishSubscribeDescription,
+    };
+    use iceoryx2_link_backend::{Announcement, OnRemote};
+
+    fn static_config_path(config: &Config, hash: &ServiceHash) -> PathBuf {
+        PathBuf::from(config.global.root_path().as_str())
+            .join(config.global.service.directory.as_str())
+            .join(format!(
+                "{}{}{}",
+                config.global.prefix, hash, config.global.service.static_config_storage_suffix
+            ))
+    }
+
+    fn write_static_config(path: &Path, contents: &[u8]) {
+        let original_permissions = fs::metadata(path)
+            .expect("stat static config")
+            .permissions();
+        let mut writable_permissions = original_permissions.clone();
+        writable_permissions.set_mode(original_permissions.mode() | 0o200);
+        fs::set_permissions(path, writable_permissions).expect("make static config writable");
+        let write_result = fs::write(path, contents);
+        let restore_result = fs::set_permissions(path, original_permissions);
+        restore_result.expect("restore static config permissions");
+        write_result.expect("write static config");
+    }
+
+    struct CorruptedStaticConfig {
+        path: PathBuf,
+        original: Vec<u8>,
+    }
+
+    impl CorruptedStaticConfig {
+        fn new(config: &Config, hash: &ServiceHash) -> Self {
+            let path = static_config_path(config, hash);
+            let original = fs::read(&path).expect("read static config");
+            write_static_config(&path, b"invalid static service config");
+            Self { path, original }
+        }
+    }
+
+    impl Drop for CorruptedStaticConfig {
+        fn drop(&mut self) {
+            write_static_config(&self.path, &self.original);
+        }
+    }
+
+    #[derive(Clone)]
+    struct BackendStub {
+        announcements: Rc<RefCell<Vec<(bool, ServiceHash)>>>,
+    }
+
+    struct EventStub;
+
+    impl EventRelay<ipc::Service> for EventStub {
+        type SendError = Infallible;
+        type ReceiveError = Infallible;
+
+        fn send(&mut self, _: EventId) -> Result<(), Self::SendError> {
+            Ok(())
+        }
+
+        fn receive(&mut self) -> Result<Option<EventId>, Self::ReceiveError> {
+            Ok(None)
+        }
+    }
+
+    struct EventBuilderStub;
+
+    impl RelayBuilder for EventBuilderStub {
+        type CreationError = Infallible;
+        type Relay = EventStub;
+
+        fn create(self) -> Result<Self::Relay, Self::CreationError> {
+            Ok(EventStub)
+        }
+    }
+
+    impl RelayFactory<ipc::Service> for BackendStub {
+        type RemoteDescription = ();
+        type PublishSubscribeRelay = UnsupportedRelay<ipc::Service>;
+        type PublishSubscribeBuilder<'a> = UnsupportedRelayBuilder<ipc::Service>;
+        type EventRelay = EventStub;
+        type EventBuilder<'a> = EventBuilderStub;
+
+        fn publish_subscribe<'a>(
+            &'a mut self,
+            _: PublishSubscribeDescription<'a>,
+            _: &'a (),
+        ) -> Self::PublishSubscribeBuilder<'a>
+        where
+            Self: 'a,
+        {
+            UnsupportedRelayBuilder::new()
+        }
+
+        fn event<'a>(&'a mut self, _: EventDescription<'a>, _: &'a ()) -> Self::EventBuilder<'a>
+        where
+            Self: 'a,
+        {
+            EventBuilderStub
+        }
+    }
+
+    impl Resolver<ipc::Service> for BackendStub {
+        type RemoteId = u8;
+        type RemoteDescription = ();
+        type Refusal = String;
+
+        fn service_hash(&self, _: &()) -> Result<Option<ServiceHash>, Self::Refusal> {
+            Ok(None)
+        }
+
+        fn resolve<'a>(
+            &self,
+            local: Option<&ServiceDescription>,
+            _: impl Iterator<Item = &'a ()> + Clone,
+        ) -> Resolution<(), String> {
+            if local.is_some() {
+                Resolution::Exported(())
+            } else {
+                Resolution::OutOfScope
+            }
+        }
+    }
+
+    impl Backend<ipc::Service> for BackendStub {
+        type ListError = Infallible;
+        type AnnouncementError = Infallible;
+        type RemoteId = u8;
+        type RemoteDescription = ();
+        type Refusal = String;
+        type Resolver<'a> = Self;
+        type PublishSubscribeRelay = UnsupportedRelay<ipc::Service>;
+        type EventRelay = EventStub;
+        type RelayFactory<'a> = Self;
+
+        fn list(&self, _: &mut OnRemote<'_, ipc::Service, Self>) -> Result<(), Self::ListError> {
+            Ok(())
+        }
+
+        fn resolver(&self) -> Self::Resolver<'_> {
+            self.clone()
+        }
+
+        fn relay_factory(&mut self) -> Self::RelayFactory<'_> {
+            self.clone()
+        }
+
+        fn announce(
+            &mut self,
+            announcement: Announcement<'_>,
+        ) -> Result<(), Self::AnnouncementError> {
+            self.announcements.borrow_mut().push(match announcement {
+                Announcement::Offered(description) => (true, description.hash()),
+                Announcement::Withdrawn(hash) => (false, hash),
+            });
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn incomplete_local_scan_keeps_bridges_and_never_falsely_withdraws() {
+        let config = generate_isolated_config();
+        let app_node = NodeBuilder::new()
+            .config(&config)
+            .create::<ipc::Service>()
+            .expect("create app node");
+        let absent = app_node
+            .service_builder(&generate_service_name())
+            .event()
+            .create()
+            .expect("create service");
+        let damaged = app_node
+            .service_builder(&generate_service_name())
+            .event()
+            .create()
+            .expect("create service");
+        let absent_hash = *absent.service_hash();
+        let damaged_hash = *damaged.service_hash();
+        let link_node = NodeBuilder::new()
+            .config(&config)
+            .create::<ipc::Service>()
+            .expect("create link node");
+        let announcements = Rc::new(RefCell::new(Vec::new()));
+        let backend = BackendStub {
+            announcements: announcements.clone(),
+        };
+        let mut link = Link::new(link_node, backend);
+        link.discover().expect("initial discovery");
+        assert!(link.bridges().contains(&absent_hash));
+        assert!(link.bridges().contains(&damaged_hash));
+        assert_eq!(announcements.borrow().len(), 2);
+        announcements.borrow_mut().clear();
+
+        drop(absent);
+        let damaged_config = CorruptedStaticConfig::new(&config, &damaged_hash);
+        assert_eq!(link.discover(), Err(DiscoveryError::LocalDiscovery));
+        assert!(link.bridges().contains(&absent_hash));
+        assert!(link.bridges().contains(&damaged_hash));
+        assert!(announcements.borrow().is_empty());
+
+        drop(damaged_config);
+        link.discover().expect("recovered discovery");
+        assert!(!link.bridges().contains(&absent_hash));
+        assert!(link.bridges().contains(&damaged_hash));
+        assert_eq!(*announcements.borrow(), vec![(false, absent_hash)]);
+        announcements.borrow_mut().clear();
+        link.discover().expect("stable discovery");
+        assert!(announcements.borrow().is_empty());
     }
 }

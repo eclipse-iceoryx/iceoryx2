@@ -81,16 +81,23 @@ impl Service {
 
     #[staticmethod]
     /// Returns a list of all services created under a given `config.Config`.
+    /// Raises `ServiceListError` on the first failure to acquire service details.
     pub fn list(config: &Config, service_type: ServiceType) -> PyResult<Vec<ServiceDetails>> {
         use iceoryx2::service::Service;
         let mut ret_val = vec![];
         match service_type {
             ServiceType::Ipc => crate::IpcService::list(&config.0.lock(), |service| {
+                let Ok(service) = service else {
+                    return iceoryx2::prelude::CallbackProgression::Stop;
+                };
                 ret_val.push(ServiceDetails(ServiceDetailsType::Ipc(service)));
                 iceoryx2::prelude::CallbackProgression::Continue
             })
             .map_err(|e| ServiceListError::new_err(format!("{e:?}")))?,
             ServiceType::Local => crate::LocalService::list(&config.0.lock(), |service| {
+                let Ok(service) = service else {
+                    return iceoryx2::prelude::CallbackProgression::Stop;
+                };
                 ret_val.push(ServiceDetails(ServiceDetailsType::Local(service)));
                 iceoryx2::prelude::CallbackProgression::Continue
             })

@@ -25,6 +25,8 @@
 #include "iox2/subscriber_error.hpp"
 #include "iox2/waitset_enums.hpp"
 
+#include <array>
+
 namespace {
 
 TEST(EnumConversionTest, config_creation_into_c_str) {
@@ -234,6 +236,30 @@ TEST(EnumConversionTest, service_list_into_c_str) {
     using Sut = iox2::ServiceListError;
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::InsufficientPermissions)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::InternalError)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::FailedToOpenStaticServiceInfo)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::FailedToReadStaticServiceInfo)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::FailedToDeserializeStaticServiceInfo)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::ServiceInInconsistentState)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::VersionMismatch)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::FailedToAcquireNodeState)), 1U);
+    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::Interrupt)), 1U);
+}
+
+TEST(EnumConversionTest, service_list_details_error_roundtrip) {
+    using Sut = iox2::ServiceListError;
+    static_assert(static_cast<uint8_t>(Sut::InsufficientPermissions) == 0, "preserve existing error value");
+    static_assert(static_cast<uint8_t>(Sut::InternalError) == 1, "preserve existing error value");
+    constexpr std::array<Sut, 7> ERRORS = { Sut::FailedToOpenStaticServiceInfo,
+                                            Sut::FailedToReadStaticServiceInfo,
+                                            Sut::FailedToDeserializeStaticServiceInfo,
+                                            Sut::ServiceInInconsistentState,
+                                            Sut::VersionMismatch,
+                                            Sut::FailedToAcquireNodeState,
+                                            Sut::Interrupt };
+    for (const auto error : ERRORS) {
+        const auto c_error = iox2::bb::into<iox2_service_list_error_e>(error);
+        ASSERT_EQ(iox2::bb::into<Sut>(static_cast<int>(c_error)), error);
+    }
 }
 
 TEST(EnumConversionTest, subscriber_receive_into_c_str) {
