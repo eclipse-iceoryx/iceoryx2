@@ -35,6 +35,7 @@
 * [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Update dependencies in zenoh: rustls-webpki from 0.103.13 to 0.103.16, webpki-roots and webpki-roots-certs from 1.0.7 to 1.0.10
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 * [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Report per-service discovery errors instead of silently skipping unreadable services
+* [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Isolate the default std and no_std resource prefixes so discovery does not read the other domain's incompatible static configuration
 
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
@@ -167,7 +168,15 @@
    The discovery tracker and link keep existing entries on a failed scan and retry
    on the next scan. Changes already observed before an error are not rolled back.
 
-2. The `WaitSetBuilder` can no longer be directly instantiated. First a `Node`
+3. The no_std default resource prefix changes from `iox2_no_std_` to `iox2nostd_`.
+   The former starts with the std prefix `iox2_`, causing std discovery to read
+   no_std Postcard data as TOML. Explicitly configured prefixes are unchanged.
+   Stop the old no_std processes and clean up their resources before restarting
+   all peers with the new default: the new namespace does not discover or clean
+   up resources under the old prefix. Configuring the old prefix explicitly
+   retains its overlap with the std namespace.
+
+4. The `WaitSetBuilder` can no longer be directly instantiated. First a `Node`
    must be created and this can return a `WaitSetBuilder`
 
     ```rust
@@ -179,7 +188,7 @@
     let waitset = node.waitset_builder().create()?;
     ```
 
-3. The `BackpressureAction` enum had a typo in `FollowBackpressureyStrategy`
+5. The `BackpressureAction` enum had a typo in `FollowBackpressureyStrategy`
 
     ```rust
     // old
