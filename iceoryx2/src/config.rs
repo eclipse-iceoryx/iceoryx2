@@ -231,7 +231,8 @@ impl Default for Node {
 #[serde(default)]
 pub struct Global {
     root_path: Path,
-    /// Prefix used for all files created during runtime
+    /// Prefix used for all files created during runtime. To isolate domains sharing a root path,
+    /// choose prefixes such that neither starts with the other.
     pub prefix: FileName,
     /// [`Service`](crate::service::Service) settings
     pub service: Service,
@@ -249,7 +250,8 @@ impl Default for Global {
             #[cfg(feature = "std")]
             prefix: unsafe { FileName::new_unchecked_const(b"iox2_") },
             #[cfg(not(feature = "std"))]
-            prefix: unsafe { FileName::new_unchecked_const(b"iox2_no_std_") },
+            // std uses TOML and no_std uses Postcard, so their resource prefixes must not overlap.
+            prefix: unsafe { FileName::new_unchecked_const(b"iox2nostd_") },
             service: Service::default(),
             node: Node::default(),
             creation_timeout: Duration::from_secs(1),
