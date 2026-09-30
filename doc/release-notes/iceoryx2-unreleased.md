@@ -26,6 +26,8 @@
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
+* [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Report per-service discovery errors instead of silently skipping unreadable services
+* [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Isolate the default std and no_std resource prefixes so discovery does not read the other domain's incompatible static configuration
 
 ### Refactoring
 
@@ -126,5 +128,29 @@
     link.propagate()?;
     let bridges = link.bridges();
     ```
+
+2. `Service::list` now passes `Result<ServiceDetails<Self>, ServiceDetailsError>`
+   to its Rust callback. Successful details remain owned. Return
+   `CallbackProgression::Continue` to continue discovery or `Stop` to stop;
+   either choice leaves detail errors for the callback to handle. Stopping
+   returns `Ok(())` even on a detail error. The outer `ServiceListError` only
+   reports enumeration failures. To propagate a detail error, save it in the
+   callback and check it after `list` returns, before treating the scan as complete.
+
+   Existing C/C++ list callbacks retain their signatures; the list function stops
+   and returns a specific error if service details cannot be acquired. Python
+   `Service.list` raises `ServiceListError` on enumeration failures and
+   `ServiceDetailsError` on detail failures instead of returning a partial list.
+   CLI service listing and details commands exit unsuccessfully on discovery errors.
+   The discovery tracker and link keep existing entries on a failed scan and retry
+   on the next scan. Changes already observed before an error are not rolled back.
+
+3. The no_std default resource prefix changes from `iox2_no_std_` to `iox2nostd_`.
+   The former starts with the std prefix `iox2_`, causing std discovery to read
+   no_std Postcard data as TOML. Explicitly configured prefixes are unchanged.
+   Stop the old no_std processes and clean up their resources before restarting
+   all peers with the new default: the new namespace does not discover or clean
+   up resources under the old prefix. Configuring the old prefix explicitly
+   retains its overlap with the std namespace.
 
 <!-- markdownlint-enable MD013 -->

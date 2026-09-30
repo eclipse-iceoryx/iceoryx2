@@ -890,6 +890,7 @@ pub mod service_request_response_builder {
         }
 
         Sut::list(test.config(), |service| {
+            let service = service.expect("service details are accessible");
             assert_that!(service_names, contains * service.static_details.name());
             service_names.retain(|v| v != service.static_details.name());
             CallbackProgression::Continue

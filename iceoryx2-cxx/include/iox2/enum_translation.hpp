@@ -2491,6 +2491,20 @@ constexpr auto from<int, iox2::ServiceListError>(const int value) noexcept -> io
         return iox2::ServiceListError::InsufficientPermissions;
     case iox2_service_list_error_e_INTERNAL_ERROR:
         return iox2::ServiceListError::InternalError;
+    case iox2_service_list_error_e_FAILED_TO_OPEN_STATIC_SERVICE_INFO:
+        return iox2::ServiceListError::FailedToOpenStaticServiceInfo;
+    case iox2_service_list_error_e_FAILED_TO_READ_STATIC_SERVICE_INFO:
+        return iox2::ServiceListError::FailedToReadStaticServiceInfo;
+    case iox2_service_list_error_e_FAILED_TO_DESERIALIZE_STATIC_SERVICE_INFO:
+        return iox2::ServiceListError::FailedToDeserializeStaticServiceInfo;
+    case iox2_service_list_error_e_SERVICE_IN_INCONSISTENT_STATE:
+        return iox2::ServiceListError::ServiceInInconsistentState;
+    case iox2_service_list_error_e_VERSION_MISMATCH:
+        return iox2::ServiceListError::VersionMismatch;
+    case iox2_service_list_error_e_FAILED_TO_ACQUIRE_NODE_STATE:
+        return iox2::ServiceListError::FailedToAcquireNodeState;
+    case iox2_service_list_error_e_INTERRUPT:
+        return iox2::ServiceListError::Interrupt;
     }
 
     IOX2_UNREACHABLE();
@@ -2504,6 +2518,20 @@ constexpr auto from<iox2::ServiceListError, iox2_service_list_error_e>(const iox
         return iox2_service_list_error_e_INSUFFICIENT_PERMISSIONS;
     case iox2::ServiceListError::InternalError:
         return iox2_service_list_error_e_INTERNAL_ERROR;
+    case iox2::ServiceListError::FailedToOpenStaticServiceInfo:
+        return iox2_service_list_error_e_FAILED_TO_OPEN_STATIC_SERVICE_INFO;
+    case iox2::ServiceListError::FailedToReadStaticServiceInfo:
+        return iox2_service_list_error_e_FAILED_TO_READ_STATIC_SERVICE_INFO;
+    case iox2::ServiceListError::FailedToDeserializeStaticServiceInfo:
+        return iox2_service_list_error_e_FAILED_TO_DESERIALIZE_STATIC_SERVICE_INFO;
+    case iox2::ServiceListError::ServiceInInconsistentState:
+        return iox2_service_list_error_e_SERVICE_IN_INCONSISTENT_STATE;
+    case iox2::ServiceListError::VersionMismatch:
+        return iox2_service_list_error_e_VERSION_MISMATCH;
+    case iox2::ServiceListError::FailedToAcquireNodeState:
+        return iox2_service_list_error_e_FAILED_TO_ACQUIRE_NODE_STATE;
+    case iox2::ServiceListError::Interrupt:
+        return iox2_service_list_error_e_INTERRUPT;
     }
 
     IOX2_UNREACHABLE();

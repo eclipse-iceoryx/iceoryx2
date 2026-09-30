@@ -21,13 +21,25 @@ use crate::cli::OutputFilter;
 pub(crate) fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut services = Vec::<ServiceDescriptor>::new();
 
+    let mut details_error = None;
     ipc::Service::list(Config::global_config(), |service| {
+        let service = match service {
+            Ok(service) => service,
+            Err(error) => {
+                details_error = Some(error);
+                return CallbackProgression::Stop;
+            }
+        };
         if filter.matches(&service) {
             services.push(ServiceDescriptor::from(&service));
         }
         CallbackProgression::Continue
     })
     .context("failed to retrieve services")?;
+
+    if let Some(error) = details_error {
+        return Err(error).context("failed to acquire service details");
+    }
 
     services.sort_by_key(|pattern| match pattern {
         ServiceDescriptor::PublishSubscribe(name) => (name.clone(), 0),
