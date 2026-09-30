@@ -244,22 +244,27 @@ mod tests {
     }
 
     #[test]
-    fn size_that_is_not_a_multiple_of_alignment_is_rejected() {
-        const SIZE: usize = 6;
-        const ALIGNMENT: usize = 4;
-
-        let description = TypeDescription {
-            variant: TypeVariant::FixedSize,
-            type_name: "test_type".into(),
-            size: SIZE,
-            alignment: ALIGNMENT,
+    fn type_detail_with_custom_alignment_round_trips() {
+        let with_custom_alignment = |detail: TypeDetail, alignment: usize| {
+            TypeDetail::__internal_new_from_parts(
+                detail.variant(),
+                core::str::from_utf8(detail.type_name()).expect("utf-8 type name"),
+                detail.size(),
+                alignment,
+            )
+            .expect("valid parts")
         };
 
-        let result = TypeDetail::try_from(&description);
-        assert_that!(
-            result,
-            eq Err(InvalidTypeDescription::SizeNotMultipleOfAlignment)
-        );
+        let details = [
+            with_custom_alignment(TypeDetail::new::<u8>(TypeVariant::Dynamic), 16),
+            with_custom_alignment(TypeDetail::new::<u32>(TypeVariant::FixedSize), 16),
+            with_custom_alignment(TypeDetail::new::<[u32; 3]>(TypeVariant::FixedSize), 8),
+        ];
+
+        for detail in details {
+            let round_tripped = TypeDetail::try_from(&TypeDescription::from(&detail));
+            assert_that!(round_tripped, eq Ok(detail));
+        }
     }
 
     // No real type has these sizes, a description received from the
