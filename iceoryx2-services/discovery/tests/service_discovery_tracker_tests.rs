@@ -98,7 +98,7 @@ mod failed_ipc_listing {
 
     use iceoryx2::config::Config;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::{ServiceDetailsError, ServiceListError, service_hash::ServiceHash};
+    use iceoryx2::service::{ServiceDetailsError, service_hash::ServiceHash};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker, TrackerEvent};
 
@@ -204,13 +204,9 @@ mod failed_ipc_listing {
     }
 
     #[test]
-    fn nested_detail_permission_failure_stays_a_permission_error() {
-        let hash = ServiceHash::try_from("0123456789abcdef").expect("valid hash");
+    fn detail_permission_failure_stays_a_permission_error() {
         assert_eq!(
-            SyncError::from(ServiceListError::FailedToAcquireServiceDetails {
-                service_hash: hash,
-                error: ServiceDetailsError::InsufficientPermissions,
-            }),
+            SyncError::from(ServiceDetailsError::InsufficientPermissions),
             SyncError::InsufficientPermissions
         );
     }

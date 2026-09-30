@@ -1030,10 +1030,7 @@ pub mod service {
                     .create(b"")
                     .unwrap(),
             );
-            expected.push(ServiceListError::FailedToAcquireServiceDetails {
-                service_hash: hash,
-                error: ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
-            });
+            expected.push(ServiceDetailsError::FailedToDeserializeStaticServiceInfo);
         }
         let mut successes = vec![];
         let mut errors = vec![];
@@ -1047,16 +1044,14 @@ pub mod service {
         assert_that!(result, is_ok);
         assert_that!(successes.len(), eq 1);
         assert_that!(successes[0].static_details.service_hash(), eq service.service_hash());
-        assert_that!(errors.len(), eq expected.len());
-        for error in expected {
-            assert_that!(errors, contains error);
-            assert_that!(format!("{}", core::error::Error::source(&error).unwrap()), eq
-                format!("{}", ServiceDetailsError::FailedToDeserializeStaticServiceInfo));
-        }
+        assert_that!(errors, eq expected);
     }
 
     #[conformance_test]
-    pub fn list_returns_the_callback_error_when_stopped<Sut: Service, Factory: SutFactory<Sut>>() {
+    pub fn list_stops_after_detail_error_without_returning_it<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
         let test = Factory::new();
         let config = test.context().config();
         let mut storage = vec![];
@@ -1079,7 +1074,8 @@ pub mod service {
             CallbackProgression::Stop
         });
         assert_that!(calls, eq 1);
-        assert_that!(result, eq Err(reported.unwrap()));
+        assert_that!(reported, eq Some(ServiceDetailsError::FailedToDeserializeStaticServiceInfo));
+        assert_that!(result, is_ok);
     }
 
     #[conformance_test]
@@ -1172,10 +1168,7 @@ pub mod service {
     }
 
     #[conformance_test]
-    pub fn list_preserves_inconsistent_state_errors_and_the_enumerated_hash<
-        Sut: Service,
-        Factory: SutFactory<Sut>,
-    >() {
+    pub fn list_preserves_inconsistent_state_errors<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let config = test.context().config();
         let node = test.context().create_node();
@@ -1207,10 +1200,7 @@ pub mod service {
             is_ok
         );
         assert_that!(successes, eq 1);
-        assert_that!(errors, eq vec![ServiceListError::FailedToAcquireServiceDetails {
-            service_hash: wrong_hash,
-            error: ServiceDetailsError::ServiceInInconsistentState,
-        }]);
+        assert_that!(errors, eq vec![ServiceDetailsError::ServiceInInconsistentState]);
     }
 
     #[conformance_test]

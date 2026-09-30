@@ -125,10 +125,14 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
 
         // Update the state from the local services other nodes hold a port on.
         if let Some(mut update) = state.update_locals(Generation::Untracked) {
+            let mut details_error = None;
             let listed = S::list(node.config(), |result| {
                 let details = match result {
                     Ok(details) => details,
-                    Err(_) => return CallbackProgression::Stop,
+                    Err(error) => {
+                        details_error = Some(error);
+                        return CallbackProgression::Stop;
+                    }
                 };
                 if is_offered_by_others(&details, node.id()) {
                     let config = &details.static_details;
@@ -147,6 +151,10 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
                 with DiscoveryError::LocalDiscovery,
                 "Failed to list the local services"
             );
+            if let Some(error) = details_error {
+                fail!(from origin, with DiscoveryError::LocalDiscovery,
+                    "Failed to acquire local service details: {error}");
+            }
             update.finalize();
         }
 

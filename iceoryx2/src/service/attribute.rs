@@ -90,10 +90,10 @@
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! ipc::Service::list(Config::global_config(), |service| {
-//!     let Ok(service) = service else {
-//!         return CallbackProgression::Stop;
-//!     };
-//!     println!("\n{:#?}", &service.static_details.attributes());
+//!     match service {
+//!         Ok(service) => println!("\n{:#?}", service.static_details.attributes()),
+//!         Err(error) => eprintln!("Unable to acquire service details: {error}"),
+//!     }
 //!     CallbackProgression::Continue
 //! })?;
 //! # Ok(())

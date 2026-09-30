@@ -33,10 +33,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     // use the custom config when listing the services
     ipc::Service::list(&config, |service| {
-        let Ok(service) = service else {
-            return CallbackProgression::Stop;
-        };
-        coutln!("  {}", &service.static_details.name());
+        match service {
+            Ok(service) => coutln!("  {}", service.static_details.name()),
+            Err(error) => eprintln!("Unable to acquire service details: {error}"),
+        }
         CallbackProgression::Continue
     })?;
 

@@ -44,11 +44,15 @@ impl From<ServiceListError> for SyncError {
         match error {
             ServiceListError::InsufficientPermissions => Self::InsufficientPermissions,
             ServiceListError::InternalError => Self::ServiceLookupFailure,
-            ServiceListError::FailedToAcquireServiceDetails {
-                error: ServiceDetailsError::InsufficientPermissions,
-                ..
-            } => Self::InsufficientPermissions,
-            ServiceListError::FailedToAcquireServiceDetails { .. } => Self::ServiceLookupFailure,
+        }
+    }
+}
+
+impl From<ServiceDetailsError> for SyncError {
+    fn from(error: ServiceDetailsError) -> Self {
+        match error {
+            ServiceDetailsError::InsufficientPermissions => Self::InsufficientPermissions,
+            _ => Self::ServiceLookupFailure,
         }
     }
 }
@@ -109,10 +113,14 @@ impl<S: Service> Tracker<S> {
         self.epoch = self.epoch.wrapping_add(1);
         let epoch = self.epoch;
 
+        let mut details_error = None;
         S::list(&self.config, |result| {
             let service = match result {
                 Ok(service) => service,
-                Err(_) => return CallbackProgression::Stop,
+                Err(error) => {
+                    details_error = Some(error);
+                    return CallbackProgression::Stop;
+                }
             };
             let id = *service.static_details.service_hash();
 
@@ -133,6 +141,10 @@ impl<S: Service> Tracker<S> {
 
             CallbackProgression::Continue
         })?;
+
+        if let Some(error) = details_error {
+            return Err(error.into());
+        }
 
         self.services.retain(|_, entry| {
             if entry.seen == epoch {

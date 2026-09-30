@@ -129,16 +129,18 @@
     let bridges = link.bridges();
     ```
 
-2. `Service::list` now passes `Result<ServiceDetails<Self>, ServiceListError>` to
-   its Rust callback. Successful details remain owned. Match the result and return
-   `CallbackProgression::Stop` on an error to propagate it, or `Continue` to accept
-   the error and continue discovery. Stopping on success still returns `Ok(())`.
-   The new `ServiceListError::FailedToAcquireServiceDetails` variant contains the
-   enumerated service hash and the original `ServiceDetailsError`.
+2. `Service::list` now passes `Result<ServiceDetails<Self>, ServiceDetailsError>`
+   to its Rust callback. Successful details remain owned. Return
+   `CallbackProgression::Continue` to continue discovery or `Stop` to stop;
+   either choice leaves detail errors for the callback to handle. Stopping
+   returns `Ok(())` even on a detail error. The outer `ServiceListError` only
+   reports enumeration failures. To propagate a detail error, save it in the
+   callback and check it after `list` returns, before treating the scan as complete.
 
    Existing C/C++ list callbacks retain their signatures; the list function stops
    and returns a specific error if service details cannot be acquired. Python
-   `Service.list` raises `ServiceListError` instead of returning a partial list.
+   `Service.list` raises `ServiceListError` on enumeration failures and
+   `ServiceDetailsError` on detail failures instead of returning a partial list.
    CLI service listing and details commands exit unsuccessfully on discovery errors.
    The discovery tracker and link keep existing entries on a failed scan and retry
    on the next scan. Changes already observed before an error are not rolled back.

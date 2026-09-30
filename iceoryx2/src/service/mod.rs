@@ -419,13 +419,6 @@ pub enum ServiceListError {
     InsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
-    /// Acquiring the details of an enumerated service failed.
-    FailedToAcquireServiceDetails {
-        /// Identifies the service even when its name could not be read.
-        service_hash: ServiceHash,
-        /// The original failure while acquiring the service details.
-        error: ServiceDetailsError,
-    },
 }
 
 impl core::fmt::Display for ServiceListError {
@@ -434,14 +427,7 @@ impl core::fmt::Display for ServiceListError {
     }
 }
 
-impl core::error::Error for ServiceListError {
-    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-        match self {
-            Self::FailedToAcquireServiceDetails { error, .. } => Some(error),
-            _ => None,
-        }
-    }
-}
+impl core::error::Error for ServiceListError {}
 
 /// Represents all the [`Service`] information that one can acquire with [`Service::list()`]
 /// when the [`Service`] is accessible by the current process.
@@ -1072,15 +1058,16 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     ///
     /// Each acquired [`ServiceDetails`] or detail lookup error is passed to the callback.
     /// Returning [`CallbackProgression::Continue`] accepts the current result and continues.
-    /// Returning [`CallbackProgression::Stop`] for a successful result returns `Ok(())`;
-    /// returning it for an error returns that same error from this function.
+    /// Returning [`CallbackProgression::Stop`] stops the iteration and returns `Ok(())`,
+    /// regardless of whether the current result is a success or an error. To propagate a
+    /// detail lookup error, store it in the callback and handle it after this function returns.
     /// A failure to enumerate the services is returned without calling the callback.
     ///
     /// Services that disappear before their details can be acquired, or whose static storage is
     /// not yet initialized, are skipped. Missing dynamic storage does not prevent returning the
     /// static details. The listing is not an atomic snapshot and its order is unspecified.
     /// `Ok(())` does not imply that every service was read: the callback may have accepted errors
-    /// or stopped early. An error does not undo earlier callback side effects.
+    /// or stopped early. Callback side effects are not rolled back.
     ///
     /// # Example
     ///
@@ -1090,16 +1077,16 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     ///
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// ipc::Service::list(Config::global_config(), |service| {
-    ///     let Ok(service) = service else {
-    ///         return CallbackProgression::Stop;
-    ///     };
-    ///     println!("\n{:#?}", &service);
+    ///     match service {
+    ///         Ok(service) => println!("\n{service:#?}"),
+    ///         Err(error) => eprintln!("Unable to acquire service details: {error}"),
+    ///     }
     ///     CallbackProgression::Continue
     /// })?;
     /// # Ok(())
     /// # }
     /// ```
-    fn list<F: FnMut(Result<ServiceDetails<Self>, ServiceListError>) -> CallbackProgression>(
+    fn list<F: FnMut(Result<ServiceDetails<Self>, ServiceDetailsError>) -> CallbackProgression>(
         config: &config::Config,
         mut callback: F,
     ) -> Result<(), ServiceListError> {
@@ -1122,22 +1109,10 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
                     continue;
                 }
             };
-            match __internal_details::<Self>(config, &hash) {
-                Ok(Some(details)) => {
-                    if callback(Ok(details)) == CallbackProgression::Stop {
-                        return Ok(());
-                    }
-                }
-                Ok(None) => (),
-                Err(error) => {
-                    let error = ServiceListError::FailedToAcquireServiceDetails {
-                        service_hash: hash,
-                        error,
-                    };
-                    if callback(Err(error)) == CallbackProgression::Stop {
-                        return Err(error);
-                    }
-                }
+            if let Some(details) = __internal_details::<Self>(config, &hash).transpose()
+                && callback(details) == CallbackProgression::Stop
+            {
+                break;
             }
         }
 
