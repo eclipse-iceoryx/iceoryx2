@@ -12,6 +12,7 @@
 
 import os
 import stat
+import sys
 from pathlib import Path
 
 import iceoryx2 as iox2
@@ -59,13 +60,14 @@ def test_list_reports_corrupt_service_details() -> None:
     del node
 
 
-@pytest.mark.skipif(
-    os.name != "posix" or os.geteuid() == 0,
-    reason="requires POSIX permissions and an unprivileged user",
-)
 def test_list_distinguishes_enumeration_and_detail_permission_errors(
     tmp_path: Path,
 ) -> None:
+    if sys.platform == "win32":
+        pytest.skip("requires POSIX permissions")
+    elif os.geteuid() == 0:
+        pytest.skip("requires an unprivileged user")
+
     config = iox2.testing.generate_isolated_config()
     config.global_cfg.root_path = iox2.Path.new(str(tmp_path))
     node = iox2.NodeBuilder.new().config(config).create(iox2.ServiceType.Ipc)
