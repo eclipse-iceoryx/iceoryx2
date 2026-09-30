@@ -709,6 +709,8 @@ impl<
 
     fn next_request_id(&self) -> RequestId {
         RequestId::new(
+            // TODO iox2-#809: Replace with `try_update` once MSRV is set to 1.95.0
+            #[allow(deprecated)]
             self.request_id_counter
                 .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
                     Some((v + 1) % RequestId::max_value())
