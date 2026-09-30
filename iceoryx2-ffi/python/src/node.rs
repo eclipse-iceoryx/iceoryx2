@@ -183,12 +183,12 @@ impl Node {
         match &*self.0.lock() {
             NodeType::Ipc(node) => unsafe {
                 Ok(node
-                    .force_remove_service(&name.0, (*messaging_pattern).into())
+                    .force_remove_service(&name.0, (*messaging_pattern).clone().into())
                     .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?)
             },
             NodeType::Local(node) => unsafe {
                 Ok(node
-                    .force_remove_service(&name.0, (*messaging_pattern).into())
+                    .force_remove_service(&name.0, (*messaging_pattern).clone().into())
                     .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?)
             },
         }
