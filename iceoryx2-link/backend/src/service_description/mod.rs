@@ -183,6 +183,7 @@ mod tests {
     use iceoryx2::service::messaging_pattern::MessagingPattern as Pattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
+    use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_testing::assert_that;
 
     /// The static config of the service `name` of `pattern` in the
@@ -253,6 +254,33 @@ mod tests {
                 user_header: (&TypeDetail::new::<()>(TypeVariant::FixedSize)).into(),
             })
         );
+    }
+
+    #[test]
+    fn publish_subscribe_with_custom_payload_alignment_is_described() {
+        const PAYLOAD_ALIGNMENT: usize = 16;
+
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let service_name = generate_service_name();
+
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .payload_alignment(Alignment::new(PAYLOAD_ALIGNMENT).expect("power of two"))
+            .create()
+            .expect("service is created");
+
+        let static_config =
+            static_config_of::<local::Service>(&service_name, &config, Pattern::PublishSubscribe);
+        let sut = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+
+        let types = sut.types.publish_subscribe();
+        assert_that!(types.payload.alignment, eq PAYLOAD_ALIGNMENT);
+        assert_that!(types.type_details(), is_ok);
     }
 
     #[test]
