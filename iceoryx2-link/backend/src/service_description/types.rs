@@ -145,7 +145,6 @@ impl From<&TypeDetail> for TypeDescription {
 pub enum InvalidTypeDescription {
     TypeNameTooLong,
     AlignmentNotPowerOfTwo,
-    SizeNotMultipleOfAlignment,
     /// The size rounded up to the alignment exceeds what a layout may hold.
     LayoutOverflow,
 }
@@ -166,9 +165,6 @@ impl TryFrom<&TypeDescription> for TypeDetail {
 
         if !description.alignment.is_power_of_two() {
             return Err(InvalidTypeDescription::AlignmentNotPowerOfTwo);
-        }
-        if !description.size.is_multiple_of(description.alignment) {
-            return Err(InvalidTypeDescription::SizeNotMultipleOfAlignment);
         }
         if Layout::from_size_align(description.size, description.alignment).is_err() {
             return Err(InvalidTypeDescription::LayoutOverflow);
