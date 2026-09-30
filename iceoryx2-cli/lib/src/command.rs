@@ -71,15 +71,15 @@ impl HostEnvironment {
 impl Environment for HostEnvironment {
     // TODO: This can be optimized to make the command look-up quicker
     fn install_paths() -> Result<Vec<PathBuf>> {
-        let mut install_paths: Vec<PathBuf> = env::var("PATH")
-            .context("Failed to read PATH environment variable")?
-            .split(PATH_ENV_VAR_SEPARATOR)
-            .map(PathBuf::from)
-            .filter(|p| p.is_dir())
-            .collect();
+        let path_var = env::var("PATH").context("Failed to read PATH environment variable")?;
 
-        install_paths.sort();
-        install_paths.dedup();
+        let mut install_paths: Vec<PathBuf> = Vec::new();
+
+        for path in path_var.split(PATH_ENV_VAR_SEPARATOR).map(PathBuf::from) {
+            if path.is_dir() && !install_paths.contains(&path) {
+                install_paths.push(path);
+            }
+        }
 
         Ok(install_paths)
     }
