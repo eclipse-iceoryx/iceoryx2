@@ -81,22 +81,32 @@ impl Service {
 
     #[staticmethod]
     /// Returns a list of all services created under a given `config.Config`.
-    /// Raises `ServiceListError` on the first failure to acquire service details.
+    /// Raises `ServiceListError` if enumeration fails, or `ServiceDetailsError` on the
+    /// first failure to acquire service details. No partial list is returned.
     pub fn list(config: &Config, service_type: ServiceType) -> PyResult<Vec<ServiceDetails>> {
         use iceoryx2::service::Service;
         let mut ret_val = vec![];
+        let mut details_error = None;
         match service_type {
             ServiceType::Ipc => crate::IpcService::list(&config.0.lock(), |service| {
-                let Ok(service) = service else {
-                    return iceoryx2::prelude::CallbackProgression::Stop;
+                let service = match service {
+                    Ok(service) => service,
+                    Err(error) => {
+                        details_error = Some(error);
+                        return iceoryx2::prelude::CallbackProgression::Stop;
+                    }
                 };
                 ret_val.push(ServiceDetails(ServiceDetailsType::Ipc(service)));
                 iceoryx2::prelude::CallbackProgression::Continue
             })
             .map_err(|e| ServiceListError::new_err(format!("{e:?}")))?,
             ServiceType::Local => crate::LocalService::list(&config.0.lock(), |service| {
-                let Ok(service) = service else {
-                    return iceoryx2::prelude::CallbackProgression::Stop;
+                let service = match service {
+                    Ok(service) => service,
+                    Err(error) => {
+                        details_error = Some(error);
+                        return iceoryx2::prelude::CallbackProgression::Stop;
+                    }
                 };
                 ret_val.push(ServiceDetails(ServiceDetailsType::Local(service)));
                 iceoryx2::prelude::CallbackProgression::Continue
@@ -104,6 +114,9 @@ impl Service {
             .map_err(|e| ServiceListError::new_err(format!("{e:?}")))?,
         };
 
+        if let Some(error) = details_error {
+            return Err(ServiceDetailsError::new_err(format!("{error:?}")));
+        }
         Ok(ret_val)
     }
 }
