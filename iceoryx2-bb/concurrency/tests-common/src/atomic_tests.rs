@@ -12,6 +12,8 @@
 
 use iceoryx2_bb_testing_macros::tests;
 
+// TODO iox2-#809: Replace with `try_update` once MSRV is set to 1.95.0
+#[allow(deprecated)]
 #[tests(u64, u128, i64, i128)]
 pub mod generic {
     use core::alloc::Layout;
