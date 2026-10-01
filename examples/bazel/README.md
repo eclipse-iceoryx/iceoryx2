@@ -55,7 +55,7 @@ To use iceoryx2 in your own Bazel project:
      git_override(
          module_name = "iceoryx2",
          remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
-         commit = "<commit>", # revision containing the rules_rs migration
+         commit = "<commit>", # or whatever release you'd like to use
      )
      ```
 
