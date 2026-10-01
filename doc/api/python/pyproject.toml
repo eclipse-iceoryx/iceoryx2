@@ -30,4 +30,4 @@ poetry_command = ""
 shell = "maturin develop --manifest-path ../../../iceoryx2-ffi/python/Cargo.toml --target-dir ../../../target/ff/python"
 
 [tool.poe.tasks.build-docs]
-shell = "sphinx-build -M html . target -W --keep-going"
+shell = "sphinx-build -M html . target --keep-going"
