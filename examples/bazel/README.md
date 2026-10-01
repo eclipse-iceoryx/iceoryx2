@@ -1,7 +1,9 @@
 # iceoryx2 Bazel Example
 
 This directory contains a standalone Bazel example demonstrating how to use
-iceoryx2 with Bazel modules (bzlmod).
+iceoryx2 with Bazel modules (bzlmod) and `rules_rs`. Bazel 8.5.1 or newer is
+required. Cargo dependencies are resolved directly from iceoryx2's `Cargo.lock`;
+no repin step is needed.
 
 ## Quick Start
 
@@ -10,7 +12,7 @@ iceoryx2 with Bazel modules (bzlmod).
 From this directory:
 
 ```bash
-bazel build //...
+bazelisk build //...
 ```
 
 ### Run Rust Examples
@@ -18,13 +20,13 @@ bazel build //...
 Terminal 1 (subscriber):
 
 ```bash
-bazel run //rust:subscriber
+bazelisk run //rust:subscriber
 ```
 
 Terminal 2 (publisher):
 
 ```bash
-bazel run //rust:publisher
+bazelisk run //rust:publisher
 ```
 
 ### Run C++ Examples
@@ -32,13 +34,13 @@ bazel run //rust:publisher
 Terminal 1 (subscriber):
 
 ```bash
-bazel run //cxx:example_subscriber_cpp
+bazelisk run //cxx:example_subscriber_cpp
 ```
 
 Terminal 2 (publisher):
 
 ```bash
-bazel run //cxx:example_publisher_cpp
+bazelisk run //cxx:example_publisher_cpp
 ```
 
 ## Using in Your Own Project
@@ -53,7 +55,7 @@ To use iceoryx2 in your own Bazel project:
      git_override(
          module_name = "iceoryx2",
          remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
-         commit = "v0.8.1", # or whatever release you'd like to use
+         commit = "<commit>", # revision containing the rules_rs migration
      )
      ```
 

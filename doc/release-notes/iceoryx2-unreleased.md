@@ -48,6 +48,7 @@
 -->
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#2057](https://github.com/eclipse-iceoryx/iceoryx2/issues/2057) Migrate Bazel Rust builds to rules_rs; require Bazel 8.5.1 or newer
 
 ### New API features
 
