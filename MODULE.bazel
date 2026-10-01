@@ -10,6 +10,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+###############################################################################
+# Bazel now uses Bzlmod by default to manage external dependencies.
+# Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
+#
+# For more details, please check https://github.com/bazelbuild/bazel/issues/18958
+###############################################################################
 module(
     name = "iceoryx2",
     version = "0.10.999",
@@ -42,6 +48,10 @@ rust.toolchain(
 )
 use_repo(rust, "default_rust_toolchains")
 
+# Bindgen toolchain setup
+# rules_rs provides self-contained bindgen binaries, including libclang.
+# These toolchains are registered both when building iceoryx2 directly and
+# when using it as a dependency; consumers need no separate libclang setup.
 bindgen = use_extension("@rules_rs//rs:rules_rust_bindgen.bzl", "rules_rust_bindgen")
 use_repo(bindgen, "rules_rust_bindgen")
 

@@ -12,3 +12,5 @@
 
 # Use C++17 standard
 build --cxxopt=-std=c++17
+
+# rules_rs resolves Rust dependencies directly from Cargo.lock.
