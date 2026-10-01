@@ -10,12 +10,11 @@ If you think you have found a vulnerability in this repository, please report it
 
 **Please do not report security vulnerabilities through public issues, discussions, or pull requests.**
 
-Instead, report it using one of the following ways:
+Instead, report it using the following way:
 
-* Create a [confidential issue](https://gitlab.eclipse.org/security/vulnerability-reports/-/work_items/new?issue[confidential]=true) in the Eclipse Foundation Vulnerability Reporting Tracker
 * Report a [vulnerability](https://github.com/eclipse-iceoryx/iceoryx2/security/advisories/new) directly via private vulnerability reporting on GitHub
 
-You can find more information about reporting and disclosure at the [Eclipse Foundation Security page](https://www.eclipse.org/security/).
+You can find more information about reporting on other channels and disclosure at the [Eclipse Foundation Security page](https://www.eclipse.org/security/).
 
 Please include as much of the information listed below as you can to help us better understand and resolve the issue:
 
