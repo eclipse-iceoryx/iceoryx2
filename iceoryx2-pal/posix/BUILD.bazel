@@ -13,8 +13,9 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
-load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_library")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_test_suite")
+load("@rules_rs//rs:rules_rust_bindgen.bzl", "rust_bindgen")
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
 filegroup(
@@ -34,8 +35,8 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-rust_bindgen_library(
-    name = "iceoryx2-pal-posix-bindgen",
+rust_bindgen(
+    name = "iceoryx2-pal-posix-bindgen-src",
     header = "src/c/posix.h",
     cc_lib = ":iceoryx2-pal-posix-c-lib",
     bindgen_flags = [
@@ -46,6 +47,12 @@ rust_bindgen_library(
         "--raw-line=#![allow(warnings)]",
         "--raw-line=#![allow(clippy::all)]",
     ],
+)
+
+rust_library(
+    name = "iceoryx2-pal-posix-bindgen",
+    srcs = [":iceoryx2-pal-posix-bindgen-src"],
+    deps = [":iceoryx2-pal-posix-c-lib"],
 )
 
 # Create the actual crate

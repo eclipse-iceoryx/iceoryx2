@@ -1,3 +1,5 @@
 target/
 build/
 integrations/
+.cache/
+examples/bazel/

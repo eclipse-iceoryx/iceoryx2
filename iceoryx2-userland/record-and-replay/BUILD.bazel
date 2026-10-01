@@ -12,7 +12,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",

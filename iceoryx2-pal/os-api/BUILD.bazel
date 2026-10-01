@@ -13,8 +13,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_rust//rust:defs.bzl", "rust_library")
-load("@rules_rust_bindgen//:defs.bzl", "rust_bindgen_library")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
 
 filegroup(
     name = "all_srcs",
