@@ -10,10 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_rs//rs:rust_library.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -24,8 +24,8 @@ rust_library(
     name = "iceoryx2-pal-os-api",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@crate_index//:libc",
-        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "@crate_index//:libc",
     ],
 )

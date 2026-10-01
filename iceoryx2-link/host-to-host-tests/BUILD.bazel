@@ -10,10 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 load("@rules_rs//rs:rust_library.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -30,9 +30,9 @@ rust_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
     ],
 )
@@ -43,10 +43,10 @@ rust_binary(
         "ping-pong/src/pinger.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         ":iceoryx2-link-host-to-host-tests",
+        "//iceoryx2",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
     ],
 )
@@ -57,10 +57,10 @@ rust_binary(
         "ping-pong/src/ponger.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         ":iceoryx2-link-host-to-host-tests",
+        "//iceoryx2",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
     ],
 )

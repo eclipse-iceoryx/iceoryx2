@@ -10,13 +10,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rs//rs:rules_rust_bindgen.bzl", "rust_bindgen")
 load("@rules_rs//rs:rust_library.bzl", "rust_library")
 load("@rules_rust//rust:defs.bzl", "rust_test_suite")
-load("@rules_rs//rs:rules_rust_bindgen.bzl", "rust_bindgen")
-load("@bazel_skylib//lib:selects.bzl", "selects")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -30,23 +30,25 @@ cc_library(
         "src/c/socket_macros.c",
     ],
     hdrs = glob(["src/c/**"]),
-    strip_include_prefix = "src/c",
     linkstatic = True,
+    strip_include_prefix = "src/c",
     visibility = ["//visibility:public"],
 )
 
 rust_bindgen(
     name = "iceoryx2-pal-posix-bindgen-src",
-    header = "src/c/posix.h",
-    cc_lib = ":iceoryx2-pal-posix-c-lib",
     bindgen_flags = [
         "--use-core",
-        "--rust-target", "1.89.0",
-        "--blocklist-type", "max_align_t",
+        "--rust-target",
+        "1.89.0",
+        "--blocklist-type",
+        "max_align_t",
         # ignore warnings in the bindgen generated code
         "--raw-line=#![allow(warnings)]",
         "--raw-line=#![allow(clippy::all)]",
     ],
+    cc_lib = ":iceoryx2-pal-posix-c-lib",
+    header = "src/c/posix.h",
 )
 
 rust_library(
@@ -66,26 +68,47 @@ rust_library(
         "//conditions:default": [],
     }),
     rustc_flags = select({
-        "@platforms//os:linux":   ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
-        "@platforms//os:android": ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
-        "@platforms//os:vxworks": ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
-        "@platforms//os:macos":   ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
-        "@platforms//os:windows": ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
-        "@platforms//os:freebsd": ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
-        "@platforms//os:qnx":     ["--cfg=bazel_build", "--cfg=platform_binding=\"bindgen\""],
+        "@platforms//os:linux": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"libc\"",
+        ],
+        "@platforms//os:android": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"libc\"",
+        ],
+        "@platforms//os:vxworks": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"libc\"",
+        ],
+        "@platforms//os:macos": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"bindgen\"",
+        ],
+        "@platforms//os:windows": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"bindgen\"",
+        ],
+        "@platforms//os:freebsd": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"bindgen\"",
+        ],
+        "@platforms//os:qnx": [
+            "--cfg=bazel_build",
+            "--cfg=platform_binding=\"bindgen\"",
+        ],
     }),
     deps = [
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ] + select({
-        "@platforms//os:linux":   ["@crate_index//:libc"],
+        "@platforms//os:linux": ["@crate_index//:libc"],
         "@platforms//os:android": ["@crate_index//:libc"],
         "@platforms//os:vxworks": ["@crate_index//:libc"],
-        "@platforms//os:macos":   [":iceoryx2-pal-posix-bindgen"],
+        "@platforms//os:macos": [":iceoryx2-pal-posix-bindgen"],
         "@platforms//os:windows": [":iceoryx2-pal-posix-bindgen"],
         "@platforms//os:freebsd": [":iceoryx2-pal-posix-bindgen"],
-        "@platforms//os:qnx":     [":iceoryx2-pal-posix-bindgen"],
+        "@platforms//os:qnx": [":iceoryx2-pal-posix-bindgen"],
     }),
 )
 
@@ -93,10 +116,10 @@ rust_test_suite(
     name = "iceoryx2-pal-posix-tests",
     srcs = glob(["tests/**/*.rs"]),
     crate_features = ["std"],
-    deps = [
-        ":iceoryx2-pal-posix",
-    ],
     proc_macro_deps = [
         "@crate_index//:generic-tests",
+    ],
+    deps = [
+        ":iceoryx2-pal-posix",
     ],
 )

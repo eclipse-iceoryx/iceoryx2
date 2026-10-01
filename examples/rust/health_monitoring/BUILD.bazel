@@ -18,10 +18,10 @@ rust_binary(
         "publisher_1.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -31,10 +31,10 @@ rust_binary(
         "publisher_2.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -44,10 +44,10 @@ rust_binary(
         "subscriber.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -57,9 +57,9 @@ rust_binary(
         "central_daemon.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )

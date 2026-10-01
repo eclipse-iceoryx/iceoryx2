@@ -10,10 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_rs//rs:rust_library.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -25,7 +25,7 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [
-            "std"
+            "std",
         ],
         "//conditions:default": [],
     }),
@@ -33,4 +33,3 @@ rust_library(
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
     ],
 )
-
