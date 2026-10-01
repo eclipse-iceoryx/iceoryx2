@@ -47,7 +47,6 @@ register_toolchains(
 )
 ```
 
-Use Bazelisk to select Bazel 8.5.1 from the repository's `.bazelversion`.
 Bazel 8.5.1 or newer is required. The standalone example under `examples/bazel`
 uses a local path override instead of a Git revision.
 
@@ -62,7 +61,7 @@ migrate to Bazel Modules (see [Bazel Migration Guide](https://bazel.build/extern
 Build directly:
 
 ```bash
-bazelisk build //...
+bazel build //...
 ```
 
 `rules_rs` reads `Cargo.toml` and `Cargo.lock` directly and resolves dependencies
