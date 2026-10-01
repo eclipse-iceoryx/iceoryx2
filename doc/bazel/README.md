@@ -19,12 +19,21 @@ bazel_dep(name = "iceoryx2", version = "0.10.999")
 bazel_dep(name = "rules_rs", version = "0.0.112")
 bazel_dep(name = "llvm", version = "0.8.18")
 
+# ==============================================================================
+# Iceoryx2 Setup
+# ==============================================================================
+
 # Select the iceoryx2 revision containing the rules_rs migration.
 git_override(
     module_name = "iceoryx2",
     remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
+    # Insert the commit hash of the desired revision below.
     commit = "<commit>",
 )
+
+# ==============================================================================
+# Rust Setup (Example)
+# ==============================================================================
 
 rust = use_extension("@rules_rs//rs/toolchains:module_extension.bzl", "toolchains")
 rust.toolchain(
