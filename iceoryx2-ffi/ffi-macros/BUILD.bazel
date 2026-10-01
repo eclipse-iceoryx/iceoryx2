@@ -10,9 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_rs//rs:rust_proc_macro.bzl", "rust_proc_macro")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",

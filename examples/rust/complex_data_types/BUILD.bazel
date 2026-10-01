@@ -17,15 +17,15 @@ rust_binary(
     srcs = [
         "complex_data_types.rs",
     ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+    ],
     deps = [
-        "//iceoryx2:iceoryx2",
+        "//iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )

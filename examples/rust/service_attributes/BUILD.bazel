@@ -18,9 +18,9 @@ rust_binary(
         "creator.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -30,9 +30,9 @@ rust_binary(
         "incompatible.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -42,8 +42,8 @@ rust_binary(
         "opener.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )

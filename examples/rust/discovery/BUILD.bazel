@@ -18,8 +18,8 @@ rust_binary(
         "discovery.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )

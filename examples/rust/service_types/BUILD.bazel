@@ -18,9 +18,9 @@ rust_binary(
         "ipc_publisher.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -30,11 +30,11 @@ rust_binary(
         "local_pubsub.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
 
@@ -44,10 +44,10 @@ rust_binary(
         "ipc_threadsafe_subscriber.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-log/log:iceoryx2-log",
     ],
 )

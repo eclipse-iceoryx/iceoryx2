@@ -15,13 +15,15 @@ load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 rust_binary(
     name = "server",
     srcs = [
-        "server.rs", "unbounded_data_generated.rs", "data_props_generated.rs",
+        "data_props_generated.rs",
+        "server.rs",
+        "unbounded_data_generated.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:flatbuffers",
     ],
 )
@@ -29,13 +31,15 @@ rust_binary(
 rust_binary(
     name = "client",
     srcs = [
-        "client.rs", "unbounded_data_generated.rs", "data_props_generated.rs",
+        "client.rs",
+        "data_props_generated.rs",
+        "unbounded_data_generated.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:flatbuffers",
     ],
 )
