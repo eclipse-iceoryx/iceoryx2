@@ -12,7 +12,7 @@ no repin step is needed.
 From this directory:
 
 ```bash
-bazelisk build //...
+bazel build //...
 ```
 
 ### Run Rust Examples
@@ -20,13 +20,13 @@ bazelisk build //...
 Terminal 1 (subscriber):
 
 ```bash
-bazelisk run //rust:subscriber
+bazel run //rust:subscriber
 ```
 
 Terminal 2 (publisher):
 
 ```bash
-bazelisk run //rust:publisher
+bazel run //rust:publisher
 ```
 
 ### Run C++ Examples
@@ -34,13 +34,13 @@ bazelisk run //rust:publisher
 Terminal 1 (subscriber):
 
 ```bash
-bazelisk run //cxx:example_subscriber_cpp
+bazel run //cxx:example_subscriber_cpp
 ```
 
 Terminal 2 (publisher):
 
 ```bash
-bazelisk run //cxx:example_publisher_cpp
+bazel run //cxx:example_publisher_cpp
 ```
 
 ## Using in Your Own Project
