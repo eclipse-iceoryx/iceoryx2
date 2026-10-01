@@ -13,7 +13,9 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library", "rust_test")
+load("@rules_rs//rs:rust_shared_library.bzl", "rust_shared_library")
+load("@rules_rs//rs:rust_static_library.bzl", "rust_static_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
 load("//bazel/cbindgen:cbindgen.bzl", "rust_cbindgen_headers")
 
 filegroup(
@@ -77,6 +79,12 @@ rust_static_library(
 
 # Combined library with header file
 
+# POSIX timers and shared memory live in librt on the toolchain's glibc.
+ICEORYX2_FFI_C_LINKOPTS = select({
+    "@platforms//os:linux": ["-lrt"],
+    "//conditions:default": [],
+})
+
 cc_library(
     name = "iceoryx2-ffi-c-shared",
     hdrs = [ "include/iox2/iceoryx2.h" ],
@@ -86,6 +94,7 @@ cc_library(
         ":iceoryx2-ffi-c-shared-rust",
     ],
     linkstatic = False,
+    linkopts = ICEORYX2_FFI_C_LINKOPTS,
 )
 
 cc_library(
@@ -97,6 +106,7 @@ cc_library(
         ":iceoryx2-ffi-c-static-rust",
     ],
     linkstatic = True,
+    linkopts = ICEORYX2_FFI_C_LINKOPTS,
 )
 
 rust_test(

@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 
 rust_binary(
     name = "publisher_1",
