@@ -23,11 +23,10 @@ bazel_dep(name = "llvm", version = "0.8.18")
 # Iceoryx2 Setup
 # ==============================================================================
 
-# Select the iceoryx2 revision containing the rules_rs migration.
 git_override(
     module_name = "iceoryx2",
     remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
-    # Insert the commit hash of the desired revision below.
+    # Insert your git ref below. It can be a tag, commit, or branch
     commit = "<commit>",
 )
 
