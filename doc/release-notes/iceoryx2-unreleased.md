@@ -50,6 +50,7 @@
 -->
 
 * [#2063](https://github.com/eclipse-iceoryx/iceoryx2/issues/2063) Add testing function to remove all resources under a specific config
+* [#2057](https://github.com/eclipse-iceoryx/iceoryx2/issues/2057) Migrate Bazel Rust builds to rules_rs; require Bazel 8.5.1 or newer
 
 ### New API features
 
