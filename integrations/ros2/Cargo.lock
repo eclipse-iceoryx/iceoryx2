@@ -788,6 +788,7 @@ dependencies = [
  "flatbuffers",
  "iceoryx2",
  "iceoryx2-integrations-ros2-interop",
+ "iceoryx2-integrations-ros2-link-adapter",
  "iceoryx2-link-adapter",
  "iceoryx2-link-backend",
  "iceoryx2-log",
