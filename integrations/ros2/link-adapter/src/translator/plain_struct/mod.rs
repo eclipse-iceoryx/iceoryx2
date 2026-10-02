@@ -21,7 +21,7 @@ use iceoryx2_link_adapter::{LocalTypes, SampleShape, SampleTranscoders, Translat
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
 use iceoryx2_log::{fail, origin};
 
-use super::{EmptyHeader, MirroredHeader, TranslationError, mirrored_header};
+use super::{EmptyHeader, MirroredHeader, TranslationError};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
 use crate::typesupport;
@@ -122,7 +122,7 @@ impl Translator<SampleShape> for PlainStructTranslator {
 
         let header = fail!(
             from origin,
-            when mirrored_header(local),
+            when MirroredHeader::of(local),
             "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.identifier.type_name()
         );
 
