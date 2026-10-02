@@ -173,10 +173,3 @@ pub fn fits(types: &SampleTypes, header: usize, payload: usize) -> bool {
 pub unsafe fn user_header_bytes(user_header: &Header, size: usize) -> &[u8] {
     unsafe { core::slice::from_raw_parts(user_header as *const Header as *const u8, size) }
 }
-
-/// Views a sample's payload as bytes.
-pub fn payload_bytes(payload: &Payload) -> &[u8] {
-    // SAFETY: the payload marker is one byte with no padding, so a slice
-    // of markers is a slice of bytes of the same length.
-    unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) }
-}

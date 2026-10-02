@@ -46,7 +46,16 @@ pub unsafe fn user_header_bytes_mut<S: Service>(
     }
 }
 
-/// Views a loaned sample's payload as writable bytes.
+/// View of the initialized bytes of a sample's payload.
+pub fn payload_bytes<S: Service>(sample: &Sample<S>) -> &[u8] {
+    let payload = sample.payload();
+    // SAFETY: the payload marker is one byte with no padding, so a slice
+    // of markers is a slice of bytes of the same length.
+    let bytes =
+        unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) };
+    &bytes[sample.header().payload_offset() as usize..]
+}
+
 pub fn payload_bytes_mut<S: Service>(sample: &mut SampleMutUninit<S>) -> &mut [u8] {
     let payload = sample.payload_mut();
     // SAFETY: the payload marker is one byte with no padding, so a slice

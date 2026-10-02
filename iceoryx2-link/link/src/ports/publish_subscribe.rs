@@ -327,6 +327,78 @@ mod tests {
     }
 
     #[test]
+    fn a_flatbuffer_sample_is_received_as_its_finished_bytes() {
+        const SCHEMA: &str = "the binary schema";
+        const ROOT: u64 = 42;
+        const RESERVED_MEMORY: usize = 64;
+
+        let config = generate_isolated_config();
+        let app_node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let link_node = NodeBuilder::new()
+            .config(&config)
+            .create::<local::Service>()
+            .expect("node is created");
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let app_service = app_node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().expect("the file has a path"))
+            .create()
+            .expect("service is created");
+        let app_publisher = app_service
+            .publisher_builder()
+            .initial_reserved_memory(RESERVED_MEMORY)
+            .create()
+            .expect("publisher is created");
+        let app_subscriber = app_service
+            .subscriber_builder()
+            .create()
+            .expect("subscriber is created");
+        let static_config =
+            local::Service::details(&service_name, &config, MessagingPattern::PublishSubscribe)
+                .expect("details are readable")
+                .expect("service exists")
+                .static_details;
+        let description = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("carried pattern");
+        let PatternSettings::PublishSubscribe(settings) = &description.settings().pattern else {
+            panic!("a publish-subscribe service");
+        };
+        let ServiceTypes::PublishSubscribe(types) = &description.types() else {
+            panic!("a publish-subscribe service");
+        };
+        let mut sut = PublishSubscribePorts::open(&link_node, &service_name, settings, types)
+            .expect("ports open on the existing service");
+
+        // The app publishes a flatbuffer whose finished bytes sit at the
+        // end of the chunk, behind the payload offset.
+        let mut sample = app_publisher.loan_flatbuffer().expect("sample is loaned");
+        let root = sample.flatbuffer_builder().push(ROOT);
+        sample.assume_init(root).send().expect("sample is sent");
+        let expected = app_subscriber
+            .receive()
+            .expect("receive succeeds")
+            .expect("the app's own publication")
+            .payload_bytes()
+            .to_vec();
+
+        let mut received = alloc::vec::Vec::new();
+        sut.receive(link_node.id(), |sample| {
+            received.push(
+                iceoryx2_link_backend::wire::publish_subscribe::payload_bytes(&sample).to_vec(),
+            );
+            Ok::<(), ()>(())
+        })
+        .expect("receive succeeds");
+
+        assert_that!(received, eq alloc::vec![expected]);
+    }
+
+    #[test]
     fn a_flatbuffer_service_opens_without_a_schema_file() {
         const SCHEMA: &str = "the binary schema";
 
@@ -465,7 +537,7 @@ mod tests {
         let propagated = sut
             .receive(link_node.id(), |sample| {
                 received.push(u64::from_ne_bytes(
-                    iceoryx2_link_backend::wire::sample::payload_bytes(sample.payload())
+                    iceoryx2_link_backend::wire::publish_subscribe::payload_bytes(&sample)
                         .try_into()
                         .expect("payload is a u64"),
                 ));
