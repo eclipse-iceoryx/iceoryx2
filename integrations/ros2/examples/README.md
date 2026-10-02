@@ -16,3 +16,4 @@ All commands in the examples are run from the repository root.
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | [passthrough translator](passthrough_translator)   | Services carrying ROS 2 messages as CDR bytes propagated unchanged by the gateway.                                              |
 | [plain struct translator](plain_struct_translator) | Services carrying the C struct of a ROS 2 message serialized at the boundary to CDR by the gateway.                             |
+| [flatbuffer translator](flatbuffer_translator)     | Services carrying flatbuffers translated to ROS 2 messages by a hand-written translator in a custom gateway.                    |
