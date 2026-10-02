@@ -15,8 +15,8 @@ use iceoryx2_log::{fail, origin};
 
 use crate::service_description::SampleTypes;
 use crate::wire::sample::{
-    Header, LoanError, LoanableSample, Payload, PayloadUninit, SampleBytesRefMut, WritableSample,
-    fits,
+    Header, LoanError, LoanableSample, Payload, PayloadUninit, SampleBytesRef, SampleBytesRefMut,
+    WritableSample, fits, user_header_bytes,
 };
 
 pub type Sample<S> = iceoryx2::sample::Sample<S, Payload, Header>;
@@ -125,6 +125,20 @@ pub struct LoanedSample<S: Service> {
 
 impl<S: Service> WritableSample for LoanedSample<S> {
     type InitializedSample = SampleMut<S>;
+
+    fn as_ref(&self) -> SampleBytesRef<'_> {
+        // SAFETY: the header size for this service is provided by the
+        // service's own description.
+        let header = unsafe { user_header_bytes(self.sample.user_header(), self.header_size) };
+
+        let payload = self.sample.payload();
+        // SAFETY: the payload marker is one byte with no padding, so a slice
+        // of markers is a slice of bytes of the same length.
+        let payload =
+            unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) };
+
+        SampleBytesRef { header, payload }
+    }
 
     fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
         // SAFETY: the header size for this service is provided by the

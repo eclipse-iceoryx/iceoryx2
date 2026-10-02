@@ -14,7 +14,7 @@ use core::error::Error;
 
 use core::convert::Infallible;
 
-use crate::{Never, Region, UnsupportedLength};
+use crate::{Never, Region, ResizeError};
 
 /// Why a transcode ended without the region written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,8 +36,8 @@ impl<TranscoderError: core::fmt::Display> core::fmt::Display for TranscodeError<
 
 impl<TranscoderError: Error> Error for TranscodeError<TranscoderError> {}
 
-impl<TranscoderError> From<UnsupportedLength> for TranscodeError<TranscoderError> {
-    fn from(_: UnsupportedLength) -> Self {
+impl<TranscoderError> From<ResizeError> for TranscodeError<TranscoderError> {
+    fn from(_: ResizeError) -> Self {
         Self::Refused
     }
 }
