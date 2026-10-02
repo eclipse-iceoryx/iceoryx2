@@ -14,7 +14,8 @@ use core::error::Error;
 
 use core::convert::Infallible;
 
-use crate::{Never, Region, ResizeError};
+use iceoryx2_link_backend::Never;
+use iceoryx2_link_backend::wire::region::{Region, ResizeError};
 
 /// Why a transcode ended without the region written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

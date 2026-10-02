@@ -120,9 +120,7 @@ pub use endpoints::{
     EndpointDescription, EndpointTypes, EventEndpoints, PublishSubscribeEndpoints, TakeDestination,
     TakeOutcome, UnsupportedEndpoints,
 };
-pub use iceoryx2_link_backend::Never;
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
-pub use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
 pub use iceoryx2_link_backend::wire::sample::{
     LoanError, LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
     WritableSample,

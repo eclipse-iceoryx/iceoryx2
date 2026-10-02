@@ -17,15 +17,16 @@ use core::ops::{Deref, DerefMut};
 use iceoryx2::service::Service;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
-    Adapter, BackwardRegion, EndpointDescription, EndpointTypes, ForwardRegion, LoanError,
-    LoanableSample, PublishSubscribeEndpoints, Region, ResizeError, SampleBytes, SampleBytesRef,
-    SampleBytesRefMut, SampleLengths, TakeDestination, TakeOutcome, TranscodeError, Transcoder,
+    Adapter, EndpointDescription, EndpointTypes, LoanError, LoanableSample,
+    PublishSubscribeEndpoints, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
+    TakeDestination, TakeOutcome, TranscodeError, Transcoder,
 };
 use iceoryx2_link_adapter::{SampleShape, SampleTranscoders, TranscodesSamples, Translator};
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{PublishSubscribeDescription, SampleTypes};
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
 use iceoryx2_link_backend::wire::publish_subscribe::payload_bytes;
+use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
 use iceoryx2_link_backend::wire::sample::{WritableSample, user_header_bytes};
 use iceoryx2_log::{fail, fatal_panic, origin};
 

@@ -13,8 +13,9 @@
 use core::error::Error;
 use core::fmt::{Display, Formatter};
 
+use iceoryx2_link_backend::Never;
+
 use super::{Shape, Translator};
-use crate::Never;
 
 /// The translator of a shape the middleware does not carry.
 #[derive(Debug, Clone, Copy, Default)]

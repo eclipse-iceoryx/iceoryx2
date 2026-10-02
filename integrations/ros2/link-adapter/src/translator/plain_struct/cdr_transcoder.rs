@@ -15,7 +15,8 @@ use std::rc::Rc;
 use core::alloc::Layout;
 use core::ffi::c_void;
 
-use iceoryx2_link_adapter::{ForwardRegion, Region, SampleBytesRef, TranscodeError, Transcoder};
+use iceoryx2_link_adapter::{SampleBytesRef, TranscodeError, Transcoder};
+use iceoryx2_link_backend::wire::region::{ForwardRegion, Region};
 use iceoryx2_log::{fail, origin};
 use r2r_rcl::{
     RMW_RET_OK, rcutils_allocator_t, rcutils_get_default_allocator, rmw_deserialize, rmw_serialize,

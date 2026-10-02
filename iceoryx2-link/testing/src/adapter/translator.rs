@@ -15,10 +15,11 @@ use alloc::string::String;
 use core::convert::Infallible;
 
 use iceoryx2_link_adapter::{
-    ForwardRegion, LocalTypes, Region, SampleBytesRef, SampleShape, SampleTranscoders,
-    TranscodeError, Transcoder, Translator,
+    LocalTypes, SampleBytesRef, SampleShape, SampleTranscoders, TranscodeError, Transcoder,
+    Translator,
 };
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
+use iceoryx2_link_backend::wire::region::{ForwardRegion, Region};
 use iceoryx2_log::{fail, origin};
 
 /// The prefix of a type name on the middleware, its data byte-swapped.
