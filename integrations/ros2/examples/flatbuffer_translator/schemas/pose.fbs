@@ -1,0 +1,24 @@
+namespace robot;
+
+struct Vec3 {
+    x: double;
+    y: double;
+    z: double;
+}
+
+struct Quat {
+    x: double;
+    y: double;
+    z: double;
+    w: double;
+}
+
+table Pose {
+    seconds: int32;
+    nanoseconds: uint32;
+    frame: string (required);
+    position: Vec3 (required);
+    rotation: Quat (required);
+}
+
+root_type Pose;
