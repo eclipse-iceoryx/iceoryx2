@@ -122,11 +122,11 @@ pub use endpoints::{
 };
 pub use iceoryx2_link_backend::Never;
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
+pub use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
 pub use iceoryx2_link_backend::wire::sample::{
     LoanError, LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
     WritableSample,
 };
-pub use iceoryx2_link_backend::wire::{Region, UnsupportedLength};
 pub use mapping::Mapping;
 pub use translator::{
     LocalTypes, NoTranscoder, Passthrough, SampleShape, SampleTranscoders, Shape, TranscodeError,

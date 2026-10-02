@@ -39,18 +39,18 @@ pub type Header = CustomHeaderMarker;
 pub type Payload = [CustomPayloadMarker];
 pub type PayloadUninit = [MaybeUninit<CustomPayloadMarker>];
 
-/// Reference to the bytes of a sample's header and payload.
-#[derive(Debug, Clone, Copy)]
-pub struct SampleBytesRef<'a> {
-    pub header: &'a [u8],
-    pub payload: &'a [u8],
-}
-
 /// The lengths of a sample's header and payload.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SampleLengths {
     pub header: usize,
     pub payload: usize,
+}
+
+/// Reference to the bytes of a sample's header and payload.
+#[derive(Debug, Clone, Copy)]
+pub struct SampleBytesRef<'a> {
+    pub header: &'a [u8],
+    pub payload: &'a [u8],
 }
 
 /// Mutable reference to the bytes of a sample's header and payload.
@@ -126,6 +126,9 @@ pub trait WritableSample {
     /// The sample once its header and payload are written.
     type InitializedSample;
 
+    /// Retrieve a reference to the bytes of the header and payload.
+    fn as_ref(&self) -> SampleBytesRef<'_>;
+
     /// The locations into which the header and the payload bytes should
     /// be written.
     fn as_mut(&mut self) -> SampleBytesRefMut<'_>;
@@ -140,6 +143,10 @@ pub trait WritableSample {
 
 impl WritableSample for SampleBytes {
     type InitializedSample = SampleBytes;
+
+    fn as_ref(&self) -> SampleBytesRef<'_> {
+        SampleBytes::as_ref(self)
+    }
 
     fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
         SampleBytes::as_mut(self)

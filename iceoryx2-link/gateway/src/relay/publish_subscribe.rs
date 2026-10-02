@@ -12,13 +12,14 @@
 
 use alloc::vec::Vec;
 use core::marker::PhantomData;
+use core::ops::{Deref, DerefMut};
 
 use iceoryx2::service::Service;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
-    Adapter, EndpointDescription, EndpointTypes, LoanError, LoanableSample,
-    PublishSubscribeEndpoints, Region, SampleBytes, SampleBytesRef, SampleBytesRefMut,
-    SampleLengths, TakeDestination, TakeOutcome, TranscodeError, Transcoder, UnsupportedLength,
+    Adapter, BackwardRegion, EndpointDescription, EndpointTypes, ForwardRegion, LoanError,
+    LoanableSample, PublishSubscribeEndpoints, Region, ResizeError, SampleBytes, SampleBytesRef,
+    SampleBytesRefMut, SampleLengths, TakeDestination, TakeOutcome, TranscodeError, Transcoder,
 };
 use iceoryx2_link_adapter::{SampleShape, SampleTranscoders, TranscodesSamples, Translator};
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
@@ -184,7 +185,6 @@ impl<
                 Self::receive_with_header_transcoded(
                     &mut self.endpoints,
                     &mut self.scratch,
-                    header_size,
                     header_transcoder,
                     loanable,
                 )
@@ -202,7 +202,6 @@ impl<
                 Self::receive_with_both_regions_transcoded(
                     &mut self.endpoints,
                     &mut self.scratch,
-                    header_size,
                     header_transcoder,
                     payload_transcoder,
                     loanable,
@@ -252,7 +251,6 @@ impl<
     fn receive_with_header_transcoded<L: LoanableSample>(
         endpoints: &mut E,
         scratch: &mut SampleBytes,
-        header_size: usize,
         header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
         loanable: L,
     ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
@@ -273,12 +271,7 @@ impl<
         }
         let mut loaned = destination.sample();
 
-        Self::decode_header(
-            header_transcoder,
-            scratch.as_ref(),
-            &mut loaned,
-            header_size,
-        )?;
+        Self::decode_header(header_transcoder, scratch.as_ref(), &mut loaned)?;
 
         // SAFETY: the header and the payload were both written into the
         // loaned sample above.
@@ -328,7 +321,6 @@ impl<
     fn receive_with_both_regions_transcoded<L: LoanableSample>(
         endpoints: &mut E,
         scratch: &mut SampleBytes,
-        header_size: usize,
         header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
         payload_transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
         loanable: L,
@@ -355,7 +347,7 @@ impl<
         let wire = scratch.as_ref();
 
         let mut loaned = Self::decode_payload(payload_transcoder, wire, loanable)?;
-        Self::decode_header(header_transcoder, wire, &mut loaned, header_size)?;
+        Self::decode_header(header_transcoder, wire, &mut loaned)?;
 
         // SAFETY: the header and the payload were both written into the
         // loaned sample above.
@@ -403,11 +395,10 @@ impl<
         transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
         wire: SampleBytesRef<'_>,
         loaned: &mut W,
-        header_size: usize,
     ) -> Result<(), ReceiveError> {
         let origin = origin!("Relay::decode_header");
 
-        let mut header = HeaderLoan::new(loaned, header_size);
+        let mut header = loaned.as_mut().header;
         match transcoder.decode(wire, &mut header) {
             Ok(()) => Ok(()),
             Err(TranscodeError::Refused) => {
@@ -464,14 +455,14 @@ impl<
     ) -> Result<(), ReceiveError> {
         let origin = origin!("Relay::copy_header");
 
-        let mut header = HeaderLoan::new(loaned, header_size);
-        let into = fail!(
-            from origin,
-            when header.for_length(wire.header.len()),
-            with ReceiveError::Malformed,
-            "A header of {} bytes does not fit the service", wire.header.len()
-        );
-        into.copy_from_slice(wire.header);
+        if wire.header.len() != header_size {
+            fail!(
+                from origin,
+                with ReceiveError::Malformed,
+                "A header of {} bytes does not fit the service", wire.header.len()
+            );
+        }
+        loaned.as_mut().header.copy_from_slice(wire.header);
 
         Ok(())
     }
@@ -528,10 +519,86 @@ impl<L: LoanableSample> PendingLoan<L> {
 }
 
 impl<L: LoanableSample> Region for PendingLoan<L> {
-    fn for_length(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        self.loan(len)
-            .map(|loaned| loaned.as_mut().payload)
-            .ok_or(UnsupportedLength)
+    type ForwardRegion<'a>
+        = LoanRegion<'a, L>
+    where
+        Self: 'a;
+    type BackwardRegion<'a>
+        = LoanRegion<'a, L>
+    where
+        Self: 'a;
+
+    fn forward(&mut self) -> Self::ForwardRegion<'_> {
+        LoanRegion(self)
+    }
+
+    fn backward(&mut self) -> Self::BackwardRegion<'_> {
+        LoanRegion(self)
+    }
+}
+
+/// A region for the loaned bytes. It is sized once and refuses any other
+/// length.
+struct LoanRegion<'a, L: LoanableSample>(&'a mut PendingLoan<L>);
+
+impl<L: LoanableSample> LoanRegion<'_, L> {
+    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
+        let origin = origin!("LoanRegion::resize");
+
+        match &self.0.loaned {
+            None => {
+                if self.0.loan(len).is_none() {
+                    fail!(
+                        from origin,
+                        with ResizeError::UnsupportedLength,
+                        "Failed to loan a sample for a payload of {} bytes", len
+                    );
+                }
+                Ok(())
+            }
+            Some(_) => {
+                if self.len() != len {
+                    fail!(
+                        from origin,
+                        with ResizeError::UnsupportedLength,
+                        "The loaned payload of {} bytes cannot be resized to {} bytes", self.len(), len
+                    );
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+impl<L: LoanableSample> Deref for LoanRegion<'_, L> {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        match &self.0.loaned {
+            Some(loaned) => loaned.as_ref().payload,
+            None => &[],
+        }
+    }
+}
+
+impl<L: LoanableSample> DerefMut for LoanRegion<'_, L> {
+    fn deref_mut(&mut self) -> &mut [u8] {
+        match &mut self.0.loaned {
+            Some(loaned) => loaned.as_mut().payload,
+            None => &mut [],
+        }
+    }
+}
+
+impl<L: LoanableSample> ForwardRegion for LoanRegion<'_, L> {
+    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
+        LoanRegion::resize(self, len)
+    }
+}
+
+impl<L: LoanableSample> BackwardRegion for LoanRegion<'_, L> {
+    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
+        LoanRegion::resize(self, len)
     }
 }
 
@@ -603,28 +670,6 @@ impl<'a, L: LoanableSample> TakeDestination<'a> for &'a mut SplitDestination<'_,
             header: self.scratch,
             payload: loaned.as_mut().payload,
         })
-    }
-}
-
-/// The loaned sample's header as the region a header is written into. It
-/// has the service's size and refuses any other.
-struct HeaderLoan<'a, W> {
-    loaned: &'a mut W,
-    size: usize,
-}
-
-impl<'a, W: WritableSample> HeaderLoan<'a, W> {
-    fn new(loaned: &'a mut W, size: usize) -> Self {
-        Self { loaned, size }
-    }
-}
-
-impl<W: WritableSample> Region for HeaderLoan<'_, W> {
-    fn for_length(&mut self, len: usize) -> Result<&mut [u8], UnsupportedLength> {
-        match len == self.size {
-            true => Ok(self.loaned.as_mut().header),
-            false => Err(UnsupportedLength),
-        }
     }
 }
 
@@ -731,7 +776,8 @@ mod tests {
     struct StubPayload;
 
     fn reversed<R: Region>(bytes: &[u8], into: &mut R) -> Result<(), TranscodeError<Infallible>> {
-        let into = into.for_length(bytes.len())?;
+        let mut into = into.forward();
+        into.resize(bytes.len())?;
         for (to, from) in into.iter_mut().zip(bytes.iter().rev()) {
             *to = *from;
         }
@@ -752,7 +798,7 @@ mod tests {
             _: SampleBytesRef<'a>,
             into: &mut R,
         ) -> Result<(), TranscodeError<Self::Error>> {
-            into.for_length(0)?;
+            into.forward().resize(0)?;
             Ok(())
         }
 
@@ -761,8 +807,9 @@ mod tests {
             _: SampleBytesRef<'a>,
             into: &mut R,
         ) -> Result<(), TranscodeError<Self::Error>> {
-            into.for_length(DECODED_HEADER.len())?
-                .copy_from_slice(&DECODED_HEADER);
+            let mut into = into.forward();
+            into.resize(DECODED_HEADER.len())?;
+            into.copy_from_slice(&DECODED_HEADER);
             Ok(())
         }
     }

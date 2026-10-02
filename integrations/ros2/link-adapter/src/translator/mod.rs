@@ -25,7 +25,7 @@ pub use plain_struct::{CdrTranscoder, PlainStructTranslator, TranscodeFailure};
 use core::convert::Infallible;
 
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_link_adapter::{Region, SampleBytesRef, TranscodeError, Transcoder};
+use iceoryx2_link_adapter::{ForwardRegion, Region, SampleBytesRef, TranscodeError, Transcoder};
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
 use iceoryx2_log::{fail, origin};
 
@@ -72,9 +72,10 @@ impl<'a> Transcoder<SampleBytesRef<'a>> for EmptyHeader {
 
 /// Transcodes a header to nothing.
 fn empty_header<R: Region>(origin: &str, into: &mut R) -> Result<(), TranscodeError<Infallible>> {
+    let mut region = into.forward();
     fail!(
         from origin,
-        when into.for_length(0),
+        when region.resize(0),
         to TranscodeError<Infallible>,
         "The header region rejected a length of 0"
     );
