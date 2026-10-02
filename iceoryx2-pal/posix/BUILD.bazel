@@ -82,15 +82,15 @@ rust_library(
         ],
         "@platforms//os:macos": [
             "--cfg=bazel_build",
-            "--cfg=platform_binding=\"bindgen\"",
+            "--cfg=platform_binding=\"libc\"",
         ],
         "@platforms//os:windows": [
             "--cfg=bazel_build",
-            "--cfg=platform_binding=\"bindgen\"",
+            "--cfg=platform_binding=\"libc\"",
         ],
         "@platforms//os:freebsd": [
             "--cfg=bazel_build",
-            "--cfg=platform_binding=\"bindgen\"",
+            "--cfg=platform_binding=\"libc\"",
         ],
         "@platforms//os:qnx": [
             "--cfg=bazel_build",
@@ -105,9 +105,12 @@ rust_library(
         "@platforms//os:linux": ["@crate_index//:libc"],
         "@platforms//os:android": ["@crate_index//:libc"],
         "@platforms//os:vxworks": ["@crate_index//:libc"],
-        "@platforms//os:macos": [":iceoryx2-pal-posix-bindgen"],
-        "@platforms//os:windows": [":iceoryx2-pal-posix-bindgen"],
-        "@platforms//os:freebsd": [":iceoryx2-pal-posix-bindgen"],
+        "@platforms//os:macos": ["@crate_index//:libc"],
+        "@platforms//os:windows": [
+            "@crate_index//:libc",
+            "@crate_index//:windows-sys",
+        ],
+        "@platforms//os:freebsd": ["@crate_index//:libc"],
         "@platforms//os:qnx": [":iceoryx2-pal-posix-bindgen"],
     }),
 )
