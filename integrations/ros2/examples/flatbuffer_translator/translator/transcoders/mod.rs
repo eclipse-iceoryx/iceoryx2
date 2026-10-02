@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod joint_readings;
+mod pose;
 
 use core::ops::{Deref, DerefMut};
 
@@ -18,6 +19,7 @@ use flatbuffers::Allocator;
 use iceoryx2_link_backend::wire::region::{BackwardRegion, ResizeError};
 
 pub use joint_readings::JointReadingsTranscoder;
+pub use pose::PoseTranscoder;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TranscodeFailure {
