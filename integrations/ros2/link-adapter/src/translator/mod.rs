@@ -25,8 +25,9 @@ pub use plain_struct::{CdrTranscoder, PlainStructTranslator, TranscodeFailure};
 use core::convert::Infallible;
 
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_link_adapter::{ForwardRegion, Region, SampleBytesRef, TranscodeError, Transcoder};
+use iceoryx2_link_adapter::{SampleBytesRef, TranscodeError, Transcoder};
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
+use iceoryx2_link_backend::wire::region::{ForwardRegion, Region};
 use iceoryx2_log::{fail, origin};
 
 use crate::ros_header::RosHeader;

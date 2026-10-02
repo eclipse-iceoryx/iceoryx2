@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_link_backend::Never;
 use iceoryx2_link_backend::service_description::SampleTypes;
 
 use super::{Shape, Transcoder};
-use crate::{Never, SampleBytesRef};
+use crate::SampleBytesRef;
 
 /// The shape of a sample with a header and a payload.
 #[derive(Debug, Clone, Copy)]
