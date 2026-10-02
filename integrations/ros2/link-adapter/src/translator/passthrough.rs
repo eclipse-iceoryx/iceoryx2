@@ -15,7 +15,7 @@ use iceoryx2_link_adapter::{LocalTypes, NoTranscoder, SampleShape, SampleTransco
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
 use iceoryx2_log::{fail, origin};
 
-use super::{EmptyHeader, MirroredHeader, TranslationError, mirrored_header};
+use super::{EmptyHeader, MirroredHeader, TranslationError};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
 
@@ -61,7 +61,7 @@ impl Translator<SampleShape> for PassthroughTranslator {
             "Payload type '{}' is not a ROS 2 type name", payload_name
         );
 
-        // The payload must be a byte slice under that name, not a struct.
+        // The payload must be a (cdr) byte slice under that name.
         if local.payload != cdr_payload_type(type_name.as_str()) {
             fail!(
                 from origin,
@@ -82,7 +82,7 @@ impl Translator<SampleShape> for PassthroughTranslator {
     ) -> Result<Self::Transcoders, TranslationError> {
         let origin = origin!("PassthroughTranslator::transcoders");
 
-        // The payload must be the byte slice with topic's message type name.
+        // The payload must be a (cdr) byte slice with topic's message type name.
         if local.payload != cdr_payload_type(remote.type_name.as_str()) {
             fail!(
                 from origin,
@@ -97,7 +97,7 @@ impl Translator<SampleShape> for PassthroughTranslator {
         // unsupported.
         let header = fail!(
             from origin,
-            when mirrored_header(local),
+            when MirroredHeader::of(local),
             "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.identifier.type_name()
         );
 
