@@ -35,6 +35,22 @@ name = "flatbuffer_gateway"
 path = "flatbuffer_translator/gateway.rs"
 
 [[example]]
+name = "flatbuffer_joint_readings_publisher"
+path = "flatbuffer_translator/joint_readings_publisher.rs"
+
+[[example]]
+name = "flatbuffer_pose_publisher"
+path = "flatbuffer_translator/pose_publisher.rs"
+
+[[example]]
+name = "flatbuffer_joint_readings_subscriber"
+path = "flatbuffer_translator/joint_readings_subscriber.rs"
+
+[[example]]
+name = "flatbuffer_pose_subscriber"
+path = "flatbuffer_translator/pose_subscriber.rs"
+
+[[example]]
 name = "passthrough_prefix_mapping_publisher"
 path = "passthrough_translator/prefix_mapping_publisher.rs"
 
