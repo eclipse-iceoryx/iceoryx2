@@ -24,7 +24,7 @@ With the plain commands, from this directory:
 source /opt/ros/<distro>/setup.bash
 mkdir -p src
 vcs import src < <distro>.repos
-colcon build --packages-up-to std_msgs geometry_msgs rosidl_generator_rs
+colcon build --packages-up-to std_msgs geometry_msgs sensor_msgs rosidl_generator_rs
 source install/setup.bash
 ```
 
