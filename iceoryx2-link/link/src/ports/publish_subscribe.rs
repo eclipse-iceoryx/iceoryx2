@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn a_flatbuffer_sample_is_received_as_its_finished_bytes() {
+    fn flatbuffer_samples_round_trip_through_the_ports() {
         const SCHEMA: &str = "the binary schema";
         const ROOT: u64 = 42;
         const RESERVED_MEMORY: usize = 64;
@@ -386,6 +386,7 @@ mod tests {
             .payload_bytes()
             .to_vec();
 
+        // Out of the local system: the ports receive the finished bytes.
         let mut received = alloc::vec::Vec::new();
         sut.receive(link_node.id(), |sample| {
             received.push(
@@ -394,8 +395,33 @@ mod tests {
             Ok::<(), ()>(())
         })
         .expect("receive succeeds");
+        assert_that!(received, eq alloc::vec![expected.clone()]);
 
-        assert_that!(received, eq alloc::vec![expected]);
+        // Into the local system: the ports ingest the bytes into a payload
+        // loaned from its end, the app reads the same flatbuffer.
+        let mut ingested_once = false;
+        let published = sut
+            .send(|unloaned| {
+                if ingested_once {
+                    return Ok::<_, ()>(ReceiveOutcome::Empty);
+                }
+                ingested_once = true;
+                let mut loaned = unloaned
+                    .loan_backward(expected.len())
+                    .expect("the bytes fit");
+                loaned.as_mut().payload.copy_from_slice(&expected);
+                // SAFETY: the payload was written above and the header is
+                // zero sized.
+                Ok(ReceiveOutcome::Sample(unsafe { loaned.assume_init() }))
+            })
+            .expect("send succeeds");
+        assert_that!(published, eq 1);
+        let sample = app_subscriber
+            .receive()
+            .expect("receive succeeds")
+            .expect("the ingested sample");
+        assert_that!(sample.payload_bytes(), eq expected.as_slice());
+        assert_that!(sample.payload_root().expect("a valid flatbuffer"), eq ROOT);
     }
 
     #[test]
