@@ -37,6 +37,10 @@ pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
     unsafe { crate::internal::chmod(path, mode) }
 }
 
+pub unsafe fn mkfifo(path: *const c_char, mode: mode_t) -> int {
+    unsafe { crate::internal::mkfifo(path, mode) }
+}
+
 #[cfg(target_pointer_width = "32")]
 mod internal {
     use super::*;

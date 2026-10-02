@@ -29,3 +29,7 @@ pub unsafe fn umask(mask: mode_t) -> mode_t {
 pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
     unimplemented!("chmod")
 }
+
+pub unsafe fn mkfifo(path: *const c_char, mode: mode_t) -> int {
+    unimplemented!("mkfifo")
+}
