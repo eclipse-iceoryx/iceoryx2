@@ -10,6 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod flatbuffer_translator;
-pub mod passthrough_translator;
-pub mod plain_struct_translator;
+#[path = "joint_readings_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+mod joint_readings_generated;
+
+#[path = "pose_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+mod pose_generated;
+
+pub use joint_readings_generated::robot::*;
+pub use pose_generated::robot::*;
+
+pub const JOINT_READINGS_SCHEMA: &[u8] = include_bytes!("joint_readings.bfbs");
+pub const POSE_SCHEMA: &[u8] = include_bytes!("pose.bfbs");

@@ -16,6 +16,7 @@ iceoryx2 = { workspace = true }
 iceoryx2-integrations-ros2-interop = { workspace = true }
 
 cdr = { workspace = true }
+flatbuffers = { workspace = true }
 ros-env = { workspace = true, features = ["serde"] }
 rosidl_runtime_rs = { workspace = true }
 

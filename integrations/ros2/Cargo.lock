@@ -785,6 +785,7 @@ name = "iceoryx2-integrations-ros2-examples"
 version = "0.10.999"
 dependencies = [
  "cdr",
+ "flatbuffers",
  "iceoryx2",
  "iceoryx2-integrations-ros2-interop",
  "ros-env",
