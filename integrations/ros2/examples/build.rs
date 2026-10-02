@@ -18,7 +18,12 @@
 use std::path::Path;
 
 /// The message packages the examples use through `ros-env`.
-const REQUIRED_PACKAGES: [&str; 2] = ["std_msgs", "geometry_msgs"];
+const REQUIRED_PACKAGES: [&str; 4] = [
+    "builtin_interfaces",
+    "std_msgs",
+    "geometry_msgs",
+    "sensor_msgs",
+];
 
 fn main() {
     println!("cargo:rerun-if-env-changed=AMENT_PREFIX_PATH");

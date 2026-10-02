@@ -208,7 +208,7 @@ _setup-integrations-ros2-messages:
     just _setup-integrations-ros2-colcon-build \
         "{{INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR}}" \
         "{{INTEGRATIONS_ROS2_MESSAGES_TARGET_DIR}}" \
-        "--packages-up-to std_msgs geometry_msgs rosidl_generator_rs"
+        "--packages-up-to std_msgs geometry_msgs sensor_msgs rosidl_generator_rs"
 
     echo "✓ ros2 message crates built at {{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}"
 
