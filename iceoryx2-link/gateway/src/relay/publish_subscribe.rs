@@ -24,7 +24,8 @@ use iceoryx2_link_adapter::{SampleShape, SampleTranscoders, TranscodesSamples, T
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{PublishSubscribeDescription, SampleTypes};
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
-use iceoryx2_link_backend::wire::sample::{WritableSample, payload_bytes, user_header_bytes};
+use iceoryx2_link_backend::wire::publish_subscribe::payload_bytes;
+use iceoryx2_link_backend::wire::sample::{WritableSample, user_header_bytes};
 use iceoryx2_log::{fail, fatal_panic, origin};
 
 use crate::relay::{CreationError, ReceiveError, SendError};
@@ -131,7 +132,7 @@ impl<
             // SAFETY: the sample belongs to the service this relay was built
             // for, whose description states the user header size.
             header: unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) },
-            payload: payload_bytes(sample.payload()),
+            payload: payload_bytes(sample),
         };
 
         // Encode the transcoded regions into the scratch, the others are
@@ -922,7 +923,9 @@ mod tests {
     }
 
     fn payload_of(sample: &SampleMut<local::Service>) -> [u8; SIZE] {
-        payload_bytes(sample.payload())
+        let payload = sample.payload();
+        // SAFETY: the payload marker is one byte, the slice is its bytes.
+        unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) }
             .try_into()
             .expect("a payload")
     }

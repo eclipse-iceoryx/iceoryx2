@@ -18,8 +18,9 @@ use iceoryx2_link_backend::service_description::{
     PublishSubscribeDescription, SampleTypes, ServiceDescriptor,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
+use iceoryx2_link_backend::wire::publish_subscribe::payload_bytes;
 use iceoryx2_link_backend::wire::sample::{
-    LoanError, LoanableSample, SampleBytesRef, WritableSample, payload_bytes, user_header_bytes,
+    LoanError, LoanableSample, SampleBytesRef, WritableSample, user_header_bytes,
 };
 use iceoryx2_link_carrier::{Carrier, SampleChannel};
 use iceoryx2_log::{fail, origin};
@@ -90,7 +91,7 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         // for, whose description states the user header size.
         let header =
             unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) };
-        let payload = payload_bytes(sample.payload());
+        let payload = payload_bytes(sample);
         fail!(
             from origin,
             when self.channel.send(SampleBytesRef { header, payload }),
