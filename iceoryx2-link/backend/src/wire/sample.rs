@@ -13,25 +13,27 @@
 //! Defines the state machine for loaning and populating a sample.
 //!
 //! ```text
-//!   ┌──────────────────┐   loan(payload_len)   ┌──────────────────┐   as_mut()
-//!   │  LoanableSample  │ ────────────────────▶ │  WritableSample  │ ────────────────▶ writable header and payload
-//!   │                  │                       │                  │   assume_init()
-//!   │  no memory yet   │                       │  a loan for the  │ ────────────────▶ the initialized, sendable sample
-//!   │                  │                       │  payload length  │
-//!   └──────────────────┘                       └──────────────────┘
-//!            │                                          │
-//!            ▼ dropped                                  ▼ dropped
+//!   ┌──────────────────┐   loan_forward(len)    ┌──────────────────┐   as_mut()
+//!   │  LoanableSample  │   loan_backward(len)   │  WritableSample  │ ────────────────▶ writable header and payload
+//!   │                  │ ─────────────────────▶ │                  │   resize(len)
+//!   │  no memory yet   │                        │  a loan for the  │ ────────────────▶ the payload at another length
+//!   │                  │                        │  payload length  │   assume_init()
+//!   └──────────────────┘                        └──────────────────┘ ────────────────▶ the initialized, sendable sample
+//!            │                                           │
+//!            ▼ dropped                                   ▼ dropped
 //!
-//!       nothing loaned                          the loan is returned
+//!       nothing loaned                           the loan is returned
 //! ```
 
 use alloc::vec::Vec;
 use core::mem::MaybeUninit;
+use core::ops::{Deref, DerefMut};
 
 use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 
-use crate::service_description::SampleTypes;
+use crate::service_description::{SampleTypes, TypeIdentifier};
+use crate::wire::region::{BackwardRegion, ForwardRegion, ResizeError};
 
 /// The untyped user header as it passes through a relay.
 pub type Header = CustomHeaderMarker;
@@ -83,22 +85,38 @@ impl SampleBytes {
     }
 }
 
-/// Loans a sample for a payload length and provides a [`WritableSample`]
-/// that can be populated.
+/// A sample of the local service that holds no memory yet.
 pub trait LoanableSample {
-    /// The loaned sample with writable header and payload.
-    type WritableSample: WritableSample<InitializedSample = Self::InitializedSample>;
+    /// The loaned sample whose payload is written from its front.
+    type ForwardWritableSample: WritableSample<InitializedSample = Self::InitializedSample>
+        + ForwardRegion;
+    /// The loaned sample whose payload is written from its end.
+    type BackwardWritableSample: WritableSample<InitializedSample = Self::InitializedSample>
+        + BackwardRegion;
     /// The loaned sample once its header and payload are written.
     type InitializedSample;
 
-    /// Acquire a loan for the sample.
+    /// Acquire a loan for the sample with a payload of `payload_len` bytes
+    /// written from its front.
     ///
     /// Fails with:
     ///
-    /// * `Malformed` if no `payload_len` is an invalid length for a sample of
+    /// * `Malformed` if `payload_len` is an invalid length for a sample of
     ///   this service
     /// * `Exhausted` if no sample could be loaned
-    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError>;
+    fn loan_forward(self, payload_len: usize) -> Result<Self::ForwardWritableSample, LoanError>;
+
+    /// Acquire a loan for the sample with a payload of `payload_len` bytes
+    /// written from its end.
+    ///
+    /// Fails with:
+    ///
+    /// * `Malformed` if `payload_len` is an invalid length for a sample of
+    ///   this service
+    /// * `Exhausted` if no sample could be loaned
+    /// * `DirectionUnsupported` if the payload of this service cannot be
+    ///   written from its end
+    fn loan_backward(self, payload_len: usize) -> Result<Self::BackwardWritableSample, LoanError>;
 }
 
 /// Why no sample was loaned.
@@ -111,6 +129,9 @@ pub enum LoanError {
     /// The loaned sample holds a payload of another length and cannot be
     /// resized to this one.
     NotResizable,
+    /// The payload of the service cannot be written from the requested
+    /// direction.
+    DirectionUnsupported,
 }
 
 impl core::fmt::Display for LoanError {
@@ -120,6 +141,17 @@ impl core::fmt::Display for LoanError {
 }
 
 impl core::error::Error for LoanError {}
+
+impl From<LoanError> for ResizeError {
+    fn from(refusal: LoanError) -> Self {
+        match refusal {
+            LoanError::Malformed => ResizeError::UnsupportedLength,
+            LoanError::NotResizable => ResizeError::NotResizable,
+            LoanError::Exhausted => ResizeError::Exhausted,
+            LoanError::DirectionUnsupported => ResizeError::DirectionUnsupported,
+        }
+    }
+}
 
 /// Provides the locations to write a sample's header and payload.
 pub trait WritableSample {
@@ -139,6 +171,40 @@ pub trait WritableSample {
     ///
     /// The header and the payload must both have been written.
     unsafe fn assume_init(self) -> Self::InitializedSample;
+}
+
+impl Deref for SampleBytes {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        &self.payload
+    }
+}
+
+impl DerefMut for SampleBytes {
+    fn deref_mut(&mut self) -> &mut [u8] {
+        &mut self.payload
+    }
+}
+
+impl ForwardRegion for SampleBytes {
+    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
+        self.payload.resize(len, 0);
+        Ok(())
+    }
+}
+
+impl BackwardRegion for SampleBytes {
+    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
+        let current = self.payload.len();
+        if len > current {
+            self.payload.resize(len, 0);
+            self.payload.rotate_right(len - current);
+        } else {
+            self.payload.drain(..current - len);
+        }
+        Ok(())
+    }
 }
 
 impl WritableSample for SampleBytes {
@@ -164,6 +230,11 @@ pub fn fits(types: &SampleTypes, header: usize, payload: usize) -> bool {
         return false;
     }
 
+    // A flatbuffer holds any number of serialized bytes.
+    if let TypeIdentifier::Flatbuffer(_) = types.payload.identifier {
+        return true;
+    }
+
     let size = types.payload.size;
     match types.payload.variant {
         TypeVariant::FixedSize => payload == size,
@@ -179,4 +250,73 @@ pub fn fits(types: &SampleTypes, header: usize, payload: usize) -> bool {
 /// to, as its description states.
 pub unsafe fn user_header_bytes(user_header: &Header, size: usize) -> &[u8] {
     unsafe { core::slice::from_raw_parts(user_header as *const Header as *const u8, size) }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use iceoryx2::service::static_config::message_type_details::TypeDetail;
+    use iceoryx2_bb_testing::assert_that;
+
+    use crate::service_description::{Schema, TypeDescription};
+
+    fn no_user_header() -> TypeDescription {
+        TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize))
+    }
+
+    #[test]
+    fn sample_bytes_resized_forward_keep_their_payload_at_the_front() {
+        const WRITTEN: &[u8] = b"abcd";
+        const GROWN: usize = 8;
+        const SHRUNK: usize = 3;
+
+        let mut sample = SampleBytes::default();
+        ForwardRegion::resize(&mut sample, WRITTEN.len()).expect("heap buffers resize");
+        sample.copy_from_slice(WRITTEN);
+
+        ForwardRegion::resize(&mut sample, GROWN).expect("heap buffers resize");
+        assert_that!(&sample[..WRITTEN.len()], eq WRITTEN);
+
+        ForwardRegion::resize(&mut sample, SHRUNK).expect("heap buffers resize");
+        assert_that!(sample.payload, eq WRITTEN[..SHRUNK].to_vec());
+    }
+
+    #[test]
+    fn sample_bytes_resized_backward_keep_their_payload_at_the_end() {
+        const WRITTEN: &[u8] = b"wxyz";
+        const GROWN: usize = 8;
+        const SHRUNK: usize = 3;
+
+        let mut sample = SampleBytes::default();
+        BackwardRegion::resize(&mut sample, WRITTEN.len()).expect("heap buffers resize");
+        sample.copy_from_slice(WRITTEN);
+
+        BackwardRegion::resize(&mut sample, GROWN).expect("heap buffers resize");
+        assert_that!(&sample[GROWN - WRITTEN.len()..], eq WRITTEN);
+
+        BackwardRegion::resize(&mut sample, SHRUNK).expect("heap buffers resize");
+        assert_that!(sample.payload, eq WRITTEN[WRITTEN.len() - SHRUNK..].to_vec());
+    }
+
+    #[test]
+    fn a_flatbuffer_payload_fits_any_number_of_bytes() {
+        const SCHEMA: &[u8] = b"the binary schema";
+        const LENGTHS: [usize; 3] = [0, 1, 1234];
+
+        let types = SampleTypes {
+            payload: TypeDescription {
+                variant: TypeVariant::FixedSize,
+                identifier: TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.to_vec())),
+                size: 1,
+                alignment: 1,
+            },
+            user_header: no_user_header(),
+        };
+
+        for length in LENGTHS {
+            assert_that!(fits(&types, 0, length), eq true);
+        }
+        assert_that!(fits(&types, 1, LENGTHS[2]), eq false);
+    }
 }

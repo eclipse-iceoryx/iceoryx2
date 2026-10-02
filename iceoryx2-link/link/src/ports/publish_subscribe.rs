@@ -557,7 +557,7 @@ mod tests {
                 ingested_once = true;
                 // The header is zero sized, only the payload is written.
                 let mut loaned = unloaned
-                    .loan(core::mem::size_of::<u64>())
+                    .loan_forward(core::mem::size_of::<u64>())
                     .expect("one u64 fits");
                 loaned
                     .as_mut()

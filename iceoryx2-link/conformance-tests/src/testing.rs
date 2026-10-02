@@ -284,10 +284,18 @@ pub struct UnloanedBuffers {
 }
 
 impl LoanableSample for UnloanedBuffers {
-    type WritableSample = SampleBytes;
+    type ForwardWritableSample = SampleBytes;
+    type BackwardWritableSample = SampleBytes;
     type InitializedSample = SampleBytes;
 
-    fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
+    fn loan_forward(self, payload_len: usize) -> Result<Self::ForwardWritableSample, LoanError> {
+        Ok(SampleBytes {
+            header: vec![0; self.header_size],
+            payload: vec![0; payload_len],
+        })
+    }
+
+    fn loan_backward(self, payload_len: usize) -> Result<Self::BackwardWritableSample, LoanError> {
         Ok(SampleBytes {
             header: vec![0; self.header_size],
             payload: vec![0; payload_len],
@@ -299,10 +307,15 @@ impl LoanableSample for UnloanedBuffers {
 pub struct NotLoanable;
 
 impl LoanableSample for NotLoanable {
-    type WritableSample = SampleBytes;
+    type ForwardWritableSample = SampleBytes;
+    type BackwardWritableSample = SampleBytes;
     type InitializedSample = SampleBytes;
 
-    fn loan(self, _: usize) -> Result<Self::WritableSample, LoanError> {
+    fn loan_forward(self, _: usize) -> Result<Self::ForwardWritableSample, LoanError> {
+        Err(LoanError::Malformed)
+    }
+
+    fn loan_backward(self, _: usize) -> Result<Self::BackwardWritableSample, LoanError> {
         Err(LoanError::Malformed)
     }
 }
