@@ -537,6 +537,12 @@ impl MemoryMapping {
         &self.file_descriptor
     }
 
+    /// Closes the [`FileDescriptor`] the [`MemoryMapping`] was created from. The mapping stays
+    /// valid.
+    pub fn close_file_descriptor(&mut self) {
+        self.file_descriptor = None;
+    }
+
     /// Returns the const base address of the [`MemoryMapping`]
     pub fn base_address(&self) -> *const u8 {
         self.base_address
