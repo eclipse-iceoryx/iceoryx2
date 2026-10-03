@@ -294,6 +294,18 @@ pub fn from_mode_to_security_attributes(mode: mode_t) -> SECURITY_ATTRIBUTES {
     add_permissions(&mut buffer, IDENT_GROUP);
     add_permissions(&mut buffer, IDENT_OWNER);
 
+    // A read-only file must stay deletable by its owner: Windows requires DELETE on the object itself.
+    add_to_ace_string!(
+        &mut buffer,
+        b"(A;",
+        ACE_INHERITANCE,
+        b";",
+        DELETE,
+        b";;;",
+        IDENT_OWNER,
+        b")"
+    );
+
     let (convert_result, _) = unsafe {
         win32call! { ConvertStringSecurityDescriptorToSecurityDescriptorA(
             buffer.as_ptr(),
@@ -363,12 +375,9 @@ fn parse_hex_rights(hex_str: &str) -> u8 {
         if (hex_val & FILE_READ_DATA_HEX) != 0 || (hex_val & FILE_READ_ATTRIBUTES_HEX) != 0 {
             ret_val |= 4;
         }
-        // windows has separate permissions for write and delete...
-        // if either one are present, set the corresponding POSIX write mode
-        if (hex_val & FILE_WRITE_DATA_HEX) != 0
-            || (hex_val & FILE_WRITE_ATTRIBUTES_HEX) != 0
-            || (hex_val & DELETE_HEX) != 0
-        {
+        // `DELETE` is granted on its own, because the POSIX mode cannot express
+        // it: only the write bit maps to the POSIX write mode.
+        if (hex_val & FILE_WRITE_DATA_HEX) != 0 || (hex_val & FILE_WRITE_ATTRIBUTES_HEX) != 0 {
             ret_val |= 2;
         }
         if (hex_val & FILE_EXECUTE_HEX) != 0 {
@@ -395,9 +404,9 @@ fn parse_ace_string_rights(ace_rights: &[u8]) -> u8 {
         if right == GENERIC_PERM_READ || right == FILE_PERM_READ {
             ret_val |= 4;
         }
-        // windows has separate permissions for write and delete...
-        // if either one are present, set the corresponding POSIX write mode
-        if right == GENERIC_PERM_WRITE || right == FILE_PERM_WRITE || right == DELETE {
+        // `DELETE` is granted on its own, because the POSIX mode cannot express
+        // it: only the write bit maps to the POSIX write mode.
+        if right == GENERIC_PERM_WRITE || right == FILE_PERM_WRITE {
             ret_val |= 2;
         }
         if right == GENERIC_PERM_EXECUTE || right == FILE_PERM_EXECUTE {
@@ -473,4 +482,53 @@ pub fn from_security_attributes_to_mode(value: &SECURITY_ATTRIBUTES) -> mode_t {
     mode |= (owner_perms as u64) << 6;
 
     mode
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iceoryx2_bb_testing::assert_that;
+
+    fn with_dacl_string(attr: &SECURITY_ATTRIBUTES, check: impl FnOnce(&str)) {
+        let mut raw: *mut u8 = core::ptr::null_mut();
+        let mut raw_length = 0;
+        let (converted, _) = unsafe {
+            win32call! { ConvertSecurityDescriptorToStringSecurityDescriptorA(
+                attr.lpSecurityDescriptor,
+                SDDL_REVISION_1,
+                DACL_SECURITY_INFORMATION,
+                &mut raw,
+                &mut raw_length,
+            ) }
+        };
+        assert_that!(converted, ne FALSE);
+
+        let bytes = unsafe { core::slice::from_raw_parts(raw, raw_length as usize) };
+        check(core::str::from_utf8(bytes).expect("SDDL is an ASCII string"));
+    }
+
+    #[test]
+    fn a_read_only_mode_still_grants_delete_to_its_owner() {
+        with_dacl_string(&from_mode_to_security_attributes(S_IRUSR), |dacl| {
+            let owner_may_delete = dacl.contains("SD;;;BU)");
+            assert_that!(owner_may_delete, eq true);
+        });
+    }
+
+    #[test]
+    fn the_mode_round_trip_survives_the_owner_delete_ace() {
+        for mode in [
+            S_IRUSR,
+            S_IWUSR,
+            S_IXUSR,
+            S_IRUSR | S_IWUSR,
+            S_IRUSR | S_IXUSR,
+            S_IRGRP | S_IROTH,
+            S_IRUSR | S_IWUSR | S_IXUSR,
+        ] {
+            let attr = from_mode_to_security_attributes(mode);
+            let round_tripped = from_security_attributes_to_mode(&attr);
+            assert_that!(round_tripped, eq mode);
+        }
+    }
 }
