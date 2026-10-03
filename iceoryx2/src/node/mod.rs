@@ -845,10 +845,13 @@ fn remove_node<Service: service::Service>(
         id
     );
 
-    let details_config = node_details_config::<Service>(config, &id);
-    let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
-    remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
-    remove_node_details_directory::<Service>(config, &id)?;
+    if !Service::IS_PERSISTENT {
+        let details_config = node_details_config::<Service>(config, &id);
+        let detail_storages =
+            acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
+        remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
+        remove_node_details_directory::<Service>(config, &id)?;
+    }
 
     Ok(true)
 }
@@ -1675,7 +1678,12 @@ impl NodeBuilder {
         node_id: &UniqueNodeId,
     ) -> Result<(Service::StaticStorage, NodeDetails), NodeCreationFailure> {
         let msg = "Unable to create node details storage";
-        let details = NodeDetails::new(&self.name, config);
+        let mut details = NodeDetails::new(&self.name, config);
+
+        if Service::IS_PERSISTENT {
+            details.executable = "persistent-setup".try_into().unwrap();
+            details.process = ProcessId::new(0);
+        }
 
         let details_config = node_details_config::<Service>(&details.config, node_id);
         let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
@@ -1685,6 +1693,17 @@ impl NodeBuilder {
                     "{msg} since the node details could not be serialized.");
             }
         };
+
+        if Service::IS_PERSISTENT
+            && let Ok(node_details) = <Service::StaticStorage as StaticStorage>::Builder::new(
+                &FileName::new(b"node").unwrap(),
+            )
+            .config(&details_config)
+            .has_ownership(false)
+            .open(Duration::ZERO)
+        {
+            return Ok((node_details, details));
+        }
 
         match <Service::StaticStorage as StaticStorage>::Builder::new(
             &FileName::new(b"node").unwrap(),
