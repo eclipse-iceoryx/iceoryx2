@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::alloc::string::ToString;
 use crate::{config, identifiers::UniqueNodeId, service::dynamic_config::DynamicConfig};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
