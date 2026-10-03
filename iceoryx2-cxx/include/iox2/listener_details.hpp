@@ -15,11 +15,13 @@
 
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/unique_node_id.hpp"
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
-/// Contains the communication settings of the connected [`Listener`].
+/// Callback-scoped view of a connected [`Listener`]. It expires when the
+/// callback which supplied it returns and may only be used on that thread.
 class ListenerDetailsView {
   public:
     ListenerDetailsView(const ListenerDetailsView&) = delete;
@@ -35,9 +37,14 @@ class ListenerDetailsView {
     /// The [`NodeId`] of the [`Node`] under which the [`Listener`] was created.
     auto node_id() const -> UniqueNodeId;
 
+    /// A borrowed name, valid only while this callback view is valid.
+    auto listener_name() const -> PortNameView;
+
   private:
     template <typename T, typename>
     friend auto internal::list_ports_callback(void* context, T port_details_view) -> iox2_callback_progression_e;
+    template <ServiceType>
+    friend class Notifier;
 
     explicit ListenerDetailsView(iox2_listener_details_ptr handle);
     iox2_listener_details_ptr m_handle = nullptr;

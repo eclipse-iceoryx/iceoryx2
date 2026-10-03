@@ -52,3 +52,28 @@ iceoryx2 efficiently handles event signaling across processes.
 > to set the limits globally or at the
 > [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 > to set them for a single service.
+
+## Notify a Selected Listener
+
+Run the self-contained LOCAL example to select a listener by name, notify it
+inside a callback, and save its key for a later notification:
+
+```sh
+poetry --project iceoryx2-ffi/python run python examples/python/event/selective_notification.py
+```
+
+`for_each_listener` passes a `Monofier` and a `ListenerDetails` snapshot to each
+callback. Return `CallbackProgression.Continue` or `CallbackProgression.Stop`.
+Any other return value raises `TypeError`. Exceptions propagate unchanged after
+cleanup; notifications already sent are not rolled back.
+
+A `Monofier` is valid only on its creating thread, until that callback returns.
+It never becomes valid again during another callback. Copy its `listener_key()`
+to retain a target; keys and details can outlive the callback. A saved key does
+not keep a listener alive, and notification may fail if that listener disappears.
+
+During traversal, calls to the same notifier's methods or properties, including
+`delete()`, raise `RuntimeError` on all threads. Use the callback's `Monofier`
+for notification. Different notifiers remain usable. Outside traversal, ordinary
+concurrent calls wait for each other; same-thread re-entry from an ordinary
+operation (for example, a logging handler) raises `RuntimeError`.
