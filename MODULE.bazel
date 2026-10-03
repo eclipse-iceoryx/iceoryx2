@@ -19,6 +19,7 @@
 module(
     name = "iceoryx2",
     version = "0.10.999",
+    bazel_compatibility = [">=8.5.1"],
 )
 
 bazel_dep(name = "bazel_features", version = "1.51.0")
@@ -29,44 +30,57 @@ bazel_dep(name = "googletest", version = "1.16.0", dev_dependency = True)
 
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.22")
-bazel_dep(name = "rules_rust", version = "0.73.0")
-bazel_dep(name = "rules_rust_bindgen", version = "0.73.0")
-bazel_dep(name = "toolchains_llvm", version = "1.8.0")
 
 # NOTE: keep in sync with Cargo.toml and Iceoryx2Flatbuffers.cmake
 bazel_dep(name = "flatbuffers", version = "25.12.19")
 
-# LLVM for bindgen
-# Note: When iceoryx2 is used as a dependency (not root module), the root module
-# must set up the llvm extension and provide a bindgen toolchain.
-# When building iceoryx2 directly (as root module), we set it up here.
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
-llvm.toolchain(llvm_version = "21.1.6")
-use_repo(llvm, "llvm_toolchain_llvm")
+# Rust rules and toolchains share the patched rules_rust repository.
+bazel_dep(name = "rules_rs", version = "0.1.0")
+bazel_dep(name = "llvm", version = "0.8.18")
 
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
+use_repo(rules_rust, "rules_rust")
+
+rust = use_extension("@rules_rs//rs/toolchains:module_extension.bzl", "toolchains")
 rust.toolchain(
     edition = "2024",
-    versions = ["1.89.0"],
+    version = "1.89.0",
 )
-use_repo(rust, "rust_toolchains")
+use_repo(rust, "default_rust_toolchains")
+
+# Bindgen toolchain setup
+# rules_rs provides self-contained bindgen binaries, including libclang.
+# These toolchains are registered both when building iceoryx2 directly and
+# when using it as a dependency; consumers need no separate libclang setup.
+bindgen = use_extension("@rules_rs//rs:rules_rust_bindgen.bzl", "rules_rust_bindgen")
+use_repo(bindgen, "rules_rust_bindgen")
 
 register_toolchains(
-    "@rust_toolchains//:all",
-    "//bazel/bindgen:toolchain",
+    "@default_rust_toolchains//...",
+    "@rules_rust_bindgen//:all",
+    "@llvm//toolchain:all",
 )
 
-crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
 crate.annotation(
     crate = "cbindgen",
     gen_binaries = ["cbindgen"],
 )
 crate.from_cargo(
     name = "crate_index",
-    cargo_lockfile = "//:Cargo.lock",
-    lockfile = "//:Cargo.Bazel.lock",
-    manifests = [
-        "//:Cargo.toml",
+    cargo_lock = "//:Cargo.lock",
+    cargo_toml = "//:Cargo.toml",
+    platform_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-pc-windows-msvc",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-nto-qnx710",
+        "aarch64-unknown-nto-qnx800",
+        "x86_64-apple-darwin",
+        "x86_64-pc-nto-qnx710",
+        "x86_64-pc-nto-qnx800",
+        "x86_64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
     ],
 )
 use_repo(crate, "crate_index")

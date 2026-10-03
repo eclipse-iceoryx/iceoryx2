@@ -13,5 +13,4 @@
 # Use C++17 standard
 build --cxxopt=-std=c++17
 
-# Enable automatic dependency repinning for Rust crates
-build --action_env=CARGO_BAZEL_REPIN=true
+# rules_rs resolves Rust dependencies directly from Cargo.lock.

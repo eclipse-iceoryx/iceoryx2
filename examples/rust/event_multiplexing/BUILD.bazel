@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 
 rust_binary(
     name = "notifier",
@@ -18,10 +18,10 @@ rust_binary(
         "notifier.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
     ],
 )
@@ -32,11 +32,11 @@ rust_binary(
         "wait.rs",
     ],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
     ],
 )
