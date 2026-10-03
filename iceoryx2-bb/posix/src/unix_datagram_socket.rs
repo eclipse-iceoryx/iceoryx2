@@ -134,7 +134,6 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, trace};
@@ -429,39 +428,38 @@ impl UnixDatagramSocket {
         let socket_address = self.create_socket_address();
         let ptr: *const posix::sockaddr_un = &socket_address;
 
+        // The permission is applied AFTER the bind, with `chmod`, rather than by
+        // moving the process umask around it. `umask` is per PROCESS, not per
+        // thread and not per call.
+        if unsafe {
+            posix::bind(
+                self.file_descriptor.native_handle(),
+                ptr as *const posix::sockaddr,
+                size_of::<posix::sockaddr_un>() as u32,
+            )
+        } != 0
         {
-            let _mask = ScopeGuardBuilder::new(0 as posix::mode_t)
-                .on_init(|mask| -> Result<(), ()> {
-                    *mask = unsafe { posix::umask((!permission).bits()) };
-                    Ok(())
-                })
-                .on_drop(|mask| unsafe {
-                    posix::umask(*mask);
-                })
-                .create();
-
-            if unsafe {
-                posix::bind(
-                    self.file_descriptor.native_handle(),
-                    ptr as *const posix::sockaddr,
-                    size_of::<posix::sockaddr_un>() as u32,
-                )
-            } == 0
-            {
-                return Ok(());
-            }
+            let msg = "Failed to bind socket";
+            handle_errno!(UnixDatagramReceiverCreationError, from self,
+                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
+                Errno::EADDRINUSE => (AddressAlreadyInUse, "{} since the address is already in use.", msg),
+                Errno::ENOENT => (PathDoesNotExist, "{} since the path does not exist.", msg),
+                Errno::ENOTDIR => (PathDoesNotExist, "{} since the path does not exist.", msg),
+                Errno::ENOBUFS => (InsufficientResources, "{} due to insufficient resources.", msg),
+                Errno::EROFS => (ReadOnlyFileSytem, "{} since it would reside on an read-only file system.", msg),
+                v => (UnknownError(v as i32), "{} since an unknown error has occurred ({}).", msg, v)
+            );
         }
 
-        let msg = "Failed to bind socket";
-        handle_errno!(UnixDatagramReceiverCreationError, from self,
-            Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
-            Errno::EADDRINUSE => (AddressAlreadyInUse, "{} since the address is already in use.", msg),
-            Errno::ENOENT => (PathDoesNotExist, "{} since the path does not exist.", msg),
-            Errno::ENOTDIR => (PathDoesNotExist, "{} since the path does not exist.", msg),
-            Errno::ENOBUFS => (InsufficientResources, "{} due to insufficient resources.", msg),
-            Errno::EROFS => (ReadOnlyFileSytem, "{} since it would reside on an read-only file system.", msg),
-            v => (UnknownError(v as i32), "{} since an unknown error has occurred ({}).", msg, v)
-        );
+        if unsafe { posix::chmod(self.name.as_c_str(), permission.bits()) } != 0 {
+            let msg = "Failed to set the socket permission after bind";
+            handle_errno!(UnixDatagramReceiverCreationError, from self,
+                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
+                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+            );
+        }
+
+        Ok(())
     }
 
     fn connect(&self) -> Result<(), UnixDatagramSenderCreationError> {
