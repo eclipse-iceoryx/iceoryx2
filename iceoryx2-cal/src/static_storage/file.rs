@@ -149,8 +149,15 @@ impl NamedConcept for Locked {
 impl StaticStorageLocked<Storage> for Locked {
     fn unlock(mut self, contents: &[u8]) -> Result<Storage, StaticStorageUnlockError> {
         let msg = "Failed to unlock storage";
+        let mut file = match self.static_storage.view.file.take() {
+            Some(file) => file,
+            None => {
+                fail!(from self, with StaticStorageUnlockError::InternalError,
+                    "{} since the static storage is not locked.", msg);
+            }
+        };
 
-        let bytes_written = match self.static_storage.view.file.write(contents) {
+        let bytes_written = match file.write(contents) {
             Ok(bytes_written) => bytes_written,
             Err(FileWriteError::InsufficientPermissions) => {
                 fail!(from self, with StaticStorageUnlockError::InsufficientPermissions,
@@ -176,7 +183,7 @@ impl StaticStorageLocked<Storage> for Locked {
                 msg, contents.len(), bytes_written);
         }
 
-        match self.static_storage.view.file.sync_all() {
+        match file.sync_all() {
             Ok(()) => (),
             Err(FileSyncError::Interrupt) => {
                 fail!(from self, with StaticStorageUnlockError::Interrupt,
@@ -188,12 +195,7 @@ impl StaticStorageLocked<Storage> for Locked {
             }
         }
 
-        match self
-            .static_storage
-            .view
-            .file
-            .set_permission(FINAL_PERMISSIONS)
-        {
+        match file.set_permission(FINAL_PERMISSIONS) {
             Ok(_) => (),
             Err(FileSetPermissionError::InsufficientPermissions) => {
                 fail!(from self, with StaticStorageUnlockError::InsufficientPermissions,
@@ -207,7 +209,7 @@ impl StaticStorageLocked<Storage> for Locked {
             }
         }
 
-        self.static_storage.view.len = contents.len() as u64;
+        self.static_storage.view.content = contents.to_vec();
 
         Ok(self.static_storage)
     }
@@ -401,62 +403,74 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
 #[derive(Debug)]
 pub struct StorageView {
-    file: File,
-    len: u64,
+    file: Option<File>,
+    content: Vec<u8>,
 }
 
 impl Abandonable for StorageView {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { File::abandon_in_place(NonNull::from_mut(&mut this.file)) };
+        if let Some(file) = this.file.as_mut() {
+            unsafe { File::abandon_in_place(NonNull::from_mut(file)) };
+        }
     }
 }
 
 impl crate::static_storage::StaticStorageView for StorageView {
     fn len(&self) -> u64 {
-        self.len
+        self.content.len() as u64
     }
 
     fn is_empty(&self) -> bool {
-        self.len == 0
+        self.content.is_empty()
     }
 
     fn read(&self, content: &mut [u8]) -> Result<(), StaticStorageReadError> {
         let msg = "Unable to read from static storage";
-        let len = self.len();
+        let len = self.content.len();
 
-        if len > content.len() as u64 {
+        if len > content.len() {
             fail!(from self, with StaticStorageReadError::BufferTooSmall,
                 "{} since a buffer with a size of a least {} bytes is required to read the file but a buffer of size {} bytes was provided.",
                 msg, len, content.len());
         }
 
-        if let Err(e) = self.file.seek(0) {
-            fail!(from self, with StaticStorageReadError::InternalError,
+        content[..len].copy_from_slice(&self.content);
+        Ok(())
+    }
+}
+
+impl StorageView {
+    fn read_file(file: &File, len: u64) -> Result<Vec<u8>, StaticStorageReadError> {
+        let msg = "Unable to read from static storage";
+        let mut content = vec![0u8; len as usize];
+
+        if let Err(e) = file.seek(0) {
+            fail!(from "StorageView::read_file()", with StaticStorageReadError::InternalError,
                 "{msg} since the file position could not be set to 0. [{e:?}]");
         }
 
-        let bytes_read = match self.file.read(content) {
+        let bytes_read = match file.read(&mut content) {
             Ok(bytes_read) => bytes_read,
             Err(FileReadError::Interrupt) => {
-                fail!(from self,
+                fail!(from "StorageView::read_file()",
                       with StaticStorageReadError::Interrupt,
                       "{} since an interrupt signal was raised.", msg);
             }
             Err(e) => {
-                fail!(from self,
+                fail!(from "StorageView::read_file()",
                     with StaticStorageReadError::InternalError,
                     "{} due to an unknown failure while reading the file. [{e:?}]", msg);
             }
         };
 
         if bytes_read != len {
-            fail!(from self, with StaticStorageReadError::StaticStorageWasModified,
+            fail!(from "StorageView::read_file()", with StaticStorageReadError::StaticStorageWasModified,
                         "{} since the expected read size is {} bytes but {} bytes were read instead. Was the static storage file modified?",
                         msg, len, bytes_read);
         }
 
-        Ok(())
+        Ok(content)
     }
 }
 
@@ -576,7 +590,10 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
                 name: self.storage_name,
                 config: self.config,
                 has_ownership: AtomicBool::new(self.has_ownership),
-                view: StorageView { file, len: 0 },
+                view: StorageView {
+                    file: Some(file),
+                    content: Vec::new(),
+                },
             },
         })
     }
@@ -642,13 +659,20 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
                     with StaticStorageOpenError::InternalError,
                     "{} since the adaptive wait call failed.", msg);
             } else {
+                let content = match StorageView::read_file(&file, metadata.size()) {
+                    Ok(content) => content,
+                    Err(e) => {
+                        fail!(from origin, with StaticStorageOpenError::InternalError,
+                            "{} since the contents could not be read. [{e:?}]", msg);
+                    }
+                };
                 return Ok(Storage {
                     name: self.storage_name,
                     config: self.config,
                     has_ownership: AtomicBool::new(self.has_ownership),
                     view: StorageView {
-                        file,
-                        len: metadata.size(),
+                        file: None,
+                        content,
                     },
                 });
             }
