@@ -18,7 +18,6 @@ mod service_discovery_service {
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_services_discovery::service_discovery::{
@@ -260,23 +259,14 @@ mod service_discovery_service {
 
         let mut node_id = None;
         Node::<ipc::Service>::list(&iceoryx_config, |node_state| {
-            node_id = Some(node_state.node_id().value());
+            node_id = Some(*node_state.node_id());
             CallbackProgression::Stop
         })
         .unwrap();
-        let node_id = node_id.unwrap().to_string();
+        let node_id = node_id.unwrap();
 
-        let node_resources_exist = || {
-            Directory::new(&iceoryx_config.global.node_dir())
-                .unwrap()
-                .contents()
-                .unwrap()
-                .iter()
-                .any(|entry| entry.name().to_string() == node_id)
-        };
-
-        assert_that!(node_resources_exist(), eq true);
+        assert_that!(iceoryx2::testing::do_stale_node_resources_exist::<ipc::Service>(&iceoryx_config, node_id), eq true);
         drop(sut);
-        assert_that!(node_resources_exist(), eq false);
+        assert_that!(iceoryx2::testing::do_stale_node_resources_exist::<ipc::Service>(&iceoryx_config, node_id), eq false);
     }
 }

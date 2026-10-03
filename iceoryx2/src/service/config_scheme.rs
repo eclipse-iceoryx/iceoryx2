@@ -13,7 +13,11 @@
 use crate::{config, identifiers::UniqueNodeId, service::dynamic_config::DynamicConfig};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
+use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_cal::{
+    event::SemanticString,
+    named_concept::{NamedConceptConfiguration, NamedConceptMgmt},
+};
 use iceoryx2_log::fatal_panic;
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
@@ -92,7 +96,10 @@ pub(crate) fn node_details_path(
 ) -> iceoryx2_bb_system_types::path::Path {
     let origin = "node_details_path";
     let mut path = global_config.global.node_dir();
-    fatal_panic!(from origin, when path.add_path_entry(&node_id.as_file_name().into()),
+    let details_path = global_config.global.prefix.to_string() + &node_id.to_string();
+    let details_path = fatal_panic!(from origin, when FileName::new(details_path.as_bytes()),
+                        "The details sub path exceeds the maximum length.");
+    fatal_panic!(from origin, when path.add_path_entry(&details_path.into()),
                     "The node path exceeds the maximum path length.");
     path
 }
