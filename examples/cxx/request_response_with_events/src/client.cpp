@@ -55,9 +55,10 @@ auto main() -> int {
 
     while (node.wait(CYCLE_TIME).has_value()) {
         std::cout << "send request " << request_counter << " ..." << std::endl;
-        // write_payload requires an rvalue; construct a copy to retain the request counter.
-        // NOLINTNEXTLINE(readability-redundant-casting)
-        auto request = client.loan_uninit().value().write_payload(uint64_t { request_counter });
+        // Preserve the counter and pass an explicit rvalue, including on MSVC.
+        auto request_payload = request_counter;
+        // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) write_payload requires an rvalue.
+        auto request = client.loan_uninit().value().write_payload(std::move(request_payload));
         const auto& id_bytes = listener_id.bytes().value();
         std::copy(id_bytes.unchecked_access().begin(),
                   id_bytes.unchecked_access().end(),

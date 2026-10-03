@@ -15,10 +15,9 @@
 import ctypes
 from functools import partial
 
+import iceoryx2 as iox2
 from request_header import RequestHeader
 from transmission_data import TransmissionData
-
-import iceoryx2 as iox2
 
 timeout = iox2.Duration.from_secs(2)
 
