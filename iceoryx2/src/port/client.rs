@@ -566,8 +566,9 @@ impl<
             segment_states: {
                 let mut v =
                     alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
-                for _ in 0..max_number_of_segments {
-                    v.push(SegmentState::new(number_of_requests))
+                v.push(SegmentState::new(number_of_requests));
+                for _ in 1..max_number_of_segments {
+                    v.push(SegmentState::new_unallocated(number_of_requests))
                 }
                 v
             },

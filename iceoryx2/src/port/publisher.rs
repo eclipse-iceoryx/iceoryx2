@@ -557,8 +557,9 @@ impl<
                     segment_states: {
                         let mut v: Vec<SegmentState> =
                             Vec::with_capacity(max_number_of_segments as usize);
-                        for _ in 0..max_number_of_segments {
-                            v.push(SegmentState::new(number_of_samples))
+                        v.push(SegmentState::new(number_of_samples));
+                        for _ in 1..max_number_of_segments {
+                            v.push(SegmentState::new_unallocated(number_of_samples))
                         }
                         v
                     },

@@ -53,6 +53,20 @@ impl<T> Cell<T> {
     }
 }
 
+impl<T> OnceCell<T> {
+    pub const fn new() -> Self {
+        Self(internal::OnceCell::new())
+    }
+
+    pub fn get(&self) -> Option<&T> {
+        self.0.get()
+    }
+
+    pub fn get_or_init<F: FnOnce() -> T>(&self, f: F) -> &T {
+        self.0.get_or_init(f)
+    }
+}
+
 impl<T: Default> PlacementDefault for OnceCell<T> {
     unsafe fn placement_default(ptr: *mut Self) {
         unsafe {
