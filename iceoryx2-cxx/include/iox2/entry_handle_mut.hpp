@@ -32,6 +32,10 @@ class EntryHandleMut {
     /// Updates the value by copying the passed value into it.
     void update_with_copy(ValueType value);
 
+    /// Returns a copy of the last committed value without creating a reader.
+    /// Must not be called concurrently with writes through this handle.
+    auto read() const -> ValueType;
+
     /// Consumes the [`EntryHandleMut`] and loans an uninitialized entry value that can be used to update without copy.
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto loan_uninit(EntryHandleMut<ST, KeyT, ValueT>&& self) -> EntryValueUninit<ST, KeyT, ValueT>;
@@ -92,6 +96,13 @@ inline void EntryHandleMut<S, KeyType, ValueType>::update_with_copy(ValueType va
     iox2_entry_handle_mut_update_with_copy(&m_handle, value_ptr, sizeof(ValueType), alignof(ValueType));
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
     delete value_ptr;
+}
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline auto EntryHandleMut<S, KeyType, ValueType>::read() const -> ValueType {
+    ValueType value {};
+    iox2_entry_handle_mut_read(&m_handle, &value, sizeof(ValueType), alignof(ValueType));
+    return value;
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>

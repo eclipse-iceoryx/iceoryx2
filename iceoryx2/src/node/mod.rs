@@ -671,7 +671,11 @@ impl<Service: service::Service> DeadNodeView<Service> {
             }
         };
 
-        cleanup_failure?;
+        if let Err(error) = cleanup_failure {
+            // Preserve the dead-node marker so another cleanup attempt can retry.
+            cleaner.abandon();
+            return Err(error);
+        }
 
         // remove the port tags last, after the ports have been removed from the service;
         // now, everything not belonging to a service can be removed
@@ -717,7 +721,10 @@ impl<Service: service::Service> DeadNodeView<Service> {
             }
         }
 
-        cleanup_failure?;
+        if let Err(error) = cleanup_failure {
+            cleaner.abandon();
+            return Err(error);
+        }
 
         match remove_node::<Service>(*self.id(), config) {
             Ok(_) => {

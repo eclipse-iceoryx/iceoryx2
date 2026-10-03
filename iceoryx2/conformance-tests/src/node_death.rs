@@ -446,6 +446,164 @@ pub mod node_death {
     }
 
     #[conformance_test]
+    pub fn blackboard_entry_can_be_written_after_writer_node_crash<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
+        let service_name = generate_service_name();
+        let good_node = test.create_node();
+        let service = good_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 17)
+            .add::<u64>(1, 23)
+            .create()
+            .unwrap();
+        let reader = service.reader_builder().create().unwrap();
+        let retained_entry = reader.entry::<u64>(&0).unwrap();
+
+        for value in 1..=3 {
+            let bad_node = test.create_node();
+            let bad_service = bad_node
+                .service_builder(&service_name)
+                .blackboard_opener::<u64>()
+                .open()
+                .unwrap();
+            let bad_writer = bad_service.writer_builder().create().unwrap();
+            let bad_entry = bad_writer.entry::<u64>(&0).unwrap();
+            bad_entry.update_with_copy(value);
+
+            bad_entry.abandon();
+            bad_writer.abandon();
+            bad_service.abandon();
+            bad_node.abandon();
+
+            assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0 });
+            assert_that!(*retained_entry.get(), eq value);
+
+            let writer = service.writer_builder().create().unwrap();
+            let entry = writer.entry::<u64>(&0);
+            assert_that!(entry, is_ok);
+            entry.unwrap().update_with_copy(value + 10);
+            assert_that!(*retained_entry.get(), eq value + 10);
+            assert_that!(*reader.entry::<u64>(&1).unwrap().get(), eq 23);
+            assert_that!(writer.entry::<u64>(&1), is_ok);
+        }
+    }
+
+    #[conformance_test]
+    pub fn blackboard_uncommitted_loan_is_discarded_after_writer_node_crash<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
+        let service_name = generate_service_name();
+        let good_node = test.create_node();
+        let service = good_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<[u64; 128]>(0, [17; 128])
+            .create()
+            .unwrap();
+        let reader = service.reader_builder().create().unwrap();
+        let retained_entry = reader.entry::<[u64; 128]>(&0).unwrap();
+
+        for drop_writer_before_crash in [false, true] {
+            let bad_node = test.create_node();
+            let bad_service = bad_node
+                .service_builder(&service_name)
+                .blackboard_opener::<u64>()
+                .open()
+                .unwrap();
+            let bad_writer = bad_service.writer_builder().create().unwrap();
+            let bad_entry = bad_writer.entry::<[u64; 128]>(&0).unwrap();
+            bad_entry.update_with_copy([23; 128]);
+            let mut loan = bad_entry.loan_uninit();
+            loan.value_mut().write([42; 128]);
+            assert_that!(*retained_entry.get(), eq [23; 128]);
+
+            // The outstanding loan keeps the writer registered even if its lifetime tag is gone.
+            if drop_writer_before_crash {
+                drop(bad_writer);
+            } else {
+                bad_writer.abandon();
+            }
+            loan.abandon();
+            bad_service.abandon();
+            bad_node.abandon();
+
+            assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0 });
+            assert_that!(*retained_entry.get(), eq [23; 128]);
+            let writer = service.writer_builder().create().unwrap();
+            writer
+                .entry::<[u64; 128]>(&0)
+                .unwrap()
+                .update_with_copy([51; 128]);
+            assert_that!(*retained_entry.get(), eq [51; 128]);
+        }
+    }
+
+    #[conformance_test]
+    pub fn blackboard_failed_writer_cleanup_can_be_retried<S: iceoryx2::service::Service>() {
+        use iceoryx2::node::{DeadNodeView, NodeCleanupFailure, NodeDetails};
+
+        let test = Test::<S>::new();
+        let service_name = generate_service_name();
+        let good_node = test.create_node();
+        let service = good_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 17)
+            .create()
+            .unwrap();
+        let reader = service.reader_builder().create().unwrap();
+        let retained_entry = reader.entry::<u64>(&0).unwrap();
+        let bad_node = test.create_node();
+        let bad_node_id = *bad_node.id();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_opener::<u64>()
+            .open()
+            .unwrap();
+        let bad_writer = bad_service.writer_builder().create().unwrap();
+        let bad_entry = bad_writer.entry::<u64>(&0).unwrap();
+        bad_entry.update_with_copy(23);
+
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 0, failed_cleanups: 0 });
+        assert_that!(service.writer_builder().create(), is_err);
+        bad_entry.abandon();
+        bad_writer.abandon();
+        bad_service.abandon();
+        bad_node.abandon();
+
+        // Make only the payload unavailable to the cleaner; the service and node remain discoverable.
+        let mut unavailable_payload_config = test.config().clone();
+        unavailable_payload_config
+            .global
+            .service
+            .blackboard_data_suffix = ".unavailable_payload".try_into().unwrap();
+        for _ in 0..2 {
+            let result = DeadNodeView::<S>::__internal_try_remove_stale_resources(
+                bad_node_id,
+                NodeDetails::__internal_new(&None, &unavailable_payload_config),
+            );
+            assert_that!(result, eq Err(NodeCleanupFailure::InternalError));
+            assert_that!(test.number_of_nodes(), eq 2);
+            assert_that!(service.dynamic_config().number_of_writers(), eq 1);
+            assert_that!(service.writer_builder().create(), is_err);
+            assert_that!(*retained_entry.get(), eq 23);
+        }
+
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0 });
+        assert_that!(test.number_of_nodes(), eq 1);
+        let writer = service.writer_builder().create().unwrap();
+        let entry = writer.entry::<u64>(&0).unwrap();
+        entry.update_with_copy(42);
+        assert_that!(*retained_entry.get(), eq 42);
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 0, failed_cleanups: 0 });
+        assert_that!(writer.entry::<u64>(&0), is_err);
+    }
+
+    #[conformance_test]
     pub fn event_service_is_removed_when_last_node_dies<S: iceoryx2::service::Service>() {
         let test = Test::<S>::new();
         let service_name = generate_service_name();

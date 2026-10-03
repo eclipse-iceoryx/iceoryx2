@@ -844,8 +844,9 @@ pub mod internal {
                 }
             };
 
+            let mut cleanup_failed = false;
             let mut number_of_dead_node_notifications = 0;
-            let cleanup_port_resources = |port_id| {
+            let mut cleanup_port_resources = |port_id| {
                 match port_id {
                     UniquePortId::Publisher(ref id) => {
                         if remove_sender_connection_and_data_segment::<S>(
@@ -901,10 +902,31 @@ pub mod internal {
                         }
                     }
                     UniquePortId::Reader(ref _id) => {}
-                    UniquePortId::Writer(ref _id) => {}
+                    UniquePortId::Writer(ref _id) => {
+                        // Recover entries while the dead writer still occupies the only slot.
+                        // Releasing the slot first could reset a new writer's producer flags.
+                        if unsafe {
+                            resource::blackboard::BlackboardResources::<S>::recover_dead_writer(
+                                config,
+                                &static_config,
+                            )
+                        }
+                        .is_err()
+                        {
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
                 };
 
                 if let Err(e) = remove_port_tag::<S>(node_id, port_id.value(), config) {
+                    // The cleaner may have died after removing the tag, or the writer may have
+                    // dropped its tag while an entry handle kept its registration alive.
+                    if matches!(
+                        e,
+                        stale_resource_cleanup::PortRemoveTagError::AlreadyRemoved
+                    ) {
+                        return PortCleanupAction::RemovePort;
+                    }
                     debug!(from origin,  "Failed to remove the port tag for port {:?}. [{e:?}]", port_id);
                     return PortCleanupAction::SkipPort;
                 }
@@ -915,12 +937,21 @@ pub mod internal {
             let remove_service = match unsafe {
                 dynamic_config
                     .get()
-                    .remove_dead_node_id(node_id, cleanup_port_resources)
+                    .remove_dead_node_id(node_id, |port_id| {
+                        let action = cleanup_port_resources(port_id);
+                        if action == PortCleanupAction::SkipPort {
+                            cleanup_failed = true;
+                        }
+                        action
+                    })
             } {
                 DeregisterNodeState::HasOwners => false,
                 DeregisterNodeState::NoMoreOwners => true,
             };
 
+            if cleanup_failed {
+                return Err(ServiceRemoveNodeError::InternalError);
+            }
             if remove_service {
                 unsafe { Self::__internal_remove_service(&static_config, config)? };
             } else if number_of_dead_node_notifications != 0 {

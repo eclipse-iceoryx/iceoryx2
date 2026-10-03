@@ -131,6 +131,18 @@ impl UnrestrictedAtomicMgmt {
         )
     }
 
+    /// Makes the producer available without changing the committed value or write index.
+    /// Repeating recovery before a new producer is acquired is harmless.
+    ///
+    /// # Safety
+    ///
+    /// * The previous producer, if any, must no longer be alive.
+    /// * The caller must exclude producer acquisition for the duration of recovery.
+    #[doc(hidden)]
+    pub unsafe fn __internal_recover_dead_producer(&self) {
+        self.has_producer.store(true, Ordering::Release);
+    }
+
     #[doc(hidden)]
     /// # Safety
     ///
