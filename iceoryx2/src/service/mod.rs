@@ -938,6 +938,10 @@ pub mod internal {
 /// establish communication.
 #[allow(private_bounds)]
 pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Send + Sync {
+    /// Marks a service persistent. Resources will not be removed on graceful shutdown and
+    /// `create` calls will be extended to `open_or_create`.
+    const IS_PERSISTENT: bool = false;
+
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
