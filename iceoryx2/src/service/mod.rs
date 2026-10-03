@@ -539,6 +539,11 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
 impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
+
+        if S::IS_PERSISTENT {
+            return;
+        }
+
         let hash = self.static_config.service_hash();
         self.shared_node.registered_services().remove(hash, |handle| {
             match self.dynamic_storage.get().deregister_node_id(handle) {
