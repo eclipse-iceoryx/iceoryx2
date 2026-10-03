@@ -13,15 +13,18 @@
 #ifndef IOX2_EXAMPLES_REQUEST_RESPONSE_WITH_EVENTS_REQUEST_HEADER_HPP
 #define IOX2_EXAMPLES_REQUEST_RESPONSE_WITH_EVENTS_REQUEST_HEADER_HPP
 
+#include <cstddef>
 #include <cstdint>
 
 struct RequestResponseWithEventsHeader {
+    static constexpr std::size_t LISTENER_ID_SIZE = 16;
     static constexpr const char* IOX2_TYPE_NAME = "RequestResponseWithEventsHeader";
     // The native-endian bytes of the client's 128-bit UniqueListenerId.
-    uint8_t listener_id[16]; // NOLINT
+    uint8_t listener_id[LISTENER_ID_SIZE]; // NOLINT
 };
 
-static_assert(sizeof(RequestResponseWithEventsHeader) == 16 && alignof(RequestResponseWithEventsHeader) == 1,
+static_assert(sizeof(RequestResponseWithEventsHeader) == RequestResponseWithEventsHeader::LISTENER_ID_SIZE
+                  && alignof(RequestResponseWithEventsHeader) == 1,
               "Request header must match Python's layout");
 
 #endif
