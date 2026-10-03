@@ -67,51 +67,21 @@ rust_library(
         ],
         "//conditions:default": [],
     }),
-    rustc_flags = select({
-        "@platforms//os:linux": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"libc\"",
-        ],
-        "@platforms//os:android": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"libc\"",
-        ],
-        "@platforms//os:vxworks": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"libc\"",
-        ],
-        "@platforms//os:macos": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"libc\"",
-        ],
-        "@platforms//os:windows": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"libc\"",
-        ],
-        "@platforms//os:freebsd": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"libc\"",
-        ],
-        "@platforms//os:qnx": [
-            "--cfg=bazel_build",
-            "--cfg=platform_binding=\"bindgen\"",
-        ],
+    rustc_flags = ["--cfg=bazel_build"] + select({
+        "@platforms//os:qnx": ["--cfg=platform_binding=\"bindgen\""],
+        "//conditions:default": ["--cfg=platform_binding=\"libc\""],
     }),
     deps = [
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
     ] + select({
-        "@platforms//os:linux": ["@crate_index//:libc"],
-        "@platforms//os:android": ["@crate_index//:libc"],
-        "@platforms//os:vxworks": ["@crate_index//:libc"],
-        "@platforms//os:macos": ["@crate_index//:libc"],
+        "@platforms//os:qnx": [":iceoryx2-pal-posix-bindgen"],
         "@platforms//os:windows": [
             "@crate_index//:libc",
             "@crate_index//:windows-sys",
         ],
-        "@platforms//os:freebsd": ["@crate_index//:libc"],
-        "@platforms//os:qnx": [":iceoryx2-pal-posix-bindgen"],
+        "//conditions:default": ["@crate_index//:libc"],
     }),
 )
 
