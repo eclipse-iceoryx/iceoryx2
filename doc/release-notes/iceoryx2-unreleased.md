@@ -14,7 +14,7 @@
 -->
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
-* [#2001](https://github.com/eclipse-iceoryx/iceoryx2/issues/2001) Add listener traversal and single-listener notification APIs to C, C++, and Python bindings
+* [#2001](https://github.com/eclipse-iceoryx/iceoryx2/issues/2001) Add listener traversal and single-listener notification APIs to C, C++, and Python bindings, with request-response event examples for C++ and Python
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
 
 ### Bugfixes
