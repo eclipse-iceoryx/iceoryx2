@@ -1088,11 +1088,31 @@ impl<Service: service::Service> SharedNode<Service> {
         let name = FileName::new(port_id.to_string().as_bytes())
             .expect("A number is always a valid file name.");
 
+        let ownership = if Service::IS_PERSISTENT {
+            // persistent mode, the port tags shall not be removed when drop is called,
+            // since the accompanying shared memory is also not removed
+            false
+        } else {
+            true
+        };
+
+        if Service::IS_PERSISTENT
+            && let Ok(static_storage) =
+                <<Service::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+                    Service::StaticStorage,
+                >>::new(&name)
+                .config(&port_tag_config::<Service>(self.config(), self.id()))
+                .has_ownership(ownership)
+                .open(Duration::ZERO)
+        {
+            return Ok(static_storage);
+        }
+
         match <<Service::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
             Service::StaticStorage,
         >>::new(&name)
         .config(&port_tag_config::<Service>(self.config(), self.id()))
-        .has_ownership(true)
+        .has_ownership(ownership)
         .create(&[])
         {
             Ok(static_storage) => Ok(static_storage),
