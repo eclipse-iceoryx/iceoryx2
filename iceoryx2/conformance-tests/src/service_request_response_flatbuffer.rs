@@ -23,8 +23,12 @@ pub mod service_request_response_flatbuffer {
         RequestResponseCreateError, RequestResponseOpenError,
     };
     use iceoryx2::service::marker::CustomPayloadMarker;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::{Service, marker::Flatbuffer};
+    use iceoryx2::service::{
+        __internal_request_type_definition, __internal_response_type_definition, Service,
+        marker::Flatbuffer,
+    };
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::testing::*;
@@ -637,6 +641,64 @@ pub mod service_request_response_flatbuffer {
             .create();
 
         assert_that!(sut.err(), eq Some(RequestResponseCreateError::UnableToAcquireTypeDefinition));
+    }
+
+    #[conformance_test]
+    pub fn request_type_definition_is_read_from_the_static_config<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<u64>, u64>()
+            .request_flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::RequestResponse,
+        )
+        .unwrap()
+        .unwrap();
+
+        let request =
+            __internal_request_type_definition::<Sut>(test.config(), &details.static_details);
+        let response =
+            __internal_response_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(request, eq Ok(Some(UNBOUND_DATA_SCHEMA.as_bytes().to_vec())));
+        assert_that!(response, eq Ok(None));
+    }
+
+    #[conformance_test]
+    pub fn response_type_definition_is_read_from_the_static_config<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .request_response::<u64, Flatbuffer<u64>>()
+            .response_flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::RequestResponse,
+        )
+        .unwrap()
+        .unwrap();
+
+        let request =
+            __internal_request_type_definition::<Sut>(test.config(), &details.static_details);
+        let response =
+            __internal_response_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(request, eq Ok(None));
+        assert_that!(response, eq Ok(Some(DATA_PROPS_SCHEMA.as_bytes().to_vec())));
     }
 
     #[conformance_test]
@@ -1812,5 +1874,80 @@ pub mod service_request_response_flatbuffer {
         let mut buffer = vec![0u8; response_type_definition.len() as usize];
         response_type_definition.read(&mut buffer).unwrap();
         assert_that!(DATA_PROPS_SCHEMA.as_bytes(), eq buffer.as_slice());
+    }
+
+    fn flatbuffer_type_detail() -> TypeDetail {
+        TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, "iox2::Flatbuffer", 1, 1)
+            .unwrap()
+    }
+
+    #[conformance_test]
+    pub fn create_with_schema_bytes_stores_them<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .__internal_set_request_payload_type_details(&flatbuffer_type_detail())
+                .__internal_set_response_payload_type_details(&flatbuffer_type_detail())
+                .__internal_request_flatbuffer_schema(UNBOUND_DATA_SCHEMA.as_bytes())
+                .__internal_response_flatbuffer_schema(DATA_PROPS_SCHEMA.as_bytes())
+                .create()
+                .unwrap()
+        };
+
+        let request_type_definition = sut.request_type_definition().unwrap();
+        let mut buffer = vec![0u8; request_type_definition.len() as usize];
+        request_type_definition.read(&mut buffer).unwrap();
+        assert_that!(UNBOUND_DATA_SCHEMA.as_bytes(), eq buffer.as_slice());
+
+        let response_type_definition = sut.response_type_definition().unwrap();
+        let mut buffer = vec![0u8; response_type_definition.len() as usize];
+        response_type_definition.read(&mut buffer).unwrap();
+        assert_that!(DATA_PROPS_SCHEMA.as_bytes(), eq buffer.as_slice());
+    }
+
+    #[conformance_test]
+    pub fn open_with_schema_bytes_verifies_them<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<example::UnboundedData>, Flatbuffer<example::DataProps>>(
+            )
+            .request_flatbuffer_schema_path(request_schema_file.path().unwrap())
+            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let same = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .__internal_set_request_payload_type_details(&flatbuffer_type_detail())
+                .__internal_set_response_payload_type_details(&flatbuffer_type_detail())
+                .__internal_request_flatbuffer_schema(UNBOUND_DATA_SCHEMA.as_bytes())
+                .__internal_response_flatbuffer_schema(DATA_PROPS_SCHEMA.as_bytes())
+                .open()
+        };
+        let swapped = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .__internal_set_request_payload_type_details(&flatbuffer_type_detail())
+                .__internal_set_response_payload_type_details(&flatbuffer_type_detail())
+                .__internal_request_flatbuffer_schema(DATA_PROPS_SCHEMA.as_bytes())
+                .__internal_response_flatbuffer_schema(UNBOUND_DATA_SCHEMA.as_bytes())
+                .open()
+        };
+
+        assert_that!(same, is_ok);
+        assert_that!(
+            swapped.err(),
+            eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType)
+        );
     }
 }

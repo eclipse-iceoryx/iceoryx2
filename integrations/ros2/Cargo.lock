@@ -785,10 +785,18 @@ name = "iceoryx2-integrations-ros2-examples"
 version = "0.10.999"
 dependencies = [
  "cdr",
+ "flatbuffers",
  "iceoryx2",
  "iceoryx2-integrations-ros2-interop",
+ "iceoryx2-integrations-ros2-link-adapter",
+ "iceoryx2-link",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
+ "iceoryx2-link-gateway",
+ "iceoryx2-log",
  "ros-env",
  "rosidl_runtime_rs",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]

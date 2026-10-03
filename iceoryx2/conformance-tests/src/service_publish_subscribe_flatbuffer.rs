@@ -23,9 +23,10 @@ pub mod service_publish_subscribe_flatbuffer {
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
-    use iceoryx2::service::marker::CustomPayloadMarker;
+    use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::{Service, marker::Flatbuffer};
+    use iceoryx2::service::{__internal_payload_type_definition, Service, marker::Flatbuffer};
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::testing::*;
@@ -564,6 +565,54 @@ pub mod service_publish_subscribe_flatbuffer {
     }
 
     #[conformance_test]
+    pub fn payload_type_definition_is_read_from_the_static_config<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::PublishSubscribe,
+        )
+        .unwrap()
+        .unwrap();
+
+        let sut = __internal_payload_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(sut, eq Ok(Some(SCHEMA.as_bytes().to_vec())));
+    }
+
+    #[conformance_test]
+    pub fn a_payload_without_type_definition_has_none<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+        let details = Sut::details(
+            &service_name,
+            test.config(),
+            MessagingPattern::PublishSubscribe,
+        )
+        .unwrap()
+        .unwrap();
+
+        let sut = __internal_payload_type_definition::<Sut>(test.config(), &details.static_details);
+
+        assert_that!(sut, eq Ok(None));
+    }
+
+    #[conformance_test]
     pub fn service_schema_is_identical_to_origin<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
@@ -977,5 +1026,121 @@ pub mod service_publish_subscribe_flatbuffer {
         type_definition.read(&mut buffer).unwrap();
 
         assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
+    }
+
+    #[conformance_test]
+    pub fn custom_payload_grows_to_the_bytes_of_a_flatbuffer<Sut: Service + 'static>() {
+        const BYTES: &[u8] = b"a serialized flatbuffer";
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+
+        let typed = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+        let subscriber = typed.subscriber_builder().create().unwrap();
+
+        let untyped = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
+                .__internal_set_user_header_type_details(&TypeDetail::new::<()>(
+                    TypeVariant::FixedSize,
+                ))
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_skip_type_definition_verification()
+                .open()
+                .unwrap()
+        };
+        let publisher = untyped
+            .publisher_builder()
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+
+        // A flatbuffer is loaned as one element, which is too small for the
+        // bytes.
+        let mut sample = unsafe { publisher.loan_custom_payload(1).unwrap() };
+
+        // The memory of the sample is grown until the bytes fit.
+        let mut memory = sample.__internal_create_resizable_memory();
+        memory.grow_downwards_with_size(BYTES.len(), 0).unwrap();
+
+        // The bytes are written at the end of the memory, where a flatbuffer
+        // builder leaves its finished buffer.
+        let start = memory.len() - BYTES.len();
+        memory[start..].copy_from_slice(BYTES);
+
+        // The sample is told where its payload starts. This records the
+        // payload offset and the payload length in the header.
+        sample.__internal_finish_serialized(memory[start..].as_ptr());
+        unsafe { sample.assume_init().send().unwrap() };
+
+        // The subscriber sees exactly the bytes, with nothing after them.
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(sample.payload_bytes(), eq BYTES);
+    }
+
+    fn flatbuffer_type_detail() -> TypeDetail {
+        TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, "iox2::Flatbuffer", 1, 1)
+            .unwrap()
+    }
+
+    #[conformance_test]
+    pub fn create_with_schema_bytes_stores_them<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .create()
+                .unwrap()
+        };
+
+        let type_definition = sut.type_definition().unwrap();
+        let mut buffer = vec![0u8; type_definition.len() as usize];
+        type_definition.read(&mut buffer).unwrap();
+        assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
+    }
+
+    #[conformance_test]
+    pub fn open_with_schema_bytes_verifies_them<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let _sut_create = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let same = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .open()
+        };
+        let other = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(ALT_SCHEMA.as_bytes())
+                .open()
+        };
+
+        assert_that!(same, is_ok);
+        assert_that!(other.err(), eq Some(PublishSubscribeOpenError::IncompatibleTypes));
     }
 }

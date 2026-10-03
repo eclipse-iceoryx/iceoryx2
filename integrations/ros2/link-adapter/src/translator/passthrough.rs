@@ -12,10 +12,10 @@
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 
 use iceoryx2_link_adapter::{LocalTypes, NoTranscoder, SampleShape, SampleTranscoders, Translator};
-use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
+use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
 use iceoryx2_log::{fail, origin};
 
-use super::{EmptyHeader, MirroredHeader, TranslationError, mirrored_header};
+use super::{EmptyHeader, MirroredHeader, TranslationError};
 use crate::config::TypeName;
 use crate::endpoint_description::TopicTypes;
 
@@ -47,20 +47,27 @@ impl Translator<SampleShape> for PassthroughTranslator {
         let origin = origin!("PassthroughTranslator::remote");
 
         // The payload's type name must be a ROS 2 message type.
+        let TypeIdentifier::Name(payload_name) = &local.payload.identifier else {
+            fail!(
+                from origin,
+                with TranslationError::InvalidTypeName,
+                "Payload '{}' is not named after a ROS 2 type", local.payload.identifier.type_name()
+            );
+        };
         let type_name = fail!(
             from origin,
-            when TypeName::new(&local.payload.type_name),
+            when TypeName::new(payload_name),
             with TranslationError::InvalidTypeName,
-            "Payload type '{}' is not a ROS 2 type name", local.payload.type_name
+            "Payload type '{}' is not a ROS 2 type name", payload_name
         );
 
-        // The payload must be a byte slice under that name, not a struct.
+        // The payload must be a (cdr) byte slice under that name.
         if local.payload != cdr_payload_type(type_name.as_str()) {
             fail!(
                 from origin,
                 with TranslationError::LayoutMismatch,
                 "Payload '{}' ({:?}, {} bytes, align {}) is not the byte slice carrying the CDR of ROS 2 type '{}'",
-                local.payload.type_name, local.payload.variant, local.payload.size,
+                local.payload.identifier.type_name(), local.payload.variant, local.payload.size,
                 local.payload.alignment, type_name.as_str()
             );
         }
@@ -75,13 +82,13 @@ impl Translator<SampleShape> for PassthroughTranslator {
     ) -> Result<Self::Transcoders, TranslationError> {
         let origin = origin!("PassthroughTranslator::transcoders");
 
-        // The payload must be the byte slice with topic's message type name.
+        // The payload must be a (cdr) byte slice with topic's message type name.
         if local.payload != cdr_payload_type(remote.type_name.as_str()) {
             fail!(
                 from origin,
                 with TranslationError::LayoutMismatch,
                 "Payload '{}' is not the byte slice carrying the CDR of ROS 2 type '{}'",
-                local.payload.type_name, remote.type_name.as_str()
+                local.payload.identifier.type_name(), remote.type_name.as_str()
             );
         }
 
@@ -90,8 +97,8 @@ impl Translator<SampleShape> for PassthroughTranslator {
         // unsupported.
         let header = fail!(
             from origin,
-            when mirrored_header(local),
-            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.type_name
+            when MirroredHeader::of(local),
+            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.identifier.type_name()
         );
 
         // The payload passes through.
@@ -106,7 +113,7 @@ impl Translator<SampleShape> for PassthroughTranslator {
 fn cdr_payload_type(type_name: &str) -> TypeDescription {
     TypeDescription {
         variant: TypeVariant::Dynamic,
-        type_name: type_name.to_string(),
+        identifier: TypeIdentifier::Name(type_name.to_string()),
         size: 1,
         alignment: 1,
     }
@@ -178,7 +185,7 @@ mod tests {
         let sut = PassthroughTranslator::default();
         let payload = TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize));
         let mut named = payload.clone();
-        named.type_name = TYPE_NAME.to_string();
+        named.identifier = TypeIdentifier::Name(TYPE_NAME.to_string());
 
         let remote = sut.remote(&sample(named, no_user_header()));
 

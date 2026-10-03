@@ -25,8 +25,9 @@ pub use plain_struct::{CdrTranscoder, PlainStructTranslator, TranscodeFailure};
 use core::convert::Infallible;
 
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_link_adapter::{Region, SampleBytesRef, TranscodeError, Transcoder};
+use iceoryx2_link_adapter::{SampleBytesRef, TranscodeError, Transcoder};
 use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
+use iceoryx2_link_backend::wire::region::{ForwardRegion, Region};
 use iceoryx2_log::{fail, origin};
 
 use crate::ros_header::RosHeader;
@@ -72,9 +73,10 @@ impl<'a> Transcoder<SampleBytesRef<'a>> for EmptyHeader {
 
 /// Transcodes a header to nothing.
 fn empty_header<R: Region>(origin: &str, into: &mut R) -> Result<(), TranscodeError<Infallible>> {
+    let mut region = into.forward();
     fail!(
         from origin,
-        when into.for_length(0),
+        when region.resize(0),
         to TranscodeError<Infallible>,
         "The header region rejected a length of 0"
     );
@@ -82,7 +84,25 @@ fn empty_header<R: Region>(origin: &str, into: &mut R) -> Result<(), TranscodeEr
 }
 
 impl MirroredHeader {
-    pub(crate) fn type_description(self) -> TypeDescription {
+    /// The header of a local service of `types`.
+    pub fn of(types: &SampleTypes) -> Result<Self, TranslationError> {
+        let origin = origin!("MirroredHeader::of");
+
+        if types.user_header == TypeDescription::from(&RosHeader::type_detail()) {
+            Ok(MirroredHeader::RosHeader)
+        } else if types.user_header.size == 0 {
+            Ok(MirroredHeader::None)
+        } else {
+            fail!(
+                from origin,
+                with TranslationError::UnsupportedHeader,
+                "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.identifier.type_name()
+            );
+        }
+    }
+
+    /// The user header type of a service mirroring a topic.
+    pub fn type_description(self) -> TypeDescription {
         match self {
             MirroredHeader::None => {
                 TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize))
@@ -115,20 +135,3 @@ impl core::fmt::Display for TranslationError {
 }
 
 impl core::error::Error for TranslationError {}
-
-/// The header of a local service of `types`.
-fn mirrored_header(types: &SampleTypes) -> Result<MirroredHeader, TranslationError> {
-    let origin = origin!("mirrored_header");
-
-    if types.user_header == TypeDescription::from(&RosHeader::type_detail()) {
-        Ok(MirroredHeader::RosHeader)
-    } else if types.user_header.size == 0 {
-        Ok(MirroredHeader::None)
-    } else {
-        fail!(
-            from origin,
-            with TranslationError::UnsupportedHeader,
-            "Header '{}' is not the RosHeader, ROS 2 cannot fill it", types.user_header.type_name
-        );
-    }
-}
