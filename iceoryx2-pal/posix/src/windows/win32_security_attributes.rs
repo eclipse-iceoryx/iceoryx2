@@ -294,6 +294,34 @@ pub fn from_mode_to_security_attributes(mode: mode_t) -> SECURITY_ATTRIBUTES {
     add_permissions(&mut buffer, IDENT_GROUP);
     add_permissions(&mut buffer, IDENT_OWNER);
 
+    // A read-only object must stay removable by its owner. On POSIX, deleting a
+    // file is a property of its parent directory (write plus execute), never of
+    // the file mode, so a 0400 file is removable by the user who owns it.
+    // Windows instead requires DELETE on the object itself, a right the mode
+    // cannot express, so it is granted here independently of the write bit.
+    //
+    // Without it, a read-only file is indestructible for its own creator. The
+    // state of every process that was killed - `shm_unlink` never ran, so the
+    // files stay - becomes permanent, and the dead node cleanup that is meant
+    // to reap it (`Node::blocking_cleanup_dead_nodes`, which deletes as the
+    // calling user) fails with ERROR_ACCESS_DENIED on that same user and skips
+    // the node instead of failing, leaving the state on the machine forever.
+    //
+    // The owner-rights SID (`OW`, S-1-3-4) cannot be used for this: Windows
+    // silently *drops* an OWNER RIGHTS ACE when a DACL carrying one is written
+    // to a file, so it never reaches the object. The identity that already
+    // holds the POSIX owner bits is the one that must carry the right.
+    add_to_ace_string!(
+        &mut buffer,
+        b"(A;",
+        ACE_INHERITANCE,
+        b";",
+        DELETE,
+        b";;;",
+        IDENT_OWNER,
+        b")"
+    );
+
     let (convert_result, _) = unsafe {
         win32call! { ConvertStringSecurityDescriptorToSecurityDescriptorA(
             buffer.as_ptr(),
@@ -363,12 +391,9 @@ fn parse_hex_rights(hex_str: &str) -> u8 {
         if (hex_val & FILE_READ_DATA_HEX) != 0 || (hex_val & FILE_READ_ATTRIBUTES_HEX) != 0 {
             ret_val |= 4;
         }
-        // windows has separate permissions for write and delete...
-        // if either one are present, set the corresponding POSIX write mode
-        if (hex_val & FILE_WRITE_DATA_HEX) != 0
-            || (hex_val & FILE_WRITE_ATTRIBUTES_HEX) != 0
-            || (hex_val & DELETE_HEX) != 0
-        {
+        // `DELETE` is granted on its own, because the POSIX mode cannot express
+        // it: only the write bit maps to the POSIX write mode.
+        if (hex_val & FILE_WRITE_DATA_HEX) != 0 || (hex_val & FILE_WRITE_ATTRIBUTES_HEX) != 0 {
             ret_val |= 2;
         }
         if (hex_val & FILE_EXECUTE_HEX) != 0 {
@@ -395,9 +420,9 @@ fn parse_ace_string_rights(ace_rights: &[u8]) -> u8 {
         if right == GENERIC_PERM_READ || right == FILE_PERM_READ {
             ret_val |= 4;
         }
-        // windows has separate permissions for write and delete...
-        // if either one are present, set the corresponding POSIX write mode
-        if right == GENERIC_PERM_WRITE || right == FILE_PERM_WRITE || right == DELETE {
+        // `DELETE` is granted on its own, because the POSIX mode cannot express
+        // it: only the write bit maps to the POSIX write mode.
+        if right == GENERIC_PERM_WRITE || right == FILE_PERM_WRITE {
             ret_val |= 2;
         }
         if right == GENERIC_PERM_EXECUTE || right == FILE_PERM_EXECUTE {
@@ -473,4 +498,69 @@ pub fn from_security_attributes_to_mode(value: &SECURITY_ATTRIBUTES) -> mode_t {
     mode |= (owner_perms as u64) << 6;
 
     mode
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Renders the DACL of `attr` as its SDDL string and hands it to `check`.
+    fn with_dacl_string(attr: &SECURITY_ATTRIBUTES, check: impl FnOnce(&str)) {
+        let mut raw: *mut u8 = core::ptr::null_mut();
+        let mut raw_length = 0;
+        let (converted, _) = unsafe {
+            win32call! { ConvertSecurityDescriptorToStringSecurityDescriptorA(
+                attr.lpSecurityDescriptor,
+                SDDL_REVISION_1,
+                DACL_SECURITY_INFORMATION,
+                &mut raw,
+                &mut raw_length,
+            ) }
+        };
+        assert_ne!(converted, FALSE, "the descriptor must render as SDDL");
+
+        let bytes = unsafe { core::slice::from_raw_parts(raw, raw_length as usize) };
+        check(core::str::from_utf8(bytes).expect("SDDL is an ASCII string"));
+    }
+
+    /// A read-only mode must not make the object undeletable for its owner.
+    ///
+    /// The POSIX mode cannot express deletion: on POSIX the parent directory
+    /// governs it, so a 0400 file stays removable by its owner. Windows needs
+    /// the right on the object itself, which is why it is granted here whatever
+    /// the mode. Without it the state every killed process leaves behind
+    /// survives forever: the user cannot remove it, and
+    /// [`Node::blocking_cleanup_dead_nodes`] - which deletes as that same user -
+    /// receives ERROR_ACCESS_DENIED and skips the node instead of failing.
+    #[test]
+    fn a_read_only_mode_still_grants_delete_to_its_owner() {
+        with_dacl_string(&from_mode_to_security_attributes(S_IRUSR), |dacl| {
+            assert!(
+                dacl.contains("SD;;;BU)"),
+                "the POSIX owner identity must be able to delete: {dacl}"
+            );
+        });
+    }
+
+    /// The reverse mapping is what `stat` reports as the file mode, so `DELETE`
+    /// must no longer be read as a proxy for the POSIX write bit.
+    #[test]
+    fn the_mode_round_trip_survives_the_owner_delete_ace() {
+        for mode in [
+            S_IRUSR,
+            S_IWUSR,
+            S_IXUSR,
+            S_IRUSR | S_IWUSR,
+            S_IRUSR | S_IXUSR,
+            S_IRGRP | S_IROTH,
+            S_IRUSR | S_IWUSR | S_IXUSR,
+        ] {
+            let attr = from_mode_to_security_attributes(mode);
+            assert_eq!(
+                from_security_attributes_to_mode(&attr),
+                mode,
+                "mode {mode:o} must survive the round trip"
+            );
+        }
+    }
 }
