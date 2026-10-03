@@ -214,11 +214,22 @@ where
                 CommandType::Installed,
             )?);
         }
-        commands.sort_by_cached_key(|command| {
+
+        let mut unique_commands: Vec<CommandInfo> = Vec::new();
+        for command in commands {
+            if !unique_commands
+                .iter()
+                .any(|known| known.name == command.name)
+            {
+                unique_commands.push(command);
+            }
+        }
+
+        unique_commands.sort_by_cached_key(|command| {
             command.path.file_name().unwrap_or_default().to_os_string()
         });
 
-        Ok(commands)
+        Ok(unique_commands)
     }
 }
 
