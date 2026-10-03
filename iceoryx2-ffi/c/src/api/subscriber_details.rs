@@ -15,7 +15,8 @@
 use iceoryx2::service::dynamic_config::publish_subscribe::SubscriberDetails;
 
 use super::{
-    c_size_t, iox2_unique_node_id_ptr, iox2_unique_subscriber_id_h, iox2_unique_subscriber_id_t,
+    c_size_t, iox2_port_name_ptr, iox2_unique_node_id_ptr, iox2_unique_subscriber_id_h,
+    iox2_unique_subscriber_id_t,
 };
 
 /// The immutable pointer to the underlying `SubscriberDetails`
@@ -65,6 +66,19 @@ pub unsafe extern "C" fn iox2_subscriber_details_node_id(
 ) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
     unsafe { &(*handle).node_id }
+}
+
+/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the name of the subscriber.
+///
+/// # Safety
+///
+/// * `handle` valid pointer to the subscriber details
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_subscriber_details_subscriber_name(
+    handle: iox2_subscriber_details_ptr,
+) -> iox2_port_name_ptr {
+    debug_assert!(!handle.is_null());
+    unsafe { &(*handle).subscriber_name }
 }
 
 /// Returns the size of the receive buffer that stores the incoming samples.

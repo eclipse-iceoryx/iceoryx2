@@ -14,7 +14,10 @@
 
 use iceoryx2::service::dynamic_config::request_response::ServerDetails;
 
-use super::{c_size_t, iox2_unique_node_id_ptr, iox2_unique_server_id_h, iox2_unique_server_id_t};
+use super::{
+    c_size_t, iox2_port_name_ptr, iox2_unique_node_id_ptr, iox2_unique_server_id_h,
+    iox2_unique_server_id_t,
+};
 
 /// The immutable pointer to the underlying `ServerDetails`
 pub type iox2_server_details_ptr = *const ServerDetails;
@@ -63,6 +66,19 @@ pub unsafe extern "C" fn iox2_server_details_node_id(
 ) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
     unsafe { &(*handle).node_id }
+}
+
+/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the name of the server.
+///
+/// # Safety
+///
+/// * `handle` valid pointer to the server details
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_server_details_server_name(
+    handle: iox2_server_details_ptr,
+) -> iox2_port_name_ptr {
+    debug_assert!(!handle.is_null());
+    unsafe { &(*handle).server_name }
 }
 
 /// Returns the receive buffer size for incoming requests.

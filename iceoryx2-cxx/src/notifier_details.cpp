@@ -43,4 +43,8 @@ auto NotifierDetailsView::node_id() const -> UniqueNodeId {
     iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
     return UniqueNodeId(id_handle);
 }
+
+auto NotifierDetailsView::notifier_name() const -> PortNameView {
+    return PortNameView::from_native_ptr(iox2_notifier_details_notifier_name(m_handle));
+}
 } // namespace iox2

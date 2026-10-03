@@ -15,6 +15,7 @@
 
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/unique_node_id.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -34,6 +35,9 @@ class PublisherDetailsView {
 
     /// The [`NodeId`] of the [`Node`] under which the [`Publisher`] was created.
     auto node_id() const -> UniqueNodeId;
+
+    /// The [`PortNameView`] of the [`Publisher`], empty when it was created without a name.
+    auto publisher_name() const -> PortNameView;
 
     /// The total number of samples available in the [`Publisher`]s data segment
     auto number_of_samples() const -> uint64_t;
