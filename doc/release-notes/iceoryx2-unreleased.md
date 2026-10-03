@@ -47,7 +47,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#2063](https://github.com/eclipse-iceoryx/iceoryx2/issues/2063) Add testing function to remove all resources under a specific config
 
 ### New API features
 
