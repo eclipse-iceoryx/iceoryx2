@@ -27,7 +27,7 @@ impl UniqueIdGenerator for UniqueSystemId {
     /// Generates a system-wide unique ID by using the process ID and the incremented static
     /// atomic counter from the global management segment.
     fn generate<Service: service::Service>(
-        entity: Entity,
+        entity: &Entity,
         config: &Config,
     ) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
         let id = match entity {
