@@ -15,7 +15,10 @@ use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
 use crate::service::config_scheme::{
-    dynamic_config_storage_config, node_details_path, port_tag_config, service_tag_config,
+    blackboard_data_config, blackboard_mgmt_config, connection_config, data_segment_config,
+    dynamic_config_storage_config, event_config, node_details_path, node_monitoring_config,
+    port_tag_config, resizable_data_segment_config, service_tag_config,
+    static_config_storage_config,
 };
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::service_hash::ServiceHash;
@@ -30,6 +33,7 @@ use alloc::string::ToString;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::directory::Directory;
+use iceoryx2_bb_posix::file_type::FileType;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::{config::TEST_DIRECTORY, testing::*};
 use iceoryx2_bb_system_types::file_name::*;
@@ -244,4 +248,58 @@ pub unsafe fn remove_dynamic_config<S: crate::service::Service>(
         )
         .unwrap()
     };
+}
+
+unsafe fn remove_all_concept_resources<Concept: NamedConceptMgmt>(config: &Concept::Configuration) {
+    for entry in Concept::list_cfg(config).unwrap() {
+        unsafe { Concept::remove_cfg(&entry, config).unwrap() };
+    }
+}
+
+fn remove_all_node_resource_directories(global_config: &Config) {
+    let node_resource_path = global_config.global.node_dir();
+    let node_resource_dir = Directory::new(&node_resource_path).unwrap();
+    for entry in node_resource_dir.contents().unwrap() {
+        if entry.metadata().file_type() == FileType::Directory
+            && entry
+                .name()
+                .to_string()
+                .starts_with(&global_config.global.prefix.to_string())
+        {
+            let mut entry_path = node_resource_path;
+            entry_path.add_path_entry(&entry.name().into()).unwrap();
+            Directory::remove(&entry_path).unwrap();
+        }
+    }
+}
+
+pub unsafe fn remove_all_resources<S: crate::service::Service>(global_config: &Config) {
+    let c = dynamic_config_storage_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::DynamicStorage<DynamicConfig<S::Bag>>>(&c) };
+
+    let c = static_config_storage_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::StaticStorage>(&c) };
+
+    let c = connection_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::Connection>(&c) };
+
+    let c = event_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::Event>(&c) };
+
+    let c = data_segment_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::SharedMemory>(&c) };
+
+    let c = resizable_data_segment_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::ResizableSharedMemory>(&c) };
+
+    let c = node_monitoring_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::Monitoring>(&c) };
+
+    let c = blackboard_mgmt_config::<S, ()>(global_config);
+    unsafe { remove_all_concept_resources::<S::BlackboardMgmt<()>>(&c) };
+
+    let c = blackboard_data_config::<S>(global_config);
+    unsafe { remove_all_concept_resources::<S::BlackboardPayload>(&c) };
+
+    remove_all_node_resource_directories(global_config);
 }
