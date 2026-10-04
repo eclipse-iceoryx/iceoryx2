@@ -71,11 +71,17 @@ impl HostEnvironment {
 impl Environment for HostEnvironment {
     // TODO: This can be optimized to make the command look-up quicker
     fn install_paths() -> Result<Vec<PathBuf>> {
-        let path_var = env::var("PATH").context("Failed to read PATH environment variable")?;
+        let path_var = env::var("PATH").unwrap_or_default();
 
         let mut install_paths: Vec<PathBuf> = Vec::new();
 
-        for path in path_var.split(PATH_ENV_VAR_SEPARATOR).map(PathBuf::from) {
+        // The commands located in the iox2 binary folder take precedence over PATH
+        let binary_dir = env::current_exe()
+            .ok()
+            .and_then(|exe| exe.parent().map(Path::to_path_buf));
+        let path_dirs = path_var.split(PATH_ENV_VAR_SEPARATOR).map(PathBuf::from);
+
+        for path in binary_dir.into_iter().chain(path_dirs) {
             if path.is_dir() && !install_paths.contains(&path) {
                 install_paths.push(path);
             }
