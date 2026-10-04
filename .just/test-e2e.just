@@ -60,9 +60,10 @@ _test-e2e-dispatch what *flags:
     set -euo pipefail
 
     show_help() {
-        echo "Usage: just test-e2e <scope> [flags]"
+        echo "Usage: just test-e2e <workspace> [flags]"
+        echo "       just test-e2e --list [flags]"
         echo ""
-        echo "Scope:"
+        echo "Workspace:"
         echo "  sdk                    run end-to-end tests for the main workspace"
         echo "  integrations-zenoh     run end-to-end tests for the zenoh workspace"
         echo "  integrations-ros2      run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
@@ -82,7 +83,9 @@ _test-e2e-dispatch what *flags:
     PARSED_ARGS=$(just _parse-test-e2e-args {{flags}}) || exit $?
     eval "$PARSED_ARGS"
 
-    case "{{what}}" in
+    WORKSPACE="{{what}}"
+
+    case "$WORKSPACE" in
         "")
             show_help
             exit 1
@@ -91,8 +94,13 @@ _test-e2e-dispatch what *flags:
             show_help
             exit 0
             ;;
+        --list)
+            # Listing without a workspace lists every workspace.
+            WORKSPACE="all"
+            HAS_LIST="true"
+            ;;
         -*)
-            echo "Invalid argument '{{what}}'!"
+            echo "Invalid argument '$WORKSPACE'!"
             echo ""
             show_help
             exit 1
@@ -100,12 +108,12 @@ _test-e2e-dispatch what *flags:
         sdk|integrations-zenoh|integrations-ros2|all)
             ;;
         *)
-            echo "Error: unknown scope '{{what}}' (expected: sdk, integrations-zenoh, integrations-ros2, all)" >&2
+            echo "Error: unknown workspace '$WORKSPACE' (expected: sdk, integrations-zenoh, integrations-ros2, all)" >&2
             exit 1
             ;;
     esac
 
-    TESTS=$(just _test-e2e-find-tests "{{what}}" "$CATEGORIES" "$FILTER")
+    TESTS=$(just _test-e2e-find-tests "$WORKSPACE" "$CATEGORIES" "$FILTER")
 
     if [ -z "$TESTS" ]; then
         echo -e "\033[1;33mNo end-to-end tests selected\033[0m"
@@ -118,10 +126,10 @@ _test-e2e-dispatch what *flags:
     fi
 
     if [ "$HAS_NO_BUILD" != "true" ]; then
-        echo "$TESTS" | just "_test-e2e-build-{{what}}"
+        echo "$TESTS" | just "_test-e2e-build-$WORKSPACE"
     fi
     if [ "$HAS_NO_RUN" != "true" ]; then
-        echo "$TESTS" | just "_test-e2e-run-{{what}}"
+        echo "$TESTS" | just "_test-e2e-run-$WORKSPACE"
     fi
 
 # Maps artifacts required by test suites to recipes to build them.
@@ -150,7 +158,7 @@ _test-e2e-artifacts:
 _test-e2e-suites:
     #!/usr/bin/env bash
 
-    # Scope                     Category          Root                                        Artifacts
+    # Workspace                 Category          Root                                        Artifacts
     cat <<'EOF'
     sdk                         examples          examples/rust                               sdk-examples
     sdk                         examples-c        examples/c                                  sdk-c-cxx
@@ -158,7 +166,7 @@ _test-e2e-suites:
     sdk                         examples-python   examples/python                             sdk-python
     sdk                         examples-nostd    examples/nostd                              sdk-nostd-examples
     sdk                         cross-language    examples/cross-language-end-to-end-tests    sdk-examples,sdk-c-cxx,sdk-python
-    sdk                         iox2-cli          iceoryx2-cli                                sdk-cli,sdk-examples,zenoh-tunnel
+    sdk                         cli               iceoryx2-cli                                sdk-cli,sdk-examples,zenoh-tunnel
     sdk                         component-tests   component-tests                             sdk-component-tests,sdk-c-cxx
     integrations-zenoh          tunnel-cli        integrations/zenoh/link-tunnel-cli          sdk-cli,sdk-examples,zenoh-tunnel
     integrations-ros2           gateway-cli       integrations/ros2/link-gateway-cli          sdk-cli,ros2-gateway,ros2-examples
@@ -170,20 +178,20 @@ _test-e2e-suites:
 [private]
 _test-e2e-print-suite-table:
     #!/usr/bin/env bash
-    SCOPE_WIDTH=28
+    WORKSPACE_WIDTH=28
     CATEGORY_WIDTH=18
     DIRECTORY_WIDTH=44
-    { echo "SCOPE CATEGORY DIRECTORY ARTIFACTS"; cat; } \
-        | just _test-e2e-print-table $SCOPE_WIDTH $CATEGORY_WIDTH $DIRECTORY_WIDTH
+    { echo "WORKSPACE CATEGORY DIRECTORY ARTIFACTS"; cat; } \
+        | just _test-e2e-print-table $WORKSPACE_WIDTH $CATEGORY_WIDTH $DIRECTORY_WIDTH
 
 # Formats test rows from stdin as a table with a heading.
 [private]
 _test-e2e-print-test-table:
     #!/usr/bin/env bash
-    SCOPE_WIDTH=28
+    WORKSPACE_WIDTH=28
     CATEGORY_WIDTH=18
-    { echo "SCOPE CATEGORY TEST"; cat; } \
-        | just _test-e2e-print-table $SCOPE_WIDTH $CATEGORY_WIDTH
+    { echo "WORKSPACE CATEGORY TEST"; cat; } \
+        | just _test-e2e-print-table $WORKSPACE_WIDTH $CATEGORY_WIDTH
 
 # Prints the rows from stdin as columns of the given widths.
 [private]
@@ -191,11 +199,11 @@ _test-e2e-print-table *widths:
     @awk -v widths="{{widths}}" 'BEGIN { n = split(widths, w, " ") } { line = " "; for (i = 1; i <= n; i++) line = line sprintf(" %-" w[i] "s", $i); for (i = n + 1; i <= NF; i++) line = line " " $i; print line }'
 
 
-# Finds every `*.exp` in the given scope whose category is listed and whose
+# Finds every `*.exp` in the given workspace whose category is listed and whose
 # file name matches the filter.
 [private]
 [no-exit-message]
-_test-e2e-find-tests scope categories filter:
+_test-e2e-find-tests workspace categories filter:
     #!/usr/bin/env bash
     set -euo pipefail
     set -f
@@ -204,9 +212,9 @@ _test-e2e-find-tests scope categories filter:
     CATEGORIES="{{categories}}"
     FILTER="{{filter}}"
 
-    # Rejects a scope or category that no suite declares.
-    if [ "{{scope}}" != "all" ] && ! echo "$SUITES" | awk '{ print $1 }' | grep -qx "{{scope}}"; then
-        echo "Error: unknown scope '{{scope}}'" >&2
+    # Rejects a workspace or category that no suite declares.
+    if [ "{{workspace}}" != "all" ] && ! echo "$SUITES" | awk '{ print $1 }' | grep -qx "{{workspace}}"; then
+        echo "Error: unknown workspace '{{workspace}}'" >&2
         exit 1
     fi
     for CATEGORY in $CATEGORIES; do
@@ -216,9 +224,9 @@ _test-e2e-find-tests scope categories filter:
         fi
     done
 
-    # Walks the roots matching the scope and categories and finds the test files.
-    while read -r SCOPE CATEGORY DIRECTORY ARTIFACTS; do
-        if [ "{{scope}}" != "all" ] && [ "$SCOPE" != "{{scope}}" ]; then
+    # Walks the roots matching the workspace and categories and finds the test files.
+    while read -r WORKSPACE CATEGORY DIRECTORY ARTIFACTS; do
+        if [ "{{workspace}}" != "all" ] && [ "$WORKSPACE" != "{{workspace}}" ]; then
             continue
         fi
         if [ -n "$CATEGORIES" ] && [[ " $CATEGORIES " != *" $CATEGORY "* ]]; then
@@ -228,7 +236,7 @@ _test-e2e-find-tests scope categories filter:
             if [ -n "$FILTER" ] && [[ "$(basename "$FILE")" != $FILTER ]]; then
                 continue
             fi
-            echo "$SCOPE $CATEGORY $FILE"
+            echo "$WORKSPACE $CATEGORY $FILE"
         done
     done <<< "$SUITES"
 
@@ -240,8 +248,8 @@ _test-e2e-build-all:
     set -euo pipefail
 
     TESTS=$(cat)
-    for SCOPE in $(echo "$TESTS" | awk '{ print $1 }' | awk '!seen[$0]++'); do
-        echo "$TESTS" | awk -v scope="$SCOPE" '$1 == scope' | just "_test-e2e-build-$SCOPE"
+    for WORKSPACE in $(echo "$TESTS" | awk '{ print $1 }' | awk '!seen[$0]++'); do
+        echo "$TESTS" | awk -v workspace="$WORKSPACE" '$1 == workspace' | just "_test-e2e-build-$WORKSPACE"
     done
 
 # Runs the tests from stdin.
@@ -253,10 +261,10 @@ _test-e2e-run-all:
 
     TESTS=$(cat)
 
-    # Runs every scope before failing so one scope does not hide another.
+    # Runs every workspace before failing so one workspace does not hide another.
     STATUS=0
-    for SCOPE in $(echo "$TESTS" | awk '{ print $1 }' | awk '!seen[$0]++'); do
-        echo "$TESTS" | awk -v scope="$SCOPE" '$1 == scope' | just "_test-e2e-run-$SCOPE" || STATUS=1
+    for WORKSPACE in $(echo "$TESTS" | awk '{ print $1 }' | awk '!seen[$0]++'); do
+        echo "$TESTS" | awk -v workspace="$WORKSPACE" '$1 == workspace' | just "_test-e2e-run-$WORKSPACE" || STATUS=1
     done
     exit $STATUS
 
@@ -388,11 +396,11 @@ _test-e2e-build-artifacts:
 
     SELECTED=$(awk '{ print $1, $2 }' | sort -u)
 
-    # Collect the artifacts of every selected scope and category without
+    # Collect the artifacts of every selected workspace and category without
     # duplicates.
-    ARTIFACTS=$(while read -r SCOPE CATEGORY; do
-        just _test-e2e-suites | awk -v scope="$SCOPE" -v category="$CATEGORY" \
-            '$1 == scope && $2 == category { print $4 }'
+    ARTIFACTS=$(while read -r WORKSPACE CATEGORY; do
+        just _test-e2e-suites | awk -v workspace="$WORKSPACE" -v category="$CATEGORY" \
+            '$1 == workspace && $2 == category { print $4 }'
     done <<< "$SELECTED" | tr ',' '\n' | awk '!seen[$0]++')
 
     for ARTIFACT in $ARTIFACTS; do
@@ -457,7 +465,7 @@ _test-e2e-build-ros2-gateway:
 _test-e2e-build-ros2-examples:
     cargo build --manifest-path {{INTEGRATIONS_ROS2_DIR}}/Cargo.toml --package iceoryx2-integrations-ros2-examples --examples
 
-# Runs the tests from stdin with `expect`, one `scope category path` row each.
+# Runs the tests from stdin with `expect`, one `workspace category path` row each.
 [private]
 [no-exit-message]
 _test-e2e-run-tests:
