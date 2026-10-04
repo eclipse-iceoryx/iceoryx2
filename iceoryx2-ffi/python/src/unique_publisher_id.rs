@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Publisher`.
-pub struct UniquePublisherId(pub(crate) iceoryx2::identifiers::UniquePublisherId);
+pub struct UniquePublisherId(pub iceoryx2::identifiers::UniquePublisherId);
 
 #[pymethods]
 impl UniquePublisherId {

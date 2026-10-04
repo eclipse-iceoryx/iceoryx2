@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Reader`.
-pub struct UniqueReaderId(pub(crate) iceoryx2::identifiers::UniqueReaderId);
+pub struct UniqueReaderId(pub iceoryx2::identifiers::UniqueReaderId);
 
 #[pymethods]
 impl UniqueReaderId {
