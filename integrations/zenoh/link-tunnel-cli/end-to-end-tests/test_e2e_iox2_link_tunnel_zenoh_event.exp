@@ -22,7 +22,7 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 15
 
-exec cargo build -p example 2>@1
+exec cargo build --example event_notifier 2>@1
 exec cargo build --manifest-path integrations/zenoh/Cargo.toml -p iceoryx2-integrations-zenoh-link-tunnel-cli 2>@1
 
 #### Test
