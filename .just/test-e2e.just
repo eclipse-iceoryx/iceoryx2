@@ -463,7 +463,7 @@ _test-e2e-build-ros2-gateway:
 # Expects the cargo environment of the ros2 workspace.
 [private]
 _test-e2e-build-ros2-examples:
-    cargo build --manifest-path {{INTEGRATIONS_ROS2_DIR}}/Cargo.toml --package iceoryx2-integrations-ros2-examples --examples
+    cargo build --manifest-path {{INTEGRATIONS_ROS2_DIR}}/Cargo.toml --examples
 
 # Runs the tests from stdin with `expect`, one `workspace category path` row each.
 [private]
