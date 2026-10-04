@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _parse-test-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -61,6 +62,7 @@ _parse-test-args *flags:
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
+[no-exit-message]
 _test-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -118,6 +120,7 @@ _test-dispatch what *flags:
     esac
 
 [private]
+[no-exit-message]
 _test-sdk toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -191,6 +194,7 @@ _test-sdk toolchain target_triplet profile has_nostd has_doc extra_args:
     fi
 
 [private]
+[no-exit-message]
 _test-integrations-zenoh toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -209,6 +213,7 @@ _test-integrations-zenoh toolchain target_triplet profile has_nostd has_doc extr
     fi
 
 [private]
+[no-exit-message]
 _test-integrations-ros2 toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -234,6 +239,7 @@ _test-integrations-ros2 toolchain target_triplet profile has_nostd has_doc extra
     fi
 
 [private]
+[no-exit-message]
 _test-package package toolchain target_triplet profile has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail

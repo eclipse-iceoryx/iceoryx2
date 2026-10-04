@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _parse-bundle-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -64,6 +65,7 @@ _parse-bundle-args *flags:
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
+[no-exit-message]
 _bundle-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -145,6 +147,7 @@ _bundle-nostd-tests toolchain target_triplet profile do_strip do_compress extra_
     fi
 
 [private]
+[no-exit-message]
 _create-bundle-dir target_dir bundle_dir:
     #!/usr/bin/env bash
     set -euo pipefail

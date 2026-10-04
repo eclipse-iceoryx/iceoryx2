@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _discover-nostd-test-crates:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -36,6 +37,7 @@ _discover-nostd-test-crates:
         | sort
 
 [private]
+[no-exit-message]
 _discover-nostd-crates:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -78,6 +80,7 @@ _detect-host-target toolchain:
     fi
 
 [private]
+[no-exit-message]
 _find-crate-manifest package:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -106,14 +109,17 @@ _find-crate-manifest package:
     echo "$MANIFEST"
 
 [private]
+[no-exit-message]
 _find-crate-dir package:
     @dirname "$(just _find-crate-manifest '{{package}}')"
 
 [private]
+[no-exit-message]
 _find-crate-src package:
     @echo "$(just _find-crate-dir '{{package}}')/src"
 
 [private]
+[no-exit-message]
 _find-package-workspace package:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -127,6 +133,7 @@ _find-package-workspace package:
     esac
 
 [private]
+[no-exit-message]
 _parse-workspace workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
@@ -139,6 +146,7 @@ _parse-workspace workspace:
     esac
 
 [private]
+[no-exit-message]
 _workspace-manifest-arg workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in

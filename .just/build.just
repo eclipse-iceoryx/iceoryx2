@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _parse-build-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -61,6 +62,7 @@ _parse-build-args *flags:
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
+[no-exit-message]
 _build-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -167,6 +169,7 @@ _build-sdk toolchain target_triplet profile has_nostd has_tests extra_args:
     fi
 
 [private]
+[no-exit-message]
 _build-integrations-zenoh toolchain target_triplet profile has_nostd has_tests extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -191,6 +194,7 @@ _build-integrations-zenoh toolchain target_triplet profile has_nostd has_tests e
     cargo {{toolchain}} build --workspace $MANIFEST_ARG --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 
 [private]
+[no-exit-message]
 _build-integrations-ros2 toolchain target_triplet profile has_nostd has_tests extra_args:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -222,6 +226,7 @@ _build-integrations-ros2 toolchain target_triplet profile has_nostd has_tests ex
     cargo {{toolchain}} build --workspace $MANIFEST_ARG --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 
 [private]
+[no-exit-message]
 _build-package package toolchain target_triplet profile has_nostd extra_args:
     #!/usr/bin/env bash
     set -euo pipefail

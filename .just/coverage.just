@@ -37,6 +37,7 @@ COVERAGE_IGNORE := `echo \
     "build.rs"`
 
 [private]
+[no-exit-message]
 _parse-coverage-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -63,6 +64,7 @@ _parse-coverage-args *flags:
     echo "PACKAGES=(${PACKAGES[*]@Q})"
 
 [private]
+[no-exit-message]
 _coverage-dispatch action *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -192,6 +194,7 @@ _coverage-generate-report-lcov:
         "{{COVERAGE_OUT_DIR}}/lcov/iceoryx2_lcov_cpp.info"
 
 [private]
+[no-exit-message]
 _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -239,6 +242,7 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
 # --- summarize ---------------------------------------------------------------
 
 [private]
+[no-exit-message]
 _coverage-summarize detailed *packages:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -295,6 +299,7 @@ _coverage-clean:
 # --- helpers --------------------------------------------------------------
 
 [private]
+[no-exit-message]
 _find-llvm-tool tool:
     #!/usr/bin/env bash
     set -euo pipefail

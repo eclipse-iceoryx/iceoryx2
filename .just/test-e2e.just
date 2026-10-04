@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _parse-test-e2e-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -42,6 +43,7 @@ _parse-test-e2e-args *flags:
     echo "HAS_LIST='$HAS_LIST'"
 
 [private]
+[no-exit-message]
 _test-e2e-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -131,6 +133,7 @@ _test-e2e-print-rows:
 # Finds every `*.exp` in the given scope whose category is listed and whose
 # file name matches the filter.
 [private]
+[no-exit-message]
 _test-e2e-find-tests scope categories filter:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -170,6 +173,7 @@ _test-e2e-find-tests scope categories filter:
 
 # Runs the ros2 tests from stdin.
 [private]
+[no-exit-message]
 _test-e2e-integrations-ros2:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -191,6 +195,7 @@ _test-e2e-integrations-ros2:
 
 # Runs the ros2 tests from stdin against the cargo target directory.
 [private]
+[no-exit-message]
 _test-e2e-integrations-ros2-cargo:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -209,6 +214,7 @@ _test-e2e-integrations-ros2-cargo:
 
 # Runs the ros2 tests from stdin against the colcon install space.
 [private]
+[no-exit-message]
 _test-e2e-integrations-ros2-colcon:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -231,6 +237,7 @@ _test-e2e-integrations-ros2-colcon:
 
 # Runs the tests from stdin with `expect`, one `scope category path` row each.
 [private]
+[no-exit-message]
 _test-e2e-run-tests:
     #!/usr/bin/env bash
     set -euo pipefail
