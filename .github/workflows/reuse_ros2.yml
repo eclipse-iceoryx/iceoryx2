@@ -106,12 +106,6 @@ jobs:
           echo "Using RMW: $RMW_IMPLEMENTATION"
           just test integrations-ros2 +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
 
-      - name: Build examples
-        shell: bash
-        run: |
-          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just setup integrations-ros2-examples
-
       - name: End-to-end test workspace
         shell: bash
         run: |

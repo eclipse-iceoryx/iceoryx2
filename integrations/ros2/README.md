@@ -103,7 +103,6 @@ In addition, the `just` recipes provide convenience commands to run the
 end-to-end tests:
 
 ```bash
-just setup integrations-ros2-examples
 just test-e2e integrations-ros2
 ```
 
