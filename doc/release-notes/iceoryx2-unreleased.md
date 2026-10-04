@@ -49,6 +49,7 @@
 -->
 
 * [#2063](https://github.com/eclipse-iceoryx/iceoryx2/issues/2063) Add testing function to remove all resources under a specific config
+* [#2068](https://github.com/eclipse-iceoryx/iceoryx2/issues/2068) Add `just` script to orechestrate execution of end-to-end tests
 
 ### New API features
 
