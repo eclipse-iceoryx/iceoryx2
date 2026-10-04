@@ -10,4 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+exports_files([
+    "llvm_bazel7.patch",
+    "rules_rs_bazel7.patch",
+])
+
 # Root BUILD.bazel file for iceoryx2 Bazel examples

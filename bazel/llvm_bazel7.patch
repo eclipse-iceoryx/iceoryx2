@@ -1,0 +1,191 @@
+diff --git a/directory.bzl b/directory.bzl
+--- a/directory.bzl
++++ b/directory.bzl
+@@ -51,5 +51,4 @@
+         "directory": attr.label(),
+         "source_directory": attr.label(),
+     },
+-    cfg = config.none(),
+ )
+diff --git a/http_bsdtar_archive.bzl b/http_bsdtar_archive.bzl
+--- a/http_bsdtar_archive.bzl
++++ b/http_bsdtar_archive.bzl
+@@ -78,8 +78,12 @@
+             integrity_override["remote_patches"] = remote_patch_integrity
+ 
+     if not integrity_override:
++        if not hasattr(rctx, "repo_metadata"):
++            return None
+         return rctx.repo_metadata(reproducible = True)
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(
+         attrs_for_reproducibility = update_attrs(rctx.attr, attrs.keys(), integrity_override),
+     )
+diff --git a/http_pkg_archive.bzl b/http_pkg_archive.bzl
+--- a/http_pkg_archive.bzl
++++ b/http_pkg_archive.bzl
+@@ -37,6 +37,8 @@
+     for file, label in rctx.attr.files.items():
+         rctx.file(file, rctx.read(label))
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ http_pkg_archive = repository_rule(
+diff --git a/extensions/llvm.bzl b/extensions/llvm.bzl
+--- a/extensions/llvm.bzl
++++ b/extensions/llvm.bzl
+@@ -147,6 +147,8 @@
+         "version.bzl",
+         "LLVM_VERSION = {}\n".format(repr(rctx.attr.llvm_version)),
+     )
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ _llvm_version_repository = repository_rule(
+diff --git a/extensions/toolchain.bzl b/extensions/toolchain.bzl
+--- a/extensions/toolchain.bzl
++++ b/extensions/toolchain.bzl
+@@ -18,6 +18,8 @@
+ 
+ def _toolchains_repository_impl(rctx):
+     rctx.file("BUILD.bazel", rctx.attr.build_file_content)
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ _toolchains_repository = repository_rule(
+diff --git a/private/llvm_project_archive.bzl b/private/llvm_project_archive.bzl
+--- a/private/llvm_project_archive.bzl
++++ b/private/llvm_project_archive.bzl
+@@ -157,7 +157,11 @@
+             overrides["remote_patches"] = remote_patch_integrity
+ 
+     if not overrides:
++        if not hasattr(rctx, "repo_metadata"):
++            return None
+         return rctx.repo_metadata(reproducible = True)
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(
+         attrs_for_reproducibility = update_attrs(rctx.attr, _llvm_project_archive_attrs.keys(), overrides),
+     )
+diff --git a/runtimes/copy_to_resource_directory.bzl b/runtimes/copy_to_resource_directory.bzl
+--- a/runtimes/copy_to_resource_directory.bzl
++++ b/runtimes/copy_to_resource_directory.bzl
+@@ -79,15 +79,10 @@
+     ],
+ )
+ 
+-def _copy_to_resource_directory_macro_impl(name, srcs, target_triple, **kwargs):
++def copy_to_resource_directory(name, srcs, target_triple = None, **kwargs):
+     return copy_to_resource_directory_rule(
+         name = name,
+         srcs = srcs,
+         target_triple = target_triple if target_triple else select(TRIPLE_SELECT_DICT),
+         **kwargs
+     )
+-
+-copy_to_resource_directory = macro(
+-    implementation = _copy_to_resource_directory_macro_impl,
+-    inherit_attrs = copy_to_resource_directory_rule,
+-)
+diff --git a/toolchain/runtimes/graph_structure_aspect.bzl b/toolchain/runtimes/graph_structure_aspect.bzl
+--- /dev/null
++++ b/toolchain/runtimes/graph_structure_aspect.bzl
+@@ -0,0 +1,69 @@
++# Copyright 2021 The Bazel Authors. All rights reserved.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#    http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++"""Dependency graph aspect compatible with Bazel 7."""
++
++load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
++load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
++load("@rules_cc//cc/common:cc_shared_library_hint_info.bzl", "CcSharedLibraryHintInfo")
++load("@rules_cc//cc/private:graph_node_info.bzl", "GraphNodeInfo")  # buildifier: disable=bzl-visibility
++
++LINKABLE_MORE_THAN_ONCE = "LINKABLE_MORE_THAN_ONCE"
++
++def _graph_structure_aspect_impl(target, ctx):
++    children = []
++
++    attributes = dir(ctx.rule.attr)
++    owners = [ctx.label]
++    if CcSharedLibraryHintInfo in target:
++        attributes = getattr(target[CcSharedLibraryHintInfo], "attributes", dir(ctx.rule.attr))
++        owners = getattr(target[CcSharedLibraryHintInfo], "owners", [ctx.label])
++
++    # Collect graph structure info from any possible deplike attribute. The aspect
++    # itself applies across every deplike attribute (attr_aspects is *), so enumerate
++    # over all attributes and consume GraphNodeInfo if available.
++    for fieldname in attributes:
++        deps = getattr(ctx.rule.attr, fieldname, None)
++        if type(deps) == "list":
++            for dep in deps:
++                if type(dep) == "Target" and GraphNodeInfo in dep:
++                    children.append(dep[GraphNodeInfo])
++        elif type(deps) == "Target" and GraphNodeInfo in deps:
++            children.append(deps[GraphNodeInfo])
++
++    if hasattr(ctx.rule, "toolchains") and hasattr(ctx.rule.toolchains, "toolchain_types"):
++        for toolchain_type in ctx.rule.toolchains.toolchain_types():
++            dep = ctx.rule.toolchains[toolchain_type]
++            if dep and GraphNodeInfo in dep:
++                children.append(dep[GraphNodeInfo])
++
++    # TODO(bazel-team): Add flag to Bazel that can toggle the initialization of
++    # linkable_more_than_once.
++    linkable_more_than_once = False
++    if hasattr(ctx.rule.attr, "tags"):
++        for tag in ctx.rule.attr.tags:
++            if tag == LINKABLE_MORE_THAN_ONCE:
++                linkable_more_than_once = True
++    return [GraphNodeInfo(
++        owners = owners,
++        children = children,
++        linkable_more_than_once = linkable_more_than_once,
++    )]
++
++graph_structure_aspect = aspect(
++    attr_aspects = ["*"],
++    required_providers = [[CcInfo], [CcSharedLibraryHintInfo], [ProtoInfo], [platform_common.ToolchainInfo]],
++    required_aspect_providers = [[CcInfo], [CcSharedLibraryHintInfo]],
++    implementation = _graph_structure_aspect_impl,
++)
+diff --git a/toolchain/runtimes/cc_unsanitized_library.bzl b/toolchain/runtimes/cc_unsanitized_library.bzl
+--- a/toolchain/runtimes/cc_unsanitized_library.bzl
++++ b/toolchain/runtimes/cc_unsanitized_library.bzl
+@@ -1,6 +1,6 @@
+ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+ load("@rules_cc//cc/private:graph_node_info.bzl", "GraphNodeInfo")  # buildifier: disable=bzl-visibility
+-load("@rules_cc//cc/private/rules_impl:cc_shared_library.bzl", "graph_structure_aspect")  # buildifier: disable=bzl-visibility
++load(":graph_structure_aspect.bzl", "graph_structure_aspect")
+ 
+ def _reset_sanitizers_impl(settings, attr):
+     return {
+diff --git a/MODULE.bazel b/MODULE.bazel
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -4 +4 @@
+-    bazel_compatibility = [">=7.7.0"],
++    bazel_compatibility = [">=7.5.0"],
+@@ -11,0 +12 @@
++bazel_dep(name = "protobuf", version = "27.0", repo_name = "com_google_protobuf")
+@@ -16 +17 @@
+-bazel_dep(name = "rules_go", version = "0.62.0", repo_name = None)
++bazel_dep(name = "rules_go", version = "0.62.0", repo_name = "rules_go_non_dev")

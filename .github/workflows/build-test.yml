@@ -524,7 +524,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         toolchain: [stable]
-        bazel-version: ["8.5.1"]
+        bazel-version: ["7.5.0", "8.5.1"]
         feature-flatbuffers: ["", "--//:feature_flatbuffers=on"]
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
@@ -569,7 +569,7 @@ jobs:
           bazel build //... --verbose_failures
 
       - name: Check for changed files after CI run
-        if: ${{ matrix.bazel-version == '8.5.1' }}
+        if: ${{ matrix.bazel-version == '7.5.0' }}
         uses: ./.github/actions/check-repo-changes
 
   cxx-vocabulary-types:

@@ -1,0 +1,616 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+index fdb8e53..d002e1e 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -3 +3 @@ module(
+-    bazel_compatibility = [">=8.5.0"],
++    bazel_compatibility = [">=7.5.0"],
+diff --git a/rs/extensions.bzl b/rs/extensions.bzl
+index 97e2108..cf81f72 100644
+--- a/rs/extensions.bzl
++++ b/rs/extensions.bzl
+@@ -2,6 +2,7 @@ load("@bazel_lib//lib:repo_utils.bzl", "repo_utils")
+ load("@bazel_skylib//lib:paths.bzl", "paths")
+ load("@host_cargo//:defs.bzl", "RS_HOST_CARGO_LABEL")
+ load("//rs/private:annotations.bzl", "annotation_for", "build_annotation_map", "well_known_annotation_snippet_paths")
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ load("//rs/private:cargo_credentials.bzl", "load_cargo_credentials")
+ load(
+     "//rs/private:cargo_workspace_graph.bzl",
+@@ -191,8 +192,6 @@ def _generate_hub_and_spokes(
+                 facts[key] = fact
+                 fact = json.decode(fact)
+             else:
+-                package["download_token"].wait()
+-
+                 # TODO(zbarsky): Should we also dedupe this parsing?
+                 for line in mctx.read(name + ".jsonl").strip().split("\n"):
+                     if version not in line:
+@@ -324,7 +323,7 @@ def _generate_hub_and_spokes(
+             repo_name = _external_repo_for_git_source(hub_name, remote, commit)
+         else:
+             repo_name = _spoke_repo(hub_name, package["name"], package["version"])
+-        internal_packages.add("@%s//:__subpackages__" % repo_name)
++        internal_packages["@%s//:__subpackages__" % repo_name] = None
+     internal_packages = list(internal_packages)
+ 
+     for package in packages:
+diff --git a/rs/private/all_crate_deps.bzl b/rs/private/all_crate_deps.bzl
+index f6d9ceb..82fa768 100644
+--- a/rs/private/all_crate_deps.bzl
++++ b/rs/private/all_crate_deps.bzl
+@@ -1,3 +1,4 @@
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ load(":select_utils.bzl", "compute_select")
+ 
+ def _filter_by_prefix(deps, prefix):
+@@ -19,7 +20,7 @@ def merge_structured_dep_specs(specs, platforms, filter_prefix):
+     for shared_items, per_platform_items in specs:
+         for dep in shared_items:
+             if not filter_prefix or dep.startswith(filter_prefix):
+-                merged_deps.add(dep)
++                merged_deps[dep] = None
+ 
+         for platform, deps in per_platform_items.items():
+             filtered = _filter_by_prefix(deps, filter_prefix) if filter_prefix else deps
+@@ -31,7 +32,7 @@ def merge_structured_dep_specs(specs, platforms, filter_prefix):
+                 merged_by_platform[platform] = set(filtered)
+                 continue
+ 
+-            existing.update(filtered)
++            existing.update(set(filtered))
+ 
+     deps, per_platform = compute_select(merged_deps, merged_by_platform)
+     return sorted(deps), per_platform
+diff --git a/rs/private/cargo_repository.bzl b/rs/private/cargo_repository.bzl
+index f9a3b9a..1d2b273 100644
+--- a/rs/private/cargo_repository.bzl
++++ b/rs/private/cargo_repository.bzl
+@@ -14,6 +14,8 @@ def _cargo_repository_impl(rctx):
+     download_and_extract(rctx, "cargo", "cargo", exec_triple)
+     rctx.file("BUILD.bazel", _build_file_tmpl.format(binary_ext = system_to_binary_ext(exec_triple.system)))
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ cargo_repository = repository_rule(
+diff --git a/rs/private/cargo_workspace_graph.bzl b/rs/private/cargo_workspace_graph.bzl
+index d258100..152813c 100644
+--- a/rs/private/cargo_workspace_graph.bzl
++++ b/rs/private/cargo_workspace_graph.bzl
+@@ -1,4 +1,5 @@
+ load("@bazel_skylib//lib:paths.bzl", "paths")
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ load("//rs/private:cfg_parser.bzl", "cfg_matches_expr_for_cfg_attrs", "triple_to_cfg_attrs")
+ load("//rs/private:resolver.bzl", "resolve")
+ load("//rs/private:select_utils.bzl", "compute_select")
+@@ -42,7 +43,7 @@ def shared_and_per_platform(platform_items, use_legacy_rules_rust_platforms):
+         if existing == None:
+             by_platform[platform] = set(items)
+         else:
+-            existing.update(items)
++            existing.update(set(items))
+ 
+     items, per_platform = compute_select([], by_platform)
+     return sorted(items), per_platform
+@@ -566,7 +567,7 @@ def resolve_cargo_workspace_members(
+         package_feature_resolutions = feature_resolutions_by_fq_crate[fq_crate(package["name"], package["version"])]
+         if "default" in package.get("features", {}):
+             for triple in platform_triples:
+-                package_feature_resolutions.features_enabled[triple].add("default")
++                package_feature_resolutions.features_enabled[triple]["default"] = None
+ 
+         fq_deps = workspace_fq_deps.get(package["name"], {})
+ 
+@@ -615,15 +616,15 @@ def resolve_cargo_workspace_members(
+                 if not versions:
+                     versions = set()
+                     workspace_dep_versions_by_name[dep_name] = versions
+-                versions.add(dep_fq)
++                versions[dep_fq] = None
+ 
+             target = dep.get("target")
+             match_info = cfg_match_info_for_target(target, platform_cfg_attrs, cfg_match_cache)
+ 
+             for triple in match_info.matches:
+                 if not is_first_party_dep or materialize_workspace_members:
+-                    workspace_dep_labels_by_triple[triple].add(":" + dep_name)
+-                feature_resolutions.features_enabled[triple].update(features)
++                    workspace_dep_labels_by_triple[triple][":" + dep_name] = None
++                feature_resolutions.features_enabled[triple].update(set(features))
+ 
+     for crate, annotation_versions in annotations.items():
+         for version_key, annotation in annotation_versions.items():
+@@ -638,10 +639,10 @@ def resolve_cargo_workspace_members(
+                 features_enabled = feature_resolutions_by_fq_crate[fq_crate(crate, version)].features_enabled
+                 if annotation.crate_features:
+                     for triple in platform_triples:
+-                        features_enabled[triple].update(annotation.crate_features)
++                        features_enabled[triple].update(set(annotation.crate_features))
+                 for triple, features in annotation.crate_features_select.items():
+                     if triple in features_enabled:
+-                        features_enabled[triple].update(features)
++                        features_enabled[triple].update(set(features))
+ 
+     resolve(ctx, resolver_packages, feature_resolutions_by_fq_crate, platform_cfg_attrs_by_triple, debug)
+ 
+@@ -751,11 +752,11 @@ def workspace_dep_data(
+                 if is_self_dep:
+                     continue
+ 
+-                target_deps[triple].add(bazel_target)
++                target_deps[triple][bazel_target] = None
+ 
+         if feature_resolutions:
+             for triple in platform_triples:
+-                crate_features[triple].update(exclude_deps_from_features(feature_resolutions.features_enabled[triple]))
++                crate_features[triple].update(set(exclude_deps_from_features(feature_resolutions.features_enabled[triple])))
+ 
+         bazel_package = paths.join(workspace_package, package_dir) if package_dir else workspace_package
+ 
+diff --git a/rs/private/cargo_workspace_graph_test.bzl b/rs/private/cargo_workspace_graph_test.bzl
+index 72168ba..813ba99 100644
+--- a/rs/private/cargo_workspace_graph_test.bzl
++++ b/rs/private/cargo_workspace_graph_test.bzl
+@@ -1,4 +1,5 @@
+ load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ load(":cargo_workspace_graph.bzl", "cargo_toml_dependencies", "compute_package_fq_deps", "new_feature_resolutions", "resolve_cargo_workspace_members", "resolve_package_facts", "select_package_fq_dep", "split_lockfile_packages")
+ load(":resolver.bzl", "resolve")
+ 
+@@ -298,7 +299,7 @@ def _resolve_handles_dependency_chains_deeper_than_previous_round_limit_impl(ctx
+             "version": "1.0.0",
+         })
+ 
+-    resolutions[-1].features_enabled[triple].add("forward")
++    resolutions[-1].features_enabled[triple]["forward"] = None
+     resolve(None, packages, resolutions_by_crate, {}, False)
+ 
+     asserts.true(env, "forward" in resolutions[0].features_enabled[triple])
+diff --git a/rs/private/clippy_repository.bzl b/rs/private/clippy_repository.bzl
+index 25bd0bc..af8f3e7 100644
+--- a/rs/private/clippy_repository.bzl
++++ b/rs/private/clippy_repository.bzl
+@@ -32,6 +32,8 @@ def _clippy_repository_impl(rctx):
+         ),
+     )
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ clippy_repository = repository_rule(
+diff --git a/rs/private/crate_repository.bzl b/rs/private/crate_repository.bzl
+index a0c7267..f606f34 100644
+--- a/rs/private/crate_repository.bzl
++++ b/rs/private/crate_repository.bzl
+@@ -53,7 +53,7 @@ def _crate_repository_impl(rctx):
+         type = "tar.gz",
+         canonical_id = get_default_canonical_id(rctx, urls = [url]),
+         headers = headers,
+-        strip_prefix = "%s-%s" % (crate_name, version),
++        stripPrefix = "%s-%s" % (crate_name, version),
+         sha256 = sha256,
+         auth = auth,
+     )
+@@ -64,6 +64,8 @@ def _crate_repository_impl(rctx):
+ 
+     rctx.file("BUILD.bazel", _generate_build_file(rctx, cargo_toml, purl_qualifiers = rctx.attr.sbom_extra_qualifiers))
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ crate_repository = repository_rule(
+@@ -104,6 +106,8 @@ def _local_crate_repository_impl(rctx):
+     # read the crate sources. Marking non-reproducible skips replanting
+     # and keeps the original absolute symlinks, which resolve from both
+     # views. See https://github.com/bazelbuild/bazel/issues/29515.
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = False)
+ 
+ local_crate_repository = repository_rule(
+diff --git a/rs/private/downloader.bzl b/rs/private/downloader.bzl
+index 4ba347c..1cbbe2d 100644
+--- a/rs/private/downloader.bzl
++++ b/rs/private/downloader.bzl
+@@ -108,7 +108,7 @@ def start_crate_registry_downloads(
+                     url,
+                     name + ".jsonl",
+                     headers = registry_auth_headers(cargo_credentials, source),
+-                    block = False,
++                    block = True,
+                 )
+                 state.in_flight_registry_fetches_by_crate[name] = in_flight_fetch
+ 
+diff --git a/rs/private/host_cargo_repository.bzl b/rs/private/host_cargo_repository.bzl
+index a6fb65d..52cae3e 100644
+--- a/rs/private/host_cargo_repository.bzl
++++ b/rs/private/host_cargo_repository.bzl
+@@ -4,6 +4,8 @@ def _host_cargo_repository_impl(rctx):
+     rctx.file("defs.bzl", 'RS_HOST_CARGO_LABEL = Label("%s")' % rctx.attr.cargo)
+     rctx.file("BUILD.bazel", 'exports_files(["defs.bzl"])')
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ host_cargo_repository = repository_rule(
+diff --git a/rs/private/registry_config_repository.bzl b/rs/private/registry_config_repository.bzl
+index 163725e..6bcc28b 100644
+--- a/rs/private/registry_config_repository.bzl
++++ b/rs/private/registry_config_repository.bzl
+@@ -21,6 +21,8 @@ def _registry_config_repository_impl(rctx):
+     rctx.file("BUILD.bazel", "exports_files(['dl'])")
+ 
+     # Registry config can change upstream, so this repository is intentionally not reproducible.
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = False)
+ 
+ registry_config_repository = repository_rule(
+diff --git a/rs/private/resolver.bzl b/rs/private/resolver.bzl
+index 93b1fd2..89570d8 100644
+--- a/rs/private/resolver.bzl
++++ b/rs/private/resolver.bzl
+@@ -1,3 +1,4 @@
++load("//rs/private:bazel7_compat.bzl", "set_difference_update", set = "make_set")
+ load("//rs/private:cfg_parser.bzl", "cfg_matches_expr_for_cfg_attrs")
+ 
+ def _count(feature_resolutions_by_fq_crate):
+@@ -87,7 +88,7 @@ def _resolve_one_round(packages, dirty_package_indices, cfg_attrs_by_triple, deb
+                 triple_deps = deps[triple] if kind == "normal" else feature_resolutions.build_deps[triple]
+                 if package_changed or bazel_target not in triple_deps:
+                     package_changed = True
+-                    triple_deps.add(bazel_target)
++                    triple_deps[bazel_target] = None
+ 
+                 if has_alias:
+                     feature_resolutions.aliases[bazel_target] = dep_name.replace("-", "_")
+@@ -97,21 +98,21 @@ def _resolve_one_round(packages, dirty_package_indices, cfg_attrs_by_triple, deb
+                 dep_features = dep.get("features")
+                 if dep_features:
+                     prev_length = len(triple_features)
+-                    triple_features.update(dep_features)
++                    triple_features.update(set(dep_features))
+                     if prev_length != len(triple_features):
+-                        new_dirty_package_indices.add(dep_feature_resolutions.package_index)
++                        new_dirty_package_indices[dep_feature_resolutions.package_index] = None
+                 if not to_remove:
+                     to_remove = set()
+-                to_remove.add(triple)
++                to_remove[triple] = None
+ 
+             if to_remove:
+                 if len(to_remove) == len(match):
+                     dep["bazel_target"] = None
+                 else:
+-                    match.difference_update(to_remove)
++                    set_difference_update(match, to_remove)
+ 
+         if package_changed:
+-            new_dirty_package_indices.add(index)
++            new_dirty_package_indices[index] = None
+ 
+     return new_dirty_package_indices
+ 
+@@ -140,7 +141,7 @@ def _propagate_feature_enablement(
+                 if idx == -1:
+                     if feature not in feature_set:
+                         package_changed = True
+-                        feature_set.add(feature)
++                        feature_set[feature] = None
+                     continue
+ 
+                 dep_name = feature[:idx]
+@@ -163,14 +164,14 @@ def _propagate_feature_enablement(
+                             dep_feature_resolutions = dep["feature_resolutions"]
+                             triple_features = dep_feature_resolutions.features_enabled[triple]
+                             if dep_feature not in triple_features:
+-                                triple_features.add(dep_feature)
+-                                dirty_package_indices.add(dep_feature_resolutions.package_index)
++                                triple_features[dep_feature] = None
++                                dirty_package_indices[dep_feature_resolutions.package_index] = None
+                         break
+ 
+                 # Only optional deps need to be explicitly enabled when a subfeature is toggled.
+                 if dep_optional and (not optional_marker) and dep_name not in feature_set:
+                     package_changed = True
+-                    feature_set.add(dep_name)
++                    feature_set[dep_name] = None
+ 
+                 if not found and debug:
+                     print("Skipping enabling subfeature", feature, "for", package["name"], "@", package["version"], "it's not a dep...")
+diff --git a/rs/private/rust_crate.bzl b/rs/private/rust_crate.bzl
+index ea81c6c..e498346 100644
+--- a/rs/private/rust_crate.bzl
++++ b/rs/private/rust_crate.bzl
+@@ -201,7 +201,6 @@ def rust_crate(
+             rustc_flags = rustc_flags + ["--cap-lints=allow"],
+             tags = crate_tags,
+             target_compatible_with = target_compatible_with,
+-            package_metadata = [name + "_package_metadata"],
+             skip_deps_verification = skip_deps_verification,
+             visibility = crate_visibility,
+             skip_per_crate_rustc_flags = True,
+diff --git a/rs/private/rust_repository_utils.bzl b/rs/private/rust_repository_utils.bzl
+index 74706ea..a8e7472 100644
+--- a/rs/private/rust_repository_utils.bzl
++++ b/rs/private/rust_repository_utils.bzl
+@@ -97,7 +97,7 @@ def download_and_extract(rctx, tool, dir, triple, sha256 = None):
+         archive.urls,
+         sha256 = archive.sha256,
+         auth = archive.auth,
+-        strip_prefix = archive.strip_prefix,
++        stripPrefix = archive.strip_prefix,
+     )
+ 
+ RUST_REPOSITORY_COMMON_ATTR = {
+diff --git a/rs/private/rustc_repository.bzl b/rs/private/rustc_repository.bzl
+index 3db04e9..577d01e 100644
+--- a/rs/private/rustc_repository.bzl
++++ b/rs/private/rustc_repository.bzl
+@@ -121,6 +121,8 @@ def _rustc_repository_impl(rctx):
+         build_content += "\n" + _proc_macro_srv_build_file_tmpl.format(binary_ext = binary_ext)
+     rctx.file("BUILD.bazel", build_content)
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ rustc_repository = repository_rule(
+diff --git a/rs/private/rustc_src_repository.bzl b/rs/private/rustc_src_repository.bzl
+index bb084b1..925cde4 100644
+--- a/rs/private/rustc_src_repository.bzl
++++ b/rs/private/rustc_src_repository.bzl
+@@ -1,6 +1,7 @@
+ load("@bazel_skylib//lib:paths.bzl", "paths")
+ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "get_auth")
+ load("//rs/platforms:triples.bzl", "ALL_TARGET_TRIPLES")
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ load(
+     "//rs/private:cargo_workspace_graph.bzl",
+     "fq_crate",
+@@ -363,8 +364,8 @@ def _generate_source_stdlib_build_files(rctx, source_root, root_build):
+         if not dep_data:
+             continue
+         if package_dir:
+-            crate_package_dirs.add(package_dir)
+-            rustc_srcs.add(_target_label(bazel_package, "srcs"))
++            crate_package_dirs[package_dir] = None
++            rustc_srcs[_target_label(bazel_package, "srcs")] = None
+ 
+         root_build.append("""\
+ alias(
+@@ -401,7 +402,7 @@ alias(
+         fq = fq_crate(name, version)
+         bazel_package = package["bazel_package"]
+         target_name = package["target_name"]
+-        rustc_srcs.add(_target_label(bazel_package, "srcs"))
++        rustc_srcs[_target_label(bazel_package, "srcs")] = None
+         root_build.append("""\
+ alias(
+     name = "{fq}",
+@@ -427,7 +428,7 @@ alias(
+         bazel_package = _source_package(source_root, package_dir)
+         if package_dir not in crate_package_dirs:
+             rctx.file(paths.join(bazel_package, "BUILD.bazel"), _srcs_filegroup())
+-        rustc_srcs.add(_target_label(bazel_package, "srcs"))
++        rustc_srcs[_target_label(bazel_package, "srcs")] = None
+ 
+     _prune_rustc_src(rctx, source_root)
+     rctx.file(paths.join(source_root, "defs.bzl"), "RESOLVED_PLATFORMS = []")
+diff --git a/rs/private/select_utils.bzl b/rs/private/select_utils.bzl
+index 392e960..ba28a85 100644
+--- a/rs/private/select_utils.bzl
++++ b/rs/private/select_utils.bzl
+@@ -1,3 +1,5 @@
++load("//rs/private:bazel7_compat.bzl", "set_difference_update", "set_intersection_update", set = "make_set")
++
+ def compute_select(non_platform_items, platform_items):
+     if not platform_items:
+         return non_platform_items, {}
+@@ -5,17 +7,17 @@ def compute_select(non_platform_items, platform_items):
+     item_values = platform_items.values()
+     common_items = set(item_values[0])
+     for values in item_values[1:]:
+-        common_items.intersection_update(values)
++        set_intersection_update(common_items, values)
+         if not common_items:
+             break
+ 
+-    common_items.update(non_platform_items)
++    common_items.update(set(non_platform_items))
+ 
+     branches = {}
+     for platform, items in platform_items.items():
+         items = set(items)
+-        items.difference_update(non_platform_items)
+-        items.difference_update(common_items)
++        set_difference_update(items, non_platform_items)
++        set_difference_update(items, common_items)
+         if items:
+             branches[platform] = sorted(items)
+ 
+diff --git a/rs/private/stdlib_repository.bzl b/rs/private/stdlib_repository.bzl
+index 98c2889..6b3f2c5 100644
+--- a/rs/private/stdlib_repository.bzl
++++ b/rs/private/stdlib_repository.bzl
+@@ -39,6 +39,8 @@ def _stdlib_repository_impl(rctx):
+         ),
+     )
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ stdlib_repository = repository_rule(
+diff --git a/rs/private/toolchain_labels_repository.bzl b/rs/private/toolchain_labels_repository.bzl
+index b33f4f2..e3e5f36 100644
+--- a/rs/private/toolchain_labels_repository.bzl
++++ b/rs/private/toolchain_labels_repository.bzl
+@@ -6,6 +6,8 @@ def _toolchain_labels_repository_impl(rctx):
+         "def rust_toolchain_component_label(label):\n    return Label(label)\n",
+     )
+     rctx.file("BUILD.bazel", 'exports_files(["defs.bzl"])')
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ toolchain_labels_repository = repository_rule(
+diff --git a/rs/private/toolchains_repository.bzl b/rs/private/toolchains_repository.bzl
+index 5366c98..a9a7b40 100644
+--- a/rs/private/toolchains_repository.bzl
++++ b/rs/private/toolchains_repository.bzl
+@@ -53,6 +53,8 @@ declare_rust_analyzer_toolchains(
+         ),
+     )
+ 
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ toolchains_repository = repository_rule(
+diff --git a/rs/rules_rust.bzl b/rs/rules_rust.bzl
+index d355397..801f171 100644
+--- a/rs/rules_rust.bzl
++++ b/rs/rules_rust.bzl
+@@ -1,6 +1,7 @@
+ """Module extension that provisions the rules_rust repository."""
+ 
+ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ 
+ _patch = tag_class(
+     doc = "Additional patches to apply to the pinned rules_rust archive.",
+@@ -22,7 +23,7 @@ def _rules_rust_impl(mctx):
+     for mod in mctx.modules:
+         for tag in mod.tags.patch:
+             patches.extend(tag.patches)
+-            strip_values.add(tag.strip)
++            strip_values[tag.strip] = None
+ 
+     if len(strip_values) > 1:
+         fail("Found conflicting strip values in rules_rust.patch tags")
+@@ -35,7 +36,7 @@ def _rules_rust_impl(mctx):
+         strip_prefix = "rules_rust-fb6108715c7e1ab6b0c78b37aef2388e5aeb7cc3",
+         url = "https://github.com/hermeticbuild/rules_rust/releases/download/source-fb6108715c7e1ab6b0c78b37aef2388e5aeb7cc3/rules_rust-fb6108715c7e1ab6b0c78b37aef2388e5aeb7cc3.tar.gz",
+         patches = patches,
+-        patch_strip = strip,
++        patch_args = ["-p%d" % strip],
+     )
+ 
+     return mctx.extension_metadata(reproducible = True)
+diff --git a/rs/rules_rust_bindgen.bzl b/rs/rules_rust_bindgen.bzl
+index 9e4ba61..d1f213c 100644
+--- a/rs/rules_rust_bindgen.bzl
++++ b/rs/rules_rust_bindgen.bzl
+@@ -167,6 +167,8 @@ load("@rules_rs//rs/toolchains:declare_bindgen_toolchains.bzl", "declare_bindgen
+ declare_bindgen_toolchains()
+ """,
+     )
++    if not hasattr(rctx, "repo_metadata"):
++        return None
+     return rctx.repo_metadata(reproducible = True)
+ 
+ _rules_rust_bindgen_repo = repository_rule(
+diff --git a/rs/toolchains/module_extension.bzl b/rs/toolchains/module_extension.bzl
+index d110add..fdb4d84 100644
+--- a/rs/toolchains/module_extension.bzl
++++ b/rs/toolchains/module_extension.bzl
+@@ -4,6 +4,7 @@ load("@bazel_lib//lib:repo_utils.bzl", "repo_utils")
+ load("@rules_rust//rust/platform:triple.bzl", _parse_triple = "triple")
+ load("//rs/experimental/miri/private:miri_repository.bzl", "miri_repository")
+ load("//rs/platforms:triples.bzl", "SUPPORTED_EXEC_TRIPLES", "SUPPORTED_TIER_1_AND_2_TRIPLES", "SUPPORTED_TIER_3_TRIPLES")
++load("//rs/private:bazel7_compat.bzl", set = "make_set")
+ load("//rs/private:bpf_linker_repository.bzl", "BPF_LINKER_SUPPORTED_EXEC_TRIPLES", "declare_bpf_linker_repository")
+ load("//rs/private:cargo_repository.bzl", "cargo_repository")
+ load("//rs/private:clippy_repository.bzl", "clippy_repository")
+@@ -183,13 +184,13 @@ def _toolchains_impl(mctx):
+     upstream_versions = set([])
+ 
+     for tag in version_tags:
+-        versions.add(tag.version)
+-        rustfmt_versions.add(tag.rustfmt_version or tag.version)
+-        rust_analyzer_versions.add(tag.rust_analyzer_version or tag.version)
++        versions[tag.version] = None
++        rustfmt_versions[tag.rustfmt_version or tag.version] = None
++        rust_analyzer_versions[tag.rust_analyzer_version or tag.version] = None
+         if not tag.use_rust_redist:
+-            upstream_versions.add(tag.version)
+-            upstream_versions.add(tag.rustfmt_version or tag.version)
+-            upstream_versions.add(tag.rust_analyzer_version or tag.version)
++            upstream_versions[tag.version] = None
++            upstream_versions[tag.rustfmt_version or tag.version] = None
++            upstream_versions[tag.rust_analyzer_version or tag.version] = None
+ 
+     miri_versions = set([])
+     miri_repo_configs = {}
+@@ -213,7 +214,7 @@ def _toolchains_impl(mctx):
+             if not existing:
+                 miri_repo_configs[tag.name] = tag
+                 miri_repo_tags.append(tag)
+-                miri_versions.add(tag.version)
++                miri_versions[tag.version] = None
+ 
+     rust_versions = versions | miri_versions
+     all_versions = rust_versions | rustfmt_versions | rust_analyzer_versions
+@@ -243,14 +244,14 @@ def _toolchains_impl(mctx):
+                 rust_redist_manifest_url(base_version),
+                 manifest_path,
+                 allow_fail = not locked_zstd,
+-                block = False,
++                block = True,
+             ),
+             path = manifest_path,
+         )
+ 
+     rust_redist_archives = {}
+     for version, request in pending_manifests.items():
+-        result = request.token.wait()
++        result = request.token
+         if not result.success:
+             continue
+ 
+@@ -302,7 +303,7 @@ def _toolchains_impl(mctx):
+             token = mctx.download(
+                 DEFAULT_STATIC_RUST_URL_TEMPLATES[0].format(suburl) + ".sha256",
+                 sha_filename,
+-                block = False,
++                block = True,
+             ),
+             file = sha_filename,
+         )
+@@ -361,7 +362,6 @@ def _toolchains_impl(mctx):
+ 
+     # Finish downloads and record facts.
+     for archive_path, req in pending_downloads.items():
+-        req.token.wait()
+         sha_text = mctx.read(req.file).strip()
+         sha = sha_text.split(" ")[0] if sha_text else ""
+         if not sha:
+diff --git a/rs/private/bazel7_compat.bzl b/rs/private/bazel7_compat.bzl
+new file mode 100644
+index 0000000..8b9cbab
+--- /dev/null
++++ b/rs/private/bazel7_compat.bzl
+@@ -0,0 +1,17 @@
++"""Dictionary-backed sets for Bazel 7."""
++
++def make_set(items = []):
++    """Returns a dictionary whose keys represent a mutable set."""
++    return {item: None for item in items}
++
++def set_difference_update(values, items):
++    """Removes items from a dictionary-backed set."""
++    for item in list(items):
++        values.pop(item, None)
++
++def set_intersection_update(values, items):
++    """Retains only items that occur in both sets."""
++    allowed = make_set(items)
++    for item in list(values):
++        if item not in allowed:
++            values.pop(item)

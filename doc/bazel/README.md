@@ -46,7 +46,14 @@ register_toolchains(
 )
 ```
 
-Bazel 8.5.1 or newer is required. The standalone example under `examples/bazel`
+Bazel 8.5.1 or newer can be used without compatibility patches. To use Bazel 7.5.0,
+copy `bazel/rules_rs_bazel7.patch` and `bazel/llvm_bazel7.patch` into your project,
+and add the corresponding `single_version_override` declarations from iceoryx2's
+`MODULE.bazel` to your root `MODULE.bazel`. Patch labels must refer to files in
+your root repository; overrides in dependencies are ignored. Also add
+`build --experimental_cc_static_library` to your `.bazelrc`.
+
+The standalone example under `examples/bazel` includes this configuration and
 uses a local path override instead of a Git revision.
 
 ### Setup via Workspace (legacy)

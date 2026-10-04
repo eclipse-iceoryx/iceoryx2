@@ -19,7 +19,7 @@
 module(
     name = "iceoryx2",
     version = "0.10.999",
-    bazel_compatibility = [">=8.5.1"],
+    bazel_compatibility = [">=7.5.0"],
 )
 
 bazel_dep(name = "bazel_features", version = "1.51.0")
@@ -84,3 +84,16 @@ crate.from_cargo(
     ],
 )
 use_repo(crate, "crate_index")
+
+# Compatibility with Bazel 7.5.
+single_version_override(
+    module_name = "rules_rs",
+    patch_strip = 1,
+    patches = ["//bazel:rules_rs_bazel7.patch"],
+)
+
+single_version_override(
+    module_name = "llvm",
+    patch_strip = 1,
+    patches = ["//bazel:llvm_bazel7.patch"],
+)

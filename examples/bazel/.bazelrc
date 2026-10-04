@@ -13,4 +13,7 @@
 # Use C++17 standard
 build --cxxopt=-std=c++17
 
+# Required by LLVM's runtime archive rules on Bazel 7.
+build --experimental_cc_static_library
+
 # rules_rs resolves Rust dependencies directly from Cargo.lock.

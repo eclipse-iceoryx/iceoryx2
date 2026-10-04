@@ -13,7 +13,7 @@
 module(
     name = "iceoryx2_bazel_example",
     version = "0.0.0",
-    bazel_compatibility = [">=8.5.1"],
+    bazel_compatibility = [">=7.5.0"],
 )
 
 # ==============================================================================
@@ -34,6 +34,19 @@ bazel_dep(name = "iceoryx2")
 local_path_override(
     module_name = "iceoryx2",
     path = "../..",
+)
+
+# Overrides apply only in the root module; the patch files link to iceoryx2's copies.
+single_version_override(
+    module_name = "rules_rs",
+    patch_strip = 1,
+    patches = ["//:rules_rs_bazel7.patch"],
+)
+
+single_version_override(
+    module_name = "llvm",
+    patch_strip = 1,
+    patches = ["//:llvm_bazel7.patch"],
 )
 
 # ==============================================================================
