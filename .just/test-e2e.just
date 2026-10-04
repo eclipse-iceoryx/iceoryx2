@@ -63,7 +63,10 @@ _test-e2e-dispatch what *flags:
         echo "Usage: just test-e2e <scope> [flags]"
         echo ""
         echo "Scope:"
+        echo "  sdk                    run end-to-end tests for the main workspace"
+        echo "  integrations-zenoh     run end-to-end tests for the zenoh workspace"
         echo "  integrations-ros2      run end-to-end tests for the ros2 workspace (requires a sourced ROS 2 env)"
+        echo "  all                    run end-to-end tests for every workspace"
         echo ""
         echo "Flags:"
         echo "  --category <name>      select tests of this category, repeatable"
@@ -74,9 +77,6 @@ _test-e2e-dispatch what *flags:
         echo ""
         echo "Test suites:"
         just _test-e2e-suites | just _test-e2e-print-suite-table
-        echo ""
-        echo "Artifacts:"
-        just _test-e2e-artifacts | just _test-e2e-print-artifact-table
     }
 
     PARSED_ARGS=$(just _parse-test-e2e-args {{flags}}) || exit $?
@@ -97,10 +97,10 @@ _test-e2e-dispatch what *flags:
             show_help
             exit 1
             ;;
-        integrations-ros2)
+        sdk|integrations-zenoh|integrations-ros2|all)
             ;;
         *)
-            echo "Error: unknown scope '{{what}}' (expected: integrations-ros2)" >&2
+            echo "Error: unknown scope '{{what}}' (expected: sdk, integrations-zenoh, integrations-ros2, all)" >&2
             exit 1
             ;;
     esac
@@ -142,15 +142,6 @@ _test-e2e-artifacts:
     ros2-examples           _test-e2e-build-ros2-examples           Rust examples of the ros2 workspace
     ros2-colcon-examples    _setup-integrations-ros2-examples       ROS 2 packages of the ros2 workspace
     EOF
-
-# Formats artifact rows from stdin as a table with a heading.
-[private]
-_test-e2e-print-artifact-table:
-    #!/usr/bin/env bash
-    ARTIFACT_WIDTH=24
-    RECIPE_WIDTH=40
-    { echo "ARTIFACT RECIPE DESCRIPTION"; cat; } \
-        | just _test-e2e-print-table $ARTIFACT_WIDTH $RECIPE_WIDTH
 
 
 # The end-to-end test suites. Each is a directory relative to the repository
@@ -241,7 +232,69 @@ _test-e2e-find-tests scope categories filter:
         done
     done <<< "$SUITES"
 
-# Builds what the ros2 tests from stdin need.
+# Builds the artifacts of the tests from stdin.
+[private]
+[no-exit-message]
+_test-e2e-build-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    TESTS=$(cat)
+    for SCOPE in $(echo "$TESTS" | awk '{ print $1 }' | awk '!seen[$0]++'); do
+        echo "$TESTS" | awk -v scope="$SCOPE" '$1 == scope' | just "_test-e2e-build-$SCOPE"
+    done
+
+# Runs the tests from stdin.
+[private]
+[no-exit-message]
+_test-e2e-run-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    TESTS=$(cat)
+
+    # Runs every scope before failing so one scope does not hide another.
+    STATUS=0
+    for SCOPE in $(echo "$TESTS" | awk '{ print $1 }' | awk '!seen[$0]++'); do
+        echo "$TESTS" | awk -v scope="$SCOPE" '$1 == scope' | just "_test-e2e-run-$SCOPE" || STATUS=1
+    done
+    exit $STATUS
+
+# Builds the artifacts of the sdk tests from stdin.
+[private]
+[no-exit-message]
+_test-e2e-build-sdk:
+    @just _test-e2e-build-artifacts
+
+# Runs the sdk tests from stdin.
+[private]
+[no-exit-message]
+_test-e2e-run-sdk:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    TESTS=$(cat)
+
+    # Python tests spawn `python` and need the venv holding the bindings.
+    if echo "$TESTS" | grep -q ' examples-python \| cross-language '; then
+        eval "$(poetry --project iceoryx2-ffi/python env activate)"
+    fi
+
+    echo "$TESTS" | just _test-e2e-run-tests
+
+# Builds the artifacts of the zenoh tests from stdin.
+[private]
+[no-exit-message]
+_test-e2e-build-integrations-zenoh:
+    @just _test-e2e-build-artifacts
+
+# Runs the zenoh tests from stdin.
+[private]
+[no-exit-message]
+_test-e2e-run-integrations-zenoh:
+    @just _test-e2e-run-tests
+
+# Builds the artifacts of the ros2 tests from stdin.
 [private]
 [no-exit-message]
 _test-e2e-build-integrations-ros2:
@@ -415,6 +468,8 @@ _test-e2e-run-tests:
     C_GREEN='\033[1;32m'
     C_YELLOW='\033[1;33m'
     C_OFF='\033[0m'
+
+    export RUST_BACKTRACE=full
 
     # Ensure expect is installed
     if ! command -v expect &>/dev/null; then
