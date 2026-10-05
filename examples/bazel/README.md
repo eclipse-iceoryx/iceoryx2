@@ -1,7 +1,9 @@
 # iceoryx2 Bazel Example
 
 This directory contains a standalone Bazel example demonstrating how to use
-iceoryx2 with Bazel modules (bzlmod).
+iceoryx2 with Bazel modules (bzlmod) and `rules_rs`. Bazel 7.5.0 or newer is
+supported with the included compatibility patches. Cargo dependencies are
+resolved directly from iceoryx2's `Cargo.lock`; no repin step is needed.
 
 ## Quick Start
 
@@ -45,6 +47,11 @@ bazel run //cxx:example_publisher_cpp
 
 To use iceoryx2 in your own Bazel project:
 
+The two patch files in this directory are symlinks to `../../bazel`. When copying
+this example, copy the actual patch files into your project so the root module's
+`single_version_override` declarations can resolve them. Keep
+`build --experimental_cc_static_library` in `.bazelrc` when using Bazel 7.
+
 1. **Copy this directory** as a starting template
 2. **Update MODULE.bazel**:
    * Change `local_path_override` to point to your iceoryx2 location, or
@@ -53,7 +60,7 @@ To use iceoryx2 in your own Bazel project:
      git_override(
          module_name = "iceoryx2",
          remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
-         commit = "v0.8.1", # or whatever release you'd like to use
+         commit = "<commit>", # or whatever release you'd like to use
      )
      ```
 

@@ -10,11 +10,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library", "rust_test")
+load("@rules_rs//rs:rust_shared_library.bzl", "rust_shared_library")
+load("@rules_rs//rs:rust_static_library.bzl", "rust_static_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
 load("//bazel/cbindgen:cbindgen.bzl", "rust_cbindgen_headers")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -23,10 +25,10 @@ filegroup(
 
 rust_cbindgen_headers(
     name = "iceoryx2-ffi-c-cbindgen",
-    manifest_dir = "Cargo.toml",
-    config = "cbindgen.toml",
     srcs = glob(["src/**/*.rs"]) + ["//:all_srcs"],
+    config = "cbindgen.toml",
     header = "include/iox2/iceoryx2.h",
+    manifest_dir = "Cargo.toml",
 )
 
 ICEORYX2_FFI_C_SRC = glob(["src/**/*.rs"])
@@ -60,52 +62,61 @@ ICEORYX2_FFI_C_PROC_MACRO_DEPS = [
 rust_shared_library(
     name = "iceoryx2-ffi-c-shared-rust",
     srcs = ICEORYX2_FFI_C_SRC,
-    tags = ["exclusive"],
     crate_features = ICEORYX2_FFI_C_FEATURES,
-    deps = ICEORYX2_FFI_C_DEPS,
     proc_macro_deps = ICEORYX2_FFI_C_PROC_MACRO_DEPS,
+    tags = ["exclusive"],
+    deps = ICEORYX2_FFI_C_DEPS,
 )
 
 rust_static_library(
     name = "iceoryx2-ffi-c-static-rust",
     srcs = ICEORYX2_FFI_C_SRC,
-    tags = ["exclusive"],
     crate_features = ICEORYX2_FFI_C_FEATURES,
-    deps = ICEORYX2_FFI_C_DEPS,
     proc_macro_deps = ICEORYX2_FFI_C_PROC_MACRO_DEPS,
+    tags = ["exclusive"],
+    deps = ICEORYX2_FFI_C_DEPS,
 )
 
 # Combined library with header file
 
+# POSIX timers and shared memory live in librt on the toolchain's glibc.
+ICEORYX2_FFI_C_LINKOPTS = select({
+    "@platforms//os:linux": ["-lrt"],
+    "//conditions:default": [],
+})
+
 cc_library(
     name = "iceoryx2-ffi-c-shared",
-    hdrs = [ "include/iox2/iceoryx2.h" ],
-    includes = [ "include" ],
+    hdrs = ["include/iox2/iceoryx2.h"],
+    includes = ["include"],
+    linkopts = ICEORYX2_FFI_C_LINKOPTS,
+    linkstatic = False,
     deps = [
         ":iceoryx2-ffi-c-cbindgen",
         ":iceoryx2-ffi-c-shared-rust",
     ],
-    linkstatic = False,
 )
 
 cc_library(
     name = "iceoryx2-ffi-c-static",
-    hdrs = [ "include/iox2/iceoryx2.h" ],
-    includes = [ "include" ],
+    hdrs = ["include/iox2/iceoryx2.h"],
+    includes = ["include"],
+    linkopts = ICEORYX2_FFI_C_LINKOPTS,
+    linkstatic = True,
     deps = [
         ":iceoryx2-ffi-c-cbindgen",
         ":iceoryx2-ffi-c-static-rust",
     ],
-    linkstatic = True,
 )
 
 rust_test(
     name = "iceoryx2-ffi-c-tests",
     srcs = glob(["src/**/*.rs"]),
     crate_features = ICEORYX2_FFI_C_FEATURES,
-    deps = ICEORYX2_FFI_C_DEPS + [
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing"],
     proc_macro_deps = ICEORYX2_FFI_C_PROC_MACRO_DEPS + [
         "@crate_index//:generic-tests",
+    ],
+    deps = ICEORYX2_FFI_C_DEPS + [
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )

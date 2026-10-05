@@ -10,9 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_test_suite")
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -29,13 +30,13 @@ rust_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-cal",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:anyhow",
         "@crate_index//:serde",
     ],
@@ -47,11 +48,11 @@ rust_test_suite(
     crate_features = ["std"],
     deps = [
         ":iceoryx2-userland-record-and-replay",
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:serde_test",
     ],
 )

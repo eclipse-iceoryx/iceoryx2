@@ -15,31 +15,46 @@ can follow this abbreviated guide, and ensure the following is present in your
 `MODULE.bazel` or `MODULE` file:
 
 ```bazel
-bazel_dep(name = "iceoryx2", version = "0.8.1")
-bazel_dep(name = "rules_rust", version = "0.68.1")
+bazel_dep(name = "iceoryx2", version = "0.10.999")
+bazel_dep(name = "rules_rs", version = "0.0.112")
+bazel_dep(name = "llvm", version = "0.8.18")
 
 # ==============================================================================
 # Iceoryx2 Setup
 # ==============================================================================
 
-
 git_override(
-    module_name = iceoryx2,
+    module_name = "iceoryx2",
     remote = "https://github.com/eclipse-iceoryx/iceoryx2.git",
     # Insert your git ref below. It can be a tag, commit, or branch
-    commit = "0.8.1"
+    commit = "<commit>",
 )
 
 # ==============================================================================
 # Rust Setup (Example)
 # ==============================================================================
 
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust = use_extension("@rules_rs//rs/toolchains:module_extension.bzl", "toolchains")
 rust.toolchain(
     edition = "2024",
-    versions = ["1.89.0"],
+    version = "1.89.0",
+)
+use_repo(rust, "default_rust_toolchains")
+register_toolchains(
+    "@default_rust_toolchains//...",
+    "@llvm//toolchain:all",
 )
 ```
+
+Bazel 8.5.1 or newer can be used without compatibility patches. To use Bazel 7.5.0,
+copy `bazel/rules_rs_bazel7.patch` and `bazel/llvm_bazel7.patch` into your project,
+and add the corresponding `single_version_override` declarations from iceoryx2's
+`MODULE.bazel` to your root `MODULE.bazel`. Patch labels must refer to files in
+your root repository; overrides in dependencies are ignored. Also add
+`build --experimental_cc_static_library` to your `.bazelrc`.
+
+The standalone example under `examples/bazel` includes this configuration and
+uses a local path override instead of a Git revision.
 
 ### Setup via Workspace (legacy)
 
@@ -49,28 +64,24 @@ migrate to Bazel Modules (see [Bazel Migration Guide](https://bazel.build/extern
 
 ### Initial Build
 
-For the initial build, you must sync dependencies with crates.io.
-This can be done by running one of the following commands:
+Build directly:
 
 ```bash
-CARGO_BAZEL_REPIN=1 bazel sync --only=crate_index
+bazel build //...
 ```
 
-or
+`rules_rs` reads `Cargo.toml` and `Cargo.lock` directly and resolves dependencies
+incrementally. No `Cargo.Bazel.lock`, `bazel sync`, or `CARGO_BAZEL_REPIN` is needed.
+After changing dependencies, update `Cargo.lock` with Cargo and build again.
+Bazel records repository metadata in `MODULE.bazel.lock`; include changes to this
+file when updating dependencies.
 
-```bash
-CARGO_BAZEL_REPIN=1 bazel build //...
-```
+The `crate.from_cargo` declaration in the root `MODULE.bazel` lists the supported
+host and target triples. Add both execution and target triples when introducing
+another platform. Bindings use the self-contained bindgen toolchains supplied by
+`rules_rs`, so consumers do not need a separate libclang toolchain.
 
-To make syncing dependencies automatic for every build, add the
-following line to your `.bazelrc` file:
-
-```bazel
-build --action_env=CARGO_BAZEL_REPIN=true
-```
-
-For more details, refer to the
-[Crate Universe Repinning Guide](https://bazelbuild.github.io/rules_rust/crate_universe.html#repinning--updating-dependencies-1).
+For details, see the [rules_rs documentation](https://github.com/hermeticbuild/rules_rs).
 
 ## Linking iceoryx2 in Your `BUILD.bazel`
 
@@ -214,9 +225,9 @@ followed to maintain consistency between both build systems:
 file, the same crate must also be referenced in the corresponding target
 within the `BUILD.bazel` file.
 
-1. **In `WORKSPACE.bazel`**: If a new crate is added to the root `Cargo.toml`
-file, it must also be included in the `crate_index` target located in the
-`WORKSPACE.bazel` file.
+1. **In `MODULE.bazel`**: Workspace dependencies are resolved automatically from
+`Cargo.toml` and `Cargo.lock`. Add `crate.annotation` entries when a dependency
+requires custom build settings or generated binaries.
 
 ### Common Pitfalls
 

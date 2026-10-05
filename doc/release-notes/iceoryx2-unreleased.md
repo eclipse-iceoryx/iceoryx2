@@ -49,6 +49,7 @@
     conflicts when merging.
 -->
 
+* [#2057](https://github.com/eclipse-iceoryx/iceoryx2/issues/2057) Migrate Bazel Rust builds to rules_rs; support Bazel 7.5.0 or newer with compatibility patches
 * [#2063](https://github.com/eclipse-iceoryx/iceoryx2/issues/2063) Add testing function to remove all resources under a specific config
 
 ### New API features

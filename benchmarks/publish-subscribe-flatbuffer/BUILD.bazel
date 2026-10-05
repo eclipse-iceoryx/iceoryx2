@@ -10,9 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -24,10 +24,10 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     compile_data = ["src/payload_data.bfbs"],
     deps = [
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
         "@crate_index//:flatbuffers",
     ],
