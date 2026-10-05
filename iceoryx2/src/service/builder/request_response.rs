@@ -944,7 +944,7 @@ impl<
             |service_config| {
                 UniqueServiceId::from_request_response_service::<ServiceType>(
                     service_config.name(),
-                    self.base.shared_node.config(),
+                    self.base.shared_node.id_generator(),
                 )
             },
         )?;

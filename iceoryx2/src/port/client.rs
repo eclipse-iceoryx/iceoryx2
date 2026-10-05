@@ -468,7 +468,7 @@ impl<
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
         let client_id = fail!(from origin,
-            when UniqueClientId::new::<Service>(client_factory.config.port_name, service.shared_node().config()),
+            when UniqueClientId::new::<Service>(client_factory.config.port_name, service.shared_node().id_generator()),
             with ClientCreateError::UnableToGenerateUniqueClientId, "{msg} since the UniqueClientId could not be generated.");
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

@@ -419,7 +419,7 @@ impl<Service: service::Service> Notifier<Service> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
         let notifier_id = fail!(from origin,
-            when UniqueNotifierId::new::<Service>(config.port_name, service.shared_node().config()),
+            when UniqueNotifierId::new::<Service>(config.port_name, service.shared_node().id_generator()),
             with NotifierCreateError::UnableToGenerateUniqueNotifierId, "{msg} since the UniqueNotifierId could not be generated.");
 
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

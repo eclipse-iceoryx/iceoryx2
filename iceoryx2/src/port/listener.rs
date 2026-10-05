@@ -195,7 +195,7 @@ impl<Service: service::Service> Listener<Service> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
         let listener_id = fail!(from origin,
-            when UniqueListenerId::new::<Service>(config.port_name, service.shared_node().config()),
+            when UniqueListenerId::new::<Service>(config.port_name, service.shared_node().id_generator()),
             with ListenerCreateError::UnableToGenerateUniqueListenerId,
             "{msg} since the UniqueListenerId could not be generated");
 

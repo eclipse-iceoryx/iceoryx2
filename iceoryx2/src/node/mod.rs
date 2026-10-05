@@ -951,6 +951,7 @@ impl<BagHandle: BagHandleFamily> RegisteredServices<BagHandle> {
 
 #[derive(Debug)]
 struct SharedNodeState<Service: service::Service> {
+    id_generator: Service::UniqueId,
     id: UniqueNodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
@@ -1055,6 +1056,10 @@ impl<Service: service::Service> Abandonable for SharedNode<Service> {
 impl<Service: service::Service> SharedNode<Service> {
     pub(crate) fn config(&self) -> &Config {
         &self.state.details.config
+    }
+
+    pub(crate) fn id_generator(&self) -> &Service::UniqueId {
+        &self.state.id_generator
     }
 
     pub(crate) fn id(&self) -> &UniqueNodeId {
@@ -1597,7 +1602,11 @@ impl NodeBuilder {
             Some(n) => n.clone(),
             None => NodeName::default(),
         };
-        let node_id = fail!(from self, when UniqueNodeId::new::<Service>(name, config),
+
+        let id_generator = fail!(from self, when Service::UniqueId::open_or_create::<Service>(config),
+            with NodeCreationFailure::UnableToGenerateUniqueNodeId,
+            "{msg} since the unique id generator could not be opened.");
+        let node_id = fail!(from self, when UniqueNodeId::new::<Service>(name, &id_generator),
             with NodeCreationFailure::UnableToGenerateUniqueNodeId,
             "{msg} since the UniqueNodeId could not be generated.");
 
@@ -1608,6 +1617,7 @@ impl NodeBuilder {
         let monitoring_token = self.create_token::<Service>(config, &monitor_name)?;
 
         let state = Arc::new(SharedNodeState {
+            id_generator,
             id: node_id,
             monitoring_token: UnsafeCell::new(Some(monitoring_token)),
             registered_services: RegisteredServices::new(),

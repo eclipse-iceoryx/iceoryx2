@@ -206,6 +206,17 @@ pub trait DynamicStorage<T: Send + Sync + ZeroCopySend>:
     /// thread-safe.
     fn get(&self) -> &T;
 
+    /// Returns a mutable reference to the underlying object.
+    ///
+    /// # Safety
+    ///
+    /// The [`DynamicStorage`] can be accessed by multiple processes concurrently, but it is **not**
+    /// the task of the [`DynamicStorage`] to ensure a thread-safe access to the underlying object.
+    /// When using this function, the caller must ensure thread-safety by other means, for example,
+    /// using a mutex.
+    #[allow(clippy::mut_from_ref)]
+    unsafe fn get_mut(&self) -> &mut T;
+
     /// The default suffix of every dynamic storage
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".dyn") }

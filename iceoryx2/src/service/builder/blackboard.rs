@@ -577,7 +577,7 @@ impl<
             |service_config| {
                 UniqueServiceId::from_blackboard_service::<ServiceType>(
                     service_config.name(),
-                    self.builder.config.base.shared_node.config(),
+                    self.builder.config.base.shared_node.id_generator(),
                 )
             },
         )?;

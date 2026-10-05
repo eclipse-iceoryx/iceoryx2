@@ -571,7 +571,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptMgmt for Storage<T> {
             }
             Err(e) => {
                 fail!(from origin, with NamedConceptListError::InternalError,
-                    "{} due to an internal failure while checking the existance of the storage directory \"{}\". [{e:?}]", 
+                    "{} due to an internal failure while checking the existance of the storage directory \"{}\". [{e:?}]",
                     msg, cfg.path);
             }
         }
@@ -654,6 +654,14 @@ impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorage<T> for Storage<T> {
             (*(self.memory_mapping.base_address() as *const Data<T>))
                 .data
                 .assume_init_ref()
+        }
+    }
+
+    unsafe fn get_mut(&self) -> &mut T {
+        unsafe {
+            (*(self.memory_mapping.base_address() as *mut Data<T>))
+                .data
+                .assume_init_mut()
         }
     }
 

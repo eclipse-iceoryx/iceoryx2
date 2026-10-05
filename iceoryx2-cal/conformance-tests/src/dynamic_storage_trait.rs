@@ -867,4 +867,23 @@ pub mod dynamic_storage_trait {
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config), eq Ok(false));
         assert_that!(unsafe { <Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config) }, eq Ok(false));
     }
+
+    #[conformance_test]
+    pub fn get_mut_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<WrongTypeSut>();
+
+        let sut = WrongTypeSut::Builder::new(&storage_name)
+            .config(&config)
+            .initializer(|value, _| {
+                value.write(123);
+                true
+            })
+            .create()
+            .unwrap();
+
+        assert_that!(*sut.get(), eq 123);
+        unsafe { *sut.get_mut() = 456 };
+        assert_that!(*sut.get(), eq 456);
+    }
 }

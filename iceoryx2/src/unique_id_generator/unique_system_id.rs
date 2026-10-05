@@ -13,9 +13,18 @@
 //! Generates a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
 
 pub use iceoryx2_bb_posix::unique_system_id::*;
+use iceoryx2_cal::dynamic_storage::{
+    DynamicStorageCreateError, DynamicStorageOpenError, DynamicStorageOpenOrCreateError,
+};
 
 use crate::node::global_management_segment::GlobalManagementSegment;
 pub use crate::unique_id_generator::*;
+
+/// Generator for a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
+#[derive(Debug)]
+pub struct UniqueSystemIdGenerator<Service: service::Service> {
+    mgmt_segment: GlobalManagementSegment<Service>,
+}
 
 impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
     fn from(_: UniqueSystemIdCreationError) -> Self {
@@ -23,25 +32,37 @@ impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
     }
 }
 
-impl UniqueIdGenerator for UniqueSystemId {
+impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Service> {
+    fn open_or_create<ServiceType: service::Service>(
+        config: &Config,
+    ) -> Result<Self, UniqueIdGeneratorOpenError> {
+        let origin = "UniqueSystemIdGenerator::open()";
+        let msg = "Unable to open the global management segment due to";
+
+        match GlobalManagementSegment::<Service>::open_or_create(config) {
+            Ok(s) => Ok(Self { mgmt_segment: s }),
+            Err(DynamicStorageOpenOrCreateError::DynamicStorageCreateError(
+                DynamicStorageCreateError::InsufficientPermissions,
+            )) => {
+                fail!(from origin, with UniqueIdGeneratorOpenError::InsufficientPermissions, "{msg} insufficient permissions.");
+            }
+            Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
+                DynamicStorageOpenError::VersionMismatch,
+            )) => {
+                fail!(from origin, with UniqueIdGeneratorOpenError::VersionMismatch, "{msg} mismatching iceoryx2 versions.");
+            }
+            _ => {
+                fail!(from origin, with UniqueIdGeneratorOpenError::InternalError, "{msg} an internal failure.");
+            }
+        }
+    }
+
     /// Generates a system-wide unique ID by using the process ID and the incremented static
     /// atomic counter from the global management segment.
-    fn generate<Service: service::Service>(
-        entity: &Entity,
-        config: &Config,
-    ) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
+    fn generate(&self, entity: &Entity) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
         let id = match entity {
             Entity::Node(_) => {
-                let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config)
-                {
-                    Ok(mgmt) => mgmt.increment_node_counter(),
-                    Err(e) => {
-                        fail!(from "UniqueIdGenerator::generate()",
-                        with UniqueIdGeneratorGenerateError::GenerationError,
-                        "Unable to generate unique id since the global management segment could not be opened. {e:?}");
-                    }
-                };
-                UniqueSystemId::from_counter(node_counter)?
+                UniqueSystemId::from_counter(self.mgmt_segment.increment_node_counter())?
             }
             _ => UniqueSystemId::new()?,
         };
