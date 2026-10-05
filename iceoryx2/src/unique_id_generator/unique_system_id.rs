@@ -17,31 +17,34 @@ pub use iceoryx2_bb_posix::unique_system_id::*;
 use crate::node::global_management_segment::GlobalManagementSegment;
 pub use crate::unique_id_generator::*;
 
+/// Generator for a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
+#[derive(Debug)]
+pub struct UniqueSystemIdGenerator<Service: service::Service> {
+    mgmt_segment: GlobalManagementSegment<Service>,
+}
+
 impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
     fn from(_: UniqueSystemIdCreationError) -> Self {
         UniqueIdGeneratorGenerateError::GenerationError
     }
 }
 
-impl UniqueIdGenerator for UniqueSystemId {
+impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Service> {
+    fn open<ServiceType: service::Service>(config: &Config) -> Result<Self, ()> {
+        Ok(Self {
+            mgmt_segment: fail!(from "UniqueSystemIdGenerator::open()",
+                when GlobalManagementSegment::<Service>::open_or_create(config),
+                with (),
+                "Unable to generate unique id since the global management segment could not be opened."),
+        })
+    }
+
     /// Generates a system-wide unique ID by using the process ID and the incremented static
     /// atomic counter from the global management segment.
-    fn generate<Service: service::Service>(
-        entity: &Entity,
-        config: &Config,
-    ) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
+    fn generate(&self, entity: &Entity) -> Result<UniqueId, UniqueIdGeneratorGenerateError> {
         let id = match entity {
             Entity::Node(_) => {
-                let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config)
-                {
-                    Ok(mgmt) => mgmt.increment_node_counter(),
-                    Err(e) => {
-                        fail!(from "UniqueIdGenerator::generate()",
-                        with UniqueIdGeneratorGenerateError::GenerationError,
-                        "Unable to generate unique id since the global management segment could not be opened. {e:?}");
-                    }
-                };
-                UniqueSystemId::from_counter(node_counter)?
+                UniqueSystemId::from_counter(self.mgmt_segment.increment_node_counter())?
             }
             _ => UniqueSystemId::new()?,
         };

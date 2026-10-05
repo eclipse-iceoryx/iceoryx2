@@ -208,7 +208,7 @@ impl<
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
         let subscriber_id = fail!(from origin,
-            when UniqueSubscriberId::new::<Service>(config.port_name, service.shared_node().config()),
+            when UniqueSubscriberId::new::<Service>(config.port_name, service.shared_node().id_generator()),
             with SubscriberCreateError::UnableToGenerateUniqueSubscriberId,
             "{msg} since the UniqueSubscriberId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

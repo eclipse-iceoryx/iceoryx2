@@ -100,12 +100,12 @@ impl core::fmt::Display for UniqueIdGeneratorDetailsError {
 impl core::error::Error for UniqueIdGeneratorDetailsError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
-pub trait UniqueIdGenerator {
-    /// Generates a [`UniqueId`] for a specific [`service::Service`].
-    fn generate<Service: service::Service>(
-        entity: &Entity,
-        config: &Config,
-    ) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;
+pub trait UniqueIdGenerator: Sized + Debug {
+    /// Opens the [`UniqueIdGenerator`] for a specific [`service::Service`].
+    fn open<Service: service::Service>(_config: &Config) -> Result<Self, ()>;
+
+    /// Generates a [`UniqueId`].
+    fn generate(&self, entity: &Entity) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;
 
     /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) that was used to create the [`UniqueId`].
     fn pid(

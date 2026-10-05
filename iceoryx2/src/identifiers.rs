@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::port::port_name::PortName;
 use crate::service::service_name::ServiceName;
-use crate::{config::Config, node::node_name::NodeName, unique_id_generator::*};
+use crate::{node::node_name::NodeName, unique_id_generator::*};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
@@ -52,10 +52,10 @@ macro_rules! generate_id {
         impl $id_name {
             pub(crate) fn new<Service: crate::service::Service>(
                 name: $name_type,
-                config: &Config
+                id_generator: &Service::UniqueId
             ) -> Result<Self, UniqueIdGeneratorGenerateError> {
                 let id = fail!(from format!("{}::new()", stringify!($id_name)),
-                    when Service::UniqueId::generate::<Service>(&Entity::$entity(name), config),
+                    when id_generator.generate(&Entity::$entity(name)),
                     with UniqueIdGeneratorGenerateError::GenerationError,
                     ": Unable to generate required {}.", stringify!($id_name));
                 Ok(Self(id))
@@ -181,11 +181,11 @@ impl core::fmt::Display for UniqueServiceId {
 impl UniqueServiceId {
     pub(crate) fn from_publish_subscribe_service<Service: crate::service::Service>(
         name: &ServiceName,
-        config: &Config,
+        id_generator: &Service::UniqueId,
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_publish_subscribe_service()",
-            when Service::UniqueId::generate::<Service>(&Entity::PubSubService(*name), config),
+            when id_generator.generate(&Entity::PubSubService(*name)),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -194,11 +194,11 @@ impl UniqueServiceId {
 
     pub(crate) fn from_request_response_service<Service: crate::service::Service>(
         name: &ServiceName,
-        config: &Config,
+        id_generator: &Service::UniqueId,
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_request_response_service()",
-            when Service::UniqueId::generate::<Service>(&Entity::ReqResService(*name), config),
+            when id_generator.generate(&Entity::ReqResService(*name)),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -207,11 +207,11 @@ impl UniqueServiceId {
 
     pub(crate) fn from_event_service<Service: crate::service::Service>(
         name: &ServiceName,
-        config: &Config,
+        id_generator: &Service::UniqueId,
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_event_service()",
-            when Service::UniqueId::generate::<Service>(&Entity::EventService(*name), config),
+            when id_generator.generate(&Entity::EventService(*name)),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -220,11 +220,11 @@ impl UniqueServiceId {
 
     pub(crate) fn from_blackboard_service<Service: crate::service::Service>(
         name: &ServiceName,
-        config: &Config,
+        id_generator: &Service::UniqueId,
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(
             from "UniqueServiceId::from_blackboard_service()",
-            when Service::UniqueId::generate::<Service>(&Entity::BlackboardService(*name), config),
+            when id_generator.generate(&Entity::BlackboardService(*name)),
             with UniqueIdGeneratorGenerateError::GenerationError,
             ": Unable to generate required UniqueServiceId."
         );
@@ -263,10 +263,10 @@ impl core::fmt::Display for UniqueNodeId {
 impl UniqueNodeId {
     pub(crate) fn new<Service: crate::service::Service>(
         name: NodeName,
-        config: &Config,
+        id_generator: &Service::UniqueId,
     ) -> Result<Self, UniqueIdGeneratorGenerateError> {
         let id = fail!(from "UniqueNodeId::new()",
-                when Service::UniqueId::generate::<Service>(&Entity::Node(name), config),
+                when id_generator.generate(&Entity::Node(name)),
                 with UniqueIdGeneratorGenerateError::GenerationError,
                 "Unable to generate required UniqueNodeId.");
         Ok(Self(id))

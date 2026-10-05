@@ -469,7 +469,7 @@ impl<
         let config = &publisher_factory.config;
         let service = &publisher_factory.factory.service;
         let port_id = fail!(from origin,
-            when UniquePublisherId::new::<Service>(config.port_name, service.shared_node().config()),
+            when UniquePublisherId::new::<Service>(config.port_name, service.shared_node().id_generator()),
             with PublisherCreateError::UnableToGenerateUniquePublisherId,
             "{msg} since the UniquePublisherId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the

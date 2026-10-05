@@ -211,7 +211,7 @@ impl<
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
         let reader_id = fail!(from origin,
-            when UniqueReaderId::new::<Service>(config.port_name, service.shared_node().config()),
+            when UniqueReaderId::new::<Service>(config.port_name, service.shared_node().id_generator()),
             with ReaderCreateError::UnableToGenerateUniqueReaderId, "{msg} since the UniqueReaderId could not be generated.");
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
