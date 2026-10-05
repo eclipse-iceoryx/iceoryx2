@@ -214,6 +214,7 @@ pub trait DynamicStorage<T: Send + Sync + ZeroCopySend>:
     /// the task of the [`DynamicStorage`] to ensure a thread-safe access to the underlying object.
     /// When using this function, the caller must ensure thread-safety by other means, for example,
     /// using a mutex.
+    #[allow(clippy::mut_from_ref)]
     unsafe fn get_mut(&self) -> &mut T;
 
     /// The default suffix of every dynamic storage

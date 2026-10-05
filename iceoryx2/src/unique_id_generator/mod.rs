@@ -69,6 +69,21 @@ impl UniqueId {
     }
 }
 
+/// Describes failures that can occur when a [`UniqueIdGenerator`] is opened.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum UniqueIdGeneratorOpenError {
+    /// The unique ID generator could not be opened.
+    OpenError,
+}
+
+impl core::fmt::Display for UniqueIdGeneratorOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "UniqueIdGeneratorOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for UniqueIdGeneratorOpenError {}
+
 /// Describes failures that can occur when a [`UniqueId`] is generated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UniqueIdGeneratorGenerateError {
@@ -102,7 +117,8 @@ impl core::error::Error for UniqueIdGeneratorDetailsError {}
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
 pub trait UniqueIdGenerator: Sized + Debug {
     /// Opens the [`UniqueIdGenerator`] for a specific [`service::Service`].
-    fn open<Service: service::Service>(_config: &Config) -> Result<Self, ()>;
+    fn open<Service: service::Service>(config: &Config)
+    -> Result<Self, UniqueIdGeneratorOpenError>;
 
     /// Generates a [`UniqueId`].
     fn generate(&self, entity: &Entity) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;

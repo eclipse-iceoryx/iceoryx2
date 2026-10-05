@@ -30,11 +30,13 @@ impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
 }
 
 impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Service> {
-    fn open<ServiceType: service::Service>(config: &Config) -> Result<Self, ()> {
+    fn open<ServiceType: service::Service>(
+        config: &Config,
+    ) -> Result<Self, UniqueIdGeneratorOpenError> {
         Ok(Self {
             mgmt_segment: fail!(from "UniqueSystemIdGenerator::open()",
                 when GlobalManagementSegment::<Service>::open_or_create(config),
-                with (),
+                with UniqueIdGeneratorOpenError::OpenError,
                 "Unable to generate unique id since the global management segment could not be opened."),
         })
     }
