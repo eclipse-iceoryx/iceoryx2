@@ -380,6 +380,23 @@ pub struct EntryHandleMut<
     _shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
 }
 
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Abandonable for EntryHandleMut<Service, KeyType, ValueType>
+{
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        // A crashed process does not drop its producer or release the entry.
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(
+                &mut this._shared_state,
+            ))
+        };
+    }
+}
+
 // Safe since the producer implements Send + Sync and shared_state ensures the lifetime of the
 // producer (struct fields are dropped in the same order as declared)
 unsafe impl<
@@ -493,6 +510,18 @@ pub struct EntryValueUninit<
 > {
     ptr: *mut ValueType,
     entry_handle_mut: EntryHandleMut<Service, KeyType, ValueType>,
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Abandonable for EntryValueUninit<Service, KeyType, ValueType>
+{
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { Abandonable::abandon_in_place(NonNull::from_mut(&mut this.entry_handle_mut)) };
+    }
 }
 
 // Safe since the EntryHandleMut implements Send + Sync and the EntryHandleMut's shared_state ensures that
@@ -763,6 +792,17 @@ impl<Service: service::Service> __InternalEntryHandleMut<Service> {
     /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
+    }
+
+    /// Copies the last committed value into the caller's buffer.
+    ///
+    /// # Safety
+    ///
+    /// * `value` must point to writable memory with the entry's value size and alignment.
+    /// * `size` and `alignment` must match the entry's value type.
+    /// * The handle must not be written to or destroyed concurrently with this call.
+    pub unsafe fn __internal_read(&self, value: *mut u8, size: usize, alignment: usize) {
+        unsafe { (*self.atomic_mgmt_ptr).load(value, size, alignment, self.data_ptr) };
     }
 
     /// Returns a pointer to the current write cell of the underlying UnrestrictedAtomicMgmt.
