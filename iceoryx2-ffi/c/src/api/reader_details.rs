@@ -14,7 +14,9 @@
 
 use iceoryx2::service::dynamic_config::blackboard::ReaderDetails;
 
-use super::{iox2_unique_node_id_ptr, iox2_unique_reader_id_h, iox2_unique_reader_id_t};
+use super::{
+    iox2_port_name_ptr, iox2_unique_node_id_ptr, iox2_unique_reader_id_h, iox2_unique_reader_id_t,
+};
 
 /// The immutable pointer to the underlying `ReaderDetails`
 pub type iox2_reader_details_ptr = *const ReaderDetails;
@@ -63,4 +65,17 @@ pub unsafe extern "C" fn iox2_reader_details_node_id(
 ) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
     unsafe { &(*handle).node_id }
+}
+
+/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the name of the reader.
+///
+/// # Safety
+///
+/// * `handle` valid pointer to the reader details
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_reader_details_reader_name(
+    handle: iox2_reader_details_ptr,
+) -> iox2_port_name_ptr {
+    debug_assert!(!handle.is_null());
+    unsafe { &(*handle).reader_name }
 }

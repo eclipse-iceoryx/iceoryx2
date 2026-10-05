@@ -15,6 +15,7 @@
 
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/unique_node_id.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -34,6 +35,9 @@ class ReaderDetailsView {
 
     /// The [`NodeId`] of the [`Node`] under which the [`Reader`] was created.
     auto node_id() const -> UniqueNodeId;
+
+    /// The [`PortNameView`] of the [`Reader`], empty when it was created without a name.
+    auto reader_name() const -> PortNameView;
 
   private:
     template <typename T, typename>

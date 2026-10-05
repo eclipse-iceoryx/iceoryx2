@@ -1562,6 +1562,54 @@ TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {
     ASSERT_THAT(counter, Eq(1));
 }
 
+TYPED_TEST(ServiceBlackboardTest, reader_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("reader_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name)
+                   .template blackboard_creator<uint64_t>()
+                   .template add_with_default<uint64_t>(0)
+                   .create()
+                   .value();
+    auto reader = sut.reader_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_readers([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.reader_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceBlackboardTest, writer_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("writer_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name)
+                   .template blackboard_creator<uint64_t>()
+                   .template add_with_default<uint64_t>(0)
+                   .create()
+                   .value();
+    auto writer = sut.writer_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_writers([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.writer_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
 TYPED_TEST(ServiceBlackboardTest, same_entry_id_for_same_key) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 

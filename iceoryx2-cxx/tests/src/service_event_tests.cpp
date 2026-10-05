@@ -719,6 +719,26 @@ TYPED_TEST(ServiceEventTest, notifier_details_are_correct) {
     ASSERT_THAT(counter, Eq(1));
 }
 
+TYPED_TEST(ServiceEventTest, notifier_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("notifier_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).event().create().value();
+    auto notifier = sut.notifier_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_notifiers([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.notifier_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
 TYPED_TEST(ServiceEventTest, listing_all_listeners_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_LISTENERS = 17;
@@ -785,6 +805,26 @@ TYPED_TEST(ServiceEventTest, listener_details_are_correct) {
         EXPECT_TRUE(listener_details_view.listener_id() == listener.id());
         EXPECT_TRUE(listener_details_view.node_id() == node.id());
         return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceEventTest, listener_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("listener_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).event().create().value();
+    auto listener = sut.listener_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_listeners([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.listener_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
+        return CallbackProgression::Stop;
     });
 
     ASSERT_THAT(counter, Eq(1));

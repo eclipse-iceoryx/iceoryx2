@@ -44,6 +44,10 @@ auto PublisherDetailsView::node_id() const -> UniqueNodeId {
     return UniqueNodeId(id_handle);
 }
 
+auto PublisherDetailsView::publisher_name() const -> PortNameView {
+    return PortNameView::from_native_ptr(iox2_publisher_details_publisher_name(m_handle));
+}
+
 auto PublisherDetailsView::number_of_samples() const -> uint64_t {
     return iox2_publisher_details_number_of_samples(m_handle);
 }

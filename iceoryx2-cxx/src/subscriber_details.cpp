@@ -44,6 +44,10 @@ auto SubscriberDetailsView::node_id() const -> UniqueNodeId {
     return UniqueNodeId(id_handle);
 }
 
+auto SubscriberDetailsView::subscriber_name() const -> PortNameView {
+    return PortNameView::from_native_ptr(iox2_subscriber_details_subscriber_name(m_handle));
+}
+
 auto SubscriberDetailsView::buffer_size() const -> uint64_t {
     return iox2_subscriber_details_buffer_size(m_handle);
 }

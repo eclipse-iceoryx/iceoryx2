@@ -43,4 +43,8 @@ auto WriterDetailsView::node_id() const -> UniqueNodeId {
     iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
     return UniqueNodeId(id_handle);
 }
+
+auto WriterDetailsView::writer_name() const -> PortNameView {
+    return PortNameView::from_native_ptr(iox2_writer_details_writer_name(m_handle));
+}
 } // namespace iox2

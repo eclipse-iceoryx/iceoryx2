@@ -15,7 +15,8 @@
 use iceoryx2::service::dynamic_config::publish_subscribe::PublisherDetails;
 
 use super::{
-    c_size_t, iox2_unique_node_id_ptr, iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
+    c_size_t, iox2_port_name_ptr, iox2_unique_node_id_ptr, iox2_unique_publisher_id_h,
+    iox2_unique_publisher_id_t,
 };
 
 /// The immutable pointer to the underlying `PublisherDetails`
@@ -65,6 +66,19 @@ pub unsafe extern "C" fn iox2_publisher_details_node_id(
 ) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
     unsafe { &(*handle).node_id }
+}
+
+/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the name of the publisher.
+///
+/// # Safety
+///
+/// * `handle` valid pointer to the publisher details
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_publisher_details_publisher_name(
+    handle: iox2_publisher_details_ptr,
+) -> iox2_port_name_ptr {
+    debug_assert!(!handle.is_null());
+    unsafe { &(*handle).publisher_name }
 }
 
 /// Returns the total number of samples contained in the

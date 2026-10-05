@@ -1633,6 +1633,26 @@ TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_are_correct) {
     ASSERT_THAT(counter, Eq(1));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("subscriber_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+    auto subscriber = sut.subscriber_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_subscribers([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.subscriber_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 16;
@@ -1709,6 +1729,26 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_details_are_correct) {
         EXPECT_TRUE(publisher_details_view.publisher_id() == publisher.id());
         EXPECT_TRUE(publisher_details_view.node_id() == node.id());
         EXPECT_TRUE(publisher_details_view.max_slice_len() == INITIAL_MAX_SLICE_LEN);
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("publisher_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+    auto publisher = sut.publisher_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_publishers([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.publisher_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
         return CallbackProgression::Stop;
     });
 

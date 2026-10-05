@@ -43,4 +43,8 @@ auto ReaderDetailsView::node_id() const -> UniqueNodeId {
     iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
     return UniqueNodeId(id_handle);
 }
+
+auto ReaderDetailsView::reader_name() const -> PortNameView {
+    return PortNameView::from_native_ptr(iox2_reader_details_reader_name(m_handle));
+}
 } // namespace iox2

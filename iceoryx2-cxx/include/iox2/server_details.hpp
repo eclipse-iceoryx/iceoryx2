@@ -15,6 +15,7 @@
 
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/unique_node_id.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -34,6 +35,9 @@ class ServerDetailsView {
 
     /// The [`NodeId`] of the [`Node`] under which the [`Server`] was created.
     auto node_id() const -> UniqueNodeId;
+
+    /// The [`PortNameView`] of the [`Server`], empty when it was created without a name.
+    auto server_name() const -> PortNameView;
 
     /// The receive buffer size for incoming requests.
     auto request_buffer_size() const -> uint64_t;

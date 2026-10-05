@@ -44,6 +44,10 @@ auto ClientDetailsView::node_id() const -> UniqueNodeId {
     return UniqueNodeId(id_handle);
 }
 
+auto ClientDetailsView::client_name() const -> PortNameView {
+    return PortNameView::from_native_ptr(iox2_client_details_client_name(m_handle));
+}
+
 auto ClientDetailsView::response_buffer_size() const -> uint64_t {
     return iox2_client_details_response_buffer_size(m_handle);
 }

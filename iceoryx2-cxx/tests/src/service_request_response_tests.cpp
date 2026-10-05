@@ -2046,6 +2046,26 @@ TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
 
     ASSERT_THAT(counter, Eq(1));
 }
+
+TYPED_TEST(ServiceRequestResponseTest, client_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("client_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+    auto client = sut.client_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_clients([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.client_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
 // NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_works) {
@@ -2125,6 +2145,26 @@ TYPED_TEST(ServiceRequestResponseTest, server_details_are_correct) {
         EXPECT_TRUE(server_details_view.server_id() == server.id());
         EXPECT_TRUE(server_details_view.node_id() == node.id());
         EXPECT_TRUE(server_details_view.max_slice_len() == MAX_SLICE_LEN);
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_details_contain_the_port_name) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto port_name = PortName::create("server_with_a_name").value();
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+    auto server = sut.server_builder().name(port_name).create().value();
+
+    auto counter = 0;
+    sut.dynamic_config().list_servers([&](auto details_view) -> auto {
+        counter++;
+        EXPECT_THAT(details_view.server_name().to_string().unchecked_access().c_str(),
+                    StrEq(port_name.to_string().unchecked_access().c_str()));
         return CallbackProgression::Stop;
     });
 
