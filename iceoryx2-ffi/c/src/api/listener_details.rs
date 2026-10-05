@@ -14,7 +14,10 @@
 
 use iceoryx2::service::dynamic_config::event::ListenerDetails;
 
-use super::{iox2_unique_listener_id_h, iox2_unique_listener_id_t, iox2_unique_node_id_ptr};
+use super::{
+    iox2_port_name_ptr, iox2_unique_listener_id_h, iox2_unique_listener_id_t,
+    iox2_unique_node_id_ptr,
+};
 
 /// The immutable pointer to the underlying `ListenerDetails`
 pub type iox2_listener_details_ptr = *const ListenerDetails;
@@ -63,4 +66,17 @@ pub unsafe extern "C" fn iox2_listener_details_node_id(
 ) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
     unsafe { &(*handle).node_id }
+}
+
+/// Returns a borrowed listener name. The pointer is valid only during the callback
+/// which provided `handle` and must not be retained after it returns.
+///
+/// # Safety
+/// `handle` must point to listener details provided by a live callback.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_listener_details_listener_name(
+    handle: iox2_listener_details_ptr,
+) -> iox2_port_name_ptr {
+    debug_assert!(!handle.is_null());
+    unsafe { &(*handle).listener_name }
 }
