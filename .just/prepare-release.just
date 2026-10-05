@@ -207,6 +207,9 @@ _release-update-docs old new:
     sed -i 's|iceoryx2/v{{old}}|iceoryx2/v{{new}}|g' \
         doc/user-documentation/use-iceoryx2-with-zig.md
 
+    sed -i 's|"iceoryx2", version = "{{old}}|"iceoryx2", version = "{{new}}|g' \
+        doc/bazel/README.md
+
 # -----------------------------------------------------------------------------
 # Sanity check
 # -----------------------------------------------------------------------------
