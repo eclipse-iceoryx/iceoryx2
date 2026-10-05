@@ -20,7 +20,7 @@ use pyo3::prelude::*;
 /// `Path`. All modification operations ensure that never an
 /// invalid file or path name can be generated. All strings have a fixed size so that the maximum
 /// path or file name length the system supports can be stored.
-pub struct Path(pub(crate) iceoryx2::prelude::Path);
+pub struct Path(pub iceoryx2::prelude::Path);
 
 #[pymethods]
 impl Path {

@@ -17,7 +17,7 @@ use crate::type_detail::TypeDetail;
 #[pyclass]
 /// Contains all type information to the header and payload type.
 pub struct MessageTypeDetails(
-    pub(crate) iceoryx2::service::static_config::message_type_details::MessageTypeDetails,
+    pub iceoryx2::service::static_config::message_type_details::MessageTypeDetails,
 );
 
 #[pymethods]

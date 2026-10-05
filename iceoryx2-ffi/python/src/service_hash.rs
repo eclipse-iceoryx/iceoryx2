@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 
 #[pyclass]
 /// The unique id of a `Service`
-pub struct ServiceHash(pub(crate) iceoryx2::service::service_hash::ServiceHash);
+pub struct ServiceHash(pub iceoryx2::service::service_hash::ServiceHash);
 
 #[pymethods]
 impl ServiceHash {
