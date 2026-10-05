@@ -302,6 +302,10 @@ impl<T: Send + Sync + Debug + 'static + ZeroCopySend> DynamicStorage<T> for Stor
         unsafe { (*self.data.data_ptr).assume_init_ref() }
     }
 
+    unsafe fn get_mut(&self) -> &mut T {
+        unsafe { (*self.data.data_ptr).assume_init_mut() }
+    }
+
     fn has_ownership(&self) -> bool {
         self.has_ownership.load(Ordering::Relaxed)
     }

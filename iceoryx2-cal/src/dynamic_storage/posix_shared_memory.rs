@@ -566,6 +566,14 @@ impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorage<T> for Storage<T> {
         }
     }
 
+    unsafe fn get_mut(&self) -> &mut T {
+        unsafe {
+            (*(self.shm.base_address().as_ptr() as *mut Data<T>))
+                .data
+                .assume_init_mut()
+        }
+    }
+
     fn has_ownership(&self) -> bool {
         self.shm.has_ownership()
     }
