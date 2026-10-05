@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 #[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
 /// Represent the name for a `Node`.
-pub struct NodeName(pub(crate) iceoryx2::prelude::NodeName);
+pub struct NodeName(pub iceoryx2::prelude::NodeName);
 
 #[pymethods]
 impl NodeName {

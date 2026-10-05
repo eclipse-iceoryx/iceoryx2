@@ -1092,7 +1092,7 @@ impl Blackboard {
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
-pub struct Config(pub(crate) Parc<iceoryx2::config::Config>);
+pub struct Config(pub Parc<iceoryx2::config::Config>);
 
 impl PartialEq for Config {
     fn eq(&self, other: &Self) -> bool {

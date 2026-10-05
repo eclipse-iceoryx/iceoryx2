@@ -105,6 +105,7 @@ pub mod unique_notifier_id;
 pub mod unique_publisher_id;
 pub mod unique_reader_id;
 pub mod unique_server_id;
+pub mod unique_service_id;
 pub mod unique_subscriber_id;
 pub mod unique_writer_id;
 pub mod waitset;
@@ -239,6 +240,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::unique_publisher_id::UniquePublisherId>()?;
     m.add_class::<crate::unique_reader_id::UniqueReaderId>()?;
     m.add_class::<crate::unique_server_id::UniqueServerId>()?;
+    m.add_class::<crate::unique_service_id::UniqueServiceId>()?;
     m.add_class::<crate::unique_subscriber_id::UniqueSubscriberId>()?;
     m.add_class::<crate::unique_writer_id::UniqueWriterId>()?;
     m.add_class::<crate::waitset::WaitSet>()?;

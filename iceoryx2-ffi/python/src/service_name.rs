@@ -19,7 +19,7 @@ use pyo3::prelude::*;
 /// `ServiceName`. All modification operations ensure that never an
 /// invalid file or path name can be generated. All strings have a fixed size so that the maximum
 /// path or file name length the system supports can be stored.
-pub struct ServiceName(pub(crate) iceoryx2::prelude::ServiceName);
+pub struct ServiceName(pub iceoryx2::prelude::ServiceName);
 
 #[pymethods]
 impl ServiceName {

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -14,11 +14,11 @@ use pyo3::prelude::*;
 
 #[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
-/// The system-wide unique id of a `Listener`.
-pub struct UniqueListenerId(pub iceoryx2::identifiers::UniqueListenerId);
+/// The system-wide unique id of a `Service`.
+pub struct UniqueServiceId(pub iceoryx2::identifiers::UniqueServiceId);
 
 #[pymethods]
-impl UniqueListenerId {
+impl UniqueServiceId {
     #[getter]
     /// Returns the underlying raw value of the ID
     pub fn value(&self) -> u128 {

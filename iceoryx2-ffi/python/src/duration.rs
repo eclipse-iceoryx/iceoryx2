@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
 /// Represents a time duration.
-pub struct Duration(pub(crate) core::time::Duration);
+pub struct Duration(pub core::time::Duration);
 
 #[pymethods]
 impl Duration {

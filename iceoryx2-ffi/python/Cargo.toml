@@ -14,7 +14,7 @@ readme = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "_iceoryx2"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }

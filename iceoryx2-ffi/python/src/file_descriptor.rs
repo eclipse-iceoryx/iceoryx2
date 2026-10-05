@@ -19,7 +19,7 @@ use pyo3::prelude::*;
 /// Represents a FileDescriptor in a POSIX system. Contains always a value greater or equal zero,
 /// a valid file descriptor. It takes the ownership of the provided file descriptor and calls
 /// ``posix::close`` on destruction.
-pub struct FileDescriptor(pub(crate) Arc<iceoryx2::prelude::FileDescriptor>);
+pub struct FileDescriptor(pub Arc<iceoryx2::prelude::FileDescriptor>);
 
 impl iceoryx2::prelude::FileDescriptorBased for FileDescriptor {
     fn file_descriptor(&self) -> &iceoryx2::prelude::FileDescriptor {
