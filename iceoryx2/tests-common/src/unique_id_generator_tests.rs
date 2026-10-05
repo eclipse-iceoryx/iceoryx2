@@ -25,7 +25,7 @@ static COUNTER: AtomicU64 = AtomicU64::new(0);
 struct TestUniqueId {}
 
 impl UniqueIdGenerator for TestUniqueId {
-    fn open<Service: service::Service>(
+    fn open_or_create<Service: service::Service>(
         _config: &Config,
     ) -> Result<Self, UniqueIdGeneratorOpenError> {
         Ok(Self {})
@@ -48,7 +48,7 @@ fn unique_id_can_be_created_from_value() {
 #[test]
 fn pid_returns_error_when_not_implemented() {
     let config = Config::global_config();
-    let id_generator = TestUniqueId::open::<ipc::Service>(config).unwrap();
+    let id_generator = TestUniqueId::open_or_create::<ipc::Service>(config).unwrap();
     let id = id_generator
         .generate(&Entity::Client(PortName::new_empty()))
         .unwrap();
@@ -60,7 +60,7 @@ fn pid_returns_error_when_not_implemented() {
 #[test]
 fn creation_time_returns_error_when_not_implemented() {
     let config = Config::global_config();
-    let id_generator = TestUniqueId::open::<ipc::Service>(config).unwrap();
+    let id_generator = TestUniqueId::open_or_create::<ipc::Service>(config).unwrap();
     let id = id_generator
         .generate(&Entity::Client(PortName::new_empty()))
         .unwrap();

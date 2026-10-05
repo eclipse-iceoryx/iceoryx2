@@ -40,7 +40,7 @@ pub mod unique_id_generator_trait {
         let entities = [Entity::Client(PortName::new_empty())];
         Factory::setup(&entities, &config);
 
-        let id_generator = Sut::open::<ipc::Service>(&config).unwrap();
+        let id_generator = Sut::open_or_create::<ipc::Service>(&config).unwrap();
         let sut = id_generator.generate(&entities[0]);
         assert_that!(sut, is_ok);
 
@@ -57,7 +57,7 @@ pub mod unique_id_generator_trait {
         ];
         Factory::setup(&entities, &config);
 
-        let id_generator = Sut::open::<ipc::Service>(&config).unwrap();
+        let id_generator = Sut::open_or_create::<ipc::Service>(&config).unwrap();
         let sut1 = id_generator.generate(&entities[0]).unwrap();
         let sut2 = id_generator.generate(&entities[1]).unwrap();
         let sut3 = id_generator.generate(&entities[2]).unwrap();

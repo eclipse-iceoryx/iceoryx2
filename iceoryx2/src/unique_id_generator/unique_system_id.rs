@@ -13,6 +13,9 @@
 //! Generates a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
 
 pub use iceoryx2_bb_posix::unique_system_id::*;
+use iceoryx2_cal::dynamic_storage::{
+    DynamicStorageCreateError, DynamicStorageOpenError, DynamicStorageOpenOrCreateError,
+};
 
 use crate::node::global_management_segment::GlobalManagementSegment;
 pub use crate::unique_id_generator::*;
@@ -30,15 +33,28 @@ impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
 }
 
 impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Service> {
-    fn open<ServiceType: service::Service>(
+    fn open_or_create<ServiceType: service::Service>(
         config: &Config,
     ) -> Result<Self, UniqueIdGeneratorOpenError> {
-        Ok(Self {
-            mgmt_segment: fail!(from "UniqueSystemIdGenerator::open()",
-                when GlobalManagementSegment::<Service>::open_or_create(config),
-                with UniqueIdGeneratorOpenError::OpenError,
-                "Unable to generate unique id since the global management segment could not be opened."),
-        })
+        let origin = "UniqueSystemIdGenerator::open()";
+        let msg = "Unable to open the global management segment due to";
+
+        match GlobalManagementSegment::<Service>::open_or_create(config) {
+            Ok(s) => Ok(Self { mgmt_segment: s }),
+            Err(DynamicStorageOpenOrCreateError::DynamicStorageCreateError(
+                DynamicStorageCreateError::InsufficientPermissions,
+            )) => {
+                fail!(from origin, with UniqueIdGeneratorOpenError::InsufficientPermissions, "{msg} insufficient permissions.");
+            }
+            Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
+                DynamicStorageOpenError::VersionMismatch,
+            )) => {
+                fail!(from origin, with UniqueIdGeneratorOpenError::VersionMismatch, "{msg} mismatching iceoryx2 versions.");
+            }
+            _ => {
+                fail!(from origin, with UniqueIdGeneratorOpenError::InternalError, "{msg} an internal failure.");
+            }
+        }
     }
 
     /// Generates a system-wide unique ID by using the process ID and the incremented static
