@@ -58,6 +58,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
     type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<
         CustomServiceVariant,
     >;
+    type NameGenerator = iceoryx2::name_generator::default_name_generator::DefaultNameGenerator;
 }
 
 impl iceoryx2::service::internal::ServiceInternal<CustomServiceVariant> for CustomServiceVariant {}

@@ -65,6 +65,7 @@ impl crate::service::Service for Service {
         dynamic_storage::recommended::Local<KeyType>;
     type BlackboardPayload = shared_memory::recommended::Local<BumpAllocator>;
     type UniqueId = crate::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<Service>;
+    type NameGenerator = crate::name_generator::default_name_generator::DefaultNameGenerator;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {}
