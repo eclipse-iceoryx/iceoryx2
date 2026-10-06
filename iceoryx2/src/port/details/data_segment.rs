@@ -130,29 +130,23 @@ impl<Service: service::Service> DataSegment<Service> {
             true
         };
 
+        let segment_builder = || {
+            <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder
+            as NamedConceptBuilder<Service::SharedMemory>>::new(segment_name)
+                .config(&segment_config)
+                .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
+                .has_ownership(ownership)
+        };
+
         if Service::IS_PERSISTENT
-            && let Ok(memory) = <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder
-                as NamedConceptBuilder<Service::SharedMemory>
-                > ::new(segment_name)
-                    .config(&segment_config)
-                    .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
-                    .has_ownership(ownership)
-                    .open(AccessMode::ReadWrite)
+            && let Ok(memory) = segment_builder().open(AccessMode::ReadWrite)
         {
             return Ok(Self {
                 memory: MemoryType::Static(memory),
             });
         }
 
-        let memory = fail!(from origin,
-                                when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
-                                Service::SharedMemory,
-                                    >>::new(segment_name)
-                                    .config(&segment_config)
-                                    .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
-                                    .has_ownership(ownership)
-                                    .create(&allocator_config),
-                                "{msg}");
+        let memory = fail!(from origin, when segment_builder().create(&allocator_config), "{msg}");
 
         Ok(Self {
             memory: MemoryType::Static(memory),
@@ -170,8 +164,6 @@ impl<Service: service::Service> DataSegment<Service> {
         let origin = "DataSegment::create_dynamic_segment()";
 
         let segment_config = resizable_data_segment_config::<Service>(global_config);
-
-        // TODO: either pass the Service::IS_PERSISTENT flag to 'create' or add an 'open' call
         let memory = fail!(from origin,
                     when <<Service::ResizableSharedMemory as ResizableSharedMemory<
                         PoolAllocator,
