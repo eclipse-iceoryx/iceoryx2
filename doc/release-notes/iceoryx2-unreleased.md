@@ -31,6 +31,7 @@
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
 * [#2050](https://github.com/eclipse-iceoryx/iceoryx2/issues/2050) Find CLI commands in the folder of the running binary and prefer them over the ones in `PATH`
+* [#2062](https://github.com/eclipse-iceoryx/iceoryx2/issues/2062) Grant DELETE rights to the file owner in the Windows DACL
 
 ### Refactoring
 
