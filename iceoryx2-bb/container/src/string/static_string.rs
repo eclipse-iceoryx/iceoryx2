@@ -12,7 +12,7 @@
 
 //! Relocatable (inter-process shared memory compatible) string implementations.
 //!
-//! The [`StaticString`](crate::string::StaticString) has a fixed capacity defined at compile time.
+//! The [`StaticString`] has a fixed capacity defined at compile time.
 //! It is memory-layout compatible to the C++ counterpart in the iceoryx2-bb-container C++ library
 //! and can be used for zero-copy cross-language communication.
 //!

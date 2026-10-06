@@ -17,7 +17,7 @@
 //! A [`Link`] is built from a node and a backend and then leaves the user
 //! to decide how it is driven.
 //!
-//! [Bridges](Bridges) are the component that extend the communication of one
+//! [`Bridges`] are the component that extend the communication of one
 //! service from its `iceoryx2` ports into the backend.
 //!
 //! [`Link::discover`] opens and closes bridges to match what both sides
