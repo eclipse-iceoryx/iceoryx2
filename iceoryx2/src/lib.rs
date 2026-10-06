@@ -15,6 +15,11 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 #![warn(missing_docs)]
+// NOTE: probably a false positive with Rust 1.99.0;
+//       there is not output with a location;
+//       retry with Rust 1.100.0;
+//       corresponding issue https://github.com/eclipse-iceoryx/iceoryx2/issues/2088
+#![allow(rustdoc::redundant_explicit_links)]
 
 //! # iceoryx2
 //!
