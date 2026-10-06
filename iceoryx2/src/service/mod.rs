@@ -275,6 +275,7 @@ use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
+use crate::name_generator::NameGenerator;
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
@@ -995,6 +996,8 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
 
     /// Mechanism to generate IDs that are unique, at least within a single process.
     type UniqueId: UniqueIdGenerator;
+
+    type NameGenerator: NameGenerator;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

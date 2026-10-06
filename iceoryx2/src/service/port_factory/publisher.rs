@@ -55,6 +55,7 @@
 //! ```
 
 use crate::{
+    name_generator::NameGenerator,
     port::{
         BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
         backpressure_strategy::BackpressureStrategy,
@@ -170,7 +171,11 @@ impl<
                 initial_max_slice_len: 1,
                 max_loaned_samples: defaults.publisher_max_loaned_samples,
                 backpressure_strategy: defaults.backpressure_strategy,
-                port_name: PortName::new_empty(),
+                port_name: factory
+                    .service
+                    .shared_node()
+                    .name_generator()
+                    .generate_port_name(),
             },
             degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             backpressure_handler: None,
