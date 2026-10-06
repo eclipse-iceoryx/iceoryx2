@@ -102,6 +102,7 @@ const INVALID: usize = usize::MAX;
 pub struct Iter<'slotmap, T, Ptr: PointerFamily> {
     slotmap: &'slotmap MetaSlotMap<T, Ptr>,
     key: SlotMapKey,
+    remaining: usize,
 }
 
 #[doc(hidden)]
@@ -113,8 +114,13 @@ impl<'slotmap, T, Ptr: PointerFamily> Iterator for Iter<'slotmap, T, Ptr> {
     type Item = (SlotMapKey, &'slotmap T);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+
         if let Some((next_key, value)) = self.slotmap.next_available_key_after(self.key) {
             self.key.0 = next_key.0 + 1;
+            self.remaining -= 1;
             Some((next_key, value))
         } else {
             None
@@ -196,6 +202,7 @@ impl<T, Ptr: PointerFamily> MetaSlotMap<T, Ptr> {
         Iter {
             slotmap: self,
             key: SlotMapKey(0),
+            remaining: self.len,
         }
     }
 
