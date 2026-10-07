@@ -65,7 +65,7 @@
     conflicts when merging.
 -->
 
-* [#2046](https://github.com/eclipse-iceoryx/iceoryx2/issues/2046) Add abstraction for named pipes to `iceoryx2-bb-posix`
+* [#2046](https://github.com/eclipse-iceoryx/iceoryx2/issues/2046) Add abstraction for named pipes to `iceoryx2-bb-posix` and concept for event-triggering
 * [#2076](https://github.com/eclipse-iceoryx/iceoryx2/issues/2076) Expose the names of ports in the port details of the C and C++ bindings
 * [#2108](https://github.com/eclipse-iceoryx/iceoryx2/issues/2108) Extend Python bindings with an API to serialize the iceoryx2 config to toml
 
