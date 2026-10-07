@@ -19,7 +19,7 @@ pub use crate::name_generator::*;
 pub struct DefaultNameGenerator {}
 
 impl NameGenerator for DefaultNameGenerator {
-    fn open_or_create(_: &Config) -> Result<Self, ()> {
+    fn open_or_create(_: &Config) -> Result<Self, NameGeneratorOpenOrCreateError> {
         Ok(Self {})
     }
 

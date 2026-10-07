@@ -16,10 +16,21 @@ use crate::{config::Config, node::node_name::NodeName, port::port_name::PortName
 
 pub mod default_name_generator;
 
+/// Describes failures that can occur when a [`NodeNameGenerator`] is opened or created.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NameGeneratorOpenOrCreateError {
+    /// Insufficient permissions to open/create a name generator.
+    InsufficientPermissions,
+    /// Mismatching iceoryx2 versions.
+    VersionMismatch,
+    /// An internal error has occurred.
+    InternalError,
+}
+
 /// Generates [`NodeName`]s and [`PortName`]s.
 pub trait NameGenerator: Debug + Sized {
     /// Opens an existing [`NameGenerator`] or creates it.
-    fn open_or_create(config: &Config) -> Result<Self, ()>;
+    fn open_or_create(config: &Config) -> Result<Self, NameGeneratorOpenOrCreateError>;
 
     /// Generates a [`NodeName`].
     fn generate_node_name(&self) -> NodeName;
