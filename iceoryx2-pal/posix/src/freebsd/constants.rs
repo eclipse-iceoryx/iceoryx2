@@ -34,6 +34,7 @@ pub const O_CREAT: int = libc::O_CREAT as _;
 pub const O_EXCL: int = libc::O_EXCL as _;
 pub const O_NOCTTY: int = libc::O_NOCTTY as _;
 pub const O_APPEND: int = libc::O_APPEND as _;
+pub const O_ASYNC: int = libc::O_ASYNC as _;
 pub const O_NONBLOCK: int = libc::O_NONBLOCK as _;
 pub const O_DIRECTORY: int = libc::O_DIRECTORY as _;
 

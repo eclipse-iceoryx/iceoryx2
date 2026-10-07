@@ -34,6 +34,7 @@ pub const O_CREAT: int = crate::internal::O_CREAT as _;
 pub const O_EXCL: int = crate::internal::O_EXCL as _;
 pub const O_NOCTTY: int = crate::internal::O_NOCTTY as _;
 pub const O_APPEND: int = crate::internal::O_APPEND as _;
+pub const O_ASYNC: int = crate::internal::O_ASYNC as _;
 pub const O_NONBLOCK: int = crate::internal::O_NONBLOCK as _;
 pub const O_DIRECTORY: int = crate::internal::O_DIRECTORY as _;
 

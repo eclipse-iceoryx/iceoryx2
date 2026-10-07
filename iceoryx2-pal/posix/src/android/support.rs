@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub const POSIX_SUPPORT_ACL: bool = true;
+pub const POSIX_SUPPORT_NAMED_PIPE: bool = true;
 pub const POSIX_SUPPORT_NAMED_SEMAPHORE: bool = true;
 pub const POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY: bool = true;
 pub const POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA: bool = true;
