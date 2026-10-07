@@ -222,6 +222,8 @@ pub enum NodeCreationFailure {
     SystemCorrupted,
     /// The [`UniqueNodeId`] could not be generated.
     UnableToGenerateUniqueNodeId,
+    /// The [`NameGenerator`] could not be opened/created.
+    UnableToOpenOrCreateNameGenerator,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -1604,9 +1606,9 @@ impl NodeBuilder {
             .as_ref()
             .unwrap_or_else(|| Config::global_config());
 
-        // TODO: error handling
         let name_generator = fail!(from self, when Service::NameGenerator::open_or_create(config),
-            with NodeCreationFailure::InternalError, "blub");
+            with NodeCreationFailure::UnableToOpenOrCreateNameGenerator,
+            "{msg} because the name generator could not be opened/created.");
         let name = match &self.name {
             Some(n) => n.clone(),
             None => name_generator.generate_node_name(),
