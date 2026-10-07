@@ -159,7 +159,6 @@ pub fn creating_named_pipe_applies_additional_settings() {
 
     let test_path = generate_file_path();
     let test_named_pipe = NamedPipeBuilder::new(&test_path)
-        .has_ownership(false)
         .creation_mode(CreationMode::PurgeAndCreate)
         .permission(Permission::OWNER_READ_WRITE)
         .owner(User::from_self().unwrap().uid())
@@ -187,6 +186,115 @@ pub fn enable_async_io_works() {
 
     assert_that!(sut.set_async_io(true), is_ok);
     assert_that!(sut.is_async_io(), eq true);
+}
+
+#[test]
+pub fn set_and_receive_access_mode_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = generate_file_path();
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+
+    assert_that!(sut.access_mode(), eq AccessMode::ReadWrite);
+}
+
+#[test]
+pub fn set_and_receive_ownership_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = generate_file_path();
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+
+    assert_that!(sut.has_ownership(), eq false);
+}
+
+#[test]
+pub fn acquire_and_release_ownership_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = generate_file_path();
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+
+    sut.acquire_ownership();
+    assert_that!(sut.has_ownership(), eq true);
+
+    sut.release_ownership();
+    assert_that!(sut.has_ownership(), eq false);
+}
+
+#[test]
+pub fn does_exist_check_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = generate_file_path();
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq false);
+
+    // create dummy file that is not a pipe
+    create_test_directory();
+    let dummy_file_path = generate_file_path();
+    let file = FileBuilder::new(&dummy_file_path)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .permission(Permission::OWNER_READ)
+        .create();
+    assert_that!(file, is_ok);
+    assert_that!(NamedPipe::does_exist(&dummy_file_path).unwrap(), eq false);
+
+    // now a real pipe
+    let _sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq true);
+}
+
+#[test]
+pub fn remove_self_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = generate_file_path();
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+
+    assert_that!(sut.remove_self().unwrap(), eq true);
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq false);
+}
+
+#[test]
+pub fn pipe_exist_after_drop_without_ownership_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+    let test_named_pipe_path = generate_file_path();
+
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+    drop(sut);
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq true);
+}
+
+#[test]
+pub fn pipe_removed_after_drop_with_ownership_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+    let test_named_pipe_path = generate_file_path();
+
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create()
+        .unwrap();
+    sut.acquire_ownership();
+    drop(sut);
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq false);
 }
 
 #[test]
@@ -279,7 +387,6 @@ fn blocking_read_blocks() {
 
         barrier.wait();
         let sut_writer = NamedPipeBuilder::new(&pipe_test_path)
-            .has_ownership(false)
             .creation_mode(CreationMode::OpenOrCreate)
             .create()
             .unwrap();
@@ -312,7 +419,6 @@ fn timed_read_blocks() {
         s.thread_builder()
             .spawn(|| {
                 let sut_reader = NamedPipeBuilder::new(&pipe_test_path)
-                    .has_ownership(false)
                     .creation_mode(CreationMode::PurgeAndCreate)
                     .create()
                     .unwrap();
@@ -328,7 +434,6 @@ fn timed_read_blocks() {
 
         barrier.wait();
         let sut_writer = NamedPipeBuilder::new(&pipe_test_path)
-            .has_ownership(false)
             .creation_mode(CreationMode::OpenOrCreate)
             .create()
             .unwrap();
@@ -352,7 +457,6 @@ fn timed_read_blocks_at_least_for_timeout() {
     let pipe_test_path = generate_file_path();
 
     let _sut_writer = NamedPipeBuilder::new(&pipe_test_path)
-        .has_ownership(false)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
