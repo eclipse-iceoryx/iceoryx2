@@ -16,6 +16,7 @@ extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
 pub mod attribute_tests;
+pub mod default_name_generator_tests;
 pub mod node_name_tests;
 pub mod port_name_tests;
 pub mod service_event_thread_safety_tests;
