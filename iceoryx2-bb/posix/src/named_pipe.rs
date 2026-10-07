@@ -113,16 +113,6 @@ enum_gen! { NamedPipeCreationError
     MetadataFromPathError
 }
 
-enum_gen! { NamedPipeRemoveError
-  entry:
-    InsufficientPermissions,
-    CurrentlyInUse,
-    LoopInSymbolicLinks,
-    MaxSupportedPathLengthExceeded,
-    PartOfReadOnlyFileSystem,
-    UnknownError(i32)
-}
-
 enum_gen! { NamedPipeReadError
   entry:
     OpenedWithoutReadAccessMode,
@@ -166,6 +156,19 @@ enum_gen! { NamedPipeSetPropertyError
     FileTooBig,
     WouldCauseOverflow,
     UnknownError(i32)
+}
+
+enum_gen! {
+    /// The NamedPipeError enum is a generalization when one doesn't require the fine-grained error
+    /// handling enums. One can forward NamedPipeError as more generic return value when a method
+    /// returns a NamedPipe***Error.
+    /// On a higher level it is again convertible to [`crate::Error`].
+    NamedPipeError
+  generalization:
+    Create <= NamedPipeCreationError,
+    Write <= NamedPipeWriteError; FileRemoveError,
+    Read <= NamedPipeReadError; NamedPipeOpenError; MetadataFromPathError,
+    Credentials <= FileSetPermissionError; FileSetOwnerError
 }
 
 /// Opens or creates a new [`NamedPipe`]. When calling [`NamedPipeBuilder::creation_mode`] the

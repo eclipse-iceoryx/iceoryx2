@@ -27,6 +27,7 @@ use group::GroupError;
 use iceoryx2_bb_elementary::enum_gen;
 use memory_lock::MemoryLockError;
 use mutex::MutexError;
+use named_pipe::NamedPipeError;
 use process::ProcessError;
 use read_write_mutex::ReadWriteMutexError;
 use semaphore::SemaphoreError;
@@ -88,6 +89,7 @@ enum_gen! {Error
     Group <= GroupError,
     MemoryLock <= MemoryLockError,
     Mutex <= MutexError,
+    NamedPipe <= NamedPipeError,
     Process <= ProcessError,
     ReadWriteMutex <= ReadWriteMutexError,
     Semaphore <= SemaphoreError,
