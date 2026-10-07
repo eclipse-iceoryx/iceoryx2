@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::{Time, nanosleep};
