@@ -19,7 +19,6 @@
 //       there is not output with a location;
 //       retry with Rust 1.100.0;
 //       corresponding issue https://github.com/eclipse-iceoryx/iceoryx2/issues/2088
-#![allow(rustdoc::redundant_explicit_links)]
 
 //! # iceoryx2
 //!

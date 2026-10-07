@@ -32,6 +32,7 @@
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
 * [#2050](https://github.com/eclipse-iceoryx/iceoryx2/issues/2050) Find CLI commands in the folder of the running binary and prefer them over the ones in `PATH`
 * [#2062](https://github.com/eclipse-iceoryx/iceoryx2/issues/2062) Grant DELETE rights to the file owner in the Windows DACL
+* [#2088](https://github.com/eclipse-iceoryx/iceoryx2/issues/2088) Fix the faulty intra-doc links that triggered the `rustdoc::redundant_explicit_links` lint and remove the crate-level allow workaround
 
 ### Refactoring
 
