@@ -63,6 +63,7 @@
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#2076](https://github.com/eclipse-iceoryx/iceoryx2/issues/2076) Expose the names of ports in the port details of the C and C++ bindings
+* [#2046](https://github.com/eclipse-iceoryx/iceoryx2/issues/2046) Add abstraction for named pipes to `iceoryx2-bb-posix`
 
 ### API Breaking Changes
 
