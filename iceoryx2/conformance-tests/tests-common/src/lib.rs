@@ -21,6 +21,7 @@ extern crate iceoryx2_bb_loggers;
 mod active_request_tests;
 mod client_tests;
 mod listener_tests;
+mod name_generator_trait_tests;
 mod node_death_tests;
 mod node_tests;
 mod notifier_tests;

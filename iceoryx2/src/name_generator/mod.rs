@@ -27,6 +27,14 @@ pub enum NameGeneratorOpenOrCreateError {
     InternalError,
 }
 
+impl core::fmt::Display for NameGeneratorOpenOrCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "NameGeneratorOpenOrCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for NameGeneratorOpenOrCreateError {}
+
 /// Generates [`NodeName`]s and [`PortName`]s.
 pub trait NameGenerator: Debug + Sized {
     /// Opens an existing [`NameGenerator`] or creates it.
