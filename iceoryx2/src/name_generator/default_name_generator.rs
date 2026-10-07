@@ -10,9 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Generates default [`NodeName`]s and [`PortName`]s.
+
 pub use crate::name_generator::*;
 
-// TODO: better name, EmptyName?
+/// Generator for default [`NodeName`]s and [`PortName`]s.
 #[derive(Debug)]
 pub struct DefaultNameGenerator {}
 
@@ -26,6 +28,6 @@ impl NameGenerator for DefaultNameGenerator {
     }
 
     fn generate_port_name(&self) -> PortName {
-        PortName::new_empty()
+        PortName::default()
     }
 }

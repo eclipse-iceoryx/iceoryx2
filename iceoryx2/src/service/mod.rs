@@ -997,6 +997,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     /// Mechanism to generate IDs that are unique, at least within a single process.
     type UniqueId: UniqueIdGenerator;
 
+    /// Mechanism to generate [`NodeName`]s and [`PortName`]s.
     type NameGenerator: NameGenerator;
 
     /// Checks if a service under a given [`config::Config`] does exist

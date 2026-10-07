@@ -591,4 +591,5 @@ pub(crate) mod payload;
 /// Mechanism to generate unique IDs.
 pub mod unique_id_generator;
 
+/// Mechanism to generate [`NodeName`]s and [`PortName`]s.
 pub mod name_generator;
