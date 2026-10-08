@@ -506,11 +506,19 @@ _test-e2e-run-tests:
     mapfile -t FILES < <(awk '{ print $3 }')
 
     # Execute each discovered test file
+    SKIP_EXIT_CODE=77
+
     FAILED=()
+    SKIPPED=()
     for FILE in "${FILES[@]}"; do
         echo -e "${C_YELLOW}RUN${C_OFF} ${FILE}"
-        if expect "${FILE}"; then
+        STATUS=0
+        expect "${FILE}" || STATUS=$?
+        if [ "$STATUS" -eq 0 ]; then
             echo -e "${C_GREEN}PASS${C_OFF} ${FILE}"
+        elif [ "$STATUS" -eq "$SKIP_EXIT_CODE" ]; then
+            echo -e "${C_YELLOW}SKIP${C_OFF} ${FILE}"
+            SKIPPED+=("${FILE}")
         else
             echo -e "${C_RED}FAIL${C_OFF} ${FILE}"
             FAILED+=("${FILE}")
@@ -520,7 +528,10 @@ _test-e2e-run-tests:
     # Summarize results
     echo ""
     echo "-----------------------------------"
-    echo "Ran ${#FILES[@]} end-to-end test(s), ${#FAILED[@]} failed."
+    echo "Ran ${#FILES[@]} end-to-end test(s), ${#SKIPPED[@]} skipped, ${#FAILED[@]} failed."
+    if [ "${#SKIPPED[@]}" -ne 0 ]; then
+        printf "${C_YELLOW}SKIPPED${C_OFF} %s\n" "${SKIPPED[@]}"
+    fi
     if [ "${#FAILED[@]}" -ne 0 ]; then
         printf "${C_RED}FAILED${C_OFF} %s\n" "${FAILED[@]}"
         exit 1

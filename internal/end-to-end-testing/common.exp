@@ -102,3 +102,13 @@ proc show_test_skipped { } {
     puts "${C_YELLOW}Test skipped!${C_OFF}"
 }
 
+# Skips the test when the tool is not installed.
+proc require_tool { TOOL } {
+    global C_YELLOW C_OFF
+    if { [auto_execok ${TOOL}] eq "" } {
+        puts "${C_YELLOW}Requires '${TOOL}', which is not installed.${C_OFF}"
+        show_test_skipped
+        exit 77
+    }
+}
+

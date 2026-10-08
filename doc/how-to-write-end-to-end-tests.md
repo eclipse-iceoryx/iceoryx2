@@ -110,6 +110,8 @@ The `common.exp` file also contains the following functions:
   error handling.
 * `show_test_passed`: Should be placed at the end of the `test_e2e_*.exp` file
   to indicate a successful test run.
+* `require_tool`: Skips the test when the given tool, such as `flatc`, is not
+  installed.
 
 It also includes the following helper functions:
 
