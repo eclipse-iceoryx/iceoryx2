@@ -35,7 +35,7 @@ Tests can be selected by workspace and, within a workspace, by category.
 ```sh
 just test-e2e sdk                                  # build and run all sdk tests
 just test-e2e sdk --category cli --list            # list the iox2 cli tests
-just test-e2e all --filter '*request_response*'    # select by file name
+just test-e2e all --filter '*request_response*'    # select by path
 just test-e2e integrations-zenoh --no-run          # only build the artifacts
 just test-e2e integrations-zenoh --no-build        # only run the tests
 ```

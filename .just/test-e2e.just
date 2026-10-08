@@ -73,7 +73,7 @@ _test-e2e-dispatch what *flags:
         echo ""
         echo "Flags:"
         echo "  --category <glob>      select tests whose category matches the glob"
-        echo "  --filter <glob>        select tests whose file name matches the glob"
+        echo "  --filter <glob>        select tests whose file path matches the glob"
         echo "  --list                 list the selected tests instead of running them"
         echo "  --no-build             skip building what the selected tests need"
         echo "  --no-run               build what the selected tests need without running them"
@@ -202,7 +202,7 @@ _test-e2e-print-table *widths:
 
 
 # Finds every `*.exp` in the given workspace whose category is listed and whose
-# file name matches the filter.
+# path matches the filter.
 [private]
 [no-exit-message]
 _test-e2e-find-tests workspace categories filter:
@@ -250,7 +250,7 @@ _test-e2e-find-tests workspace categories filter:
             continue
         fi
         find "$DIRECTORY" -type f -name '*.exp' -not -path '*/target/*' | sort | while read -r FILE; do
-            if [ -n "$FILTER" ] && [[ "$(basename "$FILE")" != $FILTER ]]; then
+            if [ -n "$FILTER" ] && [[ "$FILE" != $FILTER ]]; then
                 continue
             fi
             echo "$WORKSPACE $CATEGORY $FILE"
