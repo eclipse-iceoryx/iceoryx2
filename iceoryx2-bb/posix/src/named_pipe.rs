@@ -21,7 +21,7 @@
 //! use iceoryx2_bb_system_types::file_path::FilePath;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //!
-//! let pipe_path = FilePath::new(b"/tmp/iceoryx2/myNamedPipe").unwrap();
+//! let pipe_path = FilePath::new(b"myNamedPipe").unwrap();
 //! let mut named_pipe = NamedPipeBuilder::new(&pipe_path)
 //!                                  .creation_mode(CreationMode::CreateExclusive)
 //!                                  .permission(Permission::OWNER_READ_WRITE | Permission::GROUP_READ)
@@ -176,7 +176,7 @@ enum_gen! {
 /// for newly created pipes.
 ///
 /// # Details
-/// The default [`AccessMode`] is [`AccessMode::Read`].
+/// The default [`AccessMode`] is [`AccessMode::ReadWrite`].
 ///
 /// # Examples
 /// ## Open existing named pipe for reading
@@ -187,7 +187,7 @@ enum_gen! {
 /// use iceoryx2_bb_system_types::file_path::FilePath;
 /// use iceoryx2_bb_container::semantic_string::SemanticString;
 ///
-/// let pipe_path = FilePath::new(b"/tmp/iceoryx2/roehrich").unwrap();
+/// let pipe_path = FilePath::new(b"Roehrich").unwrap();
 /// let named_pipe = NamedPipeBuilder::new(&pipe_path)
 ///                     .open_existing(AccessMode::Read);
 /// ```
@@ -200,7 +200,7 @@ enum_gen! {
 /// use iceoryx2_bb_system_types::file_path::FilePath;
 /// use iceoryx2_bb_container::semantic_string::SemanticString;
 ///
-/// let pipe_path = FilePath::new(b"/tmp/iceoryx2/roehrich").unwrap();
+/// let pipe_path = FilePath::new(b"Roehrich").unwrap();
 /// let named_pipe = NamedPipeBuilder::new(&pipe_path)
 ///                              .creation_mode(CreationMode::CreateExclusive)
 ///                              // BEGIN: optional settings
@@ -254,7 +254,7 @@ impl NamedPipeBuilder {
         NamedPipeCreationBuilder { config: self }
     }
 
-    /// Opens an existing pipe at the given file_path and defines how the files [`AccessMode`],
+    /// Opens an existing pipe at the given file_path and defines how the file's [`AccessMode`],
     /// for reading, writing. Is independent of
     /// the current permissions of the pipe. But writing to a read-only pipe can result
     /// in some kind of error.
@@ -594,7 +594,7 @@ impl NamedPipe {
     }
 
     /// Returns `true` if the [`NamedPipe`] is owned by the construct and automatically
-    /// removed when it goes out-of-scope, otherwise it returns `false`.
+    /// otherwise it returns `false`.
     pub fn has_ownership(&self) -> bool {
         self.has_ownership.load(Ordering::Relaxed)
     }
@@ -611,6 +611,8 @@ impl NamedPipe {
         self.has_ownership.store(false, Ordering::Relaxed);
     }
 
+    // Checks if the pipe exists at the given file_path and wether the type
+    // is a named pipe.
     pub fn does_exist(file_path: &FilePath) -> Result<bool, MetadataFromPathError> {
         let origin = "NamedPipe::does_exist()";
         let msg = format!("Unable to determine if named pipe \"{file_path}\" exists");
@@ -630,6 +632,7 @@ impl NamedPipe {
         }
     }
 
+    /// Set file status flags on a given filedescriptor
     fn fcntl(&self, command: i32, value: i32, msg: &str) -> Result<i32, NamedPipeSetPropertyError> {
         let result =
             unsafe { posix::fcntl_int(self.file_descriptor.native_handle(), command, value) };
