@@ -18,6 +18,8 @@ cd ${REPO_ROOT}
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+require_tool flatc
+
 cd examples/cxx/flatbuffer_publish_subscribe/src
 spawn flatc --schema --binary unbounded_data.fbs
 wait

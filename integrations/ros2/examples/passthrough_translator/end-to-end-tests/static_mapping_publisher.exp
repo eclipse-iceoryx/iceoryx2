@@ -25,7 +25,7 @@ set MAPPING integrations/ros2/examples/passthrough_translator/static_mapping.tom
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     --bin iox2-link-gateway-ros2 2>@1
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --examples 2>@1
+    --example passthrough_static_mapping_publisher 2>@1
 
 #### Test
 

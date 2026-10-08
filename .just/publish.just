@@ -145,6 +145,7 @@ INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
     iceoryx2-log`
 
 [private]
+[no-exit-message]
 _publish-dispatch workspace *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -263,6 +264,7 @@ _publish-sanity-checks workspace:
     done
 
 [private]
+[no-exit-message]
 _publish-check-completeness workspace:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -295,6 +297,7 @@ _publish-check-completeness workspace:
     fi
 
 [private]
+[no-exit-message]
 _publish-check-cyclic-deps workspace:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -333,6 +336,7 @@ _publish-check-cyclic-deps workspace:
 
 
 [private]
+[no-exit-message]
 _publish-check-owner workspace owner_to_check:
     #!/usr/bin/env bash
     set -euo pipefail

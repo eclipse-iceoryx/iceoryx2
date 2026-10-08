@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _parse-lint-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -36,6 +37,7 @@ _parse-lint-args *flags:
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
+[no-exit-message]
 _lint-dispatch what target *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -116,6 +118,7 @@ _lint-rust workspace mode extra_args:
 # -----------------------------------------------------------------------------
 
 [private]
+[no-exit-message]
 _lint-markdown workspace mode:
     #!/usr/bin/env bash
     set -euo pipefail

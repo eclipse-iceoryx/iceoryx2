@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _doc-dispatch workspace target *flags:
     #!/usr/bin/env bash
     set -euo pipefail

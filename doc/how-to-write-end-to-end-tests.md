@@ -10,14 +10,65 @@ useful for end-to-end testing scenarios. `expect` works by defining patterns to
 match against process outputs and can handle situations like timeouts or
 unexpected EOFs, providing robust error handling and automation.
 
-The convention in iceoryx2 is to have `test_e2e_foo.exp` files for the tests.
-These files will be automatically found and executed in the CI.
+An end-to-end test is defined in a `test_e2e_foo.exp` file that lives next to
+the example or tool it tests. The `just` recipe `just test-e2e` discovers these
+files and provides convenience for building and running the tests.
 
 See following links for more information regarding `expect`:
 <!-- markdownlint-disable MD034 Bare URL used -->
 * https://phoenixnap.com/kb/linux-expect
 * https://draculaservers.com/tutorials/linux-expect-command
 <!-- markdownlint-enable MD034 Bare URL used -->
+
+## Running the Tests
+
+The tests are run with the `just test-e2e` recipe. The available workspaces
+and flags, and the test suites grouping the tests of a workspace by category
+such as `examples-rust` or `cli`, are described by:
+
+```sh
+just test-e2e --help
+```
+
+Tests can be selected by workspace and, within a workspace, by category.
+
+```sh
+just test-e2e sdk                                  # build and run all sdk tests
+just test-e2e sdk --category cli --list            # list the iox2 cli tests
+just test-e2e all --filter '*request_response*'    # select by path
+just test-e2e integrations-zenoh --no-run          # only build the artifacts
+just test-e2e integrations-zenoh --no-build        # only run the tests
+```
+
+Before running, the recipe builds the artifacts the selected tests need, such
+as the Rust examples, the iox2 command line tools or the C and C++ bindings.
+
+It is also possible to run a single test directly with:
+
+```sh
+expect path/to/test_e2e_foo.exp
+```
+
+Each `expect` script should build the artifacts they require.
+
+## Registering a Test Suite
+
+A test suite is a directory whose `.exp` files share a workspace, a category
+and the artifacts they need. The suites are declared in two tables in
+`.just/test-e2e.just`:
+
+* `_test-e2e-suites` has one row per suite with its workspace, its category,
+  its directory and the artifacts its tests need. An artifact is a binary or
+  binding the tests spawn, such as the Rust examples, the iox2 command line
+  tools or the C and C++ bindings. The `just` scripts build these artifacts
+  before the running the tests.
+* `_test-e2e-artifacts` has one row per artifact with the recipe that builds
+  it.
+
+A test placed below the directory of an existing suite is discovered without
+any registration. A test in a new directory needs a row in `_test-e2e-suites`,
+and if it spawns something no existing artifact provides, a row in
+`_test-e2e-artifacts` together with a recipe building it.
 
 ## Common Setup
 
@@ -27,7 +78,7 @@ See following links for more information regarding `expect`:
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 ```
 
 Here, `git rev-parse --show-toplevel` is used to find the root directory of the
@@ -59,6 +110,8 @@ The `common.exp` file also contains the following functions:
   error handling.
 * `show_test_passed`: Should be placed at the end of the `test_e2e_*.exp` file
   to indicate a successful test run.
+* `require_tool`: Skips the test when the given tool, such as `flatc`, is not
+  installed.
 
 It also includes the following helper functions:
 
@@ -81,7 +134,7 @@ that the most recently spawned one outputs the expected string.
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
@@ -122,7 +175,7 @@ certain processes are terminated.
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup and Assertion
 

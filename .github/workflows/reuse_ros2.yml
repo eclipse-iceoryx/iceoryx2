@@ -113,18 +113,5 @@ jobs:
           echo "Using RMW: $RMW_IMPLEMENTATION"
           just test-e2e integrations-ros2
 
-      - name: Build examples
-        shell: bash
-        run: |
-          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just setup integrations-ros2-examples
-
-      - name: End-to-end test examples
-        shell: bash
-        run: |
-          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          echo "Using RMW: $RMW_IMPLEMENTATION"
-          just test-e2e integrations-ros2-examples
-
       - name: Check for changed files after CI run
         uses: ./.github/actions/check-repo-changes

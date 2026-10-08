@@ -20,6 +20,8 @@ set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/cxx/flatbuffer_reques
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+require_tool flatc
+
 cd examples/cxx/flatbuffer_request_response/src
 spawn flatc --schema --binary unbounded_data.fbs
 wait

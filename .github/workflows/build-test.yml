@@ -258,6 +258,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@0d6a7d60b009d01c9e7523be22153ff8f19460d3 # version: v2.2.0
         with:
@@ -293,9 +296,15 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Build end-to-end test artifacts
+        run: |
+          just test-e2e sdk --no-run
+          just test-e2e integrations-zenoh --no-run
+
       - name: Run end-to-end tests
         run: |
-          internal/scripts/ci_build_and_run_end_to_end_tests.sh
+          just test-e2e sdk --no-build
+          just test-e2e integrations-zenoh --no-build
 
   host-to-host-tests-tunnel:
     needs: [preflight-check]

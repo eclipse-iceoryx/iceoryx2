@@ -104,9 +104,6 @@ end-to-end tests:
 
 ```bash
 just test-e2e integrations-ros2
-
-just setup integrations-ros2-examples
-just test-e2e integrations-ros2-examples
 ```
 
 ## Examples

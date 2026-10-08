@@ -18,6 +18,7 @@ VERSIONS_FILE      := justfile_directory() / "internal/VERSIONS"
 PACKAGE_VERSION_RS := justfile_directory() / "iceoryx2-bb/elementary/src/package_version.rs"
 
 [private]
+[no-exit-message]
 _parse-prepare-release-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -36,6 +37,7 @@ _parse-prepare-release-args *flags:
     echo "NEW_VERSION='$NEW_VERSION'"
 
 [private]
+[no-exit-message]
 _prepare-release-dispatch what action *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -80,6 +82,7 @@ _prepare-release-dispatch what action *flags:
     esac
 
 [private]
+[no-exit-message]
 _prepare-release-all-versions new_version:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -127,6 +130,7 @@ _release-read-current-version:
     @grep '^CURRENT:' {{VERSIONS_FILE}} | sed 's/CURRENT: //'
 
 [private]
+[no-exit-message]
 _release-write-current-version old new:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -215,6 +219,7 @@ _release-update-docs old new:
 # -----------------------------------------------------------------------------
 
 [private]
+[no-exit-message]
 _release-verify-no-stale-version old:
     #!/usr/bin/env bash
     set -euo pipefail

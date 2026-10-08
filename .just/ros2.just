@@ -16,6 +16,7 @@
 
 # Fails unless a ROS 2 distribution is sourced.
 [private]
+[no-exit-message]
 _ros2-require-sourced:
     #!/usr/bin/env bash
     if [ -z "${ROS_DISTRO:-}" ]; then

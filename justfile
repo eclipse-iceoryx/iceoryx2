@@ -44,35 +44,49 @@ default:
     @echo ""
     @echo "Run 'just <command>' for usage details on each command."
 
+[no-exit-message]
 build what="" *flags:
     @just _build-dispatch "{{what}}" {{flags}}
 
+[no-exit-message]
 test what="" *flags:
     @just _test-dispatch "{{what}}" {{flags}}
 
+[no-exit-message]
 test-e2e what="" *flags:
-    @just _test-e2e-dispatch "{{what}}" {{flags}}
+    #!/usr/bin/env bash
+    # Keeps a glob passed to a flag from expanding against the working directory.
+    set -f
+    just _test-e2e-dispatch "{{what}}" {{flags}}
 
+[no-exit-message]
 doc workspace="" target="" *flags:
     @just _doc-dispatch "{{workspace}}" "{{target}}" {{flags}}
 
+[no-exit-message]
 bundle what="" *flags:
     @just _bundle-dispatch "{{what}}" {{flags}}
 
+[no-exit-message]
 verify workspace="" target="" *flags:
     @just _verify-dispatch "{{workspace}}" "{{target}}" {{flags}}
 
+[no-exit-message]
 lint workspace="" target="" *flags:
     @just _lint-dispatch "{{workspace}}" "{{target}}" {{flags}}
 
+[no-exit-message]
 setup what="":
     @just _setup-dispatch "{{what}}"
 
+[no-exit-message]
 coverage action="" *flags:
     @just _coverage-dispatch "{{action}}" {{flags}}
 
+[no-exit-message]
 publish workspace="" *flags:
     @just _publish-dispatch "{{workspace}}" {{flags}}
 
+[no-exit-message]
 prepare-release workspace="" action="" *flags:
     @just _prepare-release-dispatch "{{workspace}}" "{{action}}" {{flags}}

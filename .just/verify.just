@@ -15,6 +15,7 @@
 # =============================================================================
 
 [private]
+[no-exit-message]
 _parse-verify-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -55,6 +56,7 @@ _parse-verify-args *flags:
     echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
+[no-exit-message]
 _verify-dispatch what tool *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -120,6 +122,7 @@ _verify-dispatch what tool *flags:
 # -----------------------------------------------------------------------------
 
 [private]
+[no-exit-message]
 _verify-clippy workspace target_triplet profile has_nostd extra_args:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -219,6 +222,7 @@ _verify-std-propagation what:
     esac
 
 [private]
+[no-exit-message]
 _verify-std-propagation-workspace workspace:
     #!/usr/bin/env bash
     set -euo pipefail
