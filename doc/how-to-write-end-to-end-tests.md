@@ -24,7 +24,7 @@ See following links for more information regarding `expect`:
 
 The tests are run with the `just test-e2e` recipe. The available workspaces
 and flags, and the test suites grouping the tests of a workspace by category
-such as `examples` or `cli`, are described by:
+such as `examples-rust` or `cli`, are described by:
 
 ```sh
 just test-e2e --help

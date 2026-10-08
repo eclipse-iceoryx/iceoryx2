@@ -58,6 +58,8 @@ _parse-test-e2e-args *flags:
 _test-e2e-dispatch what *flags:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Keeps a glob passed to a flag from expanding against the working directory.
+    set -f
 
     show_help() {
         echo "Usage: just test-e2e <workspace> [flags]"
@@ -70,7 +72,7 @@ _test-e2e-dispatch what *flags:
         echo "  all                    run end-to-end tests for every workspace"
         echo ""
         echo "Flags:"
-        echo "  --category <name>      select tests of this category, repeatable"
+        echo "  --category <glob>      select tests whose category matches the glob"
         echo "  --filter <glob>        select tests whose file name matches the glob"
         echo "  --list                 list the selected tests instead of running them"
         echo "  --no-build             skip building what the selected tests need"
@@ -160,7 +162,7 @@ _test-e2e-suites:
 
     # Workspace                 Category          Root                                        Artifacts
     cat <<'EOF'
-    sdk                         examples          examples/rust                               sdk-examples
+    sdk                         examples-rust     examples/rust                               sdk-examples
     sdk                         examples-c        examples/c                                  sdk-c-cxx
     sdk                         examples-cxx      examples/cxx                                sdk-c-cxx
     sdk                         examples-python   examples/python                             sdk-python
@@ -170,7 +172,7 @@ _test-e2e-suites:
     sdk                         component-tests   component-tests                             sdk-component-tests,sdk-c-cxx
     integrations-zenoh          tunnel-cli        integrations/zenoh/link-tunnel-cli          sdk-cli,sdk-examples,zenoh-tunnel
     integrations-ros2           gateway-cli       integrations/ros2/link-gateway-cli          sdk-cli,ros2-gateway,ros2-examples
-    integrations-ros2           examples          integrations/ros2/examples                  ros2-gateway,ros2-examples
+    integrations-ros2           examples-rust     integrations/ros2/examples                  ros2-gateway,ros2-examples
     integrations-ros2           examples-colcon   integrations/ros2/colcon/examples           ros2-colcon-examples
     EOF
 
@@ -217,9 +219,24 @@ _test-e2e-find-tests workspace categories filter:
         echo "Error: unknown workspace '{{workspace}}'" >&2
         exit 1
     fi
-    for CATEGORY in $CATEGORIES; do
-        if ! echo "$SUITES" | awk '{ print $2 }' | grep -qx "$CATEGORY"; then
-            echo "Error: unknown category '$CATEGORY'" >&2
+
+    # Helper to check if a category is included in the selection.
+    is_selected_category() {
+        local ACTUAL="$1"
+        local REQUESTED
+        for REQUESTED in $CATEGORIES; do
+            if [[ "$ACTUAL" == $REQUESTED ]]; then
+                return 0
+            fi
+        done
+        return 1
+    }
+
+    for REQUESTED in $CATEGORIES; do
+        if ! echo "$SUITES" | awk '{ print $2 }' | while read -r ACTUAL; do
+            [[ "$ACTUAL" == $REQUESTED ]] && exit 0
+        done; then
+            echo "Error: unknown category '$REQUESTED'" >&2
             exit 1
         fi
     done
@@ -229,7 +246,7 @@ _test-e2e-find-tests workspace categories filter:
         if [ "{{workspace}}" != "all" ] && [ "$WORKSPACE" != "{{workspace}}" ]; then
             continue
         fi
-        if [ -n "$CATEGORIES" ] && [[ " $CATEGORIES " != *" $CATEGORY "* ]]; then
+        if [ -n "$CATEGORIES" ] && ! is_selected_category "$CATEGORY"; then
             continue
         fi
         find "$DIRECTORY" -type f -name '*.exp' -not -path '*/target/*' | sort | while read -r FILE; do

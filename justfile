@@ -54,7 +54,10 @@ test what="" *flags:
 
 [no-exit-message]
 test-e2e what="" *flags:
-    @just _test-e2e-dispatch "{{what}}" {{flags}}
+    #!/usr/bin/env bash
+    # Keeps a glob passed to a flag from expanding against the working directory.
+    set -f
+    just _test-e2e-dispatch "{{what}}" {{flags}}
 
 [no-exit-message]
 doc workspace="" target="" *flags:
