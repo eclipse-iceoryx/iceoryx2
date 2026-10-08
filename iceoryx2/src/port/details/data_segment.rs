@@ -122,14 +122,31 @@ impl<Service: service::Service> DataSegment<Service> {
         let origin = "DataSegment::create_static_segment()";
 
         let segment_config = data_segment_config::<Service>(global_config);
-        let memory = fail!(from origin,
-                                when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
-                                Service::SharedMemory,
-                                    >>::new(segment_name)
-                                    .config(&segment_config)
-                                    .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
-                                    .create(&allocator_config),
-                                "{msg}");
+
+        let ownership = if Service::IS_PERSISTENT {
+            // persistent mode, the static data segment shall not be removed when drop is called
+            false
+        } else {
+            true
+        };
+
+        let segment_builder = || {
+            <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder
+            as NamedConceptBuilder<Service::SharedMemory>>::new(segment_name)
+                .config(&segment_config)
+                .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
+                .has_ownership(ownership)
+        };
+
+        if Service::IS_PERSISTENT
+            && let Ok(memory) = segment_builder().open(AccessMode::ReadWrite)
+        {
+            return Ok(Self {
+                memory: MemoryType::Static(memory),
+            });
+        }
+
+        let memory = fail!(from origin, when segment_builder().create(&allocator_config), "{msg}");
 
         Ok(Self {
             memory: MemoryType::Static(memory),

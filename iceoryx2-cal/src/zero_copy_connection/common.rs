@@ -128,10 +128,16 @@ pub mod details {
     fn cleanup_shared_memory<Storage: DynamicStorage<SharedManagementData>>(
         storage: &Storage,
         state_to_remove: State,
+        is_persistent: bool,
     ) {
         let mgmt_data = storage.get();
         if mgmt_data.remove_state(state_to_remove) == State::MarkedForDestruction.value() {
-            storage.acquire_ownership()
+            if is_persistent {
+                mgmt_data.reset();
+                storage.release_ownership();
+            } else {
+                storage.acquire_ownership()
+            }
         }
     }
 
@@ -364,6 +370,10 @@ pub mod details {
                     msg, n);
             }
         }
+
+        fn reset(&self) {
+            self.state.store(State::None.value(), Ordering::Relaxed);
+        }
     }
 
     #[derive(Debug)]
@@ -378,6 +388,7 @@ pub mod details {
         initial_channel_state: ChannelState,
         timeout: Duration,
         config: Configuration<Storage>,
+        pub is_persistent: bool,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Builder<Storage> {
@@ -464,7 +475,7 @@ pub mod details {
                 if storage.get().channels[0].submission_queue.capacity()
                     != self.submission_queue_size()
                 {
-                    cleanup_shared_memory(&storage, port_to_register);
+                    cleanup_shared_memory(&storage, port_to_register, self.is_persistent);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
                         "{} since the connection has a buffer size of {} but a buffer size of {} is required.",
                         msg, storage.get().channels[0].submission_queue.capacity(), self.submission_queue_size());
@@ -473,14 +484,14 @@ pub mod details {
                 if storage.get().channels[0].completion_queue.capacity()
                     != self.completion_queue_size()
                 {
-                    cleanup_shared_memory(&storage, port_to_register);
+                    cleanup_shared_memory(&storage, port_to_register, self.is_persistent);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSamplesPerChannelSetting,
                         "{} since the max borrowed sample per channel setting is set to {} but a value of {} is required.",
                         msg, storage.get().channels[0].completion_queue.capacity() - storage.get().channels[0].submission_queue.capacity(), self.max_borrowed_samples_per_channel);
                 }
 
                 if storage.get().enable_safe_overflow != self.enable_safe_overflow {
-                    cleanup_shared_memory(&storage, port_to_register);
+                    cleanup_shared_memory(&storage, port_to_register, self.is_persistent);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleOverflowSetting,
                         "{} since the safe overflow is set to {} but should be set to {}.",
                         msg, storage.get().enable_safe_overflow, self.enable_safe_overflow);
@@ -488,21 +499,21 @@ pub mod details {
 
                 if storage.get().number_of_samples_per_segment != self.number_of_samples_per_segment
                 {
-                    cleanup_shared_memory(&storage, port_to_register);
+                    cleanup_shared_memory(&storage, port_to_register, self.is_persistent);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
                         "{} since the requested number of samples is set to {} but should be set to {}.",
                         msg, self.number_of_samples_per_segment, storage.get().number_of_samples_per_segment);
                 }
 
                 if storage.get().number_of_segments != self.number_of_segments {
-                    cleanup_shared_memory(&storage, port_to_register);
+                    cleanup_shared_memory(&storage, port_to_register, self.is_persistent);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSegments,
                         "{} since the requested number of segments is set to {} but should be set to {}.",
                         msg, self.number_of_segments, storage.get().number_of_segments);
                 }
 
                 if storage.get().channels.capacity() != self.number_of_channels {
-                    cleanup_shared_memory(&storage, port_to_register);
+                    cleanup_shared_memory(&storage, port_to_register, self.is_persistent);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfChannels,
                         "{} since the requested number of channels is set to {} but should be set to {}.",
                         msg, self.number_of_channels, storage.get().channels.capacity());
@@ -528,6 +539,7 @@ pub mod details {
                 config: Configuration::default(),
                 initial_channel_state: CHANNEL_STATE_OPEN,
                 timeout: Duration::ZERO,
+                is_persistent: false,
             }
         }
 
@@ -591,6 +603,7 @@ pub mod details {
             Ok(Sender {
                 storage,
                 name: self.name,
+                is_persistent: self.is_persistent,
             })
         }
 
@@ -612,6 +625,7 @@ pub mod details {
                     borrow_counter
                 },
                 name: self.name,
+                is_persistent: self.is_persistent,
             })
         }
     }
@@ -620,6 +634,7 @@ pub mod details {
     pub struct Sender<Storage: DynamicStorage<SharedManagementData>> {
         storage: Storage,
         name: FileName,
+        is_persistent: bool,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Sender<Storage> {
@@ -631,7 +646,7 @@ pub mod details {
 
     impl<Storage: DynamicStorage<SharedManagementData>> Drop for Sender<Storage> {
         fn drop(&mut self) {
-            cleanup_shared_memory(&self.storage, State::Sender);
+            cleanup_shared_memory(&self.storage, State::Sender, self.is_persistent);
         }
     }
 
@@ -916,6 +931,7 @@ pub mod details {
         storage: Storage,
         borrow_counter: Vec<UnsafeCell<usize>>,
         name: FileName,
+        is_persistent: bool,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Receiver<Storage> {
@@ -927,7 +943,7 @@ pub mod details {
 
     impl<Storage: DynamicStorage<SharedManagementData>> Drop for Receiver<Storage> {
         fn drop(&mut self) {
-            cleanup_shared_memory(&self.storage, State::Receiver);
+            cleanup_shared_memory(&self.storage, State::Receiver, self.is_persistent);
         }
     }
 
@@ -1085,6 +1101,7 @@ pub mod details {
             config: &<Connection<Storage> as NamedConceptMgmt>::Configuration,
             msg: &str,
             port: State,
+            is_persistent: bool,
         ) -> Result<(), ZeroCopyPortRemoveError> {
             let origin = "Connection::open_storage()";
             match <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
@@ -1094,7 +1111,7 @@ pub mod details {
                                for channel in storage.get().channels.iter() {
                                    channel.state.store(CHANNEL_STATE_CLOSED.0, Ordering::Relaxed);
                                }
-                               cleanup_shared_memory(&storage, port); Ok(())},
+                               cleanup_shared_memory(&storage, port, is_persistent); Ok(())},
                            Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
                                match unsafe { Storage::remove_cfg(name, &config.dynamic_storage_config) } {
                                    Ok(_) => Ok(()),
@@ -1137,11 +1154,13 @@ pub mod details {
             name: &FileName,
             config: &Self::Configuration,
         ) -> Result<(), ZeroCopyPortRemoveError> {
+            const IS_PERSISTENT: bool = false;
             Self::remove_port(
                 name,
                 config,
                 "Unable to remove forcefully the sender of the Zero Copy Connection",
                 State::Sender,
+                IS_PERSISTENT,
             )
         }
 
@@ -1149,11 +1168,13 @@ pub mod details {
             name: &FileName,
             config: &Self::Configuration,
         ) -> Result<(), ZeroCopyPortRemoveError> {
+            const IS_PERSISTENT: bool = false;
             Self::remove_port(
                 name,
                 config,
                 "Unable to remove forcefully the receiver of the Zero Copy Connection",
                 State::Receiver,
+                IS_PERSISTENT,
             )
         }
 

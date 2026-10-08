@@ -539,6 +539,11 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
 impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
+
+        if S::IS_PERSISTENT {
+            return;
+        }
+
         let hash = self.static_config.service_hash();
         self.shared_node.registered_services().remove(hash, |handle| {
             match self.dynamic_storage.get().deregister_node_id(handle) {
@@ -938,6 +943,10 @@ pub mod internal {
 /// establish communication.
 #[allow(private_bounds)]
 pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Send + Sync {
+    /// Marks a service persistent. Resources will not be removed on graceful shutdown and
+    /// `create` calls will be extended to `open_or_create`.
+    const IS_PERSISTENT: bool = false;
+
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
