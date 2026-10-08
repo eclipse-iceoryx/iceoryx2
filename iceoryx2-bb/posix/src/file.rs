@@ -95,6 +95,7 @@ enum_gen! { FileRemoveError
     LoopInSymbolicLinks,
     MaxSupportedPathLengthExceeded,
     PartOfReadOnlyFileSystem,
+    FileDoesNotExist,
     UnknownError(i32)
 }
 

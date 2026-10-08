@@ -33,6 +33,7 @@ pub mod memory_mapping_tests;
 pub mod memory_tests;
 pub mod metadata_tests;
 pub mod mutex_tests;
+pub mod named_pipe_tests;
 pub mod ownership_tests;
 pub mod permission_tests;
 pub mod process_state_tests;

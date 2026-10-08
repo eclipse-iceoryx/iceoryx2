@@ -27,6 +27,7 @@ use group::GroupError;
 use iceoryx2_bb_elementary::enum_gen;
 use memory_lock::MemoryLockError;
 use mutex::MutexError;
+use named_pipe::NamedPipeError;
 use process::ProcessError;
 use read_write_mutex::ReadWriteMutexError;
 use semaphore::SemaphoreError;
@@ -59,6 +60,7 @@ pub mod memory_lock;
 pub mod memory_mapping;
 pub mod metadata;
 pub mod mutex;
+pub mod named_pipe;
 pub mod ownership;
 pub mod permission;
 pub mod process;
@@ -87,6 +89,7 @@ enum_gen! {Error
     Group <= GroupError,
     MemoryLock <= MemoryLockError,
     Mutex <= MutexError,
+    NamedPipe <= NamedPipeError,
     Process <= ProcessError,
     ReadWriteMutex <= ReadWriteMutexError,
     Semaphore <= SemaphoreError,

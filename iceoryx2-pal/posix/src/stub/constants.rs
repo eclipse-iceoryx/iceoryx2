@@ -40,6 +40,7 @@ pub const O_APPEND: int = 32;
 pub const O_NOCTTY: int = 64;
 pub const O_NONBLOCK: int = 128;
 pub const O_DIRECTORY: int = 256;
+pub const O_ASYNC: int = 512;
 
 pub const F_RDLCK: int = 1;
 pub const F_WRLCK: int = 2;
