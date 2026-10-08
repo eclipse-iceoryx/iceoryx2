@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Defines the messaging pattern used in a [`Service`](crate::service::Service)-based
+//! Defines the messaging pattern used in a [`Service`]-based
 //! communication.
 //!
 //! ## Messaging Patterns
@@ -26,8 +26,8 @@
 //! ### Event
 //!
 //! Enable processes to notify and wakeup other processes by sending events that are uniquely
-//! identified by a [`EventId`][`crate::port::event_id::EventId`]. Hereby, `n`
-//! [`Notifier`](crate::port::notifier::Notifier)s can notify `m`
+//! identified by a [`EventId`]. Hereby, `n`
+//! [`Notifier`]s can notify `m`
 //! [`Listener`](crate::port::listener::Listener)s.
 //!
 //! **Note:** This does **not** send or receive POSIX signals nor is it based on them.
