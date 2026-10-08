@@ -16,8 +16,11 @@ use iceoryx2_bb_testing_macros::tests;
 pub mod generic {
     use alloc::vec;
 
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
+    use iceoryx2_cal::zero_copy_connection::used_chunk_list::RelocatableUsedChunkList;
 
     #[test]
     fn insert_remove_all_works<const CAPACITY: usize>() {
@@ -53,6 +56,46 @@ pub mod generic {
         for i in (0..sut.capacity()).rev() {
             assert_that!(sut.remove(i), eq true);
             assert_that!(sut.remove(i), eq false);
+        }
+    }
+
+    #[test]
+    fn list_initialized_on_dirty_memory_starts_unused<const CAPACITY: usize>() {
+        let mut memory = [u8::MAX; CAPACITY];
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::new(memory.as_mut_ptr()).unwrap(),
+            memory.len(),
+        );
+        let mut sut = unsafe { RelocatableUsedChunkList::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(&allocator) }, is_ok);
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.remove(i), eq false);
+        }
+    }
+
+    #[test]
+    fn list_initialized_on_zeroed_memory_starts_unused<const CAPACITY: usize>() {
+        let mut memory = [0u8; CAPACITY];
+        let allocator = BumpAllocator::new(
+            core::ptr::NonNull::new(memory.as_mut_ptr()).unwrap(),
+            memory.len(),
+        );
+        let mut sut = unsafe { RelocatableUsedChunkList::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init_on_zeroed_memory(&allocator) }, is_ok);
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.remove(i), eq false);
+            assert_that!(sut.insert(i), eq true);
+            assert_that!(sut.insert(i), eq false);
+        }
+
+        let mut removed_indices = vec![false; sut.capacity()];
+        sut.remove_all(|index| {
+            removed_indices[index] = true;
+        });
+        for index in removed_indices {
+            assert_that!(index, eq true);
         }
     }
 }

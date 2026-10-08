@@ -77,6 +77,37 @@ pub mod details {
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
+            unsafe { self.init_on_zeroed_memory(allocator) }?;
+            for i in 0..self.capacity {
+                unsafe {
+                    (self.data_ptr.as_ptr() as *mut AtomicBool)
+                        .add(i)
+                        .write(AtomicBool::new(false))
+                }
+            }
+
+            Ok(())
+        }
+
+        fn memory_size(capacity: usize) -> usize {
+            Self::const_memory_size(capacity)
+        }
+    }
+
+    impl UsedChunkList<RelocatablePointer<AtomicBool>> {
+        /// Initializes the list like [`RelocatableContainer::init()`] but without writing
+        /// its entries, since in zeroed memory every entry already reads as unused.
+        ///
+        /// # Safety
+        ///
+        ///  * see [`RelocatableContainer::init()`]
+        ///  * the memory the allocator provides must be zeroed
+        pub unsafe fn init_on_zeroed_memory<
+            T: iceoryx2_bb_elementary_traits::allocator::Allocate<NonNull<u8>>,
+        >(
+            &mut self,
+            allocator: &T,
+        ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
             if self.is_memory_initialized.load(Ordering::Relaxed) {
                 fatal_panic!(from self,
                 "Memory already initialized. Initializing it twice may lead to undefined behavior.");
@@ -91,13 +122,6 @@ pub mod details {
                 "Failed to initialize since the allocation of the data memory failed.");
 
             unsafe { self.data_ptr.init(memory) };
-            for i in 0..self.capacity {
-                unsafe {
-                    (self.data_ptr.as_ptr() as *mut AtomicBool)
-                        .add(i)
-                        .write(AtomicBool::new(false))
-                }
-            }
 
             // relaxed is sufficient since no relocatable container can be used
             // before init was called. Meaning, it is not allowed to send or share
@@ -105,10 +129,6 @@ pub mod details {
             self.is_memory_initialized.store(true, Ordering::Relaxed);
 
             Ok(())
-        }
-
-        fn memory_size(capacity: usize) -> usize {
-            Self::const_memory_size(capacity)
         }
     }
 

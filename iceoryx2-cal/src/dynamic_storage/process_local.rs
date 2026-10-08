@@ -61,8 +61,9 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-use iceoryx2_bb_elementary_traits::allocator::{Allocate, Deallocate};
+use iceoryx2_bb_elementary_traits::allocator::Deallocate;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
+use iceoryx2_bb_posix::memory::heap;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -171,8 +172,8 @@ impl<T> StorageDetails<T> {
         let align = core::mem::align_of::<T>();
         let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
         let new_self = Self {
-            data_ptr: fatal_panic!(from "StorageDetails::new", when HeapAllocator::new()
-                .allocate(layout), "Failed to allocate {} bytes for dynamic global storage.", size)
+            data_ptr: fatal_panic!(from "StorageDetails::new", when heap::allocate_zeroed(layout),
+                "Failed to allocate {} bytes for dynamic global storage.", size)
             .as_ptr() as *mut MaybeUninit<T>,
             layout,
         };

@@ -458,6 +458,47 @@ pub mod dynamic_storage_trait {
         }
     }
 
+    #[conformance_test]
+    pub fn supplementary_memory_is_zeroed<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        const SUPPLEMENTARY_SIZE: usize = 4096;
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let dirty = Sut::Builder::new(&generate_file_path().file_name())
+            .config(&config)
+            .supplementary_size(SUPPLEMENTARY_SIZE)
+            .initializer(|value, allocator| {
+                value.write(TestData::new(0));
+                let mem = allocator
+                    .allocate(Layout::from_size_align(SUPPLEMENTARY_SIZE, 1).unwrap())
+                    .unwrap();
+                unsafe { mem.as_ptr().write_bytes(0xff, SUPPLEMENTARY_SIZE) };
+                true
+            })
+            .create()
+            .unwrap();
+        drop(dirty);
+
+        let mut is_zeroed = false;
+        let _sut = Sut::Builder::new(&generate_file_path().file_name())
+            .config(&config)
+            .supplementary_size(SUPPLEMENTARY_SIZE)
+            .initializer(|value, allocator| {
+                value.write(TestData::new(0));
+                let mem = allocator
+                    .allocate(Layout::from_size_align(SUPPLEMENTARY_SIZE, 1).unwrap())
+                    .unwrap();
+                is_zeroed = (0..SUPPLEMENTARY_SIZE).all(|i| unsafe { *mem.as_ptr().add(i) } == 0);
+                true
+            })
+            .create()
+            .unwrap();
+
+        assert_that!(is_zeroed, eq true);
+    }
+
     #[cfg(not(any(target_os = "windows")))] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
     #[conformance_test]
     pub fn initialization_blocks_other_openers<

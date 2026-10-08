@@ -158,8 +158,8 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
 
     /// Before the construction is finalized the initializer is called
     /// with a mutable reference to the new value and a mutable reference to a bump allocator
-    /// which provides access to the supplementary memory. If the initialization failed it
-    /// shall return false, otherwise true.
+    /// which provides access to the supplementary memory. The supplementary memory is zeroed.
+    /// If the initialization failed it shall return false, otherwise true.
     fn initializer<F: FnOnce(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
         self,
         value: F,

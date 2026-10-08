@@ -158,7 +158,7 @@ pub mod details {
             &mut self,
             allocator: &T,
         ) -> Result<(), AllocationError> {
-            unsafe { self.used_chunk_list.init(allocator) }
+            unsafe { self.used_chunk_list.init_on_zeroed_memory(allocator) }
         }
     }
 
