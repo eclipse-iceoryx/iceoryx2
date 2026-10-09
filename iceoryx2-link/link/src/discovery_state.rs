@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 use alloc::collections::BTreeMap;
+use alloc::collections::btree_map::Values;
 use core::fmt::Display;
+use core::iter::Map;
 
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_elementary::epoch::Epoch;
@@ -23,15 +25,15 @@ use iceoryx2_log::{origin, trace, warn};
 /// What identifies one creation of a local service. `UniqueServiceId`
 /// once it can be generated outside iceoryx2.
 pub(crate) type CreationId = u128;
-type Unresolvable<'a, Id, Refusal> = iceoryx2_link_backend::diagnostic::Update<
-    Id,
+type Unresolvable<'a, RemoteId, Refusal> = iceoryx2_link_backend::diagnostic::Update<
+    RemoteId,
     Refusal,
-    &'a mut Findings<Id, Refusal>,
-    fn(&Id, &Refusal),
+    &'a mut Findings<RemoteId, Refusal>,
+    fn(&RemoteId, &Refusal),
 >;
 
-/// A local service as the last local update saw it.
-struct Local {
+/// What the last local update observed of one service.
+struct LocalObservation {
     description: ServiceDescription,
     /// A recreated service has a new one.
     id: CreationId,
@@ -39,38 +41,38 @@ struct Local {
     seen: Epoch,
 }
 
-/// A remote description as the last remote update saw it.
-pub(crate) struct Remote<Description> {
-    description: Description,
+/// What the last remote update observed of one description.
+pub(crate) struct RemoteObservation<RemoteDescription> {
+    description: RemoteDescription,
     /// The epoch of the update that last saw the description.
     seen: Epoch,
 }
 
-/// Everything discovered about one service, and what it resolves to.
-/// The remote descriptions of an entry, in id order.
-pub(crate) type Remotes<'a, Id, Description> = core::iter::Map<
-    alloc::collections::btree_map::Values<'a, Id, Remote<Description>>,
-    fn(&'a Remote<Description>) -> &'a Description,
+/// The descriptions of the remotes of an entry, in id order.
+pub(crate) type RemoteDescriptions<'a, RemoteId, RemoteDescription> = Map<
+    Values<'a, RemoteId, RemoteObservation<RemoteDescription>>,
+    fn(&'a RemoteObservation<RemoteDescription>) -> &'a RemoteDescription,
 >;
 
-pub(crate) struct Entry<Id, Description, Refusal> {
-    local: Option<Local>,
-    remotes: BTreeMap<Id, Remote<Description>>,
-    resolution: Resolution<Description, Refusal>,
-    /// Whether a side of the entry changed since it was last resolved.
-    changed: bool,
-    /// The epoch the current resolution was decided in.
-    decided: Epoch,
+/// A service discovered locally or remotely and how it was resolved.
+pub(crate) struct DiscoveredService<RemoteId, RemoteDescription, Refusal> {
+    local: Option<LocalObservation>,
+    remotes: BTreeMap<RemoteId, RemoteObservation<RemoteDescription>>,
+    resolution: Resolution<RemoteDescription, Refusal>,
+    /// Whether the resolution is stale, a side changed since it was decided.
+    stale: bool,
+    /// The epoch the resolution was decided in.
+    resolved: Epoch,
 }
 
-impl<Id, Description, Refusal> Entry<Id, Description, Refusal> {
+impl<RemoteId, RemoteDescription, Refusal> DiscoveredService<RemoteId, RemoteDescription, Refusal> {
     fn new() -> Self {
         Self {
             local: None,
             remotes: BTreeMap::new(),
             resolution: Resolution::OutOfScope,
-            changed: true,
-            decided: Epoch::default(),
+            stale: true,
+            resolved: Epoch::default(),
         }
     }
 
@@ -92,7 +94,7 @@ impl<Id, Description, Refusal> Entry<Id, Description, Refusal> {
     }
 
     /// The remote descriptions of the service, in id order.
-    pub(crate) fn remotes(&self) -> Remotes<'_, Id, Description> {
+    pub(crate) fn remotes(&self) -> RemoteDescriptions<'_, RemoteId, RemoteDescription> {
         self.remotes.values().map(|remote| &remote.description)
     }
 
@@ -112,13 +114,13 @@ impl<Id, Description, Refusal> Entry<Id, Description, Refusal> {
 
 /// What was discovered on both sides of the boundary and what each
 /// service resolves to.
-pub(crate) struct DiscoveryState<Id, Description, Refusal> {
-    entries: BTreeMap<ServiceHash, Entry<Id, Description, Refusal>>,
+pub(crate) struct DiscoveryState<RemoteId, RemoteDescription, Refusal> {
+    entries: BTreeMap<ServiceHash, DiscoveredService<RemoteId, RemoteDescription, Refusal>>,
     /// The remote descriptions listed, each under the service it belongs
     /// to.
-    listed: BTreeMap<Id, ServiceHash>,
+    listed: BTreeMap<RemoteId, ServiceHash>,
     /// The remote descriptions in scope that belong to no service.
-    unresolvable: Findings<Id, Refusal>,
+    unresolvable: Findings<RemoteId, Refusal>,
     /// The generation of the local listing last updated from.
     local_generation: Generation,
     /// The generation of the remote listing last updated from.
@@ -128,7 +130,9 @@ pub(crate) struct DiscoveryState<Id, Description, Refusal> {
     epoch: Epoch,
 }
 
-impl<Id, Description, Refusal> Default for DiscoveryState<Id, Description, Refusal> {
+impl<RemoteId, RemoteDescription, Refusal> Default
+    for DiscoveryState<RemoteId, RemoteDescription, Refusal>
+{
     fn default() -> Self {
         Self {
             entries: BTreeMap::new(),
@@ -141,15 +145,15 @@ impl<Id, Description, Refusal> Default for DiscoveryState<Id, Description, Refus
     }
 }
 
-impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + PartialEq>
-    DiscoveryState<Id, Description, Refusal>
+impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Display + PartialEq>
+    DiscoveryState<RemoteId, RemoteDescription, Refusal>
 {
     /// Begins an update from the local system's listing at `generation`, none
     /// if it has not moved.
     pub(crate) fn update_locals(
         &mut self,
         generation: Generation,
-    ) -> Option<LocalUpdate<'_, Id, Description, Refusal>> {
+    ) -> Option<LocalUpdate<'_, RemoteId, RemoteDescription, Refusal>> {
         if generation.unchanged_since(self.local_generation) {
             return None;
         }
@@ -167,7 +171,7 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
     pub(crate) fn update_remotes(
         &mut self,
         generation: Generation,
-    ) -> Option<RemoteUpdate<'_, Id, Description, Refusal>> {
+    ) -> Option<RemoteUpdate<'_, RemoteId, RemoteDescription, Refusal>> {
         if generation.unchanged_since(self.remote_generation) {
             return None;
         }
@@ -183,14 +187,15 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
         })
     }
 
-    /// Iterates the changes since the entries were last resolved, one per
-    /// entry a side of which changed, each to have a resolution applied.
-    pub(crate) fn changes(&mut self) -> impl Iterator<Item = Change<'_, Id, Description, Refusal>> {
+    /// Iterates the updates that need to be resolved by the backend resolver.
+    pub(crate) fn unresolved(
+        &mut self,
+    ) -> impl Iterator<Item = Unresolved<'_, RemoteId, RemoteDescription, Refusal>> {
         let epoch = self.epoch;
         self.entries
             .iter_mut()
-            .filter(|(_, entry)| entry.changed)
-            .map(move |(hash, entry)| Change { hash, entry, epoch })
+            .filter(|(_, entry)| entry.stale)
+            .map(move |(hash, entry)| Unresolved { hash, entry, epoch })
     }
 
     /// Iterates the services that resolved to a bridge, in hash order,
@@ -199,15 +204,17 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
     /// resolution was decided in.
     pub(crate) fn bridgeable(
         &self,
-    ) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription, &Description, Epoch)> {
+    ) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription, &RemoteDescription, Epoch)> {
         self.entries
             .iter()
             .filter_map(|(hash, entry)| match &entry.resolution {
                 Resolution::Exported(remote) => {
                     let local = entry.local.as_ref()?;
-                    Some((hash, &local.description, remote, entry.decided))
+                    Some((hash, &local.description, remote, entry.resolved))
                 }
-                Resolution::Imported(mirror, remote) => Some((hash, mirror, remote, entry.decided)),
+                Resolution::Imported(mirror, remote) => {
+                    Some((hash, mirror, remote, entry.resolved))
+                }
                 _ => None,
             })
     }
@@ -225,8 +232,8 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
 
 /// One update from the local system's listing. Dropped without being
 /// finalized, nothing is pruned and the generation stands.
-pub(crate) struct LocalUpdate<'a, Id, Description, Refusal> {
-    entries: &'a mut BTreeMap<ServiceHash, Entry<Id, Description, Refusal>>,
+pub(crate) struct LocalUpdate<'a, RemoteId, RemoteDescription, Refusal> {
+    entries: &'a mut BTreeMap<ServiceHash, DiscoveredService<RemoteId, RemoteDescription, Refusal>>,
     /// The generation of the last update from the listing. Set to `current`
     /// when the update finalizes, left as it is when the update is dropped.
     previous: &'a mut Generation,
@@ -236,7 +243,7 @@ pub(crate) struct LocalUpdate<'a, Id, Description, Refusal> {
     epoch: Epoch,
 }
 
-impl<Id, Description, Refusal> LocalUpdate<'_, Id, Description, Refusal> {
+impl<RemoteId, RemoteDescription, Refusal> LocalUpdate<'_, RemoteId, RemoteDescription, Refusal> {
     /// Whether the service is held under this unique id, in which case it
     /// is seen in this update. A recreated service has a new id and is to
     /// be inserted anew.
@@ -272,13 +279,13 @@ impl<Id, Description, Refusal> LocalUpdate<'_, Id, Description, Refusal> {
         let entry = self
             .entries
             .entry(description.hash())
-            .or_insert_with(Entry::new);
-        entry.local = Some(Local {
+            .or_insert_with(DiscoveredService::new);
+        entry.local = Some(LocalObservation {
             description,
             id,
             seen: epoch,
         });
-        entry.changed = true;
+        entry.stale = true;
     }
 
     /// Finalizes the update. A local service not seen is removed, and the
@@ -292,7 +299,7 @@ impl<Id, Description, Refusal> LocalUpdate<'_, Id, Description, Refusal> {
                 .is_some_and(|local| local.seen != epoch)
             {
                 entry.local = None;
-                entry.changed = true;
+                entry.stale = true;
             }
         }
         self.entries.retain(|_, entry| !entry.is_empty());
@@ -302,10 +309,10 @@ impl<Id, Description, Refusal> LocalUpdate<'_, Id, Description, Refusal> {
 
 /// One update from the backend's listing. Dropped without being finalized,
 /// nothing is pruned and the generation stands.
-pub(crate) struct RemoteUpdate<'a, Id, Description, Refusal> {
-    entries: &'a mut BTreeMap<ServiceHash, Entry<Id, Description, Refusal>>,
-    listed: &'a mut BTreeMap<Id, ServiceHash>,
-    unresolvable: Unresolvable<'a, Id, Refusal>,
+pub(crate) struct RemoteUpdate<'a, RemoteId, RemoteDescription, Refusal> {
+    entries: &'a mut BTreeMap<ServiceHash, DiscoveredService<RemoteId, RemoteDescription, Refusal>>,
+    listed: &'a mut BTreeMap<RemoteId, ServiceHash>,
+    unresolvable: Unresolvable<'a, RemoteId, Refusal>,
     /// The generation of the last update from the listing. Set to `current`
     /// when the update finalizes, left as it is when the update is dropped.
     previous: &'a mut Generation,
@@ -315,12 +322,12 @@ pub(crate) struct RemoteUpdate<'a, Id, Description, Refusal> {
     epoch: Epoch,
 }
 
-impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + PartialEq>
-    RemoteUpdate<'_, Id, Description, Refusal>
+impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Display + PartialEq>
+    RemoteUpdate<'_, RemoteId, RemoteDescription, Refusal>
 {
     /// Whether the remote is held with this same description, in which
     /// case it is seen in this update.
-    pub(crate) fn seen(&mut self, id: &Id, remote: &Description) -> bool {
+    pub(crate) fn seen(&mut self, id: &RemoteId, remote: &RemoteDescription) -> bool {
         let epoch = self.epoch;
         let Some(hash) = self.listed.get(id) else {
             return false;
@@ -341,7 +348,7 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
 
     /// Holds the remote description under the service it belongs to,
     /// seen in this update, replacing a previous description of it.
-    pub(crate) fn insert(&mut self, hash: ServiceHash, id: Id, remote: Description) {
+    pub(crate) fn insert(&mut self, hash: ServiceHash, id: RemoteId, remote: RemoteDescription) {
         let origin = origin!("RemoteUpdate::insert");
 
         trace!(from origin, "Discovered the service {} on {}", hash.as_str(), id);
@@ -351,22 +358,25 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
             && let Some(entry) = self.entries.get_mut(&previous)
         {
             entry.remotes.remove(&id);
-            entry.changed = true;
+            entry.stale = true;
         }
-        let entry = self.entries.entry(hash).or_insert_with(Entry::new);
+        let entry = self
+            .entries
+            .entry(hash)
+            .or_insert_with(DiscoveredService::new);
         entry.remotes.insert(
             id,
-            Remote {
+            RemoteObservation {
                 description: remote,
                 seen: epoch,
             },
         );
-        entry.changed = true;
+        entry.stale = true;
     }
 
     /// Records a remote description in scope that belongs to no service,
     /// warned about once.
-    pub(crate) fn refuse(&mut self, id: Id, refusal: Refusal) {
+    pub(crate) fn refuse(&mut self, id: RemoteId, refusal: Refusal) {
         self.unresolvable.record(id, refusal);
     }
 
@@ -378,7 +388,7 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
             let before = entry.remotes.len();
             entry.remotes.retain(|_, remote| remote.seen == epoch);
             if entry.remotes.len() != before {
-                entry.changed = true;
+                entry.stale = true;
             }
         }
         self.entries.retain(|_, entry| !entry.is_empty());
@@ -393,8 +403,8 @@ impl<Id: Ord + Clone + Display, Description: PartialEq, Refusal: Display + Parti
     }
 }
 
-fn warn_unresolvable<Id: core::fmt::Display, Refusal: core::fmt::Display>(
-    id: &Id,
+fn warn_unresolvable<RemoteId: core::fmt::Display, Refusal: core::fmt::Display>(
+    id: &RemoteId,
     refusal: &Refusal,
 ) {
     let origin = origin!("RemoteUpdate::finalize");
@@ -407,15 +417,15 @@ fn warn_unresolvable<Id: core::fmt::Display, Refusal: core::fmt::Display>(
 
 /// An entry a side of which changed since it was last resolved, to be
 /// resolved anew.
-pub(crate) struct Change<'a, Id, Description, Refusal> {
+pub(crate) struct Unresolved<'a, RemoteId, RemoteDescription, Refusal> {
     hash: &'a ServiceHash,
-    entry: &'a mut Entry<Id, Description, Refusal>,
+    entry: &'a mut DiscoveredService<RemoteId, RemoteDescription, Refusal>,
     /// The state's epoch, a resolution is decided in it.
     epoch: Epoch,
 }
 
-impl<Id, Description: PartialEq, Refusal: core::fmt::Display + PartialEq>
-    Change<'_, Id, Description, Refusal>
+impl<RemoteId, RemoteDescription: PartialEq, Refusal: core::fmt::Display + PartialEq>
+    Unresolved<'_, RemoteId, RemoteDescription, Refusal>
 {
     #[cfg(test)]
     pub(crate) fn hash(&self) -> &ServiceHash {
@@ -429,13 +439,13 @@ impl<Id, Description: PartialEq, Refusal: core::fmt::Display + PartialEq>
     where
         R: FnOnce(
             Option<&ServiceDescription>,
-            Remotes<'_, Id, Description>,
-        ) -> Resolution<Description, Refusal>,
+            RemoteDescriptions<'_, RemoteId, RemoteDescription>,
+        ) -> Resolution<RemoteDescription, Refusal>,
     {
-        let origin = origin!("Change::resolve");
+        let origin = origin!("Unresolved::resolve");
 
         let resolution = resolve(self.entry.local(), self.entry.remotes());
-        self.entry.changed = false;
+        self.entry.stale = false;
         if self.entry.resolution == resolution {
             return;
         }
@@ -471,7 +481,7 @@ impl<Id, Description: PartialEq, Refusal: core::fmt::Display + PartialEq>
             ),
         }
         self.entry.resolution = resolution;
-        self.entry.decided = self.epoch;
+        self.entry.resolved = self.epoch;
     }
 }
 
@@ -567,9 +577,9 @@ mod tests {
         resolution: Resolution<FakeRemote, FakeRefusal>,
     ) -> Vec<ServiceHash> {
         let mut resolved = Vec::new();
-        for change in sut.changes() {
-            resolved.push(*change.hash());
-            change.resolve(|_, _| resolution.clone());
+        for unresolved in sut.unresolved() {
+            resolved.push(*unresolved.hash());
+            unresolved.resolve(|_, _| resolution.clone());
         }
         resolved
     }
@@ -798,7 +808,7 @@ mod tests {
     }
 
     #[test]
-    fn an_entry_resolved_to_the_same_resolution_keeps_its_decided_epoch() {
+    fn an_entry_resolved_to_the_same_resolution_keeps_its_resolved_epoch() {
         const SERVICE: &str = "state/resolution/unchanged";
 
         let mut sut = Sut::default();
@@ -837,15 +847,15 @@ mod tests {
             FIRST_GENERATION,
             &[(FIRST_REMOTE, remote(&imported))],
         );
-        for change in sut.changes() {
-            let resolution = match *change.hash() {
+        for unresolved in sut.unresolved() {
+            let resolution = match *unresolved.hash() {
                 hash if hash == exported.hash() => Resolution::Exported(remote(&exported)),
                 hash if hash == imported.hash() => {
                     Resolution::Imported(imported.clone(), remote(&imported))
                 }
                 _ => Resolution::Refused(FakeRefusal),
             };
-            change.resolve(|_, _| resolution);
+            unresolved.resolve(|_, _| resolution);
         }
 
         let bridgeable: Vec<ServiceHash> = sut.bridgeable().map(|(hash, ..)| *hash).collect();

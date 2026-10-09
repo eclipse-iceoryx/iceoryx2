@@ -170,8 +170,8 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
             }
 
             // Resolve each service a side of which changed.
-            for change in state.changes() {
-                change.resolve(|local, remotes| {
+            for unresolved in state.unresolved() {
+                unresolved.resolve(|local, remotes| {
                     let resolution = resolver.resolve(local, remotes);
 
                     // Leave the service out when the filter rejects the name it bridges.
