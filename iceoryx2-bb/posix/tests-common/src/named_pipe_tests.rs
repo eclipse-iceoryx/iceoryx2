@@ -282,7 +282,7 @@ pub fn simple_read_write_with_single_fd_works() {
     assert_that!(content, len result.ok().unwrap() as usize);
 
     let mut read_buffer: [u8; 5] = [0u8; 5];
-    let result = sut_named_pipe.read(&mut read_buffer);
+    let result = sut_named_pipe.try_read(&mut read_buffer);
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
@@ -302,7 +302,7 @@ pub fn simple_read_write_from_with_different_fds_works() {
 
     let sut_reader = test.open_named_pipe(test.file());
     let mut read_buffer: [u8; 5] = [0u8; 5];
-    let result = sut_reader.read(&mut read_buffer);
+    let result = sut_reader.try_read(&mut read_buffer);
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
