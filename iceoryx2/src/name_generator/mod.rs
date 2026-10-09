@@ -16,7 +16,7 @@ use crate::{config::Config, node::node_name::NodeName, port::port_name::PortName
 
 pub mod default_name_generator;
 
-/// Describes failures that can occur when a [`NodeNameGenerator`] is opened or created.
+/// Describes failures that can occur when a [`NameGenerator`] is opened or created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NameGeneratorOpenOrCreateError {
     /// Insufficient permissions to open/create a name generator.
