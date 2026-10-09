@@ -18,8 +18,9 @@ use iceoryx2_link_backend::service_description::{
     PublishSubscribeDescription, SampleTypes, ServiceDescriptor,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
+use iceoryx2_link_backend::wire::publish_subscribe::payload_bytes;
 use iceoryx2_link_backend::wire::sample::{
-    LoanError, LoanableSample, SampleBytesRef, WritableSample, payload_bytes, user_header_bytes,
+    LoanError, LoanableSample, SampleBytesRef, WritableSample, user_header_bytes,
 };
 use iceoryx2_link_carrier::{Carrier, SampleChannel};
 use iceoryx2_log::{fail, origin};
@@ -90,7 +91,7 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         // for, whose description states the user header size.
         let header =
             unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) };
-        let payload = payload_bytes(sample.payload());
+        let payload = payload_bytes(sample);
         fail!(
             from origin,
             when self.channel.send(SampleBytesRef { header, payload }),
@@ -127,7 +128,7 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
         }
         let (header, payload) = bytes.split_at(header_size);
 
-        let mut writable = match loanable.loan(payload.len()) {
+        let mut writable = match loanable.loan_forward(payload.len()) {
             Ok(writable) => writable,
             Err(LoanError::Exhausted) => {
                 fail!(
@@ -136,7 +137,9 @@ impl<S: Service, C: SampleChannel> PublishSubscribeRelay<S> for Relay<S, C> {
                     "The publisher has no free sample for the received bytes of size {}", bytes.len()
                 );
             }
-            Err(LoanError::Malformed | LoanError::NotResizable) => {
+            Err(
+                LoanError::Malformed | LoanError::NotResizable | LoanError::DirectionUnsupported,
+            ) => {
                 fail!(
                     from origin,
                     with ReceiveError::Malformed,
@@ -204,10 +207,24 @@ mod tests {
     struct Loanable;
 
     impl LoanableSample for Loanable {
-        type WritableSample = SampleBytes;
+        type ForwardWritableSample = SampleBytes;
+        type BackwardWritableSample = SampleBytes;
         type InitializedSample = SampleBytes;
 
-        fn loan(self, payload_len: usize) -> Result<Self::WritableSample, LoanError> {
+        fn loan_forward(
+            self,
+            payload_len: usize,
+        ) -> Result<Self::ForwardWritableSample, LoanError> {
+            Ok(SampleBytes {
+                header: alloc::vec![0; SIZE],
+                payload: alloc::vec![0; payload_len],
+            })
+        }
+
+        fn loan_backward(
+            self,
+            payload_len: usize,
+        ) -> Result<Self::BackwardWritableSample, LoanError> {
             Ok(SampleBytes {
                 header: alloc::vec![0; SIZE],
                 payload: alloc::vec![0; payload_len],
@@ -219,10 +236,15 @@ mod tests {
     struct Refusing(LoanError);
 
     impl LoanableSample for Refusing {
-        type WritableSample = SampleBytes;
+        type ForwardWritableSample = SampleBytes;
+        type BackwardWritableSample = SampleBytes;
         type InitializedSample = SampleBytes;
 
-        fn loan(self, _: usize) -> Result<Self::WritableSample, LoanError> {
+        fn loan_forward(self, _: usize) -> Result<Self::ForwardWritableSample, LoanError> {
+            Err(self.0)
+        }
+
+        fn loan_backward(self, _: usize) -> Result<Self::BackwardWritableSample, LoanError> {
             Err(self.0)
         }
     }

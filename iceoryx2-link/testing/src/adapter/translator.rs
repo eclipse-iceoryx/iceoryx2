@@ -15,10 +15,11 @@ use alloc::string::String;
 use core::convert::Infallible;
 
 use iceoryx2_link_adapter::{
-    LocalTypes, Region, SampleBytesRef, SampleShape, SampleTranscoders, TranscodeError, Transcoder,
+    LocalTypes, SampleBytesRef, SampleShape, SampleTranscoders, TranscodeError, Transcoder,
     Translator,
 };
-use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription};
+use iceoryx2_link_backend::service_description::{SampleTypes, TypeDescription, TypeIdentifier};
+use iceoryx2_link_backend::wire::region::{ForwardRegion, Region};
 use iceoryx2_log::{fail, origin};
 
 /// The prefix of a type name on the middleware, its data byte-swapped.
@@ -62,8 +63,12 @@ fn map_types(types: &SampleTypes, name: fn(&str) -> String) -> SampleTypes {
 }
 
 fn map_type(description: &TypeDescription, name: fn(&str) -> String) -> TypeDescription {
+    let identifier = match &description.identifier {
+        TypeIdentifier::Name(current) => TypeIdentifier::Name(name(current)),
+        other => other.clone(),
+    };
     TypeDescription {
-        type_name: name(&description.type_name),
+        identifier,
         ..description.clone()
     }
 }
@@ -87,16 +92,13 @@ pub struct SwapPayload;
 fn swap_words<R: Region>(bytes: &[u8], into: &mut R) -> Result<(), TranscodeError<Infallible>> {
     let origin = origin!("swap_words");
 
-    let into = match into.for_length(bytes.len()) {
-        Ok(into) => into,
-        Err(refusal) => {
-            fail!(
-                from origin,
-                with TranscodeError::from(refusal),
-                "The region rejected the {} bytes to swap", bytes.len()
-            );
-        }
-    };
+    let mut into = into.forward();
+    fail!(
+        from origin,
+        when into.resize(bytes.len()),
+        with TranscodeError::Refused,
+        "The region rejected the {} bytes to swap", bytes.len()
+    );
     for (to, from) in into.chunks_mut(WORD).zip(bytes.chunks(WORD)) {
         for (to, from) in to.iter_mut().zip(from.iter().rev()) {
             *to = *from;

@@ -280,6 +280,7 @@ use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::ServiceResource;
+use crate::service::resource::type_definition::TypeDefinition;
 use crate::service::static_config::*;
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniqueServiceId},
@@ -1102,6 +1103,70 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
 
         Ok(())
     }
+}
+
+#[doc(hidden)]
+pub fn __internal_payload_type_definition<S: Service>(
+    config: &config::Config,
+    static_config: &StaticConfig,
+) -> Result<Option<Vec<u8>>, ServiceDetailsError> {
+    type_definition_of::<S>(
+        config,
+        static_config,
+        &static_config
+            .publish_subscribe()
+            .message_type_details()
+            .payload,
+        &resource::publish_subscribe::PAYLOAD_TYPE_DEFINITION,
+    )
+}
+
+#[doc(hidden)]
+pub fn __internal_request_type_definition<S: Service>(
+    config: &config::Config,
+    static_config: &StaticConfig,
+) -> Result<Option<Vec<u8>>, ServiceDetailsError> {
+    type_definition_of::<S>(
+        config,
+        static_config,
+        &static_config
+            .request_response()
+            .request_message_type_details()
+            .payload,
+        &resource::request_response::REQUEST_TYPE_DEFINITION,
+    )
+}
+
+#[doc(hidden)]
+pub fn __internal_response_type_definition<S: Service>(
+    config: &config::Config,
+    static_config: &StaticConfig,
+) -> Result<Option<Vec<u8>>, ServiceDetailsError> {
+    type_definition_of::<S>(
+        config,
+        static_config,
+        &static_config
+            .request_response()
+            .response_message_type_details()
+            .payload,
+        &resource::request_response::RESPONSE_TYPE_DEFINITION,
+    )
+}
+
+fn type_definition_of<S: Service>(
+    config: &config::Config,
+    static_config: &StaticConfig,
+    payload: &message_type_details::TypeDetail,
+    name: &iceoryx2_bb_system_types::file_name::FileName,
+) -> Result<Option<Vec<u8>>, ServiceDetailsError> {
+    use iceoryx2_bb_container::string::String;
+    use iceoryx2_bb_elementary_traits::type_name::TypeName;
+
+    if payload.type_name().as_str() != unsafe { marker::Flatbuffer::<()>::type_name() } {
+        return Ok(None);
+    }
+    let bytes = TypeDefinition::read_storage::<S>(name, config, static_config)?;
+    Ok(Some(bytes))
 }
 
 #[doc(hidden)]

@@ -36,7 +36,7 @@ use crate::service::resource::ServiceResource;
 use crate::service::resource::request_response::{
     RequestResponseResourceConfig, RequestResponseResources,
 };
-use crate::service::resource::type_definition::TypeDefinition;
+use crate::service::resource::type_definition::{SchemaOverride, TypeDefinition};
 use crate::service::static_config::StaticConfig;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -418,9 +418,9 @@ pub struct Builder<
     override_response_payload_type: Option<TypeDetail>,
     override_request_header_type: Option<TypeDetail>,
     override_response_header_type: Option<TypeDetail>,
-    request_flatbuffer_schema_path: Option<FilePath>,
+    override_request_schema: Option<SchemaOverride>,
     request_type_definition_name_hint: TypeName,
-    response_flatbuffer_schema_path: Option<FilePath>,
+    override_response_schema: Option<SchemaOverride>,
     response_type_definition_name_hint: TypeName,
     skip_type_definition_verification: bool,
     verify: Verify,
@@ -448,8 +448,8 @@ impl<
             override_response_payload_type: self.override_response_payload_type,
             override_request_header_type: self.override_request_header_type,
             override_response_header_type: self.override_response_header_type,
-            request_flatbuffer_schema_path: self.request_flatbuffer_schema_path,
-            response_flatbuffer_schema_path: self.response_flatbuffer_schema_path,
+            override_request_schema: self.override_request_schema.clone(),
+            override_response_schema: self.override_response_schema.clone(),
             request_type_definition_name_hint: self.request_type_definition_name_hint,
             response_type_definition_name_hint: self.response_type_definition_name_hint,
             skip_type_definition_verification: self.skip_type_definition_verification,
@@ -479,8 +479,8 @@ impl<
             override_request_payload_type: None,
             override_response_header_type: None,
             override_response_payload_type: None,
-            request_flatbuffer_schema_path: None,
-            response_flatbuffer_schema_path: None,
+            override_request_schema: None,
+            override_response_schema: None,
             request_type_definition_name_hint: TypeName::new::<RequestPayload>(),
             response_type_definition_name_hint: TypeName::new::<ResponsePayload>(),
             skip_type_definition_verification: false,
@@ -900,11 +900,11 @@ impl<
             }
         };
 
-        for (name, path) in [
-            ("request", &self.request_flatbuffer_schema_path),
-            ("response", &self.response_flatbuffer_schema_path),
+        for (name, schema) in [
+            ("request", &self.override_request_schema),
+            ("response", &self.override_response_schema),
         ] {
-            if let Some(schema_path) = path
+            if let Some(SchemaOverride::File(schema_path)) = schema
                 && !is_binary_flatbuffer_schema(&schema_path.file_name())
             {
                 fail!(from self,
@@ -926,13 +926,13 @@ impl<
                     &RequestResponseResourceConfig::<ServiceType> {
                         request: TypeDefinition {
                             use_type_definition: self.request_has_flatbuffer_payload(),
-                            schema_path: self.request_flatbuffer_schema_path,
+                            override_schema: self.override_request_schema.clone(),
                             type_name: self.request_type_definition_name_hint,
                             skip_type_definition_verification: false,
                         },
                         response: TypeDefinition {
                             use_type_definition: self.response_has_flatbuffer_payload(),
-                            schema_path: self.response_flatbuffer_schema_path,
+                            override_schema: self.override_response_schema.clone(),
                             type_name: self.response_type_definition_name_hint,
                             skip_type_definition_verification: false,
                         },
@@ -967,11 +967,11 @@ impl<
     > {
         let msg = "Unable to open request response service";
 
-        for (name, path) in [
-            ("request", &self.request_flatbuffer_schema_path),
-            ("response", &self.response_flatbuffer_schema_path),
+        for (name, schema) in [
+            ("request", &self.override_request_schema),
+            ("response", &self.override_response_schema),
         ] {
-            if let Some(schema_path) = path
+            if let Some(SchemaOverride::File(schema_path)) = schema
                 && !is_binary_flatbuffer_schema(&schema_path.file_name())
             {
                 fail!(from self,
@@ -993,14 +993,14 @@ impl<
                     &RequestResponseResourceConfig::<ServiceType> {
                         request: TypeDefinition {
                             use_type_definition: self.request_has_flatbuffer_payload(),
-                            schema_path: self.request_flatbuffer_schema_path,
+                            override_schema: self.override_request_schema.clone(),
                             type_name: self.request_type_definition_name_hint,
                             skip_type_definition_verification: self
                                 .skip_type_definition_verification,
                         },
                         response: TypeDefinition {
                             use_type_definition: self.response_has_flatbuffer_payload(),
-                            schema_path: self.response_flatbuffer_schema_path,
+                            override_schema: self.override_response_schema.clone(),
                             type_name: self.response_type_definition_name_hint,
                             skip_type_definition_verification: self
                                 .skip_type_definition_verification,
@@ -1656,7 +1656,13 @@ impl<
 
     #[doc(hidden)]
     pub unsafe fn __internal_request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.request_flatbuffer_schema_path = Some(*path);
+        self.override_request_schema = Some(SchemaOverride::File(*path));
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_request_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
+        self.override_request_schema = Some(SchemaOverride::Content(schema.to_vec()));
         self
     }
 
@@ -1668,7 +1674,13 @@ impl<
 
     #[doc(hidden)]
     pub unsafe fn __internal_response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.response_flatbuffer_schema_path = Some(*path);
+        self.override_response_schema = Some(SchemaOverride::File(*path));
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_response_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
+        self.override_response_schema = Some(SchemaOverride::Content(schema.to_vec()));
         self
     }
 
@@ -1731,7 +1743,7 @@ impl<
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.request_flatbuffer_schema_path = Some(*path);
+        self.override_request_schema = Some(SchemaOverride::File(*path));
         self
     }
 }
@@ -1748,7 +1760,7 @@ impl<
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.response_flatbuffer_schema_path = Some(*path);
+        self.override_response_schema = Some(SchemaOverride::File(*path));
         self
     }
 }

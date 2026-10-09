@@ -11,9 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::string::String;
+use alloc::vec::Vec;
 use core::alloc::Layout;
 
 use iceoryx2::service::header::publish_subscribe::Header;
+use iceoryx2::service::marker::Flatbuffer;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_log::{fail, fatal_panic, origin};
 use serde::{Deserialize, Serialize};
@@ -61,7 +63,7 @@ impl SampleTypes {
                 fail!(
                     from origin,
                     with InvalidSampleLayout::Payload(error),
-                    "Payload type '{}' cannot be represented as a type detail", self.payload.type_name
+                    "Payload type '{}' cannot be represented as a type detail", self.payload.identifier.type_name()
                 );
             }
         };
@@ -71,7 +73,7 @@ impl SampleTypes {
                 fail!(
                     from origin,
                     with InvalidSampleLayout::UserHeader(error),
-                    "User header type '{}' cannot be represented as a type detail", self.user_header.type_name
+                    "User header type '{}' cannot be represented as a type detail", self.user_header.identifier.type_name()
                 );
             }
         };
@@ -88,7 +90,7 @@ impl SampleTypes {
             when composed,
             with InvalidSampleLayout::Overflow,
             "Samples of '{}' under '{}' exceed what a layout may hold",
-            self.payload.type_name, self.user_header.type_name
+            self.payload.identifier.type_name(), self.user_header.identifier.type_name()
         );
         Ok((payload, user_header))
     }
@@ -123,7 +125,7 @@ impl core::error::Error for InvalidSampleLayout {}
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TypeDescription {
     pub variant: TypeVariant,
-    pub type_name: String,
+    pub identifier: TypeIdentifier,
     pub size: usize,
     pub alignment: usize,
 }
@@ -132,10 +134,52 @@ impl From<&TypeDetail> for TypeDescription {
     fn from(detail: &TypeDetail) -> Self {
         Self {
             variant: detail.variant(),
-            type_name: String::from_utf8_lossy(detail.type_name()).into_owned(),
+            identifier: TypeIdentifier::Name(
+                String::from_utf8_lossy(detail.type_name()).into_owned(),
+            ),
             size: detail.size(),
             alignment: detail.alignment(),
         }
+    }
+}
+
+/// The data used to identify a type.
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum TypeIdentifier {
+    Name(String),
+    Flatbuffer(Schema),
+}
+
+impl TypeIdentifier {
+    /// The type name a service records for the type.
+    pub fn type_name(&self) -> String {
+        match self {
+            TypeIdentifier::Name(name) => name.clone(),
+            TypeIdentifier::Flatbuffer(_) => String::from_utf8_lossy(
+                TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize).type_name(),
+            )
+            .into_owned(),
+        }
+    }
+}
+
+impl core::fmt::Display for TypeIdentifier {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&self.type_name())
+    }
+}
+
+/// The binary schema of a flatbuffer type.
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Schema(Vec<u8>);
+
+impl Schema {
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.0
     }
 }
 
@@ -169,16 +213,17 @@ impl TryFrom<&TypeDescription> for TypeDetail {
         if Layout::from_size_align(description.size, description.alignment).is_err() {
             return Err(InvalidTypeDescription::LayoutOverflow);
         }
+        let type_name = description.identifier.type_name();
         let detail = fail!(
             from origin,
             when TypeDetail::__internal_new_from_parts(
                 description.variant,
-                &description.type_name,
+                &type_name,
                 description.size,
                 description.alignment,
             ),
             with InvalidTypeDescription::TypeNameTooLong,
-            "Type name '{}' exceeds the maximum length", description.type_name
+            "Type name '{}' exceeds the maximum length", type_name
         );
         Ok(detail)
     }
@@ -197,12 +242,28 @@ mod tests {
 
         let description = TypeDescription::from(&detail);
         assert_that!(description.variant, eq TypeVariant::FixedSize);
-        assert_that!(description.type_name, eq "u64");
+        assert_that!(description.identifier, eq TypeIdentifier::Name("u64".into()));
         assert_that!(description.size, eq core::mem::size_of::<u64>());
         assert_that!(description.alignment, eq core::mem::align_of::<u64>());
 
         let round_tripped = TypeDetail::try_from(&description).expect("valid description");
         assert_that!(round_tripped, eq detail);
+    }
+
+    #[test]
+    fn a_flatbuffer_identity_records_the_flatbuffer_type_name() {
+        const SCHEMA: [u8; 4] = [1, 2, 3, 4];
+        let flatbuffer = TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize);
+
+        let description = TypeDescription {
+            variant: TypeVariant::FixedSize,
+            identifier: TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.to_vec())),
+            size: flatbuffer.size(),
+            alignment: flatbuffer.alignment(),
+        };
+
+        let detail = TypeDetail::try_from(&description).expect("valid description");
+        assert_that!(detail, eq flatbuffer);
     }
 
     #[test]
@@ -212,7 +273,7 @@ mod tests {
 
         let description = TypeDescription {
             variant: TypeVariant::FixedSize,
-            type_name: "x".repeat(MAX_TYPE_NAME_LENGTH + 1),
+            identifier: TypeIdentifier::Name("x".repeat(MAX_TYPE_NAME_LENGTH + 1)),
             size: SIZE,
             alignment: ALIGNMENT,
         };
@@ -229,7 +290,7 @@ mod tests {
         for alignment in NOT_POWERS_OF_TWO {
             let description = TypeDescription {
                 variant: TypeVariant::FixedSize,
-                type_name: "test_type".into(),
+                identifier: TypeIdentifier::Name("test_type".into()),
                 size: SIZE,
                 alignment,
             };
@@ -276,7 +337,7 @@ mod tests {
     fn described(type_name: &str, size: usize, alignment: usize) -> TypeDescription {
         TypeDescription {
             variant: TypeVariant::FixedSize,
-            type_name: type_name.into(),
+            identifier: TypeIdentifier::Name(type_name.into()),
             size,
             alignment,
         }
