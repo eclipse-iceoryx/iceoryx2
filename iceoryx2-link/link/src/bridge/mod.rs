@@ -28,7 +28,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_link_backend::service_description::{MessagingPattern, ServiceDescription};
-use iceoryx2_link_backend::{Backend, RemoteDescription};
+use iceoryx2_link_backend::{Backend, RemoteDescription, RemoteId};
 use iceoryx2_log::{fail, origin};
 
 use crate::bridge::event::EventBridge;
@@ -111,6 +111,13 @@ trait Bridge: Sized {
         remote_description: &RemoteDescription<Self::Service, Self::Backend>,
     ) -> Result<Self, OpenError>;
 
+    /// Takes note of the remotes offering the service.
+    fn reconcile<'a>(&mut self, _: impl Iterator<Item = &'a RemoteId<Self::Service, Self::Backend>>)
+    where
+        RemoteId<Self::Service, Self::Backend>: 'a,
+    {
+    }
+
     /// Moves what is pending in both directions.
     fn propagate(&mut self, node: &Node<Self::Service>, notify: bool) -> Result<(), BridgeError>;
 
@@ -146,9 +153,10 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         &mut self,
         node: &Node<S>,
         backend: &mut B,
-        bridgeable: impl Iterator<Item = BridgeableService<'a, RemoteDescription<S, B>>>,
+        bridgeable: impl Iterator<Item = BridgeableService<'a, RemoteId<S, B>, RemoteDescription<S, B>>>,
     ) where
         B: 'a,
+        RemoteId<S, B>: 'a,
     {
         self.epoch = self.epoch.next();
         let epoch = self.epoch;
@@ -159,6 +167,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
                 hash,
                 local_description,
                 remote_description,
+                remotes,
                 resolved,
             } = entry;
 
@@ -169,6 +178,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
                         backend,
                         local_description,
                         remote_description,
+                        remotes,
                         resolved,
                         epoch,
                     )
@@ -178,6 +188,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
                     backend,
                     local_description,
                     remote_description,
+                    remotes,
                     resolved,
                     epoch,
                 ),

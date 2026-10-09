@@ -17,7 +17,7 @@ use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_bb_elementary::epoch::Epoch;
-use iceoryx2_link_backend::RemoteDescription;
+use iceoryx2_link_backend::{RemoteDescription, RemoteId};
 use iceoryx2_log::{fail, origin, trace};
 
 use crate::bridge::{Bridge, BridgeError, OpenError, PropagateError};
@@ -51,23 +51,32 @@ impl<B> Default for BridgeTable<B> {
 }
 
 impl<B: Bridge> BridgeTable<B> {
-    /// Stamps the bridge of a bridgeable service, opening it first if the
-    /// service has none or was resolved anew since its bridge was opened.
-    pub(super) fn reconcile(
+    /// Reconciles the bridge of a bridgeable service.
+    ///
+    /// A new bridge is opened if the service has none or was resolved anew
+    /// since its bridge was opened. The bridge is marked as seen in `epoch`
+    /// and receives `remotes`.
+    #[allow(clippy::too_many_arguments)] // intentional
+    pub(super) fn reconcile<'a>(
         &mut self,
         node: &Node<B::Service>,
         backend: &mut B::Backend,
         local_description: B::LocalDescription<'_>,
         remote_description: &RemoteDescription<B::Service, B::Backend>,
+        remotes: impl Iterator<Item = &'a RemoteId<B::Service, B::Backend>>,
         resolved: Epoch,
         epoch: Epoch,
-    ) -> Result<(), OpenError> {
+    ) -> Result<(), OpenError>
+    where
+        RemoteId<B::Service, B::Backend>: 'a,
+    {
         let origin = origin!("BridgeTable::reconcile");
 
         let hash = local_description.hash();
         if let Some(service) = self.services.get_mut(&hash) {
             if service.resolved == resolved {
                 service.seen = epoch;
+                service.bridge.reconcile(remotes);
                 return Ok(());
             }
             trace!(from origin, "Closing the {:?} bridge of \"{}\", its resolution changed", service.pattern, service.name);
@@ -79,7 +88,7 @@ impl<B: Bridge> BridgeTable<B> {
             when B::open(node, backend, local_description, remote_description),
             "Failed to open the {:?} bridge of \"{}\"", pattern, local_description.name()
         );
-        let service = BridgedService {
+        let mut service = BridgedService {
             bridge,
             name: local_description.name(),
             pattern,
@@ -87,6 +96,7 @@ impl<B: Bridge> BridgeTable<B> {
             seen: epoch,
             failure: None,
         };
+        service.bridge.reconcile(remotes);
 
         trace!(from origin, "Opened {:?} bridge of \"{}\"", service.pattern, service.name);
 
