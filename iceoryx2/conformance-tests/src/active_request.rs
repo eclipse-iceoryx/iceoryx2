@@ -296,6 +296,19 @@ pub mod active_request {
     }
 
     #[conformance_test]
+    pub fn request_id_is_shared_with_the_pending_response_and_differs_per_request<Sut: Service>() {
+        let test = TestFixture::<Sut>::new();
+        let first_pending_response = test.client.send_copy(123).unwrap();
+        let second_pending_response = test.client.send_copy(456).unwrap();
+        let first = test.server.receive().unwrap().unwrap();
+        let second = test.server.receive().unwrap().unwrap();
+
+        assert_that!(first.header().request_id(), eq first_pending_response.header().request_id());
+        assert_that!(second.header().request_id(), eq second_pending_response.header().request_id());
+        assert_that!(first.header().request_id(), ne second.header().request_id());
+    }
+
+    #[conformance_test]
     pub fn payload_and_user_header_are_correctly_set<Sut: Service>() {
         const USER_HEADER: u64 = 910283129;
         const PAYLOAD: u64 = 125894612937;

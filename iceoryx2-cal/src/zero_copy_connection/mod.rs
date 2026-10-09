@@ -177,7 +177,19 @@ impl core::fmt::Display for ChannelStateNewError {
 impl core::error::Error for ChannelStateNewError {}
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ZeroCopySend)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    ZeroCopySend,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct ChannelState(u64);
 
 impl ChannelState {

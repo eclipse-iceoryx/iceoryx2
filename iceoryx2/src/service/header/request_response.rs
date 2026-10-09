@@ -40,6 +40,12 @@ impl RequestHeader {
         self.client_id
     }
 
+    /// Returns the [`RequestId`] the sending [`Client`](crate::port::client::Client)
+    /// gave the [`RequestMut`](crate::request_mut::RequestMut).
+    pub fn request_id(&self) -> RequestId {
+        self.request_id
+    }
+
     /// Returns the payload offset.
     pub fn payload_offset(&self) -> u64 {
         self.payload_offset
