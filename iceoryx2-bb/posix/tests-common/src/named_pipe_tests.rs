@@ -31,8 +31,7 @@ use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::{
-    POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING, POSIX_SUPPORT_NAMED_PIPE, POSIX_SUPPORT_PERMISSIONS,
-    POSIX_SUPPORT_USERS_AND_GROUPS,
+    POSIX_SUPPORT_NAMED_PIPE, POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS,
 };
 
 pub const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(100);
@@ -53,9 +52,9 @@ impl TestFixture {
         &self.named_pipe
     }
 
-    fn create_named_pipe(&self, name: &FilePath) -> NamedPipe {
+    fn create_named_pipe(&self, name: &FilePath, creation_mode: CreationMode) -> NamedPipe {
         let named_pipe = NamedPipeBuilder::new(name)
-            .creation_mode(CreationMode::PurgeAndCreate)
+            .creation_mode(creation_mode)
             .create();
 
         assert_that!(named_pipe, is_ok);
@@ -79,17 +78,19 @@ impl Drop for TestFixture {
 #[test]
 pub fn opening_non_existing_named_pipe_fails() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
     let test_non_existing_named_pipe = generate_file_path();
     let result =
         NamedPipeBuilder::new(&test_non_existing_named_pipe).open_existing(AccessMode::Read);
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::FileDoesNotExist);
+    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::NamedPipeOpenFdError(NamedPipeOpenFdError::FileDoesNotExist));
 }
 
 #[test]
-pub fn creating_existing_named_pipe_on_creation_mode_create_exclusive_suceeds() {
+pub fn creating_non_existing_named_pipe_on_creation_mode_create_exclusive_suceeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
     let test_named_pipe_path = generate_file_path();
     let result = NamedPipeBuilder::new(&test_named_pipe_path)
         .creation_mode(CreationMode::CreateExclusive)
@@ -99,8 +100,9 @@ pub fn creating_existing_named_pipe_on_creation_mode_create_exclusive_suceeds() 
 }
 
 #[test]
-pub fn purge_and_create_non_existing_named_pipe_suceeds() {
+pub fn purge_and_create_non_existing_named_pipe_succeeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
     let test_named_pipe_path = generate_file_path();
     let result = NamedPipeBuilder::new(&test_named_pipe_path)
         .has_ownership(true)
@@ -111,10 +113,11 @@ pub fn purge_and_create_non_existing_named_pipe_suceeds() {
 }
 
 #[test]
-pub fn purge_and_create_existing_named_pipe_suceeds() {
+pub fn purge_and_create_existing_named_pipe_succeeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
     let test = TestFixture::new();
-    test.create_named_pipe(test.file());
+    test.create_named_pipe(test.file(), CreationMode::PurgeAndCreate);
     let result = NamedPipeBuilder::new(test.file())
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -124,28 +127,21 @@ pub fn purge_and_create_existing_named_pipe_suceeds() {
 }
 
 #[test]
-pub fn open_or_create_non_existing_named_pipe_suceeds() {
+pub fn open_or_create_non_existing_named_pipe_succeeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
-    let test_named_pipe_path = generate_file_path();
-    let result = NamedPipeBuilder::new(&test_named_pipe_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::OpenOrCreate)
-        .create();
 
-    assert_that!(result, is_ok);
+    let test = TestFixture::new();
+    test.create_named_pipe(test.file(), CreationMode::OpenOrCreate);
 }
 
 #[test]
-pub fn open_or_create_existing_named_pipe_suceeds() {
+pub fn open_or_create_existing_named_pipe_succeeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
     let test = TestFixture::new();
-    test.create_named_pipe(test.file());
+    test.create_named_pipe(test.file(), CreationMode::OpenOrCreate);
     let result = NamedPipeBuilder::new(test.file())
-        .has_ownership(true)
         .creation_mode(CreationMode::OpenOrCreate)
-        .permission(Permission::OWNER_READ_WRITE)
-        .owner(User::from_self().unwrap().uid())
-        .group(Group::from_self().unwrap().gid())
         .create();
 
     assert_that!(result, is_ok);
@@ -167,7 +163,7 @@ pub fn creating_named_pipe_applies_additional_settings() {
 
     assert_that!(test_named_pipe, is_ok);
 
-    let test_named_pipe = test_named_pipe.ok().unwrap();
+    let test_named_pipe = test_named_pipe.unwrap();
     assert_that!(
         test_named_pipe.metadata().unwrap().permission(), eq
         Permission::OWNER_READ_WRITE
@@ -175,28 +171,11 @@ pub fn creating_named_pipe_applies_additional_settings() {
 }
 
 #[test]
-pub fn enable_async_io_works() {
-    test_requires!(POSIX_SUPPORT_NAMED_PIPE && POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
-
-    let test_named_pipe_path = generate_file_path();
-    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
-        .creation_mode(CreationMode::CreateExclusive)
-        .create()
-        .unwrap();
-
-    assert_that!(sut.set_async_io(true), is_ok);
-    assert_that!(sut.is_async_io(), eq true);
-}
-
-#[test]
 pub fn set_and_receive_access_mode_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
-    let test_named_pipe_path = generate_file_path();
-    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
-        .creation_mode(CreationMode::CreateExclusive)
-        .create()
-        .unwrap();
+    let test = TestFixture::new();
+    let sut = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     assert_that!(sut.access_mode(), eq AccessMode::ReadWrite);
 }
@@ -205,11 +184,8 @@ pub fn set_and_receive_access_mode_works() {
 pub fn set_and_receive_ownership_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
-    let test_named_pipe_path = generate_file_path();
-    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
-        .creation_mode(CreationMode::CreateExclusive)
-        .create()
-        .unwrap();
+    let test = TestFixture::new();
+    let sut = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     assert_that!(sut.has_ownership(), eq false);
 }
@@ -218,11 +194,8 @@ pub fn set_and_receive_ownership_works() {
 pub fn acquire_and_release_ownership_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
-    let test_named_pipe_path = generate_file_path();
-    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
-        .creation_mode(CreationMode::CreateExclusive)
-        .create()
-        .unwrap();
+    let test = TestFixture::new();
+    let sut = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     sut.acquire_ownership();
     assert_that!(sut.has_ownership(), eq true);
@@ -301,7 +274,7 @@ pub fn pipe_removed_after_drop_with_ownership_works() {
 pub fn simple_read_write_with_single_fd_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
     let test = TestFixture::new();
-    let sut_named_pipe = test.create_named_pipe(test.file());
+    let sut_named_pipe = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     let content: [u8; 5] = [1, 2, 3, 4, 5];
     let result = sut_named_pipe.write(content.as_slice());
@@ -320,7 +293,7 @@ pub fn simple_read_write_with_single_fd_works() {
 pub fn simple_read_write_from_with_different_fds_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
     let test = TestFixture::new();
-    let sut_writer = test.create_named_pipe(test.file());
+    let sut_writer = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     let content: [u8; 5] = [1, 2, 3, 4, 5];
     let result = sut_writer.write(content.as_slice());
@@ -340,7 +313,7 @@ pub fn simple_read_write_from_with_different_fds_works() {
 fn try_read_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
     let test = TestFixture::new();
-    let sut_writer = test.create_named_pipe(test.file());
+    let sut_writer = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     let content: [u8; 5] = [1, 2, 3, 4, 5];
     let result = sut_writer.write(content.as_slice());
