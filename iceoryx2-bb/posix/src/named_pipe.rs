@@ -181,12 +181,14 @@ enum_gen! {
     Credentials <= FileSetPermissionError; FileSetOwnerError
 }
 
+const NAMED_PIPE_ACCESS_MODE: AccessMode = AccessMode::ReadWrite;
+
 /// Opens or creates a new [`NamedPipe`]. When calling [`NamedPipeBuilder::creation_mode`] the
 /// [`NamedPipeCreationBuilder`] is returned which provides additional settings only available
 /// for newly created pipes.
 ///
 /// # Details
-/// The default [`AccessMode`] is [`AccessMode::ReadWrite`].
+/// The default [`AccessMode`] is [`AccessMode::ReadWrite`] and is set in [`NamedPipeBuilder::new`].
 ///
 /// # Examples
 /// ## Open existing named pipe for reading
@@ -235,7 +237,7 @@ impl NamedPipeBuilder {
     pub fn new(file_path: &FilePath) -> Self {
         NamedPipeBuilder {
             file_path: *file_path,
-            access_mode: AccessMode::ReadWrite,
+            access_mode: NAMED_PIPE_ACCESS_MODE,
             permission: Permission::OWNER_READ_WRITE,
             has_ownership: false,
             owner: None,
@@ -252,8 +254,7 @@ impl NamedPipeBuilder {
 
     /// Returns a [`NamedPipeCreationBuilder`] object to define further settings exclusively
     /// for newly created named pipes. Sets the [`AccessMode`] of the pipe to [`AccessMode::ReadWrite`].
-    pub fn creation_mode(mut self, creation_mode: CreationMode) -> NamedPipeCreationBuilder {
-        self.access_mode = AccessMode::ReadWrite;
+    pub fn creation_mode(self, creation_mode: CreationMode) -> NamedPipeCreationBuilder {
         NamedPipeCreationBuilder {
             config: self,
             creation_mode,
@@ -264,8 +265,7 @@ impl NamedPipeBuilder {
     /// for reading, writing. Is independent of
     /// the current permissions of the pipe. But writing to a read-only pipe can result
     /// in some kind of error.
-    pub fn open_existing(mut self, value: AccessMode) -> Result<NamedPipe, NamedPipeOpenError> {
-        self.access_mode = value;
+    pub fn open_existing(self) -> Result<NamedPipe, NamedPipeOpenError> {
         NamedPipe::open(self)
     }
 }
@@ -496,6 +496,10 @@ impl NamedPipe {
         }
     }
 
+    /// Opens an existing pipe at the given file_path and defines how the file's [`AccessMode`],
+    /// for reading, writing. Is independent of
+    /// the current permissions of the pipe. But writing to a read-only pipe can result
+    /// in some kind of error.
     fn open(config: NamedPipeBuilder) -> Result<NamedPipe, NamedPipeOpenError> {
         let file_descriptor = NamedPipe::open_fd(&config.file_path, &config.access_mode)?;
 

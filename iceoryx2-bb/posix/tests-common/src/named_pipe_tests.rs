@@ -62,7 +62,7 @@ impl TestFixture {
     }
 
     fn open_named_pipe(&self, name: &FilePath) -> NamedPipe {
-        let named_pipe = NamedPipeBuilder::new(name).open_existing(AccessMode::Read);
+        let named_pipe = NamedPipeBuilder::new(name).open_existing();
 
         assert_that!(named_pipe, is_ok);
         named_pipe.unwrap()
@@ -80,8 +80,7 @@ pub fn opening_non_existing_named_pipe_fails() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
     let test_non_existing_named_pipe = generate_file_path();
-    let result =
-        NamedPipeBuilder::new(&test_non_existing_named_pipe).open_existing(AccessMode::Read);
+    let result = NamedPipeBuilder::new(&test_non_existing_named_pipe).open_existing();
 
     assert_that!(result, is_err);
     assert_that!(result.err().unwrap(), eq NamedPipeOpenError::NamedPipeOpenFdError(NamedPipeOpenFdError::FileDoesNotExist));
@@ -435,7 +434,7 @@ fn timed_read_blocks_at_least_for_timeout() {
         .unwrap();
 
     let sut_reader = NamedPipeBuilder::new(&pipe_test_path)
-        .open_existing(AccessMode::Read)
+        .open_existing()
         .unwrap();
 
     let mut read_buffer = [0u8; 8];
