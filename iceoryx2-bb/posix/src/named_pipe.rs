@@ -622,10 +622,6 @@ impl NamedPipe {
     /// `buf.len()` bytes.
     fn read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
         let msg = "Unable to read named pipe";
-        if self.access_mode != AccessMode::Read && self.access_mode != AccessMode::ReadWrite {
-            fail!(from self, with NamedPipeReadError::OpenedWithoutReadAccessMode,
-                "{msg} since the named pipe was not opened with AccessMode::Read or AccessMode::ReadWrite.");
-        }
 
         let bytes_read = unsafe {
             posix::read(
