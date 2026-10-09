@@ -49,7 +49,8 @@ use crate::file::{
 };
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::{
-    FileDescriptorSet, FileDescriptorSetWaitError, FileEvent, SynchronousMultiplexing,
+    FileDescriptorSet, FileDescriptorSetAddError, FileDescriptorSetWaitError, FileEvent,
+    SynchronousMultiplexing,
 };
 use crate::file_type::FileType;
 use crate::group::{Gid, GroupError};
@@ -63,7 +64,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::SemanticString;
-use iceoryx2_log::{fail, fatal_panic, trace, warn};
+use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::Errno;
 use iceoryx2_pal_posix::*;
 
@@ -138,6 +139,7 @@ enum_gen! { NamedPipeReadError
     OpenedWithoutReadAccessMode,
     UnknownError(i32)
   mapping:
+    FileDescriptorSetAddError,
     FileDescriptorSetWaitError,
     NamedPipeSetPropertyError
 }
@@ -680,8 +682,7 @@ impl NamedPipe {
             "{} since the named pipe could not activate the blocking mode.", msg);
 
         let fd_set = FileDescriptorSet::new();
-        let _guard = fatal_panic!(from self, when fd_set.add(self),
-                            "This should never happen! {} since the named pipe could not be attached to a fd set.", msg);
+        let _guard = fd_set.add(self)?;
 
         let mut received_bytes = Ok(0);
         let receive_call = |_: &FileDescriptor| {
