@@ -181,6 +181,9 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
                     resolved,
                     epoch,
                 ),
+                MessagingPattern::RequestResponse(_) => {
+                    unreachable!("the link does not bridge request-response yet")
+                }
             };
             if let Err(error) = opened {
                 let failure = OpenFailure {

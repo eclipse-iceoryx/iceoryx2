@@ -50,6 +50,9 @@ pub fn endpoint_of(description: &ServiceDescription) -> FakeEndpointDescription 
         types: match description.types() {
             ServiceTypes::PublishSubscribe(types) => EndpointTypes::PublishSubscribe(types.clone()),
             ServiceTypes::Event => EndpointTypes::Event,
+            ServiceTypes::RequestResponse(_) => {
+                unimplemented!("the fake middleware has no request-response endpoints")
+            }
         },
     }
 }
