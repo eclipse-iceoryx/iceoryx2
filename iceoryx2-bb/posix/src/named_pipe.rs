@@ -434,7 +434,7 @@ impl NamedPipe {
             file_descriptor,
             has_ownership: AtomicBool::new(config.has_ownership),
             access_mode: config.access_mode,
-            is_non_blocking: AtomicBool::new(true),
+            is_non_blocking: AtomicBool::new(false),
         })
     }
 
@@ -513,7 +513,7 @@ impl NamedPipe {
             file_descriptor,
             has_ownership: AtomicBool::new(config.has_ownership),
             access_mode: config.access_mode,
-            is_non_blocking: AtomicBool::new(true),
+            is_non_blocking: AtomicBool::new(false),
         })
     }
 
@@ -636,6 +636,7 @@ impl NamedPipe {
         }
 
         match posix::Errno::get() {
+            Errno::EAGAIN => Ok(0),
             Errno::EINTR => {
                 fail!(with NamedPipeReadError::InterruptedBySignal,
                     "{msg} since an interrupt signal was received.");
