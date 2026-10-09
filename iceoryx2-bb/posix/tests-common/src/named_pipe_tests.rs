@@ -107,7 +107,7 @@ pub fn opening_file_as_named_pipe_fails() {
 }
 
 #[test]
-pub fn creating_non_existing_named_pipe_on_creation_mode_create_exclusive_suceeds() {
+pub fn creating_named_pipe_creation_mode_create_exclusive_succeeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
     let test_named_pipe_path = generate_file_path();
@@ -116,6 +116,21 @@ pub fn creating_non_existing_named_pipe_on_creation_mode_create_exclusive_suceed
         .create();
 
     assert_that!(result, is_ok);
+}
+
+#[test]
+pub fn creating_named_pipe_on_existing_pipe_creation_mode_create_exclusive_fails() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test = TestFixture::new();
+    test.create_named_pipe(test.file(), CreationMode::PurgeAndCreate);
+
+    let result = NamedPipeBuilder::new(test.file())
+        .creation_mode(CreationMode::CreateExclusive)
+        .create();
+
+    assert_that!(result, is_err);
+    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::CreateFiFoError(CreateFiFoError::AlreadyExist));
 }
 
 #[test]
@@ -190,17 +205,7 @@ pub fn creating_named_pipe_applies_additional_settings() {
 }
 
 #[test]
-pub fn set_and_receive_access_mode_works() {
-    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
-
-    let test = TestFixture::new();
-    let sut = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
-
-    assert_that!(sut.access_mode(), eq AccessMode::ReadWrite);
-}
-
-#[test]
-pub fn set_and_receive_ownership_works() {
+pub fn has_ownership_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
     let test = TestFixture::new();
@@ -332,7 +337,20 @@ pub fn simple_read_write_from_with_different_fds_works() {
 }
 
 #[test]
-fn try_read_works() {
+fn try_read_on_empty_pipe_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+    let test = TestFixture::new();
+    test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
+
+    let sut_reader = test.open_named_pipe(test.file());
+    let mut read_buffer: [u8; 53] = [0u8; 53];
+    let result = sut_reader.try_read(&mut read_buffer);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq  0);
+}
+
+#[test]
+fn try_read_with_write_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
     let test = TestFixture::new();
     let sut_writer = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
@@ -361,30 +379,29 @@ fn blocking_read_blocks() {
     let handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
+    let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
+
+    let sut_writer = NamedPipeBuilder::new(&pipe_test_path)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
 
     thread_scope(|s| {
         s.thread_builder()
             .spawn(|| {
                 let sut_reader = NamedPipeBuilder::new(&pipe_test_path)
-                    .has_ownership(false)
-                    .creation_mode(CreationMode::PurgeAndCreate)
-                    .create()
+                    .open_existing()
                     .unwrap();
                 barrier.wait();
 
-                let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
                 let result = sut_reader.blocking_read(receive_data.as_mut_slice());
+                received_message.store(true, Ordering::Relaxed);
                 assert_that!(result, is_ok);
                 assert_that!(result.unwrap(), eq send_data.len() as _);
-                received_message.store(true, Ordering::Relaxed);
             })
             .expect("failed to spawn thread");
 
         barrier.wait();
-        let sut_writer = NamedPipeBuilder::new(&pipe_test_path)
-            .creation_mode(CreationMode::OpenOrCreate)
-            .create()
-            .unwrap();
 
         nanosleep(TIMEOUT).unwrap();
         let received_message_old = received_message.load(Ordering::Relaxed);
@@ -397,6 +414,7 @@ fn blocking_read_blocks() {
     .expect("failed to spawn thread");
 
     assert_that!(received_message.load(Ordering::Relaxed), eq true);
+    assert_that!(receive_data, eq send_data);
 }
 
 #[test]
@@ -409,17 +427,21 @@ fn timed_read_blocks() {
     let handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
+    let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
+
+    let sut_writer = NamedPipeBuilder::new(&pipe_test_path)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
 
     thread_scope(|s| {
         s.thread_builder()
             .spawn(|| {
                 let sut_reader = NamedPipeBuilder::new(&pipe_test_path)
-                    .creation_mode(CreationMode::PurgeAndCreate)
-                    .create()
+                    .open_existing()
                     .unwrap();
                 barrier.wait();
 
-                let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
                 let result = sut_reader.timed_read(receive_data.as_mut_slice(), TIMEOUT * 3);
                 assert_that!(result, is_ok);
                 assert_that!(result.unwrap(), eq send_data.len() as _);
@@ -428,10 +450,6 @@ fn timed_read_blocks() {
             .expect("failed to spawn thread");
 
         barrier.wait();
-        let sut_writer = NamedPipeBuilder::new(&pipe_test_path)
-            .creation_mode(CreationMode::OpenOrCreate)
-            .create()
-            .unwrap();
 
         nanosleep(TIMEOUT).unwrap();
         let received_message_old = received_message.load(Ordering::Relaxed);
@@ -444,11 +462,13 @@ fn timed_read_blocks() {
     .expect("failed to spawn thread");
 
     assert_that!(received_message.load(Ordering::Relaxed), eq true);
+    assert_that!(receive_data, eq send_data);
 }
 
 #[test]
 fn timed_read_blocks_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+    let _watchdog = Watchdog::new();
     let pipe_test_path = generate_file_path();
 
     let _sut_writer = NamedPipeBuilder::new(&pipe_test_path)
