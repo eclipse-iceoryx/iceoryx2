@@ -15,5 +15,6 @@ use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 instantiate_conformance_tests_with_module!(
     name_generator,
     iceoryx2_conformance_tests::name_generator_trait,
-    iceoryx2::name_generator::default_name_generator::DefaultNameGenerator
+    iceoryx2::name_generator::default_name_generator::DefaultNameGenerator,
+    iceoryx2_conformance_tests::name_generator_trait::name_generator_trait::DefaultNameGeneratorTests
 );
