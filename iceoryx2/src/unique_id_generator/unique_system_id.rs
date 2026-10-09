@@ -35,7 +35,7 @@ impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
 impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Service> {
     fn open_or_create<ServiceType: service::Service>(
         config: &Config,
-    ) -> Result<Self, UniqueIdGeneratorOpenError> {
+    ) -> Result<Self, UniqueIdGeneratorOpenOrCreateError> {
         let origin = "UniqueSystemIdGenerator::open()";
         let msg = "Unable to open the global management segment due to";
 
@@ -44,15 +44,15 @@ impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Se
             Err(DynamicStorageOpenOrCreateError::DynamicStorageCreateError(
                 DynamicStorageCreateError::InsufficientPermissions,
             )) => {
-                fail!(from origin, with UniqueIdGeneratorOpenError::InsufficientPermissions, "{msg} insufficient permissions.");
+                fail!(from origin, with UniqueIdGeneratorOpenOrCreateError::InsufficientPermissions, "{msg} insufficient permissions.");
             }
             Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
                 DynamicStorageOpenError::VersionMismatch,
             )) => {
-                fail!(from origin, with UniqueIdGeneratorOpenError::VersionMismatch, "{msg} mismatching iceoryx2 versions.");
+                fail!(from origin, with UniqueIdGeneratorOpenOrCreateError::VersionMismatch, "{msg} mismatching iceoryx2 versions.");
             }
             _ => {
-                fail!(from origin, with UniqueIdGeneratorOpenError::InternalError, "{msg} an internal failure.");
+                fail!(from origin, with UniqueIdGeneratorOpenOrCreateError::InternalError, "{msg} an internal failure.");
             }
         }
     }
