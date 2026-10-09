@@ -72,14 +72,14 @@ impl core::fmt::Display for PropagateError {
 
 impl core::error::Error for PropagateError {}
 
-/// How much a bridge moved in each direction since last taken.
+/// What a bridge moved in each direction since it was last reported.
 #[derive(Default)]
-struct Counters {
+struct Monitoring {
     outbound: u64,
     inbound: u64,
 }
 
-impl Counters {
+impl Monitoring {
     /// The outbound and inbound counts, reset to zero.
     fn take(&mut self) -> (u64, u64) {
         let counts = (self.outbound, self.inbound);
@@ -90,24 +90,24 @@ impl Counters {
 
 /// The link's local ports of one pattern joined to the backend's relay
 /// for them.
-trait Bridged: Sized {
+trait Bridge: Sized {
     type Service: Service;
     type Backend: Backend<Self::Service>;
-    /// The description seen as this pattern.
-    type Pattern<'a>: Copy + Deref<Target = ServiceDescription>;
+    /// The local description seen as this bridge's pattern.
+    type LocalDescription<'a>: Copy + Deref<Target = ServiceDescription>;
 
     fn open(
         node: &Node<Self::Service>,
         backend: &mut Self::Backend,
-        description: Self::Pattern<'_>,
-        remote: &RemoteDescription<Self::Service, Self::Backend>,
+        local_description: Self::LocalDescription<'_>,
+        remote_description: &RemoteDescription<Self::Service, Self::Backend>,
     ) -> Result<Self, OpenError>;
 
     /// Moves what is pending in both directions.
     fn propagate(&mut self, node: &Node<Self::Service>, notify: bool) -> Result<(), BridgeError>;
 
     /// What was moved since last taken.
-    fn counters(&mut self) -> &mut Counters;
+    fn monitoring(&mut self) -> &mut Monitoring;
 }
 
 pub struct Bridges<S: Service, B: Backend<S>> {
@@ -155,20 +155,20 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
             } = entry;
 
             let opened = match local_description.messaging_pattern() {
-                MessagingPattern::PublishSubscribe(description) => {
+                MessagingPattern::PublishSubscribe(local_description) => {
                     self.publish_subscribe.reconcile(
                         node,
                         backend,
-                        description,
+                        local_description,
                         remote_description,
                         resolved,
                         epoch,
                     )
                 }
-                MessagingPattern::Event(description) => self.event.reconcile(
+                MessagingPattern::Event(local_description) => self.event.reconcile(
                     node,
                     backend,
-                    description,
+                    local_description,
                     remote_description,
                     resolved,
                     epoch,
