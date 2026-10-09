@@ -13,6 +13,7 @@
 use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2_bb_elementary::generation::Generation;
+use iceoryx2_link_backend::relay::UnsupportedRelay;
 use iceoryx2_link_backend::service_description::ServiceDescriptor;
 use iceoryx2_link_backend::{Announcement, Backend, OnRemote, Reactive, WakeHandle};
 use iceoryx2_log::{origin, trace};
@@ -51,6 +52,7 @@ impl<S: Service, C: Carrier> Backend<S> for Tunnel<C> {
         Self: 'a;
     type PublishSubscribeRelay = relay::publish_subscribe::Relay<S, C::SampleChannel>;
     type EventRelay = relay::event::Relay<S, C::EventChannel>;
+    type RequestResponseRelay = UnsupportedRelay<S, OfferId>;
     type RelayFactory<'a>
         = Factory<'a, S, C>
     where

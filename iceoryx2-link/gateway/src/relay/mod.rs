@@ -18,7 +18,10 @@ use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRelayBuilder};
-use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
+use iceoryx2_link_backend::service_description::Identified;
+use iceoryx2_link_backend::service_description::{
+    EventDescription, PublishSubscribeDescription, RequestResponseDescription,
+};
 use iceoryx2_link_backend::wire::region::ResizeError;
 
 use iceoryx2_link_adapter::Mapping;
@@ -52,6 +55,11 @@ where
         = UnsupportedRelayBuilder<S>
     where
         Self: 'b;
+    type RequestResponseRelay = UnsupportedRelay<S, <M::EndpointSettings as Identified>::Id>;
+    type RequestResponseBuilder<'b>
+        = UnsupportedRelayBuilder<S, <M::EndpointSettings as Identified>::Id>
+    where
+        Self: 'b;
 
     fn publish_subscribe<'b>(
         &'b mut self,
@@ -76,6 +84,18 @@ where
         _: EventDescription<'b>,
         _: &'b Self::RemoteDescription,
     ) -> Self::EventBuilder<'b>
+    where
+        Self: 'b,
+    {
+        UnsupportedRelayBuilder::new()
+    }
+
+    /// The gateway does not bridge request-response yet.
+    fn request_response<'b>(
+        &'b mut self,
+        _: RequestResponseDescription<'b>,
+        _: &'b Self::RemoteDescription,
+    ) -> Self::RequestResponseBuilder<'b>
     where
         Self: 'b,
     {
