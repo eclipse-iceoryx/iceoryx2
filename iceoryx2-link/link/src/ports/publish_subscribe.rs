@@ -24,9 +24,9 @@ use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, TypeDescription, TypeIdentifier,
 };
 use iceoryx2_link_backend::wire::publish_subscribe::{
-    Publisher, Sample, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
+    Publisher, Sample, SampleMut, SampleMutUninit, Subscriber,
 };
-use iceoryx2_link_backend::wire::sample::{Header, Payload};
+use iceoryx2_link_backend::wire::sample::{Header, Payload, UnloanedSample};
 use iceoryx2_log::{fail, origin};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -186,7 +186,7 @@ impl<S: Service> PublishSubscribePorts<S> {
     pub(crate) fn send<E>(
         &mut self,
         mut ingest: impl FnMut(
-            UnloanedSample<'_, '_, S, LoanError>,
+            UnloanedSample<'_, SampleMutUninit<S>, LoanError>,
         ) -> Result<ReceiveOutcome<SampleMut<S>>, E>,
     ) -> Result<u64, SendError> {
         let origin = origin!("PublishSubscribePorts::send");

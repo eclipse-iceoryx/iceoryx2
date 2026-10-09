@@ -193,11 +193,13 @@ mod tests {
     };
     use iceoryx2_link_backend::service_description::TypeDescription;
     use iceoryx2_link_backend::wire::publish_subscribe::{
-        LoanFn, Publisher, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
-        payload_bytes_mut, user_header_bytes_mut,
+        Publisher, SampleMut, SampleMutUninit, Subscriber,
     };
     use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
     use iceoryx2_link_backend::wire::sample::{Header, Payload};
+    use iceoryx2_link_backend::wire::sample::{
+        LoanFn, UnloanedSample, payload_bytes_mut, user_header_bytes_mut,
+    };
 
     use crate::relay::transcoding::PendingLoan;
 
@@ -459,7 +461,7 @@ mod tests {
     /// Receives through `relay` into a sample loaned with `loan`.
     fn receive_into<LoanError>(
         relay: &mut Relay<local::Service, StubEndpoints, StubTranslator>,
-        loan: &mut LoanFn<'_, local::Service, LoanError>,
+        loan: &mut LoanFn<'_, SampleMutUninit<local::Service>, LoanError>,
     ) -> Result<Option<SampleMut<local::Service>>, ReceiveError> {
         let types = types();
         let ReceiveOutcome::Sample(sample) = relay.receive(UnloanedSample::new(&types, loan))?
@@ -699,7 +701,7 @@ mod tests {
         let ports = Ports::open();
         let types = types();
         let mut loan = |len| ports.loan(len);
-        let mut sut: PendingLoan<UnloanedSample<'_, '_, local::Service, LoanError>> =
+        let mut sut: PendingLoan<UnloanedSample<'_, SampleMutUninit<local::Service>, LoanError>> =
             PendingLoan::new(UnloanedSample::new(&types, &mut loan));
 
         let resized = BackwardRegion::resize(&mut sut.backward(), SIZE);
