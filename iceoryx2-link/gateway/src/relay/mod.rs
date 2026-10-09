@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod publish_subscribe;
+mod transcoding;
 
 use core::error::Error;
 use core::marker::PhantomData;
