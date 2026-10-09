@@ -14,7 +14,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
-pub mod name_generator_trait {
+pub mod name_generator {
     use iceoryx2::config::Config;
     use iceoryx2::name_generator::NameGenerator;
     use iceoryx2_bb_testing::assert_that;

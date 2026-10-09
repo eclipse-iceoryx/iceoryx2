@@ -10,12 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::ipc;
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 instantiate_conformance_tests_with_module!(
-    unique_system_id,
-    iceoryx2_conformance_tests::unique_id_generator_trait,
-    iceoryx2::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<ipc::Service>,
-    iceoryx2_conformance_tests::unique_id_generator_trait::unique_id_generator_trait::UniqueSystemIdTests
+    name_generator,
+    iceoryx2_conformance_tests::name_generator,
+    iceoryx2::name_generator::default_name_generator::DefaultNameGenerator,
+    iceoryx2_conformance_tests::name_generator::name_generator::DefaultNameGeneratorTests
 );

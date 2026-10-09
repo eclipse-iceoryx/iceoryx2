@@ -1158,7 +1158,7 @@ pub mod service {
         let test =
             Factory::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(120)));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
-        const NUMBER_OF_ITERATIONS: usize = 3;
+        const NUMBER_OF_ITERATIONS: usize = 30;
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(number_of_creators as _)
             .create(&handle)
