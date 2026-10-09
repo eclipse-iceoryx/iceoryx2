@@ -87,6 +87,26 @@ pub fn opening_non_existing_named_pipe_fails() {
 }
 
 #[test]
+pub fn opening_file_as_named_pipe_fails() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    // create dummy file that is not a pipe
+    create_test_directory();
+    let dummy_file_path = generate_file_path();
+    let file = FileBuilder::new(&dummy_file_path)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .permission(Permission::OWNER_READ)
+        .create();
+    assert_that!(file, is_ok);
+
+    // try to open it
+    let result = NamedPipeBuilder::new(&dummy_file_path).open_existing();
+
+    assert_that!(result, is_err);
+    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::FileTypeNotNamedPipe);
+}
+
+#[test]
 pub fn creating_non_existing_named_pipe_on_creation_mode_create_exclusive_suceeds() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
@@ -218,7 +238,10 @@ pub fn does_exist_check_works() {
         .permission(Permission::OWNER_READ)
         .create();
     assert_that!(file, is_ok);
-    assert_that!(NamedPipe::does_exist(&dummy_file_path).unwrap(), eq false);
+
+    let file_result = NamedPipe::does_exist(&dummy_file_path);
+    assert_that!(file_result, is_err);
+    assert_that!(file_result.err().unwrap(), eq NamedPipeOpenError::FileTypeNotNamedPipe);
 
     // now a real pipe
     let _sut = NamedPipeBuilder::new(&test_named_pipe_path)
@@ -275,17 +298,17 @@ pub fn simple_read_write_with_single_fd_works() {
     let test = TestFixture::new();
     let sut_named_pipe = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
-    let content: [u8; 5] = [1, 2, 3, 4, 5];
+    let content = b"foreman roehrich looking into pipe";
     let result = sut_named_pipe.write(content.as_slice());
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
-    let mut read_buffer: [u8; 5] = [0u8; 5];
+    let mut read_buffer: [u8; 34] = [0u8; 34];
     let result = sut_named_pipe.try_read(&mut read_buffer);
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
-    assert_that!(content, eq read_buffer);
+    assert_that!(content.as_slice(), eq read_buffer);
 }
 
 #[test]
@@ -294,18 +317,18 @@ pub fn simple_read_write_from_with_different_fds_works() {
     let test = TestFixture::new();
     let sut_writer = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
-    let content: [u8; 5] = [1, 2, 3, 4, 5];
+    let content = b"foreman roehrich looking into pipe from multiple ends.";
     let result = sut_writer.write(content.as_slice());
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
     let sut_reader = test.open_named_pipe(test.file());
-    let mut read_buffer: [u8; 5] = [0u8; 5];
+    let mut read_buffer: [u8; 54] = [0u8; 54];
     let result = sut_reader.try_read(&mut read_buffer);
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
-    assert_that!(content, eq read_buffer);
+    assert_that!(content.as_slice(), eq read_buffer);
 }
 
 #[test]
@@ -314,18 +337,18 @@ fn try_read_works() {
     let test = TestFixture::new();
     let sut_writer = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
-    let content: [u8; 5] = [1, 2, 3, 4, 5];
+    let content = b"Is the pipe flushing? Foreman roehrich will find out.";
     let result = sut_writer.write(content.as_slice());
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
     let sut_reader = test.open_named_pipe(test.file());
-    let mut read_buffer: [u8; 5] = [0u8; 5];
+    let mut read_buffer: [u8; 53] = [0u8; 53];
     let result = sut_reader.try_read(&mut read_buffer);
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
 
-    assert_that!(content, eq read_buffer);
+    assert_that!(content.as_slice(), eq read_buffer);
 }
 
 #[test]

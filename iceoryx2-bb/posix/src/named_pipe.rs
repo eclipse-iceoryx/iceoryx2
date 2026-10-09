@@ -63,6 +63,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_system_types::path::SemanticString;
 use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::Errno;
@@ -107,15 +108,18 @@ enum_gen! { NamedPipeOpenError
     TooManySymbolicLinksInPath,
     PerProcessFileHandleLimitReached,
     FileDoesNotExist,
+    FileTypeNotNamedPipe,
     FileTooBig,
     InsufficientResources,
     UnknownError(i32)
   mapping:
-    NamedPipeOpenFdError
+    NamedPipeOpenFdError,
+    MetadataFromPathError
 }
 
 enum_gen! { NamedPipeCreationError
   mapping:
+    NamedPipeOpenError,
     NamedPipeOpenFdError,
     CreateFiFoError,
     FileStatError,
@@ -266,6 +270,7 @@ impl NamedPipeBuilder {
     /// the current permissions of the pipe. But writing to a read-only pipe can result
     /// in some kind of error.
     pub fn open_existing(self) -> Result<NamedPipe, NamedPipeOpenError> {
+        NamedPipe::does_exist(&self.file_path)?;
         NamedPipe::open(self)
     }
 }
@@ -538,10 +543,20 @@ impl NamedPipe {
 
     // Checks if the pipe exists at the given file_path and wether the type
     // is a named pipe.
-    pub fn does_exist(file_path: &FilePath) -> Result<bool, MetadataFromPathError> {
-        let origin = "NamedPipe::does_exist()";
+    pub fn does_exist(file_path: &FilePath) -> Result<bool, NamedPipeOpenError> {
         let msg = format!("Unable to determine if named pipe \"{file_path}\" exists");
-        Metadata::does_exist(&file_path.into(), origin, &msg, FileType::FiFo)
+
+        match Metadata::from_path(&Path::from(file_path)) {
+            Ok(metadata) => {
+                if metadata.file_type() != FileType::FiFo {
+                    fail!(with NamedPipeOpenError::FileTypeNotNamedPipe,
+                        "{msg} since it has not the type FiFo.");
+                }
+                Ok(true)
+            }
+            Err(MetadataFromPathError::DoesNotExist) => Ok(false),
+            Err(e) => Err(NamedPipeOpenError::MetadataFromPathError(e)),
+        }
     }
 
     /// Deletes the NamedPipe managed by self
