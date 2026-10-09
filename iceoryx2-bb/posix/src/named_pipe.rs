@@ -601,7 +601,7 @@ impl NamedPipe {
 
     /// Reads the content of a pipe into a slice and returns the number of bytes read but at most
     /// `buf.len()` bytes.
-    pub fn read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
+    fn read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
         let msg = "Unable to read named pipe";
         if self.access_mode != AccessMode::Read && self.access_mode != AccessMode::ReadWrite {
             fail!(from self, with NamedPipeReadError::OpenedWithoutReadAccessMode,
