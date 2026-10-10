@@ -41,5 +41,6 @@ mod service_request_response_tests;
 mod service_tests;
 mod subscriber_tests;
 mod unique_id_generator_tests;
+mod user_trigger_tests;
 mod waitset_tests;
 mod writer_tests;
