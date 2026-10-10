@@ -35,6 +35,7 @@
 
 use super::request_response::PortFactory;
 use crate::{
+    name_generator::NameGenerator,
     port::{
         BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
         port_name::PortName, server::Server,
@@ -207,7 +208,11 @@ impl<
                 initial_max_slice_len: 1,
                 allocation_strategy: defs.server_allocation_strategy,
                 max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
-                port_name: PortName::new_empty(),
+                port_name: factory
+                    .service
+                    .shared_node()
+                    .name_generator()
+                    .generate_port_name(),
             },
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),

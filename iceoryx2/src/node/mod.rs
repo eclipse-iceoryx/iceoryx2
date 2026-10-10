@@ -186,6 +186,7 @@ use iceoryx2_cal::{
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 
 use crate::identifiers::UniqueNodeId;
+use crate::name_generator::*;
 use crate::node::node_name::NodeName;
 use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
@@ -221,6 +222,8 @@ pub enum NodeCreationFailure {
     SystemCorrupted,
     /// The [`UniqueNodeId`] could not be generated.
     UnableToGenerateUniqueNodeId,
+    /// The [`NameGenerator`] could not be opened/created.
+    UnableToOpenOrCreateNameGenerator,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -951,6 +954,7 @@ impl<BagHandle: BagHandleFamily> RegisteredServices<BagHandle> {
 
 #[derive(Debug)]
 struct SharedNodeState<Service: service::Service> {
+    name_generator: Service::NameGenerator,
     id_generator: Service::UniqueId,
     id: UniqueNodeId,
     details: NodeDetails,
@@ -1070,6 +1074,10 @@ impl<Service: service::Service> SharedNode<Service> {
         &self,
     ) -> &RegisteredServices<<Service::Bag as BagFamily>::BagHandle> {
         &self.state.registered_services
+    }
+
+    pub(crate) fn name_generator(&self) -> &Service::NameGenerator {
+        &self.state.name_generator
     }
 
     pub(crate) fn name(&self) -> &NodeName {
@@ -1598,9 +1606,12 @@ impl NodeBuilder {
             .as_ref()
             .unwrap_or_else(|| Config::global_config());
 
+        let name_generator = fail!(from self, when Service::NameGenerator::open_or_create(config),
+            with NodeCreationFailure::UnableToOpenOrCreateNameGenerator,
+            "{msg} because the name generator could not be opened/created.");
         let name = match &self.name {
             Some(n) => n.clone(),
-            None => NodeName::default(),
+            None => name_generator.generate_node_name(),
         };
 
         let id_generator = fail!(from self, when Service::UniqueId::open_or_create::<Service>(config),
@@ -1617,6 +1628,7 @@ impl NodeBuilder {
         let monitoring_token = self.create_token::<Service>(config, &monitor_name)?;
 
         let state = Arc::new(SharedNodeState {
+            name_generator,
             id_generator,
             id: node_id,
             monitoring_token: UnsafeCell::new(Some(monitoring_token)),

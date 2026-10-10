@@ -14,7 +14,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
-pub mod unique_id_generator_trait {
+pub mod unique_id_generator {
     use iceoryx2::config::Config;
     use iceoryx2::port::port_name::PortName;
     use iceoryx2::service::ipc;

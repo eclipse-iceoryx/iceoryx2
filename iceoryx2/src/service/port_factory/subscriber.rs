@@ -36,6 +36,7 @@ use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::Z
 use iceoryx2_log::fail;
 
 use crate::{
+    name_generator::NameGenerator,
     port::{
         DegradationAction, DegradationFn, DegradationHandler,
         port_name::PortName,
@@ -105,7 +106,11 @@ impl<
                 buffer_size: None,
                 history_request: None,
                 degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-                port_name: PortName::new_empty(),
+                port_name: factory
+                    .service
+                    .shared_node()
+                    .name_generator()
+                    .generate_port_name(),
             },
             factory,
         }
