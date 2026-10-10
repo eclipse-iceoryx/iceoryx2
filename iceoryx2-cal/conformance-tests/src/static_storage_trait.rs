@@ -94,6 +94,26 @@ pub mod static_storage_trait {
     }
 
     #[conformance_test]
+    pub fn create_and_read_empty_storage_works<Sut: StaticStorage>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(&[])
+            .unwrap();
+        assert_that!(storage_guard.view().is_empty(), eq true);
+
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO)
+            .unwrap();
+        assert_that!(storage_reader.view().is_empty(), eq true);
+        assert_that!(storage_reader.len(), eq 0);
+        assert_that!(storage_reader.read(&mut []), is_ok);
+    }
+
+    #[conformance_test]
     pub fn open_non_existing_fails<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
