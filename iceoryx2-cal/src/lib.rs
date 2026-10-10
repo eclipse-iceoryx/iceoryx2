@@ -36,6 +36,7 @@ pub mod serialize;
 pub mod shared_memory;
 pub mod shm_allocator;
 pub mod static_storage;
+pub mod trigger;
 pub mod zero_copy_connection;
 
 #[doc(hidden)]
