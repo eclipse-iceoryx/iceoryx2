@@ -201,4 +201,15 @@
     iox2::Flatbuffer<Testing.UnboundedData>
     ```
 
+5. The `Service` trait has the new associated type `LocalTrigger`, the
+   process-local mechanism that wakes up a thread waiting on a `WaitSet` of
+   the service variant. A custom service variant has to define it.
+
+    ```rust
+    impl iceoryx2::service::Service for CustomServiceVariant {
+        // ...
+        type LocalTrigger = iceoryx2_cal::trigger::recommended::Recommended;
+    }
+    ```
+
 <!-- markdownlint-enable MD013 -->

@@ -38,6 +38,7 @@ pub mod waitset {
     use iceoryx2_bb_testing::{assert_that, test_fail};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::Event;
+    use iceoryx2_cal::trigger::{Activator, Observer, Trigger, TriggerBuilder};
     use iceoryx2_testing::*;
 
     const TIMEOUT: Duration = Duration::from_millis(100);
@@ -742,5 +743,28 @@ pub mod waitset {
             Ok(())
         })
         .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn local_trigger_of_the_service_variant_wakes_up_the_waitset<S: Service>() {
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let (activator, observer) = <S::LocalTrigger as Trigger>::Builder::new()
+            .create()
+            .unwrap();
+        let sut = node.waitset_builder().create().unwrap();
+        let guard = sut.attach_notification(&observer).unwrap();
+
+        activator.activate().unwrap();
+
+        let mut woken_up_by_trigger = false;
+        sut.wait_and_process_once(|attachment_id| {
+            woken_up_by_trigger = attachment_id.has_event_from(&guard);
+            CallbackProgression::Continue
+        })
+        .unwrap();
+
+        assert_that!(woken_up_by_trigger, eq true);
+        assert_that!(observer.reset(), eq Ok(true));
     }
 }
