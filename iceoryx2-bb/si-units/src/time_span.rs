@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::internal;
 
-/// A timespan, a duration of time (a difference between two [`TimePoint`]s).
+/// A timespan, a duration of time (a difference between two [`TimePoint`](crate::TimePoint)s).
 ///
 /// It is an intermediate [`Duration`] representation with a fixed memory layout
 /// which is shared memory compatible.
