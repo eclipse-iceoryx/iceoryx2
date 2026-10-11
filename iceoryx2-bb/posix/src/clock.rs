@@ -191,12 +191,12 @@ impl TimeBuilder {
 #[derive(
     Default, Clone, Copy, Eq, PartialEq, Hash, Debug, ZeroCopySend, Serialize, Deserialize,
 )]
-pub struct RelocatableDuration {
+pub struct TimeSpan {
     seconds: u64,
     nanoseconds: u32,
 }
 
-impl RelocatableDuration {
+impl TimeSpan {
     /// Returns the [`RelocatableDuration`] in seconds
     pub fn as_secs(&self) -> u64 {
         self.seconds
@@ -208,7 +208,7 @@ impl RelocatableDuration {
     }
 }
 
-impl From<Duration> for RelocatableDuration {
+impl From<Duration> for TimeSpan {
     fn from(value: Duration) -> Self {
         Self {
             seconds: value.as_secs(),
@@ -217,8 +217,8 @@ impl From<Duration> for RelocatableDuration {
     }
 }
 
-impl From<RelocatableDuration> for Duration {
-    fn from(value: RelocatableDuration) -> Self {
+impl From<TimeSpan> for Duration {
+    fn from(value: TimeSpan) -> Self {
         Duration::from_secs(value.seconds) + Duration::from_nanos(value.nanoseconds as u64)
     }
 }
