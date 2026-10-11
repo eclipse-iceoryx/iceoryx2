@@ -164,16 +164,32 @@ impl TimeSpec {
         }
     }
 
+    pub fn from_secs_f64(value: f64) -> Self {
+        Duration::from_secs_f64(value).into()
+    }
+
+    pub fn from_secs_f32(value: f32) -> Self {
+        Duration::from_secs_f32(value).into()
+    }
+
     pub const fn as_secs(&self) -> u64 {
         self.seconds
     }
 
+    pub const fn as_secs_f64(&self) -> f64 {
+        self.as_nanos() as f64 / NANO_SECOND_IN_SECONDS as f64
+    }
+
+    pub const fn as_secs_f32(&self) -> f32 {
+        self.as_nanos() as f32 / NANO_SECOND_IN_SECONDS as f32
+    }
+
     pub const fn as_micros(&self) -> u64 {
-        self.nanoseconds as u64 / MICRO_SECOND_IN_SECONDS + self.seconds * MICRO_SECOND_IN_SECONDS
+        self.nanoseconds as u64 / 1_000 + self.seconds * MICRO_SECOND_IN_SECONDS
     }
 
     pub const fn as_millis(&self) -> u64 {
-        self.nanoseconds as u64 / MILLI_SECOND_IN_SECONDS + self.seconds * MILLI_SECOND_IN_SECONDS
+        self.nanoseconds as u64 / 1_000_000 + self.seconds * MILLI_SECOND_IN_SECONDS
     }
 
     pub const fn as_nanos(&self) -> u128 {

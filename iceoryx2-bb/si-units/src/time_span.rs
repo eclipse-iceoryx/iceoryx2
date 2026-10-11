@@ -154,9 +154,33 @@ impl TimeSpan {
         }
     }
 
+    /// Creates a new [`TimeSpan`] from the given number of seconds.
+    pub fn from_secs_f64(value: f64) -> Self {
+        Self {
+            time: internal::TimeSpec::from_secs_f64(value),
+        }
+    }
+
+    /// Creates a new [`TimeSpan`] from the given number of seconds.
+    pub fn from_secs_f32(value: f32) -> Self {
+        Self {
+            time: internal::TimeSpec::from_secs_f32(value),
+        }
+    }
+
     /// Returns the [`TimeSpan`] as a number of seconds.
     pub const fn as_secs(&self) -> u64 {
         self.time.as_secs()
+    }
+
+    /// Returns the [`TimeSpan`] as a number of seconds.
+    pub const fn as_secs_f32(&self) -> f32 {
+        self.time.as_secs_f32()
+    }
+
+    /// Returns the [`TimeSpan`] as a number of seconds.
+    pub const fn as_secs_f64(&self) -> f64 {
+        self.time.as_secs_f64()
     }
 
     /// Returns the [`TimeSpan`] as a number of microseconds.

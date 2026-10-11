@@ -16,7 +16,137 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn relocatable_duration_roundtrip_conversion() {
+pub fn add_works() {
+    let lhs = TimeSpan::from_millis(600);
+    let rhs = TimeSpan::from_millis(700);
+    let sut = lhs + rhs;
+
+    assert_that!(sut.as_secs(), eq 1);
+    assert_that!(sut.as_millis(), eq 1_300);
+    assert_that!(sut.as_micros(), eq 1_300_000);
+    assert_that!(sut.as_nanos(), eq 1_300_000_000);
+    assert_that!(sut.subsec_nanos(), eq 300_000_000);
+    assert_that!(sut.as_secs_f32() - 1.3, le 0.01);
+    assert_that!(sut.as_secs_f64() - 1.3, le 0.01);
+}
+
+#[test]
+pub fn add_assign_works() {
+    let mut sut = TimeSpan::from_millis(700);
+    sut += TimeSpan::from_millis(800);
+
+    assert_that!(sut.as_secs(), eq 1);
+    assert_that!(sut.as_millis(), eq 1_500);
+    assert_that!(sut.as_micros(), eq 1_500_000);
+    assert_that!(sut.as_nanos(), eq 1_500_000_000);
+    assert_that!(sut.subsec_nanos(), eq 500_000_000);
+    assert_that!(sut.as_secs_f32() - 1.5, le 0.01);
+    assert_that!(sut.as_secs_f64() - 1.5, le 0.01);
+}
+
+#[test]
+pub fn sub_works() {
+    let sut = TimeSpan::from_millis(2100);
+    let sut = sut - TimeSpan::from_millis(900);
+
+    assert_that!(sut.as_secs(), eq 1);
+    assert_that!(sut.as_millis(), eq 1_200);
+    assert_that!(sut.as_micros(), eq 1_200_000);
+    assert_that!(sut.as_nanos(), eq 1_200_000_000);
+    assert_that!(sut.subsec_nanos(), eq 200_000_000);
+    assert_that!(sut.as_secs_f32() - 1.2, le 0.01);
+    assert_that!(sut.as_secs_f64() - 1.2, le 0.01);
+}
+
+#[test]
+pub fn sub_assign_works() {
+    let mut sut = TimeSpan::from_millis(2500);
+    sut -= TimeSpan::from_millis(1600);
+
+    assert_that!(sut.as_secs(), eq 0);
+    assert_that!(sut.as_millis(), eq 900);
+    assert_that!(sut.as_micros(), eq 900_000);
+    assert_that!(sut.as_nanos(), eq 900_000_000);
+    assert_that!(sut.subsec_nanos(), eq 900_000_000);
+    assert_that!(sut.as_secs_f32() - 0.9, le 0.01);
+    assert_that!(sut.as_secs_f64() - 0.9, le 0.01);
+}
+
+#[test]
+pub fn from_secs_works() {
+    let sut = TimeSpan::from_secs(12);
+
+    assert_that!(sut.as_secs(), eq 12);
+    assert_that!(sut.as_millis(), eq 12_000);
+    assert_that!(sut.as_micros(), eq 12_000_000);
+    assert_that!(sut.as_nanos(), eq 12_000_000_000);
+    assert_that!(sut.subsec_nanos(), eq 000_000_000);
+    assert_that!(sut.as_secs_f32() - 12.0, le 0.01);
+    assert_that!(sut.as_secs_f64() - 12.0, le 0.01);
+}
+
+#[test]
+pub fn from_secs_f32_works() {
+    let sut = TimeSpan::from_secs_f32(12.34);
+
+    assert_that!(sut.as_secs(), eq 12);
+    assert_that!(sut.as_millis(), eq 12_340);
+    assert_that!(sut.as_micros(), eq 12_340_000);
+    assert_that!(sut.as_secs_f32() - 12.34, le 0.01);
+    assert_that!(sut.as_secs_f64() - 12.34, le 0.01);
+}
+
+#[test]
+pub fn from_secs_f64_works() {
+    let sut = TimeSpan::from_secs_f32(122.345);
+
+    assert_that!(sut.as_secs(), eq 122);
+    assert_that!(sut.as_millis(), eq 122_345);
+    assert_that!(sut.as_secs_f32() - 123.345, le 0.01);
+    assert_that!(sut.as_secs_f64() - 123.345, le 0.01);
+}
+
+#[test]
+pub fn from_millis_works() {
+    let sut = TimeSpan::from_millis(54321);
+
+    assert_that!(sut.as_secs(), eq 54);
+    assert_that!(sut.as_millis(), eq 54_321);
+    assert_that!(sut.as_micros(), eq 54_321_000);
+    assert_that!(sut.as_nanos(), eq 54_321_000_000);
+    assert_that!(sut.subsec_nanos(), eq 321_000_000);
+    assert_that!(sut.as_secs_f32() - 54.321, le 0.01);
+    assert_that!(sut.as_secs_f64() - 54.321, le 0.01);
+}
+
+#[test]
+pub fn from_micros_works() {
+    let sut = TimeSpan::from_micros(56321987);
+
+    assert_that!(sut.as_secs(), eq 56);
+    assert_that!(sut.as_millis(), eq 56_321);
+    assert_that!(sut.as_micros(), eq 56_321_987);
+    assert_that!(sut.as_nanos(), eq 56_321_987_000);
+    assert_that!(sut.subsec_nanos(), eq 321_987_000);
+    assert_that!(sut.as_secs_f32() - 56.321, le 0.01);
+    assert_that!(sut.as_secs_f64() - 56.321, le 0.01);
+}
+
+#[test]
+pub fn from_nanos_works() {
+    let sut = TimeSpan::from_nanos(57321987444);
+
+    assert_that!(sut.as_secs(), eq 57);
+    assert_that!(sut.as_millis(), eq 57_321);
+    assert_that!(sut.as_micros(), eq 57_321_987);
+    assert_that!(sut.as_nanos(), eq 57_321_987_444);
+    assert_that!(sut.subsec_nanos(), eq 321_987_444);
+    assert_that!(sut.as_secs_f32() - 57.321, le 0.01);
+    assert_that!(sut.as_secs_f64() - 57.321, le 0.01);
+}
+
+#[test]
+pub fn roundtrip_conversion() {
     let secs = 123;
     let nsecs = 456;
     let duration = Duration::from_secs(secs) + Duration::from_nanos(nsecs);
@@ -29,7 +159,7 @@ pub fn relocatable_duration_roundtrip_conversion() {
 }
 
 #[test]
-pub fn relocatable_duration_max_value() {
+pub fn duration_max_value() {
     let duration = Duration::MAX;
     let sut: TimeSpan = duration.into();
 

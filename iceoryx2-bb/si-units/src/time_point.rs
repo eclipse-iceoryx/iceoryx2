@@ -152,6 +152,20 @@ impl TimePoint {
         }
     }
 
+    /// Creates a new [`TimePoint`] from the given number of seconds.
+    pub fn from_secs_f64(value: f64) -> Self {
+        Self {
+            time: internal::TimeSpec::from_secs_f64(value),
+        }
+    }
+
+    /// Creates a new [`TimePoint`] from the given number of seconds.
+    pub fn from_secs_f32(value: f32) -> Self {
+        Self {
+            time: internal::TimeSpec::from_secs_f32(value),
+        }
+    }
+
     /// Returns the [`TimePoint`] as a number of seconds.
     pub const fn as_secs(&self) -> u64 {
         self.time.as_secs()
@@ -175,5 +189,15 @@ impl TimePoint {
     /// Returns the sub-second component in nanoseconds
     pub const fn subsec_nanos(&self) -> u32 {
         self.time.subsec_nanos()
+    }
+
+    /// Returns the [`TimePoint`] as a number of seconds.
+    pub const fn as_secs_f32(&self) -> f32 {
+        self.time.as_secs_f32()
+    }
+
+    /// Returns the [`TimePoint`] as a number of seconds.
+    pub const fn as_secs_f64(&self) -> f64 {
+        self.time.as_secs_f64()
     }
 }
