@@ -33,6 +33,8 @@ rust_library(
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],
     deps = [
-        "@crate_index//:enum-iterator",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-bb/si-units:iceoryx2-bb-si-units",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )
