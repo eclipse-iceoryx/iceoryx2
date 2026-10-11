@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::format;
 use core::time::Duration;
 use iceoryx2_bb_si_units::time_span::TimeSpan;
 use iceoryx2_bb_testing::assert_that;
