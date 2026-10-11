@@ -66,6 +66,14 @@ pub fn sub_works() {
 }
 
 #[test]
+pub fn sub_larger_value_saturates_at_zero() {
+    let sut = TimeSpan::from_millis(2100);
+    let sut = sut - TimeSpan::from_millis(2900);
+
+    assert_that!(sut.as_nanos(), eq 0);
+}
+
+#[test]
 pub fn sub_assign_works() {
     let mut sut = TimeSpan::from_millis(2500);
     sut -= TimeSpan::from_millis(1600);

@@ -115,8 +115,8 @@ impl TimePoint {
         }
     }
 
-    /// Returns the amount of time elapsed since the given [`TimePoint`].
-    pub fn time_span_since(&self, value: TimePoint) -> TimeSpan {
+    /// Returns the [`TimeSpan`] between this and the given [`TimePoint`].
+    pub fn time_span_between(&self, value: TimePoint) -> TimeSpan {
         if self.time < value.time {
             value - *self
         } else {
