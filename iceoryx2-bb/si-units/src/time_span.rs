@@ -21,8 +21,33 @@ use serde::{Deserialize, Serialize};
 
 use crate::internal;
 
-/// A intermediate [`Duration`] representation with a fixed memory layout which
-/// is shared memory compatible.
+/// A timespan, a duration of time (a difference between two [`TimePoint`]s).
+///
+/// It is an intermediate [`Duration`] representation with a fixed memory layout
+/// which is shared memory compatible.
+///
+/// A [`TimeSpan`] can be created from seconds, milliseconds, microseconds or
+/// nanoseconds and converted back to any of these units. Time spans can be
+/// added to or subtracted from each other, as well as from [`TimePoint`](crate::TimePoint)s, and
+/// converted to/from [`core::time::Duration`].
+///
+/// # Example
+///
+/// ```rust
+/// use iceoryx2_bb_si_units::{TimePoint, TimeSpan};
+///
+/// let mut span = TimeSpan::from_millis(1500);
+/// span += TimeSpan::from_secs(2);
+/// assert_eq!(span.as_secs(), 3);
+/// assert_eq!(span.subsec_nanos(), 500_000_000);
+///
+/// let time_point = TimePoint::from_secs(10);
+/// let later = time_point + span;
+/// assert_eq!(later.as_secs(), 13);
+///
+/// let std_duration: std::time::Duration = span.into();
+/// assert_eq!(std_duration.as_secs(), 3);
+/// ```
 #[repr(C)]
 #[derive(
     Default,
@@ -81,58 +106,6 @@ impl Display for TimeSpan {
     }
 }
 
-impl TimeSpan {
-    pub const fn new() -> Self {
-        Self {
-            time: internal::TimeSpec::new(),
-        }
-    }
-
-    pub const fn from_secs(value: u64) -> Self {
-        Self {
-            time: internal::TimeSpec::from_secs(value),
-        }
-    }
-
-    pub const fn from_millis(value: u128) -> Self {
-        Self {
-            time: internal::TimeSpec::from_millis(value),
-        }
-    }
-
-    pub const fn from_micros(value: u128) -> Self {
-        Self {
-            time: internal::TimeSpec::from_micros(value),
-        }
-    }
-
-    pub const fn from_nanos(value: u128) -> Self {
-        Self {
-            time: internal::TimeSpec::from_nanos(value),
-        }
-    }
-
-    pub const fn as_secs(&self) -> u64 {
-        self.time.as_secs()
-    }
-
-    pub const fn as_micros(&self) -> u64 {
-        self.time.as_micros()
-    }
-
-    pub const fn as_millis(&self) -> u64 {
-        self.time.as_millis()
-    }
-
-    pub const fn as_nanos(&self) -> u128 {
-        self.time.as_nanos()
-    }
-
-    pub const fn subsec_nanos(&self) -> u32 {
-        self.time.subsec_nanos()
-    }
-}
-
 impl From<Duration> for TimeSpan {
     fn from(value: Duration) -> Self {
         Self { time: value.into() }
@@ -142,5 +115,67 @@ impl From<Duration> for TimeSpan {
 impl From<TimeSpan> for Duration {
     fn from(value: TimeSpan) -> Self {
         value.time.into()
+    }
+}
+
+impl TimeSpan {
+    /// Creates a new [`TimeSpan`] of `0` seconds.
+    pub const fn new() -> Self {
+        Self {
+            time: internal::TimeSpec::new(),
+        }
+    }
+
+    /// Creates a new [`TimeSpan`] from the given number of seconds.
+    pub const fn from_secs(value: u64) -> Self {
+        Self {
+            time: internal::TimeSpec::from_secs(value),
+        }
+    }
+
+    /// Creates a new [`TimeSpan`] from the given number of milliseconds.
+    pub const fn from_millis(value: u128) -> Self {
+        Self {
+            time: internal::TimeSpec::from_millis(value),
+        }
+    }
+
+    /// Creates a new [`TimeSpan`] from the given number of microseconds.
+    pub const fn from_micros(value: u128) -> Self {
+        Self {
+            time: internal::TimeSpec::from_micros(value),
+        }
+    }
+
+    /// Creates a new [`TimeSpan`] from the given number of nanoseconds.
+    pub const fn from_nanos(value: u128) -> Self {
+        Self {
+            time: internal::TimeSpec::from_nanos(value),
+        }
+    }
+
+    /// Returns the [`TimeSpan`] as a number of seconds.
+    pub const fn as_secs(&self) -> u64 {
+        self.time.as_secs()
+    }
+
+    /// Returns the [`TimeSpan`] as a number of microseconds.
+    pub const fn as_micros(&self) -> u64 {
+        self.time.as_micros()
+    }
+
+    /// Returns the [`TimeSpan`] as a number of milliseconds.
+    pub const fn as_millis(&self) -> u64 {
+        self.time.as_millis()
+    }
+
+    /// Returns the [`TimeSpan`] as a number of nanoseconds.
+    pub const fn as_nanos(&self) -> u128 {
+        self.time.as_nanos()
+    }
+
+    /// Returns the sub-second component in nanoseconds
+    pub const fn subsec_nanos(&self) -> u32 {
+        self.time.subsec_nanos()
     }
 }
