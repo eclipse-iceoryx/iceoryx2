@@ -18,6 +18,8 @@ default = []
 std = [
   "iceoryx2-bb-testing-macros/std",
   "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-si-units/std",
+  "iceoryx2-bb-loggers/std",
 ]
 
 [dependencies]

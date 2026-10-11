@@ -20,6 +20,14 @@ serde = { workspace = true }
 [lints]
 workspace = true
 
+[features]
+default = []
+
+std = [
+  "iceoryx2-bb-derive-macros/std",
+  "iceoryx2-log/std",
+]
+
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-si-units-tests-common = { workspace = true, features = ["std"] }
