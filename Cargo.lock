@@ -638,6 +638,7 @@ dependencies = [
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-print",
+ "iceoryx2-bb-si-units",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
@@ -1052,6 +1053,41 @@ name = "iceoryx2-bb-print"
 version = "0.10.999"
 dependencies = [
  "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-si-units"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-si-units-tests-common",
+ "iceoryx2-bb-testing",
+ "iceoryx2-log",
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-bb-si-units-tests-common"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-si-units",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+]
+
+[[package]]
+name = "iceoryx2-bb-si-units-tests-nostd"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-si-units",
+ "iceoryx2-bb-si-units-tests-common",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]

@@ -38,7 +38,8 @@ use crate::{config, prelude::EventId};
 use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_posix::clock::{Time, TimeSpan};
+use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_si_units::time_span::TimeSpan;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]

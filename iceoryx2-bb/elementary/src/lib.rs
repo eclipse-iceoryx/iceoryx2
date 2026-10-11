@@ -38,8 +38,6 @@ pub mod relocatable_pointer;
 pub mod scope_guard;
 pub mod static_assert;
 pub mod sync_pointer;
-pub mod time_point;
-pub mod time_span;
 pub mod unique_id;
 pub mod unsendable_marker;
 
