@@ -12,7 +12,7 @@
 
 use core::{
     fmt::Display,
-    ops::{Add, AddAssign, Sub, SubAssign},
+    ops::{Add, Sub},
     time::Duration,
 };
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -66,12 +66,6 @@ impl Add<TimeSpec> for TimeSpec {
     }
 }
 
-impl AddAssign<TimeSpec> for TimeSpec {
-    fn add_assign(&mut self, rhs: TimeSpec) {
-        *self = *self + rhs;
-    }
-}
-
 impl Sub<TimeSpec> for TimeSpec {
     type Output = TimeSpec;
 
@@ -87,29 +81,24 @@ impl Sub<TimeSpec> for TimeSpec {
     }
 }
 
-impl SubAssign<TimeSpec> for TimeSpec {
-    fn sub_assign(&mut self, rhs: TimeSpec) {
-        *self = *self - rhs;
-    }
-}
-
 impl Display for TimeSpec {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        if self.nanoseconds < 1_000 {
+        let nanos = self.as_nanos();
+        if nanos < 1_000 {
             write!(f, "{} ns", self.as_nanos())
-        } else if self.nanoseconds < 1_000_000 {
+        } else if nanos < 1_000_000 {
             let frac = self.as_nanos() % 1_000;
             if frac != 0 {
                 write!(f, "{}.{} us", self.as_micros(), frac)
             } else {
                 write!(f, "{} us", self.as_micros(),)
             }
-        } else if self.nanoseconds < 1_000_000_000 {
+        } else if nanos < 1_000_000_000 {
             let frac = self.as_micros() % 1_000;
             if frac != 0 {
                 write!(f, "{}.{} ms", self.as_millis(), frac)
             } else {
-                write!(f, "{} us", self.as_millis(),)
+                write!(f, "{} ms", self.as_millis(),)
             }
         } else {
             let frac = self.as_millis() % 1_000;

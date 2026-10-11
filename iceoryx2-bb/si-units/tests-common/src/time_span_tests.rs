@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -14,6 +14,13 @@ use core::time::Duration;
 use iceoryx2_bb_si_units::time_span::TimeSpan;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
+
+#[test]
+pub fn new_creates_zero_timespan() {
+    let sut = TimeSpan::new();
+    assert_that!(sut.as_secs(), eq 0);
+    assert_that!(sut.as_nanos(), eq 0);
+}
 
 #[test]
 pub fn add_works() {
@@ -98,7 +105,7 @@ pub fn from_secs_f32_works() {
 
 #[test]
 pub fn from_secs_f64_works() {
-    let sut = TimeSpan::from_secs_f32(122.345);
+    let sut = TimeSpan::from_secs_f64(122.345);
 
     assert_that!(sut.as_secs(), eq 122);
     assert_that!(sut.as_millis(), eq 122_345);
@@ -165,4 +172,15 @@ pub fn duration_max_value() {
 
     assert_that!(sut.as_secs(), eq sut.as_secs());
     assert_that!(sut.subsec_nanos(), eq sut.subsec_nanos());
+}
+
+#[test]
+pub fn display_works() {
+    assert_that!(format!("{}", TimeSpan::from_secs(12)), eq "12 s");
+    assert_that!(format!("{}", TimeSpan::from_millis(1234)), eq "1.234 s");
+    assert_that!(format!("{}", TimeSpan::from_millis(34)), eq "34 ms");
+    assert_that!(format!("{}", TimeSpan::from_micros(3456)), eq "3.456 ms");
+    assert_that!(format!("{}", TimeSpan::from_micros(45)), eq "45 us");
+    assert_that!(format!("{}", TimeSpan::from_nanos(4567)), eq "4.567 us");
+    assert_that!(format!("{}", TimeSpan::from_nanos(567)), eq "567 ns");
 }
