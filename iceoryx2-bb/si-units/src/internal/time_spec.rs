@@ -89,21 +89,21 @@ impl Display for TimeSpec {
         } else if nanos < 1_000_000 {
             let frac = self.as_nanos() % 1_000;
             if frac != 0 {
-                write!(f, "{}.{} us", self.as_micros(), frac)
+                write!(f, "{}.{:03} us", self.as_micros(), frac)
             } else {
                 write!(f, "{} us", self.as_micros(),)
             }
         } else if nanos < 1_000_000_000 {
             let frac = self.as_micros() % 1_000;
             if frac != 0 {
-                write!(f, "{}.{} ms", self.as_millis(), frac)
+                write!(f, "{}.{:03} ms", self.as_millis(), frac)
             } else {
                 write!(f, "{} ms", self.as_millis(),)
             }
         } else {
             let frac = self.as_millis() % 1_000;
             if frac != 0 {
-                write!(f, "{}.{} s", self.as_secs(), frac)
+                write!(f, "{}.{:03} s", self.as_secs(), frac)
             } else {
                 write!(f, "{} s", self.as_secs(),)
             }
