@@ -185,44 +185,6 @@ impl TimeBuilder {
     }
 }
 
-/// A intermediate [`Duration`] representation with a fixed memory layout which
-/// is shared memory compatible.
-#[repr(C)]
-#[derive(
-    Default, Clone, Copy, Eq, PartialEq, Hash, Debug, ZeroCopySend, Serialize, Deserialize,
-)]
-pub struct TimeSpan {
-    seconds: u64,
-    nanoseconds: u32,
-}
-
-impl TimeSpan {
-    /// Returns the [`RelocatableDuration`] in seconds
-    pub fn as_secs(&self) -> u64 {
-        self.seconds
-    }
-
-    /// Returns the fractional part of the seconds in nanoseconds.
-    pub fn subsec_nanos(&self) -> u32 {
-        self.nanoseconds
-    }
-}
-
-impl From<Duration> for TimeSpan {
-    fn from(value: Duration) -> Self {
-        Self {
-            seconds: value.as_secs(),
-            nanoseconds: value.subsec_nanos(),
-        }
-    }
-}
-
-impl From<TimeSpan> for Duration {
-    fn from(value: TimeSpan) -> Self {
-        Duration::from_secs(value.seconds) + Duration::from_nanos(value.nanoseconds as u64)
-    }
-}
-
 /// Represents time under a specified [`ClockType`]
 #[repr(C)]
 #[derive(
