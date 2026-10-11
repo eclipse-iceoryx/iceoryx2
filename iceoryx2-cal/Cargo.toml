@@ -43,6 +43,7 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
+iceoryx2-bb-si-units = { workspace = true }
 
 postcard = { workspace = true }
 serde = { workspace = true }

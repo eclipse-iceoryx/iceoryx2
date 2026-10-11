@@ -9,3 +9,20 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use core::marker::PhantomData;
+
+use iceoryx2_bb_si_units::{TimePoint, TimeSpan};
+
+use crate::event::event_state::EventState;
+
+pub enum Timeout {
+    By(TimeSpan),
+    At(TimePoint),
+}
+
+pub enum ScheduleHandle<E: EventState, T: crate::event::Event<E>> {
+    TranslatedTimeout(Timeout),
+    Trigger(T),
+    _Data(PhantomData<E>),
+}
