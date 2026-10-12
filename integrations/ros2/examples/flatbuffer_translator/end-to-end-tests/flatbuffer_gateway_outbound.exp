@@ -18,6 +18,8 @@ cd ${REPO_ROOT}
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+require_tool flatc
+
 #### Test Setup
 
 cd integrations/ros2/examples/flatbuffer_translator/schemas
