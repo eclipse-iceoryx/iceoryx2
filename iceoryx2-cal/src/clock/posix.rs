@@ -19,6 +19,7 @@ use crate::{
     event::{InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
 };
+use alloc::vec::Vec;
 use core::time::Duration;
 use iceoryx2_bb_posix::clock::{ClockType, NanosleepError};
 use iceoryx2_bb_system_types::file_name::FileName;
