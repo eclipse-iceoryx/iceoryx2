@@ -69,9 +69,9 @@ impl UniqueId {
     }
 }
 
-/// Describes failures that can occur when a [`UniqueIdGenerator`] is opened.
+/// Describes failures that can occur when a [`UniqueIdGenerator`] is opened/created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum UniqueIdGeneratorOpenError {
+pub enum UniqueIdGeneratorOpenOrCreateError {
     /// Insufficient permissions to open the unique id generator.
     InsufficientPermissions,
     /// Mismatching iceoryx2 versions.
@@ -80,13 +80,13 @@ pub enum UniqueIdGeneratorOpenError {
     InternalError,
 }
 
-impl core::fmt::Display for UniqueIdGeneratorOpenError {
+impl core::fmt::Display for UniqueIdGeneratorOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "UniqueIdGeneratorOpenError::{self:?}")
+        write!(f, "UniqueIdGeneratorOpenOrCreateError::{self:?}")
     }
 }
 
-impl core::error::Error for UniqueIdGeneratorOpenError {}
+impl core::error::Error for UniqueIdGeneratorOpenOrCreateError {}
 
 /// Describes failures that can occur when a [`UniqueId`] is generated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -123,7 +123,7 @@ pub trait UniqueIdGenerator: Sized + Debug {
     /// Opens an existing [`UniqueIdGenerator`] or creates it for a specific [`service::Service`].
     fn open_or_create<Service: service::Service>(
         config: &Config,
-    ) -> Result<Self, UniqueIdGeneratorOpenError>;
+    ) -> Result<Self, UniqueIdGeneratorOpenOrCreateError>;
 
     /// Generates a [`UniqueId`].
     fn generate(&self, entity: &Entity) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;

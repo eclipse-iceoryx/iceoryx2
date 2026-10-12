@@ -30,8 +30,13 @@
 //! ```
 use core::fmt::Debug;
 
-use crate::port::{
-    event_id::EventId, notifier::Notifier, notifier::NotifierCreateError, port_name::PortName,
+use crate::{
+    name_generator::NameGenerator,
+    port::{
+        event_id::EventId,
+        notifier::{Notifier, NotifierCreateError},
+        port_name::PortName,
+    },
 };
 use iceoryx2_log::fail;
 
@@ -62,7 +67,11 @@ impl<'factory, Service: service::Service> PortFactoryNotifier<'factory, Service>
             factory,
             config: NotifierConfig {
                 default_event_id: EventId::default(),
-                port_name: PortName::new_empty(),
+                port_name: factory
+                    .service
+                    .shared_node()
+                    .name_generator()
+                    .generate_port_name(),
             },
         }
     }

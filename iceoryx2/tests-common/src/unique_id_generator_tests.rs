@@ -27,7 +27,7 @@ struct TestUniqueId {}
 impl UniqueIdGenerator for TestUniqueId {
     fn open_or_create<Service: service::Service>(
         _config: &Config,
-    ) -> Result<Self, UniqueIdGeneratorOpenError> {
+    ) -> Result<Self, UniqueIdGeneratorOpenOrCreateError> {
         Ok(Self {})
     }
 

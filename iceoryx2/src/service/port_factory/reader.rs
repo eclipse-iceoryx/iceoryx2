@@ -38,6 +38,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 use super::blackboard::PortFactory;
+use crate::name_generator::NameGenerator;
 use crate::port::port_name::PortName;
 use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
@@ -70,7 +71,11 @@ impl<
         Self {
             factory,
             config: ReaderConfig {
-                port_name: PortName::new_empty(),
+                port_name: factory
+                    .service
+                    .shared_node()
+                    .name_generator()
+                    .generate_port_name(),
             },
         }
     }

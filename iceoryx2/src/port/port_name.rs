@@ -26,7 +26,17 @@ type PortNameString = StaticString<MAX_PORT_NAME_LENGTH>;
 
 /// Represents the name for a port like [`crate::port::publisher::Publisher`], [`crate::port::server::Server`] or [`crate::port::listener::Listener`].
 #[derive(
-    PlacementDefault, ZeroCopySend, Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord,
+    PlacementDefault,
+    ZeroCopySend,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
 )]
 #[repr(C)]
 pub struct PortName {

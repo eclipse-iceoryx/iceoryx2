@@ -29,6 +29,7 @@ use core::fmt::Debug;
 
 use iceoryx2_log::fail;
 
+use crate::name_generator::NameGenerator;
 use crate::port::{listener::Listener, listener::ListenerCreateError, port_name::PortName};
 use crate::service;
 
@@ -55,7 +56,11 @@ impl<'factory, Service: service::Service> PortFactoryListener<'factory, Service>
         Self {
             factory,
             config: ListenerConfig {
-                port_name: PortName::new_empty(),
+                port_name: factory
+                    .service
+                    .shared_node()
+                    .name_generator()
+                    .generate_port_name(),
             },
         }
     }
