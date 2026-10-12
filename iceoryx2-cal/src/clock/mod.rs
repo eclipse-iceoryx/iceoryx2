@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod posix_monotonic;
+pub mod posix;
 
 use core::time::Duration;
 
@@ -28,6 +28,48 @@ enum_gen! {
     InternalError
 }
 
+enum_gen! {
+    ClockNowError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+    ClockBuilderTimeControllerError
+  entry:
+    TimeControllerIsNotSupported
+}
+
+enum_gen! {
+    ClockBuilderNewError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+    ClockBuilderAcquireError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+    TimeControllerCreateError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+    TimeControllerOpenError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+    TimeControllerOpenOrCreateError
+  entry:
+    InternalError
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Timeout {
     By(Duration),
@@ -42,31 +84,27 @@ pub enum ScheduleHandle<E: crate::event::Event> {
 pub trait ScheduleGuard {}
 
 pub trait ClockBuilder<C: Clock, T: TimeController>: Sized {
-    fn new(name: &FileName) -> Result<Self, ()>;
-    fn acquire(self) -> Result<C, ()>;
-    fn time_controller(self) -> Result<T, ()>;
+    fn new(name: &FileName) -> Result<Self, ClockBuilderNewError>;
+    fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
+    fn time_controller(self) -> Result<T, ClockBuilderTimeControllerError>;
 }
 
 pub trait Clock: Sized {
     type E: crate::event::Event;
     type Guard: ScheduleGuard;
 
-    fn schedule<'a>(&'a self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
-    fn schedule_on<'a>(
-        &'a self,
-        timeout: Timeout,
-        trigger_name: &FileName,
-    ) -> (Self::Guard, Timeout);
+    fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
+    fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> (Self::Guard, Timeout);
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError>;
 
-    fn now(&self) -> Result<TimePoint, ()>;
+    fn now(&self) -> Result<TimePoint, ClockNowError>;
 }
 
 pub trait TimeControllerBuilder<T: TimeController>: NamedConceptBuilder<T> {
-    fn create(self) -> Result<T, ()>;
-    fn open(self) -> Result<T, ()>;
-    fn open_or_create(self) -> Result<T, ()>;
+    fn create(self) -> Result<T, TimeControllerCreateError>;
+    fn open(self) -> Result<T, TimeControllerOpenError>;
+    fn open_or_create(self) -> Result<T, TimeControllerOpenOrCreateError>;
 }
 
 pub trait TimeController: NamedConceptMgmt {
