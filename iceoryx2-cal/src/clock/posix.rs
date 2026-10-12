@@ -16,12 +16,52 @@ pub struct Guard {}
 
 impl ScheduleGuard for Guard {}
 
-pub struct Builder {}
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PosixTimeControllerConfig {
+    clock_type: ClockType,
+}
+
+impl PosixTimeControllerConfig {
+    pub fn clock_type(mut self, value: ClockType) -> Self {
+        self.clock_type = value;
+        self
+    }
+}
+
+impl NamedConceptConfiguration for PosixTimeControllerConfig {
+    fn prefix(self, _value: &FileName) -> Self {
+        self
+    }
+
+    fn get_prefix(&self) -> &FileName {
+        unimplemented!()
+    }
+
+    fn suffix(self, _value: &FileName) -> Self {
+        self
+    }
+
+    fn get_suffix(&self) -> &FileName {
+        unimplemented!()
+    }
+
+    fn path_hint(self, _value: &iceoryx2_bb_system_types::path::Path) -> Self {
+        self
+    }
+
+    fn get_path_hint(&self) -> &iceoryx2_bb_system_types::path::Path {
+        unimplemented!()
+    }
+}
+
+pub struct Builder {
+    config: PosixTimeControllerConfig,
+}
 
 impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> for Builder {
     fn acquire(self) -> Result<PosixClock, ClockBuilderAcquireError> {
         Ok(PosixClock {
-            clock_type: ClockType::Monotonic,
+            clock_type: self.config.clock_type,
         })
     }
 
@@ -34,11 +74,14 @@ impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> f
 
 impl NamedConceptBuilder<PosixTimeController> for Builder {
     fn new(_name: &FileName) -> Self {
-        Self {}
+        Self {
+            config: PosixTimeControllerConfig::default(),
+        }
     }
 
-    fn config(self, _config: &PosixTimeControllerConfig) -> Self {
-        Self {}
+    fn config(mut self, config: &PosixTimeControllerConfig) -> Self {
+        self.config = *config;
+        self
     }
 }
 
@@ -115,35 +158,6 @@ impl Clock for PosixClock {
                 "{msg} due to an internal error. [{e:?}]");
             }
         }
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct PosixTimeControllerConfig {}
-
-impl NamedConceptConfiguration for PosixTimeControllerConfig {
-    fn prefix(self, _value: &FileName) -> Self {
-        self
-    }
-
-    fn get_prefix(&self) -> &FileName {
-        unimplemented!()
-    }
-
-    fn suffix(self, _value: &FileName) -> Self {
-        self
-    }
-
-    fn get_suffix(&self) -> &FileName {
-        unimplemented!()
-    }
-
-    fn path_hint(self, _value: &iceoryx2_bb_system_types::path::Path) -> Self {
-        self
-    }
-
-    fn get_path_hint(&self) -> &iceoryx2_bb_system_types::path::Path {
-        unimplemented!()
     }
 }
 
