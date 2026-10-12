@@ -27,10 +27,7 @@ pub enum ScheduleHandle<E: crate::event::Event> {
     Trigger(E),
 }
 
-pub struct ScheduleGuard<'a, C: Clock> {
-    clock: &'a C,
-    generation_counter: u64,
-}
+pub trait ScheduleGuard {}
 
 pub trait ClockBuilder<C: Clock, T: TimeController>: NamedConceptBuilder<C> + Sized {
     fn new(name: &FileName) -> Result<Self, ()>;
@@ -40,16 +37,14 @@ pub trait ClockBuilder<C: Clock, T: TimeController>: NamedConceptBuilder<C> + Si
 
 pub trait Clock: Sized + NamedConceptMgmt {
     type E: crate::event::Event;
+    type Guard: ScheduleGuard;
 
-    fn schedule<'a>(
-        &'a self,
-        timeout: Timeout,
-    ) -> (ScheduleGuard<'a, Self>, ScheduleHandle<Self::E>);
+    fn schedule<'a>(&'a self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
     fn schedule_on<'a>(
         &'a self,
         timeout: Timeout,
         trigger_name: &FileName,
-    ) -> (ScheduleGuard<'a, Self>, Timeout);
+    ) -> (Self::Guard, Timeout);
 
     fn blocking_sleep(&self, timeout: Timeout);
 
