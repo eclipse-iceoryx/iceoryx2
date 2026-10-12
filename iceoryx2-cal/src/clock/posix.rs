@@ -1,8 +1,8 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
-        ClockBuilderNewError, ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard,
-        ScheduleHandle, TimeController, TimeControllerBuilder, Timeout,
+        ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard, ScheduleHandle,
+        TimeController, TimeControllerBuilder, Timeout,
     },
     event::{InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
@@ -19,10 +19,6 @@ impl ScheduleGuard for Guard {}
 pub struct Builder {}
 
 impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> for Builder {
-    fn new(_name: &FileName) -> Result<Self, ClockBuilderNewError> {
-        Ok(Self {})
-    }
-
     fn acquire(self) -> Result<PosixClock, ClockBuilderAcquireError> {
         Ok(PosixClock {
             clock_type: ClockType::Monotonic,
@@ -33,6 +29,16 @@ impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> f
         fail!(from "clock::posix::Builder::time_controller()", 
             with ClockBuilderTimeControllerError::TimeControllerIsNotSupported,
             "The controlling time is not supported for the POSIX clock.");
+    }
+}
+
+impl NamedConceptBuilder<PosixTimeController> for Builder {
+    fn new(_name: &FileName) -> Self {
+        Self {}
+    }
+
+    fn config(self, _config: &PosixTimeControllerConfig) -> Self {
+        Self {}
     }
 }
 
@@ -47,6 +53,7 @@ impl Clock for PosixClock {
     type TimeController = PosixTimeController;
     type TimeControllerBuilder = PosixTimeControllerBuilder;
     type ClockBuilder = Builder;
+    const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 
     fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
         (Guard {}, ScheduleHandle::TranslatedTimeout(timeout))
@@ -54,10 +61,10 @@ impl Clock for PosixClock {
 
     fn schedule_on(
         &self,
-        timeout: super::Timeout,
+        _timeout: super::Timeout,
         _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
-    ) -> (Self::Guard, super::Timeout) {
-        (Guard {}, timeout)
+    ) -> Self::Guard {
+        Guard {}
     }
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
@@ -116,7 +123,7 @@ pub struct PosixTimeControllerConfig {}
 
 impl NamedConceptConfiguration for PosixTimeControllerConfig {
     fn prefix(self, _value: &FileName) -> Self {
-        unimplemented!()
+        self
     }
 
     fn get_prefix(&self) -> &FileName {
@@ -124,7 +131,7 @@ impl NamedConceptConfiguration for PosixTimeControllerConfig {
     }
 
     fn suffix(self, _value: &FileName) -> Self {
-        unimplemented!()
+        self
     }
 
     fn get_suffix(&self) -> &FileName {
@@ -132,7 +139,7 @@ impl NamedConceptConfiguration for PosixTimeControllerConfig {
     }
 
     fn path_hint(self, _value: &iceoryx2_bb_system_types::path::Path) -> Self {
-        unimplemented!()
+        self
     }
 
     fn get_path_hint(&self) -> &iceoryx2_bb_system_types::path::Path {
@@ -141,16 +148,6 @@ impl NamedConceptConfiguration for PosixTimeControllerConfig {
 }
 
 pub struct PosixTimeControllerBuilder {}
-
-impl NamedConceptBuilder<PosixTimeController> for PosixTimeControllerBuilder {
-    fn new(_name: &FileName) -> Self {
-        unimplemented!()
-    }
-
-    fn config(self, _config: &PosixTimeControllerConfig) -> Self {
-        unimplemented!()
-    }
-}
 
 impl TimeControllerBuilder<PosixTimeController> for PosixTimeControllerBuilder {
     fn create(self) -> Result<PosixTimeController, super::TimeControllerCreateError> {

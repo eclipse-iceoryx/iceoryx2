@@ -41,12 +41,6 @@ enum_gen! {
 }
 
 enum_gen! {
-    ClockBuilderNewError
-  entry:
-    InternalError
-}
-
-enum_gen! {
     ClockBuilderAcquireError
   entry:
     InternalError
@@ -84,9 +78,8 @@ pub enum ScheduleHandle<E: crate::event::Event> {
 pub trait ScheduleGuard {}
 
 pub trait ClockBuilder<C: Clock, T: TimeController, TBuilder: TimeControllerBuilder<T>>:
-    Sized
+    Sized + NamedConceptBuilder<T>
 {
-    fn new(name: &FileName) -> Result<Self, ClockBuilderNewError>;
     fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
     fn time_controller(self) -> Result<T, ClockBuilderTimeControllerError>;
 }
@@ -97,16 +90,17 @@ pub trait Clock: Sized {
     type TimeController: TimeController;
     type TimeControllerBuilder: TimeControllerBuilder<Self::TimeController>;
     type ClockBuilder: ClockBuilder<Self, Self::TimeController, Self::TimeControllerBuilder>;
+    const HAS_TIME_CONTROLLER_SUPPORT: bool;
 
     fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
-    fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> (Self::Guard, Timeout);
+    fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> Self::Guard;
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError>;
 
     fn now(&self) -> Result<TimePoint, ClockNowError>;
 }
 
-pub trait TimeControllerBuilder<T: TimeController>: NamedConceptBuilder<T> {
+pub trait TimeControllerBuilder<T: TimeController> {
     fn create(self) -> Result<T, TimeControllerCreateError>;
     fn open(self) -> Result<T, TimeControllerOpenError>;
     fn open_or_create(self) -> Result<T, TimeControllerOpenOrCreateError>;
