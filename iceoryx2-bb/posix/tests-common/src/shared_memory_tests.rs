@@ -293,3 +293,134 @@ pub fn abandoning_shared_memory_keeps_resources() {
 
     sut_open.acquire_ownership();
 }
+
+#[test]
+pub fn abandoning_mapped_shared_memory_keeps_resources() {
+    test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
+    let shm_name = generate_file_path().file_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ_WRITE)
+        .has_ownership(true)
+        .create()
+        .unwrap()
+        .into_mapped();
+
+    MappedSharedMemory::abandon(sut);
+
+    let sut_open = SharedMemoryBuilder::new(&shm_name)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    assert_that!(sut_open.size(), ge 1024);
+
+    sut_open.acquire_ownership();
+}
+
+#[test]
+pub fn mapped_shared_memory_that_acquires_the_ownership_removes_the_shared_memory() {
+    let shm_name = generate_file_path().file_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ_WRITE)
+        .create()
+        .unwrap()
+        .into_mapped();
+
+    sut.release_ownership();
+    assert_that!(sut.has_ownership(), eq false);
+    sut.acquire_ownership();
+    assert_that!(sut.has_ownership(), eq true);
+    drop(sut);
+
+    assert_that!(SharedMemory::does_exist(&shm_name), eq false);
+}
+
+#[test]
+pub fn mapped_shared_memory_keeps_the_mapping() {
+    let shm_name = generate_file_path().file_name();
+    let mut sut_create = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ_WRITE)
+        .zero_memory(true)
+        .create()
+        .unwrap();
+    for e in sut_create.as_mut_slice().iter_mut() {
+        *e = 42;
+    }
+
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .open_existing(AccessMode::Read)
+        .unwrap()
+        .into_mapped();
+
+    assert_that!(*sut.name(), eq shm_name);
+    assert_that!(sut.size(), ge 1024);
+    let content = unsafe { core::slice::from_raw_parts(sut.base_address().as_ptr(), 1024) };
+    for e in content.iter() {
+        assert_that!(*e, eq 42);
+    }
+}
+
+#[test]
+pub fn mapped_shared_memory_with_ownership_removes_the_shared_memory() {
+    let shm_name = generate_file_path().file_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ)
+        .create()
+        .unwrap()
+        .into_mapped();
+
+    assert_that!(sut.has_ownership(), eq true);
+    assert_that!(SharedMemory::does_exist(&shm_name), eq true);
+
+    drop(sut);
+
+    assert_that!(SharedMemory::does_exist(&shm_name), eq false);
+}
+
+#[test]
+pub fn mapped_shared_memory_without_ownership_keeps_the_shared_memory() {
+    test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
+    let shm_name = generate_file_path().file_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ_WRITE)
+        .create()
+        .unwrap()
+        .into_mapped();
+
+    sut.release_ownership();
+    drop(sut);
+
+    assert_that!(SharedMemory::does_exist(&shm_name), eq true);
+    assert_that!(SharedMemory::remove(&shm_name), eq Ok(true));
+}
+
+#[test]
+pub fn mapped_shared_memory_can_still_be_opened_by_name() {
+    let shm_name = generate_file_path().file_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ_WRITE)
+        .zero_memory(true)
+        .create()
+        .unwrap()
+        .into_mapped();
+    unsafe { *sut.base_address().as_ptr() = 42 };
+
+    let sut_open = SharedMemoryBuilder::new(&shm_name)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    assert_that!(sut_open.as_slice()[0], eq 42);
+}

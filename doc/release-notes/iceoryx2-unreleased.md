@@ -19,6 +19,7 @@
 * [#2078](https://github.com/eclipse-iceoryx/iceoryx2/issues/2078) Allocate the sample reference counters of a grown data segment only when the data segment grows
 * [#2082](https://github.com/eclipse-iceoryx/iceoryx2/issues/2082) Keep the contents of a static storage in memory and close its file
 * [#2084](https://github.com/eclipse-iceoryx/iceoryx2/issues/2084) Stop iterating a slot map after its last element
+* [#2098](https://github.com/eclipse-iceoryx/iceoryx2/issues/2098) Close the file descriptor of a dynamic storage once its shared memory is mapped
 
 ### Bugfixes
 

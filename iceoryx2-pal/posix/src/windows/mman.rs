@@ -29,11 +29,14 @@ use windows_sys::Win32::Foundation::ERROR_FILE_EXISTS;
 use windows_sys::Win32::Storage::FileSystem::{
     FILE_ATTRIBUTE_DIRECTORY, FindClose, FindFirstFileA, FindNextFileA, WIN32_FIND_DATAA,
 };
-use windows_sys::Win32::System::Threading::{INFINITE, WaitOnAddress, WakeByAddressSingle};
+use windows_sys::Win32::System::Threading::{
+    GetCurrentProcess, INFINITE, WaitOnAddress, WakeByAddressSingle,
+};
 use windows_sys::Win32::{
     Foundation::{
-        CloseHandle, ERROR_ACCESS_DENIED, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, FALSE,
-        GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
+        CloseHandle, DUPLICATE_SAME_ACCESS, DuplicateHandle, ERROR_ACCESS_DENIED,
+        ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE,
+        INVALID_HANDLE_VALUE,
     },
     Security::SECURITY_ATTRIBUTES,
     Storage::FileSystem::{
@@ -468,9 +471,19 @@ pub unsafe fn mmap(
 
         match HandleTranslator::get_instance().get(fd) {
             Some(FdHandleEntry::SharedMemory(win_handle)) => {
-                let (map_result, _) = win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
+                let mut mapping_handle: HANDLE = 0;
+                if win32call! { DuplicateHandle(GetCurrentProcess(), win_handle.handle.handle, GetCurrentProcess(), &mut mapping_handle, 0, FALSE, DUPLICATE_SAME_ACCESS)}.0
+                    == FALSE
+                {
+                    Errno::set(Errno::ENOMEM);
+                    return core::ptr::null_mut::<void>();
+                }
+
+                let (map_result, _) =
+                    win32call! { MapViewOfFile(mapping_handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
                 match map_result {
                     0 => {
+                        win32call! { CloseHandle(mapping_handle) };
                         Errno::set(Errno::ENOMEM);
                         core::ptr::null_mut::<void>()
                     }
@@ -479,12 +492,14 @@ pub unsafe fn mmap(
                         .is_null()
                     {
                         win32call! { UnmapViewOfFile(lpaddress) };
+                        win32call! { CloseHandle(mapping_handle) };
                         Errno::set(Errno::ENOMEM);
                         return core::ptr::null_mut::<void>();
                     }
 
-                        if !FileMappingsSet::get_instance().insert(lpaddress, 0) {
+                        if !FileMappingsSet::get_instance().insert(lpaddress, mapping_handle) {
                             win32call! { UnmapViewOfFile(lpaddress) };
+                            win32call! { CloseHandle(mapping_handle) };
                             Errno::set(Errno::EMFILE);
                             return core::ptr::null_mut::<void>();
                         }

@@ -67,6 +67,7 @@
 //! println!("first byte: {}", shm.as_slice()[0]);
 //! ```
 
+use core::mem::ManuallyDrop;
 use core::ptr::NonNull;
 
 use alloc::vec;
@@ -453,6 +454,21 @@ impl Drop for SharedMemory {
 }
 
 impl SharedMemory {
+    /// Closes the file descriptor of the shared memory and keeps its mapping. The returned
+    /// [`MappedSharedMemory`] removes the shared memory on drop when it owns it.
+    pub fn into_mapped(self) -> MappedSharedMemory {
+        let mut this = ManuallyDrop::new(self);
+        this.memory_mapping.close_file_descriptor();
+        unsafe {
+            MappedSharedMemory {
+                name: core::ptr::read(&this.name),
+                has_ownership: AtomicBool::new(this.has_ownership()),
+                memory_mapping: core::ptr::read(&this.memory_mapping),
+                memory_lock: core::ptr::read(&this.memory_lock),
+            }
+        }
+    }
+
     /// Returns true if the shared memory exists and is accessible, otherwise false.
     pub fn does_exist(name: &FileName) -> bool {
         let file_path =
@@ -649,3 +665,84 @@ impl FileDescriptorBased for SharedMemory {
 }
 
 impl FileDescriptorManagement for SharedMemory {}
+
+/// A [`SharedMemory`] that is mapped into the process without keeping its file descriptor
+/// open. Created with [`SharedMemory::into_mapped()`].
+#[derive(Debug)]
+pub struct MappedSharedMemory {
+    name: FileName,
+    has_ownership: AtomicBool,
+    memory_mapping: MemoryMapping,
+    memory_lock: Option<MemoryLock>,
+}
+
+impl Abandonable for MappedSharedMemory {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(&mut this.memory_mapping) };
+        unsafe { core::ptr::drop_in_place(&mut this.memory_lock) };
+    }
+}
+
+impl Drop for MappedSharedMemory {
+    fn drop(&mut self) {
+        if !self.has_ownership() {
+            trace!(from self, "closed");
+            return;
+        }
+
+        let mut config = SharedMemoryBuilder::new(&self.name);
+        config.access_mode = AccessMode::Read;
+        let set_permission_result = SharedMemory::shm_open(&self.name, &config)
+            .map(|mut fd| fd.set_permission(Permission::OWNER_READ_WRITE));
+
+        if SharedMemory::remove(&self.name).is_err() {
+            if let Ok(Err(e)) = set_permission_result {
+                warn!(from self,
+                      "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
+            }
+            error!(from self, "Failed to cleanup shared memory.");
+        }
+
+        trace!(from self, "closed")
+    }
+}
+
+impl MappedSharedMemory {
+    /// Returns true if the [`MappedSharedMemory`] owns the underlying posix shared memory and
+    /// removes it when it goes out of scope.
+    pub fn has_ownership(&self) -> bool {
+        self.has_ownership.load(Ordering::Relaxed)
+    }
+
+    /// Releases the ownership of the underlying posix shared memory.
+    pub fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed)
+    }
+
+    /// Acquires the ownership of the underlying posix shared memory.
+    pub fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed)
+    }
+
+    /// returns the name of the shared memory
+    pub fn name(&self) -> &FileName {
+        &self.name
+    }
+
+    /// returns the base address of the shared memory, aligned to the page size
+    pub fn base_address(&self) -> NonNull<u8> {
+        match NonNull::new(self.memory_mapping.base_address().cast_mut()) {
+            Some(v) => v,
+            None => {
+                fatal_panic!(from self,
+                    "This should never happen! A valid shared memory object should never contain a base address with null value.");
+            }
+        }
+    }
+
+    /// returns the size of the shared memory
+    pub fn size(&self) -> usize {
+        self.memory_mapping.size()
+    }
+}

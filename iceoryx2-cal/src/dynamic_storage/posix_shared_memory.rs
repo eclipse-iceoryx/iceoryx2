@@ -296,7 +296,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         }
 
         Ok(Storage {
-            shm,
+            shm: shm.into_mapped(),
             name: self.storage_name,
             _phantom_data: PhantomData,
         })
@@ -389,7 +389,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         }
 
         Ok(Storage {
-            shm,
+            shm: shm.into_mapped(),
             name: self.storage_name,
             _phantom_data: PhantomData,
         })
@@ -457,7 +457,7 @@ impl<'builder, T: Send + Sync + Debug + ZeroCopySend> DynamicStorageBuilder<'bui
 /// [`Builder`].
 #[derive(Debug)]
 pub struct Storage<T: Debug + Send + Sync + ZeroCopySend> {
-    shm: SharedMemory,
+    shm: MappedSharedMemory,
     name: FileName,
     _phantom_data: PhantomData<T>,
 }
@@ -468,7 +468,7 @@ unsafe impl<T: Debug + Send + Sync + ZeroCopySend> Sync for Storage<T> {}
 impl<T: Debug + Send + Sync + ZeroCopySend> Abandonable for Storage<T> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { SharedMemory::abandon_in_place(NonNull::from_mut(&mut this.shm)) };
+        unsafe { MappedSharedMemory::abandon_in_place(NonNull::from_mut(&mut this.shm)) };
     }
 }
 
