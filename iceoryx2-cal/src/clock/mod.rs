@@ -92,6 +92,8 @@ pub trait ClockBuilder<C: Clock, T: TimeController>: Sized {
 pub trait Clock: Sized {
     type E: crate::event::Event;
     type Guard: ScheduleGuard;
+    type TimeController: TimeController;
+    type ClockBuilder: ClockBuilder<Self, Self::TimeController>;
 
     fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
     fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> (Self::Guard, Timeout);

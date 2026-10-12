@@ -44,6 +44,8 @@ pub struct PosixClock {
 impl Clock for PosixClock {
     type Guard = Guard;
     type E = InternalStubEvent;
+    type TimeController = PosixTimeController;
+    type ClockBuilder = Builder;
 
     fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
         (Guard {}, ScheduleHandle::TranslatedTimeout(timeout))
