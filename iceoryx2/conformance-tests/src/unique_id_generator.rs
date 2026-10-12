@@ -21,30 +21,40 @@ pub mod unique_id_generator {
     use iceoryx2::unique_id_generator::{Entity, UniqueIdGenerator};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_testing::generate_isolated_config;
+    use iceoryx2_testing::{generate_isolated_config, remove_global_mgmt_segment};
 
     pub trait SutFactory {
-        fn setup(entities: &[Entity], config: &Config);
-        fn cleanup(config: &Config);
+        fn new(entities: &[Entity], config: &Config) -> Self;
     }
 
-    pub struct UniqueSystemIdTests {}
+    pub struct UniqueSystemIdTests {
+        config: Config,
+    }
     impl SutFactory for UniqueSystemIdTests {
-        fn setup(_: &[Entity], _: &Config) {}
-        fn cleanup(_: &Config) {}
+        fn new(_: &[Entity], config: &Config) -> Self {
+            Self {
+                config: config.clone(),
+            }
+        }
+    }
+    impl Drop for UniqueSystemIdTests {
+        fn drop(&mut self) {
+            unsafe {
+                remove_global_mgmt_segment::<ipc::Service>(&self.config)
+                    .expect("Removed global management segment");
+            }
+        }
     }
 
     #[conformance_test]
     pub fn generate_works_with_valid_arguments<Sut: UniqueIdGenerator, Factory: SutFactory>() {
         let config = generate_isolated_config();
         let entities = [Entity::Client(PortName::new_empty())];
-        Factory::setup(&entities, &config);
+        let _factory = Factory::new(&entities, &config);
 
         let id_generator = Sut::open_or_create::<ipc::Service>(&config).unwrap();
         let sut = id_generator.generate(&entities[0]);
         assert_that!(sut, is_ok);
-
-        Factory::cleanup(&config);
     }
 
     #[conformance_test]
@@ -55,7 +65,7 @@ pub mod unique_id_generator {
             Entity::Client(PortName::new("Name").unwrap()),
             Entity::Server(PortName::new("Name").unwrap()),
         ];
-        Factory::setup(&entities, &config);
+        let _factory = Factory::new(&entities, &config);
 
         let id_generator = Sut::open_or_create::<ipc::Service>(&config).unwrap();
         let sut1 = id_generator.generate(&entities[0]).unwrap();
@@ -65,7 +75,5 @@ pub mod unique_id_generator {
         assert_that!(sut1.unique_value(), ne sut2.unique_value());
         assert_that!(sut1.unique_value(), ne sut3.unique_value());
         assert_that!(sut2.unique_value(), ne sut3.unique_value());
-
-        Factory::cleanup(&config);
     }
 }

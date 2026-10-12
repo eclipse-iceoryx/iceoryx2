@@ -22,12 +22,14 @@ pub mod name_generator {
     use iceoryx2_testing::generate_isolated_config;
 
     pub trait SutFactory {
-        fn cleanup(config: &Config);
+        fn new(config: &Config) -> Self;
     }
 
     pub struct DefaultNameGeneratorTests {}
     impl SutFactory for DefaultNameGeneratorTests {
-        fn cleanup(_: &Config) {}
+        fn new(_: &Config) -> Self {
+            Self {}
+        }
     }
 
     #[conformance_test]
@@ -36,17 +38,17 @@ pub mod name_generator {
         Factory: SutFactory,
     >() {
         let config = generate_isolated_config();
-        assert_that!(Sut::open_or_create(&config), is_ok);
+        let _factory = Factory::new(&config);
 
-        Factory::cleanup(&config);
+        assert_that!(Sut::open_or_create(&config), is_ok);
     }
 
     #[conformance_test]
     pub fn calling_open_or_create_twice_succeeds<Sut: NameGenerator, Factory: SutFactory>() {
         let config = generate_isolated_config();
+        let _factory = Factory::new(&config);
+
         let _ = Sut::open_or_create(&config).unwrap();
         assert_that!(Sut::open_or_create(&config), is_ok);
-
-        Factory::cleanup(&config);
     }
 }
