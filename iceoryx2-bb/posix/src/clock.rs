@@ -251,12 +251,6 @@ impl Time {
         self.clock_type
     }
 
-    /// Converts Time into duration
-    pub fn as_duration(&self) -> Duration {
-        Duration::from_secs(self.time.as_secs())
-            + Duration::from_nanos(self.time.subsec_nanos() as u64)
-    }
-
     /// Converts [`Time`] into a [`Time`] based on [`ClockType::Realtime`]. If it is
     /// already based on [`ClockType::Realtime`] it returns a copy of itself.
     pub fn to_realtime(&self) -> Result<Time, TimeError> {
@@ -301,11 +295,11 @@ impl Time {
     }
 }
 
-impl AsTimespec for Time {
+impl AsTimespec for TimePoint {
     fn as_timespec(&self) -> posix::timespec {
         posix::timespec {
-            tv_sec: self.time.as_secs() as _,
-            tv_nsec: self.time.subsec_nanos() as _,
+            tv_sec: self.as_secs() as _,
+            tv_nsec: self.subsec_nanos() as _,
         }
     }
 }
@@ -355,7 +349,7 @@ pub fn nanosleep_with_clock(
         return Ok(());
     }
 
-    let wait_time = Time::now_with_clock(clock_type)?.as_duration() + duration;
+    let wait_time = Time::now_with_clock(clock_type)?.time_point() + duration;
 
     let timeout = posix::timespec {
         tv_sec: wait_time.as_secs() as posix::time_t,

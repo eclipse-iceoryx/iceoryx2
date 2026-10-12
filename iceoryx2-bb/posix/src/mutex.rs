@@ -624,7 +624,7 @@ impl<'this, 'handle: 'this, T: Debug> Mutex<'this, 'handle, T> {
             ClockType::Realtime => {
                 let now = fail!(from self, when Time::now_with_clock(ClockType::Realtime),
                     "{} due to a failure while acquiring current system time.", msg);
-                let timeout = now.as_duration() + duration;
+                let timeout = now.time_point() + duration;
                 handle_errno!(MutexTimedLockError, from self,
                     errno_source unsafe { posix::pthread_mutex_timedlock(self.handle.handle.get(), &timeout.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexGuard { handle: self.handle });
