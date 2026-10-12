@@ -145,20 +145,11 @@ impl AsTimeval for Duration {
 ///                                 .seconds(123)
 ///                                 .nanoseconds(456).create();
 /// ```
+#[derive(Default)]
 pub struct TimeBuilder {
     clock_type: ClockType,
     seconds: u64,
     nanoseconds: u32,
-}
-
-impl Default for TimeBuilder {
-    fn default() -> Self {
-        TimeBuilder {
-            clock_type: ClockType::default(),
-            seconds: 0,
-            nanoseconds: 0,
-        }
-    }
 }
 
 impl TimeBuilder {
@@ -252,14 +243,9 @@ impl Time {
         Ok(now - self.as_duration())
     }
 
-    /// Returns the number of seconds
-    pub fn seconds(&self) -> u64 {
-        self.time.as_secs()
-    }
-
-    /// Returns the fractional part in nanoseconds
-    pub fn nanoseconds(&self) -> u32 {
-        self.time.subsec_nanos()
+    /// Returns the current [`TimePoint`] of the [`Time`].
+    pub fn time_point(&self) -> TimePoint {
+        self.time
     }
 
     pub fn clock_type(&self) -> ClockType {

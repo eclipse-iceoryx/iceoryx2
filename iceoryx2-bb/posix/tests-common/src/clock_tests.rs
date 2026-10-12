@@ -36,8 +36,8 @@ pub fn nanosleep_with_clock_sleeps_at_least_given_amount_of_time() {
 #[test]
 pub fn timebuilder_default_values_are_set_correctly() {
     let time = TimeBuilder::new().create();
-    assert_that!(time.seconds(), eq 0);
-    assert_that!(time.nanoseconds(), eq 0);
+    assert_that!(time.time_point().as_secs(), eq 0);
+    assert_that!(time.time_point().subsec_nanos(), eq 0);
     assert_that!(time.clock_type(), eq ClockType::default());
 }
 
@@ -48,8 +48,8 @@ pub fn timebuilder_creates_time_correctly() {
         .nanoseconds(456)
         .clock_type(ClockType::Realtime)
         .create();
-    assert_that!(time.seconds(), eq 123);
-    assert_that!(time.nanoseconds(), eq 456);
+    assert_that!(time.time_point().as_secs(), eq 123);
+    assert_that!(time.time_point().subsec_nanos(), eq 456);
     assert_that!(time.clock_type(), eq ClockType::Realtime);
 }
 
@@ -58,8 +58,8 @@ pub fn time_conversion_to_duration_works() {
     let time = TimeBuilder::new().seconds(789).nanoseconds(321).create();
     let d = time.as_duration();
 
-    assert_that!(d.as_secs(), eq time.seconds());
-    assert_that!(d.subsec_nanos(), eq time.nanoseconds());
+    assert_that!(d.as_secs(), eq time.time_point().as_secs());
+    assert_that!(d.subsec_nanos(), eq time.time_point().subsec_nanos());
 }
 
 #[test]

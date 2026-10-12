@@ -41,10 +41,10 @@ pub fn is_unique() {
     assert_that!(sut1.pid(), eq pid);
     assert_that!(sut2.pid(), eq pid);
 
-    assert_that!(sut2.creation_time().seconds(), gt sut1.creation_time().seconds());
-    assert_that!(sut3.creation_time().seconds(), gt sut2.creation_time().seconds());
-    assert_that!(sut1.creation_time().seconds() + 2, ge sut2.creation_time().seconds());
-    assert_that!(sut1.creation_time().seconds() + 3, ge sut3.creation_time().seconds());
+    assert_that!(sut2.creation_time().time_point().as_secs(), gt sut1.creation_time().time_point().as_secs());
+    assert_that!(sut3.creation_time().time_point().as_secs(), gt sut2.creation_time().time_point().as_secs());
+    assert_that!(sut1.creation_time().time_point().as_secs() + 2, ge sut2.creation_time().time_point().as_secs());
+    assert_that!(sut1.creation_time().time_point().as_secs() + 3, ge sut3.creation_time().time_point().as_secs());
 }
 
 #[test]

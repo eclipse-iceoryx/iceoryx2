@@ -252,8 +252,8 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
             iox2_service_type_e::IPC => {
                 match node_id.value.as_ref().creation_time::<crate::IpcService>() {
                     Ok(time) => {
-                        *seconds = time.seconds();
-                        *nanoseconds = time.nanoseconds();
+                        *seconds = time.time_point().as_secs();
+                        *nanoseconds = time.time_point().subsec_nanos();
                         IOX2_OK
                     }
                     Err(error) => error.into_c_int(),
@@ -266,8 +266,8 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
                     .creation_time::<crate::LocalService>()
                 {
                     Ok(time) => {
-                        *seconds = time.seconds();
-                        *nanoseconds = time.nanoseconds();
+                        *seconds = time.time_point().as_secs();
+                        *nanoseconds = time.time_point().subsec_nanos();
                         IOX2_OK
                     }
                     Err(error) => error.into_c_int(),

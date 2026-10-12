@@ -136,8 +136,8 @@ impl UniqueSystemId {
         Ok(Self {
             pid,
             counter,
-            seconds: now.seconds() as u32,
-            nanoseconds: now.nanoseconds(),
+            seconds: now.time_point().as_secs() as u32,
+            nanoseconds: now.time_point().subsec_nanos(),
         })
     }
 
@@ -153,8 +153,8 @@ impl UniqueSystemId {
 
         UniqueSystemId {
             pid,
-            seconds: now.seconds() as u32,
-            nanoseconds: now.nanoseconds(),
+            seconds: now.time_point().as_secs() as u32,
+            nanoseconds: now.time_point().subsec_nanos(),
             counter,
         }
     }
@@ -221,8 +221,8 @@ mod tests {
         static COUNTER: AtomicU32 = AtomicU32::new(0);
         let id2 = UniqueSystemId {
             pid: pid + 1,
-            seconds: now.seconds() as u32,
-            nanoseconds: now.nanoseconds(),
+            seconds: now.time_point().as_secs() as u32,
+            nanoseconds: now.time_point().subsec_nanos(),
             counter: COUNTER.fetch_add(1, Ordering::Relaxed),
         };
 
