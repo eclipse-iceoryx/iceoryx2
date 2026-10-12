@@ -236,11 +236,10 @@ impl Time {
     /// let elapsed_time: Duration = now.elapsed().unwrap();
     /// ```
     pub fn elapsed(&self) -> Result<Duration, TimeError> {
-        let now =
-            fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to acquire elapsed time")
-                .as_duration();
+        let now = fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to acquire elapsed time");
+        let time_span = now.time_point().time_span_between(self.time_point());
 
-        Ok(now - self.as_duration())
+        Ok(time_span.into())
     }
 
     /// Returns the current [`TimePoint`] of the [`Time`].
