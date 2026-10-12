@@ -404,3 +404,23 @@ pub fn mapped_shared_memory_without_ownership_keeps_the_shared_memory() {
     assert_that!(SharedMemory::does_exist(&shm_name), eq true);
     assert_that!(SharedMemory::remove(&shm_name), eq Ok(true));
 }
+
+#[test]
+pub fn mapped_shared_memory_can_still_be_opened_by_name() {
+    let shm_name = generate_file_path().file_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024)
+        .permission(Permission::OWNER_READ_WRITE)
+        .zero_memory(true)
+        .create()
+        .unwrap()
+        .into_mapped();
+    unsafe { *sut.base_address().as_ptr() = 42 };
+
+    let sut_open = SharedMemoryBuilder::new(&shm_name)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    assert_that!(sut_open.as_slice()[0], eq 42);
+}
