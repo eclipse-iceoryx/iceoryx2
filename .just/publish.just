@@ -31,6 +31,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-bb-testing-macros          \
     iceoryx2-bb-elementary              \
     iceoryx2-bb-derive-macros           \
+    iceoryx2-bb-si-units                \
     iceoryx2-bb-container               \
     iceoryx2-bb-system-types            \
     iceoryx2-bb-posix                   \
@@ -93,6 +94,8 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-trait-tests-nostd                   \
     iceoryx2-bb-system-types-tests-common           \
     iceoryx2-bb-system-types-tests-nostd            \
+    iceoryx2-bb-si-units-tests-common               \
+    iceoryx2-bb-si-units-tests-nostd                \
     iceoryx2-bb-posix-tests-common                  \
     iceoryx2-bb-posix-tests-nostd                   \
     iceoryx2-bb-flatbuffers-tests-common            \

@@ -1,0 +1,38 @@
+[package]
+name = "iceoryx2-bb-si-units"
+description = "iceoryx2: [internal] si units that are shared memory compatible"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-bb-derive-macros = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-log = { workspace = true }
+
+serde = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+
+std = [
+  "iceoryx2-bb-derive-macros/std",
+  "iceoryx2-log/std",
+]
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-si-units-tests-common = { workspace = true, features = ["std"] }
+
+[[test]]
+name = "iceoryx2-bb-si-units-tests"
+path = "tests/tests.rs"
+harness = false

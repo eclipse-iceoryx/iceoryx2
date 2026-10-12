@@ -49,6 +49,7 @@ rust_library(
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/print:iceoryx2-bb-print",
+        "//iceoryx2-bb/si-units:iceoryx2-bb-si-units",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-cal",
         "//iceoryx2-log/log:iceoryx2-log",

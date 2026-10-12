@@ -85,28 +85,6 @@ pub fn time_as_timespec_works() {
 }
 
 #[test]
-pub fn relocatable_duration_roundtrip_conversion() {
-    let secs = 123;
-    let nsecs = 456;
-    let duration = Duration::from_secs(secs) + Duration::from_nanos(nsecs);
-    let sut: RelocatableDuration = duration.into();
-    let duration_2: Duration = sut.into();
-
-    assert_that!(duration, eq duration_2);
-    assert_that!(sut.as_secs(), eq duration.as_secs());
-    assert_that!(sut.subsec_nanos(), eq duration.subsec_nanos());
-}
-
-#[test]
-pub fn relocatable_duration_max_value() {
-    let duration = Duration::MAX;
-    let sut: RelocatableDuration = duration.into();
-
-    assert_that!(sut.as_secs(), eq sut.as_secs());
-    assert_that!(sut.subsec_nanos(), eq sut.subsec_nanos());
-}
-
-#[test]
 pub fn converting_realtime_time_to_realtime_time_results_in_equal_times() {
     let sut = Time::now_with_clock(ClockType::Realtime).unwrap();
 
