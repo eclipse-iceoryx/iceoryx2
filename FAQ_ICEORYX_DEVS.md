@@ -188,3 +188,9 @@ on the filesystem apply:
 The "iceoryx2-" prefix must be set in the crate name
 (especially when the crate will be published to crates.io) to make
 visible that it belongs to the iceoryx2 project. Abbreviations are allowed.
+
+## Failing no-std tests
+
+If you encounter errors in `no_std` tests related to serialization, such as
+`ServiceConfigCouldNotbeCreated`, check if you introduced `serde` attributes
+like `flatten` - they may not be supported by Postcard.

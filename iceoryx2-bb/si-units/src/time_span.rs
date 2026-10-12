@@ -64,7 +64,6 @@ use crate::internal;
     ZeroCopySend,
 )]
 pub struct TimeSpan {
-    #[serde(flatten)]
     pub(crate) time: internal::TimeSpec,
 }
 
