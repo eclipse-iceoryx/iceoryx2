@@ -10,9 +10,9 @@ and are mapped to ROS 2 topic types:
 | `JointReadings` | `robot.JointReadings` | `/joint_states` | `sensor_msgs/msg/JointState`    |
 | `Pose`          | `robot.Pose`          | `/pose`         | `geometry_msgs/msg/PoseStamped` |
 
-* `schemas/` holds the two `.fbs` schemas, the Rust code `flatc` generates
-  from them, and their binary `.bfbs` form, which an `iceoryx2` flatbuffer
-  service stores as its type definition.
+* `schemas/` holds the two `.fbs` schemas and the Rust code `flatc` generates
+  from them. Their binary `.bfbs` form, which an `iceoryx2` flatbuffer service
+  stores as its type definition, is generated there before building.
 * `translator/transcoders/` holds one transcoder per pair to convert between
   the flatbuffer and the CDR bytes propagated in ROS 2.
 * `translator/mod.rs` holds the translator. It embeds the two `.bfbs`, which
@@ -22,6 +22,18 @@ and are mapped to ROS 2 topic types:
 * `mapping.toml` provides the mapping used by the gateway to map service names
   to topics.
 * `gateway.rs` initializes a gateway with the implemented translator.
+
+## Prerequisites
+
+To use the examples, first install the FlatBuffers package.
+
+```sh
+# Arch Linux
+pacman -S flatbuffers
+
+# Debian/Ubuntu
+apt install libflatbuffers-dev
+```
 
 ## Building
 
@@ -39,7 +51,30 @@ from source as described in the [message workspace
 README](../../colcon/messages/README.md) and additionally source its install
 space.
 
-Then build the examples, including the gateway:
+### Generate Binary Schemas
+
+Before running the example, we need to generate the binary schemas from the
+`.fbs` files. They must be placed at the location specified since the
+translator takes them from that location to bake into the binary.
+
+```sh
+flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --schema --binary \
+    integrations/ros2/examples/flatbuffer_translator/schemas/joint_readings.fbs \
+    integrations/ros2/examples/flatbuffer_translator/schemas/pose.fbs
+```
+
+The generated Rust code is already included. For completeness, the command
+used to generate it is:
+
+```sh
+flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --rust \
+    integrations/ros2/examples/flatbuffer_translator/schemas/joint_readings.fbs \
+    integrations/ros2/examples/flatbuffer_translator/schemas/pose.fbs
+```
+
+### Build
+
+Build the examples, including the gateway:
 
 ```sh
 cargo build --manifest-path integrations/ros2/Cargo.toml --examples

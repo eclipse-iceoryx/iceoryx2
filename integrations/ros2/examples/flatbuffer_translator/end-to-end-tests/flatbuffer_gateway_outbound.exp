@@ -20,6 +20,11 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 #### Test Setup
 
+cd integrations/ros2/examples/flatbuffer_translator/schemas
+spawn flatc --schema --binary joint_readings.fbs pose.fbs
+wait
+cd ${REPO_ROOT}
+
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
     -p iceoryx2-integrations-ros2-examples --examples 2>@1
 
