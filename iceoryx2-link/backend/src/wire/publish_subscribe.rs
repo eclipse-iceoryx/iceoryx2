@@ -122,7 +122,8 @@ impl<'a, 'b, S: Service, E> UnloanedSample<'a, 'b, S, E> {
     fn loan(self, payload_len: usize) -> Result<LoanedSample<S>, LoanError> {
         let origin = origin!("UnloanedSample::loan");
 
-        // The length has to be one the payload type of the service allows.
+        // Check that the length requested fits the constraints of the payload
+        // type description.
         if !fits(self.types, self.types.user_header.size, payload_len) {
             fail!(
                 from origin,

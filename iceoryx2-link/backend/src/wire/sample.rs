@@ -224,7 +224,8 @@ impl WritableSample for SampleBytes {
 }
 
 /// Whether a header and a payload of these lengths fit a sample of the
-/// described service.
+/// described service, depending on whether its payload type is a fixed-size,
+/// dynamic or flatbuffer payload type.
 pub fn fits(types: &SampleTypes, header: usize, payload: usize) -> bool {
     if header != types.user_header.size {
         return false;
