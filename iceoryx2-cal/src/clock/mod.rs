@@ -10,13 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod posix_monotonic;
+
 use core::time::Duration;
 
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 
 use crate::event::{NamedConceptBuilder, NamedConceptMgmt};
 
+enum_gen! {
+    ClockBlockingSleepError
+  entry:
+    InterruptedBySignal,
+    DurationOutOfRange,
+    InternalError
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Timeout {
     By(Duration),
     At(TimePoint),
@@ -29,13 +41,13 @@ pub enum ScheduleHandle<E: crate::event::Event> {
 
 pub trait ScheduleGuard {}
 
-pub trait ClockBuilder<C: Clock, T: TimeController>: NamedConceptBuilder<C> + Sized {
+pub trait ClockBuilder<C: Clock, T: TimeController>: Sized {
     fn new(name: &FileName) -> Result<Self, ()>;
     fn acquire(self) -> Result<C, ()>;
     fn time_controller(self) -> Result<T, ()>;
 }
 
-pub trait Clock: Sized + NamedConceptMgmt {
+pub trait Clock: Sized {
     type E: crate::event::Event;
     type Guard: ScheduleGuard;
 
@@ -46,18 +58,18 @@ pub trait Clock: Sized + NamedConceptMgmt {
         trigger_name: &FileName,
     ) -> (Self::Guard, Timeout);
 
-    fn blocking_sleep(&self, timeout: Timeout);
+    fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError>;
 
     fn now(&self) -> Result<TimePoint, ()>;
 }
 
-pub trait TimeControllerBuilder<T: TimeController> {
+pub trait TimeControllerBuilder<T: TimeController>: NamedConceptBuilder<T> {
     fn create(self) -> Result<T, ()>;
     fn open(self) -> Result<T, ()>;
     fn open_or_create(self) -> Result<T, ()>;
 }
 
-pub trait TimeController {
+pub trait TimeController: NamedConceptMgmt {
     type E: crate::event::Event;
 
     fn advance(&self, duration: Duration) -> TimePoint;

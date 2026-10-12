@@ -34,7 +34,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 
 #[derive(Debug)]
-pub(crate) struct Stub {}
+pub struct Stub {}
 
 unsafe impl Send for Stub {}
 unsafe impl Sync for Stub {}
@@ -107,3 +107,9 @@ impl<
         unimplemented!()
     }
 }
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct StubMgmt {}
+
+unsafe impl ZeroCopySend for StubMgmt {}
