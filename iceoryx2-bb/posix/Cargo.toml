@@ -23,6 +23,7 @@ std = [
   "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-derive-macros/std",
   "iceoryx2-bb-print/std",
+  "iceoryx2-bb-si-units/std",
   "iceoryx2-bb-system-types/std",
   "iceoryx2-pal-posix/std",
 ]
