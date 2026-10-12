@@ -33,7 +33,7 @@ pub mod event_trait {
     use iceoryx2_bb_testing::test_requires;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_cal::event::event_state::{EventActivation, EventState};
+    use iceoryx2_cal::event::event_state::EventActivation;
     use iceoryx2_cal::event::{EventId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
@@ -41,7 +41,7 @@ pub mod event_trait {
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[conformance_test]
-    pub fn create_works<E: EventState, Sut: Event<E>>() {
+    pub fn create_works<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -59,7 +59,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn listener_cleans_up_when_out_of_scope<E: EventState, Sut: Event<E>>() {
+    pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -75,7 +75,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn cannot_be_created_twice<E: EventState, Sut: Event<E>>() {
+    pub fn cannot_be_created_twice<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -90,7 +90,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn cannot_open_non_existing<E: EventState, Sut: Event<E>>() {
+    pub fn cannot_open_non_existing<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -101,10 +101,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<
-        E: EventState,
-        Sut: Event<E>,
-    >() {
+    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
         let name = generate_file_path().file_name();
@@ -136,8 +133,7 @@ pub mod event_trait {
     }
 
     fn sending_notification_works<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
         F: Fn(&Sut::Listener) -> Result<Option<EventId>, ListenerWaitError>,
     >(
         wait_call: F,
@@ -164,8 +160,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_and_try_wait_works<E: EventState, Sut: Event<E>>() {
-        sending_notification_works::<E, Sut, _>(|sut| {
+    pub fn sending_notification_and_try_wait_works<Sut: Event>() {
+        sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
             sut.try_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
@@ -173,8 +169,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_and_timed_wait_works<E: EventState, Sut: Event<E>>() {
-        sending_notification_works::<E, Sut, _>(|sut| {
+    pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
+        sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
             sut.timed_wait(|id| event_id = Some(id.id), TIMEOUT)?;
             Ok(event_id)
@@ -182,8 +178,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_and_blocking_wait_works<E: EventState, Sut: Event<E>>() {
-        sending_notification_works::<E, Sut, _>(|sut| {
+    pub fn sending_notification_and_blocking_wait_works<Sut: Event>() {
+        sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
             sut.blocking_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
@@ -191,7 +187,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn create_notifier_notify_and_drop_works_continuously<E: EventState, Sut: Event<E>>() {
+    pub fn create_notifier_notify_and_drop_works_continuously<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
@@ -219,8 +215,7 @@ pub mod event_trait {
     }
 
     fn sending_multiple_notifications_before_wait_works<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
         F: Fn(&Sut::Listener) -> Result<Vec<EventActivation>, ListenerWaitError>,
     >(
         wait_call: F,
@@ -251,8 +246,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_multiple_notifications_before_try_wait_works<E: EventState, Sut: Event<E>>() {
-        sending_multiple_notifications_before_wait_works::<E, Sut, _>(|sut| {
+    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             let mut event_ids = vec![];
             sut.try_wait(|id| event_ids.push(id))?;
             Ok(event_ids)
@@ -260,8 +255,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_multiple_notifications_before_timed_wait_works<E: EventState, Sut: Event<E>>() {
-        sending_multiple_notifications_before_wait_works::<E, Sut, _>(|sut| {
+    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             let mut event_ids = vec![];
             sut.timed_wait(|id| event_ids.push(id), TIMEOUT)?;
             Ok(event_ids)
@@ -269,11 +264,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_multiple_notifications_before_blocking_wait_works<
-        E: EventState,
-        Sut: Event<E>,
-    >() {
-        sending_multiple_notifications_before_wait_works::<E, Sut, _>(|sut| {
+    pub fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             let mut event_ids = vec![];
             sut.blocking_wait(|id| event_ids.push(id))?;
             Ok(event_ids)
@@ -281,8 +273,7 @@ pub mod event_trait {
     }
 
     fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
         F: Fn(&Sut::Listener) -> Result<Vec<EventActivation>, ListenerWaitError>,
     >(
         wait_call: F,
@@ -326,48 +317,39 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
     >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<E, Sut, _>(
-            |sut| {
-                let mut results = vec![];
-                sut.try_wait(|event| results.push(event))?;
-                Ok(results)
-            },
-        );
+        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
+            let mut results = vec![];
+            sut.try_wait(|event| results.push(event))?;
+            Ok(results)
+        });
     }
 
     #[conformance_test]
     pub fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
     >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<E, Sut, _>(
-            |sut| {
-                let mut results = vec![];
-                sut.timed_wait(|event| results.push(event), TIMEOUT)?;
-                Ok(results)
-            },
-        );
+        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
+            let mut results = vec![];
+            sut.timed_wait(|event| results.push(event), TIMEOUT)?;
+            Ok(results)
+        });
     }
 
     #[conformance_test]
     pub fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
     >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<E, Sut, _>(
-            |sut| {
-                let mut results = vec![];
-                sut.blocking_wait(|event| results.push(event))?;
-                Ok(results)
-            },
-        );
+        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
+            let mut results = vec![];
+            sut.blocking_wait(|event| results.push(event))?;
+            Ok(results)
+        });
     }
 
     #[conformance_test]
-    pub fn try_wait_does_not_block<E: EventState, Sut: Event<E>>() {
+    pub fn try_wait_does_not_block<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -385,7 +367,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn timed_wait_does_block_for_at_least_timeout<E: EventState, Sut: Event<E>>() {
+    pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -405,8 +387,7 @@ pub mod event_trait {
     }
 
     fn wait_blocks_until_notification_arrives<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
         F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send,
     >(
         mut wait_call: F,
@@ -455,39 +436,34 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
-        wait_blocks_until_notification_arrives::<E, Sut, _>(
-            |event_ids, listener: &Sut::Listener| {
-                listener
-                    .blocking_wait(|event| {
-                        event_ids.push(event.id);
-                    })
-                    .unwrap();
-            },
-        );
+    pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
+        wait_blocks_until_notification_arrives::<Sut, _>(|event_ids, listener: &Sut::Listener| {
+            listener
+                .blocking_wait(|event| {
+                    event_ids.push(event.id);
+                })
+                .unwrap();
+        });
     }
 
     /// windows sporadically instantly wakes up in a timed receive operation
     #[cfg(not(target_os = "windows"))]
     #[conformance_test]
-    pub fn timed_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
-        wait_blocks_until_notification_arrives::<E, Sut, _>(
-            |event_ids, listener: &Sut::Listener| {
-                listener
-                    .timed_wait(
-                        |event| {
-                            event_ids.push(event.id);
-                        },
-                        TIMEOUT * 1000,
-                    )
-                    .unwrap();
-            },
-        );
+    pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
+        wait_blocks_until_notification_arrives::<Sut, _>(|event_ids, listener: &Sut::Listener| {
+            listener
+                .timed_wait(
+                    |event| {
+                        event_ids.push(event.id);
+                    },
+                    TIMEOUT * 1000,
+                )
+                .unwrap();
+        });
     }
 
     fn wait_blocks_until_notification_arrives_after_first_notification_arrived<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
         F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send,
     >(
         mut wait_call: F,
@@ -551,10 +527,9 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn blocking_wait_blocks_until_notification_arrives_after_first_notification_arrived<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
     >() {
-        wait_blocks_until_notification_arrives_after_first_notification_arrived::<E, Sut, _>(
+        wait_blocks_until_notification_arrives_after_first_notification_arrived::<Sut, _>(
             |event_ids, listener: &Sut::Listener| {
                 listener
                     .blocking_wait(|event| {
@@ -569,10 +544,9 @@ pub mod event_trait {
     #[cfg(not(target_os = "windows"))]
     #[conformance_test]
     pub fn timed_wait_blocks_until_notification_arrives_after_first_notification_arrived<
-        E: EventState,
-        Sut: Event<E>,
+        Sut: Event,
     >() {
-        wait_blocks_until_notification_arrives_after_first_notification_arrived::<E, Sut, _>(
+        wait_blocks_until_notification_arrives_after_first_notification_arrived::<Sut, _>(
             |event_ids, listener: &Sut::Listener| {
                 listener
                     .timed_wait(
@@ -587,13 +561,13 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn defaults_for_configuration_are_set_correctly<E: EventState, Sut: Event<E>>() {
+    pub fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
     }
 
     #[conformance_test]
-    pub fn setting_trigger_id_limit_works<E: EventState, Sut: Event<E>>() {
+    pub fn setting_trigger_id_limit_works<Sut: Event>() {
         const EVENT_ID_MAX: EventId = EventId::new(123);
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -612,7 +586,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn triggering_up_to_trigger_id_max_works<E: EventState, Sut: Event<E>>() {
+    pub fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
         const EVENT_ID_MAX: EventId = EventId::new(24);
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -651,11 +625,7 @@ pub mod event_trait {
         assert_that!(result, eq 0);
     }
 
-    fn wait_collects_all_triggers<
-        E: EventState,
-        Sut: Event<E>,
-        F: FnMut(&mut Vec<EventId>, &Sut::Listener),
-    >(
+    fn wait_collects_all_triggers<Sut: Event, F: FnMut(&mut Vec<EventId>, &Sut::Listener)>(
         mut wait_call: F,
     ) {
         let _watchdog = Watchdog::new();
@@ -689,31 +659,27 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn try_wait_collects_all_triggers<E: EventState, Sut: Event<E>>() {
-        wait_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn try_wait_collects_all_triggers<Sut: Event>() {
+        wait_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.try_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn timed_wait_collects_all_triggers<E: EventState, Sut: Event<E>>() {
-        wait_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn timed_wait_collects_all_triggers<Sut: Event>() {
+        wait_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn blocking_wait_collects_all_triggers<E: EventState, Sut: Event<E>>() {
-        wait_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn blocking_wait_collects_all_triggers<Sut: Event>() {
+        wait_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
-    fn wait_wakes_up_on_notify<
-        E: EventState,
-        Sut: Event<E>,
-        F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send,
-    >(
+    fn wait_wakes_up_on_notify<Sut: Event, F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send>(
         wait_call: F,
     ) {
         let mut wait_call = wait_call;
@@ -760,21 +726,21 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn timed_wait_wakes_up_on_notify<E: EventState, Sut: Event<E>>() {
-        wait_wakes_up_on_notify::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn timed_wait_wakes_up_on_notify<Sut: Event>() {
+        wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn blocking_wait_wakes_up_on_notify<E: EventState, Sut: Event<E>>() {
-        wait_wakes_up_on_notify::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn blocking_wait_wakes_up_on_notify<Sut: Event>() {
+        wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn out_of_scope_listener_shall_not_corrupt_notifier<E: EventState, Sut: Event<E>>() {
+    pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -799,7 +765,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn abandoning_listener_keeps_event<E: EventState, Sut: Event<E>>() {
+    pub fn abandoning_listener_keeps_event<Sut: Event>() {
         test_requires!(Sut::does_support_persistency());
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
@@ -817,7 +783,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn abandoning_notifier_keeps_event<E: EventState, Sut: Event<E>>() {
+    pub fn abandoning_notifier_keeps_event<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -838,7 +804,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_many_times_never_leads_to_error<E: EventState, Sut: Event<E>>() {
+    pub fn sending_notification_many_times_never_leads_to_error<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 4096 * 128;
         let name = generate_file_path().file_name();
@@ -865,7 +831,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn notifier_and_listener_return_same_max_event_count<E: EventState, Sut: Event<E>>() {
+    pub fn notifier_and_listener_return_same_max_event_count<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -882,7 +848,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn events_are_counted<E: EventState, Sut: Event<E>>() {
+    pub fn events_are_counted<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -908,7 +874,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn many_events_notified_multiple_times_are_counted<E: EventState, Sut: Event<E>>() {
+    pub fn many_events_notified_multiple_times_are_counted<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_EVENTS: usize = 10;
         let name = generate_file_path().file_name();
@@ -941,10 +907,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn concurrent_notifications_from_multiple_notifiers_do_not_lose_events<
-        E: EventState,
-        Sut: Event<E>,
-    >() {
+    pub fn concurrent_notifications_from_multiple_notifiers_do_not_lose_events<Sut: Event>() {
         let _watchdog = Watchdog::new();
 
         let number_of_notifier_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
@@ -1038,7 +1001,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn concurrent_ping_pong_does_not_deadlock<E: EventState, Sut: Event<E>>() {
+    pub fn concurrent_ping_pong_does_not_deadlock<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const ITERATIONS: usize = 10000;
 

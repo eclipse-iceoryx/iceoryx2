@@ -73,7 +73,6 @@ use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
@@ -119,9 +118,8 @@ impl core::error::Error for ListenerCreateError {}
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: <Service::Bag as BagFamily>::BagHandle,
-    listener: Service::ArcThreadSafetyPolicy<
-        <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
-    >,
+    listener:
+        Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>,
     service_state: SharedServiceState<Service, NoResource>,
     listener_details: &'static ListenerDetails,
     // IMPORTANT!
@@ -134,23 +132,20 @@ pub struct Listener<Service: service::Service> {
 }
 
 unsafe impl<Service: service::Service> Send for Listener<Service> where
-    Service::ArcThreadSafetyPolicy<
-        <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
-    >: Send + Sync
+    Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>:
+        Send + Sync
 {
 }
 
 unsafe impl<Service: service::Service> Sync for Listener<Service> where
-    Service::ArcThreadSafetyPolicy<
-        <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
-    >: Send + Sync
+    Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>:
+        Send + Sync
 {
 }
 
 impl<Service: service::Service> FileDescriptorBased for Listener<Service>
 where
-    <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener:
-        FileDescriptorBased,
+    <Service::Event as iceoryx2_cal::event::Event>::Listener: FileDescriptorBased,
 {
     fn file_descriptor(&self) -> &FileDescriptor {
         let fd = self.listener.lock().file_descriptor() as *const FileDescriptor;
@@ -161,8 +156,7 @@ where
 }
 
 impl<Service: service::Service> SynchronousMultiplexing for Listener<Service> where
-    <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener:
-        SynchronousMultiplexing
+    <Service::Event as iceoryx2_cal::event::Event>::Listener: SynchronousMultiplexing
 {
 }
 
@@ -213,7 +207,7 @@ impl<Service: service::Service> Listener<Service> {
         let event_config = event_config::<Service>(service.shared_node().config());
 
         let listener = fail!(from origin,
-                             when <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::ListenerBuilder::new(&event_name).config(&event_config)
+                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
                                 .event_id_max(EventId::new(service.static_config().event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,

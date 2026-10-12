@@ -10,66 +10,60 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::marker::PhantomData;
 use core::time::Duration;
 
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 
-use crate::event::{NamedConceptBuilder, NamedConceptMgmt, event_state::EventState};
+use crate::event::{NamedConceptBuilder, NamedConceptMgmt};
 
 pub enum Timeout {
     By(Duration),
     At(TimePoint),
 }
 
-pub enum ScheduleHandle<S: EventState, E: crate::event::Event<S>> {
+pub enum ScheduleHandle<E: crate::event::Event> {
     TranslatedTimeout(Timeout),
     Trigger(E),
-    _Data(PhantomData<S>),
 }
 
-pub struct ScheduleGuard<'a, S: EventState, E: crate::event::Event<S>, C: Clock<S, E>> {
+pub struct ScheduleGuard<'a, C: Clock> {
     clock: &'a C,
     generation_counter: u64,
-    _data_s: PhantomData<S>,
-    _data_e: PhantomData<E>,
 }
 
-pub trait ClockBuilder<
-    S: EventState,
-    E: crate::event::Event<S>,
-    C: Clock<S, E>,
-    T: TimeController<S, E>,
->: NamedConceptBuilder<C> + Sized
-{
+pub trait ClockBuilder<C: Clock, T: TimeController>: NamedConceptBuilder<C> + Sized {
     fn new(name: &FileName) -> Result<Self, ()>;
     fn acquire(self) -> Result<C, ()>;
     fn time_controller(self) -> Result<T, ()>;
 }
 
-pub trait Clock<S: EventState, E: crate::event::Event<S>>: Sized + NamedConceptMgmt {
+pub trait Clock: Sized + NamedConceptMgmt {
+    type E: crate::event::Event;
+
     fn schedule<'a>(
         &'a self,
         timeout: Timeout,
-    ) -> (ScheduleGuard<'a, S, E, Self>, ScheduleHandle<S, E>);
+    ) -> (ScheduleGuard<'a, Self>, ScheduleHandle<Self::E>);
     fn schedule_on<'a>(
         &'a self,
         timeout: Timeout,
         trigger_name: &FileName,
-    ) -> (ScheduleGuard<'a, S, E, Self>, Timeout);
+    ) -> (ScheduleGuard<'a, Self>, Timeout);
 
     fn blocking_sleep(&self, timeout: Timeout);
 
     fn now(&self) -> Result<TimePoint, ()>;
 }
 
-pub trait TimeControllerBuilder<S: EventState, E: crate::event::Event<S>, T: TimeController<S, E>> {
+pub trait TimeControllerBuilder<T: TimeController> {
     fn create(self) -> Result<T, ()>;
     fn open(self) -> Result<T, ()>;
     fn open_or_create(self) -> Result<T, ()>;
 }
 
-pub trait TimeController<S: EventState, E: crate::event::Event<S>> {
+pub trait TimeController {
+    type E: crate::event::Event;
+
     fn advance(&self, duration: Duration) -> TimePoint;
 }

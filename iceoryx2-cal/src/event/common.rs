@@ -219,8 +219,9 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
     H: HandlerInterface<E, Mgmt, Storage>,
     W: WaiterInterface<E, Mgmt, Storage>,
-> Event<E> for EventImpl<E, Mgmt, Storage, H, W>
+> Event for EventImpl<E, Mgmt, Storage, H, W>
 {
+    type State = E;
     type Listener = Waiter<E, Mgmt, Storage, W>;
     type ListenerBuilder = WaiterBuilder<E, Mgmt, Storage, H, W>;
     type Notifier = Handle<E, Mgmt, Storage, H>;
@@ -545,7 +546,7 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
     H: HandlerInterface<E, Mgmt, Storage>,
     W: WaiterInterface<E, Mgmt, Storage>,
-> NotifierBuilder<E, EventImpl<E, Mgmt, Storage, H, W>> for HandleBuilder<E, Mgmt, Storage, H, W>
+> NotifierBuilder<EventImpl<E, Mgmt, Storage, H, W>> for HandleBuilder<E, Mgmt, Storage, H, W>
 {
     fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
@@ -559,7 +560,7 @@ impl<
 
     fn open(
         self,
-    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Notifier, NotifierOpenError> {
+    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event>::Notifier, NotifierOpenError> {
         let msg = "Failed to open notifier";
         let storage = match Storage::Builder::new(&self.name)
             .config(&self.config.to_storage_config())
@@ -648,7 +649,7 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
     H: HandlerInterface<E, Mgmt, Storage>,
     W: WaiterInterface<E, Mgmt, Storage>,
-> ListenerBuilder<E, EventImpl<E, Mgmt, Storage, H, W>> for WaiterBuilder<E, Mgmt, Storage, H, W>
+> ListenerBuilder<EventImpl<E, Mgmt, Storage, H, W>> for WaiterBuilder<E, Mgmt, Storage, H, W>
 {
     fn event_id_max(mut self, id: EventId) -> Self {
         self.event_id_max = id;
@@ -657,8 +658,7 @@ impl<
 
     fn create(
         self,
-    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Listener, ListenerCreateError>
-    {
+    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event>::Listener, ListenerCreateError> {
         let msg = "Failed to create listener";
         let state_size = E::memory_size(self.event_id_max.as_value() + 1);
         let mut waiter = None;

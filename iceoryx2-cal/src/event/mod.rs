@@ -142,22 +142,23 @@ pub trait Notifier<E: EventState>: NamedConcept + Debug + Abandonable + Send {
     fn notify(&self, event_id: EventId) -> Result<(), NotifierNotifyError>;
 }
 
-pub trait NotifierBuilder<E: EventState, T: Event<E>>: NamedConceptBuilder<T> + Debug {
+pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
     fn timeout(self, timeout: Duration) -> Self;
     fn fail_when_buffer_is_full(self, value: bool) -> Self;
     fn open(self) -> Result<T::Notifier, NotifierOpenError>;
 }
 
-pub trait ListenerBuilder<E: EventState, T: Event<E>>: NamedConceptBuilder<T> + Debug {
+pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
     fn event_id_max(self, id: EventId) -> Self;
     fn create(self) -> Result<T::Listener, ListenerCreateError>;
 }
 
-pub trait Event<E: EventState>: Sized + NamedConceptMgmt + Debug {
-    type Listener: Listener<E>;
-    type ListenerBuilder: ListenerBuilder<E, Self>;
-    type Notifier: Notifier<E>;
-    type NotifierBuilder: NotifierBuilder<E, Self>;
+pub trait Event: Sized + NamedConceptMgmt + Debug {
+    type State: EventState;
+    type Listener: Listener<Self::State>;
+    type ListenerBuilder: ListenerBuilder<Self>;
+    type Notifier: Notifier<Self::State>;
+    type NotifierBuilder: NotifierBuilder<Self>;
 
     fn does_support_persistency() -> bool;
 
