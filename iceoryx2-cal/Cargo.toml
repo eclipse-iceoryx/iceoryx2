@@ -22,6 +22,7 @@ std = [
   "iceoryx2-bb-lock-free/std",
   "iceoryx2-bb-memory/std",
   "iceoryx2-bb-posix/std",
+  "iceoryx2-bb-si-units/std",
   "iceoryx2-bb-system-types/std",
   "iceoryx2-log/std",
 ]
@@ -43,6 +44,7 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
+iceoryx2-bb-si-units = { workspace = true }
 
 postcard = { workspace = true }
 serde = { workspace = true }

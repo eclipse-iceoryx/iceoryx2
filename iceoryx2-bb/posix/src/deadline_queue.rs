@@ -119,7 +119,7 @@ impl DeadlineQueueBuilder {
     pub fn create(self) -> Result<DeadlineQueue, TimeError> {
         let start_time = fail!(from "DeadlineQueue::new()", when Time::now_with_clock(self.clock_type),
                                 "Failed to create DeadlineQueue since the current time could not be acquired.");
-        let start_time = start_time.as_duration().as_nanos();
+        let start_time = start_time.time_point().as_nanos();
 
         Ok(DeadlineQueue {
             attachments: RefCell::new(vec![]),
@@ -141,7 +141,7 @@ impl Attachment {
     fn new(index: u64, period: u128, clock_type: ClockType) -> Result<Self, TimeError> {
         let start_time = fail!(from "Attachment::new()", when Time::now_with_clock(clock_type),
                                 "Failed to create DeadlineQueue attachment since the current time could not be acquired.");
-        let start_time = start_time.as_duration().as_nanos();
+        let start_time = start_time.time_point().as_nanos();
 
         Ok(Self {
             index,
@@ -153,7 +153,7 @@ impl Attachment {
     fn reset(&mut self, clock_type: ClockType) -> Result<(), TimeError> {
         let start_time = fail!(from "Attachment::new()", when Time::now_with_clock(clock_type),
                                 "Failed to reset DeadlineQueue attachment since the current time could not be acquired.");
-        self.start_time = start_time.as_duration().as_nanos();
+        self.start_time = start_time.time_point().as_nanos();
         Ok(())
     }
 }
@@ -239,7 +239,7 @@ impl DeadlineQueue {
 
         let now = fail!(from self, when Time::now_with_clock(self.clock_type),
                         "Unable to return next duration since the current time could not be acquired.");
-        let now = now.as_duration().as_nanos();
+        let now = now.time_point().as_nanos();
         let mut has_missed_deadline = false;
         self.handle_missed_deadlines(now, |_| {
             has_missed_deadline = true;
@@ -308,7 +308,7 @@ impl DeadlineQueue {
         let now = fail!(from self, when Time::now_with_clock(self.clock_type),
                         "Unable to return next duration since the current time could not be acquired.");
 
-        let now = now.as_duration().as_nanos();
+        let now = now.time_point().as_nanos();
         self.handle_missed_deadlines(now, |idx| -> CallbackProgression { call(idx) });
         *self.previous_iteration.borrow_mut() = now;
 

@@ -220,10 +220,10 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
                 }
             }
             ClockType::Realtime => {
-                let wait_time = timeout
-                    + fail!(from self, when Time::now_with_clock(self.clock_type()),
+                let wait_time = fail!(from self, when Time::now_with_clock(self.clock_type()),
                     "{} due to a failure while acquiring the current system time.", msg)
-                    .as_duration();
+                .time_point()
+                    + timeout;
                 if unsafe {
                     posix::sem_timedwait(
                         self.handle(SemaphoreTimedWaitError::InvalidSemaphoreHandle)?,

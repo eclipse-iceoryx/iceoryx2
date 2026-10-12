@@ -13,6 +13,7 @@
 use core::{
     fmt::Display,
     ops::{Add, AddAssign, Sub, SubAssign},
+    time::Duration,
 };
 
 use crate::{TimeSpan, internal};
@@ -55,7 +56,6 @@ use serde::{Deserialize, Serialize};
     ZeroCopySend,
 )]
 pub struct TimePoint {
-    #[serde(flatten)]
     time: internal::TimeSpec,
 }
 
@@ -69,9 +69,25 @@ impl Add<TimeSpan> for TimePoint {
     }
 }
 
+impl Add<Duration> for TimePoint {
+    type Output = TimePoint;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        let rhs: TimeSpan = rhs.into();
+        self + rhs
+    }
+}
+
 impl AddAssign<TimeSpan> for TimePoint {
     fn add_assign(&mut self, rhs: TimeSpan) {
         self.time = self.time + rhs.time
+    }
+}
+
+impl AddAssign<Duration> for TimePoint {
+    fn add_assign(&mut self, rhs: Duration) {
+        let rhs: TimeSpan = rhs.into();
+        *self += rhs;
     }
 }
 
@@ -82,6 +98,15 @@ impl Sub<TimeSpan> for TimePoint {
         TimePoint {
             time: self.time - rhs.time,
         }
+    }
+}
+
+impl Sub<Duration> for TimePoint {
+    type Output = TimePoint;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        let rhs: TimeSpan = rhs.into();
+        self - rhs
     }
 }
 
@@ -98,6 +123,13 @@ impl Sub<TimePoint> for TimePoint {
 impl SubAssign<TimeSpan> for TimePoint {
     fn sub_assign(&mut self, rhs: TimeSpan) {
         self.time = self.time - rhs.time
+    }
+}
+
+impl SubAssign<Duration> for TimePoint {
+    fn sub_assign(&mut self, rhs: Duration) {
+        let rhs: TimeSpan = rhs.into();
+        *self -= rhs;
     }
 }
 

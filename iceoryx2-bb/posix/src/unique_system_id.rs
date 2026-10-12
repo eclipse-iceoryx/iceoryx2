@@ -46,6 +46,8 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
+use iceoryx2_bb_si_units::TimePoint;
+use iceoryx2_bb_si_units::TimeSpan;
 use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
@@ -134,8 +136,8 @@ impl UniqueSystemId {
         Ok(Self {
             pid,
             counter,
-            seconds: now.seconds() as u32,
-            nanoseconds: now.nanoseconds(),
+            seconds: now.time_point().as_secs() as u32,
+            nanoseconds: now.time_point().subsec_nanos(),
         })
     }
 
@@ -151,8 +153,8 @@ impl UniqueSystemId {
 
         UniqueSystemId {
             pid,
-            seconds: now.seconds() as u32,
-            nanoseconds: now.nanoseconds(),
+            seconds: now.time_point().as_secs() as u32,
+            nanoseconds: now.time_point().subsec_nanos(),
             counter,
         }
     }
@@ -176,8 +178,8 @@ impl UniqueSystemId {
     pub fn creation_time(&self) -> Time {
         Time {
             clock_type: ClockType::default(),
-            seconds: self.seconds as u64,
-            nanoseconds: self.nanoseconds,
+            time: TimePoint::from_secs(self.seconds as u64)
+                + TimeSpan::from_nanos(self.nanoseconds as u128),
         }
     }
 }
@@ -219,8 +221,8 @@ mod tests {
         static COUNTER: AtomicU32 = AtomicU32::new(0);
         let id2 = UniqueSystemId {
             pid: pid + 1,
-            seconds: now.seconds() as u32,
-            nanoseconds: now.nanoseconds(),
+            seconds: now.time_point().as_secs() as u32,
+            nanoseconds: now.time_point().subsec_nanos(),
             counter: COUNTER.fetch_add(1, Ordering::Relaxed),
         };
 

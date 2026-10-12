@@ -9,3 +9,204 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Clock concept
+//!
+//! The clock concept abstracts the source of time for every time-dependent
+//! iceoryx2 operation: retrieving the current time, sleeping, timed waits, and
+//! the timeout scheduling used by nodes, wait sets, reactors and events.
+//!
+//! Two kinds of clocks are possible:
+//!
+//! * a **physical** clock, and
+//! * a **simulation** clock whose time advances only when the single
+//!   [`TimeController`] calls [`TimeController::advance()`].
+
+pub mod posix;
+
+use core::time::Duration;
+
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_si_units::TimePoint;
+use iceoryx2_bb_system_types::file_name::FileName;
+
+use crate::event::{Event, NamedConceptBuilder, NamedConceptMgmt};
+
+enum_gen! {
+/// Error returned by [`Clock::blocking_sleep()`]
+    ClockBlockingSleepError
+  entry:
+    InterruptedBySignal,
+    DurationOutOfRange,
+    InternalError
+}
+
+enum_gen! {
+/// Error returned by [`Clock::now()`]
+    ClockNowError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+/// Error returned by [`ClockBuilder::time_controller()`]
+    ClockBuilderTimeControllerError
+  entry:
+    TimeControllerIsNotSupported
+}
+
+enum_gen! {
+/// Error returned by [`ClockBuilder::acquire()`]
+    ClockBuilderAcquireError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+/// Error returned by [`TimeControllerBuilder::create()`]
+    TimeControllerBuilderCreateError
+  entry:
+    InternalError
+}
+
+enum_gen! {
+/// Error returned by [`TimeControllerBuilder::open()`]
+    TimeControllerBuilderOpenError
+  entry:
+    AlreadyOpenedByAnotherInstance,
+    InternalError
+}
+
+enum_gen! {
+/// Error returned by [`TimeControllerBuilder::open_or_create()`]
+    TimeControllerBuilderOpenOrCreateError
+  entry:
+    AlreadyOpenedByAnotherInstance,
+    InternalError
+}
+
+/// The point in time at which a scheduled operation shall expire.
+///
+/// * [`Timeout::By`]: relative to the current time, after the given [`Duration`] elapsed.
+/// * [`Timeout::At`]: at the given absolute [`TimePoint`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Timeout {
+    /// Expire relative to the current time, after `duration` has elapsed.
+    By(Duration),
+    /// Expire at the absolute `time` point.
+    At(TimePoint),
+}
+
+/// The handle returned by [`Clock::schedule()`], describing how a scheduled [`Timeout`] is exposed to the
+/// other concepts (typically the reactor).
+///
+/// * [`ScheduleHandle::TranslatedTimeout`]: the clock is physical and the translated timeout can be
+///   forwarded unchanged to the underlying mechanism.
+/// * [`ScheduleHandle::Trigger`]: the clock is a simulation clock and the trigger is activated when the
+///   scheduled simulated time is reached.
+pub enum ScheduleHandle<E: crate::event::Event> {
+    /// A translated timeout that can be passed directly to the underlying implementation.
+    TranslatedTimeout(Timeout),
+    /// A trigger that is activated once the scheduled simulated time has been reached.
+    Trigger(E),
+}
+
+/// Marker trait implemented by the guard returned from [`Clock::schedule()`] and [`Clock::schedule_on()`].
+///
+/// The guard keeps a scheduled timeout valid for as long as it lives.
+pub trait ScheduleGuard {}
+
+/// Builder that acquires a [`Clock`] and, where the implementation supports it, its [`TimeController`].
+///
+/// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by  multiple processes.
+///
+/// Physical [`Clock`] implementations do not support a [`TimeController`]. Calling
+/// [`ClockBuilder::time_controller()`] on them returns
+/// [`ClockBuilderTimeControllerError::TimeControllerIsNotSupported`].
+pub trait ClockBuilder<C: Clock, T: TimeController, TBuilder: TimeControllerBuilder<T>>:
+    Sized + NamedConceptBuilder<T>
+{
+    /// Acquires the [`Clock`] with the name this builder was created for.
+    fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
+    /// Opens the [`TimeController`] associated with the [`Clock`], if the implementation supports explicit
+    /// time advancement.
+    fn time_controller(self) -> Result<T, ClockBuilderTimeControllerError>;
+}
+
+/// The time-consumer interface of a [`Clock`].
+///
+/// A [`Clock`] provides all time-related operations required by the remaining concepts: retrieving the
+/// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
+/// not need to know whether physical or simulated time is in use.
+pub trait Clock: Sized {
+    /// The [`Event`] type produced by triggers scheduled through this [`Clock`].
+    type E: Event;
+    /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).
+    type Guard: ScheduleGuard;
+    /// The [`TimeController`] that drives this [`Clock`], if it supports explicit time advancement.
+    type TimeController: TimeController;
+    /// The builder that opens or creates [`TimeController`].
+    type TimeControllerBuilder: TimeControllerBuilder<Self::TimeController>;
+    /// The builder that acquires this [`Clock`] (and its time controller, if any).
+    type ClockBuilder: ClockBuilder<Self, Self::TimeController, Self::TimeControllerBuilder>;
+    /// Whether this clock supports a [`TimeController`]. `true` for simulation clocks, `false` for physical
+    /// clocks.
+    const HAS_TIME_CONTROLLER_SUPPORT: bool;
+
+    /// Schedules a timeout.
+    ///
+    /// Depending on the [`Clock`] implementation this returns either a [`Timeout`] that
+    /// can be forwarded to the underlying mechanism
+    /// ([`ScheduleHandle::TranslatedTimeout`]) or a trigger that is activated
+    /// when the timeout expires ([`ScheduleHandle::Trigger`]). The returned [`ScheduleGuard`]
+    /// keeps the schedule valid for its lifetime.
+    fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
+
+    /// Schedules an existing trigger, identified by `trigger_name`, to be
+    /// activated once the given [`Timeout`] expires.
+    ///
+    /// The [`Clock`] is responsible for ensuring the corresponding trigger fires at
+    /// the requested point in time. The returned guard keeps the schedule valid
+    /// for its lifetime.
+    fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> Self::Guard;
+
+    /// Blocks the calling thread until the given [`Timeout`] has expired.
+    ///
+    /// For a simulation clock the thread is released according to simulated time
+    /// rather than physical time.
+    fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError>;
+
+    /// Returns the current time according to this clock.
+    fn now(&self) -> Result<TimePoint, ClockNowError>;
+}
+
+/// Builder that creates or opens a [`TimeController`].
+///
+/// Physical clock implementations do not provide a [`TimeController`]. Calling any of these methods on such
+/// a clock therefore results in an error.
+pub trait TimeControllerBuilder<T: TimeController> {
+    /// Creates a new [`TimeController`].
+    fn create(self) -> Result<T, TimeControllerBuilderCreateError>;
+    /// Opens an existing [`TimeController`].
+    fn open(self) -> Result<T, TimeControllerBuilderOpenError>;
+    /// Opens the [`TimeController`] if it exists, otherwise creates it.
+    fn open_or_create(self) -> Result<T, TimeControllerBuilderOpenOrCreateError>;
+}
+
+/// The time-source interface, available only for [`Clock`] implementations that
+/// support explicit time advancement (i.e. simulation clocks).
+///
+/// Exactly one [`TimeController`] exists for a simulation clock and is
+/// responsible for advancing its time. It can run in a dedicated thread or
+/// process. All [`Clock`] instances associated with the same simulation clock
+/// observe this advancement and wake scheduled operations whose timeouts have
+/// expired.
+pub trait TimeController: NamedConceptMgmt {
+    /// The event type produced by triggers scheduled through the clock this controller drives.
+    type E: crate::event::Event;
+
+    /// Advances simulated time by `duration` and activates all scheduled triggers whose deadlines have been
+    /// reached.
+    /// Returns the simulated time before the advance.
+    fn advance(&self, duration: Duration) -> TimePoint;
+}

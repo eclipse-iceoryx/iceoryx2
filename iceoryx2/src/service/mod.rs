@@ -271,7 +271,6 @@ use alloc::vec::Vec;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
@@ -972,7 +971,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
     type Connection: ZeroCopyConnection;
 
     /// The mechanism used to signal events between endpoints.
-    type Event: Event<RelocatableCountingBitSet>;
+    type Event: Event;
 
     /// Monitoring mechanism to detect dead processes.
     type Monitoring: Monitoring;

@@ -27,6 +27,7 @@ use core::time::Duration;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_si_units::{TimePoint, TimeSpan};
 use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
@@ -144,20 +145,11 @@ impl AsTimeval for Duration {
 ///                                 .seconds(123)
 ///                                 .nanoseconds(456).create();
 /// ```
+#[derive(Default)]
 pub struct TimeBuilder {
-    time: Time,
-}
-
-impl Default for TimeBuilder {
-    fn default() -> Self {
-        TimeBuilder {
-            time: Time {
-                clock_type: ClockType::default(),
-                seconds: 0,
-                nanoseconds: 0,
-            },
-        }
-    }
+    clock_type: ClockType,
+    seconds: u64,
+    nanoseconds: u32,
 }
 
 impl TimeBuilder {
@@ -166,22 +158,26 @@ impl TimeBuilder {
     }
 
     pub fn clock_type(mut self, value: ClockType) -> Self {
-        self.time.clock_type = value;
+        self.clock_type = value;
         self
     }
 
     pub fn seconds(mut self, value: u64) -> Self {
-        self.time.seconds = value;
+        self.seconds = value;
         self
     }
 
     pub fn nanoseconds(mut self, value: u32) -> Self {
-        self.time.nanoseconds = value;
+        self.nanoseconds = value;
         self
     }
 
     pub fn create(self) -> Time {
-        self.time
+        Time {
+            clock_type: self.clock_type,
+            time: TimePoint::from_secs(self.seconds)
+                + TimeSpan::from_nanos(self.nanoseconds as u128),
+        }
     }
 }
 
@@ -192,8 +188,7 @@ impl TimeBuilder {
 )]
 pub struct Time {
     pub(crate) clock_type: ClockType,
-    pub(crate) seconds: u64,
-    pub(crate) nanoseconds: u32,
+    pub(crate) time: TimePoint,
 }
 
 impl Time {
@@ -216,8 +211,7 @@ impl Time {
         handle_errno!(TimeError, from "Time::now",
             errno_source unsafe { posix::clock_gettime(clock_type.as_i32() as _, &mut current_time).into() },
             success Errno::ESUCCES => Time { clock_type,
-                                             seconds: current_time.tv_sec as u64,
-                                             nanoseconds: current_time.tv_nsec as u32},
+                                             time: TimePoint::from_secs(current_time.tv_sec as u64) + TimeSpan::from_nanos(current_time.tv_nsec as u128)},
             Errno::ENOSYS => (ClockTypeIsNotSupported, "Failed to get time {{ clock_type: {:?} }} since the clock is not supported.", clock_type),
             v => (UnknownError(v as i32), "Failed to get time {{ clock_type: {:?} }} since an unknown error occurred ({}).", clock_type, v)
         );
@@ -242,30 +236,19 @@ impl Time {
     /// let elapsed_time: Duration = now.elapsed().unwrap();
     /// ```
     pub fn elapsed(&self) -> Result<Duration, TimeError> {
-        let now =
-            fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to acquire elapsed time")
-                .as_duration();
+        let now = fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to acquire elapsed time");
+        let time_span = now.time_point().time_span_between(self.time_point());
 
-        Ok(now - self.as_duration())
+        Ok(time_span.into())
     }
 
-    /// Returns the number of seconds
-    pub fn seconds(&self) -> u64 {
-        self.seconds
-    }
-
-    /// Returns the fractional part in nanoseconds
-    pub fn nanoseconds(&self) -> u32 {
-        self.nanoseconds
+    /// Returns the current [`TimePoint`] of the [`Time`].
+    pub fn time_point(&self) -> TimePoint {
+        self.time
     }
 
     pub fn clock_type(&self) -> ClockType {
         self.clock_type
-    }
-
-    /// Converts Time into duration
-    pub fn as_duration(&self) -> Duration {
-        Duration::from_secs(self.seconds) + Duration::from_nanos(self.nanoseconds as u64)
     }
 
     /// Converts [`Time`] into a [`Time`] based on [`ClockType::Realtime`]. If it is
@@ -286,16 +269,18 @@ impl Time {
         let monotonic_now = Time::now_with_clock(ClockType::Monotonic)?;
         let realtime_now = Time::now_with_clock(ClockType::Realtime)?;
 
-        let mut offset_secs = realtime_now.seconds as i64 - monotonic_now.seconds as i64;
-        let mut offset_nsecs = realtime_now.nanoseconds as i64 - monotonic_now.nanoseconds as i64;
+        let mut offset_secs =
+            realtime_now.time.as_secs() as i64 - monotonic_now.time.as_secs() as i64;
+        let mut offset_nsecs =
+            realtime_now.time.subsec_nanos() as i64 - monotonic_now.time.subsec_nanos() as i64;
 
         if offset_nsecs < 0 {
             offset_secs -= 1;
             offset_nsecs += ONE_NANOSECOND_IN_SECONDS;
         }
 
-        let mut realtime_secs = self.seconds as i64 + offset_secs;
-        let mut realtime_nsecs = self.nanoseconds as i64 + offset_nsecs;
+        let mut realtime_secs = self.time.as_secs() as i64 + offset_secs;
+        let mut realtime_nsecs = self.time.subsec_nanos() as i64 + offset_nsecs;
 
         if realtime_nsecs >= ONE_NANOSECOND_IN_SECONDS {
             realtime_secs += 1;
@@ -304,17 +289,17 @@ impl Time {
 
         Ok(Time {
             clock_type: ClockType::Realtime,
-            seconds: realtime_secs as u64,
-            nanoseconds: realtime_nsecs as u32,
+            time: TimePoint::from_secs(realtime_secs as u64)
+                + TimeSpan::from_nanos(realtime_nsecs as u128),
         })
     }
 }
 
-impl AsTimespec for Time {
+impl AsTimespec for TimePoint {
     fn as_timespec(&self) -> posix::timespec {
         posix::timespec {
-            tv_sec: self.seconds as _,
-            tv_nsec: self.nanoseconds as _,
+            tv_sec: self.as_secs() as _,
+            tv_nsec: self.subsec_nanos() as _,
         }
     }
 }
@@ -364,7 +349,7 @@ pub fn nanosleep_with_clock(
         return Ok(());
     }
 
-    let wait_time = Time::now_with_clock(clock_type)?.as_duration() + duration;
+    let wait_time = Time::now_with_clock(clock_type)?.time_point() + duration;
 
     let timeout = posix::timespec {
         tv_sec: wait_time.as_secs() as posix::time_t,

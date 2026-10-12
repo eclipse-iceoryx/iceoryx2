@@ -45,7 +45,6 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_cal::bag::Bag;
 use iceoryx2_cal::bag::{BagFamily, BagStateFamily};
 use iceoryx2_cal::{
@@ -128,7 +127,7 @@ impl core::error::Error for NotifierNotifyError {}
 
 #[derive(Debug)]
 struct Connection<Service: service::Service> {
-    notifier: <Service::Event as Event<RelocatableCountingBitSet>>::Notifier,
+    notifier: <Service::Event as Event>::Notifier,
     listener_id: UniqueListenerId,
     node_id: UniqueNodeId,
 }
@@ -173,7 +172,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(self.service_state.shared_node().config());
         if self.get(index).is_none() {
-            match <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::NotifierBuilder::new(&event_name)
+            match <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name)
                 .config(&event_config)
                 .open()
             {

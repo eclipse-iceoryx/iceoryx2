@@ -77,9 +77,25 @@ impl Add<TimeSpan> for TimeSpan {
     }
 }
 
+impl Add<Duration> for TimeSpan {
+    type Output = TimeSpan;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        let rhs: TimeSpan = rhs.into();
+        self + rhs
+    }
+}
+
 impl AddAssign<TimeSpan> for TimeSpan {
     fn add_assign(&mut self, rhs: TimeSpan) {
         self.time = self.time + rhs.time
+    }
+}
+
+impl AddAssign<Duration> for TimeSpan {
+    fn add_assign(&mut self, rhs: Duration) {
+        let rhs: TimeSpan = rhs.into();
+        *self += rhs;
     }
 }
 
@@ -93,9 +109,25 @@ impl Sub<TimeSpan> for TimeSpan {
     }
 }
 
+impl Sub<Duration> for TimeSpan {
+    type Output = TimeSpan;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        let rhs: TimeSpan = rhs.into();
+        self - rhs
+    }
+}
+
 impl SubAssign<TimeSpan> for TimeSpan {
     fn sub_assign(&mut self, rhs: TimeSpan) {
         self.time = self.time - rhs.time
+    }
+}
+
+impl SubAssign<Duration> for TimeSpan {
+    fn sub_assign(&mut self, rhs: Duration) {
+        let rhs: TimeSpan = rhs.into();
+        *self -= rhs;
     }
 }
 

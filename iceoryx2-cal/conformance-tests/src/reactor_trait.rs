@@ -20,7 +20,6 @@ pub mod reactor_trait {
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
     use iceoryx2_bb_posix::clock::Time;
@@ -45,27 +44,19 @@ pub mod reactor_trait {
     const NUMBER_OF_ATTACHMENTS: usize = 32;
 
     struct NotifierListenerPair {
-        notifier: <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-            RelocatableCountingBitSet,
-        >>::Notifier,
-        listener: <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-            RelocatableCountingBitSet,
-        >>::Listener,
+        notifier: <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::Notifier,
+        listener: <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::Listener,
     }
 
     impl NotifierListenerPair {
         fn new() -> Self {
             let name = generate_file_path().file_name();
             let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
-            let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                RelocatableCountingBitSet,
-            >>::ListenerBuilder::new(&name)
+            let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
             .config(&config)
             .create()
             .unwrap();
-            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                RelocatableCountingBitSet,
-            >>::NotifierBuilder::new(&name)
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::NotifierBuilder::new(&name)
             .config(&config)
             .open()
             .unwrap();
@@ -84,9 +75,7 @@ pub mod reactor_trait {
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let name = generate_file_path().file_name();
             listeners.push(
-                <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                    RelocatableCountingBitSet,
-                >>::ListenerBuilder::new(&name)
+                <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                 .config(&config)
                 .create()
                 .unwrap(),
@@ -115,12 +104,13 @@ pub mod reactor_trait {
         let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
 
         let name = generate_file_path().file_name();
-        let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-            RelocatableCountingBitSet,
-        >>::ListenerBuilder::new(&name)
-        .config(&config)
-        .create()
-        .unwrap();
+        let listener =
+            <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(
+                &name,
+            )
+            .config(&config)
+            .create()
+            .unwrap();
 
         let _guard = sut.attach(&listener).unwrap();
         let result = sut.attach(&listener);
@@ -405,9 +395,7 @@ pub mod reactor_trait {
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                    RelocatableCountingBitSet,
-                >>::ListenerBuilder::new(&name)
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .create()
                 .unwrap();
@@ -426,9 +414,7 @@ pub mod reactor_trait {
             nanosleep(TIMEOUT).unwrap();
             counter_old.store(counter.load(Ordering::Relaxed), Ordering::Relaxed);
 
-            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                RelocatableCountingBitSet,
-            >>::NotifierBuilder::new(&name)
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::NotifierBuilder::new(&name)
             .config(&config.lock().unwrap())
             .open()
             .unwrap();
@@ -484,9 +470,7 @@ pub mod reactor_trait {
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                    RelocatableCountingBitSet,
-                >>::ListenerBuilder::new(&name)
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .create()
                 .unwrap();
@@ -507,9 +491,7 @@ pub mod reactor_trait {
             })?;
 
             barrier.wait();
-            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                RelocatableCountingBitSet,
-            >>::NotifierBuilder::new(&name)
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::NotifierBuilder::new(&name)
             .config(&config.lock().unwrap())
             .open()
             .unwrap();
@@ -574,9 +556,7 @@ pub mod reactor_trait {
                 let mut listeners = vec![];
                 let mut guards = vec![];
 
-                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                    RelocatableCountingBitSet,
-                >>::ListenerBuilder::new(&name)
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .create()
                 .unwrap();
@@ -584,9 +564,7 @@ pub mod reactor_trait {
 
                 for _ in 0..NUMBER_OF_ATTACHMENTS {
                     let name = generate_file_path().file_name();
-                    let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                        RelocatableCountingBitSet,
-                    >>::ListenerBuilder::new(&name)
+                    let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
                     .unwrap();
@@ -613,9 +591,7 @@ pub mod reactor_trait {
             })?;
 
             barrier.wait();
-            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
-                RelocatableCountingBitSet,
-            >>::NotifierBuilder::new(&name)
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::NotifierBuilder::new(&name)
             .config(&config.lock().unwrap())
             .open()
             .unwrap();

@@ -86,7 +86,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
     let header = CustomHeader {
         version: 0,
-        timestamp: Time::now().unwrap().as_duration().as_nanos() as u64,
+        timestamp: Time::now().unwrap().time_point().as_nanos() as u64,
     };
     let payload = Rc::from(ptr as *const P::PayloadType);
 

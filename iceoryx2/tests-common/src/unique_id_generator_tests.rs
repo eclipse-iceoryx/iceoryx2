@@ -75,6 +75,6 @@ fn unique_system_id_is_correctly_converted() {
     let unique_id = unsafe { UniqueId::from_raw_id(unique_system_id.value()) };
     assert_that!(unique_id.unique_value() >> 32, eq unique_system_id.counter() as u64);
     assert_that!(unique_id.unique_value() as u32, eq unique_system_id.pid().value() as _);
-    assert_that!(unique_id.payload_value() >> 32, eq unique_system_id.creation_time().nanoseconds() as u64);
-    assert_that!(unique_id.payload_value() as u32, eq unique_system_id.creation_time().seconds() as _);
+    assert_that!(unique_id.payload_value() >> 32, eq unique_system_id.creation_time().time_point().subsec_nanos() as u64);
+    assert_that!(unique_id.payload_value() as u32, eq unique_system_id.creation_time().time_point().as_secs() as _);
 }
