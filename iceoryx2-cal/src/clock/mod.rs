@@ -83,7 +83,9 @@ pub enum ScheduleHandle<E: crate::event::Event> {
 
 pub trait ScheduleGuard {}
 
-pub trait ClockBuilder<C: Clock, T: TimeController>: Sized {
+pub trait ClockBuilder<C: Clock, T: TimeController, TBuilder: TimeControllerBuilder<T>>:
+    Sized
+{
     fn new(name: &FileName) -> Result<Self, ClockBuilderNewError>;
     fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
     fn time_controller(self) -> Result<T, ClockBuilderTimeControllerError>;
@@ -93,7 +95,8 @@ pub trait Clock: Sized {
     type E: crate::event::Event;
     type Guard: ScheduleGuard;
     type TimeController: TimeController;
-    type ClockBuilder: ClockBuilder<Self, Self::TimeController>;
+    type TimeControllerBuilder: TimeControllerBuilder<Self::TimeController>;
+    type ClockBuilder: ClockBuilder<Self, Self::TimeController, Self::TimeControllerBuilder>;
 
     fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
     fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> (Self::Guard, Timeout);

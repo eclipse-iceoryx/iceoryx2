@@ -15,12 +15,17 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod clock_trait {
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::clock::Clock;
+    use iceoryx2_cal::testing::*;
 
     #[conformance_test]
     pub fn whatever<Sut: Clock>() {
+        let name = generate_file_path().file_name();
+        //let config = generate_isolated_config::<Sut>();
+
         assert_that!(true, eq true);
     }
 }

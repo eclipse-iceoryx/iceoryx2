@@ -2,9 +2,9 @@ use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
         ClockBuilderNewError, ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard,
-        ScheduleHandle, TimeController, Timeout,
+        ScheduleHandle, TimeController, TimeControllerBuilder, Timeout,
     },
-    event::{InternalStubEvent, NamedConceptMgmt},
+    event::{InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
 };
 use core::time::Duration;
@@ -18,7 +18,7 @@ impl ScheduleGuard for Guard {}
 
 pub struct Builder {}
 
-impl ClockBuilder<PosixClock, PosixTimeController> for Builder {
+impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> for Builder {
     fn new(_name: &FileName) -> Result<Self, ClockBuilderNewError> {
         Ok(Self {})
     }
@@ -45,6 +45,7 @@ impl Clock for PosixClock {
     type Guard = Guard;
     type E = InternalStubEvent;
     type TimeController = PosixTimeController;
+    type TimeControllerBuilder = PosixTimeControllerBuilder;
     type ClockBuilder = Builder;
 
     fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
@@ -140,6 +141,30 @@ impl NamedConceptConfiguration for PosixTimeControllerConfig {
 }
 
 pub struct PosixTimeControllerBuilder {}
+
+impl NamedConceptBuilder<PosixTimeController> for PosixTimeControllerBuilder {
+    fn new(_name: &FileName) -> Self {
+        unimplemented!()
+    }
+
+    fn config(self, _config: &PosixTimeControllerConfig) -> Self {
+        unimplemented!()
+    }
+}
+
+impl TimeControllerBuilder<PosixTimeController> for PosixTimeControllerBuilder {
+    fn create(self) -> Result<PosixTimeController, super::TimeControllerCreateError> {
+        unimplemented!()
+    }
+
+    fn open(self) -> Result<PosixTimeController, super::TimeControllerOpenError> {
+        unimplemented!()
+    }
+
+    fn open_or_create(self) -> Result<PosixTimeController, super::TimeControllerOpenOrCreateError> {
+        unimplemented!()
+    }
+}
 
 #[derive(Debug)]
 pub struct PosixTimeController {}
