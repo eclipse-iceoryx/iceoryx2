@@ -193,3 +193,33 @@ pub fn display_works() {
     assert_that!(format!("{}", TimeSpan::from_nanos(4567)), eq "4.567 us");
     assert_that!(format!("{}", TimeSpan::from_nanos(567)), eq "567 ns");
 }
+
+#[test]
+pub fn create_from_nanos_with_overflow_saturates_at_max() {
+    let sut = TimeSpan::from_nanos(u128::MAX);
+    assert_that!(sut, eq TimeSpan::MAX);
+}
+
+#[test]
+pub fn create_from_micros_with_overflow_saturates_at_max() {
+    let sut = TimeSpan::from_micros(u128::MAX);
+    assert_that!(sut, eq TimeSpan::MAX);
+}
+
+#[test]
+pub fn create_from_millis_with_overflow_saturates_at_max() {
+    let sut = TimeSpan::from_millis(u128::MAX);
+    assert_that!(sut, eq TimeSpan::MAX);
+}
+
+#[test]
+pub fn add_that_would_lead_to_overflow_saturates_at_max() {
+    let sut = TimeSpan::from_secs(123) + TimeSpan::MAX;
+    assert_that!(sut, eq TimeSpan::MAX);
+}
+
+#[test]
+pub fn sub_that_would_lead_to_underflow_saturates_at_zero() {
+    let sut = TimeSpan::from_secs(123) - TimeSpan::MAX;
+    assert_that!(sut, eq TimeSpan::ZERO);
+}

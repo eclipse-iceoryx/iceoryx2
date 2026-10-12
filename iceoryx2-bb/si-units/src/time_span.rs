@@ -118,6 +118,16 @@ impl From<TimeSpan> for Duration {
 }
 
 impl TimeSpan {
+    /// A [`TimeSpan`] with the size of 0.
+    pub const ZERO: TimeSpan = TimeSpan {
+        time: internal::TimeSpec::ZERO,
+    };
+
+    /// The maximum [`TimeSpan`].
+    pub const MAX: TimeSpan = TimeSpan {
+        time: internal::TimeSpec::MAX,
+    };
+
     /// Creates a new [`TimeSpan`] of `0` seconds.
     pub const fn new() -> Self {
         Self {

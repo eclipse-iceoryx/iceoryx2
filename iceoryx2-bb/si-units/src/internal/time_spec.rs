@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 const MILLI_SECOND_IN_SECONDS: u64 = 1_000;
 const MICRO_SECOND_IN_SECONDS: u64 = 1_000_000;
 const NANO_SECOND_IN_SECONDS: u64 = 1_000_000_000;
+const MAX_NANO_SECONDS: u32 = 999_999_999;
 
 #[repr(C)]
 #[derive(
@@ -62,7 +63,7 @@ impl Add<TimeSpec> for TimeSpec {
     type Output = TimeSpec;
 
     fn add(self, rhs: TimeSpec) -> Self::Output {
-        TimeSpec::from_nanos(self.as_nanos() + rhs.as_nanos())
+        TimeSpec::from_nanos(self.as_nanos().saturating_add(rhs.as_nanos()))
     }
 }
 
@@ -117,6 +118,11 @@ impl TimeSpec {
         nanoseconds: 0,
     };
 
+    pub const MAX: TimeSpec = TimeSpec {
+        seconds: u64::MAX,
+        nanoseconds: MAX_NANO_SECONDS,
+    };
+
     pub const fn new() -> Self {
         Self::ZERO
     }
@@ -129,27 +135,40 @@ impl TimeSpec {
     }
 
     pub const fn from_millis(value: u128) -> Self {
-        let seconds = value as u64 / MILLI_SECOND_IN_SECONDS;
-        Self {
-            seconds: value as u64 / MILLI_SECOND_IN_SECONDS,
-            nanoseconds: (value * 1_000_000 - seconds as u128 * NANO_SECOND_IN_SECONDS as u128)
-                as u32,
+        let seconds = value / MILLI_SECOND_IN_SECONDS as u128;
+
+        if seconds < u64::MAX as u128 {
+            Self {
+                seconds: seconds as u64,
+                nanoseconds: (value * 1_000_000 - seconds * NANO_SECOND_IN_SECONDS as u128) as u32,
+            }
+        } else {
+            Self::MAX
         }
     }
 
     pub const fn from_micros(value: u128) -> Self {
-        let seconds = value as u64 / MICRO_SECOND_IN_SECONDS;
-        Self {
-            seconds: value as u64 / MICRO_SECOND_IN_SECONDS,
-            nanoseconds: (value * 1_000 - seconds as u128 * NANO_SECOND_IN_SECONDS as u128) as u32,
+        let seconds = value / MICRO_SECOND_IN_SECONDS as u128;
+
+        if seconds < u64::MAX as u128 {
+            Self {
+                seconds: seconds as u64,
+                nanoseconds: (value * 1_000 - seconds * NANO_SECOND_IN_SECONDS as u128) as u32,
+            }
+        } else {
+            Self::MAX
         }
     }
 
     pub const fn from_nanos(value: u128) -> Self {
-        let seconds = value as u64 / NANO_SECOND_IN_SECONDS;
-        Self {
-            seconds: value as u64 / NANO_SECOND_IN_SECONDS,
-            nanoseconds: (value - seconds as u128 * NANO_SECOND_IN_SECONDS as u128) as u32,
+        let seconds = value / NANO_SECOND_IN_SECONDS as u128;
+        if seconds < u64::MAX as u128 {
+            Self {
+                seconds: seconds as u64,
+                nanoseconds: (value - seconds * NANO_SECOND_IN_SECONDS as u128) as u32,
+            }
+        } else {
+            Self::MAX
         }
     }
 

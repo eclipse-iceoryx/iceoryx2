@@ -108,6 +108,16 @@ impl Display for TimePoint {
 }
 
 impl TimePoint {
+    /// The smallest representable [`TimePoint`].
+    pub const ZERO: TimePoint = TimePoint {
+        time: internal::TimeSpec::ZERO,
+    };
+
+    /// The largest representable [`TimePoint`].
+    pub const MAX: TimePoint = TimePoint {
+        time: internal::TimeSpec::MAX,
+    };
+
     /// Creates a new [`TimePoint`] of `0` seconds.
     pub const fn new() -> Self {
         Self {
