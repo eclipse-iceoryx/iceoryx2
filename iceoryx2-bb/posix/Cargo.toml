@@ -34,8 +34,9 @@ iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-print = { workspace = true }
+iceoryx2-bb-si-units = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 
