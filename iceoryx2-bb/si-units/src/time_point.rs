@@ -56,7 +56,6 @@ use serde::{Deserialize, Serialize};
     ZeroCopySend,
 )]
 pub struct TimePoint {
-    #[serde(flatten)]
     time: internal::TimeSpec,
 }
 
