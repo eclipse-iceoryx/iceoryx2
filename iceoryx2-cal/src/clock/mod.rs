@@ -155,14 +155,14 @@ pub enum ScheduleOnHandle {
     Guard(Box<dyn ScheduleGuard>),
 }
 
-pub trait TriggerSchedule {
-    /// Schedules an existing trigger, identified by `trigger_name`, to be
+pub trait ClockListenerSchedule: Send + Sync {
+    /// Schedules an existing trigger, identified by `listener_name`, to be
     /// activated once the given [`Timeout`] expires.
     ///
     /// The [`Clock`] is responsible for ensuring the corresponding trigger fires at
     /// the requested point in time. The returned guard keeps the schedule valid
     /// for its lifetime.
-    fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> ScheduleOnHandle;
+    fn schedule_on(&self, timeout: Timeout, listener_name: &FileName) -> ScheduleOnHandle;
 }
 
 /// The time-consumer interface of a [`Clock`].
@@ -170,7 +170,7 @@ pub trait TriggerSchedule {
 /// A [`Clock`] provides all time-related operations required by the remaining concepts: retrieving the
 /// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
 /// not need to know whether [`FreeRunningClock`] or a [`SteppedClock`] is in use.
-pub trait Clock<E: Event>: Sized + Abandonable + TriggerSchedule + Debug {
+pub trait Clock<E: Event>: Sized + Abandonable + ClockListenerSchedule + Debug {
     /// The configuration of the [`Clock`].
     type Configuration: NamedConceptConfiguration;
     /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).

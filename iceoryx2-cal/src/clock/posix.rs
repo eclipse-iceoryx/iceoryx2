@@ -12,9 +12,9 @@
 
 use crate::{
     clock::{
-        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError, ClockNowError,
-        FreeRunningClock, ScheduleGuard, ScheduleHandle, ScheduleOnHandle, Timeout,
-        TriggerSchedule,
+        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
+        ClockListenerSchedule, ClockNowError, FreeRunningClock, ScheduleGuard, ScheduleHandle,
+        ScheduleOnHandle, Timeout,
     },
     event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
@@ -107,13 +107,15 @@ pub struct PosixClock<E: Event> {
     _event: PhantomData<E>,
 }
 
+unsafe impl<E: Event> Send for PosixClock<E> {}
+unsafe impl<E: Event> Sync for PosixClock<E> {}
 impl<E: Event> FreeRunningClock for PosixClock<E> {}
 
 impl<E: Event> Abandonable for PosixClock<E> {
     unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
 }
 
-impl<E: Event> TriggerSchedule for PosixClock<E> {
+impl<E: Event> ClockListenerSchedule for PosixClock<E> {
     fn schedule_on(
         &self,
         timeout: super::Timeout,
