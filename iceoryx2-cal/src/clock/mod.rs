@@ -27,6 +27,7 @@ pub mod posix;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
 
@@ -52,8 +53,8 @@ enum_gen! {
 }
 
 enum_gen! {
-/// Error returned by [`ClockBuilder::acquire()`]
-    ClockBuilderAcquireError
+/// Error returned by [`ClockBuilder::open_clock()`]
+    ClockBuilderOpenClockError
   entry:
     InternalError
 }
@@ -131,7 +132,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     /// Sets the custom configuration of the [`Clock`].
     fn config(self, config: &C::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
-    fn open_clock(self) -> Result<C, ClockBuilderAcquireError>;
+    fn open_clock(self) -> Result<C, ClockBuilderOpenClockError>;
 }
 
 /// Builder that creates or opens a [`TimeController`].
@@ -146,18 +147,24 @@ pub trait TimeControllerBuilder<T: TimeController> {
     fn open_or_create_time_controller(self) -> Result<T, TimeControllerBuilderOpenOrCreateError>;
 }
 
+/// Implemented by types that own a [`Clock`] and can return a reference to it.
+pub trait HasClock<E: Event, C: Clock<E>> {
+    /// Returns a reference to the [`Clock`] owned by `self`.
+    fn clock(&self) -> &C;
+}
+
 /// The time-consumer interface of a [`Clock`].
 ///
 /// A [`Clock`] provides all time-related operations required by the remaining concepts: retrieving the
 /// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
 /// not need to know whether [`FreeRunningClock`] or a [`SteppedClock`] is in use.
-pub trait Clock<E: Event>: Sized {
+pub trait Clock<E: Event>: Sized + Abandonable {
     /// The configuration of the [`Clock`].
     type Configuration: NamedConceptConfiguration;
     /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).
     type Guard: ScheduleGuard;
     /// The builder that acquires this [`Clock`] (and its time controller, if any).
-    type ClockBuilder: ClockBuilder<E, Self>;
+    type Builder: ClockBuilder<E, Self>;
     /// Whether this clock supports a [`TimeController`]. `true` for [`SteppedClock`]s, `false` for
     /// [`FreeRunningClock`]s.
     const HAS_TIME_CONTROLLER_SUPPORT: bool;
@@ -202,7 +209,7 @@ pub trait Clock<E: Event>: Sized {
 /// process. All [`SteppedClock`] instances associated with the same [`Clock`]
 /// observe this advancement and wake scheduled operations whose timeouts have
 /// expired.
-pub trait TimeController: NamedConceptMgmt {
+pub trait TimeController: NamedConceptMgmt + Abandonable {
     /// The event type produced by triggers scheduled through the clock this controller drives.
     type E: crate::event::Event;
 

@@ -12,13 +12,14 @@
 
 use crate::{
     clock::{
-        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError, ClockNowError,
+        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError, ClockNowError,
         FreeRunningClock, ScheduleGuard, ScheduleHandle, Timeout,
     },
     event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
 };
 use core::marker::PhantomData;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::clock::{ClockType, NanosleepError};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
@@ -91,7 +92,7 @@ impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
         self
     }
 
-    fn open_clock(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
+    fn open_clock(self) -> Result<PosixClock<E>, ClockBuilderOpenClockError> {
         Ok(PosixClock {
             clock_type: self.config.clock_type,
             _event: PhantomData,
@@ -107,10 +108,14 @@ pub struct PosixClock<E: Event> {
 
 impl<E: Event> FreeRunningClock for PosixClock<E> {}
 
+impl<E: Event> Abandonable for PosixClock<E> {
+    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
+}
+
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
     type Configuration = PosixTimeControllerConfig;
-    type ClockBuilder = Builder;
+    type Builder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 
     fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<E>) {

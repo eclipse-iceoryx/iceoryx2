@@ -179,6 +179,7 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
+use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -191,6 +192,7 @@ use crate::node::node_name::NodeName;
 use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
+use crate::service::config_scheme::clock_config;
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
@@ -203,6 +205,8 @@ use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::unique_id_generator::*;
 use crate::{config::Config, service::config_scheme::node_details_config};
+
+const CLOCK_NAME: FileName = unsafe { FileName::new_unchecked_const(b"iceoryx2") };
 
 impl UniqueNodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
@@ -224,6 +228,8 @@ pub enum NodeCreationFailure {
     UnableToGenerateUniqueNodeId,
     /// The [`NameGenerator`] could not be opened/created.
     UnableToOpenOrCreateNameGenerator,
+    /// The [`Clock`] used for all time related operations could not be opened.
+    FailedToOpenClock,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -1620,6 +1626,18 @@ impl NodeBuilder {
         let node_id = fail!(from self, when UniqueNodeId::new::<Service>(name, &id_generator),
             with NodeCreationFailure::UnableToGenerateUniqueNodeId,
             "{msg} since the UniqueNodeId could not be generated.");
+
+        let clock_config = clock_config::<Service>(config);
+        let clock = match <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
+            .config(&clock_config)
+            .open_clock()
+        {
+            Ok(clock) => clock,
+            Err(e) => {
+                fail!(from self, with NodeCreationFailure::FailedToOpenClock,
+                    "{msg} since the clock could not be opened. [{e:?}]");
+            }
+        };
 
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueNodeId is not a valid file name.");

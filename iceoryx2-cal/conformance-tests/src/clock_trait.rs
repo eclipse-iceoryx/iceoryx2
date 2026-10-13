@@ -33,7 +33,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -51,7 +51,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -71,7 +71,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -108,7 +108,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -125,7 +125,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();

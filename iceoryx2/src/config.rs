@@ -237,6 +237,8 @@ pub struct Global {
     pub service: Service,
     /// [`Node`](crate::node::Node) settings
     pub node: Node,
+    /// The suffix of the clock resource.
+    pub clock_suffix: FileName,
     /// Defines the time how long the process will wait until an entity, that shares inter-process
     /// resources with others, is opened or created. This entity could be for instance a service
     pub creation_timeout: Duration,
@@ -250,6 +252,7 @@ impl Default for Global {
             prefix: unsafe { FileName::new_unchecked_const(b"iox2_") },
             #[cfg(not(feature = "std"))]
             prefix: unsafe { FileName::new_unchecked_const(b"iox2_no_std_") },
+            clock_suffix: unsafe { FileName::new_unchecked_const(b".clock") },
             service: Service::default(),
             node: Node::default(),
             creation_timeout: Duration::from_secs(1),
