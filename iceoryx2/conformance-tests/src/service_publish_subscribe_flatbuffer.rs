@@ -1143,4 +1143,35 @@ pub mod service_publish_subscribe_flatbuffer {
         assert_that!(same, is_ok);
         assert_that!(other.err(), eq Some(PublishSubscribeOpenError::IncompatibleTypes));
     }
+
+    #[conformance_test]
+    pub fn open_with_schema_file_verifies_stored_schema_bytes<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _sut_create = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .create()
+                .expect("the service is created")
+        };
+
+        let same_schema = create_typed_file_with_content(SCHEMA, "bfbs");
+        let same = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(same_schema.path().expect("the file has a path"))
+            .open();
+        let other_schema = create_typed_file_with_content(ALT_SCHEMA, "bfbs");
+        let other = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(other_schema.path().expect("the file has a path"))
+            .open();
+
+        assert_that!(same, is_ok);
+        assert_that!(other.err(), eq Some(PublishSubscribeOpenError::IncompatibleTypes));
+    }
 }

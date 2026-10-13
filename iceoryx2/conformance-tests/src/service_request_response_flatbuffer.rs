@@ -1950,4 +1950,52 @@ pub mod service_request_response_flatbuffer {
             eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType)
         );
     }
+
+    #[conformance_test]
+    pub fn open_with_schema_files_verifies_stored_schema_bytes<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let _sut_create = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .__internal_set_request_payload_type_details(&flatbuffer_type_detail())
+                .__internal_set_response_payload_type_details(&flatbuffer_type_detail())
+                .__internal_request_flatbuffer_schema(UNBOUND_DATA_SCHEMA.as_bytes())
+                .__internal_response_flatbuffer_schema(DATA_PROPS_SCHEMA.as_bytes())
+                .create()
+                .expect("the service is created")
+        };
+
+        let request_schema_file = create_typed_file_with_content(UNBOUND_DATA_SCHEMA, "bfbs");
+        let response_schema_file = create_typed_file_with_content(DATA_PROPS_SCHEMA, "bfbs");
+        let same = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<example::UnboundedData>, Flatbuffer<example::DataProps>>(
+            )
+            .request_flatbuffer_schema_path(
+                request_schema_file.path().expect("the file has a path"),
+            )
+            .response_flatbuffer_schema_path(
+                response_schema_file.path().expect("the file has a path"),
+            )
+            .open();
+        let swapped = node
+            .service_builder(&service_name)
+            .request_response::<Flatbuffer<example::UnboundedData>, Flatbuffer<example::DataProps>>(
+            )
+            .request_flatbuffer_schema_path(
+                response_schema_file.path().expect("the file has a path"),
+            )
+            .response_flatbuffer_schema_path(
+                request_schema_file.path().expect("the file has a path"),
+            )
+            .open();
+
+        assert_that!(same, is_ok);
+        assert_that!(
+            swapped.err(),
+            eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType)
+        );
+    }
 }
