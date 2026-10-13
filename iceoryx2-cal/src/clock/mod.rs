@@ -30,7 +30,10 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
 
-use crate::event::{Event, NamedConceptBuilder, NamedConceptMgmt};
+use crate::{
+    event::{Event, NamedConceptMgmt},
+    named_concept::NamedConceptConfiguration,
+};
 
 enum_gen! {
 /// Error returned by [`Clock::blocking_sleep()`]
@@ -124,9 +127,11 @@ pub trait SteppedClock {}
 /// Physical [`Clock`] implementations do not support a [`TimeController`]. Calling
 /// [`ClockBuilder::time_controller()`] on them returns
 /// [`ClockBuilderTimeControllerError::TimeControllerIsNotSupported`].
-pub trait ClockBuilder<E: Event, C: Clock<E>>:
-    Sized + NamedConceptBuilder<C::TimeController>
-{
+pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
+    /// Defines the name of the [`Clock`] that shall be used.
+    fn new(name: &FileName) -> Self;
+    /// Sets the custom configuration of the [`Clock`].
+    fn config(self, config: &C::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
     fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
 }
@@ -150,10 +155,10 @@ pub trait TimeControllerBuilder<T: TimeController> {
 /// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
 /// not need to know whether physical or simulated time is in use.
 pub trait Clock<E: Event>: Sized {
+    /// The configuration of the [`Clock`].
+    type Configuration: NamedConceptConfiguration;
     /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).
     type Guard: ScheduleGuard;
-    /// The [`TimeController`] that drives this [`Clock`], if it supports explicit time advancement.
-    type TimeController: TimeController;
     /// The builder that acquires this [`Clock`] (and its time controller, if any).
     type ClockBuilder: ClockBuilder<E, Self>;
     /// Whether this clock supports a [`TimeController`]. `true` for simulation clocks, `false` for physical

@@ -27,7 +27,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn names_are_set_correctly<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -45,7 +45,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn buffer_size_is_by_default_at_least_provided_constant<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -58,7 +58,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn safe_overflow_is_disabled_by_default<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -76,7 +76,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn create_remove_and_create_again_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
         let sut_receiver = Sut::Creator::new(&storage_name)
@@ -99,7 +99,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn connecting_to_non_existing_channel_fails<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Connector::new(&storage_name)
             .config(&config)
@@ -114,7 +114,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn connecting_to_receiver_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -130,7 +130,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn connecting_after_first_connection_has_dropped_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -152,7 +152,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn send_and_receive_works_for_single_packets<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -180,7 +180,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn send_and_receive_for_multi_packets_has_queue_behavior<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .buffer_size(4)
@@ -216,7 +216,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn receive_without_transmission_returns_none<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -238,7 +238,7 @@ pub mod communication_channel_trait {
         Sut: CommunicationChannel<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .buffer_size(4)
@@ -291,7 +291,7 @@ pub mod communication_channel_trait {
         }
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .enable_safe_overflow()
@@ -325,7 +325,7 @@ pub mod communication_channel_trait {
         if !Sut::has_configurable_buffer_size() {
             return;
         }
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         for buffer_size in 1..DEFAULT_RECEIVER_BUFFER_SIZE + 2 {
             let storage_name = generate_file_path().file_name();
@@ -359,7 +359,7 @@ pub mod communication_channel_trait {
         if !Sut::has_configurable_buffer_size() || !Sut::does_support_safe_overflow() {
             return;
         }
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         for buffer_size in 1..DEFAULT_RECEIVER_BUFFER_SIZE + 2 {
             let storage_name = generate_file_path().file_name();
@@ -406,7 +406,7 @@ pub mod communication_channel_trait {
         test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)
@@ -422,7 +422,7 @@ pub mod communication_channel_trait {
     #[conformance_test]
     pub fn abandon_sender_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .config(&config)

@@ -13,10 +13,9 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError, ClockNowError,
-        FreeRunningClock, ScheduleGuard, ScheduleHandle, TimeController, TimeControllerBuilder,
-        Timeout,
+        FreeRunningClock, ScheduleGuard, ScheduleHandle, TimeController, Timeout,
     },
-    event::{Event, InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
+    event::{Event, InternalStubEvent, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
 };
 use alloc::vec::Vec;
@@ -83,15 +82,6 @@ pub struct Builder {
 }
 
 impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
-    fn acquire(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
-        Ok(PosixClock {
-            clock_type: self.config.clock_type,
-            _event: PhantomData,
-        })
-    }
-}
-
-impl NamedConceptBuilder<PosixTimeController> for Builder {
     fn new(_name: &FileName) -> Self {
         Self {
             config: PosixTimeControllerConfig::default(),
@@ -101,6 +91,13 @@ impl NamedConceptBuilder<PosixTimeController> for Builder {
     fn config(mut self, config: &PosixTimeControllerConfig) -> Self {
         self.config = *config;
         self
+    }
+
+    fn acquire(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
+        Ok(PosixClock {
+            clock_type: self.config.clock_type,
+            _event: PhantomData,
+        })
     }
 }
 
@@ -114,7 +111,7 @@ impl<E: Event> FreeRunningClock for PosixClock<E> {}
 
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
-    type TimeController = PosixTimeController;
+    type Configuration = PosixTimeControllerConfig;
     type ClockBuilder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 

@@ -21,7 +21,6 @@ pub mod clock_trait {
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::clock::{Clock, ClockBuilder, ScheduleHandle, Timeout};
     use iceoryx2_cal::event::Event;
-    use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::static_storage::process_local::NamedConceptConfiguration;
     use iceoryx2_cal::testing::*;
 
@@ -31,7 +30,7 @@ pub mod clock_trait {
     #[conformance_test]
     pub fn blocking_sleep_sleeps_for_at_least_provided_duration<E: Event, Sut: Clock<E>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut::TimeController>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
@@ -49,7 +48,7 @@ pub mod clock_trait {
     #[conformance_test]
     pub fn blocking_sleep_sleeps_until_at_least_provided_time_point<E: Event, Sut: Clock<E>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut::TimeController>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
@@ -69,7 +68,7 @@ pub mod clock_trait {
         const ITERATIONS: usize = 20;
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut::TimeController>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
@@ -93,7 +92,7 @@ pub mod clock_trait {
 
     #[conformance_test]
     pub fn default_suffix_is_used_for_default_config<E: Event, Sut: Clock<E>>() {
-        let config = <Sut::TimeController as NamedConceptMgmt>::Configuration::default();
+        let config = <Sut::Configuration as Default>::default();
 
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
     }
@@ -106,7 +105,7 @@ pub mod clock_trait {
         test_requires!(!Sut::HAS_TIME_CONTROLLER_SUPPORT);
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut::TimeController>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
@@ -123,7 +122,7 @@ pub mod clock_trait {
         test_requires!(Sut::HAS_TIME_CONTROLLER_SUPPORT);
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut::TimeController>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)

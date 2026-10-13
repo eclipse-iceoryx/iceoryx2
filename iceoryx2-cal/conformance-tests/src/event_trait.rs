@@ -43,7 +43,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn create_works<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -61,7 +61,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -77,7 +77,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn cannot_be_created_twice<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -92,7 +92,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn cannot_open_non_existing<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
 
@@ -105,7 +105,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -141,7 +141,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -191,7 +191,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -222,7 +222,7 @@ pub mod event_trait {
     ) {
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -281,7 +281,7 @@ pub mod event_trait {
         const REPETITIONS: u64 = 2;
         const SOURCES: u64 = 4;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let mut sources = vec![];
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -351,7 +351,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn try_wait_does_not_block<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -369,7 +369,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -396,7 +396,7 @@ pub mod event_trait {
         let name = generate_file_path().file_name();
         let handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &handle)
+            .create(generate_isolated_config::<Sut::Configuration>(), &handle)
             .unwrap();
 
         let counter = AtomicU64::new(0);
@@ -472,7 +472,7 @@ pub mod event_trait {
         let name = generate_file_path().file_name();
         let handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &handle)
+            .create(generate_isolated_config::<Sut::Configuration>(), &handle)
             .unwrap();
 
         let counter = AtomicU64::new(0);
@@ -570,7 +570,7 @@ pub mod event_trait {
     pub fn setting_trigger_id_limit_works<Sut: Event>() {
         const EVENT_ID_MAX: EventId = EventId::new(123);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_listener = Sut::ListenerBuilder::new(&name)
             .event_id_max(EVENT_ID_MAX)
@@ -589,7 +589,7 @@ pub mod event_trait {
     pub fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
         const EVENT_ID_MAX: EventId = EventId::new(24);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .event_id_max(EVENT_ID_MAX)
@@ -631,7 +631,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .event_id_max(EventId::new(REPETITIONS))
@@ -691,7 +691,10 @@ pub mod event_trait {
         let id = EventId::new(5);
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .create(
+                generate_isolated_config::<Sut::Configuration>(),
+                &mutex_handle,
+            )
             .unwrap();
 
         thread_scope(|s| {
@@ -742,7 +745,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -769,7 +772,7 @@ pub mod event_trait {
         test_requires!(Sut::does_support_persistency());
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -786,7 +789,7 @@ pub mod event_trait {
     pub fn abandoning_notifier_keeps_event<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -808,7 +811,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 4096 * 128;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -833,7 +836,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn notifier_and_listener_return_same_max_event_count<Sut: Event>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -851,7 +854,7 @@ pub mod event_trait {
     pub fn events_are_counted<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -878,7 +881,7 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_EVENTS: usize = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
@@ -915,7 +918,7 @@ pub mod event_trait {
         const ITERATIONS: usize = 1000;
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let start_barrier_handle = BarrierHandle::new();
         let start_barrier = Arc::new(
@@ -1007,7 +1010,7 @@ pub mod event_trait {
 
         let pong_name = generate_file_path().file_name();
         let ping_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let ping_listener = Sut::ListenerBuilder::new(&ping_name)
             .config(&config)

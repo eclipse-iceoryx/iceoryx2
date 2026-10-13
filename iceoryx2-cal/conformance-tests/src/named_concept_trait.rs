@@ -310,7 +310,7 @@ pub mod named_concept_trait {
     #[conformance_test]
     pub fn drop_does_not_panic_when_concept_is_already_removed<T: NamedConceptTest>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
 
         let sut = T::create(&name, &config).unwrap();
         assert_that!(unsafe { T::Sut::remove_cfg(&name, &config).unwrap() }, eq true);
@@ -322,7 +322,7 @@ pub mod named_concept_trait {
     #[conformance_test]
     pub fn does_exist_works<T: NamedConceptTest>() {
         const NUMBER_OF_ENTITIES: usize = 11;
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
 
         let mut suts = vec![];
         let mut names = vec![];
@@ -343,7 +343,7 @@ pub mod named_concept_trait {
     pub fn list_and_does_exist_works<T: NamedConceptTest>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 8;
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
         let mut entities = vec![];
 
         for i in 0..LIMIT {
@@ -382,7 +382,7 @@ pub mod named_concept_trait {
 
     #[conformance_test]
     pub fn custom_suffix_ensures_separation<T: NamedConceptTest>() {
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
         let config_1 = unsafe { config.clone().suffix(&FileName::new_unchecked(b".s1")) };
         let config_2 = unsafe { config.suffix(&FileName::new_unchecked(b".s2")) };
 
@@ -429,7 +429,7 @@ pub mod named_concept_trait {
     #[conformance_test]
     pub fn remove_works<T: NamedConceptTest>() {
         const NUMBER_OF_ENTITIES: usize = 26;
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
 
         let mut names = vec![];
 
@@ -452,7 +452,7 @@ pub mod named_concept_trait {
     #[conformance_test]
     pub fn cannot_be_created_twice<T: NamedConceptTest>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
 
         let _sut = T::create(&name, &config).unwrap();
         assert_that!(T::create(&name, &config), is_err);
@@ -461,7 +461,7 @@ pub mod named_concept_trait {
     #[conformance_test]
     pub fn cannot_open_non_existing<T: NamedConceptTest>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<T::Sut>();
+        let config = generate_isolated_config::<<T::Sut as NamedConceptMgmt>::Configuration>();
 
         assert_that!(T::open(&name, &config), is_err);
     }

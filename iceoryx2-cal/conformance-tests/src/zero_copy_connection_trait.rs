@@ -53,7 +53,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn create_non_existing_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         assert_that!(
             Sut::Builder::new(&name)
@@ -74,7 +74,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn establish_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -98,7 +98,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn builder_sets_default_values<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .config(&config)
@@ -135,7 +135,7 @@ pub mod zero_copy_connection_trait {
     pub fn setting_number_of_channels_works<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 12;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .config(&config)
@@ -155,7 +155,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn multi_connections_fail<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -192,7 +192,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn when_sender_goes_out_of_scope_another_sender_can_connect<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -216,7 +216,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn when_receiver_goes_out_of_scope_another_receiver_can_connect<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -240,7 +240,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn connection_is_cleaned_up_when_unused<Sut: ZeroCopyConnection + NamedConceptMgmt>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -262,7 +262,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn connecting_with_incompatible_buffer_size_fails<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .buffer_size(12)
@@ -283,7 +283,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn connecting_with_incompatible_borrow_max_fails<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .receiver_max_borrowed_chunks_per_channel(2)
@@ -304,7 +304,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn connecting_with_incompatible_overflow_setting_fails<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .enable_safe_overflow(true)
@@ -328,7 +328,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn connecting_with_incompatible_number_of_samples_fails<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -348,7 +348,7 @@ pub mod zero_copy_connection_trait {
     pub fn connecting_with_incompatible_number_of_channels_fails<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 5;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_channels(NUMBER_OF_CHANNELS)
@@ -375,7 +375,7 @@ pub mod zero_copy_connection_trait {
     pub fn connecting_with_compatible_number_of_channels_works<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 9;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_channels(NUMBER_OF_CHANNELS)
@@ -395,7 +395,7 @@ pub mod zero_copy_connection_trait {
     pub fn send_receive_and_retrieval_works<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -431,7 +431,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_CHANNELS: usize = 7;
         const ITERATIONS: usize = 5;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -480,7 +480,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_CHANNELS: usize = 7;
         const ITERATIONS: usize = 5;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -537,7 +537,7 @@ pub mod zero_copy_connection_trait {
     pub fn when_data_was_sent_receiver_has_data<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -565,7 +565,7 @@ pub mod zero_copy_connection_trait {
         const ITERATIONS: usize = 8;
         const NUMBER_OF_CHANNELS: usize = 4;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -629,7 +629,7 @@ pub mod zero_copy_connection_trait {
     pub fn send_until_buffer_is_full_works<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         const BUFFER_SIZE: usize = 89;
 
         let sut_sender = Sut::Builder::new(&name)
@@ -656,7 +656,7 @@ pub mod zero_copy_connection_trait {
     pub fn send_until_overflow_works<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         const BUFFER_SIZE: usize = 56;
 
         let sut_sender = Sut::Builder::new(&name)
@@ -688,7 +688,7 @@ pub mod zero_copy_connection_trait {
     pub fn receive_can_acquire_data_with_late_connection<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         const BUFFER_SIZE: usize = 34;
 
         let sut_sender = Sut::Builder::new(&name)
@@ -726,7 +726,7 @@ pub mod zero_copy_connection_trait {
     pub fn new_connection_has_empty_receive_buffer<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -742,7 +742,7 @@ pub mod zero_copy_connection_trait {
     pub fn receiver_cannot_borrow_more_samples_than_set_up<Sut: ZeroCopyConnection>() {
         let id = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         const BUFFER_SIZE: usize = 56;
         const MAX_BORROW: usize = 2;
 
@@ -803,7 +803,10 @@ pub mod zero_copy_connection_trait {
         let name = generate_file_path().file_name();
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .create(
+                generate_isolated_config::<Sut::Configuration>(),
+                &mutex_handle,
+            )
             .unwrap();
 
         let sut_sender = Sut::Builder::new(&name)
@@ -886,7 +889,10 @@ pub mod zero_copy_connection_trait {
         let name = generate_file_path().file_name();
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .create(
+                generate_isolated_config::<Sut::Configuration>(),
+                &mutex_handle,
+            )
             .unwrap();
 
         let sut_sender = Sut::Builder::new(&name)
@@ -1024,7 +1030,10 @@ pub mod zero_copy_connection_trait {
         let name = generate_file_path().file_name();
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .create(
+                generate_isolated_config::<Sut::Configuration>(),
+                &mutex_handle,
+            )
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
@@ -1094,7 +1103,10 @@ pub mod zero_copy_connection_trait {
         let name = generate_file_path().file_name();
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .create(
+                generate_isolated_config::<Sut::Configuration>(),
+                &mutex_handle,
+            )
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
@@ -1159,7 +1171,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_CHANNELS: usize = 6;
         const BUFFER_SIZE: usize = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1207,7 +1219,7 @@ pub mod zero_copy_connection_trait {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1258,7 +1270,7 @@ pub mod zero_copy_connection_trait {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1304,7 +1316,7 @@ pub mod zero_copy_connection_trait {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1359,7 +1371,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1400,7 +1412,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1433,7 +1445,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1463,7 +1475,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1504,7 +1516,7 @@ pub mod zero_copy_connection_trait {
     >() {
         const BUFFER_SIZE: usize = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1527,7 +1539,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1585,7 +1597,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_SEGMENTS: u8 = 10;
         const NUMBER_OF_CHANNELS: usize = 4;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1646,7 +1658,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1707,7 +1719,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1756,7 +1768,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1791,7 +1803,7 @@ pub mod zero_copy_connection_trait {
         let id = ChannelId::new(0);
         const NUMBER_OF_SEGMENTS: u8 = 98;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1835,7 +1847,7 @@ pub mod zero_copy_connection_trait {
         Sut: ZeroCopyConnection,
     >() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1863,7 +1875,7 @@ pub mod zero_copy_connection_trait {
         Sut: ZeroCopyConnection,
     >() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1891,7 +1903,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_try_send<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1909,7 +1921,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_blocking_send<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1933,7 +1945,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_reclaim<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1951,7 +1963,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_receive<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1969,7 +1981,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_release<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -1987,7 +1999,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn panics_on_out_of_bounds_channel_id_in_has_data<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -2003,7 +2015,7 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn removing_port_from_non_existing_connection_leads_to_error<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         assert_that!(unsafe { Sut::remove_receiver(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
         assert_that!(unsafe { Sut::remove_sender(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
@@ -2018,7 +2030,7 @@ pub mod zero_copy_connection_trait {
         let barrier_2 = barrier_1.clone();
         let name_1 = generate_file_path().file_name();
         let name_2 = generate_file_path().file_name();
-        let config_1 = generate_isolated_config::<Sut>();
+        let config_1 = generate_isolated_config::<Sut::Configuration>();
         let config_2 = config_1.clone();
 
         let verify = |error: ZeroCopyCreationError| {
@@ -2075,7 +2087,7 @@ pub mod zero_copy_connection_trait {
     pub fn channel_state_is_set_to_default_value_on_creation<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 12;
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .config(&config)
@@ -2105,7 +2117,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_CHANNELS: usize = 11;
         let custom_initial_channel_state = ChannelState::new(981273).unwrap();
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .config(&config)
@@ -2136,7 +2148,7 @@ pub mod zero_copy_connection_trait {
     pub fn changing_channel_state_works<Sut: ZeroCopyConnection>() {
         const CHANNEL_ID: ChannelId = ChannelId::new(0);
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .config(&config)
@@ -2163,7 +2175,7 @@ pub mod zero_copy_connection_trait {
         test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -2190,7 +2202,7 @@ pub mod zero_copy_connection_trait {
         test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -2220,7 +2232,7 @@ pub mod zero_copy_connection_trait {
         const BUFFER_SIZE: usize = 10;
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -2270,7 +2282,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_CHANNELS: usize = 4;
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
@@ -2307,7 +2319,7 @@ pub mod zero_copy_connection_trait {
         const NUMBER_OF_CHANNELS: usize = 4;
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)

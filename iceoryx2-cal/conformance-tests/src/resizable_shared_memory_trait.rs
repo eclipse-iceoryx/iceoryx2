@@ -43,7 +43,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -79,7 +79,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -103,7 +103,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -129,7 +129,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -174,7 +174,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -199,7 +199,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -226,7 +226,7 @@ pub mod resizable_shared_memory_trait {
     ) {
         const NUMBER_OF_ITERATIONS: usize = 128;
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -295,7 +295,7 @@ pub mod resizable_shared_memory_trait {
     ) {
         const NUMBER_OF_REALLOCATIONS: usize = 128;
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -364,7 +364,7 @@ pub mod resizable_shared_memory_trait {
     ) {
         const NUMBER_OF_REALLOCATIONS: usize = 6;
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let size = 1024;
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
@@ -433,7 +433,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -456,7 +456,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -476,7 +476,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -498,7 +498,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 33;
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let mut suts = vec![];
         let mut names = vec![];
@@ -537,7 +537,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 1;
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let mut suts = vec![];
         let mut names = vec![];
@@ -563,7 +563,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 25;
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let mut suts = vec![];
         let mut names = vec![];
@@ -600,7 +600,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 26;
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let mut names = vec![];
 
@@ -639,7 +639,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const TEST_VALUE: u32 = 89123523;
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
@@ -675,7 +675,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
@@ -696,7 +696,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
@@ -724,7 +724,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
@@ -756,7 +756,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
         let value_1 = 123;
         let value_2 = 2345;
@@ -822,7 +822,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
@@ -865,7 +865,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
@@ -908,7 +908,7 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let storage_name = generate_file_path().file_name();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
@@ -949,7 +949,7 @@ pub mod resizable_shared_memory_trait {
         test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -986,7 +986,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1013,7 +1013,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1047,7 +1047,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1081,7 +1081,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1115,7 +1115,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1149,7 +1149,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1174,7 +1174,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
@@ -1207,7 +1207,7 @@ pub mod resizable_shared_memory_trait {
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
