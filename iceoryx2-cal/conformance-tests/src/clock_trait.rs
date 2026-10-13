@@ -113,7 +113,7 @@ pub mod clock_trait {
             .open_clock()
             .unwrap();
 
-        if let (_, ScheduleHandle::Trigger(_)) = sut.schedule(Timeout::By(TIMEOUT)) {
+        if let ScheduleHandle::GuardAndListener(_) = sut.schedule(Timeout::By(TIMEOUT)) {
             assert_that!(shall_never_be_reached);
         }
     }
@@ -130,7 +130,7 @@ pub mod clock_trait {
             .open_clock()
             .unwrap();
 
-        if let (_, ScheduleHandle::TranslatedTimeout(_)) = sut.schedule(Timeout::By(TIMEOUT)) {
+        if let ScheduleHandle::TranslatedTimeout(_) = sut.schedule(Timeout::By(TIMEOUT)) {
             assert_that!(shall_never_be_reached);
         }
     }

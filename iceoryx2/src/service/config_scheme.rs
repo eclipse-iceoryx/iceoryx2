@@ -52,7 +52,7 @@ pub(crate) fn clock_config<Service: crate::service::Service>(
 ) -> <Service::Clock as Clock<Service::Event>>::Configuration {
     <<Service::Clock as Clock<Service::Event>>::Configuration>::default()
         .prefix(&global_config.global.prefix)
-        .suffix(&global_config.global.service.connection_suffix)
+        .suffix(&global_config.global.clock_suffix)
         .path_hint(global_config.global.root_path())
 }
 

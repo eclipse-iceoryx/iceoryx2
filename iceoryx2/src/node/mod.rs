@@ -968,6 +968,7 @@ struct SharedNodeState<Service: service::Service> {
     registered_services: RegisteredServices<<Service::Bag as BagFamily>::BagHandle>,
     signal_handling_mode: SignalHandlingMode,
     details_storage: Service::StaticStorage,
+    clock: Service::Clock,
 }
 
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
@@ -1654,6 +1655,7 @@ impl NodeBuilder {
             details_storage,
             signal_handling_mode: self.signal_handling_mode,
             details,
+            clock,
         });
 
         if config.global.node.cleanup_dead_nodes_on_creation {

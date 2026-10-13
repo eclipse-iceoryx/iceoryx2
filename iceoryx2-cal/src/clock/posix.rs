@@ -13,7 +13,8 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError, ClockNowError,
-        FreeRunningClock, ScheduleGuard, ScheduleHandle, Timeout,
+        FreeRunningClock, ScheduleGuard, ScheduleHandle, ScheduleOnHandle, Timeout,
+        TriggerSchedule,
     },
     event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
@@ -112,22 +113,24 @@ impl<E: Event> Abandonable for PosixClock<E> {
     unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
 }
 
+impl<E: Event> TriggerSchedule for PosixClock<E> {
+    fn schedule_on(
+        &self,
+        timeout: super::Timeout,
+        _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
+    ) -> ScheduleOnHandle {
+        ScheduleOnHandle::TranslatedTimeout(timeout)
+    }
+}
+
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
     type Configuration = PosixTimeControllerConfig;
     type Builder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 
-    fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<E>) {
-        (Guard {}, ScheduleHandle::TranslatedTimeout(timeout))
-    }
-
-    fn schedule_on(
-        &self,
-        _timeout: super::Timeout,
-        _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
-    ) -> Self::Guard {
-        Guard {}
+    fn schedule(&self, timeout: super::Timeout) -> ScheduleHandle<Guard, E> {
+        ScheduleHandle::TranslatedTimeout(timeout)
     }
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
