@@ -13,14 +13,12 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError, ClockNowError,
-        FreeRunningClock, ScheduleGuard, ScheduleHandle, TimeController, Timeout,
+        FreeRunningClock, ScheduleGuard, ScheduleHandle, Timeout,
     },
-    event::{Event, InternalStubEvent, NamedConceptMgmt},
+    event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
 };
-use alloc::vec::Vec;
 use core::marker::PhantomData;
-use core::time::Duration;
 use iceoryx2_bb_posix::clock::{ClockType, NanosleepError};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
@@ -175,46 +173,5 @@ impl<E: Event> Clock<E> for PosixClock<E> {
                 "{msg} due to an internal error. [{e:?}]");
             }
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct PosixTimeController {}
-
-impl TimeController for PosixTimeController {
-    type E = InternalStubEvent;
-
-    fn advance(&self, _duration: Duration) -> iceoryx2_bb_si_units::TimePoint {
-        unimplemented!()
-    }
-}
-
-impl NamedConceptMgmt for PosixTimeController {
-    type Configuration = PosixTimeControllerConfig;
-
-    unsafe fn remove_cfg(
-        _name: &FileName,
-        _cfg: &Self::Configuration,
-    ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
-        unimplemented!()
-    }
-
-    fn does_exist_cfg(
-        _name: &FileName,
-        _cfg: &Self::Configuration,
-    ) -> Result<bool, crate::named_concept::NamedConceptDoesExistError> {
-        unimplemented!()
-    }
-
-    fn list_cfg(
-        _cfg: &Self::Configuration,
-    ) -> Result<Vec<FileName>, crate::named_concept::NamedConceptListError> {
-        unimplemented!()
-    }
-
-    fn remove_path_hint(
-        _value: &iceoryx2_bb_system_types::path::Path,
-    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
-        unimplemented!()
     }
 }
