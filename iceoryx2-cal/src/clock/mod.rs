@@ -116,6 +116,14 @@ pub enum ScheduleHandle<E: crate::event::Event> {
 /// The guard keeps a scheduled timeout valid for as long as it lives.
 pub trait ScheduleGuard {}
 
+/// Marker trait that can be implemented by [`Clock`] to identify a [`Clock`] that runs on its own,
+/// continuously, uncontrolled and one can only read it.
+pub trait FreeRunningClock {}
+
+/// Marker trait that can be implemented by [`Clock`] to identify a [`Clock`] that is tied to the
+/// [`TimeController`] and must be explicitly advanced.
+pub trait SteppedClock {}
+
 /// Builder that acquires a [`Clock`] and, where the implementation supports it, its [`TimeController`].
 ///
 /// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by  multiple processes.
