@@ -36,7 +36,7 @@ pub mod reactor_trait {
     use iceoryx2_cal::event::EventId;
     use iceoryx2_cal::event::UnixDatagramShmCountingBitSet;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
-    use iceoryx2_cal::named_concept::NamedConceptBuilder;
+    use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::generate_isolated_config;
 
@@ -51,7 +51,9 @@ pub mod reactor_trait {
     impl NotifierListenerPair {
         fn new() -> Self {
             let name = generate_file_path().file_name();
-            let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
+            let config = generate_isolated_config::<
+                <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
+            >();
             let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
             .config(&config)
             .create()
@@ -68,7 +70,9 @@ pub mod reactor_trait {
     #[conformance_test]
     pub fn attach_and_detach_works<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-        let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
+        let config = generate_isolated_config::<
+            <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
+        >();
 
         let mut listeners = vec![];
         let mut guards = vec![];
@@ -101,7 +105,9 @@ pub mod reactor_trait {
     #[conformance_test]
     pub fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-        let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
+        let config = generate_isolated_config::<
+            <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
+        >();
 
         let name = generate_file_path().file_name();
         let listener =
@@ -387,7 +393,9 @@ pub mod reactor_trait {
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
             .create(
-                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
+                generate_isolated_config::<
+                    <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
+                >(),
                 &mutex_handle,
             )
             .unwrap();
@@ -462,7 +470,9 @@ pub mod reactor_trait {
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
             .create(
-                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
+                generate_isolated_config::<
+                    <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
+                >(),
                 &mutex_handle,
             )
             .unwrap();
@@ -545,7 +555,9 @@ pub mod reactor_trait {
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
             .create(
-                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
+                generate_isolated_config::<
+                    <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
+                >(),
                 &mutex_handle,
             )
             .unwrap();

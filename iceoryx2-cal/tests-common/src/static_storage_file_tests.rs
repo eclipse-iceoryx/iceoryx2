@@ -31,7 +31,8 @@ use iceoryx2_cal::testing::*;
 fn custom_suffix_works() {
     let storage_name = generate_file_path().file_name();
     let config = unsafe {
-        generate_isolated_config::<Storage>().suffix(&FileName::new_unchecked(b".blubbme"))
+        generate_isolated_config::<<Storage as NamedConceptMgmt>::Configuration>()
+            .suffix(&FileName::new_unchecked(b".blubbme"))
     };
 
     let content = "some storage content".to_string();
@@ -61,7 +62,7 @@ fn custom_suffix_works() {
 #[test]
 fn path_is_created_when_it_does_not_exist() {
     let storage_name = generate_file_path().file_name();
-    let config = generate_isolated_config::<Storage>();
+    let config = generate_isolated_config::<<Storage as NamedConceptMgmt>::Configuration>();
     let content = "some more funky content".to_string();
     let non_existing_path =
         FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_file_path().file_name()).unwrap();
@@ -94,7 +95,8 @@ fn path_is_created_when_it_does_not_exist() {
 fn custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
     let config = unsafe {
-        generate_isolated_config::<Storage>().suffix(&FileName::new_unchecked(b".blubbme"))
+        generate_isolated_config::<<Storage as NamedConceptMgmt>::Configuration>()
+            .suffix(&FileName::new_unchecked(b".blubbme"))
     }
     .path_hint(
         &FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"non_existing").unwrap())

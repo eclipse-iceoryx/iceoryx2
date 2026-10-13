@@ -15,5 +15,6 @@ use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 instantiate_conformance_tests_with_module!(
     posix,
     iceoryx2_cal_conformance_tests::clock_trait,
-    iceoryx2_cal::clock::posix::PosixClock
+    iceoryx2_cal::event::implementations::InternalStubEvent,
+    iceoryx2_cal::clock::posix::PosixClock<iceoryx2_cal::event::implementations::InternalStubEvent>
 );

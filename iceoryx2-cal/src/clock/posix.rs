@@ -12,15 +12,13 @@
 
 use crate::{
     clock::{
-        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
-        ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard, ScheduleHandle,
-        TimeController, TimeControllerBuilder, Timeout,
+        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError, ClockNowError,
+        FreeRunningClock, ScheduleGuard, ScheduleHandle, Timeout,
     },
-    event::{InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
+    event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
 };
-use alloc::vec::Vec;
-use core::time::Duration;
+use core::marker::PhantomData;
 use iceoryx2_bb_posix::clock::{ClockType, NanosleepError};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
@@ -29,9 +27,19 @@ pub struct Guard {}
 
 impl ScheduleGuard for Guard {}
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct PosixTimeControllerConfig {
     clock_type: ClockType,
+    stub_suffix: FileName,
+}
+
+impl Default for PosixTimeControllerConfig {
+    fn default() -> Self {
+        Self {
+            clock_type: ClockType::default(),
+            stub_suffix: PosixClock::<InternalStubEvent>::default_suffix(),
+        }
+    }
 }
 
 impl PosixTimeControllerConfig {
@@ -55,7 +63,7 @@ impl NamedConceptConfiguration for PosixTimeControllerConfig {
     }
 
     fn get_suffix(&self) -> &FileName {
-        unimplemented!()
+        &self.stub_suffix
     }
 
     fn path_hint(self, _value: &iceoryx2_bb_system_types::path::Path) -> Self {
@@ -71,21 +79,7 @@ pub struct Builder {
     config: PosixTimeControllerConfig,
 }
 
-impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> for Builder {
-    fn acquire(self) -> Result<PosixClock, ClockBuilderAcquireError> {
-        Ok(PosixClock {
-            clock_type: self.config.clock_type,
-        })
-    }
-
-    fn time_controller(self) -> Result<PosixTimeController, ClockBuilderTimeControllerError> {
-        fail!(from "clock::posix::Builder::time_controller()", 
-            with ClockBuilderTimeControllerError::TimeControllerIsNotSupported,
-            "The controlling time is not supported for the POSIX clock.");
-    }
-}
-
-impl NamedConceptBuilder<PosixTimeController> for Builder {
+impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
     fn new(_name: &FileName) -> Self {
         Self {
             config: PosixTimeControllerConfig::default(),
@@ -96,22 +90,30 @@ impl NamedConceptBuilder<PosixTimeController> for Builder {
         self.config = *config;
         self
     }
+
+    fn open_clock(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
+        Ok(PosixClock {
+            clock_type: self.config.clock_type,
+            _event: PhantomData,
+        })
+    }
 }
 
 #[derive(Debug)]
-pub struct PosixClock {
+pub struct PosixClock<E: Event> {
     clock_type: ClockType,
+    _event: PhantomData<E>,
 }
 
-impl Clock for PosixClock {
+impl<E: Event> FreeRunningClock for PosixClock<E> {}
+
+impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
-    type E = InternalStubEvent;
-    type TimeController = PosixTimeController;
-    type TimeControllerBuilder = PosixTimeControllerBuilder;
+    type Configuration = PosixTimeControllerConfig;
     type ClockBuilder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 
-    fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
+    fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<E>) {
         (Guard {}, ScheduleHandle::TranslatedTimeout(timeout))
     }
 
@@ -171,64 +173,5 @@ impl Clock for PosixClock {
                 "{msg} due to an internal error. [{e:?}]");
             }
         }
-    }
-}
-
-pub struct PosixTimeControllerBuilder {}
-
-impl TimeControllerBuilder<PosixTimeController> for PosixTimeControllerBuilder {
-    fn create(self) -> Result<PosixTimeController, super::TimeControllerBuilderCreateError> {
-        unimplemented!()
-    }
-
-    fn open(self) -> Result<PosixTimeController, super::TimeControllerBuilderOpenError> {
-        unimplemented!()
-    }
-
-    fn open_or_create(
-        self,
-    ) -> Result<PosixTimeController, super::TimeControllerBuilderOpenOrCreateError> {
-        unimplemented!()
-    }
-}
-
-#[derive(Debug)]
-pub struct PosixTimeController {}
-
-impl TimeController for PosixTimeController {
-    type E = InternalStubEvent;
-
-    fn advance(&self, _duration: Duration) -> iceoryx2_bb_si_units::TimePoint {
-        unimplemented!()
-    }
-}
-
-impl NamedConceptMgmt for PosixTimeController {
-    type Configuration = PosixTimeControllerConfig;
-
-    unsafe fn remove_cfg(
-        _name: &FileName,
-        _cfg: &Self::Configuration,
-    ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
-        unimplemented!()
-    }
-
-    fn does_exist_cfg(
-        _name: &FileName,
-        _cfg: &Self::Configuration,
-    ) -> Result<bool, crate::named_concept::NamedConceptDoesExistError> {
-        unimplemented!()
-    }
-
-    fn list_cfg(
-        _cfg: &Self::Configuration,
-    ) -> Result<Vec<FileName>, crate::named_concept::NamedConceptListError> {
-        unimplemented!()
-    }
-
-    fn remove_path_hint(
-        _value: &iceoryx2_bb_system_types::path::Path,
-    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
-        unimplemented!()
     }
 }

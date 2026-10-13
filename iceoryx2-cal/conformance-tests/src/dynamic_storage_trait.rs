@@ -78,7 +78,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -113,7 +113,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -129,7 +129,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -154,7 +154,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let _sut1 = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -186,7 +186,7 @@ pub mod dynamic_storage_trait {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -232,7 +232,7 @@ pub mod dynamic_storage_trait {
     >() {
         const NUMBER_OF_OPENERS: u64 = 64;
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -275,7 +275,7 @@ pub mod dynamic_storage_trait {
     >() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -312,7 +312,7 @@ pub mod dynamic_storage_trait {
     >() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
@@ -351,7 +351,7 @@ pub mod dynamic_storage_trait {
     >() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
@@ -375,7 +375,7 @@ pub mod dynamic_storage_trait {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -407,7 +407,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -471,7 +471,7 @@ pub mod dynamic_storage_trait {
             use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
             let storage_name = generate_file_path().file_name();
-            let config = generate_isolated_config::<Sut>();
+            let config = generate_isolated_config::<Sut::Configuration>();
             let _watchdog = Watchdog::new();
             let handle = BarrierHandle::new();
             let barrier_1 = Arc::new(BarrierBuilder::new(2).create(&handle).unwrap());
@@ -535,7 +535,7 @@ pub mod dynamic_storage_trait {
         const TIMEOUT: Duration = Duration::from_millis(100);
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let handle = BarrierHandle::new();
         let barrier = Arc::new(BarrierBuilder::new(2).create(&handle).unwrap());
         let _watchdog = Watchdog::new();
@@ -581,7 +581,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(134)
@@ -614,7 +614,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let sut_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
         let sut_1 = Sut::Builder::new(&sut_name)
@@ -644,7 +644,7 @@ pub mod dynamic_storage_trait {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -669,7 +669,7 @@ pub mod dynamic_storage_trait {
         let state = LifetimeTracker::start_tracking();
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -694,7 +694,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())
             .suffix(config.get_suffix())
@@ -720,7 +720,7 @@ pub mod dynamic_storage_trait {
         let mut u64_storages = vec![];
         let mut u64_storages_names = vec![];
 
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())
             .suffix(config.get_suffix())
@@ -780,7 +780,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())
             .suffix(config.get_suffix())
@@ -803,7 +803,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())
             .suffix(config.get_suffix())
@@ -824,7 +824,7 @@ pub mod dynamic_storage_trait {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -854,7 +854,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&storage_name).config(&config).create();
 
@@ -871,7 +871,7 @@ pub mod dynamic_storage_trait {
     #[conformance_test]
     pub fn get_mut_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<WrongTypeSut>();
+        let config = generate_isolated_config::<WrongTypeSut::Configuration>();
 
         let sut = WrongTypeSut::Builder::new(&storage_name)
             .config(&config)

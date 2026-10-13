@@ -20,7 +20,7 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_log::fatal_panic;
 
-pub fn generate_isolated_config<T: NamedConceptMgmt>() -> T::Configuration {
+pub fn generate_isolated_config<T: NamedConceptConfiguration>() -> T {
     match Directory::create(&TEST_DIRECTORY, Permission::OWNER_ALL) {
         Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
         Err(e) => fatal_panic!(
@@ -30,7 +30,7 @@ pub fn generate_isolated_config<T: NamedConceptMgmt>() -> T::Configuration {
         ),
     };
 
-    T::Configuration::default()
+    T::default()
         .prefix(&generate_file_path().file_name())
         .path_hint(&TEST_DIRECTORY)
 }

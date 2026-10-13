@@ -26,7 +26,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn create_works<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token, is_ok);
@@ -36,7 +36,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn create_same_token_twice_fails<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_token_1 = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token_1, is_ok);
@@ -52,7 +52,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn token_removes_resources_when_going_out_of_scope<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_token_1 = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token_1, is_ok);
@@ -65,7 +65,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn create_cleaner_fails_when_token_does_not_exist<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner();
         assert_that!(sut_cleaner, is_err);
@@ -75,7 +75,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn monitor_detects_itself_as_alive<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
         assert_that!(*sut_monitor.name(), eq name);
@@ -97,7 +97,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn abandoned_token_is_detected_as_dead<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
         assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
@@ -113,7 +113,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn cleaner_of_abandoned_token_can_be_acquired<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
         Sut::Token::abandon(sut_token);
@@ -127,7 +127,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn cleaner_of_abandoned_token_can_be_acquired_once<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
         Sut::Token::abandon(sut_token);
@@ -150,7 +150,7 @@ pub mod monitoring_trait {
     #[conformance_test]
     pub fn abandoned_cleaner_can_be_reacquired<Sut: Monitoring>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
         sut_token.abandon();

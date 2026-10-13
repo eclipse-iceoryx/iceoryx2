@@ -47,7 +47,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn size_of_zero_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_create = Sut::Builder::new(&name)
             .size(0)
@@ -70,7 +70,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn non_zero_size_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -89,7 +89,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn create_after_drop_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -110,7 +110,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn creating_it_twice_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_create1 = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -133,7 +133,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn opening_non_existing_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_open = Sut::Builder::new(&name)
             .config(&config)
@@ -147,7 +147,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn allocation_with_creator_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let mut chunks = vec![];
 
         let sut_create = Sut::Builder::new(&name)
@@ -180,7 +180,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn allocation_with_creator_and_client_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
         let mut chunks = vec![];
 
         let sut_create = Sut::Builder::new(&name)
@@ -223,7 +223,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn allocated_chunks_have_correct_alignment<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         for i in 0..12 {
             let layout = unsafe { Layout::from_size_align_unchecked(128, 2_usize.pow(i)) };
@@ -257,7 +257,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn shm_does_not_remove_resources_without_ownership<Sut: SharedMemory<DefaultAllocator>>() {
         test_requires!(Sut::does_support_persistency());
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let name_1 = generate_file_path().file_name();
         let name_2 = generate_file_path().file_name();
@@ -295,7 +295,7 @@ pub mod shared_memory_trait {
         test_requires!(Sut::does_support_persistency());
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
             .size(1024)
@@ -317,7 +317,7 @@ pub mod shared_memory_trait {
         test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -336,7 +336,7 @@ pub mod shared_memory_trait {
         Sut: SharedMemory<DefaultAllocator>,
     >() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -389,7 +389,7 @@ pub mod shared_memory_trait {
         Sut: SharedMemory<DefaultAllocator>,
     >() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -445,7 +445,7 @@ pub mod shared_memory_trait {
         Sut: SharedMemory<DefaultAllocator>,
     >() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -469,7 +469,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn shrinking_chunk_with_grow_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
@@ -490,7 +490,7 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn grow_chunk_to_same_size_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
+        let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)

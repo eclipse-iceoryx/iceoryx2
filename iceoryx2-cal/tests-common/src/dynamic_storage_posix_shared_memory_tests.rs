@@ -38,7 +38,7 @@ unsafe impl Sync for TestData {}
 fn version_check_works() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
     let storage_name = generate_file_path().file_name();
-    let config = generate_isolated_config::<Sut>();
+    let config = generate_isolated_config::<<Sut as NamedConceptMgmt>::Configuration>();
     let file_name = config.path_for(&storage_name).file_name();
 
     let raw_shm = SharedMemoryBuilder::new(&file_name)
@@ -64,7 +64,7 @@ fn version_check_works() {
 fn write_only_segment_is_not_initialized() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
     let storage_name = generate_file_path().file_name();
-    let config = generate_isolated_config::<Sut>();
+    let config = generate_isolated_config::<<Sut as NamedConceptMgmt>::Configuration>();
     let file_name = config.path_for(&storage_name).file_name();
 
     let _raw_shm = SharedMemoryBuilder::new(&file_name)
@@ -87,7 +87,7 @@ fn write_only_segment_is_not_initialized() {
 fn waiting_for_initialization_works() {
     type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
     let storage_name = generate_file_path().file_name();
-    let config = generate_isolated_config::<Sut>();
+    let config = generate_isolated_config::<<Sut as NamedConceptMgmt>::Configuration>();
     let file_name = config.path_for(&storage_name).file_name();
 
     let _raw_shm = SharedMemoryBuilder::new(&file_name)
