@@ -30,7 +30,7 @@
 //! let content: [u8; 5] = [1, 2, 3, 4, 5];
 //! let mut read_buffer: [u8; 5] = [0u8; 5];
 //! named_pipe.write(content.as_slice()).expect("Failed to write to named pipe");
-//! named_pipe.read(&mut read_buffer).expect("Failed to read from named pipe");
+//! named_pipe.blocking_read(&mut read_buffer).expect("Failed to read from named pipe");
 //!
 //! match named_pipe.remove_self().expect("Failed to remove") {
 //!   true => println!("removed named pipe"),
@@ -205,7 +205,7 @@ const NAMED_PIPE_ACCESS_MODE: AccessMode = AccessMode::ReadWrite;
 ///
 /// let pipe_path = FilePath::new(b"Roehrich").unwrap();
 /// let named_pipe = NamedPipeBuilder::new(&pipe_path)
-///                     .open_existing(AccessMode::Read);
+///                     .open_existing();
 /// ```
 ///
 /// ## Create new named pipe for writing with extras
@@ -265,8 +265,7 @@ impl NamedPipeBuilder {
         }
     }
 
-    /// Opens an existing pipe at the given file_path and defines how the file's [`AccessMode`],
-    /// for reading, writing. Is independent of
+    /// Opens an existing pipe at the given file_path, for reading, writing. Is independent of
     /// the current permissions of the pipe. But writing to a read-only pipe can result
     /// in some kind of error.
     pub fn open_existing(self) -> Result<NamedPipe, NamedPipeOpenError> {
