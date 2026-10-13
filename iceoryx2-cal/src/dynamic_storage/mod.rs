@@ -75,7 +75,7 @@ use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConcep
 
 tiny_fn! {
     /// The callback called to initialize the data inside the [`DynamicStorage`]
-    pub struct Initializer<T> = FnMut(value: &mut MaybeUninit<T>, allocator: &mut BumpAllocator) -> bool;
+    pub struct Initializer<T> = FnOnce(value: &mut MaybeUninit<T>, allocator: &mut BumpAllocator) -> bool;
 }
 
 impl<T> Debug for Initializer<'_, T> {
@@ -160,7 +160,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
     /// with a mutable reference to the new value and a mutable reference to a bump allocator
     /// which provides access to the supplementary memory. If the initialization failed it
     /// shall return false, otherwise true.
-    fn initializer<F: FnMut(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
+    fn initializer<F: FnOnce(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
         self,
         value: F,
     ) -> Self;
