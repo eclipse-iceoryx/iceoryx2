@@ -133,7 +133,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     /// Sets the custom configuration of the [`Clock`].
     fn config(self, config: &C::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
-    fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
+    fn open_clock(self) -> Result<C, ClockBuilderAcquireError>;
 }
 
 /// Builder that creates or opens a [`TimeController`].

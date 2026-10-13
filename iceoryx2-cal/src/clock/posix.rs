@@ -93,7 +93,7 @@ impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
         self
     }
 
-    fn acquire(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
+    fn open_clock(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
         Ok(PosixClock {
             clock_type: self.config.clock_type,
             _event: PhantomData,

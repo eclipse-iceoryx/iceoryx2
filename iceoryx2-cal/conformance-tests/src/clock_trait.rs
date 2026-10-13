@@ -34,7 +34,7 @@ pub mod clock_trait {
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
-            .acquire()
+            .open_clock()
             .unwrap();
 
         let start = sut.now().unwrap();
@@ -52,7 +52,7 @@ pub mod clock_trait {
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
-            .acquire()
+            .open_clock()
             .unwrap();
 
         let start = sut.now().unwrap();
@@ -72,7 +72,7 @@ pub mod clock_trait {
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
-            .acquire()
+            .open_clock()
             .unwrap();
 
         let mut time_points = vec![];
@@ -109,7 +109,7 @@ pub mod clock_trait {
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
-            .acquire()
+            .open_clock()
             .unwrap();
 
         if let (_, ScheduleHandle::Trigger(_)) = sut.schedule(Timeout::By(TIMEOUT)) {
@@ -126,7 +126,7 @@ pub mod clock_trait {
 
         let sut = Sut::ClockBuilder::new(&name)
             .config(&config)
-            .acquire()
+            .open_clock()
             .unwrap();
 
         if let (_, ScheduleHandle::TranslatedTimeout(_)) = sut.schedule(Timeout::By(TIMEOUT)) {
