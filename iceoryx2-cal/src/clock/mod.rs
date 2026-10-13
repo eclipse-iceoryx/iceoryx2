@@ -28,7 +28,7 @@ use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_si_units::TimePoint;
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
 
 use crate::event::{Event, NamedConceptBuilder, NamedConceptMgmt};
 
@@ -131,7 +131,7 @@ pub trait SteppedClock {}
 /// Physical [`Clock`] implementations do not support a [`TimeController`]. Calling
 /// [`ClockBuilder::time_controller()`] on them returns
 /// [`ClockBuilderTimeControllerError::TimeControllerIsNotSupported`].
-pub trait ClockBuilder<C: Clock, T: TimeController, TBuilder: TimeControllerBuilder<T>>:
+pub trait ClockBuilder<E: Event, C: Clock<E>, T: TimeController, TBuilder: TimeControllerBuilder<T>>:
     Sized + NamedConceptBuilder<T>
 {
     /// Acquires the [`Clock`] with the name this builder was created for.
@@ -146,9 +146,7 @@ pub trait ClockBuilder<C: Clock, T: TimeController, TBuilder: TimeControllerBuil
 /// A [`Clock`] provides all time-related operations required by the remaining concepts: retrieving the
 /// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
 /// not need to know whether physical or simulated time is in use.
-pub trait Clock: Sized {
-    /// The [`Event`] type produced by triggers scheduled through this [`Clock`].
-    type E: Event;
+pub trait Clock<E: Event>: Sized {
     /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).
     type Guard: ScheduleGuard;
     /// The [`TimeController`] that drives this [`Clock`], if it supports explicit time advancement.
@@ -156,7 +154,7 @@ pub trait Clock: Sized {
     /// The builder that opens or creates [`TimeController`].
     type TimeControllerBuilder: TimeControllerBuilder<Self::TimeController>;
     /// The builder that acquires this [`Clock`] (and its time controller, if any).
-    type ClockBuilder: ClockBuilder<Self, Self::TimeController, Self::TimeControllerBuilder>;
+    type ClockBuilder: ClockBuilder<E, Self, Self::TimeController, Self::TimeControllerBuilder>;
     /// Whether this clock supports a [`TimeController`]. `true` for simulation clocks, `false` for physical
     /// clocks.
     const HAS_TIME_CONTROLLER_SUPPORT: bool;
@@ -168,7 +166,7 @@ pub trait Clock: Sized {
     /// ([`ScheduleHandle::TranslatedTimeout`]) or a trigger that is activated
     /// when the timeout expires ([`ScheduleHandle::Trigger`]). The returned [`ScheduleGuard`]
     /// keeps the schedule valid for its lifetime.
-    fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>);
+    fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<E>);
 
     /// Schedules an existing trigger, identified by `trigger_name`, to be
     /// activated once the given [`Timeout`] expires.
@@ -186,6 +184,11 @@ pub trait Clock: Sized {
 
     /// Returns the current time according to this clock.
     fn now(&self) -> Result<TimePoint, ClockNowError>;
+
+    /// The default suffix of every [`Clock`]
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".clock") }
+    }
 }
 
 /// Builder that creates or opens a [`TimeController`].

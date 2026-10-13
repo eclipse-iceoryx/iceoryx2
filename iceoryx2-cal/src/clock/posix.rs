@@ -13,13 +13,14 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
-        ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard, ScheduleHandle,
-        TimeController, TimeControllerBuilder, Timeout,
+        ClockBuilderTimeControllerError, ClockNowError, FreeRunningClock, ScheduleGuard,
+        ScheduleHandle, TimeController, TimeControllerBuilder, Timeout,
     },
-    event::{InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
+    event::{Event, InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
 };
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_posix::clock::{ClockType, NanosleepError};
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -29,9 +30,19 @@ pub struct Guard {}
 
 impl ScheduleGuard for Guard {}
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct PosixTimeControllerConfig {
     clock_type: ClockType,
+    stub_suffix: FileName,
+}
+
+impl Default for PosixTimeControllerConfig {
+    fn default() -> Self {
+        Self {
+            clock_type: ClockType::default(),
+            stub_suffix: PosixClock::<InternalStubEvent>::default_suffix(),
+        }
+    }
 }
 
 impl PosixTimeControllerConfig {
@@ -55,7 +66,7 @@ impl NamedConceptConfiguration for PosixTimeControllerConfig {
     }
 
     fn get_suffix(&self) -> &FileName {
-        unimplemented!()
+        &self.stub_suffix
     }
 
     fn path_hint(self, _value: &iceoryx2_bb_system_types::path::Path) -> Self {
@@ -71,10 +82,13 @@ pub struct Builder {
     config: PosixTimeControllerConfig,
 }
 
-impl ClockBuilder<PosixClock, PosixTimeController, PosixTimeControllerBuilder> for Builder {
-    fn acquire(self) -> Result<PosixClock, ClockBuilderAcquireError> {
+impl<E: Event> ClockBuilder<E, PosixClock<E>, PosixTimeController, PosixTimeControllerBuilder>
+    for Builder
+{
+    fn acquire(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
         Ok(PosixClock {
             clock_type: self.config.clock_type,
+            _event: PhantomData,
         })
     }
 
@@ -99,19 +113,21 @@ impl NamedConceptBuilder<PosixTimeController> for Builder {
 }
 
 #[derive(Debug)]
-pub struct PosixClock {
+pub struct PosixClock<E: Event> {
     clock_type: ClockType,
+    _event: PhantomData<E>,
 }
 
-impl Clock for PosixClock {
+impl<E: Event> FreeRunningClock for PosixClock<E> {}
+
+impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
-    type E = InternalStubEvent;
     type TimeController = PosixTimeController;
     type TimeControllerBuilder = PosixTimeControllerBuilder;
     type ClockBuilder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 
-    fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
+    fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<E>) {
         (Guard {}, ScheduleHandle::TranslatedTimeout(timeout))
     }
 
