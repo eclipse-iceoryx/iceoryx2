@@ -23,6 +23,7 @@
 //!   [`TimeController`] calls [`TimeController::advance()`].
 
 pub mod posix;
+pub mod simulation_clock;
 
 use crate::{
     event::{Event, ListenerBuilder, ListenerWaitInterface, NamedConceptBuilder, NamedConceptMgmt},
