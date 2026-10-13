@@ -18,8 +18,8 @@
 //!
 //! Two kinds of clocks are possible:
 //!
-//! * a **physical** clock, and
-//! * a **simulation** clock whose time advances only when the single
+//! * a [`FreeRunningClock`], and
+//! * a [`SteppedClock`] whose time advances only when the single
 //!   [`TimeController`] calls [`TimeController::advance()`].
 
 pub mod posix;
@@ -96,14 +96,14 @@ pub enum Timeout {
 /// The handle returned by [`Clock::schedule()`], describing how a scheduled [`Timeout`] is exposed to the
 /// other concepts (typically the reactor).
 ///
-/// * [`ScheduleHandle::TranslatedTimeout`]: the clock is physical and the translated timeout can be
-///   forwarded unchanged to the underlying mechanism.
-/// * [`ScheduleHandle::Trigger`]: the clock is a simulation clock and the trigger is activated when the
-///   scheduled simulated time is reached.
+/// * [`ScheduleHandle::TranslatedTimeout`]: the clock is a [`FreeRunningClock`] and the translated timeout
+///   can be forwarded unchanged to the underlying mechanism.
+/// * [`ScheduleHandle::Trigger`]: the clock is a [`SteppedClock`] and the trigger is activated when the
+///   scheduled time is reached.
 pub enum ScheduleHandle<E: crate::event::Event> {
     /// A translated timeout that can be passed directly to the underlying implementation.
     TranslatedTimeout(Timeout),
-    /// A trigger that is activated once the scheduled simulated time has been reached.
+    /// A trigger that is activated once the scheduled time has been reached.
     Trigger(E),
 }
 
@@ -124,9 +124,7 @@ pub trait SteppedClock {}
 ///
 /// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by  multiple processes.
 ///
-/// Physical [`Clock`] implementations do not support a [`TimeController`]. Calling
-/// [`ClockBuilder::time_controller()`] on them returns
-/// [`ClockBuilderTimeControllerError::TimeControllerIsNotSupported`].
+/// [`FreeRunningClock`] implementations do not support a [`TimeController`].
 pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     /// Defines the name of the [`Clock`] that shall be used.
     fn new(name: &FileName) -> Self;
@@ -138,8 +136,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
 
 /// Builder that creates or opens a [`TimeController`].
 ///
-/// Physical clock implementations do not provide a [`TimeController`]. Calling any of these methods on such
-/// a clock therefore results in an error.
+/// [`FreeRunningClock`] implementations do not provide a [`TimeController`].
 pub trait TimeControllerBuilder<T: TimeController> {
     /// Creates a new [`TimeController`].
     fn create_time_controller(self) -> Result<T, TimeControllerBuilderCreateError>;
@@ -153,7 +150,7 @@ pub trait TimeControllerBuilder<T: TimeController> {
 ///
 /// A [`Clock`] provides all time-related operations required by the remaining concepts: retrieving the
 /// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
-/// not need to know whether physical or simulated time is in use.
+/// not need to know whether [`FreeRunningClock`] or a [`SteppedClock`] is in use.
 pub trait Clock<E: Event>: Sized {
     /// The configuration of the [`Clock`].
     type Configuration: NamedConceptConfiguration;
@@ -161,8 +158,8 @@ pub trait Clock<E: Event>: Sized {
     type Guard: ScheduleGuard;
     /// The builder that acquires this [`Clock`] (and its time controller, if any).
     type ClockBuilder: ClockBuilder<E, Self>;
-    /// Whether this clock supports a [`TimeController`]. `true` for simulation clocks, `false` for physical
-    /// clocks.
+    /// Whether this clock supports a [`TimeController`]. `true` for [`SteppedClock`]s, `false` for
+    /// [`FreeRunningClock`]s.
     const HAS_TIME_CONTROLLER_SUPPORT: bool;
 
     /// Schedules a timeout.
@@ -184,7 +181,7 @@ pub trait Clock<E: Event>: Sized {
 
     /// Blocks the calling thread until the given [`Timeout`] has expired.
     ///
-    /// For a simulation clock the thread is released according to simulated time
+    /// For a [`SteppedClock`] the thread is released according to time stepping
     /// rather than physical time.
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError>;
 
@@ -197,20 +194,20 @@ pub trait Clock<E: Event>: Sized {
     }
 }
 
-/// The time-source interface, available only for [`Clock`] implementations that
+/// The time-source interface, available only for [`SteppedClock`] implementations that
 /// support explicit time advancement (i.e. simulation clocks).
 ///
-/// Exactly one [`TimeController`] exists for a simulation clock and is
+/// Exactly one [`TimeController`] exists for a [`SteppedClock`] and is
 /// responsible for advancing its time. It can run in a dedicated thread or
-/// process. All [`Clock`] instances associated with the same simulation clock
+/// process. All [`SteppedClock`] instances associated with the same [`Clock`]
 /// observe this advancement and wake scheduled operations whose timeouts have
 /// expired.
 pub trait TimeController: NamedConceptMgmt {
     /// The event type produced by triggers scheduled through the clock this controller drives.
     type E: crate::event::Event;
 
-    /// Advances simulated time by `duration` and activates all scheduled triggers whose deadlines have been
+    /// Advances time by `duration` and activates all scheduled triggers whose deadlines have been
     /// reached.
-    /// Returns the simulated time before the advance.
+    /// Returns the time before the advance.
     fn advance(&self, duration: Duration) -> TimePoint;
 }
