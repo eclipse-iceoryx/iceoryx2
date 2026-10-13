@@ -18,7 +18,7 @@ use crate::{
         TimeControllerBuilderOpenError, TimeControllerBuilderOpenOrCreateError, Timeout,
     },
     dynamic_storage::{DynamicStorage, DynamicStorageBuilder, posix_shared_memory::Storage},
-    event::InternalStubEvent,
+    event::UnixDatagramShmCountingBitSet,
     named_concept::{
         NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
     },
@@ -33,6 +33,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndexSet;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{
     file_name::FileName,
@@ -47,17 +48,19 @@ pub struct Guard {
 impl ScheduleGuard for Guard {}
 
 #[derive(Debug, Clone)]
+// TODO: generic for storage
 pub struct TimeControllerConfig {
     storage_config: <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration,
     capacity: usize,
     creation_time: TimePoint,
+    time_controller_exists: bool,
 }
 
 impl Default for TimeControllerConfig {
     fn default() -> Self {
         let storage_config =
             <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration::default();
-        let mut suffix = *storage_config.get_suffix();
+        let mut suffix = *storage_config.get_suffix(); // TODO: provide default_suffix() for clock in mod.rs
         fatal_panic!(
             from "Configuration::default()",
             when suffix.insert_bytes(0, format!(".clock_state").as_bytes()),
@@ -67,6 +70,7 @@ impl Default for TimeControllerConfig {
             storage_config,
             capacity: 0,
             creation_time: TimePoint::new(),
+            time_controller_exists: false,
         }
     }
 }
@@ -151,13 +155,21 @@ impl ClockBuilder<SimulationClock, SimulationTimeController, SimulationTimeContr
 {
     fn acquire(self) -> Result<SimulationClock, ClockBuilderAcquireError> {
         Ok(
-            fail!(from self, when SimulationClock::new(&self.name, &self.config),
+            fail!(from self, when SimulationClock::open(&self.name, &self.config),
                 with ClockBuilderAcquireError::InternalError, "Unable to acquire the simulation clock."),
         )
     }
 
     fn time_controller(self) -> Result<SimulationTimeController, ClockBuilderTimeControllerError> {
-        // call SimulationTimeControllerBuilder::open_or_create()
+        // TODO: other error codes
+        let builder = SimulationTimeControllerBuilder {
+            name: self.name,
+            config: self.config.clone(),
+        };
+        // TODO: set config flag (make atomic?), confg cannot be cloned
+        let time_controller = fail!(from self, when builder.create(),
+            with ClockBuilderTimeControllerError::TimeControllerIsNotSupported,
+            "Unable to create simulation time controller");
         Err(ClockBuilderTimeControllerError::TimeControllerIsNotSupported)
     }
 }
@@ -185,7 +197,7 @@ struct SimulationClock {
 
 impl Clock for SimulationClock {
     type Guard = Guard;
-    type E = InternalStubEvent;
+    type E = UnixDatagramShmCountingBitSet;
     type TimeController = SimulationTimeController;
     type TimeControllerBuilder = SimulationTimeControllerBuilder;
     type ClockBuilder = SimulationClockBuilder;
@@ -195,6 +207,7 @@ impl Clock for SimulationClock {
     fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
         // create name + trigger
         // call schedule_on
+        unimplemented!()
     }
 
     // TODO: check current simulated time before and after registering timeout -> error
@@ -206,7 +219,7 @@ impl Clock for SimulationClock {
         let timepoint = ScheduledTimepoint {
             trigger_name: trigger_name.clone(),
             timeout_in_ns_after_creation: timeout.as_nanos() as u64, // TODO: make u128?
-            generation_counter: AtomicU64::new(0),
+            generation_counter: AtomicU64::new(1),
         };
 
         // TODO: release index by Guard/TimeController
@@ -220,7 +233,7 @@ impl Clock for SimulationClock {
         }
 
         Guard {
-            generation_counter: 0,
+            generation_counter: 1,
         }
     }
 
@@ -272,7 +285,7 @@ impl SimulationClock {
                     }
 
                     for _i in 0..capacity {
-                        unsafe { state.scheduled_timepoints.push_unchecked(ScheduledTimepoint { trigger_name: FileName::new_unchecked_const(b""), timeout_in_ns_after_creation: 0, generation_counter: AtomicU64::new(0) }); }
+                        unsafe { state.scheduled_timepoints.push_unchecked(ScheduledTimepoint { trigger_name: FileName::new_unchecked_const(b"empty"), timeout_in_ns_after_creation: 0, generation_counter: AtomicU64::new(0) }); }
                     }
 
                     true
@@ -288,13 +301,36 @@ impl SimulationClock {
             Err(_) => Err(()),
         }
     }
+
+    fn open(name: &FileName, config: &TimeControllerConfig) -> Result<Self, ()> {
+        match <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
+            name,
+        )
+        .config(&config.storage_config)
+        .open(AccessMode::ReadWrite)
+        {
+            Err(_) => Err(()),
+            Ok(storage) => Ok(Self {
+                name: *name,
+                state: storage,
+            }),
+        }
+    }
 }
 
-pub struct SimulationTimeControllerBuilder {}
+#[derive(Debug)]
+pub struct SimulationTimeControllerBuilder {
+    name: FileName,
+    config: TimeControllerConfig,
+}
 
+// fail when flag is true
 impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControllerBuilder {
     fn create(self) -> Result<SimulationTimeController, TimeControllerBuilderCreateError> {
-        Err(TimeControllerBuilderCreateError::InternalError)
+        Ok(SimulationTimeController {
+            clock: fail!(from self, when SimulationClock::new(&self.name, &self.config),
+            with TimeControllerBuilderCreateError::InternalError, "Unable to create the simulation clock."),
+        })
     }
 
     fn open(self) -> Result<SimulationTimeController, TimeControllerBuilderOpenError> {
@@ -308,14 +344,14 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
     }
 }
 
-// timecontroller owns clock, see new design document
 #[derive(Debug)]
 pub struct SimulationTimeController {
-    clock: SimulationClock, // TODO: reference
+    clock: SimulationClock,
 }
+// TODO: impl drop to set config flag to false?
 
 impl TimeController for SimulationTimeController {
-    type E = ();
+    type E = UnixDatagramShmCountingBitSet;
 
     fn advance(&self, duration: Duration) -> TimePoint {
         let mut state = unsafe { self.clock.state.get_mut() };
@@ -343,7 +379,8 @@ impl TimeController for SimulationTimeController {
                 continue;
             }
 
-            // Christian will implement wakeup = notify without id
+            // use EventId = 0 for now
+            // when triggered, unset generation counter
         }
 
         TimePoint::from_nanos(old_simulated_time as u128)
