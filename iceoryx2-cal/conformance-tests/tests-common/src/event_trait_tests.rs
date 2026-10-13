@@ -33,6 +33,15 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::event::SocketPairBitSet
 );
 
+// named pipe is currently not implemented for windows
+// TODO #2046: Enable once named pipe has windows support
+#[cfg(not(target_os = "windows"))]
+instantiate_conformance_tests_with_module!(
+    named_pipe_bitset,
+    iceoryx2_cal_conformance_tests::event_trait,
+    iceoryx2_cal::event::NamedPipeBitSet
+);
+
 // semaphore is implemented in the platform abstraction layer with WaitOnAddress
 // on Windows that comes with some problems
 #[cfg(not(target_os = "windows"))]
@@ -52,4 +61,13 @@ instantiate_conformance_tests_with_module!(
     socket_pair_process_local_counting_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
     iceoryx2_cal::event::SocketPairCountingBitSet
+);
+
+// named pipe is currently not implemented for windows
+// TODO #2046: Enable once named pipe has windows support
+#[cfg(not(target_os = "windows"))]
+instantiate_conformance_tests_with_module!(
+    named_pipe_counting_bitset,
+    iceoryx2_cal_conformance_tests::event_trait,
+    iceoryx2_cal::event::NamedPipeCountingBitSet
 );
