@@ -31,6 +31,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
 
+pub mod named_pipe;
 pub mod semaphore;
 pub mod socket_pair;
 pub mod stub;
