@@ -13,11 +13,12 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
-        ClockBuilderTimeControllerError, ClockNowError, ScheduleHandle, TimeController,
-        TimeControllerBuilder, TimeControllerBuilderCreateError, TimeControllerBuilderOpenError,
-        TimeControllerBuilderOpenOrCreateError, Timeout,
+        ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard, ScheduleHandle,
+        TimeController, TimeControllerBuilder, TimeControllerBuilderCreateError,
+        TimeControllerBuilderOpenError, TimeControllerBuilderOpenOrCreateError, Timeout,
     },
     dynamic_storage::{DynamicStorage, DynamicStorageBuilder, posix_shared_memory::Storage},
+    event::InternalStubEvent,
     named_concept::{
         NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
     },
@@ -37,28 +38,33 @@ use iceoryx2_bb_system_types::{
     file_name::FileName,
     path::{Path, SemanticString},
 };
-use iceoryx2_log::{error, fatal_panic};
+use iceoryx2_log::{error, fail, fatal_panic};
 
-#[derive(Debug, Clone, Copy)]
+pub struct Guard {
+    generation_counter: u64,
+}
+
+impl ScheduleGuard for Guard {}
+
+#[derive(Debug, Clone)]
 pub struct TimeControllerConfig {
-    prefix: FileName, // TODO: can this be removed?
-    suffix: FileName,
-    path: Path,
+    storage_config: <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration,
     capacity: usize,
     creation_time: TimePoint,
 }
 
 impl Default for TimeControllerConfig {
     fn default() -> Self {
-        let mut suffix = Storage::<()>::default_suffix();
+        let storage_config =
+            <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration::default();
+        let mut suffix = *storage_config.get_suffix();
         fatal_panic!(
             from "Configuration::default()",
             when suffix.insert_bytes(0, format!(".clock_state").as_bytes()),
             "This should never happen! Failed to added suffix to simulation clock state.");
+        let storage_config = storage_config.suffix(&suffix);
         Self {
-            path: Storage::<()>::default_path_hint(),
-            suffix,
-            prefix: Storage::<()>::default_prefix(),
+            storage_config,
             capacity: 0,
             creation_time: TimePoint::new(),
         }
@@ -87,30 +93,33 @@ impl TimeControllerConfig {
 
 impl NamedConceptConfiguration for TimeControllerConfig {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        let config = self.storage_config.prefix(value);
+        self.storage_config = config;
         self
     }
 
     fn get_prefix(&self) -> &FileName {
-        &self.prefix
+        self.storage_config.get_prefix()
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        let config = self.storage_config.suffix(value);
+        self.storage_config = config;
         self
     }
 
     fn get_suffix(&self) -> &FileName {
-        &self.suffix
+        self.storage_config.get_suffix()
     }
 
-    fn path_hint(mut self, value: &iceoryx2_bb_system_types::path::Path) -> Self {
-        self.path = *value;
+    fn path_hint(mut self, value: &Path) -> Self {
+        let config = self.storage_config.path_hint(value);
+        self.storage_config = config;
         self
     }
 
     fn get_path_hint(&self) -> &Path {
-        &self.path
+        self.storage_config.get_path_hint()
     }
 }
 
@@ -131,6 +140,7 @@ struct SimulationClockState {
     index_list: UniqueIndexSet,
 }
 
+#[derive(Debug)]
 pub struct SimulationClockBuilder {
     name: FileName,
     config: TimeControllerConfig,
@@ -140,11 +150,10 @@ impl ClockBuilder<SimulationClock, SimulationTimeController, SimulationTimeContr
     for SimulationClockBuilder
 {
     fn acquire(self) -> Result<SimulationClock, ClockBuilderAcquireError> {
-        // TODO: error handling
-        match SimulationClock::new(&self.name, &self.config) {
-            Err(_) => Err(ClockBuilderAcquireError::InternalError),
-            Ok(clock) => Ok(clock),
-        }
+        Ok(
+            fail!(from self, when SimulationClock::new(&self.name, &self.config),
+                with ClockBuilderAcquireError::InternalError, "Unable to acquire the simulation clock."),
+        )
     }
 
     fn time_controller(self) -> Result<SimulationTimeController, ClockBuilderTimeControllerError> {
@@ -162,7 +171,7 @@ impl NamedConceptBuilder<SimulationTimeController> for SimulationClockBuilder {
     }
 
     fn config(mut self, config: &TimeControllerConfig) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }
@@ -175,8 +184,8 @@ struct SimulationClock {
 }
 
 impl Clock for SimulationClock {
-    type Guard = ();
-    type E = ();
+    type Guard = Guard;
+    type E = InternalStubEvent;
     type TimeController = SimulationTimeController;
     type TimeControllerBuilder = SimulationTimeControllerBuilder;
     type ClockBuilder = SimulationClockBuilder;
@@ -209,6 +218,10 @@ impl Clock for SimulationClock {
         unsafe {
             self.state.get_mut().scheduled_timepoints[index as usize] = timepoint;
         }
+
+        Guard {
+            generation_counter: 0,
+        }
     }
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
@@ -236,6 +249,7 @@ impl SimulationClock {
             <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
                 name,
             )
+            .config(&config.storage_config)
             .supplementary_size(
                 RelocatableVec::<ScheduledTimepoint>::const_memory_size(capacity)
                     + UniqueIndexSet::const_memory_size(capacity),
