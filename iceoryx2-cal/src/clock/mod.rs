@@ -155,7 +155,7 @@ pub trait SteppedClock {}
 
 /// Builder that acquires a [`Clock`] and, where the implementation supports it, its [`TimeController`].
 ///
-/// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by  multiple processes.
+/// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by multiple processes.
 ///
 /// [`FreeRunningClock`] implementations do not support a [`TimeController`].
 pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
@@ -302,7 +302,7 @@ pub mod internal {
         origin: &str,
         msg: &str,
     ) -> Result<Box<E::Listener>, CreateTriggerError> {
-        let clock = fail!(from origin, 
+        let clock = fail!(from origin,
                     when crate::testing::create_stub_clock::<crate::clock::posix::PosixClock<crate::event::InternalStubEvent>>(),
                     with CreateTriggerError::FailedToOpenStubClock,
                     "{msg} {name} since the stub clock could not be opened.");

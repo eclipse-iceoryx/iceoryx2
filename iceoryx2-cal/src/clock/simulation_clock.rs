@@ -12,40 +12,67 @@
 
 use crate::{
     clock::{
-        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
-        ClockBuilderTimeControllerError, ClockNowError, ScheduleGuard, ScheduleHandle,
-        TimeController, TimeControllerBuilder, TimeControllerBuilderCreateError,
-        TimeControllerBuilderOpenError, TimeControllerBuilderOpenOrCreateError, Timeout,
+        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
+        ClockListenerSchedule, ClockListenerScheduleError, ClockNow, ClockNowError,
+        ClockReactorSchedule, ClockReactorScheduleError, ScheduleGuard, ScheduleHandle,
+        ScheduleOnHandle, SteppedClock, TimeController, TimeControllerBuilder,
+        TimeControllerBuilderCreateError, TimeControllerBuilderOpenError,
+        TimeControllerBuilderOpenOrCreateError, Timeout,
+        internal::{create_reactor_attachment, create_waiter},
     },
     dynamic_storage::{DynamicStorage, DynamicStorageBuilder, posix_shared_memory::Storage},
-    event::UnixDatagramShmCountingBitSet,
-    named_concept::{
-        NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
-    },
+    event::{Event, EventId, Notifier, NotifierBuilder, UnixDatagramShmCountingBitSet},
+    named_concept::{NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt},
 };
-use core::{mem::MaybeUninit, time::Duration};
+use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_container::{
     queue::RelocatableContainer,
     vector::{RelocatableVec, Vector},
 };
 use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndexSet;
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_si_units::TimePoint;
-use iceoryx2_bb_system_types::{
-    file_name::FileName,
-    path::{Path, SemanticString},
+use iceoryx2_bb_elementary_traits::{
+    testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
+use iceoryx2_bb_lock_free::mpmc::{
+    unique_index_set::UniqueIndexSet, unique_index_set_enums::ReleaseMode,
+};
+use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::{file::AccessMode, file_descriptor_set::SynchronousMultiplexing};
+use iceoryx2_bb_si_units::TimePoint;
+use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_log::{error, fail, fatal_panic};
 
-pub struct Guard {
+// TODO: refactor error handling
+
+pub struct Guard<'a> {
     generation_counter: u64,
+    index: u32,
+    scheduled_timepoints: &'a RelocatableVec<ScheduledTimepoint>,
+    index_list: &'a UniqueIndexSet,
 }
 
-impl ScheduleGuard for Guard {}
+impl<'a> ScheduleGuard<'a> for Guard<'a> {}
+
+impl<'a> Drop for Guard<'a> {
+    fn drop(&mut self) {
+        if self.scheduled_timepoints[self.index as usize]
+            .generation_counter
+            .compare_exchange(
+                self.generation_counter,
+                0,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            )
+            .is_ok()
+        {
+            unsafe {
+                self.index_list
+                    .release_raw_index(self.index, ReleaseMode::Default)
+            };
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 // TODO: generic for storage
@@ -60,12 +87,8 @@ impl Default for TimeControllerConfig {
     fn default() -> Self {
         let storage_config =
             <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration::default();
-        let mut suffix = *storage_config.get_suffix(); // TODO: provide default_suffix() for clock in mod.rs
-        fatal_panic!(
-            from "Configuration::default()",
-            when suffix.insert_bytes(0, format!(".clock_state").as_bytes()),
-            "This should never happen! Failed to added suffix to simulation clock state.");
-        let storage_config = storage_config.suffix(&suffix);
+        let storage_config = storage_config
+            .suffix(&SimulationClock::<UnixDatagramShmCountingBitSet>::default_suffix());
         Self {
             storage_config,
             capacity: 0,
@@ -81,17 +104,9 @@ impl TimeControllerConfig {
         self
     }
 
-    fn get_capacity(&self) -> usize {
-        self.capacity
-    }
-
     fn creation_time(mut self, value: TimePoint) -> Self {
         self.creation_time = value;
         self
-    }
-
-    fn get_creation_time(&self) -> TimePoint {
-        self.creation_time
     }
 }
 
@@ -142,6 +157,7 @@ struct SimulationClockState {
     nanoseconds_since_creation: AtomicU64,
     scheduled_timepoints: RelocatableVec<ScheduledTimepoint>,
     index_list: UniqueIndexSet,
+    global_generation_counter: AtomicU64,
 }
 
 #[derive(Debug)]
@@ -150,31 +166,10 @@ pub struct SimulationClockBuilder {
     config: TimeControllerConfig,
 }
 
-impl ClockBuilder<SimulationClock, SimulationTimeController, SimulationTimeControllerBuilder>
-    for SimulationClockBuilder
+impl<E: Event + 'static> ClockBuilder<E, SimulationClock<E>> for SimulationClockBuilder
+where
+    E::Listener: SynchronousMultiplexing,
 {
-    fn acquire(self) -> Result<SimulationClock, ClockBuilderAcquireError> {
-        Ok(
-            fail!(from self, when SimulationClock::open(&self.name, &self.config),
-                with ClockBuilderAcquireError::InternalError, "Unable to acquire the simulation clock."),
-        )
-    }
-
-    fn time_controller(self) -> Result<SimulationTimeController, ClockBuilderTimeControllerError> {
-        // TODO: other error codes
-        let builder = SimulationTimeControllerBuilder {
-            name: self.name,
-            config: self.config.clone(),
-        };
-        // TODO: set config flag (make atomic?), confg cannot be cloned
-        let time_controller = fail!(from self, when builder.create(),
-            with ClockBuilderTimeControllerError::TimeControllerIsNotSupported,
-            "Unable to create simulation time controller");
-        Err(ClockBuilderTimeControllerError::TimeControllerIsNotSupported)
-    }
-}
-
-impl NamedConceptBuilder<SimulationTimeController> for SimulationClockBuilder {
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
@@ -186,61 +181,157 @@ impl NamedConceptBuilder<SimulationTimeController> for SimulationClockBuilder {
         self.config = config.clone();
         self
     }
+
+    fn open_clock(self) -> Result<SimulationClock<E>, ClockBuilderOpenClockError> {
+        // time controller only when not yet created?
+        let builder = SimulationTimeControllerBuilder::new(&self.name, &self.config);
+        let time_controller = builder.open_or_create_time_controller();
+
+        // open storage
+        let storage =
+            <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
+                &self.name,
+            )
+            .config(&self.config.storage_config)
+            .open(AccessMode::ReadWrite);
+        match storage {
+            Err(_) => Err(ClockBuilderOpenClockError::InternalError),
+            Ok(s) => Ok(SimulationClock {
+                name: self.name,
+                state: s,
+                _event: PhantomData,
+            }),
+        }
+    }
 }
 
 #[repr(C)]
 #[derive(Debug)]
-struct SimulationClock {
+struct SimulationClock<E: Event> {
     name: FileName,
     state: Storage<SimulationClockState>,
+    _event: PhantomData<E>,
 }
 
-impl Clock for SimulationClock {
-    type Guard = Guard;
-    type E = UnixDatagramShmCountingBitSet;
-    type TimeController = SimulationTimeController;
-    type TimeControllerBuilder = SimulationTimeControllerBuilder;
-    type ClockBuilder = SimulationClockBuilder;
-    const HAS_TIME_CONTROLLER_SUPPORT: bool = true;
+unsafe impl<E: Event> Send for SimulationClock<E> {}
+unsafe impl<E: Event> Sync for SimulationClock<E> {}
+impl<E: Event> SteppedClock for SimulationClock<E> {}
 
-    // TODO: check current simulated time before and after registering timeout -> error
-    fn schedule(&self, timeout: Timeout) -> (Self::Guard, ScheduleHandle<Self::E>) {
-        // create name + trigger
-        // call schedule_on
-        unimplemented!()
+impl<E: Event> Abandonable for SimulationClock<E>
+where
+    E::Listener: SynchronousMultiplexing,
+{
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            <Storage<SimulationClockState> as Abandonable>::abandon_in_place(NonNull::from_mut(
+                &mut this.state,
+            ))
+        }
     }
+}
 
-    // TODO: check current simulated time before and after registering timeout -> error
-    fn schedule_on(&self, timeout: Timeout, trigger_name: &FileName) -> Self::Guard {
+impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
+    fn schedule_on<'a>(
+        &'a self,
+        timeout: Timeout,
+        listener_name: &FileName,
+    ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError> {
+        let old_counter = self
+            .state
+            .get()
+            .global_generation_counter
+            .fetch_add(1, Ordering::Relaxed);
+        let new_counter = old_counter + 1;
+
         let timeout = match timeout {
             Timeout::At(timepoint) => timepoint,
             Timeout::By(duration) => self.state.get().creation_time + duration,
         };
         let timepoint = ScheduledTimepoint {
-            trigger_name: trigger_name.clone(),
+            trigger_name: listener_name.clone(),
             timeout_in_ns_after_creation: timeout.as_nanos() as u64, // TODO: make u128?
-            generation_counter: AtomicU64::new(1),
+            generation_counter: AtomicU64::new(new_counter),
         };
 
-        // TODO: release index by Guard/TimeController
+        match self.now() {
+            Err(_) => fatal_panic!(""),
+            Ok(tp) => {
+                if timeout < tp {
+                    fatal_panic!("");
+                }
+            }
+        }
+
         let index = match unsafe { self.state.get().index_list.acquire_raw_index() } {
             Ok(idx) => idx,
-            Err(_) => fatal_panic!(""), // TODO: error handling
+            Err(_) => fatal_panic!(""),
         };
 
         unsafe {
             self.state.get_mut().scheduled_timepoints[index as usize] = timepoint;
         }
 
-        Guard {
-            generation_counter: 1,
+        match self.now() {
+            Err(_) => {
+                unsafe {
+                    self.state.get().scheduled_timepoints[index as usize]
+                        .generation_counter
+                        .store(0, Ordering::Relaxed);
+                    self.state
+                        .get()
+                        .index_list
+                        .release_raw_index(index, ReleaseMode::Default);
+                }
+                fatal_panic!("")
+            }
+            Ok(tp) => {
+                if timeout < tp {
+                    unsafe {
+                        self.state.get().scheduled_timepoints[index as usize]
+                            .generation_counter
+                            .store(0, Ordering::Relaxed);
+                        self.state
+                            .get()
+                            .index_list
+                            .release_raw_index(index, ReleaseMode::Default);
+                    }
+                    fatal_panic!("");
+                }
+            }
+        }
+
+        let guard = Guard {
+            generation_counter: new_counter,
+            index,
+            scheduled_timepoints: &self.state.get().scheduled_timepoints,
+            index_list: &self.state.get().index_list,
+        };
+        Ok(ScheduleOnHandle::Guard(Box::new(guard)))
+    }
+}
+
+impl<E: Event + 'static> ClockReactorSchedule for SimulationClock<E>
+where
+    E::Listener: SynchronousMultiplexing,
+{
+    fn schedule<'a>(
+        &'a self,
+        timeout: Timeout,
+    ) -> Result<ScheduleHandle<'a>, ClockReactorScheduleError> {
+        // TODO: unique name
+        let listener_name = unsafe { FileName::new_unchecked_const(b"blub") };
+        let listener =
+            create_reactor_attachment::<E>(&listener_name, &E::Configuration::default()).unwrap();
+        let guard = self.schedule_on(timeout, &listener_name).unwrap();
+        match guard {
+            ScheduleOnHandle::TranslatedTimeout(_) => fatal_panic!(""),
+            ScheduleOnHandle::Guard(g) => Ok(ScheduleHandle::GuardAndListener((g, listener))),
         }
     }
+}
 
-    fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
-        Err(ClockBlockingSleepError::InternalError)
-    }
-
+impl<E: Event> ClockNow for SimulationClock<E> {
     fn now(&self) -> Result<TimePoint, ClockNowError> {
         Ok(TimePoint::from_nanos(
             self.state
@@ -251,18 +342,62 @@ impl Clock for SimulationClock {
     }
 }
 
-impl SimulationClock {
-    // TODO: error handling
-    fn new(name: &FileName, config: &TimeControllerConfig) -> Result<Self, ()> {
-        let origin = "SimulationClock::new()";
-        let msg = "Unable to create the SimulationClock";
+impl<E: Event + 'static> Clock<E> for SimulationClock<E>
+where
+    E::Listener: SynchronousMultiplexing,
+{
+    type Configuration = TimeControllerConfig;
+    type Builder = SimulationClockBuilder;
+    const HAS_TIME_CONTROLLER_SUPPORT: bool = true;
 
-        let capacity = config.get_capacity();
+    fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
+        // TODO: unique name
+        let listener_name = unsafe { FileName::new_unchecked_const(b"blub") };
+        let listener = create_waiter::<E>(&listener_name, &E::Configuration::default()).unwrap();
+        let guard = self.schedule_on(timeout, &listener_name).unwrap();
+        match guard {
+            ScheduleOnHandle::TranslatedTimeout(_) => {
+                fail!(from self, with ClockBlockingSleepError::InternalError, "");
+            }
+            ScheduleOnHandle::Guard(_) => match listener.blocking_wait(&mut |_| {}) {
+                Ok(_) => return Ok(()),
+                Err(_) => {
+                    fail!(from self, with ClockBlockingSleepError::InternalError, "");
+                }
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SimulationTimeControllerBuilder {
+    name: FileName,
+    config: TimeControllerConfig,
+}
+
+impl SimulationTimeControllerBuilder {
+    fn new(name: &FileName, config: &TimeControllerConfig) -> Self {
+        Self {
+            name: *name,
+            config: config.clone(),
+        }
+    }
+}
+
+// fail when flag is true
+impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControllerBuilder {
+    fn create_time_controller(
+        self,
+    ) -> Result<SimulationTimeController, TimeControllerBuilderCreateError> {
+        let origin = "TimeControllerBuilder::create_time_controller()";
+        let msg = "Unable to create the time controller for the simulation clock";
+
+        let capacity = self.config.capacity;
         let storage =
             <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
-                name,
+                &self.name,
             )
-            .config(&config.storage_config)
+            .config(&self.config.storage_config)
             .supplementary_size(
                 RelocatableVec::<ScheduledTimepoint>::const_memory_size(capacity)
                     + UniqueIndexSet::const_memory_size(capacity),
@@ -270,12 +405,13 @@ impl SimulationClock {
             .initializer(
                 |state: &mut MaybeUninit<SimulationClockState>, allocator: &mut BumpAllocator| {
                     state.write(SimulationClockState {
-                        creation_time: config.get_creation_time(),
+                        creation_time: self.config.creation_time,
                         nanoseconds_since_creation: AtomicU64::new(0),
                         scheduled_timepoints: unsafe {
                             RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
                         },
                         index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
+                        global_generation_counter: AtomicU64::new(0),
                     });
                     let state = unsafe { state.assume_init_mut() };
 
@@ -294,67 +430,97 @@ impl SimulationClock {
             .create();
 
         match storage {
-            Ok(s) => Ok(Self {
-                name: *name,
-                state: s,
-            }),
-            Err(_) => Err(()),
+            Err(_) => Err(TimeControllerBuilderCreateError::InternalError),
+            Ok(s) => Ok(SimulationTimeController { clock_state: s }),
         }
     }
 
-    fn open(name: &FileName, config: &TimeControllerConfig) -> Result<Self, ()> {
-        match <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
-            name,
-        )
-        .config(&config.storage_config)
-        .open(AccessMode::ReadWrite)
-        {
-            Err(_) => Err(()),
-            Ok(storage) => Ok(Self {
-                name: *name,
-                state: storage,
-            }),
+    fn open_time_controller(
+        self,
+    ) -> Result<SimulationTimeController, TimeControllerBuilderOpenError> {
+        let storage =
+            <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
+                &self.name,
+            )
+            .config(&self.config.storage_config)
+            .open(AccessMode::ReadWrite);
+        match storage {
+            Err(_) => Err(TimeControllerBuilderOpenError::InternalError),
+            Ok(s) => Ok(SimulationTimeController { clock_state: s }),
         }
     }
-}
 
-#[derive(Debug)]
-pub struct SimulationTimeControllerBuilder {
-    name: FileName,
-    config: TimeControllerConfig,
-}
-
-// fail when flag is true
-impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControllerBuilder {
-    fn create(self) -> Result<SimulationTimeController, TimeControllerBuilderCreateError> {
-        Ok(SimulationTimeController {
-            clock: fail!(from self, when SimulationClock::new(&self.name, &self.config),
-            with TimeControllerBuilderCreateError::InternalError, "Unable to create the simulation clock."),
-        })
-    }
-
-    fn open(self) -> Result<SimulationTimeController, TimeControllerBuilderOpenError> {
-        Err(TimeControllerBuilderOpenError::InternalError)
-    }
-
-    fn open_or_create(
+    fn open_or_create_time_controller(
         self,
     ) -> Result<SimulationTimeController, TimeControllerBuilderOpenOrCreateError> {
-        Err(TimeControllerBuilderOpenOrCreateError::InternalError)
+        let origin = "TimeControllerBuilder::open_or_create_time_controller()";
+        let msg = "Unable to open/create the time controller for the simulation clock";
+
+        let capacity = self.config.capacity;
+        let storage =
+            <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
+                &self.name,
+            )
+            .config(&self.config.storage_config)
+            .supplementary_size(
+                RelocatableVec::<ScheduledTimepoint>::const_memory_size(capacity)
+                    + UniqueIndexSet::const_memory_size(capacity),
+            )
+            .initializer(
+                |state: &mut MaybeUninit<SimulationClockState>, allocator: &mut BumpAllocator| {
+                    state.write(SimulationClockState {
+                        creation_time: self.config.creation_time,
+                        nanoseconds_since_creation: AtomicU64::new(0),
+                        scheduled_timepoints: unsafe {
+                            RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
+                        },
+                        index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
+                        global_generation_counter: AtomicU64::new(0),
+                    });
+                    let state = unsafe { state.assume_init_mut() };
+
+                    if unsafe { state.scheduled_timepoints.init(allocator) }.is_err() || unsafe { state.index_list.init(allocator).is_err() } {
+                        error!(from origin, "{msg} because the simulation clock state could not be initialized.");
+                        return false;
+                    }
+
+                    for _i in 0..capacity {
+                        unsafe { state.scheduled_timepoints.push_unchecked(ScheduledTimepoint { trigger_name: FileName::new_unchecked_const(b"empty"), timeout_in_ns_after_creation: 0, generation_counter: AtomicU64::new(0) }); }
+                    }
+
+                    true
+                },
+            )
+            .open_or_create();
+        match storage {
+            Err(_) => Err(TimeControllerBuilderOpenOrCreateError::InternalError),
+            Ok(s) => Ok(SimulationTimeController { clock_state: s }),
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct SimulationTimeController {
-    clock: SimulationClock,
+    clock_state: Storage<SimulationClockState>,
 }
 // TODO: impl drop to set config flag to false?
+
+impl Abandonable for SimulationTimeController {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            <Storage<SimulationClockState> as Abandonable>::abandon_in_place(NonNull::from_mut(
+                &mut this.clock_state,
+            ))
+        }
+    }
+}
 
 impl TimeController for SimulationTimeController {
     type E = UnixDatagramShmCountingBitSet;
 
     fn advance(&self, duration: Duration) -> TimePoint {
-        let mut state = unsafe { self.clock.state.get_mut() };
+        let state = unsafe { self.clock_state.get_mut() };
         let old_simulated_time = state
             .nanoseconds_since_creation
             .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
@@ -379,8 +545,20 @@ impl TimeController for SimulationTimeController {
                 continue;
             }
 
-            // use EventId = 0 for now
-            // when triggered, unset generation counter
+            if old_simulated_time + duration.as_nanos() as u64 >= timeout {
+                let notifier = <Self::E as Event>::NotifierBuilder::new(&trigger_name)
+                    .open()
+                    .unwrap();
+                notifier.notify(EventId::new(0)); // TODO: check error
+                state.scheduled_timepoints[i]
+                    .generation_counter
+                    .store(0, Ordering::Relaxed);
+                unsafe {
+                    state
+                        .index_list
+                        .release_raw_index(i as u32, ReleaseMode::Default)
+                };
+            }
         }
 
         TimePoint::from_nanos(old_simulated_time as u128)
@@ -428,9 +606,3 @@ impl NamedConceptMgmt for SimulationTimeController {
         Ok(())
     }
 }
-
-// impl NamedConcept for SimulationClock {
-//     fn name(&self) -> &FileName {
-//         &self.name
-//     }
-// }
