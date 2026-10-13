@@ -49,13 +49,6 @@ enum_gen! {
 }
 
 enum_gen! {
-/// Error returned by [`ClockBuilder::time_controller()`]
-    ClockBuilderTimeControllerError
-  entry:
-    TimeControllerIsNotSupported
-}
-
-enum_gen! {
 /// Error returned by [`ClockBuilder::acquire()`]
     ClockBuilderAcquireError
   entry:
@@ -131,14 +124,24 @@ pub trait SteppedClock {}
 /// Physical [`Clock`] implementations do not support a [`TimeController`]. Calling
 /// [`ClockBuilder::time_controller()`] on them returns
 /// [`ClockBuilderTimeControllerError::TimeControllerIsNotSupported`].
-pub trait ClockBuilder<E: Event, C: Clock<E>, T: TimeController, TBuilder: TimeControllerBuilder<T>>:
-    Sized + NamedConceptBuilder<T>
+pub trait ClockBuilder<E: Event, C: Clock<E>>:
+    Sized + NamedConceptBuilder<C::TimeController>
 {
     /// Acquires the [`Clock`] with the name this builder was created for.
     fn acquire(self) -> Result<C, ClockBuilderAcquireError>;
-    /// Opens the [`TimeController`] associated with the [`Clock`], if the implementation supports explicit
-    /// time advancement.
-    fn time_controller(self) -> Result<T, ClockBuilderTimeControllerError>;
+}
+
+/// Builder that creates or opens a [`TimeController`].
+///
+/// Physical clock implementations do not provide a [`TimeController`]. Calling any of these methods on such
+/// a clock therefore results in an error.
+pub trait TimeControllerBuilder<T: TimeController> {
+    /// Creates a new [`TimeController`].
+    fn create_time_controller(self) -> Result<T, TimeControllerBuilderCreateError>;
+    /// Opens an existing [`TimeController`].
+    fn open_time_controller(self) -> Result<T, TimeControllerBuilderOpenError>;
+    /// Opens the [`TimeController`] if it exists, otherwise creates it.
+    fn open_or_create_time_controller(self) -> Result<T, TimeControllerBuilderOpenOrCreateError>;
 }
 
 /// The time-consumer interface of a [`Clock`].
@@ -151,10 +154,8 @@ pub trait Clock<E: Event>: Sized {
     type Guard: ScheduleGuard;
     /// The [`TimeController`] that drives this [`Clock`], if it supports explicit time advancement.
     type TimeController: TimeController;
-    /// The builder that opens or creates [`TimeController`].
-    type TimeControllerBuilder: TimeControllerBuilder<Self::TimeController>;
     /// The builder that acquires this [`Clock`] (and its time controller, if any).
-    type ClockBuilder: ClockBuilder<E, Self, Self::TimeController, Self::TimeControllerBuilder>;
+    type ClockBuilder: ClockBuilder<E, Self>;
     /// Whether this clock supports a [`TimeController`]. `true` for simulation clocks, `false` for physical
     /// clocks.
     const HAS_TIME_CONTROLLER_SUPPORT: bool;
@@ -189,19 +190,6 @@ pub trait Clock<E: Event>: Sized {
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".clock") }
     }
-}
-
-/// Builder that creates or opens a [`TimeController`].
-///
-/// Physical clock implementations do not provide a [`TimeController`]. Calling any of these methods on such
-/// a clock therefore results in an error.
-pub trait TimeControllerBuilder<T: TimeController> {
-    /// Creates a new [`TimeController`].
-    fn create(self) -> Result<T, TimeControllerBuilderCreateError>;
-    /// Opens an existing [`TimeController`].
-    fn open(self) -> Result<T, TimeControllerBuilderOpenError>;
-    /// Opens the [`TimeController`] if it exists, otherwise creates it.
-    fn open_or_create(self) -> Result<T, TimeControllerBuilderOpenOrCreateError>;
 }
 
 /// The time-source interface, available only for [`Clock`] implementations that

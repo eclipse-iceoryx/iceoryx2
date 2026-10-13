@@ -12,9 +12,9 @@
 
 use crate::{
     clock::{
-        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError,
-        ClockBuilderTimeControllerError, ClockNowError, FreeRunningClock, ScheduleGuard,
-        ScheduleHandle, TimeController, TimeControllerBuilder, Timeout,
+        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError, ClockNowError,
+        FreeRunningClock, ScheduleGuard, ScheduleHandle, TimeController, TimeControllerBuilder,
+        Timeout,
     },
     event::{Event, InternalStubEvent, NamedConceptBuilder, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
@@ -82,20 +82,12 @@ pub struct Builder {
     config: PosixTimeControllerConfig,
 }
 
-impl<E: Event> ClockBuilder<E, PosixClock<E>, PosixTimeController, PosixTimeControllerBuilder>
-    for Builder
-{
+impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
     fn acquire(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
         Ok(PosixClock {
             clock_type: self.config.clock_type,
             _event: PhantomData,
         })
-    }
-
-    fn time_controller(self) -> Result<PosixTimeController, ClockBuilderTimeControllerError> {
-        fail!(from "clock::posix::Builder::time_controller()", 
-            with ClockBuilderTimeControllerError::TimeControllerIsNotSupported,
-            "The controlling time is not supported for the POSIX clock.");
     }
 }
 
@@ -123,7 +115,6 @@ impl<E: Event> FreeRunningClock for PosixClock<E> {}
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
     type TimeController = PosixTimeController;
-    type TimeControllerBuilder = PosixTimeControllerBuilder;
     type ClockBuilder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
 
@@ -187,24 +178,6 @@ impl<E: Event> Clock<E> for PosixClock<E> {
                 "{msg} due to an internal error. [{e:?}]");
             }
         }
-    }
-}
-
-pub struct PosixTimeControllerBuilder {}
-
-impl TimeControllerBuilder<PosixTimeController> for PosixTimeControllerBuilder {
-    fn create(self) -> Result<PosixTimeController, super::TimeControllerBuilderCreateError> {
-        unimplemented!()
-    }
-
-    fn open(self) -> Result<PosixTimeController, super::TimeControllerBuilderOpenError> {
-        unimplemented!()
-    }
-
-    fn open_or_create(
-        self,
-    ) -> Result<PosixTimeController, super::TimeControllerBuilderOpenOrCreateError> {
-        unimplemented!()
     }
 }
 
