@@ -22,6 +22,7 @@ use crate::{
     },
     named_concept::NamedConceptRemoveError,
 };
+use alloc::sync::Arc;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::{
@@ -40,7 +41,6 @@ use iceoryx2_bb_posix::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
-use std::sync::Arc;
 
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]

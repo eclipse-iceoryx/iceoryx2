@@ -24,6 +24,7 @@ use crate::{
     },
     named_concept::NamedConceptConfiguration,
 };
+use alloc::sync::Arc;
 use alloc::vec::Vec;
 use core::fmt::Debug;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
@@ -39,7 +40,6 @@ use iceoryx2_bb_posix::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{debug, fail};
-use std::sync::Arc;
 
 const NOTIFICATION_STATE_IDLE: u8 = 0;
 const NOTIFICATION_STATE_PENDING: u8 = 1;
