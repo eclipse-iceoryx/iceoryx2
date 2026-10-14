@@ -209,7 +209,7 @@ impl<Service: service::Service> Listener<Service> {
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
                                 .event_id_max(EventId::new(service.static_config().event().event_id_max_value))
-                                .create(),
+                                .create(service.shared_node().clock()),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
         let listener = Service::ArcThreadSafetyPolicy::new(listener);

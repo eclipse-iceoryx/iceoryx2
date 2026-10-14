@@ -179,6 +179,7 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
+use iceoryx2_cal::clock::ClockListenerSchedule;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -971,6 +972,16 @@ struct SharedNodeState<Service: service::Service> {
     clock: Service::Clock,
 }
 
+impl<Service: service::Service> ClockListenerSchedule for SharedNodeState<Service> {
+    fn schedule_on(
+        &self,
+        timeout: iceoryx2_cal::clock::Timeout,
+        listener_name: &FileName,
+    ) -> iceoryx2_cal::clock::ScheduleOnHandle {
+        self.clock.schedule_on(timeout, listener_name)
+    }
+}
+
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
 unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
 
@@ -1065,6 +1076,10 @@ impl<Service: service::Service> Abandonable for SharedNode<Service> {
 }
 
 impl<Service: service::Service> SharedNode<Service> {
+    pub(crate) fn clock(&self) -> Arc<dyn ClockListenerSchedule> {
+        self.state.clone()
+    }
+
     pub(crate) fn config(&self) -> &Config {
         &self.state.details.config
     }

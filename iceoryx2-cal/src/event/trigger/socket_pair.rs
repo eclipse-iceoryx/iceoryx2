@@ -192,6 +192,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Abandonab
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.receiver) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 

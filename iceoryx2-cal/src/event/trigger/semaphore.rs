@@ -146,6 +146,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonabl
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(this.semaphore_mgmt) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 
