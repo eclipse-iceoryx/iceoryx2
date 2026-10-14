@@ -61,6 +61,20 @@ enum_gen! {
 }
 
 enum_gen! {
+/// Error returned by [`ClockBuilder::open_clock()`]
+    ClockListenerScheduleError
+  entry:
+    ClockScheduleCapacityExceeded
+}
+
+enum_gen! {
+/// Error returned by [`ClockBuilder::open_clock()`]
+    ClockReactorScheduleError
+  entry:
+    ClockScheduleCapacityExceeded
+}
+
+enum_gen! {
 /// Error returned by [`TimeControllerBuilder::create()`]
     TimeControllerBuilderCreateError
   entry:
@@ -198,7 +212,7 @@ pub trait ClockListenerSchedule: ClockNow + Send + Sync + Debug {
         &'a self,
         timeout: Timeout,
         listener_name: &FileName,
-    ) -> ScheduleOnHandle<'a>;
+    ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError>;
 }
 
 /// Trait that defines an interface to schedule a notification on a returned
@@ -211,7 +225,10 @@ pub trait ClockReactorSchedule: Send + Sync + Debug {
     /// ([`ScheduleHandle::TranslatedTimeout`]) or a trigger that is activated
     /// when the timeout expires ([`ScheduleHandle::GuardAndListener`]). The returned [`ScheduleGuard`]
     /// keeps the schedule valid for its lifetime.
-    fn schedule<'a>(&'a self, timeout: Timeout) -> ScheduleHandle<'a>;
+    fn schedule<'a>(
+        &'a self,
+        timeout: Timeout,
+    ) -> Result<ScheduleHandle<'a>, ClockReactorScheduleError>;
 }
 
 /// The time-consumer interface of a [`Clock`].

@@ -12,7 +12,7 @@
 
 use super::Configuration;
 use crate::{
-    clock::{ClockListenerSchedule, ScheduleOnHandle, Timeout},
+    clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -256,7 +256,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     fn timed_wait(&self, timeout: Duration, now: TimePoint) -> Result<(), ListenerWaitError> {
         let msg = "Failed to wait with timeout on the unnamed semaphore";
         match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
-            ScheduleOnHandle::TranslatedTimeout(t) => {
+            Ok(ScheduleOnHandle::TranslatedTimeout(t)) => {
                 let translated_timeout = t.as_duration(now);
 
                 match self.semaphore.timed_wait(translated_timeout) {
@@ -277,7 +277,15 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
                     }
                 }
             }
-            ScheduleOnHandle::Guard(_guard) => self.blocking_wait(),
+            Ok(ScheduleOnHandle::Guard(_guard)) => self.blocking_wait(),
+            Err(ClockListenerScheduleError::ClockScheduleCapacityExceeded) => {
+                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the clock schedule is full.");
+            }
+            Err(e) => {
+                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the timeout could not be scheduled in the clock. [{e:?}]");
+            }
         }
     }
 

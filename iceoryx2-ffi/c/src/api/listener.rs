@@ -40,6 +40,7 @@ pub enum iox2_listener_wait_error_e {
     CONTRACT_VIOLATION = IOX2_OK as isize + 1,
     INTERNAL_FAILURE,
     INTERRUPT_SIGNAL,
+    CLOCK_SCHEDULE_CAPACITY_EXCEEDED,
 }
 
 impl IntoCInt for ListenerWaitError {
@@ -48,6 +49,9 @@ impl IntoCInt for ListenerWaitError {
             ListenerWaitError::ContractViolation => iox2_listener_wait_error_e::CONTRACT_VIOLATION,
             ListenerWaitError::InterruptSignal => iox2_listener_wait_error_e::INTERRUPT_SIGNAL,
             ListenerWaitError::InternalFailure => iox2_listener_wait_error_e::INTERNAL_FAILURE,
+            ListenerWaitError::ClockScheduleCapacityExceeded => {
+                iox2_listener_wait_error_e::CLOCK_SCHEDULE_CAPACITY_EXCEEDED
+            }
         }) as c_int
     }
 }

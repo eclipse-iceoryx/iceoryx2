@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
-    clock::{ClockListenerSchedule, ScheduleOnHandle, Timeout},
+    clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -331,7 +331,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         let mut buffer = [0u8; RECEIVE_BUFFER_SIZE as usize];
 
         match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
-            ScheduleOnHandle::TranslatedTimeout(t) => {
+            Ok(ScheduleOnHandle::TranslatedTimeout(t)) => {
                 let translated_timeout = t.as_duration(now);
                 match self.receiver.timed_receive(&mut buffer, translated_timeout) {
                     Ok(RECEIVE_BUFFER_SIZE) => self.empty_buffer(),
@@ -348,7 +348,15 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                     }
                 }
             }
-            ScheduleOnHandle::Guard(_guard) => self.blocking_wait(),
+            Ok(ScheduleOnHandle::Guard(_guard)) => self.blocking_wait(),
+            Err(ClockListenerScheduleError::ClockScheduleCapacityExceeded) => {
+                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the clock schedule is full.");
+            }
+            Err(e) => {
+                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the timeout could not be scheduled in the clock. [{e:?}]");
+            }
         }
     }
 

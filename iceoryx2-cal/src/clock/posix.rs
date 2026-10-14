@@ -13,8 +13,9 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
-        ClockListenerSchedule, ClockNow, ClockNowError, ClockReactorSchedule, FreeRunningClock,
-        ScheduleGuard, ScheduleHandle, ScheduleOnHandle, Timeout,
+        ClockListenerSchedule, ClockListenerScheduleError, ClockNow, ClockNowError,
+        ClockReactorSchedule, ClockReactorScheduleError, FreeRunningClock, ScheduleGuard,
+        ScheduleHandle, ScheduleOnHandle, Timeout,
     },
     event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
@@ -120,14 +121,17 @@ impl<E: Event> ClockListenerSchedule for PosixClock<E> {
         &'a self,
         timeout: super::Timeout,
         _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
-    ) -> ScheduleOnHandle<'a> {
-        ScheduleOnHandle::TranslatedTimeout(timeout)
+    ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError> {
+        Ok(ScheduleOnHandle::TranslatedTimeout(timeout))
     }
 }
 
 impl<E: Event> ClockReactorSchedule for PosixClock<E> {
-    fn schedule<'a>(&'a self, timeout: super::Timeout) -> ScheduleHandle<'a> {
-        ScheduleHandle::TranslatedTimeout(timeout)
+    fn schedule<'a>(
+        &'a self,
+        timeout: super::Timeout,
+    ) -> Result<ScheduleHandle<'a>, ClockReactorScheduleError> {
+        Ok(ScheduleHandle::TranslatedTimeout(timeout))
     }
 }
 
