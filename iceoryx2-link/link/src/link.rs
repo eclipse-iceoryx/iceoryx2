@@ -199,7 +199,7 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
         for exported in exported {
             fail!(
                 from origin,
-                when update.set_exported(exported.description, exported.creation_id),
+                when update.announce(exported.description, exported.creation_id),
                 with DiscoveryError::Announcement,
                 "Failed to announce {}", exported.description.name()
             );
