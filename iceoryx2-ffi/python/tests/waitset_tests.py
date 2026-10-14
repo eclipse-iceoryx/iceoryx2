@@ -20,7 +20,8 @@ service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 def test_newly_created_waitset_is_empty(
     service_type: iox2.ServiceType,
 ) -> None:
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    node = iox2.NodeBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     assert sut.len == 0
     assert sut.is_empty
 
@@ -31,15 +32,16 @@ def test_newly_created_waitset_is_empty(
 def test_waitset_builder_set_signal_handling_mode_correctly(
     service_type: iox2.ServiceType,
 ) -> None:
+    node = iox2.NodeBuilder.new().create(service_type)
     sut_1 = (
-        iox2.WaitSetBuilder.new()
+        node.waitset_builder()
         .signal_handling_mode(iox2.SignalHandlingMode.Disabled)
-        .create(service_type)
+        .create()
     )
     sut_2 = (
-        iox2.WaitSetBuilder.new()
+        node.waitset_builder()
         .signal_handling_mode(iox2.SignalHandlingMode.HandleTerminationRequests)
-        .create(service_type)
+        .create()
     )
     assert sut_1.signal_handling_mode == iox2.SignalHandlingMode.Disabled
     assert (
@@ -69,7 +71,7 @@ def test_attaching_notifications_works(
         listener = service.listener_builder().create()
         listeners.append(listener)
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     waitset_guards = []
     for i in range(0, number_of_attachments):
         guard = sut.attach_notification(listeners[i])
@@ -104,7 +106,7 @@ def test_attaching_deadlines_works(
         listener = service.listener_builder().create()
         listeners.append(listener)
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     waitset_guards = []
     for i in range(0, number_of_attachments):
         guard = sut.attach_deadline(listeners[i], deadline)
@@ -123,9 +125,10 @@ def test_attaching_deadlines_works(
 def test_attaching_interval_works(
     service_type: iox2.ServiceType,
 ) -> None:
+    node = iox2.NodeBuilder.new().create(service_type)
     number_of_attachments = 5
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     waitset_guards = []
     for i in range(0, number_of_attachments):
         guard = sut.attach_interval(iox2.Duration.from_millis(i + 1))
@@ -142,7 +145,8 @@ def test_attaching_interval_works(
 def test_wait_and_process_returns_when_timeout_has_passed(
     service_type: iox2.ServiceType,
 ) -> None:
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    node = iox2.NodeBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     guard = sut.attach_interval(iox2.Duration.from_secs(123))
     triggers, result = sut.wait_and_process_with_timeout(iox2.Duration.from_millis(1))
     assert len(triggers) == 0
@@ -176,7 +180,7 @@ def test_wait_and_process_returns_triggered_listeners(
         notifiers.append(notifier)
         services.append(service)
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     waitset_guards = []
     for i in range(0, number_of_attachments):
         guard = sut.attach_notification(listeners[i])
@@ -219,7 +223,7 @@ def test_reports_missed_deadline(
     service = node.service_builder(service_name).event().create()
     listener = service.listener_builder().create()
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     guard = sut.attach_deadline(listener, iox2.Duration.from_nanos(1))
 
     triggers, result = sut.wait_and_process()
@@ -242,7 +246,7 @@ def test_create_attachment_id_from_guard(
     service = node.service_builder(service_name).event().create()
     listener = service.listener_builder().create()
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     guard = sut.attach_deadline(listener, iox2.Duration.from_nanos(1))
     attachment_id = iox2.WaitSetAttachmentId.from_guard(guard)
 
@@ -275,7 +279,7 @@ def test_deleting_guard_explicitly_removes_attachment(
         listener = service.listener_builder().create()
         listeners.append(listener)
 
-    sut = iox2.WaitSetBuilder.new().create(service_type)
+    sut = node.waitset_builder().create()
     waitset_guards = []
     for i in range(0, number_of_attachments):
         guard = sut.attach_notification(listeners[i])
