@@ -1013,6 +1013,10 @@ impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
                 )
             };
         }
+
+        unsafe {
+            <Service::Clock as Abandonable>::abandon_in_place(NonNull::from_mut(&mut this.clock))
+        };
     }
 }
 

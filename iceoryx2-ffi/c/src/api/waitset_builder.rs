@@ -113,7 +113,7 @@ impl HandleToType for iox2_waitset_builder_h_ref {
 ///
 /// # Safety
 ///
-///  * `handle` must be acquired with [`iox2_waitset_builder_new()`]
+///  * `handle` must be acquired with [`iox2_node_waitset_builder()`](crate::iox2_node_waitset_builder)
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_h) {
     handle.assert_non_null();
@@ -141,7 +141,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 ///
 /// # Safety
 ///
-///  * `handle` must be acquired with [`iox2_waitset_builder_new()`] and valid
+///  * `handle` must be acquired with [`iox2_node_waitset_builder()`](crate::iox2_node_waitset_builder)
 ///  * `handle` is invalidated after a successful operation and cannot used again
 ///    with this function.
 ///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
@@ -149,7 +149,6 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_builder_create(
     handle: iox2_waitset_builder_h,
-    service_type: iox2_service_type_e,
     struct_ptr: *mut iox2_waitset_t,
     handle_ptr: *mut iox2_waitset_h,
 ) -> c_int {
@@ -173,7 +172,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
             (*struct_ptr).deleter = deleter;
         };
 
-        match service_type {
+        match waitset_builder_struct.service_type {
             iox2_service_type_e::IPC => {
                 let builder = ManuallyDrop::into_inner(waitset_builder.ipc);
                 let waitset = match builder.create() {
@@ -183,7 +182,11 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 
                 alloc_memory();
 
-                (*struct_ptr).init(service_type, WaitSetUnion::new_ipc(waitset), deleter);
+                (*struct_ptr).init(
+                    iox2_service_type_e::IPC,
+                    WaitSetUnion::new_ipc(waitset),
+                    deleter,
+                );
             }
             iox2_service_type_e::LOCAL => {
                 let builder = ManuallyDrop::into_inner(waitset_builder.local);
@@ -194,7 +197,11 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 
                 alloc_memory();
 
-                (*struct_ptr).init(service_type, WaitSetUnion::new_local(waitset), deleter);
+                (*struct_ptr).init(
+                    iox2_service_type_e::LOCAL,
+                    WaitSetUnion::new_local(waitset),
+                    deleter,
+                );
             }
         }
 
@@ -207,7 +214,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 ///
 /// # Arguments
 ///
-/// * `waitset_builder_handle` - Must be a valid [`iox2_waitset_builder_h_ref`] obtained by [`iox2_waitset_builder_new`].
+///  * `waitset_builder_handle` must be acquired with [`iox2_node_waitset_builder()`](crate::iox2_node_waitset_builder)
 ///
 /// # Safety
 ///
