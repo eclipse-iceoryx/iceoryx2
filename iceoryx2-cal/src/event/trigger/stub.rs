@@ -32,6 +32,7 @@ use core::{mem::MaybeUninit, time::Duration};
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 
@@ -80,7 +81,7 @@ impl<
         unimplemented!()
     }
 
-    fn timed_wait(&self, _timeout: Duration) -> Result<(), ListenerWaitError> {
+    fn timed_wait(&self, _timeout: Duration, _now: TimePoint) -> Result<(), ListenerWaitError> {
         unimplemented!()
     }
 
@@ -89,6 +90,10 @@ impl<
     }
 
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
+        unimplemented!()
+    }
+
+    fn clock(&self) -> &dyn crate::clock::ClockNow {
         unimplemented!()
     }
 }

@@ -486,7 +486,11 @@ impl<
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        self.drain_events(msg, callback, || self.waiter.timed_wait(timeout))
+        let now = fail!(from self, when self.waiter.clock().now(),
+                        with ListenerWaitError::InternalFailure,
+                        "{msg} since the current time could not be acquired.");
+
+        self.drain_events(msg, callback, || self.waiter.timed_wait(timeout, now))
     }
 
     fn blocking_wait<F: FnMut(EventActivation)>(

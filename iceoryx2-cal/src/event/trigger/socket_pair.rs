@@ -35,6 +35,7 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
@@ -293,12 +294,9 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     fn timed_wait(
         &self,
         timeout: core::time::Duration,
+        now: TimePoint,
     ) -> Result<(), crate::event::ListenerWaitError> {
         let msg = "Unable to wait with timeout for a notification";
-        let now = fail!(from self, when self.clock.now(),
-                        with ListenerWaitError::InternalFailure,
-                        "{msg} since the current time could not be acquired.");
-
         match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
             ScheduleOnHandle::TranslatedTimeout(t) => {
                 let translated_timeout = t.as_duration(now);
@@ -336,6 +334,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
                     "{msg} due to an internal failure. [{e:?}]");
             }
         }
+    }
+
+    fn clock(&self) -> &dyn crate::clock::ClockNow {
+        &*self.clock
     }
 }
 

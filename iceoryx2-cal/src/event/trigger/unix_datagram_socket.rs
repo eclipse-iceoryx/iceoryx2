@@ -38,6 +38,7 @@ use iceoryx2_bb_posix::{
         UnixDatagramSenderBuilder, UnixDatagramSenderCreationError,
     },
 };
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{fail, trace};
@@ -321,12 +322,13 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         }
     }
 
-    fn timed_wait(&self, timeout: core::time::Duration) -> Result<(), ListenerWaitError> {
+    fn timed_wait(
+        &self,
+        timeout: core::time::Duration,
+        now: TimePoint,
+    ) -> Result<(), ListenerWaitError> {
         let msg = "Unable to wait with a timeout for a notification";
         let mut buffer = [0u8; RECEIVE_BUFFER_SIZE as usize];
-        let now = fail!(from self, when self.clock.now(),
-                        with ListenerWaitError::InternalFailure,
-                        "{msg} since the current time could not be acquired.");
 
         match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
             ScheduleOnHandle::TranslatedTimeout(t) => {
@@ -367,6 +369,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                     "{msg} due to an internal failure. [{e:?}]");
             }
         }
+    }
+
+    fn clock(&self) -> &dyn crate::clock::ClockNow {
+        &*self.clock
     }
 }
 

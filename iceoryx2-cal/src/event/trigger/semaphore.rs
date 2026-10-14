@@ -38,6 +38,7 @@ use iceoryx2_bb_posix::{
         UnnamedSemaphoreHandle,
     },
 };
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
@@ -252,12 +253,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         }
     }
 
-    fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError> {
+    fn timed_wait(&self, timeout: Duration, now: TimePoint) -> Result<(), ListenerWaitError> {
         let msg = "Failed to wait with timeout on the unnamed semaphore";
-        let now = fail!(from self, when self.clock.now(),
-                        with ListenerWaitError::InternalFailure,
-                        "{msg} since the current time could not be acquired.");
-
         match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
             ScheduleOnHandle::TranslatedTimeout(t) => {
                 let translated_timeout = t.as_duration(now);
@@ -297,6 +294,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
                     "{msg} due to an internal error. [{e:?}]");
             }
         }
+    }
+
+    fn clock(&self) -> &dyn crate::clock::ClockNow {
+        &*self.clock
     }
 }
 

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::clock::ClockListenerSchedule;
+use crate::clock::{ClockListenerSchedule, ClockNow};
 use crate::event::{
     EventId, ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
 };
@@ -25,6 +25,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
@@ -94,9 +95,10 @@ pub trait WaiterInterface<
         clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError>;
     fn try_wait(&self) -> Result<(), ListenerWaitError>;
-    fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;
+    fn timed_wait(&self, timeout: Duration, now: TimePoint) -> Result<(), ListenerWaitError>;
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
     fn empty_buffer(&self) -> Result<(), ListenerWaitError>;
+    fn clock(&self) -> &dyn ClockNow;
 }
 
 pub trait HandlerInterface<
