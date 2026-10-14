@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
-    clock::ClockListenerSchedule,
+    clock::{ClockListenerSchedule, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -161,6 +161,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
 
 #[derive(Debug)]
 pub struct UnixDatagramWaiter<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
+    name: FileName,
     receiver: UnixDatagramReceiver,
     clock: Arc<dyn ClockListenerSchedule>,
     _data_1: PhantomData<E>,
@@ -293,6 +294,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         };
 
         Ok(Self {
+            name: *name,
             receiver,
             clock,
             _data_1: PhantomData,
@@ -322,19 +324,29 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
     fn timed_wait(&self, timeout: core::time::Duration) -> Result<(), ListenerWaitError> {
         let msg = "Unable to wait with a timeout for a notification";
         let mut buffer = [0u8; RECEIVE_BUFFER_SIZE as usize];
-        match self.receiver.timed_receive(&mut buffer, timeout) {
-            Ok(RECEIVE_BUFFER_SIZE) => self.empty_buffer(),
-            Ok(_)
-            | Err(UnixDatagramReceiveError::NotConnected)
-            | Err(UnixDatagramReceiveError::ConnectionReset) => Ok(()),
-            Err(UnixDatagramReceiveError::Interrupt) => {
-                fail!(from self, with ListenerWaitError::InterruptSignal,
+        let now = fail!(from self, when self.clock.now(),
+                        with ListenerWaitError::InternalFailure,
+                        "{msg} since the current time could not be acquired.");
+
+        match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
+            ScheduleOnHandle::TranslatedTimeout(t) => {
+                let translated_timeout = t.as_duration(now);
+                match self.receiver.timed_receive(&mut buffer, translated_timeout) {
+                    Ok(RECEIVE_BUFFER_SIZE) => self.empty_buffer(),
+                    Ok(_)
+                    | Err(UnixDatagramReceiveError::NotConnected)
+                    | Err(UnixDatagramReceiveError::ConnectionReset) => Ok(()),
+                    Err(UnixDatagramReceiveError::Interrupt) => {
+                        fail!(from self, with ListenerWaitError::InterruptSignal,
                     "{msg} since an interrupt signal was raised.");
-            }
-            Err(e) => {
-                fail!(from self, with ListenerWaitError::InternalFailure,
+                    }
+                    Err(e) => {
+                        fail!(from self, with ListenerWaitError::InternalFailure,
                     "{msg} due to an internal failure. [{e:?}]");
+                    }
+                }
             }
+            ScheduleOnHandle::Guard(_guard) => self.blocking_wait(),
         }
     }
 

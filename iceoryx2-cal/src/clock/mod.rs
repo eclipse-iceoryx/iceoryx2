@@ -36,7 +36,6 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
-use iceoryx2_log::fail;
 
 enum_gen! {
 /// Error returned by [`Clock::blocking_sleep()`]
@@ -98,17 +97,11 @@ pub enum Timeout {
 
 impl Timeout {
     /// Returns either the [`Duration`] stored in [`Timeout::By`] or converts the [`TimePoint`]
-    /// stored in [`Timeout::At`] into a [`Duration`] based on [`ClockNow::now()`].
-    pub fn as_duration(&self, clock: &dyn ClockNow) -> Result<Duration, ClockNowError> {
+    /// stored in [`Timeout::At`] into a [`Duration`] based on the provided now [`TimePoint`].
+    pub fn as_duration(&self, now: TimePoint) -> Duration {
         match self {
-            Timeout::By(duration) => Ok(*duration),
-            Timeout::At(time_point) => match clock.now() {
-                Ok(now) => Ok(time_point.time_span_between(now).into()),
-                Err(e) => {
-                    fail!(from "Timeout::as_duration()", with e,
-                        "Failed to convert timepoint to duration since the current time could not be acquired.");
-                }
-            },
+            Timeout::By(duration) => *duration,
+            Timeout::At(time_point) => time_point.time_span_between(now).into(),
         }
     }
 }

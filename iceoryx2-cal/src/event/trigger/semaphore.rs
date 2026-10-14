@@ -254,12 +254,13 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
 
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError> {
         let msg = "Failed to wait with timeout on the unnamed semaphore";
+        let now = fail!(from self, when self.clock.now(),
+                        with ListenerWaitError::InternalFailure,
+                        "{msg} since the current time could not be acquired.");
+
         match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
             ScheduleOnHandle::TranslatedTimeout(t) => {
-                let translated_timeout = fail!(from self, 
-                                    when t.as_duration(&*self.clock),
-                                    with ListenerWaitError::InternalFailure,
-                                    "{msg} since the translated duration could not be acquired.");
+                let translated_timeout = t.as_duration(now);
 
                 match self.semaphore.timed_wait(translated_timeout) {
                     Ok(true) => self.empty_buffer(),

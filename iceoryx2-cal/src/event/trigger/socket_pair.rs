@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
-    clock::ClockListenerSchedule,
+    clock::{ClockListenerSchedule, ScheduleOnHandle, Timeout},
     dynamic_storage::{self, DynamicStorage},
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -146,6 +146,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
 
 #[derive(Debug)]
 pub struct SocketPairWaiter<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> {
+    name: FileName,
     mgmt: *mut SocketPairMgmt,
     receiver: StreamingSocket,
     clock: Arc<dyn ClockListenerSchedule>,
@@ -233,7 +234,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         }
     }
     fn create(
-        _name: &FileName,
+        name: &FileName,
         _config: &super::Configuration,
         mgmt: &mut core::mem::MaybeUninit<SocketPairMgmt>,
         clock: Arc<dyn ClockListenerSchedule>,
@@ -263,6 +264,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         mgmt.write(SocketPairMgmt { handler });
 
         Ok(Self {
+            name: *name,
             mgmt: mgmt.as_mut_ptr(),
             receiver: waiter,
             clock,
@@ -293,18 +295,29 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         timeout: core::time::Duration,
     ) -> Result<(), crate::event::ListenerWaitError> {
         let msg = "Unable to wait with timeout for a notification";
-        let mut buffer = [0u8; RECEIVE_BUFFER_SIZE];
-        match self.receiver.timed_receive(&mut buffer, timeout) {
-            Ok(RECEIVE_BUFFER_SIZE) => self.empty_buffer(),
-            Ok(_) | Err(StreamingSocketPairReceiveError::ConnectionReset) => Ok(()),
-            Err(StreamingSocketPairReceiveError::Interrupt) => {
-                fail!(from self, with ListenerWaitError::InterruptSignal,
+        let now = fail!(from self, when self.clock.now(),
+                        with ListenerWaitError::InternalFailure,
+                        "{msg} since the current time could not be acquired.");
+
+        match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
+            ScheduleOnHandle::TranslatedTimeout(t) => {
+                let translated_timeout = t.as_duration(now);
+
+                let mut buffer = [0u8; RECEIVE_BUFFER_SIZE];
+                match self.receiver.timed_receive(&mut buffer, translated_timeout) {
+                    Ok(RECEIVE_BUFFER_SIZE) => self.empty_buffer(),
+                    Ok(_) | Err(StreamingSocketPairReceiveError::ConnectionReset) => Ok(()),
+                    Err(StreamingSocketPairReceiveError::Interrupt) => {
+                        fail!(from self, with ListenerWaitError::InterruptSignal,
                     "{msg} since an interrupt signal was raised.");
-            }
-            Err(e) => {
-                fail!(from self, with ListenerWaitError::InternalFailure,
+                    }
+                    Err(e) => {
+                        fail!(from self, with ListenerWaitError::InternalFailure,
                     "{msg} due to an internal failure. [{e:?}]");
+                    }
+                }
             }
+            ScheduleOnHandle::Guard(_guard) => self.blocking_wait(),
         }
     }
 
