@@ -115,18 +115,18 @@ impl Timeout {
 ///   [`Event::Listener`](crate::event::Listener) is activated when the scheduled time is reached.
 ///   If the provided [`ScheduleGuard`] goes out of scope, registered timout is removed from the [`Clock`]
 ///   and the [`Event::Listener`](crate::event::Listener) will no longer be notified.
-pub enum ScheduleHandle {
+pub enum ScheduleHandle<'a> {
     /// A translated timeout that can be passed directly to the underlying implementation.
     TranslatedTimeout(Timeout),
     /// A trigger that is activated once the scheduled time has been reached.
-    GuardAndListener((Box<dyn ScheduleGuard>, Box<dyn SynchronousMultiplexing>)),
+    GuardAndListener((Box<dyn ScheduleGuard<'a>>, Box<dyn SynchronousMultiplexing>)),
 }
 
 /// Marker trait implemented by the guard returned from [`ClockReactorSchedule::schedule()`] and
 /// [`ClockListenerSchedule::schedule_on()`].
 ///
 /// The guard keeps a scheduled timeout valid for as long as it lives.
-pub trait ScheduleGuard {}
+pub trait ScheduleGuard<'a> {}
 
 /// Marker trait that can be implemented by [`Clock`] to identify a [`Clock`] that runs on its own,
 /// continuously, uncontrolled and one can only read it.
@@ -171,12 +171,12 @@ pub trait TimeControllerBuilder<T: TimeController> {
 ///   [`Event::Listener`](crate::event::Listener) is activated when the scheduled time is reached.
 ///   If the provided [`ScheduleGuard`] goes out of scope, registered timout is removed from the [`Clock`]
 ///   and the [`Event::Listener`](crate::event::Listener) will no longer be notified.
-pub enum ScheduleOnHandle {
+pub enum ScheduleOnHandle<'a> {
     /// A translated timeout that can be passed directly to the underlying implementation.
     TranslatedTimeout(Timeout),
     /// The user provided [`Event::Listener`](crate::event::Listener) is when the [`Timeout`] has
     /// passed and the [`ScheduleGuard`] is still alive.
-    Guard(Box<dyn ScheduleGuard>),
+    Guard(Box<dyn ScheduleGuard<'a>>),
 }
 
 /// Trait that defines an interface to acquire the current time.
@@ -194,7 +194,11 @@ pub trait ClockListenerSchedule: ClockNow + Send + Sync + Debug {
     /// The [`Clock`] is responsible for ensuring the corresponding trigger fires at
     /// the requested point in time. The returned guard keeps the schedule valid
     /// for its lifetime.
-    fn schedule_on(&self, timeout: Timeout, listener_name: &FileName) -> ScheduleOnHandle;
+    fn schedule_on<'a>(
+        &'a self,
+        timeout: Timeout,
+        listener_name: &FileName,
+    ) -> ScheduleOnHandle<'a>;
 }
 
 /// Trait that defines an interface to schedule a notification on a returned
@@ -207,7 +211,7 @@ pub trait ClockReactorSchedule: Send + Sync + Debug {
     /// ([`ScheduleHandle::TranslatedTimeout`]) or a trigger that is activated
     /// when the timeout expires ([`ScheduleHandle::GuardAndListener`]). The returned [`ScheduleGuard`]
     /// keeps the schedule valid for its lifetime.
-    fn schedule(&self, timeout: Timeout) -> ScheduleHandle;
+    fn schedule<'a>(&'a self, timeout: Timeout) -> ScheduleHandle<'a>;
 }
 
 /// The time-consumer interface of a [`Clock`].
@@ -220,8 +224,6 @@ pub trait Clock<E: Event>:
 {
     /// The configuration of the [`Clock`].
     type Configuration: NamedConceptConfiguration;
-    /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).
-    type Guard: ScheduleGuard;
     /// The builder that acquires this [`Clock`] (and its time controller, if any).
     type Builder: ClockBuilder<E, Self>;
     /// Whether this clock supports a [`TimeController`]. `true` for [`SteppedClock`]s, `false` for

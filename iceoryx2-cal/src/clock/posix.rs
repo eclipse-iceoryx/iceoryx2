@@ -27,7 +27,7 @@ use iceoryx2_log::fail;
 
 pub struct Guard {}
 
-impl ScheduleGuard for Guard {}
+impl<'a> ScheduleGuard<'a> for Guard {}
 
 #[derive(Debug, Clone, Copy)]
 pub struct PosixTimeControllerConfig {
@@ -116,17 +116,17 @@ impl<E: Event> Abandonable for PosixClock<E> {
 }
 
 impl<E: Event> ClockListenerSchedule for PosixClock<E> {
-    fn schedule_on(
-        &self,
+    fn schedule_on<'a>(
+        &'a self,
         timeout: super::Timeout,
         _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
-    ) -> ScheduleOnHandle {
+    ) -> ScheduleOnHandle<'a> {
         ScheduleOnHandle::TranslatedTimeout(timeout)
     }
 }
 
 impl<E: Event> ClockReactorSchedule for PosixClock<E> {
-    fn schedule(&self, timeout: super::Timeout) -> ScheduleHandle {
+    fn schedule<'a>(&'a self, timeout: super::Timeout) -> ScheduleHandle<'a> {
         ScheduleHandle::TranslatedTimeout(timeout)
     }
 }
@@ -145,7 +145,6 @@ impl<E: Event> ClockNow for PosixClock<E> {
 }
 
 impl<E: Event> Clock<E> for PosixClock<E> {
-    type Guard = Guard;
     type Configuration = PosixTimeControllerConfig;
     type Builder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
