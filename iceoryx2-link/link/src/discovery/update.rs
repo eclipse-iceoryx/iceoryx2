@@ -32,8 +32,9 @@ pub(super) type Unresolvable<'a, RemoteId, Refusal> = iceoryx2_link_backend::dia
     fn(&RemoteId, &Refusal),
 >;
 
-/// One update from the local system's listing. Dropped without being
-/// finalized, nothing is pruned and the generation stands.
+/// One update from the local system's listing. Finalizing the update prunes
+/// the local services it did not see and marks the listing's generation as
+/// processed.
 pub(crate) struct LocalUpdate<'a, RemoteId, RemoteDescription, Refusal> {
     pub(super) entries:
         &'a mut BTreeMap<ServiceHash, DiscoveredService<RemoteId, RemoteDescription, Refusal>>,
@@ -47,9 +48,8 @@ pub(crate) struct LocalUpdate<'a, RemoteId, RemoteDescription, Refusal> {
 }
 
 impl<RemoteId, RemoteDescription, Refusal> LocalUpdate<'_, RemoteId, RemoteDescription, Refusal> {
-    /// Whether the service is held under this unique id, in which case it
-    /// is seen in this update. A recreated service has a new id and is to
-    /// be inserted anew.
+    /// Marks the local service as seen in this update when it is held under
+    /// this creation id. A recreated service has a new id and counts as unseen.
     pub(crate) fn seen(&mut self, hash: &ServiceHash, id: CreationId) -> bool {
         let epoch = self.epoch;
         let Some(local) = self
@@ -66,8 +66,8 @@ impl<RemoteId, RemoteDescription, Refusal> LocalUpdate<'_, RemoteId, RemoteDescr
         true
     }
 
-    /// Holds the local service, seen in this update, replacing a previous
-    /// description of it.
+    /// Records the local service as seen in this update, with this
+    /// description under this creation id.
     pub(crate) fn insert(&mut self, id: CreationId, description: ServiceDescription) {
         let origin = origin!("LocalUpdate::insert");
 
@@ -91,8 +91,8 @@ impl<RemoteId, RemoteDescription, Refusal> LocalUpdate<'_, RemoteId, RemoteDescr
         entry.stale = true;
     }
 
-    /// Finalizes the update. A local service not seen is removed, and the
-    /// listing is at the generation updated from.
+    /// Prunes every local service not seen in this update and marks the
+    /// listing's generation as processed.
     pub(crate) fn finalize(self) {
         let epoch = self.epoch;
         for entry in self.entries.values_mut() {
@@ -110,8 +110,8 @@ impl<RemoteId, RemoteDescription, Refusal> LocalUpdate<'_, RemoteId, RemoteDescr
     }
 }
 
-/// One update from the backend's listing. Dropped without being finalized,
-/// nothing is pruned and the generation stands.
+/// One update from the backend's listing. Finalizing the update prunes the
+/// remotes it did not see and marks the listing's generation as processed.
 pub(crate) struct RemoteUpdate<'a, RemoteId, RemoteDescription, Refusal> {
     pub(super) entries:
         &'a mut BTreeMap<ServiceHash, DiscoveredService<RemoteId, RemoteDescription, Refusal>>,
@@ -129,8 +129,8 @@ pub(crate) struct RemoteUpdate<'a, RemoteId, RemoteDescription, Refusal> {
 impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Display + PartialEq>
     RemoteUpdate<'_, RemoteId, RemoteDescription, Refusal>
 {
-    /// Whether the remote is held with this same description, in which
-    /// case it is seen in this update.
+    /// Marks the remote as seen in this update when it is held with this
+    /// description. A remote that changed its description counts as unseen.
     pub(crate) fn seen(&mut self, id: &RemoteId, remote: &RemoteDescription) -> bool {
         let epoch = self.epoch;
         let Some(hash) = self.listed.get(id) else {
@@ -150,8 +150,8 @@ impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Dis
         true
     }
 
-    /// Holds the remote description under the service it belongs to,
-    /// seen in this update, replacing a previous description of it.
+    /// Records the remote as seen in this update, with this description
+    /// under this service.
     pub(crate) fn insert(&mut self, hash: ServiceHash, id: RemoteId, remote: RemoteDescription) {
         let origin = origin!("RemoteUpdate::insert");
 
@@ -184,8 +184,8 @@ impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Dis
         self.unresolvable.record(id, refusal);
     }
 
-    /// Finalizes the update. A remote description not seen is removed, and
-    /// the listing is at the generation updated from.
+    /// Prunes every remote not seen in this update and marks the listing's
+    /// generation as processed.
     pub(crate) fn finalize(self) {
         let epoch = self.epoch;
         for entry in self.entries.values_mut() {
