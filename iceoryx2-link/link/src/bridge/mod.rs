@@ -27,6 +27,7 @@ use crate::bridge::event::EventBridge;
 use crate::bridge::publish_subscribe::PublishSubscribeBridge;
 use crate::bridge::table::BridgeTable;
 use crate::diagnostics::{Diagnostics, OpenFailure};
+use crate::discovery::BridgeableService;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum OpenError {
@@ -137,14 +138,7 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         &mut self,
         node: &Node<S>,
         backend: &mut B,
-        bridgeable: impl Iterator<
-            Item = (
-                &'a ServiceHash,
-                &'a ServiceDescription,
-                &'a RemoteDescription<S, B>,
-                Epoch,
-            ),
-        >,
+        bridgeable: impl Iterator<Item = BridgeableService<'a, RemoteDescription<S, B>>>,
     ) where
         B: 'a,
     {
@@ -152,19 +146,37 @@ impl<S: Service, B: Backend<S>> Bridges<S, B> {
         let epoch = self.epoch;
         let mut failed = self.diagnostics.failed_opens();
 
-        for (hash, description, remote, resolved) in bridgeable {
-            let opened = match description.messaging_pattern() {
-                MessagingPattern::PublishSubscribe(description) => self
-                    .publish_subscribe
-                    .reconcile(node, backend, description, remote, resolved, epoch),
-                MessagingPattern::Event(description) => {
-                    self.event
-                        .reconcile(node, backend, description, remote, resolved, epoch)
+        for entry in bridgeable {
+            let BridgeableService {
+                hash,
+                local_description,
+                remote_description,
+                resolved,
+            } = entry;
+
+            let opened = match local_description.messaging_pattern() {
+                MessagingPattern::PublishSubscribe(description) => {
+                    self.publish_subscribe.reconcile(
+                        node,
+                        backend,
+                        description,
+                        remote_description,
+                        resolved,
+                        epoch,
+                    )
                 }
+                MessagingPattern::Event(description) => self.event.reconcile(
+                    node,
+                    backend,
+                    description,
+                    remote_description,
+                    resolved,
+                    epoch,
+                ),
             };
             if let Err(error) = opened {
                 let failure = OpenFailure {
-                    description: description.clone(),
+                    description: local_description.clone(),
                     error,
                 };
                 failed.record(*hash, failure);

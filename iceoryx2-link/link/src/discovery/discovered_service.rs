@@ -14,6 +14,7 @@ use alloc::collections::BTreeMap;
 use alloc::collections::btree_map::Values;
 use core::iter::Map;
 
+use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_link_backend::resolver::Resolution;
 use iceoryx2_link_backend::service_description::ServiceDescription;
@@ -53,6 +54,16 @@ pub(crate) struct DiscoveredService<RemoteId, RemoteDescription, Refusal> {
     pub(super) stale: bool,
     /// The epoch the resolution was decided in.
     pub(super) resolved: Epoch,
+}
+
+/// A discovered service for which a bridge can be established.
+pub(crate) struct BridgeableService<'a, RemoteDescription> {
+    pub(crate) hash: &'a ServiceHash,
+    pub(crate) local_description: &'a ServiceDescription,
+    /// The remote the service is relayed against.
+    pub(crate) remote_description: &'a RemoteDescription,
+    /// The epoch the resolution was decided in.
+    pub(crate) resolved: Epoch,
 }
 
 impl<RemoteId, RemoteDescription, Refusal> DiscoveredService<RemoteId, RemoteDescription, Refusal> {

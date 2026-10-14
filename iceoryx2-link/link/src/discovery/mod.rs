@@ -25,8 +25,8 @@ use iceoryx2_link_backend::resolver::Resolution;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 
 pub(crate) use announcement::AnnouncementState;
-pub(crate) use discovered_service::CreationId;
 use discovered_service::DiscoveredService;
+pub(crate) use discovered_service::{BridgeableService, CreationId};
 use update::{LocalUpdate, RemoteUpdate, Unresolved, warn_unresolvable};
 
 /// What was discovered on both sides of the boundary and what each
@@ -121,19 +121,21 @@ impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Dis
     /// resolution was decided in.
     pub(crate) fn bridgeable(
         &self,
-    ) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription, &RemoteDescription, Epoch)> {
-        self.entries
-            .iter()
-            .filter_map(|(hash, entry)| match &entry.resolution {
-                Resolution::Exported(remote) => {
-                    let local = entry.local.as_ref()?;
-                    Some((hash, &local.description, remote, entry.resolved))
-                }
-                Resolution::Imported(mirror, remote) => {
-                    Some((hash, mirror, remote, entry.resolved))
-                }
-                _ => None,
+    ) -> impl Iterator<Item = BridgeableService<'_, RemoteDescription>> {
+        self.entries.iter().filter_map(|(hash, entry)| {
+            let (local_description, remote_description) = match &entry.resolution {
+                Resolution::Exported(remote) => (&entry.local.as_ref()?.description, remote),
+                Resolution::Imported(mirror, remote) => (mirror, remote),
+                _ => return None,
+            };
+
+            Some(BridgeableService {
+                hash,
+                local_description,
+                remote_description,
+                resolved: entry.resolved,
             })
+        })
     }
 
     /// Iterates the exported local services with their creation ids,
@@ -477,7 +479,7 @@ mod tests {
         let service = description(SERVICE);
         update_from_locals(&mut sut, FIRST_GENERATION, &[(FIRST_CREATION, &service)]);
         resolve_to(&mut sut, Resolution::Exported(remote(&service)));
-        let before = sut.bridgeable().map(|(.., epoch)| epoch).next();
+        let before = sut.bridgeable().map(|entry| entry.resolved).next();
         update_from_remotes(
             &mut sut,
             FIRST_GENERATION,
@@ -485,7 +487,7 @@ mod tests {
         );
         resolve_to(&mut sut, Resolution::Exported(remote(&service)));
 
-        let after = sut.bridgeable().map(|(.., epoch)| epoch).next();
+        let after = sut.bridgeable().map(|entry| entry.resolved).next();
         assert_that!(after, eq before);
     }
 
@@ -520,7 +522,7 @@ mod tests {
             unresolved.resolve(|_, _| resolution);
         }
 
-        let bridgeable: Vec<ServiceHash> = sut.bridgeable().map(|(hash, ..)| *hash).collect();
+        let bridgeable: Vec<ServiceHash> = sut.bridgeable().map(|entry| *entry.hash).collect();
         let exported_hashes: Vec<ServiceHash> = sut
             .exported()
             .map(|(description, _)| description.hash())
