@@ -61,8 +61,8 @@ impl<'a> Drop for Guard<'a> {
             .compare_exchange(
                 self.generation_counter,
                 0,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
             )
             .is_ok()
         {
@@ -237,12 +237,11 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         timeout: Timeout,
         listener_name: &FileName,
     ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError> {
-        let old_counter = self
+        let counter = self
             .state
             .get()
             .global_generation_counter
-            .fetch_add(1, Ordering::Relaxed);
-        let new_counter = old_counter + 1;
+            .fetch_add(1, Ordering::SeqCst);
 
         let timeout = match timeout {
             Timeout::At(timepoint) => timepoint,
@@ -251,7 +250,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         let timepoint = ScheduledTimepoint {
             trigger_name: listener_name.clone(),
             timeout_in_ns_after_creation: timeout.as_nanos() as u64, // TODO: make u128?
-            generation_counter: AtomicU64::new(new_counter),
+            generation_counter: AtomicU64::new(counter),
         };
 
         match self.now() {
@@ -277,7 +276,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
                 unsafe {
                     self.state.get().scheduled_timepoints[index as usize]
                         .generation_counter
-                        .store(0, Ordering::Relaxed);
+                        .store(0, Ordering::SeqCst);
                     self.state
                         .get()
                         .index_list
@@ -287,22 +286,27 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
             }
             Ok(tp) => {
                 if timeout < tp {
-                    unsafe {
-                        self.state.get().scheduled_timepoints[index as usize]
-                            .generation_counter
-                            .store(0, Ordering::Relaxed);
-                        self.state
-                            .get()
-                            .index_list
-                            .release_raw_index(index, ReleaseMode::Default);
-                    }
+                    match self.state.get().scheduled_timepoints[index as usize]
+                        .generation_counter
+                        .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
+                    {
+                        Ok(_) => unsafe {
+                            self.state
+                                .get()
+                                .index_list
+                                .release_raw_index(index, ReleaseMode::Default);
+                        },
+                        Err(_) => {
+                            // advance released index
+                        }
+                    };
                     fatal_panic!("");
                 }
             }
         }
 
         let guard = Guard {
-            generation_counter: new_counter,
+            generation_counter: counter,
             index,
             scheduled_timepoints: &self.state.get().scheduled_timepoints,
             index_list: &self.state.get().index_list,
@@ -337,7 +341,7 @@ impl<E: Event> ClockNow for SimulationClock<E> {
             self.state
                 .get()
                 .nanoseconds_since_creation
-                .load(Ordering::Relaxed) as u128,
+                .load(Ordering::SeqCst) as u128,
         ))
     }
 }
@@ -411,7 +415,7 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
                             RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
                         },
                         index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
-                        global_generation_counter: AtomicU64::new(0),
+                        global_generation_counter: AtomicU64::new(1),
                     });
                     let state = unsafe { state.assume_init_mut() };
 
@@ -523,14 +527,14 @@ impl TimeController for SimulationTimeController {
         let state = unsafe { self.clock_state.get_mut() };
         let old_simulated_time = state
             .nanoseconds_since_creation
-            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+            .fetch_add(duration.as_nanos() as u64, Ordering::SeqCst);
 
         // iterate scheduled time points and notify
         let capacity = state.scheduled_timepoints.capacity();
         for i in 0..capacity {
             let counter = state.scheduled_timepoints[i]
                 .generation_counter
-                .load(Ordering::Relaxed);
+                .load(Ordering::SeqCst);
             if counter == 0 {
                 continue;
             }
@@ -539,9 +543,10 @@ impl TimeController for SimulationTimeController {
             let timeout = state.scheduled_timepoints[i].timeout_in_ns_after_creation;
             if state.scheduled_timepoints[i]
                 .generation_counter
-                .load(Ordering::Relaxed)
+                .load(Ordering::SeqCst)
                 != counter
             {
+                // guard deregistered trigger
                 continue;
             }
 
@@ -549,15 +554,18 @@ impl TimeController for SimulationTimeController {
                 let notifier = <Self::E as Event>::NotifierBuilder::new(&trigger_name)
                     .open()
                     .unwrap();
-                notifier.notify(EventId::new(0)); // TODO: check error
-                state.scheduled_timepoints[i]
+                notifier.notify(EventId::new(0)).expect("notify successful");
+                if state.scheduled_timepoints[i]
                     .generation_counter
-                    .store(0, Ordering::Relaxed);
-                unsafe {
-                    state
-                        .index_list
-                        .release_raw_index(i as u32, ReleaseMode::Default)
-                };
+                    .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
+                    unsafe {
+                        state
+                            .index_list
+                            .release_raw_index(i as u32, ReleaseMode::Default)
+                    };
+                }
             }
         }
 
