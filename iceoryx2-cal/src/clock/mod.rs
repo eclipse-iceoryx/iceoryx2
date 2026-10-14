@@ -36,6 +36,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
+use iceoryx2_log::fail;
 
 enum_gen! {
 /// Error returned by [`Clock::blocking_sleep()`]
@@ -93,6 +94,23 @@ pub enum Timeout {
     By(Duration),
     /// Expire at the absolute `time` point.
     At(TimePoint),
+}
+
+impl Timeout {
+    /// Returns either the [`Duration`] stored in [`Timeout::By`] or converts the [`TimePoint`]
+    /// stored in [`Timeout::At`] into a [`Duration`] based on [`ClockNow::now()`].
+    pub fn as_duration(&self, clock: &dyn ClockNow) -> Result<Duration, ClockNowError> {
+        match self {
+            Timeout::By(duration) => Ok(*duration),
+            Timeout::At(time_point) => match clock.now() {
+                Ok(now) => Ok(time_point.time_span_between(now).into()),
+                Err(e) => {
+                    fail!(from "Timeout::as_duration()", with e,
+                        "Failed to convert timepoint to duration since the current time could not be acquired.");
+                }
+            },
+        }
+    }
 }
 
 /// The handle returned by [`ClockReactorSchedule::schedule()`], describing how a scheduled [`Timeout`] is
@@ -168,9 +186,15 @@ pub enum ScheduleOnHandle {
     Guard(Box<dyn ScheduleGuard>),
 }
 
+/// Trait that defines an interface to acquire the current time.
+pub trait ClockNow {
+    /// Returns the current time according to this clock.
+    fn now(&self) -> Result<TimePoint, ClockNowError>;
+}
+
 /// Trait that defines an interface to schedule a notification on a defined
 /// [`Event::Listener`](crate::event::Listener) name.
-pub trait ClockListenerSchedule: Send + Sync + Debug {
+pub trait ClockListenerSchedule: ClockNow + Send + Sync + Debug {
     /// Schedules an existing trigger, identified by `listener_name`, to be
     /// activated once the given [`Timeout`] expires.
     ///
@@ -216,9 +240,6 @@ pub trait Clock<E: Event>:
     /// For a [`SteppedClock`] the thread is released according to time stepping
     /// rather than physical time.
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError>;
-
-    /// Returns the current time according to this clock.
-    fn now(&self) -> Result<TimePoint, ClockNowError>;
 
     /// The default suffix of every [`Clock`]
     fn default_suffix() -> FileName {

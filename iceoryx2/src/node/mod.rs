@@ -180,6 +180,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
 use iceoryx2_cal::clock::ClockListenerSchedule;
+use iceoryx2_cal::clock::ClockNow;
 use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
@@ -972,6 +973,12 @@ struct SharedNodeState<Service: service::Service> {
     signal_handling_mode: SignalHandlingMode,
     details_storage: Service::StaticStorage,
     clock: Service::Clock,
+}
+
+impl<Service: service::Service> ClockNow for SharedNodeState<Service> {
+    fn now(&self) -> Result<iceoryx2_bb_si_units::TimePoint, iceoryx2_cal::clock::ClockNowError> {
+        self.clock.now()
+    }
 }
 
 impl<Service: service::Service> ClockListenerSchedule for SharedNodeState<Service> {

@@ -13,7 +13,7 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
-        ClockListenerSchedule, ClockNowError, ClockReactorSchedule, FreeRunningClock,
+        ClockListenerSchedule, ClockNow, ClockNowError, ClockReactorSchedule, FreeRunningClock,
         ScheduleGuard, ScheduleHandle, ScheduleOnHandle, Timeout,
     },
     event::{Event, InternalStubEvent},
@@ -131,6 +131,19 @@ impl<E: Event> ClockReactorSchedule for PosixClock<E> {
     }
 }
 
+impl<E: Event> ClockNow for PosixClock<E> {
+    fn now(&self) -> Result<iceoryx2_bb_si_units::TimePoint, ClockNowError> {
+        let msg = "Failed to acquire the current time";
+        match iceoryx2_bb_posix::clock::Time::now_with_clock(self.clock_type) {
+            Ok(v) => Ok(v.time_point()),
+            Err(e) => {
+                fail!(from self, with ClockNowError::InternalError,
+                "{msg} due to an internal error. [{e:?}]");
+            }
+        }
+    }
+}
+
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
     type Configuration = PosixTimeControllerConfig;
@@ -172,17 +185,6 @@ impl<E: Event> Clock<E> for PosixClock<E> {
             Err(e) => {
                 fail!(from self, with ClockBlockingSleepError::InternalError,
                             "{msg} {timeout:?} due to an internal error. [{e:?}]");
-            }
-        }
-    }
-
-    fn now(&self) -> Result<iceoryx2_bb_si_units::TimePoint, ClockNowError> {
-        let msg = "Failed to acquire the current time";
-        match iceoryx2_bb_posix::clock::Time::now_with_clock(self.clock_type) {
-            Ok(v) => Ok(v.time_point()),
-            Err(e) => {
-                fail!(from self, with ClockNowError::InternalError,
-                "{msg} due to an internal error. [{e:?}]");
             }
         }
     }
