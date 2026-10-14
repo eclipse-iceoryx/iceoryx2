@@ -206,7 +206,7 @@ where
 
 #[repr(C)]
 #[derive(Debug)]
-struct SimulationClock<E: Event> {
+pub struct SimulationClock<E: Event> {
     name: FileName,
     state: Storage<SimulationClockState>,
     _event: PhantomData<E>,
