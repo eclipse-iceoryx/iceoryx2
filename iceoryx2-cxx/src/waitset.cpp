@@ -167,8 +167,7 @@ auto WaitSetBuilder<S>::create() const&& -> bb::Expected<WaitSet<S>, WaitSetCrea
     }
 
     iox2_waitset_h waitset_handle {};
-    auto result =
-        iox2_waitset_builder_create(m_handle, iox2::bb::into<iox2_service_type_e>(S), nullptr, &waitset_handle);
+    auto result = iox2_waitset_builder_create(m_handle, nullptr, &waitset_handle);
 
     if (result == IOX2_OK) {
         return WaitSet<S>(waitset_handle);

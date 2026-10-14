@@ -24,19 +24,18 @@
 
 pub mod posix;
 
+use crate::{
+    event::{Event, NamedConceptMgmt},
+    named_concept::NamedConceptConfiguration,
+};
+use alloc::boxed::Box;
 use core::fmt::Debug;
 use core::time::Duration;
-
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
-
-use crate::{
-    event::{Event, NamedConceptMgmt},
-    named_concept::NamedConceptConfiguration,
-};
 
 enum_gen! {
 /// Error returned by [`Clock::blocking_sleep()`]
