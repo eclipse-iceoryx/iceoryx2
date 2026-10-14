@@ -262,7 +262,7 @@ mod tests {
         update_from_locals(&mut sut, FIRST_GENERATION, &[(FIRST_CREATION, &service)]);
 
         let entry = sut.entries.get(&service.hash()).expect("held");
-        assert_that!(entry.local(), eq Some(&service));
+        assert_that!(entry.local_description(), eq Some(&service));
         assert_that!(entry.creation_id(), eq Some(creation_id(FIRST_CREATION)));
     }
 
@@ -327,8 +327,8 @@ mod tests {
         );
 
         let entry = sut.entries.get(&service.hash()).expect("held");
-        assert_that!(entry.remotes().collect::<Vec<_>>(), eq alloc::vec![&remote]);
-        assert_that!(entry.local(), is_none);
+        assert_that!(entry.remote_descriptions().collect::<Vec<_>>(), eq alloc::vec![&remote]);
+        assert_that!(entry.local_description(), is_none);
     }
 
     #[test]
@@ -469,7 +469,7 @@ mod tests {
         update_from_locals(&mut sut, FIRST_GENERATION, &[(FIRST_CREATION, &service)]);
 
         let entry = sut.entries.get(&service.hash()).expect("held");
-        assert_that!(entry.local(), is_none);
+        assert_that!(entry.local_description(), is_none);
     }
 
     #[test]

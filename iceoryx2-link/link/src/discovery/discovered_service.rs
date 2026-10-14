@@ -19,8 +19,8 @@ use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_link_backend::resolver::Resolution;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 
-/// What identifies one creation of a local service. `UniqueServiceId`
-/// once it can be generated outside iceoryx2.
+/// Identifies a unique creation of a local service.
+/// TODO: Replace with `UniqueServiceId` when the generator is available.
 pub(crate) type CreationId = u128;
 
 /// What the last local update observed of one service.
@@ -39,7 +39,7 @@ pub(crate) struct RemoteObservation<RemoteDescription> {
     pub(super) seen: Epoch,
 }
 
-/// The descriptions of the remotes of an entry, in id order.
+/// The description each remote listed the service with.
 pub(crate) type RemoteDescriptions<'a, RemoteId, RemoteDescription> = Map<
     Values<'a, RemoteId, RemoteObservation<RemoteDescription>>,
     fn(&'a RemoteObservation<RemoteDescription>) -> &'a RemoteDescription,
@@ -50,7 +50,7 @@ pub(crate) struct DiscoveredService<RemoteId, RemoteDescription, Refusal> {
     pub(super) local: Option<LocalObservation>,
     pub(super) remotes: BTreeMap<RemoteId, RemoteObservation<RemoteDescription>>,
     pub(super) resolution: Resolution<RemoteDescription, Refusal>,
-    /// Whether the resolution is stale, a side changed since it was decided.
+    /// Whether a side changed since the resolution was decided.
     pub(super) stale: bool,
     /// The epoch the resolution was decided in.
     pub(super) resolved: Epoch,
@@ -83,10 +83,8 @@ impl<RemoteId, RemoteDescription, Refusal> DiscoveredService<RemoteId, RemoteDes
         }
     }
 
-    /// The local service an application offers, none when the only
-    /// local service is the mirror the entry imported, listed since an
-    /// application opened a port on it.
-    pub(crate) fn local(&self) -> Option<&ServiceDescription> {
+    /// The description of the service if it is offered by a local application.
+    pub(crate) fn local_description(&self) -> Option<&ServiceDescription> {
         if self.local_is_mirror() {
             return None;
         }
@@ -100,8 +98,10 @@ impl<RemoteId, RemoteDescription, Refusal> DiscoveredService<RemoteId, RemoteDes
         self.local.as_ref().map(|local| local.id)
     }
 
-    /// The remote descriptions of the service, in id order.
-    pub(crate) fn remotes(&self) -> RemoteDescriptions<'_, RemoteId, RemoteDescription> {
+    /// The description each remote listed the service with.
+    pub(crate) fn remote_descriptions(
+        &self,
+    ) -> RemoteDescriptions<'_, RemoteId, RemoteDescription> {
         self.remotes.values().map(|remote| &remote.description)
     }
 

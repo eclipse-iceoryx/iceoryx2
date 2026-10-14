@@ -248,7 +248,10 @@ impl<RemoteId, RemoteDescription: PartialEq, Refusal: core::fmt::Display + Parti
     {
         let origin = origin!("Unresolved::resolve");
 
-        let resolution = resolve(self.entry.local(), self.entry.remotes());
+        let resolution = resolve(
+            self.entry.local_description(),
+            self.entry.remote_descriptions(),
+        );
         self.entry.stale = false;
         if self.entry.resolution == resolution {
             return;
