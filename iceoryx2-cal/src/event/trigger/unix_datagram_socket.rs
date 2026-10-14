@@ -353,10 +353,6 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                 fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
                     "{msg} since the clock schedule is full.");
             }
-            Err(e) => {
-                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
-                    "{msg} since the timeout could not be scheduled in the clock. [{e:?}]");
-            }
         }
     }
 
