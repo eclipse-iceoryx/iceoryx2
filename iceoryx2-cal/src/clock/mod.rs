@@ -81,6 +81,7 @@ enum_gen! {
 /// Error returned by [`TimeControllerBuilder::create()`]
     TimeControllerBuilderCreateError
   entry:
+    AlreadyCreatedByAnotherInstance,
     InternalError
 }
 
@@ -89,6 +90,7 @@ enum_gen! {
     TimeControllerBuilderOpenError
   entry:
     AlreadyOpenedByAnotherInstance,
+    TimeControllerDoesNotExist,
     InternalError
 }
 
