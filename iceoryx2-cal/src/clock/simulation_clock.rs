@@ -158,6 +158,7 @@ struct SimulationClockState {
     scheduled_timepoints: RelocatableVec<ScheduledTimepoint>,
     index_list: UniqueIndexSet,
     global_generation_counter: AtomicU64,
+    name_id: AtomicU64,
 }
 
 #[derive(Debug)]
@@ -323,8 +324,9 @@ where
         &'a self,
         timeout: Timeout,
     ) -> Result<ScheduleHandle<'a>, ClockReactorScheduleError> {
-        // TODO: unique name
-        let listener_name = unsafe { FileName::new_unchecked_const(b"blub") };
+        let id = self.state.get().name_id.fetch_add(1, Ordering::Relaxed);
+        let listener_name =
+            unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
         let listener =
             create_reactor_attachment::<E>(&listener_name, &E::Configuration::default()).unwrap();
         let guard = self.schedule_on(timeout, &listener_name).unwrap();
@@ -416,6 +418,7 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
                         },
                         index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
                         global_generation_counter: AtomicU64::new(1),
+                        name_id: AtomicU64::new(0),
                     });
                     let state = unsafe { state.assume_init_mut() };
 
@@ -480,6 +483,7 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
                         },
                         index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
                         global_generation_counter: AtomicU64::new(0),
+                        name_id: AtomicU64::new(0),
                     });
                     let state = unsafe { state.assume_init_mut() };
 
