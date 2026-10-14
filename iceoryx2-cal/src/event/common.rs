@@ -430,7 +430,7 @@ impl<
     fn drain_events<F: FnMut(EventActivation), Fw: FnMut() -> Result<(), ListenerWaitError>>(
         &self,
         msg: &str,
-        mut callback: F,
+        callback: &mut F,
         mut wait_call: Fw,
     ) -> Result<u64, ListenerWaitError> {
         let mgmt = self.storage.get();
@@ -438,7 +438,7 @@ impl<
         let mut drain = || -> Result<u64, ListenerWaitError> {
             fail!(from self, when self.waiter.empty_buffer(),
                 "{msg} since the wait buffer could not be emptied.");
-            Ok(self.storage.get().event.drain(&mut callback))
+            Ok(self.storage.get().event.drain(callback))
         };
 
         if mgmt
@@ -475,30 +475,50 @@ impl<
         self.storage.get().event.max_event_count()
     }
 
-    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError> {
+    fn try_wait<F: FnMut(EventActivation)>(
+        &self,
+        mut callback: F,
+    ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to try wait and acquire all event notifications";
-        self.drain_events(msg, callback, || self.waiter.try_wait())
+        self.drain_events(msg, &mut callback, || self.waiter.try_wait())
     }
 
     fn timed_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
+        let mut timeout = timeout;
         let now = fail!(from self, when self.waiter.clock().now(),
                         with ListenerWaitError::InternalFailure,
                         "{msg} since the current time could not be acquired.");
 
-        self.drain_events(msg, callback, || self.waiter.timed_wait(timeout, now))
+        loop {
+            let number_if_events =
+                self.drain_events(msg, &mut callback, || self.waiter.timed_wait(timeout, now))?;
+            if number_if_events != 0 {
+                return Ok(number_if_events);
+            }
+
+            let after_wait_now = fail!(from self, when self.waiter.clock().now(),
+                        with ListenerWaitError::InternalFailure,
+                        "{msg} since the current time could not be acquired.");
+            let elapsed_time: Duration = after_wait_now.time_span_between(now).into();
+            if timeout < elapsed_time {
+                return Ok(number_if_events);
+            }
+
+            timeout -= elapsed_time;
+        }
     }
 
     fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        self.drain_events(msg, callback, || self.waiter.blocking_wait())
+        self.drain_events(msg, &mut callback, || self.waiter.blocking_wait())
     }
 }
 
