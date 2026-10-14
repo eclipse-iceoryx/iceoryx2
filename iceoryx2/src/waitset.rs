@@ -47,14 +47,14 @@
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let event = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
 //! #     .open_or_create()?;
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let waitset = node.waitset_builder().create()?;
 //! let guard = waitset.attach_notification(&listener)?;
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
@@ -78,7 +78,7 @@
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let event = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
 //! #     .open_or_create()?;
@@ -86,7 +86,7 @@
 //! let mut listener = event.listener_builder().create()?;
 //!
 //! let listener_deadline = Duration::from_secs(1);
-//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let waitset = node.waitset_builder().create()?;
 //! let guard = waitset.attach_deadline(&listener, listener_deadline)?;
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
@@ -112,7 +112,7 @@
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let pubsub = node.service_builder(&"MyServiceName".try_into()?)
 //! #     .publish_subscribe::<u64>()
 //! #     .open_or_create()?;
@@ -123,7 +123,7 @@
 //! let pub_1_period = Duration::from_millis(250);
 //! let pub_2_period = Duration::from_millis(718);
 //!
-//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let waitset = node.waitset_builder().create()?;
 //! let guard_1 = waitset.attach_interval(pub_1_period)?;
 //! let guard_2 = waitset.attach_interval(pub_2_period)?;
 //!
@@ -150,7 +150,7 @@
 //! use iceoryx2::port::listener::Listener;
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let event_1 = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
 //! #     .open_or_create()?;
@@ -162,7 +162,7 @@
 //! let listener_2 = event_2.listener_builder().create()?;
 //!
 //! let mut listeners: BTreeMap<WaitSetAttachmentId<ipc::Service>, &Listener<ipc::Service>> = BTreeMap::new();
-//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let waitset = node.waitset_builder().create()?;
 //!
 //! // attach all listeners to the waitset
 //! let guard_1 = waitset.attach_notification(&listener_1)?;
@@ -199,9 +199,10 @@
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
-//! let waitset = WaitSetBuilder::new()
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let waitset = node.waitset_builder()
 //!                 .signal_handling_mode(SignalHandlingMode::Disabled)
-//!                 .create::<ipc::Service>()?;
+//!                 .create()?;
 //!
 //! let on_event = |_| {
 //!     // your event handling
@@ -213,6 +214,7 @@
 //! # Ok(())
 //! # }
 
+use alloc::sync::Arc;
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, time::Duration};
 
 use alloc::collections::BTreeMap;
@@ -229,6 +231,7 @@ use iceoryx2_bb_posix::{
     file_descriptor_set::SynchronousMultiplexing,
     signal::SignalHandler,
 };
+use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::reactor::*;
 use iceoryx2_log::fail;
 
@@ -473,15 +476,20 @@ impl<Service: crate::service::Service> Drop for WaitSetGuard<'_, '_, Service> {
 }
 
 /// The builder for the [`WaitSet`].
-#[derive(Default, Debug, Clone)]
-pub struct WaitSetBuilder {
+#[derive(Debug, Clone)]
+pub struct WaitSetBuilder<Service: crate::service::Service> {
     signal_handling_mode: SignalHandlingMode,
+    clock: Arc<dyn ClockReactorSchedule>,
+    _data: PhantomData<Service>,
 }
 
-impl WaitSetBuilder {
-    /// Creates a new [`WaitSetBuilder`].
-    pub fn new() -> Self {
-        Self::default()
+impl<Service: crate::service::Service> WaitSetBuilder<Service> {
+    pub(crate) fn new(clock: Arc<dyn ClockReactorSchedule>) -> Self {
+        Self {
+            signal_handling_mode: SignalHandlingMode::default(),
+            clock,
+            _data: PhantomData,
+        }
     }
 
     /// Defines the [`SignalHandlingMode`] for the [`WaitSet`]. It affects the
@@ -494,15 +502,13 @@ impl WaitSetBuilder {
     }
 
     /// Creates the [`WaitSet`].
-    pub fn create<Service: crate::service::Service>(
-        self,
-    ) -> Result<WaitSet<Service>, WaitSetCreateError> {
+    pub fn create(self) -> Result<WaitSet<Service>, WaitSetCreateError> {
         let msg = "Unable to create WaitSet";
         let deadline_queue = fail!(from self, when DeadlineQueueBuilder::new().create(),
                 with WaitSetCreateError::InternalError,
                 "{msg} since the underlying Timer could not be created.");
 
-        match <Service::Reactor as Reactor>::Builder::new().create() {
+        match <Service::Reactor as Reactor>::Builder::new().create(self.clock.clone()) {
             Ok(reactor) => Ok(WaitSet {
                 reactor,
                 deadline_queue,
@@ -743,14 +749,14 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// use iceoryx2::prelude::*;
     /// # use core::time::Duration;
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
     /// #     .event()
     /// #     .open_or_create()?;
     ///
     /// # let mut listener = event.listener_builder().create()?;
     ///
-    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    /// let waitset = node.waitset_builder().create()?;
     /// # let guard = waitset.attach_notification(&listener)?;
     ///
     /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
@@ -820,12 +826,12 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// use iceoryx2::prelude::*;
     /// # use core::time::Duration;
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
     /// #     .event()
     /// #     .open_or_create()?;
     ///
-    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    /// let waitset = node.waitset_builder().create()?;
     ///
     /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
     ///     // do some event processing
@@ -886,12 +892,12 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// use iceoryx2::prelude::*;
     /// # use core::time::Duration;
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
     /// #     .event()
     /// #     .open_or_create()?;
     ///
-    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    /// let waitset = node.waitset_builder().create()?;
     ///
     /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
     ///     // do some event processing

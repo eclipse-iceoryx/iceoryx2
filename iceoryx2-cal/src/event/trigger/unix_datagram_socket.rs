@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
+    clock::ClockListenerSchedule,
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -21,6 +22,7 @@ use crate::{
     named_concept::NamedConceptRemoveError,
 };
 use alloc::format;
+use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -160,6 +162,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
 #[derive(Debug)]
 pub struct UnixDatagramWaiter<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
     receiver: UnixDatagramReceiver,
+    clock: Arc<dyn ClockListenerSchedule>,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
 }
@@ -183,6 +186,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { UnixDatagramReceiver::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 
@@ -242,6 +246,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         name: &FileName,
         config: &super::Configuration,
         _mgmt: &mut core::mem::MaybeUninit<()>,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
         let origin = "UnixDatagramWaiter::create()";
         let msg = "Unable to create unix datagram socket trigger";
@@ -289,6 +294,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
 
         Ok(Self {
             receiver,
+            clock,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })

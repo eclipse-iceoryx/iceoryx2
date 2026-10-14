@@ -66,7 +66,7 @@ auto main(int argc, char** argv) -> int {
     auto listener_2 = service_2.listener_builder().create().value();
 
     // create the waitset and attach the listeners to it
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
+    auto waitset = node.waitset_builder().create().value();
     // NOLINTNEXTLINE(misc-const-correctness) false positive
     iox2::bb::StaticVector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 

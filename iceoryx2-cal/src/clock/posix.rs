@@ -12,13 +12,15 @@
 
 use crate::{
     clock::{
-        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderAcquireError, ClockNowError,
-        FreeRunningClock, ScheduleGuard, ScheduleHandle, Timeout,
+        Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
+        ClockListenerSchedule, ClockNowError, ClockReactorSchedule, FreeRunningClock,
+        ScheduleGuard, ScheduleHandle, ScheduleOnHandle, Timeout,
     },
     event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
 };
 use core::marker::PhantomData;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::clock::{ClockType, NanosleepError};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
@@ -91,7 +93,7 @@ impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
         self
     }
 
-    fn open_clock(self) -> Result<PosixClock<E>, ClockBuilderAcquireError> {
+    fn open_clock(self) -> Result<PosixClock<E>, ClockBuilderOpenClockError> {
         Ok(PosixClock {
             clock_type: self.config.clock_type,
             _event: PhantomData,
@@ -105,25 +107,35 @@ pub struct PosixClock<E: Event> {
     _event: PhantomData<E>,
 }
 
+unsafe impl<E: Event> Send for PosixClock<E> {}
+unsafe impl<E: Event> Sync for PosixClock<E> {}
 impl<E: Event> FreeRunningClock for PosixClock<E> {}
+
+impl<E: Event> Abandonable for PosixClock<E> {
+    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
+}
+
+impl<E: Event> ClockListenerSchedule for PosixClock<E> {
+    fn schedule_on(
+        &self,
+        timeout: super::Timeout,
+        _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
+    ) -> ScheduleOnHandle {
+        ScheduleOnHandle::TranslatedTimeout(timeout)
+    }
+}
+
+impl<E: Event> ClockReactorSchedule for PosixClock<E> {
+    fn schedule(&self, timeout: super::Timeout) -> ScheduleHandle {
+        ScheduleHandle::TranslatedTimeout(timeout)
+    }
+}
 
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
     type Configuration = PosixTimeControllerConfig;
-    type ClockBuilder = Builder;
+    type Builder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
-
-    fn schedule(&self, timeout: super::Timeout) -> (Self::Guard, ScheduleHandle<E>) {
-        (Guard {}, ScheduleHandle::TranslatedTimeout(timeout))
-    }
-
-    fn schedule_on(
-        &self,
-        _timeout: super::Timeout,
-        _trigger_name: &iceoryx2_bb_system_types::file_name::FileName,
-    ) -> Self::Guard {
-        Guard {}
-    }
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
         let msg = "Failed to blocking sleep with";

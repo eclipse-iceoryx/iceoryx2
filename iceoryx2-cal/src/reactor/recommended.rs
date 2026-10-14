@@ -14,7 +14,7 @@
 /// [`Reactor`](crate::reactor::Reactor) concept
 /// implementation for the target.
 #[cfg(target_os = "linux")]
-pub type Ipc = crate::reactor::epoll::Epoll;
+pub type Ipc = crate::reactor::epoll::EpollReactor;
 
 #[cfg(not(target_os = "linux"))]
 pub type Ipc = crate::reactor::posix_select::Reactor;
@@ -23,7 +23,7 @@ pub type Ipc = crate::reactor::posix_select::Reactor;
 /// [`Reactor`](crate::reactor::Reactor) concept
 /// implementation for the target.
 #[cfg(target_os = "linux")]
-pub type Local = crate::reactor::epoll::Epoll;
+pub type Local = crate::reactor::epoll::EpollReactor;
 
 #[cfg(not(target_os = "linux"))]
 pub type Local = crate::reactor::posix_select::Reactor;

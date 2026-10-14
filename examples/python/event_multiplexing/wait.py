@@ -28,7 +28,7 @@ for i in range(1, len(sys.argv)):
     listener = event.listener_builder().create()
     listeners.append((sys.argv[i], listener))
 
-waitset = iox2.WaitSetBuilder.new().create(iox2.ServiceType.Ipc)
+waitset = node.waitset_builder().create()
 listener_attachments = {}
 guards = []
 

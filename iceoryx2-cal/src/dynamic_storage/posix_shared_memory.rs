@@ -355,10 +355,8 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         );
 
         let origin = format!("{self:?}");
-        if !self
-            .initializer
-            .call(unsafe { &mut (*value).data }, &mut allocator)
-        {
+        let initializer = core::mem::replace(&mut self.initializer, Initializer::new(|_, _| false));
+        if !initializer.call(unsafe { &mut (*value).data }, &mut allocator) {
             unsafe { core::ptr::drop_in_place(value) };
             shm.acquire_ownership();
             fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
@@ -409,7 +407,7 @@ impl<'builder, T: Send + Sync + Debug + ZeroCopySend> DynamicStorageBuilder<'bui
         self
     }
 
-    fn initializer<F: FnMut(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
+    fn initializer<F: FnOnce(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
         mut self,
         value: F,
     ) -> Self {

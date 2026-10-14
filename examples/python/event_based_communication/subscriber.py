@@ -92,7 +92,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 subscriber = CustomSubscriber(node, SERVICE_NAME)
 
-waitset = iox2.WaitSetBuilder.new().create(iox2.ServiceType.Ipc)
+waitset = node.waitset_builder().create()
 subscriber_guard = waitset.attach_deadline(subscriber.listener, DEADLINE)
 
 print("Subscriber ready to receive data!")

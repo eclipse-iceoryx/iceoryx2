@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .create()?;
     let mut counter: u64 = 1000000;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
 
     // we only want to notify the other side explicitly when we have sent a sample
     // so we can define it as default event id

@@ -272,6 +272,7 @@ use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_cal::clock::Clock;
 
 use crate::config;
 use crate::name_generator::NameGenerator;
@@ -938,7 +939,9 @@ pub mod internal {
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
 #[allow(private_bounds)]
-pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Send + Sync {
+pub trait Service:
+    Debug + Sized + internal::ServiceInternal<Self> + Clone + Send + Sync + 'static
+{
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
@@ -973,6 +976,10 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
 
     /// The mechanism used to signal events between endpoints.
     type Event: Event;
+
+    /// The clock concept used for all time related calls like, acquiring the current time or sleep
+    /// for a specified time.
+    type Clock: Clock<Self::Event>;
 
     /// Monitoring mechanism to detect dead processes.
     type Monitoring: Monitoring;

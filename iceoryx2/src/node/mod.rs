@@ -179,6 +179,9 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
+use iceoryx2_cal::clock::ClockListenerSchedule;
+use iceoryx2_cal::clock::ClockReactorSchedule;
+use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -191,6 +194,7 @@ use crate::node::node_name::NodeName;
 use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
+use crate::service::config_scheme::clock_config;
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
@@ -202,7 +206,10 @@ use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::unique_id_generator::*;
+use crate::waitset::WaitSetBuilder;
 use crate::{config::Config, service::config_scheme::node_details_config};
+
+const CLOCK_NAME: FileName = unsafe { FileName::new_unchecked_const(b"iceoryx2") };
 
 impl UniqueNodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
@@ -224,6 +231,8 @@ pub enum NodeCreationFailure {
     UnableToGenerateUniqueNodeId,
     /// The [`NameGenerator`] could not be opened/created.
     UnableToOpenOrCreateNameGenerator,
+    /// The [`Clock`] used for all time related operations could not be opened.
+    FailedToOpenClock,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -962,7 +971,29 @@ struct SharedNodeState<Service: service::Service> {
     registered_services: RegisteredServices<<Service::Bag as BagFamily>::BagHandle>,
     signal_handling_mode: SignalHandlingMode,
     details_storage: Service::StaticStorage,
+    clock: Service::Clock,
 }
+
+impl<Service: service::Service> ClockListenerSchedule for SharedNodeState<Service> {
+    fn schedule_on(
+        &self,
+        timeout: iceoryx2_cal::clock::Timeout,
+        listener_name: &FileName,
+    ) -> iceoryx2_cal::clock::ScheduleOnHandle {
+        self.clock.schedule_on(timeout, listener_name)
+    }
+}
+
+impl<Service: service::Service> ClockReactorSchedule for SharedNodeState<Service> {
+    fn schedule(
+        &self,
+        timeout: iceoryx2_cal::clock::Timeout,
+    ) -> iceoryx2_cal::clock::ScheduleHandle {
+        self.clock.schedule(timeout)
+    }
+}
+
+impl<Service: service::Service> NodeClock for SharedNodeState<Service> {}
 
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
 unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
@@ -982,6 +1013,10 @@ impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
                 )
             };
         }
+
+        unsafe {
+            <Service::Clock as Abandonable>::abandon_in_place(NonNull::from_mut(&mut this.clock))
+        };
     }
 }
 
@@ -1057,7 +1092,13 @@ impl<Service: service::Service> Abandonable for SharedNode<Service> {
     }
 }
 
+pub(crate) trait NodeClock: ClockListenerSchedule + ClockReactorSchedule {}
+
 impl<Service: service::Service> SharedNode<Service> {
+    pub(crate) fn clock(&self) -> Arc<dyn NodeClock> {
+        self.state.clone()
+    }
+
     pub(crate) fn config(&self) -> &Config {
         &self.state.details.config
     }
@@ -1171,6 +1212,12 @@ impl<Service: service::Service> Node<Service> {
     /// Instantiates a [`ServiceBuilder`](Builder) for a service with the provided name.
     pub fn service_builder(&self, name: &ServiceName) -> Builder<Service> {
         Builder::new(name, self.shared.clone())
+    }
+
+    /// Instantiates a [`WaitSetBuilder`] to construct a new [`WaitSet`](crate::waitset::WaitSet),
+    /// iceoryx2 event multiplexer.
+    pub fn waitset_builder(&self) -> WaitSetBuilder<Service> {
+        WaitSetBuilder::new(self.shared.clock())
     }
 
     /// Returns the [`NodeState`] of a specific [`Node`] that has the provided [`UniqueNodeId`].
@@ -1621,6 +1668,18 @@ impl NodeBuilder {
             with NodeCreationFailure::UnableToGenerateUniqueNodeId,
             "{msg} since the UniqueNodeId could not be generated.");
 
+        let clock_config = clock_config::<Service>(config);
+        let clock = match <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
+            .config(&clock_config)
+            .open_clock()
+        {
+            Ok(clock) => clock,
+            Err(e) => {
+                fail!(from self, with NodeCreationFailure::FailedToOpenClock,
+                    "{msg} since the clock could not be opened. [{e:?}]");
+            }
+        };
+
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueNodeId is not a valid file name.");
         let (details_storage, details) =
@@ -1636,6 +1695,7 @@ impl NodeBuilder {
             details_storage,
             signal_handling_mode: self.signal_handling_mode,
             details,
+            clock,
         });
 
         if config.global.node.cleanup_dead_nodes_on_creation {

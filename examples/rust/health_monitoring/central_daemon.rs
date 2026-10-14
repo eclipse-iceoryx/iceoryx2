@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .notifier_dead_event(PubSubEvent::ProcessDied.into())
         .open_or_create()?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
     let _cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
     coutln!("Central daemon up and running.");

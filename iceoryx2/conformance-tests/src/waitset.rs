@@ -19,7 +19,7 @@ pub mod waitset {
     use core::time::Duration;
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
-    use iceoryx2::prelude::{WaitSetBuilder, *};
+    use iceoryx2::prelude::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::testing::generate_file_path;
@@ -65,7 +65,9 @@ pub mod waitset {
 
     #[conformance_test]
     pub fn calling_wait_and_process_once_on_empty_waitset_fails<S: Service>() {
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
         let result = sut.wait_and_process_once(|_| CallbackProgression::Continue);
 
         assert_that!(result.err(), eq Some(WaitSetRunError::NoAttachments));
@@ -81,7 +83,7 @@ pub mod waitset {
         let test = Test::<S>::new();
         let node = test.create_node();
 
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
         let mut listeners = vec![];
         let mut sockets = vec![];
         let mut guards = vec![];
@@ -123,7 +125,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
         let (receiver, _) = create_socket();
@@ -142,7 +144,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
         let (receiver, _) = create_socket();
@@ -161,7 +163,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
         let (listener_2, _notifier_2) = create_event::<S>(&node);
@@ -209,7 +211,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
         let _guard = sut.attach_notification(&listener);
@@ -236,7 +238,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
         let guard = sut.attach_deadline(&listener, TIMEOUT).unwrap();
@@ -257,7 +259,9 @@ pub mod waitset {
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
         let _watchdog = Watchdog::new();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
 
         let _tick_guard = sut.attach_interval(Duration::MAX).unwrap();
 
@@ -283,7 +287,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new_with_custom_watchdog(Watchdog::new_with_timeout(TIMEOUT * 40));
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
         let _listener_guard = sut.attach_notification(&listener).unwrap();
@@ -314,7 +318,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new_with_custom_watchdog(Watchdog::new_with_timeout(TIMEOUT * 40));
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
         let (listener_2, _notifier_2) = create_event::<S>(&node);
@@ -365,8 +369,9 @@ pub mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let _watchdog = Watchdog::new();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
 
         let _tick_guard = sut.attach_interval(TIMEOUT).unwrap();
 
@@ -389,7 +394,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
         let (listener_2, _notifier_2) = create_event::<S>(&node);
@@ -443,7 +448,9 @@ pub mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
 
         let tick_1_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
         let tick_2_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
@@ -485,7 +492,9 @@ pub mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
 
         let _tick_1_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
         let _tick_2_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
@@ -512,7 +521,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
         let (listener_2, _notifier_2) = create_event::<S>(&node);
@@ -584,7 +593,7 @@ pub mod waitset {
     {
         let test = Test::<S>::new();
         let node = test.create_node();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let sut = node.waitset_builder().create().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
 
@@ -619,7 +628,9 @@ pub mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
 
         let _interval_guard = sut.attach_interval(TIMEOUT).unwrap();
         let now = Time::now().unwrap();
@@ -638,14 +649,18 @@ pub mod waitset {
 
     #[conformance_test]
     pub fn signal_handling_mechanism_can_be_configured<S: Service>() {
-        let sut_1 = WaitSetBuilder::new()
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut_1 = node
+            .waitset_builder()
             .signal_handling_mode(SignalHandlingMode::Disabled)
-            .create::<S>()
+            .create()
             .unwrap();
 
-        let sut_2 = WaitSetBuilder::new()
+        let sut_2 = node
+            .waitset_builder()
             .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
-            .create::<S>()
+            .create()
             .unwrap();
 
         assert_that!(sut_1.signal_handling_mode(), eq SignalHandlingMode::Disabled);
@@ -654,7 +669,9 @@ pub mod waitset {
 
     #[conformance_test]
     pub fn by_default_termination_signals_are_handled<S: Service>() {
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
 
         assert_that!(sut.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
     }

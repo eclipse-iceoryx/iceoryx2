@@ -15,6 +15,7 @@ use crate::{config, identifiers::UniqueNodeId, service::dynamic_config::DynamicC
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_cal::clock::Clock;
 use iceoryx2_cal::{
     event::SemanticString,
     named_concept::{NamedConceptConfiguration, NamedConceptMgmt},
@@ -44,6 +45,15 @@ pub(crate) fn static_config_storage_config<Service: crate::service::Service>(
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.static_config_storage_suffix)
         .path_hint(&path_hint)
+}
+
+pub(crate) fn clock_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+) -> <Service::Clock as Clock<Service::Event>>::Configuration {
+    <<Service::Clock as Clock<Service::Event>>::Configuration>::default()
+        .prefix(&global_config.global.prefix)
+        .suffix(&global_config.global.clock_suffix)
+        .path_hint(global_config.global.root_path())
 }
 
 pub(crate) fn connection_config<Service: crate::service::Service>(

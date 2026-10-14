@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             Ok(event.listener_builder().create()?)
         };
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
     let mut listeners = vec![];
     let mut listener_attachments: BTreeMap<
         WaitSetAttachmentId<ipc::Service>,

@@ -15,45 +15,56 @@ use pyo3::prelude::*;
 use crate::{
     error::WaitSetCreateError,
     parc::Parc,
-    service_type::ServiceType,
     signal_handling_mode::SignalHandlingMode,
     waitset::{WaitSet, WaitSetType},
 };
 
-#[derive(Default)]
-#[pyclass(str = "{0:?}")]
+pub(crate) enum WaitSetBuilderType {
+    Ipc(iceoryx2::prelude::WaitSetBuilder<crate::IpcService>),
+    Local(iceoryx2::prelude::WaitSetBuilder<crate::LocalService>),
+}
+
+#[pyclass]
 /// Creates a new `WaitSet`.
-pub struct WaitSetBuilder(iceoryx2::prelude::WaitSetBuilder);
+pub struct WaitSetBuilder(pub(crate) Parc<WaitSetBuilderType>);
 
 #[pymethods]
 impl WaitSetBuilder {
-    #[staticmethod]
-    /// Instantiates a new `WaitSetBuilder`
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Defines the `SignalHandlingMode` for the `WaitSet`. It affects the
     /// `WaitSet.wait_and_process` and `WaitSet.wait_and_process_with_timeout` calls
     /// that returns any received ``Signal`` via its `WaitSetRunResult` return value.
     pub fn signal_handling_mode(&mut self, value: &SignalHandlingMode) -> Self {
-        let this = self.0.clone();
-        let this = this.signal_handling_mode(value.clone().into());
-        Self(this)
+        match &*self.0.lock() {
+            WaitSetBuilderType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.signal_handling_mode(value.clone().into());
+                Self(Parc::new(WaitSetBuilderType::Ipc(this)))
+            }
+            WaitSetBuilderType::Local(v) => {
+                let this = v.clone();
+                let this = this.signal_handling_mode(value.clone().into());
+                Self(Parc::new(WaitSetBuilderType::Local(this)))
+            }
+        }
     }
 
     /// Creates the `WaitSet`.
-    pub fn create(&mut self, service_type: &ServiceType) -> PyResult<WaitSet> {
-        let this = self.0.clone();
-        match service_type {
-            ServiceType::Ipc => Ok(WaitSet(Parc::new(WaitSetType::Ipc(Some(
-                this.create::<crate::IpcService>()
-                    .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
-            ))))),
-            ServiceType::Local => Ok(WaitSet(Parc::new(WaitSetType::Local(Some(
-                this.create::<crate::LocalService>()
-                    .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
-            ))))),
+    pub fn create(&mut self) -> PyResult<WaitSet> {
+        match &*self.0.lock() {
+            WaitSetBuilderType::Ipc(v) => {
+                let this = v.clone();
+                Ok(WaitSet(Parc::new(WaitSetType::Ipc(Some(
+                    this.create()
+                        .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
+                )))))
+            }
+            WaitSetBuilderType::Local(v) => {
+                let this = v.clone();
+                Ok(WaitSet(Parc::new(WaitSetType::Local(Some(
+                    this.create()
+                        .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
+                )))))
+            }
         }
     }
 }

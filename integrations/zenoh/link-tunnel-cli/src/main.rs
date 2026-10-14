@@ -55,9 +55,14 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn run(tunnel: &mut ZenohTunnel, wake_sources: &WakeSources) -> anyhow::Result<()> {
+    let node = fail!(
+        from ORIGIN,
+        when NodeBuilder::new().create::<ipc::Service>(),
+        "Failed to create node"
+    );
     let waitset = fail!(
         from ORIGIN,
-        when WaitSetBuilder::new().create::<ipc::Service>(),
+        when node.waitset_builder().create(),
         "Failed to create the wait set"
     );
     let _attached = fail!(

@@ -59,6 +59,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
         CustomServiceVariant,
     >;
     type NameGenerator = iceoryx2::name_generator::default_name_generator::DefaultNameGenerator;
+    type Clock = iceoryx2_cal::clock::posix::PosixClock<Self::Event>;
 }
 
 impl iceoryx2::service::internal::ServiceInternal<CustomServiceVariant> for CustomServiceVariant {}

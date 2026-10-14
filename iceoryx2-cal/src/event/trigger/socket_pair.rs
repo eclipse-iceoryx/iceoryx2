@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
+    clock::ClockListenerSchedule,
     dynamic_storage::{self, DynamicStorage},
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -20,6 +21,7 @@ use crate::{
     },
     named_concept::NamedConceptRemoveError,
 };
+use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{
@@ -146,6 +148,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
 pub struct SocketPairWaiter<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> {
     mgmt: *mut SocketPairMgmt,
     receiver: StreamingSocket,
+    clock: Arc<dyn ClockListenerSchedule>,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
 }
@@ -189,6 +192,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Abandonab
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.receiver) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 
@@ -232,6 +236,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         _name: &FileName,
         _config: &super::Configuration,
         mgmt: &mut core::mem::MaybeUninit<SocketPairMgmt>,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
         let origin = "SocketPairWaiter::create()";
         let msg = "Unable to create socket pair trigger";
@@ -260,6 +265,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         Ok(Self {
             mgmt: mgmt.as_mut_ptr(),
             receiver: waiter,
+            clock,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })

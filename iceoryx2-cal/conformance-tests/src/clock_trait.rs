@@ -33,7 +33,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -51,7 +51,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -71,7 +71,7 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
@@ -108,12 +108,12 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
 
-        if let (_, ScheduleHandle::Trigger(_)) = sut.schedule(Timeout::By(TIMEOUT)) {
+        if let ScheduleHandle::GuardAndListener(_) = sut.schedule(Timeout::By(TIMEOUT)) {
             assert_that!(shall_never_be_reached);
         }
     }
@@ -125,12 +125,12 @@ pub mod clock_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
-        let sut = Sut::ClockBuilder::new(&name)
+        let sut = Sut::Builder::new(&name)
             .config(&config)
             .open_clock()
             .unwrap();
 
-        if let (_, ScheduleHandle::TranslatedTimeout(_)) = sut.schedule(Timeout::By(TIMEOUT)) {
+        if let ScheduleHandle::TranslatedTimeout(_) = sut.schedule(Timeout::By(TIMEOUT)) {
             assert_that!(shall_never_be_reached);
         }
     }

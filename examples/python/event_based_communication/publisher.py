@@ -81,7 +81,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 publisher = CustomPublisher(node, SERVICE_NAME)
 
-waitset = iox2.WaitSetBuilder.new().create(iox2.ServiceType.Ipc)
+waitset = node.waitset_builder().create()
 publisher_guard = waitset.attach_notification(publisher.listener)
 cyclic_guard = waitset.attach_interval(CYCLE_TIME)
 

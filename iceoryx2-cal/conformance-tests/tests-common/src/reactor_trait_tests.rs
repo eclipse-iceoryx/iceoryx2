@@ -22,5 +22,5 @@ instantiate_conformance_tests_with_module!(
 instantiate_conformance_tests_with_module!(
     epoll,
     iceoryx2_cal_conformance_tests::reactor_trait,
-    iceoryx2_cal::reactor::epoll::Epoll
+    iceoryx2_cal::reactor::epoll::EpollReactor
 );

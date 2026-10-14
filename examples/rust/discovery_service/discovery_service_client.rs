@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = service.client_builder().create()?;
 
-    let waitset = WaitSetBuilder::new().create::<Service>()?;
+    let waitset = node.waitset_builder().create()?;
     let guard = waitset.attach_interval(CYCLE_TIME)?;
 
     let pending_response = client.send_copy(())?;

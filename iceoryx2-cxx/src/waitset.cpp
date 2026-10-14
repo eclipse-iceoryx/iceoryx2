@@ -154,24 +154,20 @@ void WaitSetGuard<S>::drop() {
 ////////////////////////////
 // BEGIN: WaitSetBuilder
 ////////////////////////////
-WaitSetBuilder::WaitSetBuilder()
-    : m_handle([]() -> auto {
-        iox2_waitset_builder_h handle {};
-        iox2_waitset_builder_new(nullptr, &handle);
-        return handle;
-    }()) {
+template <ServiceType S>
+WaitSetBuilder<S>::WaitSetBuilder(iox2_waitset_builder_h handle)
+    : m_handle { handle } {
 }
 
 template <ServiceType S>
-auto WaitSetBuilder::create() const&& -> bb::Expected<WaitSet<S>, WaitSetCreateError> {
+auto WaitSetBuilder<S>::create() const&& -> bb::Expected<WaitSet<S>, WaitSetCreateError> {
     if (m_signal_handling_mode.has_value()) {
         iox2_waitset_builder_set_signal_handling_mode(
             &m_handle, iox2::bb::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
     }
 
     iox2_waitset_h waitset_handle {};
-    auto result =
-        iox2_waitset_builder_create(m_handle, iox2::bb::into<iox2_service_type_e>(S), nullptr, &waitset_handle);
+    auto result = iox2_waitset_builder_create(m_handle, nullptr, &waitset_handle);
 
     if (result == IOX2_OK) {
         return WaitSet<S>(waitset_handle);
@@ -359,9 +355,8 @@ template class WaitSetGuard<ServiceType::Ipc>;
 template class WaitSetGuard<ServiceType::Local>;
 template class WaitSet<ServiceType::Ipc>;
 template class WaitSet<ServiceType::Local>;
-
-template auto WaitSetBuilder::create() const&& -> bb::Expected<WaitSet<ServiceType::Ipc>, WaitSetCreateError>;
-template auto WaitSetBuilder::create() const&& -> bb::Expected<WaitSet<ServiceType::Local>, WaitSetCreateError>;
+template class WaitSetBuilder<ServiceType::Ipc>;
+template class WaitSetBuilder<ServiceType::Local>;
 
 template auto operator==(const WaitSetAttachmentId<ServiceType::Ipc>& lhs,
                          const WaitSetAttachmentId<ServiceType::Ipc>& rhs) -> bool;

@@ -26,6 +26,7 @@ use crate::{
     service_type::ServiceType,
     signal_handling_mode::SignalHandlingMode,
     unique_node_id::UniqueNodeId,
+    waitset_builder::{WaitSetBuilder, WaitSetBuilderType},
 };
 
 pub(crate) enum NodeType {
@@ -138,6 +139,18 @@ impl Node {
             NodeType::Local(node) => ServiceBuilder(Parc::new(ServiceBuilderType::Local(
                 node.service_builder(&name.0),
             ))),
+        }
+    }
+
+    /// Instantiates a `WaitSetBuilder`
+    pub fn waitset_builder(&self) -> WaitSetBuilder {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => {
+                WaitSetBuilder(Parc::new(WaitSetBuilderType::Ipc(node.waitset_builder())))
+            }
+            NodeType::Local(node) => {
+                WaitSetBuilder(Parc::new(WaitSetBuilderType::Local(node.waitset_builder())))
+            }
         }
     }
 

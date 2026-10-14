@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::clock::ClockListenerSchedule;
 use crate::event::{
     EventId, ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
 };
 use crate::named_concept::NamedConceptRemoveError;
 use crate::{dynamic_storage::DynamicStorage, event::event_state::EventState};
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use core::time::Duration;
@@ -89,6 +91,7 @@ pub trait WaiterInterface<
         name: &FileName,
         config: &Configuration,
         mgmt: &mut MaybeUninit<Mgmt>,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError>;
     fn try_wait(&self) -> Result<(), ListenerWaitError>;
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;

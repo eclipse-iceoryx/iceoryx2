@@ -44,10 +44,11 @@ pub mod event_trait {
     pub fn create_works<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -62,11 +63,12 @@ pub mod event_trait {
     pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq true);
 
@@ -78,12 +80,15 @@ pub mod event_trait {
     pub fn cannot_be_created_twice<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let _sut = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock.clone())
             .unwrap();
-        let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
+        let sut = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create(clock);
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
@@ -106,10 +111,11 @@ pub mod event_trait {
         const REPETITIONS: u64 = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -142,10 +148,11 @@ pub mod event_trait {
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -192,10 +199,11 @@ pub mod event_trait {
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
 
         for i in 0..REPETITIONS {
@@ -223,10 +231,11 @@ pub mod event_trait {
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -282,12 +291,13 @@ pub mod event_trait {
         const SOURCES: u64 = 4;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
         let mut sources = vec![];
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
             .event_id_max(EventId::new(128))
-            .create()
+            .create(clock)
             .unwrap();
         for _ in 0..SOURCES {
             sources.push(
@@ -352,10 +362,11 @@ pub mod event_trait {
     pub fn try_wait_does_not_block<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let _sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -370,10 +381,11 @@ pub mod event_trait {
     pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let _sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -398,6 +410,7 @@ pub mod event_trait {
         let config = MutexBuilder::new()
             .create(generate_isolated_config::<Sut::Configuration>(), &handle)
             .unwrap();
+        let clock = create_test_clock();
 
         let counter = AtomicU64::new(0);
         let counter_old = AtomicU64::new(0);
@@ -408,7 +421,7 @@ pub mod event_trait {
             s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
-                    .create()
+                    .create(clock)
                     .unwrap();
                 barrier.wait();
                 let mut notified_events = vec![];
@@ -474,6 +487,7 @@ pub mod event_trait {
         let config = MutexBuilder::new()
             .create(generate_isolated_config::<Sut::Configuration>(), &handle)
             .unwrap();
+        let clock = create_test_clock();
 
         let counter = AtomicU64::new(0);
         let counter_old = AtomicU64::new(0);
@@ -484,7 +498,7 @@ pub mod event_trait {
             s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
-                    .create()
+                    .create(clock)
                     .unwrap();
                 barrier.wait();
                 barrier.wait();
@@ -571,11 +585,12 @@ pub mod event_trait {
         const EVENT_ID_MAX: EventId = EventId::new(123);
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let _sut_listener = Sut::ListenerBuilder::new(&name)
             .event_id_max(EVENT_ID_MAX)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -590,11 +605,12 @@ pub mod event_trait {
         const EVENT_ID_MAX: EventId = EventId::new(24);
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .event_id_max(EVENT_ID_MAX)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -632,11 +648,12 @@ pub mod event_trait {
         const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .event_id_max(EventId::new(REPETITIONS))
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -696,12 +713,13 @@ pub mod event_trait {
                 &mutex_handle,
             )
             .unwrap();
+        let clock = create_test_clock();
 
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
-                    .create()
+                    .create(clock)
                     .unwrap();
                 barrier.wait();
 
@@ -746,10 +764,11 @@ pub mod event_trait {
     pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -773,10 +792,11 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
 
         Sut::Listener::abandon(sut_listener);
@@ -790,10 +810,11 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let _sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
 
         let sut_notifier = Sut::NotifierBuilder::new(&name)
@@ -812,10 +833,11 @@ pub mod event_trait {
         const REPETITIONS: u64 = 4096 * 128;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -837,10 +859,11 @@ pub mod event_trait {
     pub fn notifier_and_listener_return_same_max_event_count<Sut: Event>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -855,10 +878,11 @@ pub mod event_trait {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -882,11 +906,12 @@ pub mod event_trait {
         const NUMBER_OF_EVENTS: usize = 10;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
             .event_id_max(EventId::new(NUMBER_OF_EVENTS - 1))
-            .create()
+            .create(clock)
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
@@ -919,6 +944,7 @@ pub mod event_trait {
 
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let start_barrier_handle = BarrierHandle::new();
         let start_barrier = Arc::new(
@@ -933,7 +959,7 @@ pub mod event_trait {
         let listener = Sut::ListenerBuilder::new(&name)
             .config(&config)
             .event_id_max(EventId::new(NUMBER_OF_EVENTS - 1))
-            .create()
+            .create(clock)
             .unwrap();
         let max_event_count = listener.max_event_count();
 
@@ -1011,10 +1037,11 @@ pub mod event_trait {
         let pong_name = generate_file_path().file_name();
         let ping_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
+        let clock = create_test_clock();
 
         let ping_listener = Sut::ListenerBuilder::new(&ping_name)
             .config(&config)
-            .create()
+            .create(clock.clone())
             .unwrap();
         let ping_notifier = Sut::NotifierBuilder::new(&ping_name)
             .config(&config)
@@ -1022,7 +1049,7 @@ pub mod event_trait {
             .unwrap();
         let pong_listener = Sut::ListenerBuilder::new(&pong_name)
             .config(&config)
-            .create()
+            .create(clock)
             .unwrap();
         let pong_notifier = Sut::NotifierBuilder::new(&pong_name)
             .config(&config)

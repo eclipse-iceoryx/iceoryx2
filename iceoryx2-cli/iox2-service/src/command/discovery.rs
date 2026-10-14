@@ -44,7 +44,8 @@ pub(crate) fn discovery(
 
     println!("Discovering Services (rate: {rate}ms)");
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
     let guard = waitset
         .attach_interval(core::time::Duration::from_millis(rate))
         .map_err(|e| anyhow!("failed to attach interval to waitset: {:?}", e))?;

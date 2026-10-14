@@ -23,7 +23,7 @@ use alloc::format;
 use alloc::rc::Rc;
 
 use iceoryx2::prelude::{
-    LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder, ipc, set_log_level_from_env_or,
+    LogLevel, NodeBuilder, WaitSetAttachmentId, ipc, set_log_level_from_env_or,
 };
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_log::info;
@@ -69,7 +69,7 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         .listener_builder()
         .create()?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
 
     let pong_guard = waitset.attach_notification(&pong_listener)?;
     let pong_id = WaitSetAttachmentId::from_guard(&pong_guard);

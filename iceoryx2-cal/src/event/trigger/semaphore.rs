@@ -12,6 +12,7 @@
 
 use super::Configuration;
 use crate::{
+    clock::ClockListenerSchedule,
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -21,6 +22,7 @@ use crate::{
     },
     named_concept::NamedConceptRemoveError,
 };
+use alloc::sync::Arc;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::{
@@ -124,6 +126,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
 pub struct SemaphoreWaiter<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
     semaphore_mgmt: *mut SemaphoreMgmt,
     semaphore: UnnamedSemaphore<'static>,
+    clock: Arc<dyn ClockListenerSchedule>,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
 }
@@ -143,6 +146,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonabl
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(this.semaphore_mgmt) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 
@@ -194,6 +198,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         _name: &FileName,
         _config: &Configuration,
         mgmt: &mut MaybeUninit<SemaphoreMgmt>,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
         use iceoryx2_bb_posix::ipc_capable::Handle;
 
@@ -223,6 +228,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         Ok(Self {
             semaphore_mgmt: mgmt.as_mut_ptr(),
             semaphore,
+            clock,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })

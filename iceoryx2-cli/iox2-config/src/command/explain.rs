@@ -77,6 +77,12 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Prefix that is used for every file iceoryx2 creates.",
                 },
                 Field {
+                    key: "global.clock-suffix",
+                    value_type: "string",
+                    default_value: format!("\"{}\"", config.global.clock_suffix),
+                    description: "The suffix of the clock resource.",
+                },
+                Field {
                     key: "global.creation-timeout.secs",
                     value_type: "int",
                     default_value: config.global.creation_timeout.as_secs().to_string(),

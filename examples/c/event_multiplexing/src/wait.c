@@ -141,10 +141,9 @@ int main(int argc, char** argv) {
     }
 
     // create waitset
-    iox2_waitset_builder_h waitset_builder = NULL;
-    iox2_waitset_builder_new(NULL, &waitset_builder);
+    iox2_waitset_builder_h waitset_builder = iox2_node_waitset_builder(&node_handle, NULL);
     iox2_waitset_h waitset = NULL;
-    ret_val = iox2_waitset_builder_create(waitset_builder, iox2_service_type_e_IPC, NULL, &waitset);
+    ret_val = iox2_waitset_builder_create(waitset_builder, NULL, &waitset);
     if (ret_val != IOX2_OK) {
         printf("Unable to create waitset! Error: %d\n", ret_val);
         goto drop_listener_2;

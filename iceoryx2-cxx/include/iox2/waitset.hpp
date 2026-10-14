@@ -280,6 +280,7 @@ class WaitSet {
     auto signal_handling_mode() const -> SignalHandlingMode;
 
   private:
+    template <ServiceType>
     friend class WaitSetBuilder;
     explicit WaitSet(iox2_waitset_h handle);
     void drop();
@@ -288,6 +289,7 @@ class WaitSet {
 };
 
 /// The builder for the [`WaitSet`].
+template <ServiceType S>
 class WaitSetBuilder {
   public:
     /// Defines the [`SignalHandlingMode`] for the [`WaitSet`]. It affects the
@@ -300,19 +302,20 @@ class WaitSetBuilder {
 #endif
 
   public:
-    WaitSetBuilder();
     ~WaitSetBuilder() = default;
 
     WaitSetBuilder(const WaitSetBuilder&) = delete;
-    WaitSetBuilder(WaitSetBuilder&&) = delete;
+    WaitSetBuilder(WaitSetBuilder&&) = default;
     auto operator=(const WaitSetBuilder&) -> WaitSetBuilder& = delete;
-    auto operator=(WaitSetBuilder&&) -> WaitSetBuilder& = delete;
+    auto operator=(WaitSetBuilder&&) -> WaitSetBuilder& = default;
 
     /// Creates the [`WaitSet`].
-    template <ServiceType S>
     auto create() const&& -> bb::Expected<WaitSet<S>, WaitSetCreateError>;
 
   private:
+    template <ServiceType>
+    friend class Node;
+    explicit WaitSetBuilder(iox2_waitset_builder_h handle);
     iox2_waitset_builder_h m_handle = nullptr;
 };
 } // namespace iox2
