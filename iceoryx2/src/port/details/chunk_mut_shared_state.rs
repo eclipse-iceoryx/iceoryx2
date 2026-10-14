@@ -200,12 +200,8 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> Grow<ShmPointe
         content_placement: ContentPlacement,
     ) -> Result<ShmPointer, AllocationGrowError> {
         let state = self.state.lock();
-        let ptr = unsafe {
-            state
-                .port_shared_state
-                .lock()
-                .grow(ptr, old_layout, new_layout, content_placement)
-        }?;
+        let port_state = state.port_shared_state.lock();
+        let ptr = unsafe { port_state.grow(ptr, old_layout, new_layout, content_placement) }?;
 
         state
             .offset_to_chunk
@@ -213,7 +209,12 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> Grow<ShmPointe
         state
             .shm_raw_ptr
             .store(ptr.data_ptr as usize, Ordering::Relaxed);
-        state.slice_len.store(new_layout.size(), Ordering::Relaxed);
+
+        // The layout covers the headers, the slice length only the payload.
+        state.slice_len.store(
+            new_layout.size() - port_state.header_len(),
+            Ordering::Relaxed,
+        );
 
         Ok(ptr)
     }

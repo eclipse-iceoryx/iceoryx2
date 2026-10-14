@@ -18,6 +18,7 @@ use core::marker::PhantomData;
 use iceoryx2::service::Service;
 use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRelayBuilder};
 use iceoryx2_link_backend::service_description::{EventDescription, PublishSubscribeDescription};
+use iceoryx2_link_backend::wire::region::ResizeError;
 
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::Translators;
@@ -132,3 +133,13 @@ impl core::fmt::Display for ReceiveError {
 }
 
 impl Error for ReceiveError {}
+
+impl From<ResizeError> for ReceiveError {
+    fn from(refusal: ResizeError) -> Self {
+        match refusal {
+            ResizeError::UnsupportedLength | ResizeError::NotResizable => Self::Malformed,
+            ResizeError::Exhausted => Self::Loan,
+            ResizeError::DirectionUnsupported => Self::Transcode,
+        }
+    }
+}

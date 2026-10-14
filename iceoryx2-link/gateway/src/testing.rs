@@ -18,7 +18,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, ServiceDescription, TypeDescription,
+    PublishSubscribeSettings, ServiceDescription, TypeDescription, TypeIdentifier,
 };
 
 use iceoryx2_link_adapter::Mapping;
@@ -198,7 +198,7 @@ impl Mapping for PartialMapping {
 pub(crate) struct RefusingTranslator;
 
 fn refuses(types: &SampleTypes) -> bool {
-    types.payload.type_name == "refused"
+    matches!(&types.payload.identifier, TypeIdentifier::Name(name) if name == "refused")
 }
 
 impl Translator<SampleShape> for RefusingTranslator {
@@ -297,7 +297,7 @@ pub(crate) fn settings(history_size: usize) -> PublishSubscribeSettings {
 pub(crate) fn types_of(payload: &str) -> SampleTypes {
     let type_description = TypeDescription {
         variant: TypeVariant::FixedSize,
-        type_name: String::from(payload),
+        identifier: TypeIdentifier::Name(String::from(payload)),
         size: 8,
         alignment: 8,
     };

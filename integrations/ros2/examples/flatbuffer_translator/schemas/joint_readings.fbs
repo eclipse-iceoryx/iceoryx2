@@ -1,0 +1,17 @@
+namespace robot;
+
+struct Timestamp {
+    seconds: int32;
+    nanoseconds: uint32;
+}
+
+table JointReadings {
+    captured_at: Timestamp (required);
+    frame: string (required);
+    joints: [string] (required);
+    angles: [double] (required);
+    speeds: [double] (required);
+    torques: [double] (required);
+}
+
+root_type JointReadings;

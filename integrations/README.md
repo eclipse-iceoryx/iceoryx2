@@ -24,9 +24,8 @@ just build integrations-zenoh
 just test integrations-zenoh
 ```
 
-The ROS 2 integration additionally requires a sourced ROS 2 environment —
-see [`ros2/README.md`](ros2/README.md) for the development distrobox that
-provides one:
+> [!NOTE]
+> A sourced ROS 2 environment is required for building the ROS 2 integrations.
 
 ```bash
 just build integrations-ros2

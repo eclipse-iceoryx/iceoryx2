@@ -47,9 +47,9 @@ jobs:
           RMW_PKG="ros-${{ inputs.ros-distro }}-$(echo '${{ inputs.rmw }}' | tr '_' '-')"
           # The message packages the workspace builds against. Installing them
           # upgrades them past a base image that predates their Rust crates.
-          MSG_PKGS="ros-${{ inputs.ros-distro }}-builtin-interfaces ros-${{ inputs.ros-distro }}-std-msgs ros-${{ inputs.ros-distro }}-geometry-msgs"
+          MSG_PKGS="ros-${{ inputs.ros-distro }}-builtin-interfaces ros-${{ inputs.ros-distro }}-std-msgs ros-${{ inputs.ros-distro }}-geometry-msgs ros-${{ inputs.ros-distro }}-sensor-msgs"
           apt-get update
-          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev expect ros-dev-tools python3-pip "$RMW_PKG" $MSG_PKGS
+          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev libflatbuffers-dev expect ros-dev-tools python3-pip "$RMW_PKG" $MSG_PKGS
 
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0

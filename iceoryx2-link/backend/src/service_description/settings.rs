@@ -156,7 +156,8 @@ mod tests {
             &config,
             MessagingPattern::PublishSubscribe,
         );
-        let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+        let described = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
         let PatternSettings::PublishSubscribe(settings) = described.settings.pattern else {
             panic!("a publish-subscribe service");
         };
@@ -180,7 +181,8 @@ mod tests {
 
         let static_config =
             static_config_of::<local::Service>(&service_name, &config, MessagingPattern::Event);
-        let described = ServiceDescription::try_from(&static_config).expect("pattern is carried");
+        let described = ServiceDescription::load::<local::Service>(&config, &static_config)
+            .expect("pattern is carried");
         let PatternSettings::Event(settings) = described.settings.pattern else {
             panic!("an event service");
         };

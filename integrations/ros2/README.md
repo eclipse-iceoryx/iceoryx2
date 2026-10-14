@@ -64,11 +64,14 @@ The integrations require:
   message crates generated in the [message workspace](colcon/messages/README.md)
 * The cargo-aware colcon build tools, for the
   [colcon examples](colcon/examples/README.md)
+* The FlatBuffers compiler `flatc`, for the
+  [flatbuffer translator example](examples/flatbuffer_translator/README.md)
 
 The associated READMEs describe how to set them up.
 
 Inside a container, such as the development distrobox, the colcon build tools
-can be installed with a `just` recipe for convenience:
+can be installed and the required flatbuffer schemas generated with a `just`
+recipe for convenience:
 
 ```bash
 just setup integrations-ros2
@@ -112,4 +115,3 @@ just test-e2e integrations-ros2
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | [gateway examples](examples/README.md)       | `iceoryx2` applications whose services are propagated to ROS 2 via a gateway.                  |
 | [colcon examples](colcon/examples/README.md) | `iceoryx2` applications packaged as ROS 2 packages built with colcon and run with `ros2 run`. |
-

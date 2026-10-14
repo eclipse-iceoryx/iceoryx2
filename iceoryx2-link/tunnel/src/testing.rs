@@ -18,6 +18,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, TypeDescription,
+    TypeIdentifier,
 };
 
 use iceoryx2_link_carrier::PeerId;
@@ -31,7 +32,7 @@ pub(crate) fn peer(discriminator: u8) -> PeerId {
 pub(crate) fn description(name: &str, payload: &str) -> ServiceDescription {
     let type_description = TypeDescription {
         variant: TypeVariant::FixedSize,
-        type_name: String::from(payload),
+        identifier: TypeIdentifier::Name(String::from(payload)),
         size: 8,
         alignment: 8,
     };
