@@ -12,6 +12,7 @@
 
 use super::Configuration;
 use crate::{
+    clock::ClockListenerSchedule,
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -39,6 +40,7 @@ use iceoryx2_bb_posix::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
+use std::sync::Arc;
 
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
@@ -124,6 +126,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
 pub struct SemaphoreWaiter<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
     semaphore_mgmt: *mut SemaphoreMgmt,
     semaphore: UnnamedSemaphore<'static>,
+    clock: Arc<dyn ClockListenerSchedule>,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
 }
@@ -194,6 +197,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         _name: &FileName,
         _config: &Configuration,
         mgmt: &mut MaybeUninit<SemaphoreMgmt>,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
         use iceoryx2_bb_posix::ipc_capable::Handle;
 
@@ -223,6 +227,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         Ok(Self {
             semaphore_mgmt: mgmt.as_mut_ptr(),
             semaphore,
+            clock,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })

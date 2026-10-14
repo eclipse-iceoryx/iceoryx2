@@ -155,7 +155,7 @@ pub enum ScheduleOnHandle {
     Guard(Box<dyn ScheduleGuard>),
 }
 
-pub trait ClockListenerSchedule: Send + Sync {
+pub trait ClockListenerSchedule: Send + Sync + Debug {
     /// Schedules an existing trigger, identified by `listener_name`, to be
     /// activated once the given [`Timeout`] expires.
     ///

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
+    clock::ClockListenerSchedule,
     dynamic_storage::DynamicStorage,
     event::{
         event_state::EventState,
@@ -24,6 +25,7 @@ use crate::{
     },
     named_concept::NamedConceptRemoveError,
 };
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::ptr::NonNull;
 use core::{mem::MaybeUninit, time::Duration};
@@ -69,6 +71,7 @@ impl<
         _name: &FileName,
         _config: &Configuration,
         _mgmt: &mut MaybeUninit<Mgmt>,
+        _clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
         unimplemented!()
     }

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
+    clock::ClockListenerSchedule,
     dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
     },
@@ -38,6 +39,7 @@ use iceoryx2_bb_posix::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{debug, fail};
+use std::sync::Arc;
 
 const NOTIFICATION_STATE_IDLE: u8 = 0;
 const NOTIFICATION_STATE_PENDING: u8 = 1;
@@ -658,6 +660,7 @@ impl<
 
     fn create(
         self,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event>::Listener, ListenerCreateError> {
         let msg = "Failed to create listener";
         let state_size = E::memory_size(self.event_id_max.as_value() + 1);
@@ -679,6 +682,7 @@ impl<
                     &self.name,
                     &self.config.to_trigger_config(),
                     &mut unsafe { value.assume_init_mut() }.handle,
+                    clock
                 ) {
                     Ok(w) => waiter = Some(w),
                     Err(e) => {

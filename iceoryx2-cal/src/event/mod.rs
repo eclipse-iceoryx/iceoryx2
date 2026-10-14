@@ -16,6 +16,7 @@ pub mod implementations;
 pub mod recommended;
 pub mod trigger;
 
+use crate::clock::ClockListenerSchedule;
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
@@ -23,6 +24,7 @@ pub use iceoryx2_bb_system_types::path::Path;
 pub use implementations::*;
 
 use crate::event::event_state::{EventActivation, EventState, EventStateActivateError};
+use alloc::sync::Arc;
 use core::{fmt::Debug, time::Duration};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -150,7 +152,10 @@ pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
 
 pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
     fn event_id_max(self, id: EventId) -> Self;
-    fn create(self) -> Result<T::Listener, ListenerCreateError>;
+    fn create(
+        self,
+        clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<T::Listener, ListenerCreateError>;
 }
 
 pub trait Event: Sized + NamedConceptMgmt + Debug {
