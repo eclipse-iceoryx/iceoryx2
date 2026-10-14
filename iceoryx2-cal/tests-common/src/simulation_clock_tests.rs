@@ -98,6 +98,17 @@ fn cleanup_clock_state(name: &FileName, config: &TimeControllerConfig) {
         .acquire_ownership();
 }
 
+fn cleanup_time_controller_state(config: &TimeControllerConfig) {
+    let state_config = <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
+        .prefix(config.get_prefix())
+        .path_hint(config.get_path_hint());
+    <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(&TIME_CONTROLLER_STATE_NAME)
+        .config(&state_config)
+        .open(AccessMode::ReadWrite)
+        .unwrap()
+        .acquire_ownership();
+}
+
 #[test]
 fn time_controller_can_be_created_once() {
     let test = TestFixture::new();
@@ -253,4 +264,53 @@ fn time_controller_can_be_created_after_clock() {
         SimulationTimeControllerBuilder::new(test.name(), test.config()).open_time_controller(),
         is_ok
     );
+}
+
+#[test]
+fn now_returns_current_time() {
+    let test = TestFixture::new();
+    let duration = Duration::from_nanos(452381790);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
+        .open_clock()
+        .unwrap();
+
+    assert_that!(clock.now().unwrap(), eq TimePoint::new());
+
+    time_controller.advance(duration);
+    assert_that!(clock.now().unwrap(), eq TimePoint::from_nanos(duration.as_nanos()));
+
+    time_controller.advance(2 * duration);
+    assert_that!(clock.now().unwrap(), eq TimePoint::from_nanos(3 * duration.as_nanos()));
+}
+
+#[test]
+fn now_returns_current_time_with_configured_creation_time() {
+    let name = generate_file_path().file_name();
+    let tp = TimePoint::from_nanos(6253);
+    let config = create_time_controller_config().creation_time(tp);
+    let duration = Duration::from_nanos(452381790);
+
+    let time_controller = SimulationTimeControllerBuilder::new(&name, &config)
+        .create_time_controller()
+        .unwrap();
+    let clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
+        .config(&config)
+        .open_clock()
+        .unwrap();
+
+    assert_that!(clock.now().unwrap(), eq tp);
+
+    time_controller.advance(duration);
+    assert_that!(clock.now().unwrap(), eq tp + duration);
+
+    time_controller.advance(2 * duration);
+    assert_that!(clock.now().unwrap(), eq tp + (3 * duration));
+
+    cleanup_clock_state(&name, &config);
+    cleanup_time_controller_state(&config);
 }

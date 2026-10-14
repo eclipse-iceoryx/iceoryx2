@@ -348,12 +348,9 @@ where
 
 impl<E: Event> ClockNow for SimulationClock<E> {
     fn now(&self) -> Result<TimePoint, ClockNowError> {
-        Ok(TimePoint::from_nanos(
-            self.state
-                .get()
-                .nanoseconds_since_creation
-                .load(Ordering::SeqCst) as u128,
-        ))
+        let state = self.state.get();
+        Ok(state.creation_time
+            + Duration::from_nanos(state.nanoseconds_since_creation.load(Ordering::Relaxed)))
     }
 }
 
