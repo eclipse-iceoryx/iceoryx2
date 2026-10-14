@@ -14,11 +14,11 @@
 
 use crate::api::cleanup_state::iox2_cleanup_state_t;
 use crate::api::{
-    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ServiceBuilderUnion,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ServiceBuilderUnion, WaitSetBuilderUnion,
     iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr,
     iox2_service_builder_h, iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e,
 };
-use crate::iox2_messaging_pattern_e;
+use crate::{iox2_messaging_pattern_e, iox2_waitset_builder_h, iox2_waitset_builder_t};
 
 use iceoryx2::node::{
     DeadNodeView, NodeCleanupFailure, NodeDetails, NodeListFailure, NodeView, NodeWaitFailure,
@@ -801,6 +801,57 @@ pub unsafe extern "C" fn iox2_node_service_builder(
         };
 
         (*service_builder_struct_ptr).as_handle()
+    }
+}
+
+/// # Arguments
+///
+/// * `node_handle` - Must be a valid [`iox2_node_h_ref`] obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)
+/// * `waitset_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_waitset_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the `iox2_waitset_builder_h` handle for the waitset builder.
+///
+/// # Safety
+///
+/// * The `node_handle` is still valid after the return of this function and can be use in another function call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_node_waitset_builder(
+    node_handle: iox2_node_h_ref,
+    waitset_builder_struct_ptr: *mut iox2_waitset_builder_t,
+) -> iox2_waitset_builder_h {
+    node_handle.assert_non_null();
+
+    let mut waitset_builder_struct_ptr = waitset_builder_struct_ptr;
+    fn no_op(_: *mut iox2_waitset_builder_t) {}
+    let mut deleter: fn(*mut iox2_waitset_builder_t) = no_op;
+    if waitset_builder_struct_ptr.is_null() {
+        waitset_builder_struct_ptr = iox2_waitset_builder_t::alloc();
+        deleter = iox2_waitset_builder_t::dealloc;
+    }
+    debug_assert!(!waitset_builder_struct_ptr.is_null());
+    unsafe {
+        let node = &mut *node_handle.as_type();
+        match node.service_type {
+            iox2_service_type_e::IPC => {
+                let waitset_builder = node.value.as_ref().ipc.waitset_builder();
+                (*waitset_builder_struct_ptr).init(
+                    node.service_type,
+                    WaitSetBuilderUnion::new_ipc(waitset_builder),
+                    deleter,
+                );
+            }
+            iox2_service_type_e::LOCAL => {
+                let waitset_builder = node.value.as_ref().local.waitset_builder();
+                (*waitset_builder_struct_ptr).init(
+                    node.service_type,
+                    WaitSetBuilderUnion::new_local(waitset_builder),
+                    deleter,
+                );
+            }
+        };
+
+        (*waitset_builder_struct_ptr).as_handle()
     }
 }
 
