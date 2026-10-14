@@ -139,4 +139,16 @@
     let bridges = link.bridges();
     ```
 
+2. The `WaitSetBuilder` can no longer be directly instantiated. First a `Node`
+   must be created and this can return a `WaitSetBuilder`
+
+    ```rust
+    // old
+    let waitset = WaitSetBuilder::new().create::<ipc::Service>()>?;
+
+    // new
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
+    ```
+
 <!-- markdownlint-enable MD013 -->
