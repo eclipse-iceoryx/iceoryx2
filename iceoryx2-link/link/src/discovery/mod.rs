@@ -9,6 +9,8 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+mod announcement;
+
 use alloc::collections::BTreeMap;
 use alloc::collections::btree_map::Values;
 use core::fmt::Display;
@@ -21,6 +23,8 @@ use iceoryx2_link_backend::diagnostic::Findings;
 use iceoryx2_link_backend::resolver::Resolution;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_log::{origin, trace, warn};
+
+pub(crate) use announcement::AnnouncementState;
 
 /// What identifies one creation of a local service. `UniqueServiceId`
 /// once it can be generated outside iceoryx2.

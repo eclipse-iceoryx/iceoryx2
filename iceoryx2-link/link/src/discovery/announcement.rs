@@ -17,7 +17,7 @@ use iceoryx2_link_backend::Announcement;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_log::{fail, origin, trace};
 
-use crate::discovery_state::CreationId;
+use crate::discovery::CreationId;
 
 /// An exported service as the opposing side was last told of it.
 struct Announced {

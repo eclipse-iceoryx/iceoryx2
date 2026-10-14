@@ -24,9 +24,9 @@ use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_backend::{Backend, Reactive, Refusal, RemoteDescription, RemoteId, WakeService};
 use iceoryx2_log::{fail, origin};
 
-use crate::announcement_state::AnnouncementState;
 use crate::bridge::{Bridges, PropagateError};
-use crate::discovery_state::DiscoveryState;
+use crate::discovery::AnnouncementState;
+use crate::discovery::DiscoveryState;
 use crate::wake::{Wake, WakeCreationError};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
