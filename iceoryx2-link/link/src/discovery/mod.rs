@@ -10,6 +10,52 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Discovers the services of both sides, resolves how each is bridged and
+//! announces the exported ones to the opposing side.
+//!
+//! ```text
+//!   local listing, one pass                      remote listing, one pass
+//!             │                                             │
+//!             ▼                                             ▼
+//!   ┌────────────────────────┐                  ┌────────────────────────┐
+//!   │ LocalUpdate            │                  │ RemoteUpdate           │
+//!   │   insert() per service │                  │   insert() per remote  │
+//!   │   finalize() prunes    │                  │   finalize() prunes    │
+//!   │   what was not seen    │                  │   what was not seen    │
+//!   └────────────────────────┘                  └────────────────────────┘
+//!             │  records                                    │  records
+//!             ▼                                             ▼
+//!   ┌────────────────────────┐                  ┌────────────────────────┐
+//!   │ LocalObservation       │                  │ RemoteObservation      │
+//!   │   one per listed       │                  │   one per listed       │
+//!   │   service              │                  │   remote description   │
+//!   └────────────────────────┘                  └────────────────────────┘
+//!             │                                             │
+//!             └──────────────────────┬──────────────────────┘
+//!                                    ▼
+//!                        ┌────────────────────────┐  DiscoveryState::unresolved() ┌────────────────────────┐
+//!                        │ DiscoveredService      │ ────────────────────────────▶ │ Unresolved::resolve    │ ──▶ the backend's
+//!                        │   one per service hash │  the services that changed    │   asks the resolver,   │     resolver
+//!                        │   local, remotes,      │                               │   stamps the result    │
+//!                        │   resolution           │ ◀──────────────────────────── │   with the epoch       │
+//!                        └────────────────────────┘  the Resolution, stored       └────────────────────────┘
+//!                                    │
+//!                ┌───────────────────┴─────────────────────────┐
+//!                │  DiscoveryState::bridgeable()               │  DiscoveryState::exported(), the set of local
+//!                │  the set of services that should            │  services being exported to opposing side
+//!                │  require a bridge service                   │
+//!                ▼                                             ▼
+//!     ┌────────────────────────┐                    ┌───────────────────────────┐
+//!     │ BridgeableService      │                    │ AnnouncementState::update │
+//!     └────────────────────────┘                    │   tells the opposing side │
+//!                │                                  │   of changes              │
+//!                │                                  └───────────────────────────┘
+//!                ▼                                             │
+//!       Bridges::reconcile                                     ▼
+//!       opens and closes bridges                      Backend::announce
+//!       to match the set
+//! ```
+
 mod announcement;
 mod discovered_service;
 mod update;
