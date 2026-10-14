@@ -31,6 +31,7 @@
 #include "iox2/service_type.hpp"
 #include "iox2/signal_handling_mode.hpp"
 #include "iox2/unique_node_id.hpp"
+#include "iox2/waitset.hpp"
 
 namespace iox2 {
 /// The central entry point of iceoryx2. Represents a node of the iceoryx2
@@ -58,6 +59,9 @@ class Node {
     /// Returns the [`ServiceBuilder`] to create a new service. The
     /// [`ServiceName`] of the [`Service`] is provided as argument.
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
+
+    /// Returns the [`WaitSetBuilder`] to create a new [`WaitSet`].
+    auto waitset_builder() const -> WaitSetBuilder<T>;
 
     /// Waits for a given `cycle_time`.
     auto wait(iox2::bb::Duration cycle_time) const -> bb::Expected<void, NodeWaitFailure>;

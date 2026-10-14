@@ -53,6 +53,8 @@ enum class NodeCreationFailure : uint8_t {
     UnableToGenerateUniqueNodeId,
     /// The [`NameGenerator`] could not be opened/created.
     UnableToOpenOrCreateNameGenerator,
+    /// The [`Clock`] used for all time related operations could not be opened.
+    FailedToOpenClock,
 };
 
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of

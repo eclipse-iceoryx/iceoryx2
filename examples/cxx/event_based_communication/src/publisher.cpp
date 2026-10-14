@@ -24,7 +24,7 @@ auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
     auto publisher = CustomPublisher::create(node, ServiceName::create("EventBasedCommService").value());
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
+    auto waitset = node.waitset_builder().create().value();
     // Whenever our publisher receives an event we get notified.
     auto publisher_guard = waitset.attach_notification(publisher).value();
     // Attach an interval so that we wake up and can publish a new message

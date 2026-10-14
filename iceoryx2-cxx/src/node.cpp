@@ -86,6 +86,12 @@ auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T
 }
 
 template <ServiceType T>
+auto Node<T>::waitset_builder() const -> WaitSetBuilder<T> {
+    auto* handle = iox2_node_waitset_builder(&m_handle, nullptr);
+    return WaitSetBuilder<T>(handle);
+}
+
+template <ServiceType T>
 auto Node<T>::list(ConfigView config, const iox2::bb::StaticFunction<CallbackProgression(NodeState<T>)>& callback)
     -> bb::Expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);

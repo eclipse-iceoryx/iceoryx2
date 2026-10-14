@@ -44,7 +44,7 @@ auto main() -> int {
     auto listener_1 = service_1.event.listener_builder().create().value();
     auto listener_2 = service_2.event.listener_builder().create().value();
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
+    auto waitset = node.waitset_builder().create().value();
 
     // If the service has defined a deadline we will use it, otherwise
     // we expect that the listener receive a message sent event after at most CYCLE_TIME_X

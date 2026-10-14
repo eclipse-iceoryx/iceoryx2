@@ -35,7 +35,7 @@ auto main() -> int {
                         .value();
     auto counter = 1000000U; // NOLINT, magic number is fine in an example
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
+    auto waitset = node.waitset_builder().create().value();
 
     // we only want to notify the other side explicitly when we have sent a sample
     // so we can define it as default event id

@@ -158,8 +158,6 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
     let waitset_builder_struct = unsafe { &mut *handle.as_type() };
     let waitset_builder = waitset_builder_struct.take().unwrap();
     unsafe {
-        iox2_waitset_builder_drop(handle);
-
         fn no_op(_: *mut iox2_waitset_t) {}
         let mut deleter: fn(*mut iox2_waitset_t) = no_op;
         let mut struct_ptr = struct_ptr;

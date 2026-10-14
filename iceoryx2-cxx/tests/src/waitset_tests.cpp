@@ -40,7 +40,7 @@ struct WaitSetTest : public ::testing::Test {
     }
 
     auto create_sut() -> WaitSet<TYPE> {
-        return WaitSetBuilder().create<TYPE>().value();
+        return node.waitset_builder().create().value();
     }
 
     auto create_listener() -> Listener<TYPE> {
@@ -327,12 +327,10 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 }
 
 TYPED_TEST(WaitSetTest, signal_handling_mode_can_be_set) {
-    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-
-    auto sut_1 = WaitSetBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<SERVICE_TYPE>().value();
-    auto sut_2 = WaitSetBuilder()
+    auto sut_1 = this->node.waitset_builder().signal_handling_mode(SignalHandlingMode::Disabled).create().value();
+    auto sut_2 = this->node.waitset_builder()
                      .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
-                     .create<SERVICE_TYPE>()
+                     .create()
                      .value();
 
     ASSERT_THAT(sut_1.signal_handling_mode(), Eq(SignalHandlingMode::Disabled));

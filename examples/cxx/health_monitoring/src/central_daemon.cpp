@@ -71,7 +71,7 @@ auto main() -> int {
                                .open_or_create()
                                .value();
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
+    auto waitset = node.waitset_builder().create().value();
     auto cycle_guard = waitset.attach_interval(CYCLE_TIME);
 
     std::cout << "Central daemon up and running." << std::endl;

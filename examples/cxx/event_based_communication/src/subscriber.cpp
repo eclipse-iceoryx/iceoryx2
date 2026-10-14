@@ -25,7 +25,7 @@ auto main() -> int {
 
     auto subscriber = CustomSubscriber::create(node, ServiceName::create("EventBasedCommService").value());
 
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
+    auto waitset = node.waitset_builder().create().value();
 
     // The subscriber is attached as a deadline, meaning that we expect some activity
     // latest after the deadline has passed.
