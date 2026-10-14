@@ -13,7 +13,6 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Add flatbuffer translation example for the ROS 2 gateway
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
 * [#2031](https://github.com/eclipse-iceoryx/iceoryx2/issues/2031) Notify the event service named after a service when the link delivered samples to it
@@ -29,7 +28,6 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
@@ -67,8 +65,8 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 * [#2076](https://github.com/eclipse-iceoryx/iceoryx2/issues/2076) Expose the names of ports in the port details of the C and C++ bindings
+* [#2108](https://github.com/eclipse-iceoryx/iceoryx2/issues/2108) Extend Python bindings with an API to serialize the iceoryx2 config to toml
 
 ### API Breaking Changes
 

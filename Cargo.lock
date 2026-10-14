@@ -1471,6 +1471,7 @@ dependencies = [
  "iceoryx2-log",
  "pyo3",
  "pyo3-log",
+ "toml",
 ]
 
 [[package]]
