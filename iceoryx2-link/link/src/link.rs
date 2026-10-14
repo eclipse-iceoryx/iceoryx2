@@ -195,13 +195,13 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
         let mut update = announcements.update(|announcement| backend.announce(announcement));
         let exported = state
             .exported()
-            .filter(|(description, _)| bridges.contains(&description.hash()));
-        for (description, creation_id) in exported {
+            .filter(|exported| bridges.contains(&exported.description.hash()));
+        for exported in exported {
             fail!(
                 from origin,
-                when update.set_exported(description, creation_id),
+                when update.set_exported(exported.description, exported.creation_id),
                 with DiscoveryError::Announcement,
-                "Failed to announce {}", description.name()
+                "Failed to announce {}", exported.description.name()
             );
         }
         fail!(

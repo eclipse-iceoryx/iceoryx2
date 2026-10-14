@@ -22,11 +22,10 @@ use iceoryx2_bb_elementary::epoch::Epoch;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::diagnostic::Findings;
 use iceoryx2_link_backend::resolver::Resolution;
-use iceoryx2_link_backend::service_description::ServiceDescription;
 
 pub(crate) use announcement::AnnouncementState;
 use discovered_service::DiscoveredService;
-pub(crate) use discovered_service::{BridgeableService, CreationId};
+pub(crate) use discovered_service::{BridgeableService, CreationId, ExportedService};
 use update::{LocalUpdate, RemoteUpdate, Unresolved, warn_unresolvable};
 
 /// What was discovered on both sides of the boundary and what each
@@ -140,11 +139,13 @@ impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Dis
 
     /// Iterates the exported local services with their creation ids,
     /// in hash order.
-    pub(crate) fn exported(&self) -> impl Iterator<Item = (&ServiceDescription, CreationId)> {
+    pub(crate) fn exported(&self) -> impl Iterator<Item = ExportedService<'_>> {
         self.entries.values().filter_map(|entry| {
             let local = entry.local.as_ref()?;
-            matches!(entry.resolution, Resolution::Exported(_))
-                .then_some((&local.description, local.id))
+            matches!(entry.resolution, Resolution::Exported(_)).then_some(ExportedService {
+                description: &local.description,
+                creation_id: local.id,
+            })
         })
     }
 }
@@ -159,7 +160,7 @@ mod tests {
     use iceoryx2::service::local;
     use iceoryx2::service::service_name::ServiceName;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_link_backend::service_description::ServiceTypes;
+    use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceTypes};
 
     /// A remote description, belonging to the service it names.
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -525,7 +526,7 @@ mod tests {
         let bridgeable: Vec<ServiceHash> = sut.bridgeable().map(|entry| *entry.hash).collect();
         let exported_hashes: Vec<ServiceHash> = sut
             .exported()
-            .map(|(description, _)| description.hash())
+            .map(|exported| exported.description.hash())
             .collect();
 
         let mut expected = alloc::vec![exported.hash(), imported.hash()];

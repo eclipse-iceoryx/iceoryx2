@@ -66,6 +66,12 @@ pub(crate) struct BridgeableService<'a, RemoteDescription> {
     pub(crate) resolved: Epoch,
 }
 
+/// A discovered service that should be exported to the opposing side.
+pub(crate) struct ExportedService<'a> {
+    pub(crate) description: &'a ServiceDescription,
+    pub(crate) creation_id: CreationId,
+}
+
 impl<RemoteId, RemoteDescription, Refusal> DiscoveredService<RemoteId, RemoteDescription, Refusal> {
     pub(super) fn new() -> Self {
         Self {
