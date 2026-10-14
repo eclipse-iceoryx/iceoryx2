@@ -168,7 +168,7 @@ impl<E: Event> Clock<E> for PosixClock<E> {
                     return Ok(());
                 }
 
-                now.time_point().time_span_between(v).into()
+                now.time_point().abs_diff(v).into()
             }
         };
 

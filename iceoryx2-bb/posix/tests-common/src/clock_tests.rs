@@ -92,7 +92,7 @@ pub fn converting_monotonic_time_to_realtime_time_results_in_nearly_the_same_tim
 
     let time_diff_in_ms = sut_converted
         .time_point()
-        .time_span_between(sut_realtime.time_point())
+        .abs_diff(sut_realtime.time_point())
         .as_millis();
 
     assert_that!(time_diff_in_ms, le 1);
