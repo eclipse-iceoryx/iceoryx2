@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let subscriber = CustomSubscriber::new(&node, &"EventBasedCommService".try_into()?)?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
 
     // The subscriber is attached as a deadline, meaning that we expect some activity
     // latest after the deadline has passed.

@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     let publisher = CustomPublisher::new(&node, &"EventBasedCommService".try_into()?)?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
 
     // Whenever our publisher receives an event we get notified.
     let publisher_guard = waitset.attach_notification(&publisher)?;

@@ -29,6 +29,7 @@ use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
 
@@ -104,11 +105,11 @@ pub enum Timeout {
 ///   [`Event::Listener`](crate::event::Listener) is activated when the scheduled time is reached.
 ///   If the provided [`ScheduleGuard`] goes out of scope, registered timout is removed from the [`Clock`]
 ///   and the [`Event::Listener`](crate::event::Listener) will no longer be notified.
-pub enum ScheduleHandle<Guard: ScheduleGuard, Event: crate::event::Event> {
+pub enum ScheduleHandle {
     /// A translated timeout that can be passed directly to the underlying implementation.
     TranslatedTimeout(Timeout),
     /// A trigger that is activated once the scheduled time has been reached.
-    GuardAndListener((Guard, Event::Listener)),
+    GuardAndListener((Box<dyn ScheduleGuard>, Box<dyn SynchronousMultiplexing>)),
 }
 
 /// Marker trait implemented by the guard returned from [`Clock::schedule()`] and [`Clock::schedule_on()`].
@@ -165,12 +166,25 @@ pub trait ClockListenerSchedule: Send + Sync + Debug {
     fn schedule_on(&self, timeout: Timeout, listener_name: &FileName) -> ScheduleOnHandle;
 }
 
+pub trait ClockReactorSchedule: Send + Sync + Debug {
+    /// Schedules a timeout.
+    ///
+    /// Depending on the [`Clock`] implementation this returns either a [`Timeout`] that
+    /// can be forwarded to the underlying mechanism
+    /// ([`ScheduleHandle::TranslatedTimeout`]) or a trigger that is activated
+    /// when the timeout expires ([`ScheduleHandle::Trigger`]). The returned [`ScheduleGuard`]
+    /// keeps the schedule valid for its lifetime.
+    fn schedule(&self, timeout: Timeout) -> ScheduleHandle;
+}
+
 /// The time-consumer interface of a [`Clock`].
 ///
 /// A [`Clock`] provides all time-related operations required by the remaining concepts: retrieving the
 /// current time, sleeping, and scheduling the timeouts. Higher layers use this interface uniformly and do
 /// not need to know whether [`FreeRunningClock`] or a [`SteppedClock`] is in use.
-pub trait Clock<E: Event>: Sized + Abandonable + ClockListenerSchedule + Debug {
+pub trait Clock<E: Event>:
+    Sized + Abandonable + ClockListenerSchedule + ClockReactorSchedule + Debug
+{
     /// The configuration of the [`Clock`].
     type Configuration: NamedConceptConfiguration;
     /// The guard that keeps a scheduled timeout valid (see [`ScheduleGuard`]).
@@ -180,15 +194,6 @@ pub trait Clock<E: Event>: Sized + Abandonable + ClockListenerSchedule + Debug {
     /// Whether this clock supports a [`TimeController`]. `true` for [`SteppedClock`]s, `false` for
     /// [`FreeRunningClock`]s.
     const HAS_TIME_CONTROLLER_SUPPORT: bool;
-
-    /// Schedules a timeout.
-    ///
-    /// Depending on the [`Clock`] implementation this returns either a [`Timeout`] that
-    /// can be forwarded to the underlying mechanism
-    /// ([`ScheduleHandle::TranslatedTimeout`]) or a trigger that is activated
-    /// when the timeout expires ([`ScheduleHandle::Trigger`]). The returned [`ScheduleGuard`]
-    /// keeps the schedule valid for its lifetime.
-    fn schedule(&self, timeout: Timeout) -> ScheduleHandle<Self::Guard, E>;
 
     /// Blocks the calling thread until the given [`Timeout`] has expired.
     ///

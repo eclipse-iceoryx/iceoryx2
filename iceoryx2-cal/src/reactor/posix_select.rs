@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::sync::Arc;
 use core::{fmt::Debug, time::Duration};
 
 use alloc::format;
@@ -24,7 +25,10 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_log::fail;
 
-use crate::reactor::{ReactorAttachError, ReactorWaitError};
+use crate::{
+    clock::ClockReactorSchedule,
+    reactor::{ReactorAttachError, ReactorWaitError},
+};
 
 impl crate::reactor::ReactorGuard<'_, '_> for FileDescriptorSetGuard<'_, '_> {
     fn file_descriptor(&self) -> &FileDescriptor {
@@ -35,12 +39,14 @@ impl crate::reactor::ReactorGuard<'_, '_> for FileDescriptorSetGuard<'_, '_> {
 #[derive(Debug)]
 pub struct Reactor {
     set: FileDescriptorSet,
+    _clock: Arc<dyn ClockReactorSchedule>,
 }
 
 impl Reactor {
-    fn new() -> Self {
+    fn new(clock: Arc<dyn ClockReactorSchedule>) -> Self {
         Self {
             set: FileDescriptorSet::new(),
+            _clock: clock,
         }
     }
 
@@ -171,7 +177,10 @@ impl crate::reactor::ReactorBuilder<Reactor> for ReactorBuilder {
         Self {}
     }
 
-    fn create(self) -> Result<Reactor, super::ReactorCreateError> {
-        Ok(Reactor::new())
+    fn create(
+        self,
+        clock: Arc<dyn ClockReactorSchedule>,
+    ) -> Result<Reactor, super::ReactorCreateError> {
+        Ok(Reactor::new(clock))
     }
 }

@@ -17,8 +17,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::{
-    CallbackProgression, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder, ipc,
-    set_log_level_from_env_or,
+    CallbackProgression, LogLevel, NodeBuilder, WaitSetAttachmentId, ipc, set_log_level_from_env_or,
 };
 use iceoryx2_log::info;
 
@@ -62,7 +61,7 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
         .notifier_builder()
         .create()?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
     let ping_guard = waitset.attach_notification(&ping_listener)?;
     let ping_id = WaitSetAttachmentId::from_guard(&ping_guard);
 

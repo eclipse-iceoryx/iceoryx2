@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .create()?;
     let mut counter: u64 = 0;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
 
     // we need to send out a sample with an interval of CYCLE_TIME, therefore we attach an
     // interval that wakes us up regularly to send out the next sample

@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener_1 = service_event_1.listener_builder().create()?;
     let listener_2 = service_event_2.listener_builder().create()?;
 
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let waitset = node.waitset_builder().create()?;
 
     // If the service has defined a deadline we will use it, otherwise
     // we expect that the listener receive a message sent event after at most CYCLE_TIME_X

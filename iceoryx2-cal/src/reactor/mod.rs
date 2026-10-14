@@ -15,11 +15,14 @@ pub mod epoll;
 pub mod posix_select;
 pub mod recommended;
 
+use alloc::sync::Arc;
 use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptor, file_descriptor_set::SynchronousMultiplexing,
 };
+
+use crate::clock::ClockReactorSchedule;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorCreateError {
@@ -99,5 +102,5 @@ pub trait Reactor: Sized + Debug + Send {
 
 pub trait ReactorBuilder<T: Reactor> {
     fn new() -> Self;
-    fn create(self) -> Result<T, ReactorCreateError>;
+    fn create(self, clock: Arc<dyn ClockReactorSchedule>) -> Result<T, ReactorCreateError>;
 }

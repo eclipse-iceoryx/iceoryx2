@@ -180,6 +180,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
 use iceoryx2_cal::clock::ClockListenerSchedule;
+use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -205,6 +206,7 @@ use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::unique_id_generator::*;
+use crate::waitset::WaitSetBuilder;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
 const CLOCK_NAME: FileName = unsafe { FileName::new_unchecked_const(b"iceoryx2") };
@@ -982,6 +984,17 @@ impl<Service: service::Service> ClockListenerSchedule for SharedNodeState<Servic
     }
 }
 
+impl<Service: service::Service> ClockReactorSchedule for SharedNodeState<Service> {
+    fn schedule(
+        &self,
+        timeout: iceoryx2_cal::clock::Timeout,
+    ) -> iceoryx2_cal::clock::ScheduleHandle {
+        self.clock.schedule(timeout)
+    }
+}
+
+impl<Service: service::Service> NodeClock for SharedNodeState<Service> {}
+
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
 unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
 
@@ -1075,8 +1088,10 @@ impl<Service: service::Service> Abandonable for SharedNode<Service> {
     }
 }
 
+pub(crate) trait NodeClock: ClockListenerSchedule + ClockReactorSchedule {}
+
 impl<Service: service::Service> SharedNode<Service> {
-    pub(crate) fn clock(&self) -> Arc<dyn ClockListenerSchedule> {
+    pub(crate) fn clock(&self) -> Arc<dyn NodeClock> {
         self.state.clone()
     }
 
@@ -1193,6 +1208,12 @@ impl<Service: service::Service> Node<Service> {
     /// Instantiates a [`ServiceBuilder`](Builder) for a service with the provided name.
     pub fn service_builder(&self, name: &ServiceName) -> Builder<Service> {
         Builder::new(name, self.shared.clone())
+    }
+
+    /// Instantiates a [`WaitSetBuilder`] to construct a new [`WaitSet`](crate::waitset::WaitSet),
+    /// iceoryx2 event multiplexer.
+    pub fn waitset_builder(&self) -> WaitSetBuilder<Service> {
+        WaitSetBuilder::new(self.shared.clock())
     }
 
     /// Returns the [`NodeState`] of a specific [`Node`] that has the provided [`UniqueNodeId`].

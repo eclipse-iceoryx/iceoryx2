@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::sync::Arc;
+
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueServiceId};
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
@@ -23,6 +25,7 @@ use crate::service::config_scheme::{
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::service_hash::ServiceHash;
 use crate::service::static_config;
+use crate::waitset::WaitSetBuilder;
 use crate::{
     config::Config,
     prelude::{NodeName, ServiceName},
@@ -37,6 +40,8 @@ use iceoryx2_bb_posix::file_type::FileType;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::{config::TEST_DIRECTORY, testing::*};
 use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_cal::clock::posix::PosixClock;
+use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptDoesExistError, NamedConceptRemoveError};
@@ -302,4 +307,16 @@ pub unsafe fn remove_all_resources<S: crate::service::Service>(global_config: &C
     unsafe { remove_all_concept_resources::<S::BlackboardPayload>(&c) };
 
     remove_all_node_resource_directories(global_config);
+}
+
+fn create_clock<C: Clock<iceoryx2_cal::event::InternalStubEvent>>() -> C {
+    let name = generate_file_path().file_name();
+    C::Builder::new(&name).open_clock().unwrap()
+}
+
+pub fn create_posix_clock_based_waitset_builder<S: crate::service::Service>() -> WaitSetBuilder<S> {
+    let clock = Arc::new(create_clock::<
+        PosixClock<iceoryx2_cal::event::InternalStubEvent>,
+    >());
+    WaitSetBuilder::<S>::new(clock)
 }

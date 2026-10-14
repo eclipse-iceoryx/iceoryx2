@@ -13,8 +13,8 @@
 use crate::{
     clock::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
-        ClockListenerSchedule, ClockNowError, FreeRunningClock, ScheduleGuard, ScheduleHandle,
-        ScheduleOnHandle, Timeout,
+        ClockListenerSchedule, ClockNowError, ClockReactorSchedule, FreeRunningClock,
+        ScheduleGuard, ScheduleHandle, ScheduleOnHandle, Timeout,
     },
     event::{Event, InternalStubEvent},
     named_concept::NamedConceptConfiguration,
@@ -125,15 +125,17 @@ impl<E: Event> ClockListenerSchedule for PosixClock<E> {
     }
 }
 
+impl<E: Event> ClockReactorSchedule for PosixClock<E> {
+    fn schedule(&self, timeout: super::Timeout) -> ScheduleHandle {
+        ScheduleHandle::TranslatedTimeout(timeout)
+    }
+}
+
 impl<E: Event> Clock<E> for PosixClock<E> {
     type Guard = Guard;
     type Configuration = PosixTimeControllerConfig;
     type Builder = Builder;
     const HAS_TIME_CONTROLLER_SUPPORT: bool = false;
-
-    fn schedule(&self, timeout: super::Timeout) -> ScheduleHandle<Guard, E> {
-        ScheduleHandle::TranslatedTimeout(timeout)
-    }
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
         let msg = "Failed to blocking sleep with";

@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         })?;
     let listener = event.listener_builder().create()?;
 
-    let waitset = WaitSetBuilder::new().create::<Service>()?;
+    let waitset = node.waitset_builder().create()?;
     let guard = waitset.attach_notification(&listener)?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 

@@ -213,6 +213,7 @@
 //! # Ok(())
 //! # }
 
+use alloc::sync::Arc;
 use core::{fmt::Debug, hash::Hash, marker::PhantomData, time::Duration};
 
 use alloc::collections::BTreeMap;
@@ -229,6 +230,7 @@ use iceoryx2_bb_posix::{
     file_descriptor_set::SynchronousMultiplexing,
     signal::SignalHandler,
 };
+use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::reactor::*;
 use iceoryx2_log::fail;
 
@@ -473,15 +475,20 @@ impl<Service: crate::service::Service> Drop for WaitSetGuard<'_, '_, Service> {
 }
 
 /// The builder for the [`WaitSet`].
-#[derive(Default, Debug, Clone)]
-pub struct WaitSetBuilder {
+#[derive(Debug, Clone)]
+pub struct WaitSetBuilder<Service: crate::service::Service> {
     signal_handling_mode: SignalHandlingMode,
+    clock: Arc<dyn ClockReactorSchedule>,
+    _data: PhantomData<Service>,
 }
 
-impl WaitSetBuilder {
-    /// Creates a new [`WaitSetBuilder`].
-    pub fn new() -> Self {
-        Self::default()
+impl<Service: crate::service::Service> WaitSetBuilder<Service> {
+    pub(crate) fn new(clock: Arc<dyn ClockReactorSchedule>) -> Self {
+        Self {
+            signal_handling_mode: SignalHandlingMode::default(),
+            clock,
+            _data: PhantomData,
+        }
     }
 
     /// Defines the [`SignalHandlingMode`] for the [`WaitSet`]. It affects the
@@ -494,15 +501,13 @@ impl WaitSetBuilder {
     }
 
     /// Creates the [`WaitSet`].
-    pub fn create<Service: crate::service::Service>(
-        self,
-    ) -> Result<WaitSet<Service>, WaitSetCreateError> {
+    pub fn create(self) -> Result<WaitSet<Service>, WaitSetCreateError> {
         let msg = "Unable to create WaitSet";
         let deadline_queue = fail!(from self, when DeadlineQueueBuilder::new().create(),
                 with WaitSetCreateError::InternalError,
                 "{msg} since the underlying Timer could not be created.");
 
-        match <Service::Reactor as Reactor>::Builder::new().create() {
+        match <Service::Reactor as Reactor>::Builder::new().create(self.clock.clone()) {
             Ok(reactor) => Ok(WaitSet {
                 reactor,
                 deadline_queue,

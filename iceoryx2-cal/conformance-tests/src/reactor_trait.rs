@@ -70,7 +70,8 @@ pub mod reactor_trait {
 
     #[conformance_test]
     pub fn attach_and_detach_works<Sut: Reactor>() {
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
         let config = generate_isolated_config::<
             <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
         >();
@@ -106,7 +107,8 @@ pub mod reactor_trait {
 
     #[conformance_test]
     pub fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
         let config = generate_isolated_config::<
             <UnixDatagramShmCountingBitSet as NamedConceptMgmt>::Configuration,
         >();
@@ -133,7 +135,8 @@ pub mod reactor_trait {
     >(
         mut wait_call: F,
     ) {
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
 
         let attachment = NotifierListenerPair::new();
         attachment.notifier.notify(EventId::new(7)).unwrap();
@@ -180,7 +183,8 @@ pub mod reactor_trait {
     >(
         mut wait_call: F,
     ) {
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
 
         let attachment = NotifierListenerPair::new();
         attachment.notifier.notify(EventId::new(4)).unwrap();
@@ -239,7 +243,8 @@ pub mod reactor_trait {
     >(
         mut wait_call: F,
     ) {
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
 
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
@@ -294,7 +299,8 @@ pub mod reactor_trait {
     pub fn timed_wait_blocks_for_at_least_timeout<Sut: Reactor>() {
         const TIMEOUT: Duration = Duration::from_millis(50);
 
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
 
         let attachment = NotifierListenerPair::new();
 
@@ -320,7 +326,8 @@ pub mod reactor_trait {
     >(
         mut wait_call: F,
     ) {
-        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let clock = create_test_clock();
+        let sut = <<Sut as Reactor>::Builder>::new().create(clock).unwrap();
 
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
@@ -406,7 +413,7 @@ pub mod reactor_trait {
 
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
-                let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+                let sut = <<Sut as Reactor>::Builder>::new().create(clock.clone()).unwrap();
                 let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .create(clock)
@@ -484,7 +491,7 @@ pub mod reactor_trait {
 
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
-                let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+                let sut = <<Sut as Reactor>::Builder>::new().create(clock.clone()).unwrap();
                 let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .create(clock)
@@ -570,7 +577,7 @@ pub mod reactor_trait {
 
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
-                let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+                let sut = <<Sut as Reactor>::Builder>::new().create(clock.clone()).unwrap();
                 let mut listeners = vec![];
                 let mut guards = vec![];
 
