@@ -90,7 +90,7 @@ impl Default for TimeControllerConfig {
             .suffix(&SimulationClock::<UnixDatagramShmCountingBitSet>::default_suffix());
         Self {
             storage_config,
-            capacity: 0,
+            capacity: 100, // TODO: const
             creation_time: TimePoint::new(),
         }
     }
@@ -264,17 +264,24 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         };
 
         match self.now() {
-            Err(_) => fatal_panic!(""),
+            Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
             Ok(tp) => {
                 if timeout < tp {
-                    fatal_panic!("");
+                    // TODO: trigger instead of error
+                    fatal_panic!(
+                        "Trigger {} cannot be scheduled since the timeout is already expired.",
+                        listener_name
+                    );
                 }
             }
         }
 
         let index = match unsafe { self.state.get().index_list.acquire_raw_index() } {
             Ok(idx) => idx,
-            Err(_) => fatal_panic!(""),
+            Err(_) => fatal_panic!(
+                "Trigger {} cannot be scheduled since it would exceed the max. amount of triggers.",
+                listener_name
+            ), // TODO: return error
         };
 
         unsafe {
@@ -292,7 +299,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
                         .index_list
                         .release_raw_index(index, ReleaseMode::Default);
                 }
-                fatal_panic!("")
+                fatal_panic!("This should never happen! Failed to obtain current time.");
             }
             Ok(tp) => {
                 if timeout < tp {
@@ -307,10 +314,14 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
                                 .release_raw_index(index, ReleaseMode::Default);
                         },
                         Err(_) => {
-                            // advance released index
+                            // advance() released index
                         }
                     };
-                    fatal_panic!("");
+                    // TODO: no error, trigger when schedule() set counter to 0
+                    fatal_panic!(
+                        "Trigger {} cannot be scheduled since the timeout is already expired.",
+                        listener_name
+                    );
                 }
             }
         }
