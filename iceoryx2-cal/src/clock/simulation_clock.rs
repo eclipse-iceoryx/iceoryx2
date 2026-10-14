@@ -25,7 +25,7 @@ use crate::{
     named_concept::{NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt},
 };
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
-use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
 use iceoryx2_bb_container::{
     queue::RelocatableContainer,
     vector::{RelocatableVec, Vector},
@@ -80,7 +80,6 @@ pub struct TimeControllerConfig {
     storage_config: <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration,
     capacity: usize,
     creation_time: TimePoint,
-    time_controller_exists: bool,
 }
 
 impl Default for TimeControllerConfig {
@@ -93,7 +92,6 @@ impl Default for TimeControllerConfig {
             storage_config,
             capacity: 0,
             creation_time: TimePoint::new(),
-            time_controller_exists: false,
         }
     }
 }
@@ -375,6 +373,9 @@ where
     }
 }
 
+const TIME_CONTROLLER_STATE_NAME: FileName =
+    unsafe { FileName::new_unchecked_const(b"timer_controller") };
+
 #[derive(Debug)]
 pub struct SimulationTimeControllerBuilder {
     name: FileName,
@@ -390,13 +391,29 @@ impl SimulationTimeControllerBuilder {
     }
 }
 
-// fail when flag is true
 impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControllerBuilder {
     fn create_time_controller(
         self,
     ) -> Result<SimulationTimeController, TimeControllerBuilderCreateError> {
         let origin = "TimeControllerBuilder::create_time_controller()";
         let msg = "Unable to create the time controller for the simulation clock";
+
+        let time_controller_state =
+            match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
+                &TIME_CONTROLLER_STATE_NAME,
+            )
+            .has_ownership(false)
+            .initializer(|_, _| false)
+            .open_or_create()
+            {
+                Ok(storage) => storage,
+                Err(_) => {
+                    return Err(TimeControllerBuilderCreateError::InternalError);
+                }
+            };
+        if time_controller_state.get().load(Ordering::SeqCst) {
+            return Err(TimeControllerBuilderCreateError::InternalError);
+        }
 
         let capacity = self.config.capacity;
         let storage =
@@ -438,13 +455,38 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
 
         match storage {
             Err(_) => Err(TimeControllerBuilderCreateError::InternalError),
-            Ok(s) => Ok(SimulationTimeController { clock_state: s }),
+            Ok(s) => {
+                match time_controller_state.get().compare_exchange(
+                    false,
+                    true,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(_) => Ok(SimulationTimeController { clock_state: s }),
+                    Err(_) => Err(TimeControllerBuilderCreateError::InternalError),
+                }
+            }
         }
     }
 
     fn open_time_controller(
         self,
     ) -> Result<SimulationTimeController, TimeControllerBuilderOpenError> {
+        let time_controller_state =
+            match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
+                &TIME_CONTROLLER_STATE_NAME,
+            )
+            .open(AccessMode::ReadWrite)
+            {
+                Ok(storage) => storage,
+                Err(_) => {
+                    return Err(TimeControllerBuilderOpenError::InternalError);
+                }
+            };
+        if time_controller_state.get().load(Ordering::SeqCst) {
+            return Err(TimeControllerBuilderOpenError::AlreadyOpenedByAnotherInstance);
+        }
+
         let storage =
             <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
                 &self.name,
@@ -453,7 +495,17 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
             .open(AccessMode::ReadWrite);
         match storage {
             Err(_) => Err(TimeControllerBuilderOpenError::InternalError),
-            Ok(s) => Ok(SimulationTimeController { clock_state: s }),
+            Ok(s) => {
+                match time_controller_state.get().compare_exchange(
+                    false,
+                    true,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(_) => Ok(SimulationTimeController { clock_state: s }),
+                    Err(_) => Err(TimeControllerBuilderOpenError::AlreadyOpenedByAnotherInstance),
+                }
+            }
         }
     }
 
@@ -462,6 +514,23 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
     ) -> Result<SimulationTimeController, TimeControllerBuilderOpenOrCreateError> {
         let origin = "TimeControllerBuilder::open_or_create_time_controller()";
         let msg = "Unable to open/create the time controller for the simulation clock";
+
+        let time_controller_state =
+            match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
+                &TIME_CONTROLLER_STATE_NAME,
+            )
+            .has_ownership(false)
+            .initializer(|_, _| false)
+            .open_or_create()
+            {
+                Ok(storage) => storage,
+                Err(_) => {
+                    return Err(TimeControllerBuilderOpenOrCreateError::InternalError);
+                }
+            };
+        if time_controller_state.get().load(Ordering::SeqCst) {
+            return Err(TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance);
+        }
 
         let capacity = self.config.capacity;
         let storage =
@@ -502,7 +571,19 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
             .open_or_create();
         match storage {
             Err(_) => Err(TimeControllerBuilderOpenOrCreateError::InternalError),
-            Ok(s) => Ok(SimulationTimeController { clock_state: s }),
+            Ok(s) => {
+                match time_controller_state.get().compare_exchange(
+                    false,
+                    true,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(_) => Ok(SimulationTimeController { clock_state: s }),
+                    Err(_) => {
+                        Err(TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance)
+                    }
+                }
+            }
         }
     }
 }
@@ -511,7 +592,19 @@ impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControlle
 pub struct SimulationTimeController {
     clock_state: Storage<SimulationClockState>,
 }
-// TODO: impl drop to set config flag to false?
+
+impl Drop for SimulationTimeController {
+    fn drop(&mut self) {
+        match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
+            &TIME_CONTROLLER_STATE_NAME,
+        )
+        .open(AccessMode::ReadWrite)
+        {
+            Ok(storage) => storage.get().store(false, Ordering::SeqCst),
+            Err(_) => {}
+        };
+    }
+}
 
 impl Abandonable for SimulationTimeController {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
