@@ -17,8 +17,8 @@ use crate::{
     },
     event::{
         DEFAULT_MAX_EVENT_ID, Event, EventId, Listener, ListenerBuilder, ListenerCreateError,
-        ListenerWaitError, NamedConcept, NamedConceptBuilder, NamedConceptMgmt, Notifier,
-        NotifierBuilder, NotifierNotifyError, NotifierOpenError,
+        ListenerWaitError, ListenerWaitInterface, NamedConcept, NamedConceptBuilder,
+        NamedConceptMgmt, Notifier, NotifierBuilder, NotifierNotifyError, NotifierOpenError,
         event_state::{EventActivation, EventState},
         trigger::{HandlerInterface, State, WaiterInterface, stub::Stub},
     },
@@ -427,10 +427,10 @@ impl<
     W: WaiterInterface<E, Mgmt, Storage>,
 > Waiter<E, Mgmt, Storage, W>
 {
-    fn drain_events<F: FnMut(EventActivation), Fw: FnMut() -> Result<(), ListenerWaitError>>(
+    fn drain_events<Fw: FnMut() -> Result<(), ListenerWaitError>>(
         &self,
         msg: &str,
-        callback: &mut F,
+        callback: &mut dyn FnMut(EventActivation),
         mut wait_call: Fw,
     ) -> Result<u64, ListenerWaitError> {
         let mgmt = self.storage.get();
@@ -467,25 +467,19 @@ impl<
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
     W: WaiterInterface<E, Mgmt, Storage>,
-> Listener<E> for Waiter<E, Mgmt, Storage, W>
+> ListenerWaitInterface for Waiter<E, Mgmt, Storage, W>
 {
-    const IS_FILE_DESCRIPTOR_BASED: bool = W::IS_FILE_DESCRIPTOR_BASED;
-
-    fn max_event_count(&self) -> u64 {
-        self.storage.get().event.max_event_count()
-    }
-
-    fn try_wait<F: FnMut(EventActivation)>(
+    fn try_wait(
         &self,
-        mut callback: F,
+        callback: &mut dyn FnMut(EventActivation),
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to try wait and acquire all event notifications";
-        self.drain_events(msg, &mut callback, || self.waiter.try_wait())
+        self.drain_events(msg, callback, || self.waiter.try_wait())
     }
 
-    fn timed_wait<F: FnMut(EventActivation)>(
+    fn timed_wait(
         &self,
-        mut callback: F,
+        callback: &mut dyn FnMut(EventActivation),
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
@@ -495,7 +489,7 @@ impl<
                         "{msg} since the current time could not be acquired.");
 
         loop {
-            let number_of_events = self.drain_events(msg, &mut callback, || {
+            let number_of_events = self.drain_events(msg, callback, || {
                 self.waiter.timed_wait(remaining_timeout, now)
             })?;
             if number_of_events != 0 {
@@ -515,12 +509,26 @@ impl<
         }
     }
 
-    fn blocking_wait<F: FnMut(EventActivation)>(
+    fn blocking_wait(
         &self,
-        mut callback: F,
+        callback: &mut dyn FnMut(EventActivation),
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        self.drain_events(msg, &mut callback, || self.waiter.blocking_wait())
+        self.drain_events(msg, callback, || self.waiter.blocking_wait())
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> Listener<E> for Waiter<E, Mgmt, Storage, W>
+{
+    const IS_FILE_DESCRIPTOR_BASED: bool = W::IS_FILE_DESCRIPTOR_BASED;
+
+    fn max_event_count(&self) -> u64 {
+        self.storage.get().event.max_event_count()
     }
 }
 

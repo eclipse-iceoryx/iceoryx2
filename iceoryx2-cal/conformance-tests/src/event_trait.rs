@@ -128,10 +128,10 @@ pub mod event_trait {
             sut_notifier.notify(trigger_id).unwrap();
         }
 
-        assert_that!(sut_listener.try_wait(|_| {}).unwrap(), ge 1);
+        assert_that!(sut_listener.try_wait(&mut |_| {}).unwrap(), ge 1);
 
         let now = Time::now().unwrap();
-        let result = sut_listener.timed_wait(|_| {}, TIMEOUT).unwrap();
+        let result = sut_listener.timed_wait(&mut |_| {}, TIMEOUT).unwrap();
 
         if result > 0 {
             assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
@@ -170,7 +170,7 @@ pub mod event_trait {
     pub fn sending_notification_and_try_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
-            sut.try_wait(|id| event_id = Some(id.id))?;
+            sut.try_wait(&mut |id| event_id = Some(id.id))?;
             Ok(event_id)
         });
     }
@@ -179,7 +179,7 @@ pub mod event_trait {
     pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
-            sut.timed_wait(|id| event_id = Some(id.id), TIMEOUT)?;
+            sut.timed_wait(&mut |id| event_id = Some(id.id), TIMEOUT)?;
             Ok(event_id)
         });
     }
@@ -188,7 +188,7 @@ pub mod event_trait {
     pub fn sending_notification_and_blocking_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
-            sut.blocking_wait(|id| event_id = Some(id.id))?;
+            sut.blocking_wait(&mut |id| event_id = Some(id.id))?;
             Ok(event_id)
         });
     }
@@ -214,7 +214,7 @@ pub mod event_trait {
 
             sut_notifier.notify(EventId::new(i)).unwrap();
             let result = sut_listener
-                .try_wait(|event| {
+                .try_wait(&mut |event| {
                     assert_that!(event.id.as_value(), eq i);
                 })
                 .unwrap();
@@ -258,7 +258,7 @@ pub mod event_trait {
     pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             let mut event_ids = vec![];
-            sut.try_wait(|id| event_ids.push(id))?;
+            sut.try_wait(&mut |id| event_ids.push(id))?;
             Ok(event_ids)
         });
     }
@@ -267,7 +267,7 @@ pub mod event_trait {
     pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             let mut event_ids = vec![];
-            sut.timed_wait(|id| event_ids.push(id), TIMEOUT)?;
+            sut.timed_wait(&mut |id| event_ids.push(id), TIMEOUT)?;
             Ok(event_ids)
         });
     }
@@ -276,7 +276,7 @@ pub mod event_trait {
     pub fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
             let mut event_ids = vec![];
-            sut.blocking_wait(|id| event_ids.push(id))?;
+            sut.blocking_wait(&mut |id| event_ids.push(id))?;
             Ok(event_ids)
         });
     }
@@ -331,7 +331,7 @@ pub mod event_trait {
     >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             let mut results = vec![];
-            sut.try_wait(|event| results.push(event))?;
+            sut.try_wait(&mut |event| results.push(event))?;
             Ok(results)
         });
     }
@@ -342,7 +342,7 @@ pub mod event_trait {
     >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             let mut results = vec![];
-            sut.timed_wait(|event| results.push(event), TIMEOUT)?;
+            sut.timed_wait(&mut |event| results.push(event), TIMEOUT)?;
             Ok(results)
         });
     }
@@ -353,7 +353,7 @@ pub mod event_trait {
     >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             let mut results = vec![];
-            sut.blocking_wait(|event| results.push(event))?;
+            sut.blocking_wait(&mut |event| results.push(event))?;
             Ok(results)
         });
     }
@@ -373,7 +373,7 @@ pub mod event_trait {
             .open()
             .unwrap();
 
-        let result = sut_listener.try_wait(|_| {}).unwrap();
+        let result = sut_listener.try_wait(&mut |_| {}).unwrap();
         assert_that!(result, eq 0);
     }
 
@@ -393,7 +393,7 @@ pub mod event_trait {
             .unwrap();
 
         let start = Time::now().unwrap();
-        let result = sut_listener.timed_wait(|_| {}, TIMEOUT).unwrap();
+        let result = sut_listener.timed_wait(&mut |_| {}, TIMEOUT).unwrap();
         assert_that!(result, eq 0);
         assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
@@ -452,7 +452,7 @@ pub mod event_trait {
     pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
         wait_blocks_until_notification_arrives::<Sut, _>(|event_ids, listener: &Sut::Listener| {
             listener
-                .blocking_wait(|event| {
+                .blocking_wait(&mut |event| {
                     event_ids.push(event.id);
                 })
                 .unwrap();
@@ -466,7 +466,7 @@ pub mod event_trait {
         wait_blocks_until_notification_arrives::<Sut, _>(|event_ids, listener: &Sut::Listener| {
             listener
                 .timed_wait(
-                    |event| {
+                    &mut |event| {
                         event_ids.push(event.id);
                     },
                     TIMEOUT * 1000,
@@ -546,7 +546,7 @@ pub mod event_trait {
         wait_blocks_until_notification_arrives_after_first_notification_arrived::<Sut, _>(
             |event_ids, listener: &Sut::Listener| {
                 listener
-                    .blocking_wait(|event| {
+                    .blocking_wait(&mut |event| {
                         event_ids.push(event.id);
                     })
                     .unwrap();
@@ -564,7 +564,7 @@ pub mod event_trait {
             |event_ids, listener: &Sut::Listener| {
                 listener
                     .timed_wait(
-                        |event| {
+                        &mut |event| {
                             event_ids.push(event.id);
                         },
                         TIMEOUT * 1000,
@@ -630,14 +630,14 @@ pub mod event_trait {
 
         let mut ids = BTreeSet::new();
         let result = sut_listener
-            .try_wait(|event| {
+            .try_wait(&mut |event| {
                 assert_that!(event.id, lt EVENT_ID_MAX);
                 assert_that!(ids.insert(event.id), eq true);
             })
             .unwrap();
         assert_that!(result, eq EVENT_ID_MAX.as_value() as u64);
 
-        let result = sut_listener.try_wait(|_| {}).unwrap();
+        let result = sut_listener.try_wait(&mut |_| {}).unwrap();
         assert_that!(result, eq 0);
     }
 
@@ -678,21 +678,22 @@ pub mod event_trait {
     #[conformance_test]
     pub fn try_wait_collects_all_triggers<Sut: Event>() {
         wait_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.try_wait(|id| v.push(id.id)).unwrap();
+            sut.try_wait(&mut |id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
     pub fn timed_wait_collects_all_triggers<Sut: Event>() {
         wait_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
+            sut.timed_wait(&mut |id| v.push(id.id), TIMEOUT * 1000)
+                .unwrap();
         });
     }
 
     #[conformance_test]
     pub fn blocking_wait_collects_all_triggers<Sut: Event>() {
         wait_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.blocking_wait(|id| v.push(id.id)).unwrap();
+            sut.blocking_wait(&mut |id| v.push(id.id)).unwrap();
         });
     }
 
@@ -749,14 +750,15 @@ pub mod event_trait {
     #[conformance_test]
     pub fn timed_wait_wakes_up_on_notify<Sut: Event>() {
         wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
+            sut.timed_wait(&mut |id| v.push(id.id), TIMEOUT * 1000)
+                .unwrap();
         });
     }
 
     #[conformance_test]
     pub fn blocking_wait_wakes_up_on_notify<Sut: Event>() {
         wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.blocking_wait(|id| v.push(id.id)).unwrap();
+            sut.blocking_wait(&mut |id| v.push(id.id)).unwrap();
         });
     }
 
@@ -850,7 +852,7 @@ pub mod event_trait {
         }
 
         let result = sut_listener
-            .try_wait(|event| assert_that!(event.id, eq EventId::new(3)))
+            .try_wait(&mut |event| assert_that!(event.id, eq EventId::new(3)))
             .unwrap();
         assert_that!(result, eq sut_listener.max_event_count().min(REPETITIONS));
     }
@@ -895,7 +897,7 @@ pub mod event_trait {
         }
 
         let result = sut_listener
-            .try_wait(|event| assert_that!(event.count, eq event_count))
+            .try_wait(&mut |event| assert_that!(event.count, eq event_count))
             .unwrap();
         assert_that!(result, eq event_count);
     }
@@ -927,7 +929,7 @@ pub mod event_trait {
         }
 
         let result = sut_listener
-            .try_wait(|event| {
+            .try_wait(&mut |event| {
                 assert_that!(event.count, eq event_count);
             })
             .unwrap();
@@ -1002,7 +1004,7 @@ pub mod event_trait {
                         < number_of_notifier_threads
                     {
                         listener
-                            .try_wait(|event| {
+                            .try_wait(&mut |event| {
                                 rc[event.id.as_value()].fetch_add(event.count, Ordering::Relaxed);
                             })
                             .unwrap();
@@ -1010,7 +1012,7 @@ pub mod event_trait {
                     start_barrier.wait();
                     start_barrier.wait();
                     listener
-                        .try_wait(|event| {
+                        .try_wait(&mut |event| {
                             rc[event.id.as_value()].fetch_add(event.count, Ordering::Relaxed);
                         })
                         .unwrap();
@@ -1062,7 +1064,7 @@ pub mod event_trait {
                 .spawn(move || {
                     for _ in 0..ITERATIONS {
                         ping_notifier.notify(EventId::new(0)).unwrap();
-                        pong_listener.blocking_wait(|_| {}).unwrap();
+                        pong_listener.blocking_wait(&mut |_| {}).unwrap();
                     }
                 })
                 .unwrap();
@@ -1071,7 +1073,7 @@ pub mod event_trait {
                 .affinity(&[1])
                 .spawn(move || {
                     for _ in 0..ITERATIONS {
-                        ping_listener.blocking_wait(|_| {}).unwrap();
+                        ping_listener.blocking_wait(&mut |_| {}).unwrap();
                         pong_notifier.notify(EventId::new(0)).unwrap();
                     }
                 })

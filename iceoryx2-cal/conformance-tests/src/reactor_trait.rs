@@ -34,8 +34,9 @@ pub mod reactor_trait {
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::Event;
     use iceoryx2_cal::event::EventId;
+    use iceoryx2_cal::event::ListenerWaitInterface;
     use iceoryx2_cal::event::UnixDatagramShmCountingBitSet;
-    use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
+    use iceoryx2_cal::event::{ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{create_test_clock, generate_isolated_config};
@@ -200,7 +201,7 @@ pub mod reactor_trait {
             assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
         }
 
-        attachment.listener.try_wait(|_| {}).unwrap();
+        attachment.listener.try_wait(&mut |_| {}).unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -351,7 +352,7 @@ pub mod reactor_trait {
                 assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait(|_| {}).unwrap();
+            attachments[n].listener.try_wait(&mut |_| {}).unwrap();
         }
 
         let mut triggered_fds = vec![];

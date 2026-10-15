@@ -71,5 +71,5 @@ pub trait EventState: Sized + Send + Sync + Debug + ZeroCopySend + RelocatableCo
     /// # Returns
     ///
     /// The total number of event activations drained.
-    fn drain<F: FnMut(EventActivation)>(&self, callback: &mut F) -> u64;
+    fn drain(&self, callback: &mut dyn FnMut(EventActivation)) -> u64;
 }

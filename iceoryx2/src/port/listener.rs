@@ -79,7 +79,7 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::event_state::EventActivation;
-use iceoryx2_cal::event::{EventId, ListenerBuilder, NamedConceptMgmt};
+use iceoryx2_cal::event::{EventId, ListenerBuilder, ListenerWaitInterface, NamedConceptMgmt};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
 use iceoryx2_log::fail;
 
@@ -270,10 +270,9 @@ impl<Service: service::Service> Listener<Service> {
     /// calls the provided callback with the [`EventActivation`] as input argument.
     pub fn try_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
     ) -> Result<u64, ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        let number_of_notifications = fail!(from self, when self.listener.lock().try_wait(callback),
+        let number_of_notifications = fail!(from self, when self.listener.lock().try_wait(&mut callback),
                                             "Failed try_wait on underlying event::Listener");
         Ok(number_of_notifications)
     }
@@ -283,11 +282,10 @@ impl<Service: service::Service> Listener<Service> {
     /// calls the provided callback with the [`EventActivation`] as input argument.
     pub fn timed_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        let number_of_notifications = fail!(from self, when self.listener.lock().timed_wait(callback, timeout),
+        let number_of_notifications = fail!(from self, when self.listener.lock().timed_wait(&mut callback, timeout),
                                             "Failed timed_wait({:?}) on underlying event::Listener", timeout);
         Ok(number_of_notifications)
     }
@@ -297,10 +295,9 @@ impl<Service: service::Service> Listener<Service> {
     /// calls the provided callback with the [`EventActivation`] as input argument.
     pub fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
     ) -> Result<u64, ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        let number_of_notifications = fail!(from self, when self.listener.lock().blocking_wait(callback),
+        let number_of_notifications = fail!(from self, when self.listener.lock().blocking_wait(&mut callback),
                                             "Failed blocking_wait on underlying event::Listener");
         Ok(number_of_notifications)
     }

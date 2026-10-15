@@ -123,20 +123,26 @@ impl From<EventStateActivateError> for NotifierNotifyError {
     }
 }
 
-pub trait Listener<E: EventState>: NamedConcept + Debug + Abandonable + Send {
+pub trait ListenerWaitInterface {
+    fn try_wait(&self, callback: &mut dyn FnMut(EventActivation))
+    -> Result<u64, ListenerWaitError>;
+    fn timed_wait(
+        &self,
+        callback: &mut dyn FnMut(EventActivation),
+        timeout: Duration,
+    ) -> Result<u64, ListenerWaitError>;
+    fn blocking_wait(
+        &self,
+        callback: &mut dyn FnMut(EventActivation),
+    ) -> Result<u64, ListenerWaitError>;
+}
+
+pub trait Listener<E: EventState>:
+    NamedConcept + Debug + Abandonable + Send + ListenerWaitInterface
+{
     const IS_FILE_DESCRIPTOR_BASED: bool = false;
 
     fn max_event_count(&self) -> u64;
-    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError>;
-    fn timed_wait<F: FnMut(EventActivation)>(
-        &self,
-        callback: F,
-        timeout: Duration,
-    ) -> Result<u64, ListenerWaitError>;
-    fn blocking_wait<F: FnMut(EventActivation)>(
-        &self,
-        callback: F,
-    ) -> Result<u64, ListenerWaitError>;
 }
 
 pub trait Notifier<E: EventState>: NamedConcept + Debug + Abandonable + Send {
