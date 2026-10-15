@@ -41,20 +41,35 @@
 //!                        └────────────────────────┘  the Resolution, stored       └────────────────────────┘
 //!                                    │
 //!                ┌───────────────────┴─────────────────────────┐
-//!                │  DiscoveryState::bridgeable()               │  DiscoveryState::exported(), the set of local
-//!                │  the set of services that should            │  services being exported to opposing side
-//!                │  require a bridge service                   │
+//!                │  DiscoveryState::bridgeable()               │  DiscoveryState::exported()
+//!                │  the set of services that get               │  the set of local services that
+//!                │  a bridge                                   │  should be exported
 //!                ▼                                             ▼
-//!     ┌────────────────────────┐                    ┌───────────────────────────┐
-//!     │ BridgeableService      │                    │ AnnouncementState::update │
-//!     └────────────────────────┘                    │   tells the opposing side │
-//!                │                                  │   of changes              │
-//!                │                                  └───────────────────────────┘
-//!                ▼                                             │
-//!       Bridges::reconcile                                     ▼
-//!       opens and closes bridges                      Backend::announce
-//!       to match the set
+//!     ┌────────────────────────┐                    ┌────────────────────────┐
+//!     │ BridgeableService      │                    │ ExportedService        │
+//!     │   a view of a          │                    │   a view of a          │
+//!     │   DiscoveredService    │                    │   DiscoveredService    │
+//!     └────────────────────────┘                    └────────────────────────┘
+//!                │                                             │
+//!                ▼                                             ▼
+//!       Bridges::reconcile                          ┌────────────────────────┐
+//!       opens and closes bridges                    │ announcement::Update   │
+//!       to match the set                            │   announce() per       │
+//!                                                   │   exported service     │
+//!                                                   │   finalize() withdraws │
+//!                                                   │   what was not seen    │
+//!                                                   └────────────────────────┘
+//!                                                             │
+//!                                                             ▼
+//!                                                     Backend::announce
 //! ```
+//!
+//! - A bridgeable service is either exported or imported. In both cases a
+//!   bridge is created in [`Bridges`](crate::Bridges) to propagate data via
+//!   the backend.
+//! - The exported services are the subset of local services that this side
+//!   offers over the backend. The link announces them for the opposing side
+//!   to discover.
 
 mod announcement;
 mod discovered_service;

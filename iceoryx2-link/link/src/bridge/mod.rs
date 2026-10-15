@@ -10,6 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! A bridge relays samples between one local service and the opposing side.
+//!
+//! ```text
+//!   application ◀──▶ ┌─────────┐ ◀──▶ ┌────────┐ ◀──▶ ┌───────┐ ◀──▶ opposing side
+//!                    │ service │      │ bridge │      │ relay │
+//!                    └─────────┘      └────────┘      └───────┘
+//! ```
+
 mod event;
 mod publish_subscribe;
 mod table;
