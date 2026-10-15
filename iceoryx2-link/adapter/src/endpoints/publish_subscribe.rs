@@ -30,10 +30,12 @@ impl<'a> TakeDestination<'a> for &'a mut SampleBytes {
     }
 }
 
+/// The possible outcomes taking from the middleware may provide.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TakeOutcome {
-    /// The sample was written into the destination.
-    Taken,
+pub enum TakeOutcome<Details> {
+    /// The sample was written into the destination with optional details
+    /// describing the take.
+    Taken(Details),
     /// The destination declined the sample.
     Declined,
     /// A sample was taken and dropped as one not meant for the link. More
@@ -55,5 +57,5 @@ pub trait PublishSubscribeEndpoints {
     fn take<'a>(
         &mut self,
         destination: impl TakeDestination<'a>,
-    ) -> Result<TakeOutcome, Self::Failure>;
+    ) -> Result<TakeOutcome<()>, Self::Failure>;
 }

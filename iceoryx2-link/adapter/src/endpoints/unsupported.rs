@@ -26,7 +26,7 @@ impl PublishSubscribeEndpoints for UnsupportedEndpoints {
         match self.0 {}
     }
 
-    fn take<'a>(&mut self, _: impl TakeDestination<'a>) -> Result<TakeOutcome, Self::Failure> {
+    fn take<'a>(&mut self, _: impl TakeDestination<'a>) -> Result<TakeOutcome<()>, Self::Failure> {
         match self.0 {}
     }
 }

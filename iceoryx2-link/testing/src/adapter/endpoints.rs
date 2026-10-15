@@ -72,7 +72,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
     fn take<'a>(
         &mut self,
         destination: impl TakeDestination<'a>,
-    ) -> Result<TakeOutcome, Self::Failure> {
+    ) -> Result<TakeOutcome<()>, Self::Failure> {
         let Some(message) = self.middleware.receive(&self.name, self.id) else {
             return Ok(TakeOutcome::Empty);
         };
@@ -86,7 +86,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
         locations.header.copy_from_slice(header);
         locations.payload.copy_from_slice(payload);
 
-        Ok(TakeOutcome::Taken)
+        Ok(TakeOutcome::Taken(()))
     }
 }
 

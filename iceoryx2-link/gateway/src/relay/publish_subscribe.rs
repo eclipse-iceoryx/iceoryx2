@@ -159,7 +159,7 @@ impl<
             "Failed to take a message"
         );
         match outcome {
-            TakeOutcome::Taken => {
+            TakeOutcome::Taken(()) => {
                 let sample = fail!(
                     from origin,
                     when decode.output(),
@@ -262,7 +262,7 @@ mod tests {
         fn take<'a>(
             &mut self,
             destination: impl TakeDestination<'a>,
-        ) -> Result<TakeOutcome, Self::Failure> {
+        ) -> Result<TakeOutcome<()>, Self::Failure> {
             let Some(message) = self.pending.take() else {
                 return Ok(TakeOutcome::Empty);
             };
@@ -274,7 +274,7 @@ mod tests {
             };
             regions.header.copy_from_slice(&message.header);
             regions.payload.copy_from_slice(&message.payload);
-            Ok(TakeOutcome::Taken)
+            Ok(TakeOutcome::Taken(()))
         }
     }
 

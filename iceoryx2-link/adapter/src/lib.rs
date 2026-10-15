@@ -77,13 +77,13 @@
 //!         // remote endpoints.
 //!     }
 //!
-//!     fn take<'a>(&mut self, destination: impl TakeDestination<'a>) -> Result<TakeOutcome, MyError> {
+//!     fn take<'a>(&mut self, destination: impl TakeDestination<'a>) -> Result<TakeOutcome<()>, MyError> {
 //!         // Acquire buffers for the required header and payload size from
 //!         // the provided `destination` and write their bytes in wire form
 //!         // into them.
 //!
 //!         // Return:
-//!         // * TakeOutcome::Taken if taken bytes are written to the
+//!         // * TakeOutcome::Taken(()) if taken bytes are written to the
 //!         //   destination
 //!         // * TakeOutcome::Declined if the locations were declined and drop
 //!         //   the message

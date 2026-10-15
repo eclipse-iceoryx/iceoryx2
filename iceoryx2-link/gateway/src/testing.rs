@@ -246,7 +246,7 @@ impl PublishSubscribeEndpoints for NoEndpoints {
         Ok(())
     }
 
-    fn take<'a>(&mut self, _: impl TakeDestination<'a>) -> Result<TakeOutcome, Self::Failure> {
+    fn take<'a>(&mut self, _: impl TakeDestination<'a>) -> Result<TakeOutcome<()>, Self::Failure> {
         Ok(TakeOutcome::Empty)
     }
 }
