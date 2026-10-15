@@ -258,7 +258,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         match self.now() {
             Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
             Ok(tp) => {
-                if timeout < tp {
+                if timeout <= tp {
                     let notifier = E::NotifierBuilder::new(&listener_name).open().unwrap();
                     notifier.notify(EventId::new(0)).expect("notify successful");
                     return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
@@ -286,7 +286,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
                 fatal_panic!("This should never happen! Failed to obtain current time.");
             }
             Ok(tp) => {
-                if timeout < tp {
+                if timeout <= tp {
                     match state.scheduled_timepoints[index as usize]
                         .generation_counter
                         .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
@@ -337,7 +337,7 @@ where
             .global_generation_counter
             .fetch_add(1, Ordering::SeqCst);
 
-        let id = state.name_id.fetch_add(1, Ordering::Relaxed);
+        let id = state.name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
         let listener =
@@ -347,7 +347,7 @@ where
         match self.now() {
             Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
             Ok(tp) => {
-                if timeout < tp {
+                if timeout <= tp {
                     return Ok(ScheduleHandle::TranslatedTimeout(Timeout::By(
                         Duration::ZERO,
                     )));
@@ -373,7 +373,7 @@ where
                 fatal_panic!("This should never happen! Failed to obtain current time.");
             }
             Ok(tp) => {
-                if timeout < tp {
+                if timeout <= tp {
                     match state.scheduled_timepoints[index as usize]
                         .generation_counter
                         .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
@@ -412,7 +412,7 @@ impl<E: Event> ClockNow for SimulationClock<E> {
     fn now(&self) -> Result<TimePoint, ClockNowError> {
         let state = self.state.get();
         Ok(state.creation_time
-            + Duration::from_nanos(state.nanoseconds_since_creation.load(Ordering::Relaxed)))
+            + Duration::from_nanos(state.nanoseconds_since_creation.load(Ordering::SeqCst)))
     }
 }
 
@@ -462,21 +462,26 @@ where
     const HAS_TIME_CONTROLLER_SUPPORT: bool = true;
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
-        let id = self.state.get().name_id.fetch_add(1, Ordering::Relaxed);
+        let id = self.state.get().name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
         let listener = create_waiter::<E>(&listener_name, &E::Configuration::default()).unwrap();
         let guard = self.schedule_on(timeout, &listener_name).unwrap();
         match guard {
             ScheduleOnHandle::TranslatedTimeout(_) => {
-                fail!(from self, with ClockBlockingSleepError::InternalError, "");
+                // timeout has already expired
+                return Ok(());
             }
-            ScheduleOnHandle::Guard(_) => match listener.blocking_wait(&mut |_| {}) {
-                Ok(_) => return Ok(()),
-                Err(_) => {
-                    fail!(from self, with ClockBlockingSleepError::InternalError, "");
+            ScheduleOnHandle::Guard(_g) => {
+                // let _guard = g;
+                match listener.blocking_wait(&mut |_| {}) {
+                    Ok(_) => return Ok(()),
+                    Err(_) => {
+                        // TODO: distinct errors
+                        fail!(from self, with ClockBlockingSleepError::InternalError, "");
+                    }
                 }
-            },
+            }
         }
     }
 }
@@ -499,7 +504,9 @@ impl SimulationTimeControllerBuilder {
     }
 }
 
-impl TimeControllerBuilder<SimulationTimeController> for SimulationTimeControllerBuilder {
+impl TimeControllerBuilder for SimulationTimeControllerBuilder {
+    type TimeController = SimulationTimeController;
+
     fn create_time_controller(
         self,
     ) -> Result<SimulationTimeController, TimeControllerBuilderCreateError> {
