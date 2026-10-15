@@ -115,7 +115,7 @@ impl Timeout {
     pub fn as_duration(&self, now: TimePoint) -> Duration {
         match self {
             Timeout::By(duration) => *duration,
-            Timeout::At(time_point) => time_point.abs_diff(now).into(),
+            Timeout::At(time_point) => (*time_point - now).into(),
         }
     }
 }

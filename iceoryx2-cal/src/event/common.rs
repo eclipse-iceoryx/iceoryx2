@@ -489,16 +489,17 @@ impl<
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        let mut timeout = timeout;
-        let now = fail!(from self, when self.waiter.clock().now(),
+        let mut remaining_timeout = timeout;
+        let mut now = fail!(from self, when self.waiter.clock().now(),
                         with ListenerWaitError::InternalFailure,
                         "{msg} since the current time could not be acquired.");
 
         loop {
-            let number_if_events =
-                self.drain_events(msg, &mut callback, || self.waiter.timed_wait(timeout, now))?;
-            if number_if_events != 0 {
-                return Ok(number_if_events);
+            let number_of_events = self.drain_events(msg, &mut callback, || {
+                self.waiter.timed_wait(remaining_timeout, now)
+            })?;
+            if number_of_events != 0 {
+                return Ok(number_of_events);
             }
 
             let after_wait_now = fail!(from self, when self.waiter.clock().now(),
@@ -506,10 +507,11 @@ impl<
                         "{msg} since the current time could not be acquired.");
             let elapsed_time: Duration = after_wait_now.abs_diff(now).into();
             if timeout < elapsed_time {
-                return Ok(number_if_events);
+                return Ok(number_of_events);
             }
 
-            timeout -= elapsed_time;
+            remaining_timeout -= elapsed_time;
+            now = after_wait_now;
         }
     }
 
