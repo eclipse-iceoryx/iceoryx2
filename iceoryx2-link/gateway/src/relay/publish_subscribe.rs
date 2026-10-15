@@ -68,7 +68,7 @@ where
             when self
                 .translator
                 .transcoders(publish_subscribe_description.types(), remote_types),
-            with CreationError::PublishSubscribeTranslation,
+            with CreationError::Translation,
             "No transcoders for service {}", publish_subscribe_description.name()
         );
         let endpoints = fail!(
@@ -86,8 +86,8 @@ where
     }
 }
 
-/// Moves publish-subscribe samples over the gateway's endpoints,
-/// translating them on the way.
+/// Relays publish-subscribe samples between the link and the gateway's
+/// endpoints, transcoding them between the two forms.
 pub struct Relay<S, E, X: Translator<SampleShape, Transcoders: TranscodesSamples>> {
     endpoints: E,
     transcoding: Transcoding<X::Transcoders>,

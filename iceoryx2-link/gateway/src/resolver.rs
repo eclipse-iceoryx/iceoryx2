@@ -166,6 +166,9 @@ impl<M: Mapping, T: Translators> Resolver<M, T> {
                 PatternSettings::PublishSubscribe(settings),
                 ServiceTypes::PublishSubscribe(types),
             ) => ServiceDescription::compose_publish_subscribe::<S>(name, settings, types),
+            (PatternSettings::RequestResponse(settings), ServiceTypes::RequestResponse(types)) => {
+                ServiceDescription::compose_request_response::<S>(name, settings, types)
+            }
             (PatternSettings::Event(settings), ServiceTypes::Event) => {
                 ServiceDescription::compose_event::<S>(name, settings)
             }
@@ -222,7 +225,10 @@ impl<S: Service, M: Mapping, T: Translators> resolver::Resolver<S> for Resolver<
 
 /// Whether the gateway bridges services of these types' pattern.
 fn bridged(types: &ServiceTypes) -> bool {
-    matches!(types, ServiceTypes::PublishSubscribe(_))
+    matches!(
+        types,
+        ServiceTypes::PublishSubscribe(_) | ServiceTypes::RequestResponse(_)
+    )
 }
 
 #[cfg(test)]
