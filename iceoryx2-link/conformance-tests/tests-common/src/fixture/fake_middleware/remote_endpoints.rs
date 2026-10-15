@@ -34,10 +34,18 @@ pub(crate) fn endpoint_for<T: WireForm>(service: &ServiceDescription) -> FakeEnd
                 .remote(types)
                 .expect("the fake translators never fail"),
         ),
-        ServiceTypes::Event => EndpointTypes::Event,
-        ServiceTypes::RequestResponse(_) => {
-            unimplemented!("the fake middleware has no request-response endpoints")
+        ServiceTypes::RequestResponse(types) => {
+            let translator = T::default();
+            EndpointTypes::RequestResponse {
+                request: translator
+                    .remote(&types.request)
+                    .expect("the fake translators never fail"),
+                response: translator
+                    .remote(&types.response)
+                    .expect("the fake translators never fail"),
+            }
         }
+        ServiceTypes::Event => EndpointTypes::Event,
     };
     EndpointDescription {
         types,
@@ -59,7 +67,7 @@ impl<T: WireForm> FakeRemoteEndpoints<T> {
     /// Creates remote endpoints on `middleware`'s endpoint of `service`.
     pub(crate) fn on(middleware: &FakeMiddleware, service: ServiceDescription) -> Self {
         let description = endpoint_for::<T>(&service);
-        let remote = middleware.remote_endpoints(&description);
+        let remote = middleware.remote_publish_subscribe_endpoints(&description);
         let header_size = match service.types() {
             ServiceTypes::PublishSubscribe(types) => types.user_header.size,
             ServiceTypes::Event => 0,

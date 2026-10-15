@@ -14,14 +14,18 @@ mod endpoint_description;
 mod mapping;
 mod middleware;
 mod publish_subscribe_endpoints;
+mod request_response_endpoints;
 mod translator;
 
 pub use endpoint_description::{
-    FakeEndpointDescription, FakeEndpointSettings, FakeSampleTypes, endpoint_of, header_size,
+    FakeEndpointDescription, FakeEndpointSettings, FakeSampleTypes, endpoint_of,
 };
 pub use mapping::FakeMapping;
-pub use middleware::FakeMiddleware;
+pub use middleware::{
+    FakeMiddleware, FakeRequestId, FakeRequestMessage, FakeResponseMessage, Message, MessageRef,
+};
 pub use publish_subscribe_endpoints::FakePublishSubscribeEndpoints;
+pub use request_response_endpoints::FakeRequestResponseEndpoints;
 pub use translator::{FakeSwapTranslator, SwapHeader, SwapPayload, swapped_bytes};
 
 use iceoryx2_bb_elementary::generation::Generation;
@@ -62,7 +66,7 @@ impl Adapter for FakeAdapter {
     type EndpointSettings = FakeEndpointSettings;
     type EndpointTypes = EndpointTypes<FakeSampleTypes>;
     type PublishSubscribeEndpoints = FakePublishSubscribeEndpoints;
-    type RequestResponseEndpoints = UnsupportedEndpoints;
+    type RequestResponseEndpoints = FakeRequestResponseEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn generation(&self) -> Generation {
@@ -74,13 +78,13 @@ impl Adapter for FakeAdapter {
         callback: &mut dyn FnMut(&FakeEndpointDescription),
     ) -> Result<(), Self::ListError> {
         let state = self.middleware.state();
-        for group in state.groups.values() {
-            let remote = group
+        for topic in state.topics.values() {
+            let remote = topic
                 .endpoints
                 .values()
                 .any(|remote| remote.origin == Origin::Remote);
             if remote {
-                callback(&group.description);
+                callback(&topic.description);
             }
         }
         Ok(())
@@ -93,9 +97,8 @@ impl Adapter for FakeAdapter {
         let id = self.middleware.join(description, Origin::Gateway);
         Ok(FakePublishSubscribeEndpoints::new(
             self.middleware.clone(),
-            description.settings.name,
+            description,
             id,
-            header_size(description),
         ))
     }
 
@@ -103,13 +106,12 @@ impl Adapter for FakeAdapter {
         &mut self,
         description: &FakeEndpointDescription,
     ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
-        let origin = origin!("FakeAdapter::request_response");
-
-        fail!(
-            from origin,
-            with Error::UnsupportedPattern,
-            "The fake middleware has no request-response yet, {} cannot be opened as one", description.settings.name
-        );
+        let id = self.middleware.join(description, Origin::Gateway);
+        Ok(FakeRequestResponseEndpoints::new(
+            self.middleware.clone(),
+            description,
+            id,
+        ))
     }
 
     fn event(
