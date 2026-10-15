@@ -189,7 +189,7 @@ mod tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_adapter::LocalTypes;
     use iceoryx2_link_adapter::{
-        SampleLengths, SampleTranscoders, TakeDestination, TranscodeError, Transcoder,
+        SampleDestination, SampleLengths, SampleTranscoders, TranscodeError, Transcoder,
     };
     use iceoryx2_link_backend::service_description::TypeDescription;
     use iceoryx2_link_backend::wire::publish_subscribe::{
@@ -261,7 +261,7 @@ mod tests {
 
         fn take<'a>(
             &mut self,
-            destination: impl TakeDestination<'a>,
+            destination: impl SampleDestination<'a>,
         ) -> Result<TakeOutcome<()>, Self::Failure> {
             let Some(message) = self.pending.take() else {
                 return Ok(TakeOutcome::Empty);

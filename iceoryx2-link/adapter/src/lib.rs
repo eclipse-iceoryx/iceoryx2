@@ -77,7 +77,7 @@
 //!         // remote endpoints.
 //!     }
 //!
-//!     fn take<'a>(&mut self, destination: impl TakeDestination<'a>) -> Result<TakeOutcome<()>, MyError> {
+//!     fn take<'a>(&mut self, destination: impl SampleDestination<'a>) -> Result<TakeOutcome<()>, MyError> {
 //!         // Acquire buffers for the required header and payload size from
 //!         // the provided `destination` and write their bytes in wire form
 //!         // into them.
@@ -117,8 +117,8 @@ pub mod translator;
 
 pub use adapter::Adapter;
 pub use endpoints::{
-    EndpointDescription, EndpointTypes, EventEndpoints, PublishSubscribeEndpoints, TakeDestination,
-    TakeOutcome, UnsupportedEndpoints,
+    EndpointDescription, EndpointTypes, EventEndpoints, PublishSubscribeEndpoints,
+    SampleDestination, TakeOutcome, UnsupportedEndpoints,
 };
 pub use iceoryx2_link_backend::relay::ReceiveOutcome;
 pub use iceoryx2_link_backend::wire::sample::{

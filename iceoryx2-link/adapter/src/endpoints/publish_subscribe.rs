@@ -12,38 +12,8 @@
 
 use core::error::Error;
 
-use crate::{SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths};
-
-/// Where a taken sample's bytes are written.
-pub trait TakeDestination<'a> {
-    /// The locations for a sample of `lengths`.
-    ///
-    /// Returns `None` if the destination cannot honor the requested lengths.
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>>;
-}
-
-impl<'a> TakeDestination<'a> for &'a mut SampleBytes {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
-        self.header.resize(lengths.header, 0);
-        self.payload.resize(lengths.payload, 0);
-        Some(self.as_mut())
-    }
-}
-
-/// The possible outcomes taking from the middleware may provide.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TakeOutcome<Details> {
-    /// The sample was written into the destination with optional details
-    /// describing the take.
-    Taken(Details),
-    /// The destination declined the sample.
-    Declined,
-    /// A sample was taken and dropped as one not meant for the link. More
-    /// may be pending.
-    Skipped,
-    /// Nothing was pending.
-    Empty,
-}
+use super::{SampleDestination, TakeOutcome};
+use crate::SampleBytesRef;
 
 /// The gateway's publisher and subscription on the middleware.
 pub trait PublishSubscribeEndpoints {
@@ -56,6 +26,6 @@ pub trait PublishSubscribeEndpoints {
     /// the locations `destination` provides for its lengths.
     fn take<'a>(
         &mut self,
-        destination: impl TakeDestination<'a>,
+        destination: impl SampleDestination<'a>,
     ) -> Result<TakeOutcome<()>, Self::Failure>;
 }

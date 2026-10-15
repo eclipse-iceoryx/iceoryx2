@@ -52,14 +52,14 @@
 //!               as-is                                   decoded
 //!                 │                                        │
 //!                 ▼                                        ▼
-//!     ┌────────────────────────┐               ┌────────────────────────┐
-//!     │ Destination::Loan      │               │ Destination::Scratch   │
-//!     │   LoanBackedDestination│               │   Transcoding::scratch │
-//!     │   impl TakeDestination │               │   impl TakeDestination │
-//!     │ Destination::Split     │               └────────────────────────┘
-//!     │   SplitDestination     │                            │
-//!     │   impl TakeDestination │                            │
-//!     └────────────────────────┘                            │
+//!     ┌──────────────────────────┐             ┌──────────────────────────┐
+//!     │ Destination::Loan        │             │ Destination::Scratch     │
+//!     │   LoanBackedDestination  │             │   Transcoding::scratch   │
+//!     │   impl SampleDestination │             │   impl SampleDestination │
+//!     │ Destination::Split       │             └──────────────────────────┘
+//!     │   SplitDestination       │                          │
+//!     │   impl SampleDestination │                          │
+//!     └──────────────────────────┘                          │
 //!                 │                                         │
 //!   the endpoint fills the sample            the endpoint fills the scratch
 //!                 │                                         │
@@ -101,8 +101,8 @@ use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut};
 
 use iceoryx2_link_adapter::{
-    LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths,
-    SampleTranscoders, TakeDestination, TranscodeError, Transcoder, TranscodesSamples,
+    LoanableSample, SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleDestination,
+    SampleLengths, SampleTranscoders, TranscodeError, Transcoder, TranscodesSamples,
 };
 use iceoryx2_link_backend::service_description::SampleTypes;
 use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
@@ -249,7 +249,7 @@ pub(super) enum Destination<'l, 's, L: LoanableSample> {
     Scratch(&'s mut SampleBytes),
 }
 
-impl<'a, L: LoanableSample> TakeDestination<'a> for &'a mut Destination<'_, '_, L> {
+impl<'a, L: LoanableSample> SampleDestination<'a> for &'a mut Destination<'_, '_, L> {
     fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
         match self {
             Destination::Loan(destination) => destination.for_lengths(lengths),
@@ -638,7 +638,7 @@ impl<'l, L: LoanableSample> LoanBackedDestination<'l, L> {
     }
 }
 
-impl<'a, L: LoanableSample> TakeDestination<'a> for &'a mut LoanBackedDestination<'_, L> {
+impl<'a, L: LoanableSample> SampleDestination<'a> for &'a mut LoanBackedDestination<'_, L> {
     fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
         if lengths.header != self.header_size {
             *self.loan = PendingLoan::Refused(ReceiveError::Malformed);
@@ -665,7 +665,7 @@ impl<'l, 's, L: LoanableSample> SplitDestination<'l, 's, L> {
     }
 }
 
-impl<'a, L: LoanableSample> TakeDestination<'a> for &'a mut SplitDestination<'_, '_, L> {
+impl<'a, L: LoanableSample> SampleDestination<'a> for &'a mut SplitDestination<'_, '_, L> {
     fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
         self.loan.loan_or_resize_forward(lengths.payload).ok()?;
         self.scratch.resize(lengths.header, 0);

@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_adapter::{
-    PublishSubscribeEndpoints, SampleBytesRef, SampleLengths, TakeDestination, TakeOutcome,
+    PublishSubscribeEndpoints, SampleBytesRef, SampleDestination, SampleLengths, TakeOutcome,
 };
 
 use crate::adapter::Error;
@@ -71,7 +71,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
 
     fn take<'a>(
         &mut self,
-        destination: impl TakeDestination<'a>,
+        destination: impl SampleDestination<'a>,
     ) -> Result<TakeOutcome<()>, Self::Failure> {
         let Some(message) = self.middleware.receive(&self.name, self.id) else {
             return Ok(TakeOutcome::Empty);
