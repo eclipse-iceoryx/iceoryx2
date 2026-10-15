@@ -184,6 +184,8 @@ use iceoryx2_cal::clock::ClockListenerScheduleError;
 use iceoryx2_cal::clock::ClockNow;
 use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::ClockReactorScheduleError;
+use iceoryx2_cal::clock::TimeControllerBuilder;
+use iceoryx2_cal::clock::TimeControllerBuilderOpenOrCreateError;
 use iceoryx2_cal::clock::Timeout;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
@@ -1200,6 +1202,32 @@ impl<Service: service::Service> Abandonable for Node<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { SharedNode::abandon_in_place(NonNull::from_mut(&mut this.shared)) };
+    }
+}
+
+/// Defines the underlying [`TimeController`](iceoryx2_cal::clock::TimeController) type used to manually
+/// advance the [`Clock`].
+#[allow(type_alias_bounds)] // Introduce bounds for completeness
+pub type TimeController<Service>
+where
+    Service: service::Service,
+    <<Service as service::Service>::Clock as Clock<<Service as service::Service>::Event>>::Builder: TimeControllerBuilder,
+= <<<Service as service::Service>::Clock as Clock<<Service as service::Service>::Event>>::Builder as TimeControllerBuilder>::TimeController;
+
+impl<Service: service::Service> Node<Service>
+where
+    <Service::Clock as Clock<Service::Event>>::Builder: TimeControllerBuilder,
+{
+    /// Returns the underlying [`TimeController`](iceoryx2_cal::clock::TimeController) that allows
+    /// the user to manually advance the [`Clock`]. At most one [`Node`] in the iceoryx2 domain is
+    /// allowed to hold the [`TimeController`](iceoryx2_cal::clock::TimeController)
+    pub fn time_controller(
+        &self,
+    ) -> Result<TimeController<Service>, TimeControllerBuilderOpenOrCreateError> {
+        let clock_config = clock_config::<Service>(self.shared.config());
+        <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
+            .config(&clock_config)
+            .open_or_create_time_controller()
     }
 }
 
