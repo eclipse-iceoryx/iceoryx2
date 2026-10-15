@@ -73,15 +73,22 @@ impl<B: Bridge> BridgeTable<B> {
         let origin = origin!("BridgeTable::reconcile");
 
         let hash = local_description.hash();
+
+        // If a bridge already exists for the service, update the epoch and
+        // the known remotes offering the service.
         if let Some(service) = self.services.get_mut(&hash) {
             if service.resolved == resolved {
                 service.seen = epoch;
-                service.bridge.reconcile(remotes);
+                service.bridge.update_remotes(remotes);
                 return Ok(());
             }
+            // If the resolution has changed, the bridge must be reopened
+            // with the new resolution.
             trace!(from origin, "Closing the {:?} bridge of \"{}\", its resolution changed", service.pattern, service.name);
             self.services.remove(&hash);
         }
+
+        // If a bridge does not exist for the service, open one.
         let pattern = local_description.settings().pattern.messaging_pattern();
         let bridge = fail!(
             from origin,
@@ -96,11 +103,12 @@ impl<B: Bridge> BridgeTable<B> {
             seen: epoch,
             failure: None,
         };
-        service.bridge.reconcile(remotes);
+        service.bridge.update_remotes(remotes);
 
         trace!(from origin, "Opened {:?} bridge of \"{}\"", service.pattern, service.name);
 
         self.services.insert(hash, service);
+
         Ok(())
     }
 

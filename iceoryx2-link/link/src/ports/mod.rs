@@ -12,11 +12,11 @@
 
 mod event;
 mod publish_subscribe;
-#[allow(dead_code)] // the bridge over the ports follows
 mod request_response;
 
 pub(crate) use event::EventPorts;
 pub(crate) use publish_subscribe::PublishSubscribePorts;
+pub(crate) use request_response::RequestResponsePorts;
 
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::service_description::TypeDescription;
