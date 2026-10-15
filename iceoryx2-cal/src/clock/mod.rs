@@ -281,54 +281,59 @@ pub trait TimeController: NamedConceptMgmt + Abandonable {
     fn advance(&self, duration: Duration) -> TimePoint;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CreateTriggerError {
-    FailedToOpenStubClock,
-    FailedToCreateListener,
-}
+#[doc(hidden)]
+pub mod internal {
+    use super::*;
 
-fn create_listener<E: Event + 'static>(
-    name: &FileName,
-    config: &E::Configuration,
-    origin: &str,
-    msg: &str,
-) -> Result<Box<E::Listener>, CreateTriggerError> {
-    let clock = fail!(from origin, 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum CreateTriggerError {
+        FailedToOpenStubClock,
+        FailedToCreateListener,
+    }
+
+    fn create_listener<E: Event + 'static>(
+        name: &FileName,
+        config: &E::Configuration,
+        origin: &str,
+        msg: &str,
+    ) -> Result<Box<E::Listener>, CreateTriggerError> {
+        let clock = fail!(from origin, 
                     when crate::testing::create_stub_clock::<crate::clock::posix::PosixClock<crate::event::InternalStubEvent>>(),
                     with CreateTriggerError::FailedToOpenStubClock,
                     "{msg} {name} since the stub clock could not be opened.");
 
-    let listener = fail!(from origin,
+        let listener = fail!(from origin,
         when <E::ListenerBuilder as NamedConceptBuilder<E>>::new(name).config(config).create(Arc::new(clock)),
         with CreateTriggerError::FailedToCreateListener,
         "{msg} {name} since the listener could not be created.");
 
-    Ok(Box::new(listener))
-}
+        Ok(Box::new(listener))
+    }
 
-pub(crate) fn create_reactor_attachment<E: Event + 'static>(
-    name: &FileName,
-    config: &E::Configuration,
-) -> Result<Box<dyn SynchronousMultiplexing>, CreateTriggerError>
-where
-    E::Listener: SynchronousMultiplexing,
-{
-    Ok(create_listener::<E>(
-        name,
-        config,
-        origin!("create_reactor_attachment()"),
-        "Failed to create reactor attachment",
-    )?)
-}
+    pub fn create_reactor_attachment<E: Event + 'static>(
+        name: &FileName,
+        config: &E::Configuration,
+    ) -> Result<Box<dyn SynchronousMultiplexing>, CreateTriggerError>
+    where
+        E::Listener: SynchronousMultiplexing,
+    {
+        Ok(create_listener::<E>(
+            name,
+            config,
+            origin!("create_reactor_attachment()"),
+            "Failed to create reactor attachment",
+        )?)
+    }
 
-pub(crate) fn create_waiter<E: Event + 'static>(
-    name: &FileName,
-    config: &E::Configuration,
-) -> Result<Box<dyn ListenerWaitInterface>, CreateTriggerError> {
-    Ok(create_listener::<E>(
-        name,
-        config,
-        origin!("create_waiter()"),
-        "Failed to create reactor attachment",
-    )?)
+    pub fn create_waiter<E: Event + 'static>(
+        name: &FileName,
+        config: &E::Configuration,
+    ) -> Result<Box<dyn ListenerWaitInterface>, CreateTriggerError> {
+        Ok(create_listener::<E>(
+            name,
+            config,
+            origin!("create_waiter()"),
+            "Failed to create reactor attachment",
+        )?)
+    }
 }
