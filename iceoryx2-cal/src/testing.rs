@@ -23,7 +23,7 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_log::fatal_panic;
 
-pub type TestClock = Arc<crate::clock::posix::PosixClock<crate::event::InternalStubEvent>>;
+pub type StubClock = Arc<crate::clock::posix::PosixClock<crate::event::InternalStubEvent>>;
 
 pub fn generate_isolated_config<T: NamedConceptConfiguration>() -> T {
     match Directory::create(&TEST_DIRECTORY, Permission::OWNER_ALL) {
@@ -47,16 +47,20 @@ pub fn generate_custom_config<T: NamedConceptMgmt>(
     T::Configuration::default().prefix(name).path_hint(path)
 }
 
-fn create_test_clock_impl<C: Clock<crate::event::InternalStubEvent>>() -> C {
+#[derive(Debug)]
+pub(crate) struct FailedToOpenStubClock;
+
+pub(crate) fn create_stub_clock<C: Clock<crate::event::InternalStubEvent>>()
+-> Result<C, FailedToOpenStubClock> {
     let clock_config = generate_isolated_config::<C::Configuration>();
     let name = generate_file_path().file_name();
 
     C::Builder::new(&name)
         .config(&clock_config)
         .open_clock()
-        .unwrap()
+        .map_err(|_| FailedToOpenStubClock)
 }
 
-pub fn create_test_clock() -> TestClock {
-    Arc::new(create_test_clock_impl())
+pub fn create_test_clock() -> StubClock {
+    Arc::new(create_stub_clock().unwrap())
 }

@@ -134,7 +134,7 @@ impl<T: CommunicationChannel<u64> + 'static> NamedConceptTest for CommunicationC
 }
 
 pub struct EventTest<T: Event + 'static> {
-    clock: TestClock,
+    clock: StubClock,
     _data: PhantomData<T>,
 }
 

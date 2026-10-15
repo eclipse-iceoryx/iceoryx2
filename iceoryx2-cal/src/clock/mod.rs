@@ -25,10 +25,11 @@
 pub mod posix;
 
 use crate::{
-    event::{Event, NamedConceptMgmt},
+    event::{Event, ListenerBuilder, NamedConceptBuilder, NamedConceptMgmt},
     named_concept::NamedConceptConfiguration,
 };
 use alloc::boxed::Box;
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::time::Duration;
 use iceoryx2_bb_elementary::enum_gen;
@@ -36,6 +37,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::SemanticString};
+use iceoryx2_log::{fail, origin};
 
 enum_gen! {
 /// Error returned by [`Clock::blocking_sleep()`]
@@ -275,4 +277,32 @@ pub trait TimeController: NamedConceptMgmt + Abandonable {
     /// reached.
     /// Returns the time before the advance.
     fn advance(&self, duration: Duration) -> TimePoint;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CreateTriggerError {
+    FailedToOpenStubClock,
+    FailedToCreateListener,
+}
+
+pub(crate) fn create_trigger<E: Event + 'static>(
+    name: &FileName,
+    config: &E::Configuration,
+) -> Result<Box<dyn SynchronousMultiplexing>, CreateTriggerError>
+where
+    E::Listener: SynchronousMultiplexing,
+{
+    let msg = "Unable to create trigger";
+    let origin = origin!("create_trigger()");
+    let clock = fail!(from origin, 
+                    when crate::testing::create_stub_clock::<crate::clock::posix::PosixClock<crate::event::InternalStubEvent>>(),
+                    with CreateTriggerError::FailedToOpenStubClock,
+                    "{msg} {name} since the stub clock could not be opened.");
+
+    let listener = fail!(from origin,
+        when <E::ListenerBuilder as NamedConceptBuilder<E>>::new(name).config(config).create(Arc::new(clock)),
+        with CreateTriggerError::FailedToCreateListener,
+        "{msg} {name} since the listener could not be created.");
+
+    Ok(Box::new(listener))
 }
