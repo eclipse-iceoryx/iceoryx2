@@ -37,8 +37,8 @@ use iceoryx2_link::Link;
 use crate::parameters::{PayloadShape, PublishSubscribeService};
 use iceoryx2_link_adapter::{LoanError, LoanableSample, SampleBytes};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
-    TypeDescription, TypeIdentifier,
+    PublishSubscribeSettings, RequestResponseSettings, RequestResponseTypes, SampleTypes,
+    ServiceDescription, ServiceDescriptor, ServiceTypes, TypeDescription, TypeIdentifier,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 
@@ -85,6 +85,30 @@ pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
         SampleTypes {
             payload: TypeDescription::from(&Payload::type_detail()),
             user_header: TypeDescription::from(&TypeDetail::new::<Header>(TypeVariant::FixedSize)),
+        },
+    )
+}
+
+/// The description of a request-response service whose requests are `Q`
+/// and whose responses are `R`, with the service settings `config`
+/// defaults to.
+pub fn describe_request_response<S: Service, Q: PayloadShape, R: PayloadShape>(
+    name: &ServiceName,
+    config: &Config,
+) -> ServiceDescription {
+    let no_header = TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize));
+    ServiceDescription::compose_request_response::<S>(
+        *name,
+        RequestResponseSettings::from_config(config),
+        RequestResponseTypes {
+            request: SampleTypes {
+                payload: TypeDescription::from(&Q::type_detail()),
+                user_header: no_header.clone(),
+            },
+            response: SampleTypes {
+                payload: TypeDescription::from(&R::type_detail()),
+                user_header: no_header,
+            },
         },
     )
 }
