@@ -124,6 +124,7 @@ impl Adapter for Ros2Adapter {
     type EndpointSettings = TopicSettings;
     type EndpointTypes = EndpointTypes<TopicTypes>;
     type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
+    type RequestResponseEndpoints = UnsupportedEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn endpoints(
@@ -248,6 +249,19 @@ impl Adapter for Ros2Adapter {
             publisher,
             subscription,
         ))
+    }
+
+    fn request_response(
+        &mut self,
+        description: &TopicDescription,
+    ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
+        let origin = origin!("Ros2Adapter::request_response");
+
+        fail!(
+            from origin,
+            with OpenError::UnsupportedPattern,
+            "The ROS 2 adapter does not support request-response yet, '{}' cannot be opened as one", description.settings.topic
+        );
     }
 
     fn event(
