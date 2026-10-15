@@ -59,6 +59,8 @@ pub enum ReactorWaitError {
     Interrupt,
     InsufficientPermissions,
     ClockScheduleCapacityExceeded,
+    CapacityExceeded,
+    InsufficientResources,
     InternalError,
 }
 

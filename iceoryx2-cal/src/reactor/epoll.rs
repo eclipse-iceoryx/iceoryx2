@@ -169,7 +169,22 @@ impl Reactor for EpollReactor {
                 )
             }
             Ok(ScheduleHandle::GuardAndListener((_guard, listener))) => {
-                let _attachment = self.attach(&*listener);
+                let _attachment = match self.attach(&*listener) {
+                    Ok(v) => v,
+                    Err(ReactorAttachError::CapacityExceeded) => {
+                        fail!(from self, with ReactorWaitError::CapacityExceeded,
+                            "{msg} since the wait trigger could not be attached since it would exceed the capacity.");
+                    }
+                    Err(ReactorAttachError::InsufficientResources) => {
+                        fail!(from self, with ReactorWaitError::InsufficientResources,
+                            "{msg} since the wait trigger could not be attached due to insufficient resources.");
+                    }
+                    Err(e) => {
+                        fail!(from self, with ReactorWaitError::InternalError,
+                            "{msg} since the wait trigger could not be attached due to an internal error. [{e:?}]");
+                    }
+                };
+
                 handle_wait_error(
                     &self.epoll,
                     msg,
