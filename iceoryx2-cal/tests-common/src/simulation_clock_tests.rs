@@ -12,6 +12,8 @@
 
 use alloc::sync::Arc;
 use core::time::Duration;
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_cal::reactor::Reactor;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
@@ -572,4 +574,55 @@ fn guard_deregisters_timeout_that_was_registered_with_schedule() {
 
     let _ = time_controller.advance(2 * duration);
     assert_that!(reactor.try_wait(|_| {}).unwrap(), eq 0);
+}
+
+#[test]
+fn blocking_sleep_does_not_block_when_timeout_expired() {
+    let test = TestFixture::new();
+    let _watchdog = Watchdog::new();
+    let duration = Duration::from_millis(1);
+    let timeout = Timeout::By(duration);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
+        .open_clock()
+        .unwrap();
+
+    let _ = time_controller.advance(2 * duration);
+
+    assert_that!(clock.blocking_sleep(timeout), is_ok);
+}
+
+#[test]
+fn blocking_sleep_blocks_until_timeout_has_expired() {
+    let test = TestFixture::new();
+    let _watchdog = Watchdog::new();
+    let duration = Duration::from_millis(12);
+    let timeout = Timeout::By(duration);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
+        .open_clock()
+        .unwrap();
+
+    let start = clock.now().unwrap();
+    thread_scope(|s| {
+        s.thread_builder().spawn(|| {
+            let _ = time_controller.advance(duration / 3);
+            let _ = time_controller.advance(duration / 3);
+            let _ = time_controller.advance(duration / 3);
+        })?;
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(clock.blocking_sleep(timeout), is_ok);
+    let end = clock.now().unwrap();
+    assert_that!(end - start, time_at_least duration);
 }

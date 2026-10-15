@@ -18,3 +18,12 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::event::implementations::InternalStubEvent,
     iceoryx2_cal::clock::posix::PosixClock<iceoryx2_cal::event::implementations::InternalStubEvent>
 );
+
+instantiate_conformance_tests_with_module!(
+    simulation_clock,
+    iceoryx2_cal_conformance_tests::clock_trait,
+    iceoryx2_cal::event::implementations::UnixDatagramShmCountingBitSet,
+    iceoryx2_cal::clock::simulation_clock::SimulationClock<
+        iceoryx2_cal::event::implementations::UnixDatagramShmCountingBitSet,
+    >
+);
