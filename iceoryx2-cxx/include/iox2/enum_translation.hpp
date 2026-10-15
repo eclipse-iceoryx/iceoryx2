@@ -2161,6 +2161,8 @@ constexpr auto from<int, iox2::ListenerWaitError>(const int value) noexcept -> i
         return iox2::ListenerWaitError::InterruptSignal;
     case iox2_listener_wait_error_e_INTERNAL_FAILURE:
         return iox2::ListenerWaitError::InternalFailure;
+    case iox2_listener_wait_error_e_CLOCK_SCHEDULE_CAPACITY_EXCEEDED:
+        return iox2::ListenerWaitError::ClockScheduleCapacityExceeded;
     }
 
     IOX2_UNREACHABLE();
@@ -2176,6 +2178,8 @@ constexpr auto from<iox2::ListenerWaitError, iox2_listener_wait_error_e>(const i
         return iox2_listener_wait_error_e_INTERRUPT_SIGNAL;
     case iox2::ListenerWaitError::InternalFailure:
         return iox2_listener_wait_error_e_INTERNAL_FAILURE;
+    case iox2::ListenerWaitError::ClockScheduleCapacityExceeded:
+        return iox2_listener_wait_error_e_CLOCK_SCHEDULE_CAPACITY_EXCEEDED;
     }
 
     IOX2_UNREACHABLE();

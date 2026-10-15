@@ -12,7 +12,7 @@
 
 use super::Configuration;
 use crate::{
-    clock::ClockListenerSchedule,
+    clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -38,6 +38,7 @@ use iceoryx2_bb_posix::{
         UnnamedSemaphoreHandle,
     },
 };
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
@@ -124,6 +125,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
 
 #[derive(Debug)]
 pub struct SemaphoreWaiter<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
+    name: FileName,
     semaphore_mgmt: *mut SemaphoreMgmt,
     semaphore: UnnamedSemaphore<'static>,
     clock: Arc<dyn ClockListenerSchedule>,
@@ -195,7 +197,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     }
 
     fn create(
-        _name: &FileName,
+        name: &FileName,
         _config: &Configuration,
         mgmt: &mut MaybeUninit<SemaphoreMgmt>,
         clock: Arc<dyn ClockListenerSchedule>,
@@ -226,6 +228,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         };
 
         Ok(Self {
+            name: *name,
             semaphore_mgmt: mgmt.as_mut_ptr(),
             semaphore,
             clock,
@@ -250,21 +253,34 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         }
     }
 
-    fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError> {
+    fn timed_wait(&self, timeout: Duration, now: TimePoint) -> Result<(), ListenerWaitError> {
         let msg = "Failed to wait with timeout on the unnamed semaphore";
-        match self.semaphore.timed_wait(timeout) {
-            Ok(true) => self.empty_buffer(),
-            Ok(false) => Ok(()),
-            Err(SemaphoreTimedWaitError::SemaphoreWaitError(SemaphoreWaitError::Interrupt))
-            | Err(SemaphoreTimedWaitError::AdaptiveWaitError(AdaptiveWaitError::NanosleepError(
-                NanosleepError::InterruptedBySignal(_),
-            ))) => {
-                fail!(from self, with ListenerWaitError::InterruptSignal,
+        match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
+            Ok(ScheduleOnHandle::TranslatedTimeout(t)) => {
+                let translated_timeout = t.as_duration(now);
+
+                match self.semaphore.timed_wait(translated_timeout) {
+                    Ok(true) => self.empty_buffer(),
+                    Ok(false) => Ok(()),
+                    Err(SemaphoreTimedWaitError::SemaphoreWaitError(
+                        SemaphoreWaitError::Interrupt,
+                    ))
+                    | Err(SemaphoreTimedWaitError::AdaptiveWaitError(
+                        AdaptiveWaitError::NanosleepError(NanosleepError::InterruptedBySignal(_)),
+                    )) => {
+                        fail!(from self, with ListenerWaitError::InterruptSignal,
                     "{msg} since an interrupt signal was raised.");
-            }
-            Err(e) => {
-                fail!(from self, with ListenerWaitError::InternalFailure,
+                    }
+                    Err(e) => {
+                        fail!(from self, with ListenerWaitError::InternalFailure,
                     "{msg} due to an internal failure. [{e:?}]");
+                    }
+                }
+            }
+            Ok(ScheduleOnHandle::Guard(_guard)) => self.blocking_wait(),
+            Err(ClockListenerScheduleError::ClockScheduleCapacityExceeded) => {
+                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the clock schedule is full.");
             }
         }
     }
@@ -282,6 +298,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
                     "{msg} due to an internal error. [{e:?}]");
             }
         }
+    }
+
+    fn clock(&self) -> &dyn crate::clock::ClockNow {
+        &*self.clock
     }
 }
 

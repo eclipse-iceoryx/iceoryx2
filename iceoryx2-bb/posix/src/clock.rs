@@ -237,7 +237,7 @@ impl Time {
     /// ```
     pub fn elapsed(&self) -> Result<Duration, TimeError> {
         let now = fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to acquire elapsed time");
-        let time_span = now.time_point().time_span_between(self.time_point());
+        let time_span = now.time_point().abs_diff(self.time_point());
 
         Ok(time_span.into())
     }

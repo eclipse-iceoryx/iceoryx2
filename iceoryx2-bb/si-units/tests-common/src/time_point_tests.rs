@@ -227,11 +227,11 @@ pub fn from_nanos_works() {
 #[test]
 pub fn time_span_between_works() {
     let sut = TimePoint::from_secs(456);
-    let span = sut.time_span_between(TimePoint::from_secs(123));
+    let span = sut.abs_diff(TimePoint::from_secs(123));
 
     assert_that!(span.as_secs(), eq 333);
 
-    let span = sut.time_span_between(TimePoint::from_secs(789));
+    let span = sut.abs_diff(TimePoint::from_secs(789));
     assert_that!(span.as_secs(), eq 333);
 }
 

@@ -180,7 +180,10 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
 use iceoryx2_cal::clock::ClockListenerSchedule;
+use iceoryx2_cal::clock::ClockListenerScheduleError;
+use iceoryx2_cal::clock::ClockNow;
 use iceoryx2_cal::clock::ClockReactorSchedule;
+use iceoryx2_cal::clock::ClockReactorScheduleError;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -974,21 +977,27 @@ struct SharedNodeState<Service: service::Service> {
     clock: Service::Clock,
 }
 
+impl<Service: service::Service> ClockNow for SharedNodeState<Service> {
+    fn now(&self) -> Result<iceoryx2_bb_si_units::TimePoint, iceoryx2_cal::clock::ClockNowError> {
+        self.clock.now()
+    }
+}
+
 impl<Service: service::Service> ClockListenerSchedule for SharedNodeState<Service> {
-    fn schedule_on(
-        &self,
+    fn schedule_on<'a>(
+        &'a self,
         timeout: iceoryx2_cal::clock::Timeout,
         listener_name: &FileName,
-    ) -> iceoryx2_cal::clock::ScheduleOnHandle {
+    ) -> Result<iceoryx2_cal::clock::ScheduleOnHandle<'a>, ClockListenerScheduleError> {
         self.clock.schedule_on(timeout, listener_name)
     }
 }
 
 impl<Service: service::Service> ClockReactorSchedule for SharedNodeState<Service> {
-    fn schedule(
-        &self,
+    fn schedule<'a>(
+        &'a self,
         timeout: iceoryx2_cal::clock::Timeout,
-    ) -> iceoryx2_cal::clock::ScheduleHandle {
+    ) -> Result<iceoryx2_cal::clock::ScheduleHandle<'a>, ClockReactorScheduleError> {
         self.clock.schedule(timeout)
     }
 }

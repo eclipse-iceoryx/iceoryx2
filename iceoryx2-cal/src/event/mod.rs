@@ -86,6 +86,7 @@ impl core::error::Error for NotifierOpenError {}
 pub enum ListenerWaitError {
     ContractViolation,
     InternalFailure,
+    ClockScheduleCapacityExceeded,
     InterruptSignal,
 }
 

@@ -158,7 +158,7 @@ impl TimePoint {
     }
 
     /// Returns the [`TimeSpan`] between this and the given [`TimePoint`].
-    pub fn time_span_between(&self, value: TimePoint) -> TimeSpan {
+    pub fn abs_diff(&self, value: TimePoint) -> TimeSpan {
         if self.time < value.time {
             value - *self
         } else {
