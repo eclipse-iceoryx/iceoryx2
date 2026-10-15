@@ -64,14 +64,14 @@ enum_gen! {
 }
 
 enum_gen! {
-/// Error returned by [`ClockBuilder::open_clock()`]
+/// Error returned by [`ClockListenerSchedule::schedule_on()`]
     ClockListenerScheduleError
   entry:
     ClockScheduleCapacityExceeded
 }
 
 enum_gen! {
-/// Error returned by [`ClockBuilder::open_clock()`]
+/// Error returned by [`ClockReactorSchedule::schedule()`]
     ClockReactorScheduleError
   entry:
     ClockScheduleCapacityExceeded
