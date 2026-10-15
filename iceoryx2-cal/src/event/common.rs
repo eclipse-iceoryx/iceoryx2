@@ -506,7 +506,7 @@ impl<
                         with ListenerWaitError::InternalFailure,
                         "{msg} since the current time could not be acquired.");
             let elapsed_time: Duration = after_wait_now.abs_diff(now).into();
-            if timeout < elapsed_time {
+            if remaining_timeout < elapsed_time {
                 return Ok(number_of_events);
             }
 
