@@ -12,6 +12,7 @@
 
 use alloc::sync::Arc;
 use core::time::Duration;
+use iceoryx2_cal::reactor::Reactor;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -28,6 +29,7 @@ use iceoryx2_cal::event::{
     Event, ListenerBuilder, ListenerWaitInterface, UnixDatagramShmCountingBitSet,
 };
 use iceoryx2_cal::named_concept::*;
+use iceoryx2_cal::reactor::ReactorBuilder;
 use iceoryx2_cal::testing::*;
 
 struct TestFixture {
@@ -444,4 +446,130 @@ fn guard_deregisters_timeout() {
 
     let _ = time_controller.advance(2 * duration);
     assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 0);
+}
+
+#[test]
+fn schedule_returns_zero_timeout_when_passed_timeout_has_already_expired() {
+    let test = TestFixture::new();
+    let duration = Duration::from_nanos(100);
+    let timeout = Timeout::By(duration);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
+            .open_clock()
+            .unwrap(),
+    );
+
+    let _ = time_controller.advance(2 * duration);
+
+    let handle = clock.schedule(timeout).unwrap();
+    let t = match handle {
+        ScheduleHandle::TranslatedTimeout(t) => t,
+        ScheduleHandle::GuardAndListener(_) => {
+            assert_that!(shall_never_be_reached);
+        }
+    };
+    assert_that!(t, eq Timeout::By(Duration::ZERO));
+}
+
+#[test]
+fn schedule_returns_guard_and_listener_when_timeout_has_not_expired() {
+    let name = generate_file_path().file_name();
+    let config = create_time_controller_config();
+
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
+            .config(&config)
+            .open_clock()
+            .unwrap(),
+    );
+
+    let timeout = Timeout::At(TimePoint::from_nanos(100));
+
+    let handle = clock.schedule(timeout);
+    assert_that!(handle, is_ok);
+    if let ScheduleHandle::TranslatedTimeout(_) = handle.unwrap() {
+        assert_that!(shall_never_be_reached);
+    }
+
+    cleanup_clock_state(&name, &config);
+}
+
+#[test]
+fn advance_notifies_when_timeout_was_scheduled_with_schedule() {
+    let name = generate_file_path().file_name();
+    let config = create_time_controller_config();
+    let duration = Duration::from_nanos(100);
+    let timeout = Timeout::By(duration);
+
+    let time_controller = SimulationTimeControllerBuilder::new(&name, &config)
+        .create_time_controller()
+        .unwrap();
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
+            .config(&config)
+            .open_clock()
+            .unwrap(),
+    );
+
+    let handle = clock.schedule(timeout).unwrap();
+    let (_guard, listener) = match handle {
+        ScheduleHandle::GuardAndListener((g, l)) => (g, l),
+        _ => {
+            assert_that!(shall_never_be_reached);
+        }
+    };
+    let reactor = iceoryx2_cal::reactor::posix_select::ReactorBuilder::new()
+        .create(clock.clone())
+        .unwrap();
+    let _reactor_guard = reactor.attach(&*listener);
+
+    assert_that!(reactor.try_wait(|_| {}).unwrap(), eq 0);
+
+    let _ = time_controller.advance(duration / 2);
+    assert_that!(reactor.try_wait(|_| {}).unwrap(), eq 0);
+
+    let _ = time_controller.advance(duration);
+    assert_that!(reactor.try_wait(|_| {}).unwrap(), eq 1);
+
+    cleanup_clock_state(&name, &config);
+    cleanup_time_controller_state(&config);
+}
+
+#[test]
+fn guard_deregisters_timeout_that_was_registered_with_schedule() {
+    let test = TestFixture::new();
+    let duration = Duration::from_nanos(100);
+    let timeout = Timeout::By(duration);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
+            .open_clock()
+            .unwrap(),
+    );
+
+    let handle = clock.schedule(timeout).unwrap();
+    let (guard, listener) = match handle {
+        ScheduleHandle::GuardAndListener((g, l)) => (g, l),
+        _ => {
+            assert_that!(shall_never_be_reached);
+        }
+    };
+    let reactor = iceoryx2_cal::reactor::posix_select::ReactorBuilder::new()
+        .create(clock.clone())
+        .unwrap();
+    let _reactor_guard = reactor.attach(&*listener);
+
+    drop(guard);
+
+    let _ = time_controller.advance(2 * duration);
+    assert_that!(reactor.try_wait(|_| {}).unwrap(), eq 0);
 }
