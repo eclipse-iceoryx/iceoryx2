@@ -61,6 +61,9 @@ pub fn endpoint_of(description: &ServiceDescription) -> FakeEndpointDescription 
 pub fn header_size(description: &FakeEndpointDescription) -> usize {
     match &description.types {
         EndpointTypes::PublishSubscribe(types) => types.user_header.size,
+        EndpointTypes::RequestResponse { .. } => {
+            unimplemented!("the fake middleware has no request-response endpoints")
+        }
         EndpointTypes::Event => 0,
     }
 }

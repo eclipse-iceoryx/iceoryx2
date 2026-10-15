@@ -16,6 +16,12 @@ pub enum EndpointTypes<SampleTypes> {
     /// The sample type used by an endpoint for the publish-subscribe messaging
     /// pattern.
     PublishSubscribe(SampleTypes),
+    /// The request and response sample types used by an endpoint for the
+    /// request-response messaging pattern.
+    RequestResponse {
+        request: SampleTypes,
+        response: SampleTypes,
+    },
     /// Events carry no types.
     Event,
 }
