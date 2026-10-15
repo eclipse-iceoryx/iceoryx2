@@ -18,7 +18,7 @@ use iceoryx2::port::event_id::EventId;
 pub trait EventEndpoints {
     type Failure: Error;
 
-    /// Notifies every other endpoint under the same description.
+    /// Notifies every other endpoint with the same description.
     fn notify(&mut self, id: EventId) -> Result<(), Self::Failure>;
 
     /// The pending notification, if any.

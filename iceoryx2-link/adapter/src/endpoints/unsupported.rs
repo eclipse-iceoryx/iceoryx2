@@ -13,7 +13,12 @@
 use iceoryx2::port::event_id::EventId;
 use iceoryx2_link_backend::Never;
 
-use super::{EventEndpoints, PublishSubscribeEndpoints, SampleDestination, TakeOutcome};
+use iceoryx2_link_backend::wire::request_response::ClientRequestId;
+
+use super::{
+    EventEndpoints, PublishSubscribeEndpoints, RequestDestination, RequestResponseEndpoints,
+    ResponseDestination, ResponseKind, SampleDestination, TakeOutcome,
+};
 use crate::SampleBytesRef;
 
 /// The endpoints of a pattern the middleware does not have.
@@ -30,6 +35,41 @@ impl PublishSubscribeEndpoints for UnsupportedEndpoints {
         &mut self,
         _: impl SampleDestination<'a>,
     ) -> Result<TakeOutcome<()>, Self::Failure> {
+        match self.0 {}
+    }
+}
+
+impl RequestResponseEndpoints for UnsupportedEndpoints {
+    type Failure = core::convert::Infallible;
+    type ServerRequestId = Never;
+
+    fn send_request(
+        &mut self,
+        _: ClientRequestId,
+        _: SampleBytesRef<'_>,
+    ) -> Result<(), Self::Failure> {
+        match self.0 {}
+    }
+
+    fn take_response<'a>(
+        &mut self,
+        _: impl ResponseDestination<'a>,
+    ) -> Result<TakeOutcome<(ClientRequestId, ResponseKind)>, Self::Failure> {
+        match self.0 {}
+    }
+
+    fn take_request<'a>(
+        &mut self,
+        _: impl RequestDestination<'a>,
+    ) -> Result<TakeOutcome<Never>, Self::Failure> {
+        match self.0 {}
+    }
+
+    fn send_response(&mut self, _: &Never, _: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
+        match self.0 {}
+    }
+
+    fn end_response_stream(&mut self, _: Never) -> Result<(), Self::Failure> {
         match self.0 {}
     }
 }

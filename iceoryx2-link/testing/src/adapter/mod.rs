@@ -33,7 +33,7 @@ use crate::adapter::middleware::Origin;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// The middleware has no events.
+    /// The middleware has no endpoints of the pattern.
     UnsupportedPattern,
 }
 
@@ -62,6 +62,7 @@ impl Adapter for FakeAdapter {
     type EndpointSettings = FakeEndpointSettings;
     type EndpointTypes = EndpointTypes<FakeSampleTypes>;
     type PublishSubscribeEndpoints = FakeEndpoints;
+    type RequestResponseEndpoints = UnsupportedEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn generation(&self) -> Generation {
@@ -96,6 +97,19 @@ impl Adapter for FakeAdapter {
             id,
             header_size(description),
         ))
+    }
+
+    fn request_response(
+        &mut self,
+        description: &FakeEndpointDescription,
+    ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
+        let origin = origin!("FakeAdapter::request_response");
+
+        fail!(
+            from origin,
+            with Error::UnsupportedPattern,
+            "The fake middleware has no request-response yet, {} cannot be opened as one", description.settings.name
+        );
     }
 
     fn event(
