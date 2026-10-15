@@ -12,4 +12,5 @@
 
 pub mod discovery;
 pub mod publish_subscribe;
+pub mod request_response;
 pub mod wake;

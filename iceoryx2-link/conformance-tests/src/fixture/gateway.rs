@@ -43,8 +43,8 @@ pub trait GatewayFixture<S: Service>: AdapterFixture {
         Gateway::new(self.adapter(), self.mapping(), self.translator())
     }
 
-    /// Remote endpoints where `service` maps to, one the mapping covers.
-    /// Gone once dropped.
+    /// Creates remote endpoints where `service` maps to, one the mapping
+    /// covers. Dropping them removes them from the middleware.
     fn remote_endpoints_on(
         &mut self,
         service: &ServiceDescription,

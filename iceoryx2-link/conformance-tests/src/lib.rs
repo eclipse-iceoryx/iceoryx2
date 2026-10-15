@@ -88,6 +88,7 @@ extern crate alloc;
 mod adapter;
 pub use adapter::discovery as adapter_discovery;
 pub use adapter::publish_subscribe as adapter_publish_subscribe;
+pub use adapter::request_response as adapter_request_response;
 pub use adapter::wake as adapter_wake;
 mod carrier;
 pub use carrier::discovery as carrier_discovery;

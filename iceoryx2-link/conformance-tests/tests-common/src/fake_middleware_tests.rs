@@ -29,6 +29,10 @@ instantiate_conformance_tests!(
     FakeMiddlewareFixture<Passthrough>
 );
 instantiate_conformance_tests!(
+    iceoryx2_link_conformance_tests::adapter_request_response,
+    FakeMiddlewareFixture<Passthrough>
+);
+instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::adapter_wake,
     FakeMiddlewareFixture<Passthrough>
 );
