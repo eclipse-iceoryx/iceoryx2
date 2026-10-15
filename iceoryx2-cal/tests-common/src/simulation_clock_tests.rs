@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::sync::Arc;
 use core::time::Duration;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
@@ -23,7 +24,9 @@ use iceoryx2_cal::clock::*;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::dynamic_storage::DynamicStorageBuilder;
 use iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage;
-use iceoryx2_cal::event::UnixDatagramShmCountingBitSet;
+use iceoryx2_cal::event::{
+    Event, ListenerBuilder, ListenerWaitInterface, UnixDatagramShmCountingBitSet,
+};
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::testing::*;
 
@@ -313,4 +316,132 @@ fn now_returns_current_time_with_configured_creation_time() {
 
     cleanup_clock_state(&name, &config);
     cleanup_time_controller_state(&config);
+}
+
+#[test]
+fn schedule_on_notifies_listener_when_timeout_has_already_expired() {
+    let test = TestFixture::new();
+    let duration = Duration::from_nanos(100);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
+            .open_clock()
+            .unwrap(),
+    );
+
+    let listener_name = unsafe { FileName::new_unchecked_const(b"foo") };
+    let listener = <UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&listener_name)
+        .create(clock.clone())
+        .unwrap();
+    let timeout = Timeout::By(duration);
+
+    let _ = time_controller.advance(2 * duration);
+
+    let handle = clock.schedule_on(timeout, &listener_name);
+    assert_that!(handle, is_ok);
+    let t = match handle.unwrap() {
+        ScheduleOnHandle::TranslatedTimeout(t) => t,
+        ScheduleOnHandle::Guard(_) => {
+            assert_that!(shall_never_be_reached);
+        }
+    };
+    assert_that!(t, eq Timeout::By(Duration::ZERO));
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 1);
+}
+
+#[test]
+fn schedule_on_returns_guard_when_timeout_has_not_expired() {
+    let name = generate_file_path().file_name();
+    let config = create_time_controller_config();
+
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
+            .config(&config)
+            .open_clock()
+            .unwrap(),
+    );
+
+    let listener_name = unsafe { FileName::new_unchecked_const(b"foo") };
+    let timeout = Timeout::At(TimePoint::from_nanos(100));
+
+    let handle = clock.schedule_on(timeout, &listener_name);
+    assert_that!(handle, is_ok);
+    if let ScheduleOnHandle::TranslatedTimeout(_) = handle.unwrap() {
+        assert_that!(shall_never_be_reached);
+    }
+
+    cleanup_clock_state(&name, &config);
+}
+
+#[test]
+fn advance_notifies_when_timeout_was_scheduled_with_schedule_on() {
+    let name = generate_file_path().file_name();
+    let config = create_time_controller_config();
+    let duration = Duration::from_nanos(100);
+
+    let time_controller = SimulationTimeControllerBuilder::new(&name, &config)
+        .create_time_controller()
+        .unwrap();
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
+            .config(&config)
+            .open_clock()
+            .unwrap(),
+    );
+
+    let listener_name = unsafe { FileName::new_unchecked_const(b"foo") };
+    let listener = <UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&listener_name)
+        .create(clock.clone())
+        .unwrap();
+    let timeout = Timeout::By(duration);
+    let _handle = clock.schedule_on(timeout, &listener_name).unwrap();
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 0);
+
+    let _ = time_controller.advance(duration / 2);
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 0);
+
+    let _ = time_controller.advance(duration);
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 1);
+
+    cleanup_clock_state(&name, &config);
+    cleanup_time_controller_state(&config);
+}
+
+#[test]
+fn guard_deregisters_timeout() {
+    let test = TestFixture::new();
+    let duration = Duration::from_nanos(100);
+
+    let time_controller = SimulationTimeControllerBuilder::new(test.name(), test.config())
+        .create_time_controller()
+        .unwrap();
+    let clock = Arc::new(
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
+            .open_clock()
+            .unwrap(),
+    );
+
+    let listener_name = unsafe { FileName::new_unchecked_const(b"foo") };
+    let listener = <UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&listener_name)
+        .create(clock.clone())
+        .unwrap();
+    let timeout = Timeout::By(duration);
+
+    let handle = clock.schedule_on(timeout, &listener_name).unwrap();
+    let guard = match handle {
+        ScheduleOnHandle::TranslatedTimeout(_) => {
+            assert_that!(shall_never_be_reached);
+        }
+        ScheduleOnHandle::Guard(g) => g,
+    };
+
+    drop(guard);
+
+    let _ = time_controller.advance(2 * duration);
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 0);
 }

@@ -247,15 +247,15 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         timeout: Timeout,
         listener_name: &FileName,
     ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError> {
-        let counter = self
-            .state
-            .get()
+        let state = unsafe { self.state.get_mut() };
+
+        let counter = state
             .global_generation_counter
             .fetch_add(1, Ordering::SeqCst);
 
         let timeout = match timeout {
             Timeout::At(timepoint) => timepoint,
-            Timeout::By(duration) => self.state.get().creation_time + duration,
+            Timeout::By(duration) => state.creation_time + duration,
         };
         let timepoint = ScheduledTimepoint {
             trigger_name: listener_name.clone(),
@@ -263,65 +263,66 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
             generation_counter: AtomicU64::new(counter),
         };
 
+        // TODO: fail with new error code
         match self.now() {
             Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
             Ok(tp) => {
                 if timeout < tp {
-                    // TODO: trigger instead of error
-                    fatal_panic!(
-                        "Trigger {} cannot be scheduled since the timeout is already expired.",
-                        listener_name
-                    );
+                    let notifier = E::NotifierBuilder::new(&listener_name).open().unwrap();
+                    notifier.notify(EventId::new(0)).expect("notify successful");
+                    return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
+                        Duration::ZERO,
+                    )));
                 }
             }
         }
 
-        let index = match unsafe { self.state.get().index_list.acquire_raw_index() } {
+        let index = match unsafe { state.index_list.acquire_raw_index() } {
             Ok(idx) => idx,
-            Err(_) => fatal_panic!(
-                "Trigger {} cannot be scheduled since it would exceed the max. amount of triggers.",
-                listener_name
-            ), // TODO: return error
+            Err(_) => {
+                fail!(from self, with ClockListenerScheduleError::ClockScheduleCapacityExceeded,
+                    "Trigger {} cannot be scheduled since it would exceed the max. amount of triggers.",
+                    listener_name);
+            }
         };
 
-        unsafe {
-            self.state.get_mut().scheduled_timepoints[index as usize] = timepoint;
-        }
+        state.scheduled_timepoints[index as usize] = timepoint;
 
         match self.now() {
             Err(_) => {
+                state.scheduled_timepoints[index as usize]
+                    .generation_counter
+                    .store(0, Ordering::SeqCst);
                 unsafe {
-                    self.state.get().scheduled_timepoints[index as usize]
-                        .generation_counter
-                        .store(0, Ordering::SeqCst);
-                    self.state
-                        .get()
+                    state
                         .index_list
                         .release_raw_index(index, ReleaseMode::Default);
                 }
+                // TODO: fail with new error code
                 fatal_panic!("This should never happen! Failed to obtain current time.");
             }
             Ok(tp) => {
                 if timeout < tp {
-                    match self.state.get().scheduled_timepoints[index as usize]
+                    match state.scheduled_timepoints[index as usize]
                         .generation_counter
                         .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
                     {
-                        Ok(_) => unsafe {
-                            self.state
-                                .get()
-                                .index_list
-                                .release_raw_index(index, ReleaseMode::Default);
-                        },
+                        Ok(_) => {
+                            unsafe {
+                                state
+                                    .index_list
+                                    .release_raw_index(index, ReleaseMode::Default);
+                            }
+                            let notifier = E::NotifierBuilder::new(&listener_name).open().unwrap();
+                            notifier.notify(EventId::new(0)).expect("notify successful");
+                        }
                         Err(_) => {
-                            // advance() released index
+                            // advance() triggered and released index
                         }
                     };
-                    // TODO: no error, trigger when schedule() set counter to 0
-                    fatal_panic!(
-                        "Trigger {} cannot be scheduled since the timeout is already expired.",
-                        listener_name
-                    );
+                    return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
+                        Duration::ZERO,
+                    )));
                 }
             }
         }
@@ -329,8 +330,8 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         let guard = Guard {
             generation_counter: counter,
             index,
-            scheduled_timepoints: &self.state.get().scheduled_timepoints,
-            index_list: &self.state.get().index_list,
+            scheduled_timepoints: &state.scheduled_timepoints,
+            index_list: &state.index_list,
         };
         Ok(ScheduleOnHandle::Guard(Box::new(guard)))
     }
@@ -374,8 +375,9 @@ where
     const HAS_TIME_CONTROLLER_SUPPORT: bool = true;
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
-        // TODO: unique name
-        let listener_name = unsafe { FileName::new_unchecked_const(b"blub") };
+        let id = self.state.get().name_id.fetch_add(1, Ordering::Relaxed);
+        let listener_name =
+            unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
         let listener = create_waiter::<E>(&listener_name, &E::Configuration::default()).unwrap();
         let guard = self.schedule_on(timeout, &listener_name).unwrap();
         match guard {
@@ -393,7 +395,7 @@ where
 }
 
 pub const TIME_CONTROLLER_STATE_NAME: FileName =
-    unsafe { FileName::new_unchecked_const(b"timer_controller") };
+    unsafe { FileName::new_unchecked_const(b"time_controller") };
 
 #[derive(Debug)]
 pub struct SimulationTimeControllerBuilder {
@@ -566,7 +568,7 @@ impl SimulationTimeControllerBuilder {
                             RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
                         },
                         index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
-                        global_generation_counter: AtomicU64::new(0),
+                        global_generation_counter: AtomicU64::new(1),
                         name_id: AtomicU64::new(0),
                     });
                     let state = unsafe { state.assume_init_mut() };
@@ -664,6 +666,7 @@ impl TimeController for SimulationTimeController {
             }
 
             if old_simulated_time + duration.as_nanos() as u64 >= timeout {
+                // TODO: add notifier config?
                 let notifier = <Self::E as Event>::NotifierBuilder::new(&trigger_name)
                     .open()
                     .unwrap();

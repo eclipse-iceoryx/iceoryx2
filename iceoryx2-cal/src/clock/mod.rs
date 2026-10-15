@@ -202,6 +202,7 @@ pub enum ScheduleOnHandle<'a> {
     /// The user provided [`Event::Listener`](crate::event::Listener) is when the [`Timeout`] has
     /// passed and the [`ScheduleGuard`] is still alive.
     Guard(Box<dyn ScheduleGuard<'a>>),
+    // TODO: Update documentation: TranslatedTimeout(0) is returned by stepped clock when timeout is expired before scheduling
 }
 
 /// Trait that defines an interface to acquire the current time.
