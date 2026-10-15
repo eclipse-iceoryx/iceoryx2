@@ -19,8 +19,8 @@ use iceoryx2_link_conformance_tests::fixture::{
     Discoverable, MessageEndpoints, PropagatesPayloads, PropagatesPayloadsWithHeaders,
 };
 use iceoryx2_link_testing::{
-    FakeEndpointDescription, FakeEndpointSettings, FakeEndpoints, FakeMiddleware, FakeSampleTypes,
-    endpoint_of,
+    FakeEndpointDescription, FakeEndpointSettings, FakeMiddleware, FakePublishSubscribeEndpoints,
+    FakeSampleTypes, endpoint_of,
 };
 
 use super::wire_form::{Header, Payload, WireForm};
@@ -49,7 +49,7 @@ pub(crate) fn endpoint_for<T: WireForm>(service: &ServiceDescription) -> FakeEnd
 pub(crate) struct FakeRemoteEndpoints<T> {
     service: ServiceDescription,
     description: FakeEndpointDescription,
-    remote: FakeEndpoints,
+    remote: FakePublishSubscribeEndpoints,
     header_size: usize,
     _translator: PhantomData<T>,
 }

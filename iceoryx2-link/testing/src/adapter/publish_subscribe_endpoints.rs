@@ -21,14 +21,14 @@ use crate::adapter::middleware::FakeMiddleware;
 
 /// A publisher and subscription on a [`FakeMiddleware`], the
 /// gateway's or an application's.
-pub struct FakeEndpoints {
+pub struct FakePublishSubscribeEndpoints {
     middleware: FakeMiddleware,
     name: ServiceName,
     id: u64,
     header_size: usize,
 }
 
-impl FakeEndpoints {
+impl FakePublishSubscribeEndpoints {
     pub(super) fn new(
         middleware: FakeMiddleware,
         name: ServiceName,
@@ -44,7 +44,7 @@ impl FakeEndpoints {
     }
 }
 
-impl FakeEndpoints {
+impl FakePublishSubscribeEndpoints {
     /// Sends a message to every other endpoint under the description.
     pub fn send(&self, message: &[u8]) {
         self.middleware.publish(&self.name, self.id, message);
@@ -56,7 +56,7 @@ impl FakeEndpoints {
     }
 }
 
-impl PublishSubscribeEndpoints for FakeEndpoints {
+impl PublishSubscribeEndpoints for FakePublishSubscribeEndpoints {
     type Failure = Error;
 
     fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
@@ -90,7 +90,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
     }
 }
 
-impl Drop for FakeEndpoints {
+impl Drop for FakePublishSubscribeEndpoints {
     fn drop(&mut self) {
         self.middleware.leave(&self.name, self.id);
     }

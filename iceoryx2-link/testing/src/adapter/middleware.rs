@@ -18,7 +18,9 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_bb_concurrency::cell::{Ref, RefCell};
 use iceoryx2_link_backend::WakeHandle;
 
-use crate::adapter::{FakeAdapter, FakeEndpointDescription, FakeEndpoints, header_size};
+use crate::adapter::{
+    FakeAdapter, FakeEndpointDescription, FakePublishSubscribeEndpoints, header_size,
+};
 
 /// Who created an endpoint. Only remote endpoints make a description one
 /// the adapter lists.
@@ -77,9 +79,12 @@ impl FakeMiddleware {
 
     /// Creates remote endpoints under `description`, as an application of
     /// the middleware would.
-    pub fn remote_endpoints(&self, description: &FakeEndpointDescription) -> FakeEndpoints {
+    pub fn remote_endpoints(
+        &self,
+        description: &FakeEndpointDescription,
+    ) -> FakePublishSubscribeEndpoints {
         let id = self.join(description, Origin::Remote);
-        FakeEndpoints::new(
+        FakePublishSubscribeEndpoints::new(
             self.clone(),
             description.settings.name,
             id,

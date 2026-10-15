@@ -11,17 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod endpoint_description;
-mod endpoints;
 mod mapping;
 mod middleware;
+mod publish_subscribe_endpoints;
 mod translator;
 
 pub use endpoint_description::{
     FakeEndpointDescription, FakeEndpointSettings, FakeSampleTypes, endpoint_of, header_size,
 };
-pub use endpoints::FakeEndpoints;
 pub use mapping::FakeMapping;
 pub use middleware::FakeMiddleware;
+pub use publish_subscribe_endpoints::FakePublishSubscribeEndpoints;
 pub use translator::{FakeSwapTranslator, SwapHeader, SwapPayload, swapped_bytes};
 
 use iceoryx2_bb_elementary::generation::Generation;
@@ -61,7 +61,7 @@ impl Adapter for FakeAdapter {
     type OpenError = Error;
     type EndpointSettings = FakeEndpointSettings;
     type EndpointTypes = EndpointTypes<FakeSampleTypes>;
-    type PublishSubscribeEndpoints = FakeEndpoints;
+    type PublishSubscribeEndpoints = FakePublishSubscribeEndpoints;
     type RequestResponseEndpoints = UnsupportedEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
@@ -91,7 +91,7 @@ impl Adapter for FakeAdapter {
         description: &FakeEndpointDescription,
     ) -> Result<Self::PublishSubscribeEndpoints, Self::OpenError> {
         let id = self.middleware.join(description, Origin::Gateway);
-        Ok(FakeEndpoints::new(
+        Ok(FakePublishSubscribeEndpoints::new(
             self.middleware.clone(),
             description.settings.name,
             id,
