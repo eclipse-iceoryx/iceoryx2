@@ -271,9 +271,7 @@ pub trait Clock<E: Event>:
 /// expired.
 pub trait TimeController: NamedConceptMgmt + Abandonable {
     /// The event type produced by triggers scheduled through the clock this controller drives.
-    type E: crate::event::Event
-    where
-        <Self::E as crate::event::Event>::Listener: SynchronousMultiplexing;
+    type E: crate::event::Event;
 
     /// Advances time by `duration` and activates all scheduled triggers whose deadlines have been
     /// reached.
