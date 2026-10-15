@@ -21,8 +21,8 @@ pub use crate::service::marker::Flatbuffer;
 pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     Service, ServiceDetails, attribute::AttributeSet, attribute::AttributeSpecifier,
-    attribute::AttributeVerifier, ipc, ipc_threadsafe, local, local_threadsafe,
-    port_factory::PortFactory, service_name::ServiceName,
+    attribute::AttributeVerifier, ipc, ipc_simulated_clock, ipc_threadsafe, local,
+    local_threadsafe, port_factory::PortFactory, service_name::ServiceName,
 };
 pub use crate::signal_handling_mode::SignalHandlingMode;
 pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};

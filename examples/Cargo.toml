@@ -302,3 +302,7 @@ path = "rust/simulated_clock/subscriber.rs"
 [[example]]
 name = "simulated_clock_publisher"
 path = "rust/simulated_clock/publisher.rs"
+
+[[example]]
+name = "simulated_clock_time_controller"
+path = "rust/simulated_clock/time_controller.rs"

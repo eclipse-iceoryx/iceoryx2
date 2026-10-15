@@ -37,3 +37,16 @@ rust_binary(
         "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
+
+rust_binary(
+    name = "time_controller",
+    srcs = [
+        "time_controller.rs",
+    ],
+    deps = [
+        "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
+    ],
+)

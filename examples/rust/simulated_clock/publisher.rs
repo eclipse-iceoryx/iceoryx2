@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -20,13 +20,12 @@ use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_log_level_from_env_or(LogLevel::Info);
-
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
+fn start_publishing<ServiceVariant: iceoryx2::service::Service>()
+-> Result<(), Box<dyn core::error::Error>> {
+    let node = NodeBuilder::new().create::<ServiceVariant>()?;
 
     let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .service_builder(&"Time/Controlled/Service".try_into()?)
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
 
@@ -52,4 +51,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     coutln!("exit");
 
     Ok(())
+}
+
+fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
+
+    start_publishing::<ipc_simulated_clock::Service>()
 }
