@@ -154,7 +154,7 @@ impl<
         let mut decode = self.transcoding.decode(loanable);
         let outcome = fail!(
             from origin,
-            when self.endpoints.take(&mut decode.input()),
+            when self.endpoints.take(decode.input()),
             with ReceiveError::Endpoints,
             "Failed to take a message"
         );

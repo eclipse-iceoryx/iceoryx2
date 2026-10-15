@@ -249,12 +249,12 @@ pub(super) enum Destination<'l, 's, L: LoanableSample> {
     Scratch(&'s mut SampleBytes),
 }
 
-impl<'a, L: LoanableSample> SampleDestination<'a> for &'a mut Destination<'_, '_, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
+impl<'l, 's: 'l, L: LoanableSample> SampleDestination<'l> for Destination<'l, 's, L> {
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'l>> {
         match self {
             Destination::Loan(destination) => destination.for_lengths(lengths),
             Destination::Split(destination) => destination.for_lengths(lengths),
-            Destination::Scratch(scratch) => (&mut **scratch).for_lengths(lengths),
+            Destination::Scratch(scratch) => scratch.for_lengths(lengths),
         }
     }
 }
@@ -638,14 +638,15 @@ impl<'l, L: LoanableSample> LoanBackedDestination<'l, L> {
     }
 }
 
-impl<'a, L: LoanableSample> SampleDestination<'a> for &'a mut LoanBackedDestination<'_, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
-        if lengths.header != self.header_size {
-            *self.loan = PendingLoan::Refused(ReceiveError::Malformed);
+impl<'l, L: LoanableSample> SampleDestination<'l> for LoanBackedDestination<'l, L> {
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'l>> {
+        let Self { loan, header_size } = self;
+        if lengths.header != header_size {
+            *loan = PendingLoan::Refused(ReceiveError::Malformed);
             return None;
         }
-        self.loan.loan_or_resize_forward(lengths.payload).ok()?;
-        match self.loan {
+        loan.loan_or_resize_forward(lengths.payload).ok()?;
+        match loan {
             PendingLoan::Loaned(loaned) => Some(loaned.as_mut()),
             _ => None,
         }
@@ -665,13 +666,14 @@ impl<'l, 's, L: LoanableSample> SplitDestination<'l, 's, L> {
     }
 }
 
-impl<'a, L: LoanableSample> SampleDestination<'a> for &'a mut SplitDestination<'_, '_, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
-        self.loan.loan_or_resize_forward(lengths.payload).ok()?;
-        self.scratch.resize(lengths.header, 0);
+impl<'l, 's: 'l, L: LoanableSample> SampleDestination<'l> for SplitDestination<'l, 's, L> {
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'l>> {
+        let Self { loan, scratch } = self;
+        loan.loan_or_resize_forward(lengths.payload).ok()?;
+        scratch.resize(lengths.header, 0);
         Some(SampleBytesRefMut {
-            header: self.scratch,
-            payload: self.loan.payload_mut(),
+            header: scratch,
+            payload: loan.payload_mut(),
         })
     }
 }
