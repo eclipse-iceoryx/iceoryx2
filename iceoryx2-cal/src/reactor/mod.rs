@@ -58,6 +58,7 @@ impl core::error::Error for ReactorAttachError {}
 pub enum ReactorWaitError {
     Interrupt,
     InsufficientPermissions,
+    ClockScheduleCapacityExceeded,
     InternalError,
 }
 

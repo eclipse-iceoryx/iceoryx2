@@ -219,7 +219,7 @@ pub trait ClockListenerSchedule: ClockNow + Send + Sync + Debug {
 
 /// Trait that defines an interface to schedule a notification on a returned
 /// [`Event::Listener`](crate::event::Listener).
-pub trait ClockReactorSchedule: Send + Sync + Debug {
+pub trait ClockReactorSchedule: ClockNow + Send + Sync + Debug {
     /// Schedules a timeout.
     ///
     /// Depending on the [`Clock`] implementation this returns either a [`Timeout`] that

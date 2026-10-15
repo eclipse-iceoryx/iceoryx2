@@ -15,7 +15,7 @@ pub use iceoryx2_bb_linux::epoll::{
 };
 
 use crate::{
-    clock::ClockReactorSchedule,
+    clock::{ClockReactorSchedule, ClockReactorScheduleError, ScheduleHandle, Timeout},
     reactor::{
         Reactor, ReactorAttachError, ReactorBuilder, ReactorCreateError, ReactorGuard,
         ReactorWaitError,
@@ -30,7 +30,7 @@ use iceoryx2_log::{fail, warn};
 #[derive(Debug)]
 pub struct EpollReactor {
     epoll: Epoll,
-    _clock: Arc<dyn ClockReactorSchedule>,
+    clock: Arc<dyn ClockReactorSchedule>,
 }
 
 impl<'reactor, 'attachment> ReactorGuard<'reactor, 'attachment>
@@ -148,16 +148,41 @@ impl Reactor for EpollReactor {
         mut fn_call: F,
         timeout: core::time::Duration,
     ) -> Result<usize, super::ReactorWaitError> {
-        handle_wait_error(
-            &self.epoll,
-            "Unable to wait with timeout on reactor::Epoll",
-            self.epoll.timed_wait(
-                |event| {
-                    wait_call(&self.epoll, event, &mut fn_call);
-                },
-                timeout,
-            ),
-        )
+        let msg = "Unable to wait with timeout on reactor::Epoll";
+
+        match self.clock.schedule(Timeout::By(timeout)) {
+            Ok(ScheduleHandle::TranslatedTimeout(t)) => {
+                let now = fail!(from self, when self.clock.now(),
+                                with ReactorWaitError::InternalError,
+                                "{msg} since the current time could not be acquired.");
+
+                let translated_timeout = t.as_duration(now);
+                handle_wait_error(
+                    &self.epoll,
+                    msg,
+                    self.epoll.timed_wait(
+                        |event| {
+                            wait_call(&self.epoll, event, &mut fn_call);
+                        },
+                        translated_timeout,
+                    ),
+                )
+            }
+            Ok(ScheduleHandle::GuardAndListener((_guard, listener))) => {
+                let _attachment = self.attach(&*listener);
+                handle_wait_error(
+                    &self.epoll,
+                    msg,
+                    self.epoll.blocking_wait(|event| {
+                        wait_call(&self.epoll, event, &mut fn_call);
+                    }),
+                )
+            }
+            Err(ClockReactorScheduleError::ClockScheduleCapacityExceeded) => {
+                fail!(from self, with ReactorWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the clocks schedule capacity is exceeded.");
+            }
+        }
     }
 
     fn blocking_wait<F: FnMut(&FileDescriptor)>(
@@ -186,10 +211,7 @@ impl ReactorBuilder<EpollReactor> for EpollBuilder {
         let msg = "Unable to create epoll::Reactor";
         let origin = format!("{self:?}");
         match self.create() {
-            Ok(epoll) => Ok(EpollReactor {
-                epoll,
-                _clock: clock,
-            }),
+            Ok(epoll) => Ok(EpollReactor { epoll, clock }),
             Err(EpollCreateError::InsufficientMemory)
             | Err(EpollCreateError::PerProcessFileHandleLimitReached)
             | Err(EpollCreateError::SystemWideFileHandleLimitReached) => {

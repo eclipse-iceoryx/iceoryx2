@@ -38,6 +38,7 @@ pub enum iox2_waitset_run_error_e {
     INTERNAL_ERROR,
     NO_ATTACHMENTS,
     TERMINATION_REQUEST,
+    CLOCK_SCHEDULE_CAPACITY_EXCEEDED,
     INTERRUPT,
 }
 
@@ -49,6 +50,9 @@ impl IntoCInt for WaitSetRunError {
             }
             WaitSetRunError::InternalError => iox2_waitset_run_error_e::INTERNAL_ERROR,
             WaitSetRunError::NoAttachments => iox2_waitset_run_error_e::NO_ATTACHMENTS,
+            WaitSetRunError::ClockScheduleCapacityExceeded => {
+                iox2_waitset_run_error_e::CLOCK_SCHEDULE_CAPACITY_EXCEEDED
+            }
         }) as c_int
     }
 }
