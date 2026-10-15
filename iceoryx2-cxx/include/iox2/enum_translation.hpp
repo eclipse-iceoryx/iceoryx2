@@ -2837,6 +2837,12 @@ constexpr auto from<int, iox2::WaitSetRunError>(const int value) noexcept -> iox
         return iox2::WaitSetRunError::TerminationRequest;
     case iox2_waitset_run_error_e_INTERRUPT:
         return iox2::WaitSetRunError::Interrupt;
+    case iox2_waitset_run_error_e_CLOCK_SCHEDULE_CAPACITY_EXCEEDED:
+        return iox2::WaitSetRunError::ClockScheduleCapacityExceeded;
+    case iox2_waitset_run_error_e_INSUFFICIENT_CAPACITY:
+        return iox2::WaitSetRunError::InsufficientCapacity;
+    case iox2_waitset_run_error_e_INSUFFICIENT_RESOURCES:
+        return iox2::WaitSetRunError::InsufficientResources;
     }
 
     IOX2_UNREACHABLE();
@@ -2856,6 +2862,12 @@ constexpr auto from<iox2::WaitSetRunError, iox2_waitset_run_error_e>(const iox2:
         return iox2_waitset_run_error_e_TERMINATION_REQUEST;
     case iox2::WaitSetRunError::Interrupt:
         return iox2_waitset_run_error_e_INTERRUPT;
+    case iox2::WaitSetRunError::ClockScheduleCapacityExceeded:
+        return iox2_waitset_run_error_e_CLOCK_SCHEDULE_CAPACITY_EXCEEDED;
+    case iox2::WaitSetRunError::InsufficientCapacity:
+        return iox2_waitset_run_error_e_INSUFFICIENT_CAPACITY;
+    case iox2::WaitSetRunError::InsufficientResources:
+        return iox2_waitset_run_error_e_INSUFFICIENT_RESOURCES;
     }
 
     IOX2_UNREACHABLE();

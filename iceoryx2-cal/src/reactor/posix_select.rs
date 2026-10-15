@@ -50,13 +50,13 @@ impl Reactor {
         }
     }
 
-    fn wait<
-        F: FnMut(&FileDescriptor),
-        W: FnMut(F, FileEvent) -> Result<usize, FileDescriptorSetWaitError>,
-    >(
+    fn wait(
         &self,
-        fn_call: F,
-        mut wait_call: W,
+        mut fn_call: impl FnMut(&FileDescriptor),
+        mut wait_call: impl FnMut(
+            &mut dyn FnMut(&FileDescriptor),
+            FileEvent,
+        ) -> Result<usize, FileDescriptorSetWaitError>,
         timeout: Duration,
     ) -> Result<usize, super::ReactorWaitError> {
         let msg = "Unable to wait on Reactor";
@@ -75,7 +75,7 @@ impl Reactor {
                 }
             }
         } else {
-            match wait_call(fn_call, FileEvent::Read) {
+            match wait_call(&mut fn_call, FileEvent::Read) {
                 Ok(number_of_notifications) => Ok(number_of_notifications),
                 Err(FileDescriptorSetWaitError::Interrupt) => {
                     fail!(from self, with ReactorWaitError::Interrupt,
@@ -141,14 +141,14 @@ impl crate::reactor::Reactor for Reactor {
     ) -> Result<usize, super::ReactorWaitError> {
         self.wait(
             fn_call,
-            |f: F, event: FileEvent| self.set.timed_wait(Duration::ZERO, event, f),
+            |f, event| self.set.timed_wait(Duration::ZERO, event, f),
             Duration::ZERO,
         )
     }
 
     fn timed_wait<F: FnMut(&FileDescriptor)>(
         &self,
-        fn_call: F,
+        mut fn_call: F,
         timeout: core::time::Duration,
     ) -> Result<usize, super::ReactorWaitError> {
         let msg = "Unable to wait on posix_select::Reactor";
@@ -161,7 +161,7 @@ impl crate::reactor::Reactor for Reactor {
 
                 self.wait(
                     fn_call,
-                    |f: F, event: FileEvent| self.set.timed_wait(translated_timeout, event, f),
+                    |f, event| self.set.timed_wait(translated_timeout, event, f),
                     translated_timeout,
                 )
             }
@@ -182,9 +182,17 @@ impl crate::reactor::Reactor for Reactor {
                     }
                 };
 
+                let timeout_trigger_fd = unsafe { listener.file_descriptor().native_handle() };
+                let mut number_of_timeout_triggers = 0;
                 self.wait(
-                    fn_call,
-                    |f: F, event: FileEvent| self.set.blocking_wait(event, f),
+                    |fd: &FileDescriptor| {
+                        if unsafe { fd.native_handle() == timeout_trigger_fd } {
+                            number_of_timeout_triggers += 1;
+                        } else {
+                            fn_call(fd);
+                        }
+                    },
+                    |f, event| self.set.blocking_wait(event, f),
                     Duration::MAX,
                 )
             }
@@ -201,7 +209,7 @@ impl crate::reactor::Reactor for Reactor {
     ) -> Result<usize, super::ReactorWaitError> {
         self.wait(
             fn_call,
-            |f: F, event: FileEvent| self.set.blocking_wait(event, f),
+            |f, event| self.set.blocking_wait(event, f),
             Duration::MAX,
         )
     }
