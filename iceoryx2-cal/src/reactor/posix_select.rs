@@ -195,6 +195,7 @@ impl crate::reactor::Reactor for Reactor {
                     |f, event| self.set.blocking_wait(event, f),
                     Duration::MAX,
                 )
+                .map(|count| count - number_of_timeout_triggers)
             }
             Err(ClockReactorScheduleError::ClockScheduleCapacityExceeded) => {
                 fail!(from self, with ReactorWaitError::ClockScheduleCapacityExceeded,

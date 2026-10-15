@@ -185,13 +185,21 @@ impl Reactor for EpollReactor {
                     }
                 };
 
+                let mut number_of_timeout_triggers = 0;
                 handle_wait_error(
                     &self.epoll,
                     msg,
                     self.epoll.blocking_wait(|event| {
+                        if let EpollEvent::FileDescriptor(fd_event) = &event
+                            && fd_event.originates_from(listener.file_descriptor())
+                        {
+                            number_of_timeout_triggers += 1;
+                            return;
+                        }
                         wait_call(&self.epoll, event, &mut fn_call);
                     }),
                 )
+                .map(|count| count - number_of_timeout_triggers)
             }
             Err(ClockReactorScheduleError::ClockScheduleCapacityExceeded) => {
                 fail!(from self, with ReactorWaitError::ClockScheduleCapacityExceeded,
