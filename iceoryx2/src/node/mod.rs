@@ -167,7 +167,6 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::clock::Time;
-use iceoryx2_bb_posix::clock::{NanosleepError, nanosleep};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
 use iceoryx2_bb_posix::mutex::MutexBuilder;
@@ -179,11 +178,13 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
+use iceoryx2_cal::clock::ClockBlockingSleepError;
 use iceoryx2_cal::clock::ClockListenerSchedule;
 use iceoryx2_cal::clock::ClockListenerScheduleError;
 use iceoryx2_cal::clock::ClockNow;
 use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::ClockReactorScheduleError;
+use iceoryx2_cal::clock::Timeout;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -1324,12 +1325,17 @@ impl<Service: service::Service> Node<Service> {
         let msg = "Unable to wait on node";
         self.handle_termination_request(msg)?;
 
-        match nanosleep(cycle_time) {
+        match self
+            .shared
+            .state
+            .clock
+            .blocking_sleep(Timeout::By(cycle_time))
+        {
             Ok(()) => {
                 self.handle_termination_request(msg)?;
                 Ok(())
             }
-            Err(NanosleepError::InterruptedBySignal(_)) => {
+            Err(ClockBlockingSleepError::InterruptedBySignal) => {
                 fail!(from self, with NodeWaitFailure::Interrupt,
                         "{msg} since a interrupt signal was received.");
             }
