@@ -24,9 +24,9 @@ use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_backend::{Backend, Reactive, Refusal, RemoteDescription, RemoteId, WakeService};
 use iceoryx2_log::{fail, origin};
 
-use crate::announcement_state::AnnouncementState;
 use crate::bridge::{Bridges, PropagateError};
-use crate::discovery_state::DiscoveryState;
+use crate::discovery::AnnouncementState;
+use crate::discovery::DiscoveryState;
 use crate::wake::{Wake, WakeCreationError};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -170,8 +170,8 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
             }
 
             // Resolve each service a side of which changed.
-            for change in state.changes() {
-                change.resolve(|local, remotes| {
+            for unresolved in state.unresolved() {
+                unresolved.resolve(|local, remotes| {
                     let resolution = resolver.resolve(local, remotes);
 
                     // Leave the service out when the filter rejects the name it bridges.
@@ -195,13 +195,13 @@ impl<S: Service, B: Backend<S>> Link<S, B> {
         let mut update = announcements.update(|announcement| backend.announce(announcement));
         let exported = state
             .exported()
-            .filter(|(description, _)| bridges.contains(&description.hash()));
-        for (description, creation_id) in exported {
+            .filter(|exported| bridges.contains(&exported.description.hash()));
+        for exported in exported {
             fail!(
                 from origin,
-                when update.set_exported(description, creation_id),
+                when update.announce(exported.description, exported.creation_id),
                 with DiscoveryError::Announcement,
-                "Failed to announce {}", description.name()
+                "Failed to announce {}", exported.description.name()
             );
         }
         fail!(

@@ -81,10 +81,9 @@
 
 extern crate alloc;
 
-mod announcement_state;
 mod bridge;
 mod diagnostics;
-mod discovery_state;
+mod discovery;
 mod link;
 mod ports;
 mod wake;

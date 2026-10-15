@@ -17,7 +17,7 @@ use iceoryx2_link_backend::Announcement;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_log::{fail, origin, trace};
 
-use crate::discovery_state::CreationId;
+use crate::discovery::CreationId;
 
 /// An exported service as the opposing side was last told of it.
 struct Announced {
@@ -59,16 +59,16 @@ impl<A, E> Update<'_, A>
 where
     A: FnMut(Announcement<'_>) -> Result<(), E>,
 {
-    /// Records `description` as exported.
+    /// Announces `description` to the opposing side.
     ///
-    /// Previously unseen services are announced. Seen services that have now
-    /// a different creation id are re-announced with the new description.
-    pub(crate) fn set_exported(
+    /// A service announced with the same creation id is left alone. One
+    /// announced with a different creation id is withdrawn and announced anew.
+    pub(crate) fn announce(
         &mut self,
         description: &ServiceDescription,
         creation_id: CreationId,
     ) -> Result<(), E> {
-        let origin = origin!("Update::set_exported");
+        let origin = origin!("Update::announce");
 
         let hash = description.hash();
         let epoch = self.state.epoch;
@@ -185,7 +185,7 @@ mod tests {
         });
         for (creation_id, description) in exported {
             update
-                .set_exported(description, *creation_id)
+                .announce(description, *creation_id)
                 .expect("accepted");
         }
         update.finalize().expect("accepted");
@@ -195,7 +195,7 @@ mod tests {
     fn update_refused(sut: &mut AnnouncementState, exported: &[(CreationId, &ServiceDescription)]) {
         let mut update = sut.update(|_| Err(()));
         for (creation_id, description) in exported {
-            if update.set_exported(description, *creation_id).is_err() {
+            if update.announce(description, *creation_id).is_err() {
                 return;
             }
         }

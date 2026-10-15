@@ -17,7 +17,7 @@ use iceoryx2_link_backend::service_description::EventDescription;
 use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::{fail, origin};
 
-use crate::bridge::{BridgeError, Bridged, Counters, OpenError};
+use crate::bridge::{Bridge, BridgeError, Monitoring, OpenError};
 use crate::ports::EventPorts;
 
 /// An event service's local ports paired with the backend's relay for
@@ -25,41 +25,41 @@ use crate::ports::EventPorts;
 pub(super) struct EventBridge<S: Service, B: Backend<S>> {
     ports: EventPorts<S>,
     relay: B::EventRelay,
-    counters: Counters,
+    monitoring: Monitoring,
 }
 
-impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
+impl<S: Service, B: Backend<S>> Bridge for EventBridge<S, B> {
     type Service = S;
     type Backend = B;
-    type Pattern<'a> = EventDescription<'a>;
+    type LocalDescription<'a> = EventDescription<'a>;
 
     fn open(
         node: &Node<S>,
         backend: &mut B,
-        description: EventDescription<'_>,
-        remote: &RemoteDescription<S, B>,
+        local_description: EventDescription<'_>,
+        remote_description: &RemoteDescription<S, B>,
     ) -> Result<Self, OpenError> {
         let origin = origin!("EventBridge::open");
 
         let ports = fail!(
             from origin,
-            when EventPorts::open(node, &description.name(), description.settings()),
+            when EventPorts::open(node, &local_description.name(), local_description.settings()),
             with OpenError::Ports,
-            "Failed to open the local ports of {}", description.name()
+            "Failed to open the local ports of {}", local_description.name()
         );
 
         let mut factory = backend.relay_factory();
         let relay = fail!(
             from origin,
-            when factory.event(description, remote).create(),
+            when factory.event(local_description, remote_description).create(),
             with OpenError::Relay,
-            "Failed to create the relay of {}", description.name()
+            "Failed to create the relay of {}", local_description.name()
         );
 
         Ok(Self {
             ports,
             relay,
-            counters: Counters::default(),
+            monitoring: Monitoring::default(),
         })
     }
 
@@ -74,7 +74,7 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             with BridgeError::Propagation,
             "Failed to propagate notifications"
         );
-        self.counters.outbound += propagated;
+        self.monitoring.outbound += propagated;
 
         let ingested = fail!(
             from origin,
@@ -82,12 +82,12 @@ impl<S: Service, B: Backend<S>> Bridged for EventBridge<S, B> {
             with BridgeError::Ingestion,
             "Failed to ingest notifications from the opposing side"
         );
-        self.counters.inbound += ingested;
+        self.monitoring.inbound += ingested;
 
         Ok(())
     }
 
-    fn counters(&mut self) -> &mut Counters {
-        &mut self.counters
+    fn monitoring(&mut self) -> &mut Monitoring {
+        &mut self.monitoring
     }
 }

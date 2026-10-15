@@ -46,6 +46,7 @@
 
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Restructure the ROS 2 gateway into a link gateway with a ROS 2 adapter
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Remove the former gateway core in `iceoryx2-gateway/`, superseded by the link crates
+* [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Tidy up implementation of the link's discovery state
 * [#2010](https://github.com/eclipse-iceoryx/iceoryx2/issues/2010) Receive bytes from a tunnel directly into loaned samples
 
 ### Workflow

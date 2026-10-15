@@ -20,7 +20,7 @@ use iceoryx2_link_backend::service_description::PublishSubscribeDescription;
 use iceoryx2_link_backend::{Backend, RemoteDescription};
 use iceoryx2_log::{fail, origin, trace, warn};
 
-use crate::bridge::{BridgeError, Bridged, Counters, OpenError};
+use crate::bridge::{Bridge, BridgeError, Monitoring, OpenError};
 use crate::ports::PublishSubscribePorts;
 
 /// A publish-subscribe service's local ports paired with the backend's
@@ -29,42 +29,42 @@ pub(super) struct PublishSubscribeBridge<S: Service, B: Backend<S>> {
     ports: PublishSubscribePorts<S>,
     relay: B::PublishSubscribeRelay,
     notification: Notification<S>,
-    counters: Counters,
+    monitoring: Monitoring,
 }
 
-impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
+impl<S: Service, B: Backend<S>> Bridge for PublishSubscribeBridge<S, B> {
     type Service = S;
     type Backend = B;
-    type Pattern<'a> = PublishSubscribeDescription<'a>;
+    type LocalDescription<'a> = PublishSubscribeDescription<'a>;
 
     fn open(
         node: &Node<S>,
         backend: &mut B,
-        description: PublishSubscribeDescription<'_>,
-        remote: &RemoteDescription<S, B>,
+        local_description: PublishSubscribeDescription<'_>,
+        remote_description: &RemoteDescription<S, B>,
     ) -> Result<Self, OpenError> {
         let origin = origin!("PublishSubscribeBridge::open");
 
         let ports = fail!(
             from origin,
-            when PublishSubscribePorts::open(node, &description.name(), description.settings(), description.types()),
+            when PublishSubscribePorts::open(node, &local_description.name(), local_description.settings(), local_description.types()),
             with OpenError::Ports,
-            "Failed to open the local ports of {}", description.name()
+            "Failed to open the local ports of {}", local_description.name()
         );
 
         let mut factory = backend.relay_factory();
         let relay = fail!(
             from origin,
-            when factory.publish_subscribe(description, remote).create(),
+            when factory.publish_subscribe(local_description, remote_description).create(),
             with OpenError::Relay,
-            "Failed to create the relay of {}", description.name()
+            "Failed to create the relay of {}", local_description.name()
         );
 
         Ok(Self {
             ports,
             relay,
-            notification: Notification::new(description.name()),
-            counters: Counters::default(),
+            notification: Notification::new(local_description.name()),
+            monitoring: Monitoring::default(),
         })
     }
 
@@ -77,7 +77,7 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
             with BridgeError::Propagation,
             "Failed to propagate samples"
         );
-        self.counters.outbound += propagated;
+        self.monitoring.outbound += propagated;
 
         let ingested = fail!(
             from origin,
@@ -85,7 +85,7 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
             with BridgeError::Ingestion,
             "Failed to ingest samples from the opposing side"
         );
-        self.counters.inbound += ingested;
+        self.monitoring.inbound += ingested;
 
         if notify && ingested != 0 {
             self.notification.notify(node);
@@ -93,8 +93,8 @@ impl<S: Service, B: Backend<S>> Bridged for PublishSubscribeBridge<S, B> {
         Ok(())
     }
 
-    fn counters(&mut self) -> &mut Counters {
-        &mut self.counters
+    fn monitoring(&mut self) -> &mut Monitoring {
+        &mut self.monitoring
     }
 }
 
