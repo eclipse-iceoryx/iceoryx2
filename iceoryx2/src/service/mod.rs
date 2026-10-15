@@ -250,6 +250,11 @@ pub mod ipc;
 /// [`Send`] but at the cost of an additional internal mutex.
 pub mod ipc_threadsafe;
 
+/// A ipc configuration with a simulated clock that the user can explicitly acquire with
+/// [`Node::time_controller()`](crate::node::Node::time_controller()) and advance with
+/// [`TimeController::advance()`](iceoryx2_cal::clock::TimeController::advance()).
+pub mod ipc_simulated_clock;
+
 /// Contains marker types to enable additional API features.
 pub mod marker;
 

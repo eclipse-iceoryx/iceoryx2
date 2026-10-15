@@ -60,7 +60,13 @@ enum class WaitSetRunError : uint8_t {
     /// A termination signal `SIGTERM` was received.
     TerminationRequest,
     /// An interrupt signal `SIGINT` was received.
-    Interrupt
+    Interrupt,
+    /// The schedule capacity of the used clock was exceeded.
+    ClockScheduleCapacityExceeded,
+    /// The [`WaitSet`]s capacity is exceeded.
+    InsufficientCapacity,
+    /// Insufficient resources to add another attachment to the [`WaitSet`].
+    InsufficientResources,
 };
 
 } // namespace iox2

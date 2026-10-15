@@ -62,7 +62,7 @@ use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 use iceoryx2_pal_posix::*;
 
 /// A trait which is implement by all objects which can be added to the [`FileDescriptorSet`].
-pub trait SynchronousMultiplexing: FileDescriptorBased {}
+pub trait SynchronousMultiplexing: FileDescriptorBased + Debug {}
 
 enum_gen! { FileDescriptorSetWaitError
   entry:

@@ -281,6 +281,12 @@ pub enum WaitSetRunError {
     InternalError,
     /// Waiting on an empty [`WaitSet`] would lead to a deadlock therefore it causes an error.
     NoAttachments,
+    /// The schedule capacity of the used clock was exceeded.
+    ClockScheduleCapacityExceeded,
+    /// The [`WaitSet`]s capacity is exceeded.
+    InsufficientCapacity,
+    /// Insufficient resources to add another attachment to the [`WaitSet`].
+    InsufficientResources,
 }
 
 impl core::fmt::Display for WaitSetRunError {
@@ -970,6 +976,18 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             Err(ReactorWaitError::InternalError) => {
                 fail!(from self, with WaitSetRunError::InternalError,
                     "{msg} due to an internal error.");
+            }
+            Err(ReactorWaitError::ClockScheduleCapacityExceeded) => {
+                fail!(from self, with WaitSetRunError::ClockScheduleCapacityExceeded,
+                    "{msg} since the clocks schedule capacity was exceeded.");
+            }
+            Err(ReactorWaitError::InsufficientResources) => {
+                fail!(from self, with WaitSetRunError::InsufficientResources,
+                    "{msg} since the resources of the underlying reactor were exceeded.");
+            }
+            Err(ReactorWaitError::CapacityExceeded) => {
+                fail!(from self, with WaitSetRunError::InsufficientCapacity,
+                    "{msg} since the capacity of the underlying reactor is insufficient.");
             }
         }
     }

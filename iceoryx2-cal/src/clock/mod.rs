@@ -169,13 +169,19 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
 /// Builder that creates or opens a [`TimeController`].
 ///
 /// [`FreeRunningClock`] implementations do not provide a [`TimeController`].
-pub trait TimeControllerBuilder<T: TimeController> {
+pub trait TimeControllerBuilder {
+    type TimeController: TimeController;
+
     /// Creates a new [`TimeController`].
-    fn create_time_controller(self) -> Result<T, TimeControllerBuilderCreateError>;
+    fn create_time_controller(
+        self,
+    ) -> Result<Self::TimeController, TimeControllerBuilderCreateError>;
     /// Opens an existing [`TimeController`].
-    fn open_time_controller(self) -> Result<T, TimeControllerBuilderOpenError>;
+    fn open_time_controller(self) -> Result<Self::TimeController, TimeControllerBuilderOpenError>;
     /// Opens the [`TimeController`] if it exists, otherwise creates it.
-    fn open_or_create_time_controller(self) -> Result<T, TimeControllerBuilderOpenOrCreateError>;
+    fn open_or_create_time_controller(
+        self,
+    ) -> Result<Self::TimeController, TimeControllerBuilderOpenOrCreateError>;
 }
 
 /// The handle is returned by [`ClockListenerSchedule::schedule_on()`], describing how a scheduled
@@ -219,7 +225,7 @@ pub trait ClockListenerSchedule: ClockNow + Send + Sync + Debug {
 
 /// Trait that defines an interface to schedule a notification on a returned
 /// [`Event::Listener`](crate::event::Listener).
-pub trait ClockReactorSchedule: Send + Sync + Debug {
+pub trait ClockReactorSchedule: ClockNow + Send + Sync + Debug {
     /// Schedules a timeout.
     ///
     /// Depending on the [`Clock`] implementation this returns either a [`Timeout`] that

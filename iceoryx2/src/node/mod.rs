@@ -167,7 +167,6 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::clock::Time;
-use iceoryx2_bb_posix::clock::{NanosleepError, nanosleep};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
 use iceoryx2_bb_posix::mutex::MutexBuilder;
@@ -179,11 +178,15 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
+use iceoryx2_cal::clock::ClockBlockingSleepError;
 use iceoryx2_cal::clock::ClockListenerSchedule;
 use iceoryx2_cal::clock::ClockListenerScheduleError;
 use iceoryx2_cal::clock::ClockNow;
 use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::ClockReactorScheduleError;
+use iceoryx2_cal::clock::TimeControllerBuilder;
+use iceoryx2_cal::clock::TimeControllerBuilderOpenOrCreateError;
+use iceoryx2_cal::clock::Timeout;
 use iceoryx2_cal::clock::{Clock, ClockBuilder};
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -1202,6 +1205,32 @@ impl<Service: service::Service> Abandonable for Node<Service> {
     }
 }
 
+/// Defines the underlying [`TimeController`](iceoryx2_cal::clock::TimeController) type used to manually
+/// advance the [`Clock`].
+#[allow(type_alias_bounds)] // Introduce bounds for completeness
+pub type TimeController<Service>
+where
+    Service: service::Service,
+    <<Service as service::Service>::Clock as Clock<<Service as service::Service>::Event>>::Builder: TimeControllerBuilder,
+= <<<Service as service::Service>::Clock as Clock<<Service as service::Service>::Event>>::Builder as TimeControllerBuilder>::TimeController;
+
+impl<Service: service::Service> Node<Service>
+where
+    <Service::Clock as Clock<Service::Event>>::Builder: TimeControllerBuilder,
+{
+    /// Returns the underlying [`TimeController`](iceoryx2_cal::clock::TimeController) that allows
+    /// the user to manually advance the [`Clock`]. At most one [`Node`] in the iceoryx2 domain is
+    /// allowed to hold the [`TimeController`](iceoryx2_cal::clock::TimeController)
+    pub fn time_controller(
+        &self,
+    ) -> Result<TimeController<Service>, TimeControllerBuilderOpenOrCreateError> {
+        let clock_config = clock_config::<Service>(self.shared.config());
+        <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
+            .config(&clock_config)
+            .open_or_create_time_controller()
+    }
+}
+
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].
     pub fn name(&self) -> &NodeName {
@@ -1324,12 +1353,17 @@ impl<Service: service::Service> Node<Service> {
         let msg = "Unable to wait on node";
         self.handle_termination_request(msg)?;
 
-        match nanosleep(cycle_time) {
+        match self
+            .shared
+            .state
+            .clock
+            .blocking_sleep(Timeout::By(cycle_time))
+        {
             Ok(()) => {
                 self.handle_termination_request(msg)?;
                 Ok(())
             }
-            Err(NanosleepError::InterruptedBySignal(_)) => {
+            Err(ClockBlockingSleepError::InterruptedBySignal) => {
                 fail!(from self, with NodeWaitFailure::Interrupt,
                         "{msg} since a interrupt signal was received.");
             }
