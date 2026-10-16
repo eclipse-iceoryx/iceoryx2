@@ -13,3 +13,5 @@
 pub mod discovery;
 pub mod publish_subscribe;
 pub mod publish_subscribe_with_headers;
+pub mod request_response;
+pub mod request_response_with_headers;

@@ -111,6 +111,7 @@ pub use adapter::{
 pub use carrier::CarrierFixture;
 pub use gateway::{
     Discoverable, GatewayFixture, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+    PropagatesRequestResponse, PropagatesRequestResponseWithHeaders,
 };
 pub use link::{GatewayLinkFixture, LinkFixture, TunnelLinkFixture};
 pub use tunnel::TunnelFixture;

@@ -17,54 +17,68 @@ use iceoryx2::pending_response::PendingResponse;
 use iceoryx2::port::client::Client;
 use iceoryx2::port::server::Server;
 use iceoryx2::service::Service;
-use iceoryx2::service::builder::request_response::Builder;
 use iceoryx2::service::port_factory::request_response::PortFactory;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use crate::parameters::{FixedSizePayload, RequestPayload, ResponsePayload};
+use crate::parameters::{FixedSizePayload, RequestPayload, ResponsePayload, UserHeader};
 
 impl<T> RequestPayload for FixedSizePayload<T>
 where
     T: IceoryxSend + ZeroCopySend + TypeName + Debug + Copy + PartialEq + From<u64> + 'static,
 {
-    fn create<S: Service, R: IceoryxSend + Debug>(
-        builder: Builder<T, (), R, (), S>,
-    ) -> PortFactory<S, T, (), R, ()> {
-        builder.create().expect("service is created")
-    }
-
-    fn open<S: Service, R: IceoryxSend + Debug>(
-        builder: Builder<T, (), R, (), S>,
-    ) -> PortFactory<S, T, (), R, ()> {
-        builder.open().expect("service is opened")
-    }
-
-    fn client<S: Service, R: IceoryxSend + Debug>(
-        service: &PortFactory<S, T, (), R, ()>,
-    ) -> Client<S, T, (), R, ()> {
+    fn client<S: Service, QH: UserHeader, R: IceoryxSend + Debug + ?Sized, RH: UserHeader>(
+        service: &PortFactory<S, T, QH, R, RH>,
+    ) -> Client<S, T, QH, R, RH> {
         service
             .client_builder()
             .create()
             .expect("client is created")
     }
 
-    fn send_request<S: Service, R: IceoryxSend + Debug>(
-        client: &Client<S, T, (), R, ()>,
+    fn send_request<S: Service, QH: UserHeader, R: IceoryxSend + Debug + ?Sized, RH: UserHeader>(
+        client: &Client<S, T, QH, R, RH>,
+        header: QH,
         value: T,
-    ) -> PendingResponse<S, T, (), R, ()> {
-        client.send_copy(value).expect("request is sent")
+    ) -> PendingResponse<S, T, QH, R, RH> {
+        let mut request = client.loan_uninit().expect("request is loaned");
+        *request.user_header_mut() = header;
+        request
+            .write_payload(value)
+            .send()
+            .expect("request is sent")
     }
 
-    fn receive_request<S: Service, R: IceoryxSend + Debug>(
-        server: &Server<S, T, (), R, ()>,
-    ) -> Option<ActiveRequest<S, T, (), R, ()>> {
+    fn receive_request<
+        S: Service,
+        QH: UserHeader,
+        R: IceoryxSend + Debug + ?Sized,
+        RH: UserHeader,
+    >(
+        server: &Server<S, T, QH, R, RH>,
+    ) -> Option<ActiveRequest<S, T, QH, R, RH>> {
         server.receive().expect("receive succeeds")
     }
 
-    fn request_value<S: Service, R: IceoryxSend + Debug>(
-        request: &ActiveRequest<S, T, (), R, ()>,
+    fn request_header<
+        S: Service,
+        QH: UserHeader,
+        R: IceoryxSend + Debug + ?Sized,
+        RH: UserHeader,
+    >(
+        request: &ActiveRequest<S, T, QH, R, RH>,
+    ) -> QH {
+        *request.user_header()
+    }
+
+    fn request_value<
+        S: Service,
+        QH: UserHeader,
+        R: IceoryxSend + Debug + ?Sized,
+        RH: UserHeader,
+    >(
+        request: &ActiveRequest<S, T, QH, R, RH>,
     ) -> T {
         *request.payload()
     }
@@ -74,28 +88,44 @@ impl<T> ResponsePayload for FixedSizePayload<T>
 where
     T: IceoryxSend + ZeroCopySend + TypeName + Debug + Copy + PartialEq + From<u64> + 'static,
 {
-    fn server<S: Service, Q: IceoryxSend + Debug>(
-        service: &PortFactory<S, Q, (), T, ()>,
-    ) -> Server<S, Q, (), T, ()> {
+    fn server<S: Service, Q: IceoryxSend + Debug + ?Sized, QH: UserHeader, RH: UserHeader>(
+        service: &PortFactory<S, Q, QH, T, RH>,
+    ) -> Server<S, Q, QH, T, RH> {
         service
             .server_builder()
             .create()
             .expect("server is created")
     }
 
-    fn send_response<S: Service, Q: IceoryxSend + Debug>(
-        request: &ActiveRequest<S, Q, (), T, ()>,
+    fn send_response<
+        S: Service,
+        Q: IceoryxSend + Debug + ?Sized,
+        QH: UserHeader,
+        RH: UserHeader,
+    >(
+        request: &ActiveRequest<S, Q, QH, T, RH>,
+        header: RH,
         value: T,
     ) {
-        request.send_copy(value).expect("response is sent");
+        let mut response = request.loan_uninit().expect("response is loaned");
+        *response.user_header_mut() = header;
+        response
+            .write_payload(value)
+            .send()
+            .expect("response is sent");
     }
 
-    fn receive_response<S: Service, Q: IceoryxSend + Debug>(
-        pending: &PendingResponse<S, Q, (), T, ()>,
-    ) -> Option<T> {
+    fn receive_response<
+        S: Service,
+        Q: IceoryxSend + Debug + ?Sized,
+        QH: UserHeader,
+        RH: UserHeader,
+    >(
+        pending: &PendingResponse<S, Q, QH, T, RH>,
+    ) -> Option<(RH, T)> {
         pending
             .receive()
             .expect("receive succeeds")
-            .map(|response| *response.payload())
+            .map(|response| (*response.user_header(), *response.payload()))
     }
 }

@@ -100,6 +100,8 @@ mod gateway;
 pub use gateway::discovery as gateway_discovery;
 pub use gateway::publish_subscribe as gateway_publish_subscribe;
 pub use gateway::publish_subscribe_with_headers as gateway_publish_subscribe_with_headers;
+pub use gateway::request_response as gateway_request_response;
+pub use gateway::request_response_with_headers as gateway_request_response_with_headers;
 mod link;
 pub use link::discovery as link_discovery;
 pub use link::wake as link_wake;

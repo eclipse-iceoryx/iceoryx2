@@ -108,16 +108,16 @@ pub mod adapter_request_response {
     fn received_request_id<S, T, R: RequestResponseMessageEndpoints<S, T>>(
         remote: &R,
     ) -> R::RequestId {
-        let mut received = None;
         retry(
             || {
-                received = remote.receive_request().map(|(id, _)| id);
-                received.as_ref().map(|_| ()).ok_or("no request arrived")
+                remote
+                    .receive_request()
+                    .map(|(id, _)| id)
+                    .ok_or("no request arrived")
             },
             TIMEOUT,
         )
-        .expect("the request reaches the remote endpoints");
-        received.expect("the request was received")
+        .expect("the request reaches the remote endpoints")
     }
 
     #[conformance_test]
@@ -164,16 +164,15 @@ pub mod adapter_request_response {
             .expect("the adapter's endpoints open");
         assert_that!(remote.sync(TIMEOUT), eq true);
         let request_id = remote.send_request(remote.request(REQUEST));
-        let mut taken = None;
-        retry(
+        let taken = retry(
             || {
-                taken = take_request(&mut own).map(|(id, _)| id);
-                taken.as_ref().map(|_| ()).ok_or("no request arrived")
+                take_request(&mut own)
+                    .map(|(id, _)| id)
+                    .ok_or("no request arrived")
             },
             TIMEOUT,
         )
         .expect("the request reaches the adapter");
-        let taken = taken.expect("the request was taken");
 
         // === RESPOND ===
         // Serialize the response to the wire form of the service.

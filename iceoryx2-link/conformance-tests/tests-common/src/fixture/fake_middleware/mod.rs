@@ -63,7 +63,9 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
         let service = describe_request_response::<
             Local,
             FixedSizePayload<Payload>,
+            (),
             FixedSizePayload<Payload>,
+            (),
         >(&generate_service_name(), &Config::default());
         FakeRemoteEndpoints::on(&self.middleware, service)
     }

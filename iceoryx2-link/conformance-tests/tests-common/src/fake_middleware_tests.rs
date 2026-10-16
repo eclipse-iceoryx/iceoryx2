@@ -15,7 +15,9 @@ use iceoryx2::service::local::Service as Local;
 use iceoryx2_bb_testing::instantiate_conformance_tests;
 use iceoryx2_link_adapter::Passthrough;
 use iceoryx2_link_conformance_tests::fixture::GatewayLinkFixture;
-use iceoryx2_link_conformance_tests::parameters::{AnyName, FixedSizePayload, PublishSubscribe};
+use iceoryx2_link_conformance_tests::parameters::{
+    AnyName, FixedSizePayload, PublishSubscribe, RequestResponse,
+};
 use iceoryx2_link_testing::FakeSwapTranslator;
 
 use crate::fixture::FakeMiddlewareFixture;
@@ -77,6 +79,41 @@ mod ipc {
                 GatewayLinkFixture<FakeMiddlewareFixture<Passthrough>>
             );
         }
+
+        mod request_response {
+            use super::*;
+
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_discovery,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<Passthrough>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<Passthrough>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response_with_headers,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<Passthrough>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::link_discovery,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                GatewayLinkFixture<FakeMiddlewareFixture<Passthrough>>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::link_wake,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                GatewayLinkFixture<FakeMiddlewareFixture<Passthrough>>
+            );
+        }
     }
 
     mod transcoded {
@@ -107,6 +144,35 @@ mod ipc {
                 iceoryx2_link_conformance_tests::link_discovery,
                 Ipc,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+                GatewayLinkFixture<FakeMiddlewareFixture<FakeSwapTranslator>>
+            );
+        }
+
+        mod request_response {
+            use super::*;
+
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_discovery,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<FakeSwapTranslator>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<FakeSwapTranslator>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response_with_headers,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<FakeSwapTranslator>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::link_discovery,
+                Ipc,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
                 GatewayLinkFixture<FakeMiddlewareFixture<FakeSwapTranslator>>
             );
         }
@@ -153,6 +219,41 @@ mod local {
                 GatewayLinkFixture<FakeMiddlewareFixture<Passthrough>>
             );
         }
+
+        mod request_response {
+            use super::*;
+
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_discovery,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<Passthrough>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<Passthrough>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response_with_headers,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<Passthrough>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::link_discovery,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                GatewayLinkFixture<FakeMiddlewareFixture<Passthrough>>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::link_wake,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                GatewayLinkFixture<FakeMiddlewareFixture<Passthrough>>
+            );
+        }
     }
 
     mod transcoded {
@@ -183,6 +284,35 @@ mod local {
                 iceoryx2_link_conformance_tests::link_discovery,
                 Local,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
+                GatewayLinkFixture<FakeMiddlewareFixture<FakeSwapTranslator>>
+            );
+        }
+
+        mod request_response {
+            use super::*;
+
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_discovery,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<FakeSwapTranslator>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<FakeSwapTranslator>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::gateway_request_response_with_headers,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
+                FakeMiddlewareFixture<FakeSwapTranslator>
+            );
+            instantiate_conformance_tests!(
+                iceoryx2_link_conformance_tests::link_discovery,
+                Local,
+                RequestResponse<AnyName, FixedSizePayload<u64>, u64, FixedSizePayload<u64>, u64>,
                 GatewayLinkFixture<FakeMiddlewareFixture<FakeSwapTranslator>>
             );
         }

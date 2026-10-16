@@ -44,33 +44,40 @@ use iceoryx2_link_backend::service_description::{
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 
-/// Calls `attempt` until it succeeds or `timeout` passes. On timeout the
-/// error lists every distinct failure seen.
-pub fn retry(
-    mut attempt: impl FnMut() -> Result<(), &'static str>,
+/// Calls `attempt` until it succeeds or `timeout` passes, returning what
+/// the successful attempt did.
+///
+/// On timeout the error lists every distinct failure.
+pub fn retry<T>(
+    mut attempt: impl FnMut() -> Result<T, &'static str>,
     timeout: Duration,
-) -> Result<(), String> {
+) -> Result<T, String> {
     let mut failures = BTreeSet::<&'static str>::new();
+    let mut succeeded = None;
     let mut wait = AdaptiveWaitBuilder::new()
         .create()
         .expect("adaptive wait is created");
-    let succeeded = wait
-        .timed_wait_while(
-            || -> Result<bool, ()> {
-                match attempt() {
-                    Ok(()) => Ok(false),
-                    Err(failure) => {
-                        failures.insert(failure);
-                        Ok(true)
-                    }
+    wait.timed_wait_while(
+        || -> Result<bool, ()> {
+            match attempt() {
+                Ok(value) => {
+                    succeeded = Some(value);
+                    Ok(false)
                 }
-            },
-            timeout,
-        )
-        .expect("waiting succeeds");
-    if succeeded {
-        return Ok(());
+                Err(failure) => {
+                    failures.insert(failure);
+                    Ok(true)
+                }
+            }
+        },
+        timeout,
+    )
+    .expect("waiting succeeds");
+
+    if let Some(value) = succeeded {
+        return Ok(value);
     }
+
     failures.insert("timeout exceeded");
     Err(failures.into_iter().collect::<Vec<_>>().join(", "))
 }
@@ -92,24 +99,30 @@ pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
 }
 
 /// The description of a request-response service whose requests are `Q`
-/// and whose responses are `R`, with the service settings `config`
-/// defaults to.
-pub fn describe_request_response<S: Service, Q: PayloadShape, R: PayloadShape>(
+/// with the user header `QH` and whose responses are `R` with the user
+/// header `RH`, with the service settings `config` defaults to.
+pub fn describe_request_response<S, Q, QH, R, RH>(
     name: &ServiceName,
     config: &Config,
-) -> ServiceDescription {
-    let no_header = TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize));
+) -> ServiceDescription
+where
+    S: Service,
+    Q: PayloadShape,
+    QH: TypeName,
+    R: PayloadShape,
+    RH: TypeName,
+{
     ServiceDescription::compose_request_response::<S>(
         *name,
         RequestResponseSettings::from_config(config),
         RequestResponseTypes {
             request: SampleTypes {
                 payload: TypeDescription::from(&Q::type_detail()),
-                user_header: no_header.clone(),
+                user_header: TypeDescription::from(&TypeDetail::new::<QH>(TypeVariant::FixedSize)),
             },
             response: SampleTypes {
                 payload: TypeDescription::from(&R::type_detail()),
-                user_header: no_header,
+                user_header: TypeDescription::from(&TypeDetail::new::<RH>(TypeVariant::FixedSize)),
             },
         },
     )
@@ -249,6 +262,20 @@ pub fn side<S: Service, B: Backend<S>>(
 /// The hash of the publish-subscribe service `name`, with `S`'s hasher.
 pub fn hash_of<S: Service>(name: &ServiceName) -> ServiceHash {
     ServiceHash::new::<S::ServiceNameHasher>(name, MessagingPattern::PublishSubscribe)
+}
+
+/// The description of the existing service `name` of `pattern` in the
+/// local system `config` configures.
+pub fn description_of<S: Service>(
+    name: &ServiceName,
+    config: &Config,
+    pattern: MessagingPattern,
+) -> ServiceDescription {
+    let details = S::details(name, config, pattern)
+        .expect("the service details are read")
+        .expect("the service exists");
+    ServiceDescription::load::<S>(config, &details.static_details)
+        .expect("the service is described")
 }
 
 /// Whether the service `name` of `pattern` exists in the local system

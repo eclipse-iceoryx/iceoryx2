@@ -14,8 +14,9 @@
 //!
 //! * [`PublishSubscribe<N, P, H>`], services named by `N`, of the payload
 //!   `P` under the user header `H`.
-//! * [`RequestResponse<N, Q, R>`], services named by `N`, of the request
-//!   payload `Q` and the response payload `R`.
+//! * [`RequestResponse<N, Q, QH, R, RH>`], services named by `N`, of the
+//!   request payload `Q` under the user header `QH` and the response
+//!   payload `R` under the user header `RH`.
 //! * [`Event<N>`], services named by `N`.
 //!
 //! A carrier or tunnel fixture carries anything, so it passes [`AnyName`]
@@ -114,8 +115,9 @@ pub use publish_subscribe::{
     PublishSubscribeService, UserHeader, Value,
 };
 pub use request_response::{
-    Request, RequestPayload, RequestResponse, RequestResponseName, RequestResponseService,
-    RequestValue, Response, ResponsePayload, ResponseValue,
+    CreatesRequestResponseService, Request, RequestHeader, RequestPayload, RequestResponse,
+    RequestResponseName, RequestResponseService, RequestValue, Response, ResponseHeader,
+    ResponsePayload, ResponseValue,
 };
 
 use alloc::vec::Vec;

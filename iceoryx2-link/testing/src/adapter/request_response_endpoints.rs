@@ -65,7 +65,7 @@ impl FakeRequestResponseEndpoints {
     }
 
     /// The next pending request, if any.
-    pub fn received_request(&self) -> Option<(FakeRequestId, FakeRequestMessage)> {
+    pub fn receive_request(&self) -> Option<(FakeRequestId, FakeRequestMessage)> {
         self.middleware.receive_request(&self.name, self.id)
     }
 
@@ -80,7 +80,7 @@ impl FakeRequestResponseEndpoints {
     }
 
     /// The next pending response or end, if any.
-    pub fn received_response(&self) -> Option<(FakeRequestId, FakeResponseMessage)> {
+    pub fn receive_response(&self) -> Option<(FakeRequestId, FakeResponseMessage)> {
         self.middleware.receive_response(&self.name, self.id)
     }
 }
@@ -124,7 +124,7 @@ impl RequestResponseEndpoints for FakeRequestResponseEndpoints {
         &mut self,
         destination: impl ResponseDestination<'a>,
     ) -> Result<TakeOutcome<(ClientRequestId, ResponseKind)>, Self::Failure> {
-        let Some((sent, response)) = self.received_response() else {
+        let Some((sent, response)) = self.receive_response() else {
             return Ok(TakeOutcome::Empty);
         };
         let Some(id) = self.sent.get(&sent).copied() else {
@@ -151,7 +151,7 @@ impl RequestResponseEndpoints for FakeRequestResponseEndpoints {
         &mut self,
         destination: impl RequestDestination<'a>,
     ) -> Result<TakeOutcome<FakeRequestId>, Self::Failure> {
-        let Some((id, message)) = self.received_request() else {
+        let Some((id, message)) = self.receive_request() else {
             return Ok(TakeOutcome::Empty);
         };
         if !write(destination, self.request_header_size, &message) {
