@@ -200,6 +200,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { NamedPipe::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 
