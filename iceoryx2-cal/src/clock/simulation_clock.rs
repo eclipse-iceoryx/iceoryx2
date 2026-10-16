@@ -493,7 +493,12 @@ impl<E: Event> SimulationClock<E> {
     fn translate_timeout(&self, timeout: Timeout) -> TimePoint {
         match timeout {
             Timeout::At(timepoint) => timepoint,
-            Timeout::By(duration) => self.state.get().creation_time + duration,
+            Timeout::By(duration) => {
+                let state = self.state.get();
+                let now = state.creation_time
+                    + Duration::from_nanos(state.nanoseconds_since_creation.load(Ordering::SeqCst));
+                now + duration
+            }
         }
     }
 
