@@ -165,6 +165,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     fn new(name: &FileName) -> Self;
     /// Sets the custom configuration of the [`Clock`].
     fn config(self, config: &C::Configuration) -> Self;
+    fn event_config(self, config: E::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
     fn open_clock(self) -> Result<C, ClockBuilderOpenClockError>;
 }
@@ -291,6 +292,10 @@ pub trait TimeController: NamedConceptMgmt + Abandonable {
 
 #[doc(hidden)]
 pub mod internal {
+    use iceoryx2_log::debug;
+
+    use crate::event::{NotifierBuilder, NotifierOpenError};
+
     use super::*;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -331,6 +336,20 @@ pub mod internal {
             origin!("create_reactor_attachment()"),
             "Failed to create reactor attachment",
         )?)
+    }
+
+    pub fn create_notifier<E: Event>(
+        name: &FileName,
+        config: &E::Configuration,
+        origin: &impl Debug,
+        msg: &str,
+    ) -> Result<E::Notifier, NotifierOpenError> {
+        E::NotifierBuilder::new(name)
+            .config(config)
+            .open()
+            .inspect_err(
+                |e| debug!(from origin, "{msg} since the notifier could not be opened. [{e:?}]"),
+            )
     }
 
     pub fn create_waiter<E: Event + 'static>(
