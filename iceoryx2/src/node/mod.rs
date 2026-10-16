@@ -259,6 +259,8 @@ pub enum NodeWaitFailure {
     Interrupt,
     /// A termination signal `SIGTERM` was received.
     TerminationRequest,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalError,
 }
 
 impl core::fmt::Display for NodeWaitFailure {
@@ -1360,7 +1362,7 @@ impl<Service: service::Service> Node<Service> {
     /// when a `SIGTERM` signal was received or [`NodeWaitFailure::Interrupt`] when a `SIGINT`
     /// signal was received.
     pub fn wait(&self, cycle_time: Duration) -> Result<(), NodeWaitFailure> {
-        let msg = "Unable to wait on node";
+        let msg = "Unable to wait on node with cycle time";
         self.handle_termination_request(msg)?;
 
         match self
@@ -1375,12 +1377,11 @@ impl<Service: service::Service> Node<Service> {
             }
             Err(ClockBlockingSleepError::InterruptedBySignal) => {
                 fail!(from self, with NodeWaitFailure::Interrupt,
-                        "{msg} since a interrupt signal was received.");
+                        "{msg} {cycle_time:?} since a interrupt signal was received.");
             }
             Err(v) => {
-                fatal_panic!(from self,
-                    "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",
-                    cycle_time, v);
+                fail!(from self, with NodeWaitFailure::InternalError,
+                    "{msg} {cycle_time:?} in main event look, caused by ({v:?}).");
             }
         }
     }
