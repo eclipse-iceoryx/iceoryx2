@@ -66,25 +66,10 @@ impl TestFixture {
 impl Drop for TestFixture {
     fn drop(&mut self) {
         // clean up time controller state
-        let state_config = <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
-            .prefix(self.config.get_prefix())
-            .path_hint(self.config.get_path_hint());
-        <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
-            &TIME_CONTROLLER_STATE_NAME,
-        )
-        .config(&state_config)
-        .open(AccessMode::ReadWrite)
-        .unwrap()
-        .acquire_ownership();
+        cleanup_time_controller_state(self.config());
 
         // clean up clock state storage
-        <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
-            self.name(),
-        )
-        .config(&self.storage_config)
-        .open(AccessMode::ReadWrite)
-        .unwrap()
-        .acquire_ownership();
+        cleanup_clock_state(self.name(), self.config());
     }
 }
 
@@ -98,22 +83,30 @@ fn create_time_controller_config() -> TimeControllerConfig {
 }
 
 fn cleanup_clock_state(name: &FileName, config: &TimeControllerConfig) {
-    <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(name)
-        .config(config.get_storage_config())
-        .open(AccessMode::ReadWrite)
-        .unwrap()
-        .acquire_ownership();
+    match <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
+        name,
+    )
+    .config(config.get_storage_config())
+    .open(AccessMode::ReadWrite)
+    {
+        Ok(s) => s.acquire_ownership(),
+        Err(_) => {}
+    };
 }
 
 fn cleanup_time_controller_state(config: &TimeControllerConfig) {
     let state_config = <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
         .prefix(config.get_prefix())
         .path_hint(config.get_path_hint());
-    <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(&TIME_CONTROLLER_STATE_NAME)
-        .config(&state_config)
-        .open(AccessMode::ReadWrite)
-        .unwrap()
-        .acquire_ownership();
+    match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
+        &TIME_CONTROLLER_STATE_NAME,
+    )
+    .config(&state_config)
+    .open(AccessMode::ReadWrite)
+    {
+        Ok(s) => s.acquire_ownership(),
+        Err(_) => {}
+    };
 }
 
 #[test]
@@ -230,37 +223,31 @@ fn open_clock_succeeds_when_time_controller_was_created_before() {
 
 #[test]
 fn open_clock_succeeds_without_time_controller() {
-    let name = generate_file_path().file_name();
-    let config = create_time_controller_config();
+    let test = TestFixture::new();
 
     assert_that!(
-        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-            .config(&config)
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
             .open_clock(),
         is_ok
     );
-
-    cleanup_clock_state(&name, &config);
 }
 
 #[test]
 fn open_two_clocks_works() {
-    let name = generate_file_path().file_name();
-    let config = create_time_controller_config();
+    let test = TestFixture::new();
 
-    let _clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-        .config(&config)
+    let _clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
         .open_clock()
         .unwrap();
 
     assert_that!(
-        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-            .config(&config)
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
             .open_clock(),
         is_ok
     );
-
-    cleanup_clock_state(&name, &config);
 }
 
 #[test]
@@ -381,12 +368,11 @@ fn schedule_on_notifies_listener_when_timeout_has_already_expired() {
 
 #[test]
 fn schedule_on_returns_guard_when_timeout_has_not_expired() {
-    let name = generate_file_path().file_name();
-    let config = create_time_controller_config();
+    let test = TestFixture::new();
 
     let clock = Arc::new(
-        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-            .config(&config)
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
             .open_clock()
             .unwrap(),
     );
@@ -399,23 +385,20 @@ fn schedule_on_returns_guard_when_timeout_has_not_expired() {
     if let ScheduleOnHandle::TranslatedTimeout(_) = handle.unwrap() {
         assert_that!(shall_never_be_reached);
     }
-
-    cleanup_clock_state(&name, &config);
 }
 
 #[test]
 fn advance_notifies_when_timeout_was_scheduled_with_schedule_on() {
-    let name = generate_file_path().file_name();
-    let config = create_time_controller_config();
+    let test = TestFixture::new();
     let duration = Duration::from_nanos(100);
 
-    let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-        .config(&config)
+    let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
         .create_time_controller()
         .unwrap();
     let clock = Arc::new(
-        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-            .config(&config)
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
             .open_clock()
             .unwrap(),
     );
@@ -433,9 +416,6 @@ fn advance_notifies_when_timeout_was_scheduled_with_schedule_on() {
 
     let _ = time_controller.advance(duration);
     assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq 1);
-
-    cleanup_clock_state(&name, &config);
-    cleanup_time_controller_state(&config);
 }
 
 #[test]
@@ -505,12 +485,11 @@ fn schedule_returns_zero_timeout_when_passed_timeout_has_already_expired() {
 
 #[test]
 fn schedule_returns_guard_and_listener_when_timeout_has_not_expired() {
-    let name = generate_file_path().file_name();
-    let config = create_time_controller_config();
+    let test = TestFixture::new();
 
     let clock = Arc::new(
-        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-            .config(&config)
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
             .open_clock()
             .unwrap(),
     );
@@ -522,24 +501,21 @@ fn schedule_returns_guard_and_listener_when_timeout_has_not_expired() {
     if let ScheduleHandle::TranslatedTimeout(_) = handle.unwrap() {
         assert_that!(shall_never_be_reached);
     }
-
-    cleanup_clock_state(&name, &config);
 }
 
 #[test]
 fn advance_notifies_when_timeout_was_scheduled_with_schedule() {
-    let name = generate_file_path().file_name();
-    let config = create_time_controller_config();
+    let test = TestFixture::new();
     let duration = Duration::from_nanos(100);
     let timeout = Timeout::By(duration);
 
-    let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-        .config(&config)
+    let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
         .create_time_controller()
         .unwrap();
     let clock = Arc::new(
-        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(&name)
-            .config(&config)
+        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+            .config(test.config())
             .open_clock()
             .unwrap(),
     );
@@ -563,9 +539,6 @@ fn advance_notifies_when_timeout_was_scheduled_with_schedule() {
 
     let _ = time_controller.advance(duration);
     assert_that!(reactor.try_wait(|_| {}).unwrap(), eq 1);
-
-    cleanup_clock_state(&name, &config);
-    cleanup_time_controller_state(&config);
 }
 
 #[test]
