@@ -165,7 +165,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     fn new(name: &FileName) -> Self;
     /// Sets the custom configuration of the [`Clock`].
     fn config(self, config: &C::Configuration) -> Self;
-    fn event_config(self, config: E::Configuration) -> Self;
+    fn event_config(self, config: &E::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
     fn open_clock(self) -> Result<C, ClockBuilderOpenClockError>;
 }
