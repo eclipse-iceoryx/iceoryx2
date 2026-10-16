@@ -14,7 +14,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
-pub mod gateway_publish_subscribe_payload {
+pub mod gateway_publish_subscribe {
     use core::time::Duration;
 
     use iceoryx2::service::Service;
@@ -48,6 +48,7 @@ pub mod gateway_publish_subscribe_payload {
             node,
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
+
         let service_name = X::service_name();
         let service = X::create_service::<(), _>(&node, &service_name);
         let publisher = X::create_publisher(&service);
@@ -117,6 +118,7 @@ pub mod gateway_publish_subscribe_payload {
             node,
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
+
         let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
             &X::service_name(),
             &config,

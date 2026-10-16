@@ -49,13 +49,13 @@ mod ipc {
                 FakeMiddlewareFixture<Passthrough>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                 Ipc,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<Passthrough>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_header,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe_with_headers,
                 Ipc,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<Passthrough>
@@ -88,13 +88,13 @@ mod ipc {
                 FakeMiddlewareFixture<FakeSwapTranslator>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                 Ipc,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<FakeSwapTranslator>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_header,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe_with_headers,
                 Ipc,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<FakeSwapTranslator>
@@ -125,13 +125,13 @@ mod local {
                 FakeMiddlewareFixture<Passthrough>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                 Local,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<Passthrough>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_header,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe_with_headers,
                 Local,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<Passthrough>
@@ -164,13 +164,13 @@ mod local {
                 FakeMiddlewareFixture<FakeSwapTranslator>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                 Local,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<FakeSwapTranslator>
             );
             instantiate_conformance_tests!(
-                iceoryx2_link_conformance_tests::gateway_publish_subscribe_header,
+                iceoryx2_link_conformance_tests::gateway_publish_subscribe_with_headers,
                 Local,
                 PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
                 FakeMiddlewareFixture<FakeSwapTranslator>

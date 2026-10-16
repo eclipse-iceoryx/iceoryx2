@@ -18,7 +18,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 /// [`PropagatesPayloadsWithHeaders`]: crate::fixture::PropagatesPayloadsWithHeaders
 #[allow(clippy::module_inception)]
 #[conformance_tests]
-pub mod gateway_publish_subscribe_header {
+pub mod gateway_publish_subscribe_with_headers {
     use core::time::Duration;
 
     use iceoryx2::service::Service;
@@ -53,6 +53,7 @@ pub mod gateway_publish_subscribe_header {
             node,
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
+
         let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
             &X::service_name(),
             &config,
@@ -68,6 +69,7 @@ pub mod gateway_publish_subscribe_header {
             TIMEOUT,
         )
         .expect("the remote endpoint is mirrored");
+
         assert_that!(remote.sync(TIMEOUT), eq true);
         let service = X::open_service::<Header<X>, _>(&node, &remote.service().name());
         let subscriber = X::create_subscriber(&service);
@@ -114,6 +116,7 @@ pub mod gateway_publish_subscribe_header {
             node,
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
+
         let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
             &X::service_name(),
             &config,
@@ -129,6 +132,7 @@ pub mod gateway_publish_subscribe_header {
             TIMEOUT,
         )
         .expect("the remote endpoint is mirrored");
+
         assert_that!(remote.sync(TIMEOUT), eq true);
         let service = X::open_service::<Header<X>, _>(&node, &remote.service().name());
         let publisher = X::create_publisher(&service);

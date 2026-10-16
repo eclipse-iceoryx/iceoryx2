@@ -87,7 +87,7 @@
 //!     MyMiddlewareFixture
 //! );
 //! instantiate_conformance_tests!(
-//!     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+//!     iceoryx2_link_conformance_tests::gateway_publish_subscribe,
 //!     Ipc,
 //!     PublishSubscribe<MyMapping, FixedSizePayload<Counter>, ()>,
 //!     MyMiddlewareFixture
