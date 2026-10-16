@@ -16,7 +16,7 @@ use core::marker::PhantomData;
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceTypes};
 use iceoryx2_link_conformance_tests::fixture::{
-    DiscoverableEndpoints, MessageEndpoints, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+    Discoverable, MessageEndpoints, PropagatesPayloads, PropagatesPayloadsWithHeaders,
 };
 use iceoryx2_link_testing::{
     FakeEndpointDescription, FakeEndpointSettings, FakeEndpoints, FakeMiddleware, FakeSampleTypes,
@@ -102,7 +102,7 @@ impl<T: WireForm> MessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampl
     }
 }
 
-impl<T: WireForm> DiscoverableEndpoints for FakeRemoteEndpoints<T> {
+impl<T: WireForm> Discoverable for FakeRemoteEndpoints<T> {
     fn service(&self) -> &ServiceDescription {
         &self.service
     }

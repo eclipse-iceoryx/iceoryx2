@@ -22,7 +22,7 @@ pub mod gateway_publish_subscribe_payload {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
 
-    use crate::fixture::{DiscoverableEndpoints, GatewayFixture, PropagatesPayloads};
+    use crate::fixture::{Discoverable, GatewayFixture, PropagatesPayloads};
 
     use crate::parameters::{Header, PayloadShape, PublishSubscribeService, Value};
     use crate::testing::{Side, describe, notifications_of, retry, service_exists, side};
@@ -33,7 +33,7 @@ pub mod gateway_publish_subscribe_payload {
     pub fn payloads_from_services_without_headers_flow_in_both_directions<
         S: Service,
         X: PublishSubscribeService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints + PropagatesPayloads<Value<X>>>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable + PropagatesPayloads<Value<X>>>,
     >() {
         let from_remote = X::Payload::value(7);
         let from_local = X::Payload::value(9);
@@ -102,7 +102,7 @@ pub mod gateway_publish_subscribe_payload {
     pub fn payloads_from_services_with_headers_flow_in_both_directions<
         S: Service,
         X: PublishSubscribeService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints + PropagatesPayloads<Value<X>>>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable + PropagatesPayloads<Value<X>>>,
     >() {
         let from_remote = X::Payload::value(7);
         let from_local = X::Payload::value(9);
@@ -173,7 +173,7 @@ pub mod gateway_publish_subscribe_payload {
     pub fn a_delivery_notifies_the_event_service_named_after_the_service<
         S: Service,
         X: PublishSubscribeService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints + PropagatesPayloads<Value<X>>>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable + PropagatesPayloads<Value<X>>>,
     >() {
         let payload = X::Payload::value(7);
 
@@ -243,7 +243,7 @@ pub mod gateway_publish_subscribe_payload {
     pub fn a_link_without_notifications_creates_no_event_service<
         S: Service,
         X: PublishSubscribeService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints + PropagatesPayloads<Value<X>>>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable + PropagatesPayloads<Value<X>>>,
     >() {
         let payload = X::Payload::value(7);
 

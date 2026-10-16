@@ -23,7 +23,7 @@ use iceoryx2_integrations_ros2_link_adapter::{
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{
-    DiscoverableEndpoints, MessageEndpoints, PropagatesPayloads,
+    Discoverable, MessageEndpoints, PropagatesPayloads,
 };
 use iceoryx2_link_conformance_tests::parameters::PayloadShape;
 
@@ -127,14 +127,13 @@ impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, EndpointTypes<Topic
     }
 }
 
-/// [`RclEndpoints`] on the topic a local service maps to. Required to support
-/// tests against [`DiscoverableEndpoints`] and [`PropagatesPayloads`].
+/// [`RclEndpoints`] on the topic a local service maps to.
 pub struct MappedRclEndpoints<T> {
     pub(super) service: ServiceDescription,
     pub(super) endpoints: RclEndpoints<T>,
 }
 
-impl<T: TranslatorUnderTest> DiscoverableEndpoints for MappedRclEndpoints<T> {
+impl<T: TranslatorUnderTest> Discoverable for MappedRclEndpoints<T> {
     fn service(&self) -> &ServiceDescription {
         &self.service
     }

@@ -52,7 +52,7 @@ pub trait GatewayFixture<S: Service>: AdapterFixture {
 }
 
 /// Remote endpoints the link can discover, where a service maps to.
-pub trait DiscoverableEndpoints {
+pub trait Discoverable {
     /// The service the endpoints map to.
     fn service(&self) -> &ServiceDescription;
 
@@ -65,7 +65,7 @@ pub trait DiscoverableEndpoints {
 }
 
 /// Remote endpoints that propagate publish-subscribe payloads of type `P`.
-pub trait PropagatesPayloads<P>: DiscoverableEndpoints {
+pub trait PropagatesPayloads<P>: Discoverable {
     /// Sends a payload.
     fn send_payload(&self, payload: P);
 

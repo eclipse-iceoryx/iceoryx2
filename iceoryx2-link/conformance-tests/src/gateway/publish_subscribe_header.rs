@@ -25,7 +25,7 @@ pub mod gateway_publish_subscribe_header {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
 
-    use crate::fixture::{DiscoverableEndpoints, GatewayFixture, PropagatesPayloadsWithHeaders};
+    use crate::fixture::{Discoverable, GatewayFixture, PropagatesPayloadsWithHeaders};
     use crate::parameters::{Header, PayloadShape, PublishSubscribeService, Value};
     use crate::testing::{Side, describe, retry, side};
 
@@ -37,8 +37,7 @@ pub mod gateway_publish_subscribe_header {
         X: PublishSubscribeService<Header: From<u64>>,
         F: GatewayFixture<
                 S,
-                RemoteEndpoints: DiscoverableEndpoints
-                                     + PropagatesPayloadsWithHeaders<Header<X>, Value<X>>,
+                RemoteEndpoints: Discoverable + PropagatesPayloadsWithHeaders<Header<X>, Value<X>>,
             >,
     >() {
         let header = Header::<X>::from(3);
@@ -99,8 +98,7 @@ pub mod gateway_publish_subscribe_header {
         X: PublishSubscribeService<Header: From<u64>>,
         F: GatewayFixture<
                 S,
-                RemoteEndpoints: DiscoverableEndpoints
-                                     + PropagatesPayloadsWithHeaders<Header<X>, Value<X>>,
+                RemoteEndpoints: Discoverable + PropagatesPayloadsWithHeaders<Header<X>, Value<X>>,
             >,
     >() {
         let header = Header::<X>::from(3);

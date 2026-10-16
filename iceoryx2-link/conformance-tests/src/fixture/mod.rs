@@ -105,7 +105,7 @@ pub mod tunnel;
 pub use adapter::{AdapterFixture, MessageEndpoints};
 pub use carrier::CarrierFixture;
 pub use gateway::{
-    DiscoverableEndpoints, GatewayFixture, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+    Discoverable, GatewayFixture, PropagatesPayloads, PropagatesPayloadsWithHeaders,
 };
 pub use link::{GatewayLinkFixture, LinkFixture, TunnelLinkFixture};
 pub use tunnel::TunnelFixture;
