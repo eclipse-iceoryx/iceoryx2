@@ -52,7 +52,7 @@ where
         } else if attachment_id.has_missed_deadline(&sample_sent_attachment) {
             coutln!("sample sent notification deadline missed");
         } else if attachment_id.has_event_from(&sample_received_attachment) {
-            listener_sample_sent
+            listener_sample_received
                 .try_wait(|event_id| {
                     if event_id.id == EventId::new(0) {
                         coutln!("{} samples were received", event_id.count)
@@ -63,6 +63,8 @@ where
                 .unwrap();
         } else if attachment_id.has_missed_deadline(&sample_received_attachment) {
             coutln!("sample received notification deadline missed");
+        } else {
+            coutln!("spurious wakeup");
         }
 
         CallbackProgression::Continue

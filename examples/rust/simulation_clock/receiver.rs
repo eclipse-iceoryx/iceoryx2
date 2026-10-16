@@ -17,7 +17,7 @@ use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
 
-const CYCLE_TIME: Duration = Duration::from_secs(1);
+const CYCLE_TIME: Duration = Duration::from_secs(2);
 
 fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
 -> Result<(), Box<dyn core::error::Error>> {
