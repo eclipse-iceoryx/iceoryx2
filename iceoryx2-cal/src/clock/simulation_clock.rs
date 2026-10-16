@@ -15,8 +15,8 @@ use crate::{
         Clock, ClockBlockingSleepError, ClockBuilder, ClockBuilderOpenClockError,
         ClockListenerSchedule, ClockListenerScheduleError, ClockNow, ClockNowError,
         ClockReactorSchedule, ClockReactorScheduleError, ScheduleGuard, ScheduleHandle,
-        ScheduleOnHandle, SteppedClock, TimeController, TimeControllerBuilder,
-        TimeControllerBuilderCreateError, TimeControllerBuilderOpenError,
+        ScheduleOnHandle, SteppedClock, TimeController, TimeControllerAdvanceError,
+        TimeControllerBuilder, TimeControllerBuilderCreateError, TimeControllerBuilderOpenError,
         TimeControllerBuilderOpenOrCreateError, Timeout,
         internal::{create_notifier, create_reactor_attachment, create_waiter},
     },
@@ -45,7 +45,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::{file::AccessMode, file_descriptor_set::SynchronousMultiplexing};
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
-use iceoryx2_log::{error, fail, fatal_panic};
+use iceoryx2_log::{error, fail};
 
 // TODO: refactor error handling
 
@@ -288,7 +288,7 @@ impl<E: Event> SimulationClockBuilder<E> {
                         true
                     },
                 )
-                .open_or_create(),
+                .open_or_create(), // TODO: error handling
                 with TimeControllerBuilderOpenOrCreateError::InternalError,
                 "Unable to open/create the simulation clock state."))
     }
@@ -334,66 +334,48 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
             .global_generation_counter
             .fetch_add(1, Ordering::SeqCst);
 
-        // TODO: fail with new error code
-        match self.now() {
-            Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
-            Ok(tp) => {
-                if timeout <= tp {
-                    let notifier =
-                        create_notifier::<E>(listener_name, &self.event_config, self, msg).unwrap(); // TODO: don't fail
-
-                    notifier.notify(EventId::new(0)).expect("notify successful");
-                    return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
-                        Duration::ZERO,
-                    )));
-                }
-            }
+        let now = fail!(from self, when self.now(),
+            with ClockListenerScheduleError::InternalError,
+            "{msg} since the current time could not be acquired.");
+        if timeout <= now {
+            let notifier = fail!(from self, when create_notifier::<E>(listener_name, &self.event_config, self, msg),
+                        with ClockListenerScheduleError::NotificationFailed,
+                        "{msg} since the timeout has already expired and the notifier could not be created.");
+            fail!(from self, when notifier.notify(EventId::new(0)),
+                        with ClockListenerScheduleError::NotificationFailed,
+                        "{msg} since the timeout has already expired but notifying the listener failed.");
+            return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
+                Duration::ZERO,
+            )));
         }
 
         let index = fail!(from self, when self.write_state(timeout, listener_name, counter),
             with ClockListenerScheduleError::ClockScheduleCapacityExceeded,
             "Timeout cannot be scheduled because the capacity would be exceeded.");
 
-        match self.now() {
-            Err(_) => {
-                // state.generation_counters[index as usize].store(0, Ordering::SeqCst);
-                // unsafe {
-                //     state
-                //         .index_list
-                //         .release_raw_index(index, ReleaseMode::Default);
-                // }
-                // TODO: fail with new error code
-                fatal_panic!("This should never happen! Failed to obtain current time.");
-            }
-            Ok(tp) => {
-                if timeout <= tp {
-                    match state.generation_counters[index as usize].compare_exchange(
-                        counter,
-                        0,
-                        Ordering::SeqCst,
-                        Ordering::SeqCst,
-                    ) {
-                        Ok(_) => {
-                            unsafe {
-                                state
-                                    .index_list
-                                    .release_raw_index(index, ReleaseMode::Default);
-                            }
-                            // TODO: don't fail when notifier creation/notify fails
-                            let notifier =
-                                create_notifier::<E>(&listener_name, &self.event_config, self, msg)
-                                    .unwrap();
-                            notifier.notify(EventId::new(0)).expect("notify successful");
-                        }
-                        Err(_) => {
-                            // advance() triggered and released index
-                        }
-                    };
-                    return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
-                        Duration::ZERO,
-                    )));
+        let now = fail!(from self, when self.now(),
+            with ClockListenerScheduleError::InternalError,
+            "{msg} since the current time could not be acquired.");
+        if timeout <= now {
+            if state.generation_counters[index as usize]
+                .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
+                unsafe {
+                    state
+                        .index_list
+                        .release_raw_index(index, ReleaseMode::Default);
                 }
+                let notifier = fail!(from self, when create_notifier::<E>(listener_name, &self.event_config, self, msg),
+                            with ClockListenerScheduleError::NotificationFailed,
+                            "{msg} since the timeout has already expired and the notifier could not be created.");
+                fail!(from self, when notifier.notify(EventId::new(0)),
+                            with ClockListenerScheduleError::NotificationFailed,
+                            "{msg} since the timeout has already expired but notifying the listener failed.");
             }
+            return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
+                Duration::ZERO,
+            )));
         }
 
         let guard = Guard {
@@ -414,6 +396,8 @@ where
         &'a self,
         timeout: Timeout,
     ) -> Result<ScheduleHandle<'a>, ClockReactorScheduleError> {
+        let msg = "Timeout cannot be scheduled";
+
         let state = self.state.get();
         let timeout = self.translate_timeout(timeout);
 
@@ -424,57 +408,44 @@ where
         let id = state.name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
-        let listener = create_reactor_attachment::<E>(&listener_name, &self.event_config).unwrap(); // TODO: don't fail
-
-        // TODO: fail with new error code
-        match self.now() {
-            Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
-            Ok(tp) => {
-                if timeout <= tp {
-                    return Ok(ScheduleHandle::TranslatedTimeout(Timeout::By(
-                        Duration::ZERO,
-                    )));
-                }
+        let listener = match create_reactor_attachment::<E>(&listener_name, &self.event_config) {
+            Ok(l) => l,
+            Err(e) => {
+                fail!(from self, with ClockReactorScheduleError::ListenerAttachmentFailed,
+                    "{msg} because attaching the listener to the reactor failed: {e:?}");
             }
+        };
+
+        let now = fail!(from self, when self.now(),
+            with ClockReactorScheduleError::InternalError,
+            "{msg} since the current time could not be acquired.");
+        if timeout <= now {
+            return Ok(ScheduleHandle::TranslatedTimeout(Timeout::By(
+                Duration::ZERO,
+            )));
         }
 
         let index = fail!(from self, when self.write_state(timeout, &listener_name, counter),
             with ClockReactorScheduleError::ClockScheduleCapacityExceeded,
             "Timeout cannot be scheduled because the capacity would be exceeded.");
 
-        match self.now() {
-            Err(_) => {
-                // state.generation_counters[index as usize].store(0, Ordering::SeqCst);
-                // unsafe {
-                //     state
-                //         .index_list
-                //         .release_raw_index(index, ReleaseMode::Default);
-                // }
-                // TODO: fail with new error code
-                fatal_panic!("This should never happen! Failed to obtain current time.");
+        let now = fail!(from self, when self.now(),
+            with ClockReactorScheduleError::InternalError,
+            "{msg} since the current time could not be acquired.");
+        if timeout <= now {
+            if state.generation_counters[index as usize]
+                .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
+                unsafe {
+                    state
+                        .index_list
+                        .release_raw_index(index, ReleaseMode::Default);
+                };
             }
-            Ok(tp) => {
-                if timeout <= tp {
-                    match state.generation_counters[index as usize].compare_exchange(
-                        counter,
-                        0,
-                        Ordering::SeqCst,
-                        Ordering::SeqCst,
-                    ) {
-                        Ok(_) => unsafe {
-                            state
-                                .index_list
-                                .release_raw_index(index, ReleaseMode::Default);
-                        },
-                        Err(_) => {
-                            // advance() triggered and released index
-                        }
-                    };
-                    return Ok(ScheduleHandle::TranslatedTimeout(Timeout::By(
-                        Duration::ZERO,
-                    )));
-                }
-            }
+            return Ok(ScheduleHandle::TranslatedTimeout(Timeout::By(
+                Duration::ZERO,
+            )));
         }
 
         let guard = Guard {
@@ -549,11 +520,20 @@ where
     const HAS_TIME_CONTROLLER_SUPPORT: bool = true;
 
     fn blocking_sleep(&self, timeout: Timeout) -> Result<(), ClockBlockingSleepError> {
+        let msg = "Blocking sleep failed";
         let id = self.state.get().name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
-        let listener = create_waiter::<E>(&listener_name, &self.event_config).unwrap(); // TODO: don't fail
-        let guard = self.schedule_on(timeout, &listener_name).unwrap();
+        let listener = match create_waiter::<E>(&listener_name, &self.event_config) {
+            Ok(l) => l,
+            Err(e) => {
+                fail!(from self, with ClockBlockingSleepError::ScheduleTimeoutFailed,
+                    "because the timeout could not be scheduled: {e:?}");
+            }
+        };
+        let guard = fail!(from self, when self.schedule_on(timeout, &listener_name),
+            with ClockBlockingSleepError::ScheduleTimeoutFailed,
+            "{msg} because the timeout could not be scheduled.");
         match guard {
             ScheduleOnHandle::TranslatedTimeout(_) => {
                 // timeout has already expired
@@ -694,7 +674,7 @@ impl<E: Event> Abandonable for SimulationTimeController<E> {
 impl<E: Event> TimeController for SimulationTimeController<E> {
     type E = E;
 
-    fn advance(&self, duration: Duration) -> TimePoint {
+    fn advance(&self, duration: Duration) -> Result<TimePoint, TimeControllerAdvanceError> {
         let msg = "Failed to advance time";
 
         let state = self.clock_state.get();
@@ -720,10 +700,12 @@ impl<E: Event> TimeController for SimulationTimeController<E> {
             let timeout = timepoint.timeout_in_ns_after_creation;
 
             if old_simulated_time + duration.as_nanos() as u64 >= timeout {
-                let notifier =
-                    create_notifier::<Self::E>(&trigger_name, &self.event_config, self, msg)
-                        .unwrap(); // TODO: don't fail
-                notifier.notify(EventId::new(0)).expect("notify successful");
+                let notifier = fail!(from self, when create_notifier::<E>(&trigger_name, &self.event_config, self, msg),
+                    with TimeControllerAdvanceError::NotificationFailed,
+                    "{msg} because a scheduled trigger could not be activated.");
+                fail!(from self, when notifier.notify(EventId::new(0)),
+                    with TimeControllerAdvanceError::NotificationFailed,
+                    "{msg} because a scheduled trigger could not be activated.");
                 if state.generation_counters[i]
                     .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
                     .is_ok()
@@ -737,7 +719,7 @@ impl<E: Event> TimeController for SimulationTimeController<E> {
             }
         }
 
-        TimePoint::from_nanos(old_simulated_time as u128)
+        Ok(TimePoint::from_nanos(old_simulated_time as u128))
     }
 }
 

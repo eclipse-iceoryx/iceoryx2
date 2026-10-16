@@ -179,11 +179,11 @@ fn advance_returns_old_timepoint() {
         .create_time_controller()
         .unwrap();
 
-    let tp0 = time_controller.advance(duration);
+    let tp0 = time_controller.advance(duration).unwrap();
     assert_that!(tp0, eq TimePoint::new());
-    let tp1 = time_controller.advance(2 * duration);
+    let tp1 = time_controller.advance(2 * duration).unwrap();
     assert_that!(tp1, eq TimePoint::from_nanos(duration.as_nanos()));
-    let tp2 = time_controller.advance(duration);
+    let tp2 = time_controller.advance(duration).unwrap();
     assert_that!(tp2, eq TimePoint::from_nanos(3 * duration.as_nanos()));
 }
 
@@ -278,10 +278,14 @@ fn now_returns_current_time() {
 
     assert_that!(clock.now().unwrap(), eq TimePoint::new());
 
-    time_controller.advance(duration);
+    time_controller
+        .advance(duration)
+        .expect("advance time worked");
     assert_that!(clock.now().unwrap(), eq TimePoint::from_nanos(duration.as_nanos()));
 
-    time_controller.advance(2 * duration);
+    time_controller
+        .advance(2 * duration)
+        .expect("advance time worked");
     assert_that!(clock.now().unwrap(), eq TimePoint::from_nanos(3 * duration.as_nanos()));
 }
 
@@ -303,10 +307,14 @@ fn now_returns_current_time_with_configured_creation_time() {
 
     assert_that!(clock.now().unwrap(), eq tp);
 
-    time_controller.advance(duration);
+    time_controller
+        .advance(duration)
+        .expect("advance time worked");
     assert_that!(clock.now().unwrap(), eq tp + duration);
 
-    time_controller.advance(2 * duration);
+    time_controller
+        .advance(2 * duration)
+        .expect("advance time worked");
     assert_that!(clock.now().unwrap(), eq tp + (3 * duration));
 
     cleanup_clock_state(&name, &config);

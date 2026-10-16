@@ -46,7 +46,8 @@ enum_gen! {
   entry:
     InterruptedBySignal,
     DurationOutOfRange,
-    InternalError
+    InternalError,
+    ScheduleTimeoutFailed
 }
 
 enum_gen! {
@@ -67,14 +68,18 @@ enum_gen! {
 /// Error returned by [`ClockListenerSchedule::schedule_on()`]
     ClockListenerScheduleError
   entry:
-    ClockScheduleCapacityExceeded
+    ClockScheduleCapacityExceeded,
+    NotificationFailed,
+    InternalError
 }
 
 enum_gen! {
 /// Error returned by [`ClockReactorSchedule::schedule()`]
     ClockReactorScheduleError
   entry:
-    ClockScheduleCapacityExceeded
+    ClockScheduleCapacityExceeded,
+    ListenerAttachmentFailed,
+    InternalError
 }
 
 enum_gen! {
@@ -100,6 +105,13 @@ enum_gen! {
   entry:
     AlreadyOpenedByAnotherInstance,
     InternalError
+}
+
+enum_gen! {
+/// Error returned by [`TimeController::advance()`]
+    TimeControllerAdvanceError
+  entry:
+    NotificationFailed
 }
 
 /// The point in time at which a scheduled operation shall expire.
@@ -287,7 +299,7 @@ pub trait TimeController: NamedConceptMgmt + Abandonable {
     /// Advances time by `duration` and activates all scheduled triggers whose deadlines have been
     /// reached.
     /// Returns the time before the advance.
-    fn advance(&self, duration: Duration) -> TimePoint;
+    fn advance(&self, duration: Duration) -> Result<TimePoint, TimeControllerAdvanceError>;
 }
 
 #[doc(hidden)]

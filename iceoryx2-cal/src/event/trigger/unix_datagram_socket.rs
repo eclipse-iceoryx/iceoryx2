@@ -353,6 +353,14 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                 fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
                     "{msg} since the clock schedule is full.");
             }
+            Err(ClockListenerScheduleError::NotificationFailed) => {
+                fail!(from self, with ListenerWaitError::NotificationError,
+                    "{msg} since the notification failed.");
+            }
+            Err(ClockListenerScheduleError::InternalError) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                    "{msg} due to an internal error.");
+            }
         }
     }
 
