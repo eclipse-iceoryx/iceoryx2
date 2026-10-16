@@ -406,7 +406,7 @@ macro_rules! semantic_string {
     } => {
         $(#[$documentation])*
         #[repr(C)]
-        #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend)]
+        #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend, AtomicCopy)]
         pub struct $string_name {
             value: iceoryx2_bb_container::string::StaticString<$capacity>
         }
