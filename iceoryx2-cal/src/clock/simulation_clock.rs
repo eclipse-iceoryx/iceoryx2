@@ -20,7 +20,10 @@ use crate::{
         TimeControllerBuilderOpenOrCreateError, Timeout,
         internal::{create_reactor_attachment, create_waiter},
     },
-    dynamic_storage::{DynamicStorage, DynamicStorageBuilder, posix_shared_memory::Storage},
+    dynamic_storage::{
+        DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
+        posix_shared_memory::Storage,
+    },
     event::{Event, EventId, Notifier, NotifierBuilder, UnixDatagramShmCountingBitSet},
     named_concept::{NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt},
 };
@@ -171,6 +174,7 @@ pub struct SimulationClockState {
     index_list: UniqueIndexSet,
     global_generation_counter: AtomicU64,
     name_id: AtomicU64,
+    time_controller_state: AtomicBool,
 }
 
 #[derive(Debug)]
@@ -214,12 +218,6 @@ where
 }
 
 impl<E: Event> SimulationClockBuilder<E> {
-    fn time_controller_state(&self) -> <Storage<AtomicBool> as NamedConceptMgmt>::Configuration {
-        <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
-            .prefix(self.config.get_prefix())
-            .path_hint(self.config.get_path_hint())
-    }
-
     fn open_or_create_clock_state_storage(
         &self,
     ) -> Result<Storage<SimulationClockState>, TimeControllerBuilderOpenOrCreateError> {
@@ -249,6 +247,7 @@ impl<E: Event> SimulationClockBuilder<E> {
                             index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
                             global_generation_counter: AtomicU64::new(1),
                             name_id: AtomicU64::new(0),
+                            time_controller_state: AtomicBool::new(false),
                         });
                         let state = unsafe { state.assume_init_mut() };
 
@@ -347,12 +346,12 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
 
         match self.now() {
             Err(_) => {
-                state.generation_counters[index as usize].store(0, Ordering::SeqCst);
-                unsafe {
-                    state
-                        .index_list
-                        .release_raw_index(index, ReleaseMode::Default);
-                }
+                // state.generation_counters[index as usize].store(0, Ordering::SeqCst);
+                // unsafe {
+                //     state
+                //         .index_list
+                //         .release_raw_index(index, ReleaseMode::Default);
+                // }
                 // TODO: fail with new error code
                 fatal_panic!("This should never happen! Failed to obtain current time.");
             }
@@ -434,12 +433,12 @@ where
 
         match self.now() {
             Err(_) => {
-                state.generation_counters[index as usize].store(0, Ordering::SeqCst);
-                unsafe {
-                    state
-                        .index_list
-                        .release_raw_index(index, ReleaseMode::Default);
-                }
+                // state.generation_counters[index as usize].store(0, Ordering::SeqCst);
+                // unsafe {
+                //     state
+                //         .index_list
+                //         .release_raw_index(index, ReleaseMode::Default);
+                // }
                 // TODO: fail with new error code
                 fatal_panic!("This should never happen! Failed to obtain current time.");
             }
@@ -594,24 +593,6 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
         let origin = "SimulationTimeControllerBuilder::open_time_controller()";
         let msg = "Unable to open the time controller for the simulation clock";
 
-        let time_controller_state =
-            match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
-                &TIME_CONTROLLER_STATE_NAME,
-            )
-            .config(&self.time_controller_state())
-            .open(AccessMode::ReadWrite)
-            {
-                Ok(storage) => storage,
-                Err(_) => {
-                    fail!(from origin, with TimeControllerBuilderOpenError::TimeControllerDoesNotExist,
-                        "{msg} because its state does not exist.");
-                }
-            };
-        if time_controller_state.get().load(Ordering::SeqCst) {
-            fail!(from origin, with TimeControllerBuilderOpenError::AlreadyOpenedByAnotherInstance,
-                "{msg} because it is already opened.");
-        }
-
         let storage =
             <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
                 &self.name,
@@ -619,21 +600,22 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
             .config(&self.config.storage_config)
             .open(AccessMode::ReadWrite);
         match storage {
+            Err(DynamicStorageOpenError::DoesNotExist) => {
+                fail!(from origin, with TimeControllerBuilderOpenError::TimeControllerDoesNotExist,
+                    "{msg} because it does not exist.");
+            }
             Err(e) => {
                 fail!(from origin, with TimeControllerBuilderOpenError::InternalError,
                     "{msg} because the clock state storage could not be opened: {e:?}");
             }
             Ok(s) => {
-                match time_controller_state.get().compare_exchange(
+                match s.get().time_controller_state.compare_exchange(
                     false,
                     true,
                     Ordering::SeqCst,
                     Ordering::SeqCst,
                 ) {
-                    Ok(_) => Ok(SimulationTimeController {
-                        clock_state: s,
-                        config: self.config,
-                    }),
+                    Ok(_) => Ok(SimulationTimeController { clock_state: s }),
                     Err(_) => {
                         fail!(from origin, with TimeControllerBuilderOpenError::AlreadyOpenedByAnotherInstance,
                             "{msg} because it is already opened.");
@@ -649,34 +631,10 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
         let origin = "SimulationTimeControllerBuilder::open_or_create_time_controller()";
         let msg = "Unable to open/create the time controller for the simulation clock";
 
-        // Check if a time controller already exists
-        let time_controller_state =
-            match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
-                &TIME_CONTROLLER_STATE_NAME,
-            )
-            .config(&self.time_controller_state())
-            .has_ownership(false)
-            .initializer(|_, _| {
-                AtomicBool::new(false);
-                true
-            })
-            .open_or_create()
-            {
-                Ok(storage) => storage,
-                Err(e) => {
-                    fail!(from origin, with TimeControllerBuilderOpenOrCreateError::InternalError,
-                        "{msg} because its state could not be opened/created: {e:?}");
-                }
-            };
-        if time_controller_state.get().load(Ordering::SeqCst) {
-            // println!("OHA");
-            return Err(TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance);
-        }
-
         // Create and initialize clock storage
         let storage = fail!(from origin, when self.open_or_create_clock_state_storage(),
             "{msg} because the clock state could not be opened/created.");
-        match time_controller_state.get().compare_exchange(
+        match storage.get().time_controller_state.compare_exchange(
             false,
             true,
             Ordering::SeqCst,
@@ -684,7 +642,6 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
         ) {
             Ok(_) => Ok(SimulationTimeController {
                 clock_state: storage,
-                config: self.config,
             }),
             Err(_) => {
                 fail!(from origin, with TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance,
@@ -697,23 +654,14 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
 #[derive(Debug)]
 pub struct SimulationTimeController {
     clock_state: Storage<SimulationClockState>,
-    config: TimeControllerConfig,
 }
 
 impl Drop for SimulationTimeController {
     fn drop(&mut self) {
-        let state_config = <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
-            .prefix(self.config.get_prefix())
-            .path_hint(self.config.get_path_hint());
-        match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
-            &TIME_CONTROLLER_STATE_NAME,
-        )
-        .config(&state_config)
-        .open(AccessMode::ReadWrite)
-        {
-            Ok(storage) => storage.get().store(false, Ordering::SeqCst),
-            Err(_) => {}
-        };
+        self.clock_state
+            .get()
+            .time_controller_state
+            .store(false, Ordering::SeqCst);
     }
 }
 
