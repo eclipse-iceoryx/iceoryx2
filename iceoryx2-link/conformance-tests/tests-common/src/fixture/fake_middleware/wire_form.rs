@@ -14,10 +14,10 @@ use iceoryx2_link_adapter::{Passthrough, SampleShape, TranscodesSamples, Transla
 use iceoryx2_link_backend::service_description::SampleTypes;
 use iceoryx2_link_testing::{FakeSwapTranslator, swapped_bytes};
 
-/// The payload type every suite speaks through the fixtures.
+/// The payload type that test suites send and receive through the fixtures.
 pub(crate) type Payload = u64;
 
-/// The header type the header suite speaks through the fixtures.
+/// The header type that test suites send and receive through the fixtures.
 pub(crate) type Header = u64;
 
 /// A payload as the fake middleware carries it.

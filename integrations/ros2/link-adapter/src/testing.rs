@@ -20,8 +20,7 @@ use crate::typesupport;
 pub use crate::rcl::publisher::RclPublisher;
 pub use crate::rcl::subscription::{MessageInfo, RclSubscription};
 
-/// A ROS 2 node beside the gateway's, holding the endpoints a test
-/// speaks through.
+/// A ROS 2 node that the gateway communicates with in tests.
 #[derive(Debug)]
 pub struct PeerNode {
     node: Rc<RclNode>,

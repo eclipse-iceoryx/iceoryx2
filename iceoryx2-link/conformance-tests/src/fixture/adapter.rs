@@ -23,8 +23,8 @@ pub trait AdapterFixture {
     /// The middleware's types of a sample.
     type SampleTypes: Clone + PartialEq + 'static;
     type Adapter: Adapter<EndpointTypes = EndpointTypes<Self::SampleTypes>>;
-    /// Remote endpoints of the middleware, speaking its messages, bytes
-    /// in its form.
+    /// Remote endpoints of the middleware that send and receive its
+    /// messages as bytes in its form.
     type RemoteEndpoints: MessageEndpoints<
             <Self::Adapter as Adapter>::EndpointSettings,
             EndpointTypes<Self::SampleTypes>,
@@ -45,8 +45,8 @@ pub trait AdapterFixture {
     fn remote_endpoints(&mut self) -> Self::RemoteEndpoints;
 }
 
-/// Remote endpoints speaking the middleware's messages as values, and
-/// encoding them as the bytes the gateway's endpoints handle.
+/// Remote endpoints that send and receive the middleware's messages as
+/// values. They encode a value as the bytes the gateway's endpoints handle.
 pub trait MessageEndpoints<S, T> {
     /// The value of a message.
     type Value: Clone + PartialEq + Debug;
