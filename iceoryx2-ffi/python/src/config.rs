@@ -1154,6 +1154,19 @@ pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
 }
 
 #[pyfunction]
+pub fn into_toml(config: &Config) -> String {
+    toml::to_string_pretty(&(*config.0.lock())).expect("toml serialization should never fail")
+}
+
+#[pyfunction]
+pub fn from_toml(content: &str) -> PyResult<Config> {
+    let config = toml::from_str::<iceoryx2::config::Config>(content)
+        .map_err(|e| ConfigCreationError::new_err(format!("{e:?}")))?;
+
+    Ok(Config(Parc::new(config)))
+}
+
+#[pyfunction]
 /// Path to the default user config file
 pub fn default_user_config_file_path() -> FilePath {
     FilePath(iceoryx2::config::Config::default_user_config_file_path())
@@ -1193,6 +1206,8 @@ pub fn config(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(relative_config_path))?;
     m.add_wrapped(wrap_pyfunction!(default_user_config_file_path))?;
     m.add_wrapped(wrap_pyfunction!(from_file))?;
+    m.add_wrapped(wrap_pyfunction!(into_toml))?;
+    m.add_wrapped(wrap_pyfunction!(from_toml))?;
     m.add_wrapped(wrap_pyfunction!(setup_global_config_from_file))?;
     m.add_wrapped(wrap_pyfunction!(global_config))?;
     m.add_wrapped(wrap_pyfunction!(default))?;
