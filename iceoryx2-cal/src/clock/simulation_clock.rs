@@ -424,8 +424,7 @@ where
         let id = state.name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
-        let listener =
-            create_reactor_attachment::<E>(&listener_name, &E::Configuration::default()).unwrap(); // TODO: don't fail
+        let listener = create_reactor_attachment::<E>(&listener_name, &self.event_config).unwrap(); // TODO: don't fail
 
         // TODO: fail with new error code
         match self.now() {
@@ -553,7 +552,7 @@ where
         let id = self.state.get().name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
-        let listener = create_waiter::<E>(&listener_name, &E::Configuration::default()).unwrap(); // TODO: don't fail
+        let listener = create_waiter::<E>(&listener_name, &self.event_config).unwrap(); // TODO: don't fail
         let guard = self.schedule_on(timeout, &listener_name).unwrap();
         match guard {
             ScheduleOnHandle::TranslatedTimeout(_) => {
@@ -561,7 +560,6 @@ where
                 return Ok(());
             }
             ScheduleOnHandle::Guard(_g) => {
-                // let _guard = g;
                 match listener.blocking_wait(&mut |_| {}) {
                     Ok(_) => return Ok(()),
                     Err(_) => {
@@ -707,9 +705,6 @@ impl<E: Event> TimeController for SimulationTimeController<E> {
         // iterate scheduled time points and notify
         let capacity = state.scheduled_timepoints.capacity();
         for i in 0..capacity {
-            // let counter = state.scheduled_timepoints[i]
-            //     .generation_counter
-            //     .load(Ordering::SeqCst);
             let counter = state.generation_counters[i].load(Ordering::SeqCst);
             if counter == 0 {
                 continue;
@@ -725,8 +720,6 @@ impl<E: Event> TimeController for SimulationTimeController<E> {
             let timeout = timepoint.timeout_in_ns_after_creation;
 
             if old_simulated_time + duration.as_nanos() as u64 >= timeout {
-                // TODO: add notifier config?
-
                 let notifier =
                     create_notifier::<Self::E>(&trigger_name, &self.event_config, self, msg)
                         .unwrap(); // TODO: don't fail
