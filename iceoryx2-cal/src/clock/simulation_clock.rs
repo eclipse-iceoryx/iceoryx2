@@ -198,9 +198,7 @@ where
     }
 
     fn open_clock(self) -> Result<SimulationClock<E>, ClockBuilderOpenClockError> {
-        match SimulationTimeControllerBuilder::new(&self.name, &self.config)
-            .open_or_create_clock_state_storage()
-        {
+        match self.open_or_create_clock_state_storage() {
             Ok(storage) => Ok(SimulationClock {
                 name: self.name,
                 state: storage,
@@ -212,6 +210,70 @@ where
                     opening/creating the clock state.");
             }
         }
+    }
+}
+
+impl<E: Event> SimulationClockBuilder<E> {
+    fn time_controller_state(&self) -> <Storage<AtomicBool> as NamedConceptMgmt>::Configuration {
+        <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
+            .prefix(self.config.get_prefix())
+            .path_hint(self.config.get_path_hint())
+    }
+
+    fn open_or_create_clock_state_storage(
+        &self,
+    ) -> Result<Storage<SimulationClockState>, TimeControllerBuilderOpenOrCreateError> {
+        let capacity = self.config.capacity;
+        Ok(fail!(from self,
+                when
+                <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
+                    &self.name,
+                )
+                .config(&self.config.storage_config)
+                .has_ownership(false)
+                .supplementary_size(
+                    RelocatableVec::<ScheduledTimepoint>::const_memory_size(capacity)
+                        + UniqueIndexSet::const_memory_size(capacity),
+                )
+                .initializer(
+                    |state: &mut MaybeUninit<SimulationClockState>, allocator: &mut BumpAllocator| {
+                        state.write(SimulationClockState {
+                            creation_time: self.config.creation_time,
+                            nanoseconds_since_creation: AtomicU64::new(0),
+                            scheduled_timepoints: unsafe {
+                                RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
+                            },
+                            index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
+                            global_generation_counter: AtomicU64::new(1),
+                            name_id: AtomicU64::new(0),
+                        });
+                        let state = unsafe { state.assume_init_mut() };
+
+                        if unsafe { state.scheduled_timepoints.init(allocator) }.is_err()
+                            || unsafe { state.index_list.init(allocator).is_err() }
+                        {
+                            error!(from self, "Unable to initialize the simulation clock state.");
+                            return false;
+                        }
+
+                        for _i in 0..capacity {
+                            unsafe {
+                                state
+                                    .scheduled_timepoints
+                                    .push_unchecked(ScheduledTimepoint {
+                                        trigger_name: FileName::new_unchecked_const(b"empty"),
+                                        timeout_in_ns_after_creation: 0,
+                                        generation_counter: AtomicU64::new(0),
+                                    });
+                            }
+                        }
+
+                        true
+                    },
+                )
+                .open_or_create(),
+                with TimeControllerBuilderOpenOrCreateError::InternalError,
+                "Unable to open/create the simulation clock state."))
     }
 }
 
@@ -489,22 +551,7 @@ where
 pub const TIME_CONTROLLER_STATE_NAME: FileName =
     unsafe { FileName::new_unchecked_const(b"time_controller") };
 
-#[derive(Debug)]
-pub struct SimulationTimeControllerBuilder {
-    name: FileName,
-    config: TimeControllerConfig,
-}
-
-impl SimulationTimeControllerBuilder {
-    pub fn new(name: &FileName, config: &TimeControllerConfig) -> Self {
-        Self {
-            name: *name,
-            config: config.clone(),
-        }
-    }
-}
-
-impl TimeControllerBuilder for SimulationTimeControllerBuilder {
+impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
     type TimeController = SimulationTimeController;
 
     fn create_time_controller(
@@ -536,7 +583,7 @@ impl TimeControllerBuilder for SimulationTimeControllerBuilder {
             match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
                 &TIME_CONTROLLER_STATE_NAME,
             )
-            .config(&self.state_config())
+            .config(&self.time_controller_state())
             .open(AccessMode::ReadWrite)
             {
                 Ok(storage) => storage,
@@ -592,7 +639,7 @@ impl TimeControllerBuilder for SimulationTimeControllerBuilder {
             match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
                 &TIME_CONTROLLER_STATE_NAME,
             )
-            .config(&self.state_config())
+            .config(&self.time_controller_state())
             .has_ownership(false)
             .initializer(|_, _| {
                 AtomicBool::new(false);
@@ -628,70 +675,6 @@ impl TimeControllerBuilder for SimulationTimeControllerBuilder {
                             "{msg} because it already exists.");
             }
         }
-    }
-}
-
-impl SimulationTimeControllerBuilder {
-    fn state_config(&self) -> <Storage<AtomicBool> as NamedConceptMgmt>::Configuration {
-        <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
-            .prefix(self.config.get_prefix())
-            .path_hint(self.config.get_path_hint())
-    }
-
-    fn open_or_create_clock_state_storage(
-        &self,
-    ) -> Result<Storage<SimulationClockState>, TimeControllerBuilderOpenOrCreateError> {
-        let capacity = self.config.capacity;
-        Ok(fail!(from self,
-            when
-            <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
-                &self.name,
-            )
-            .config(&self.config.storage_config)
-            .has_ownership(false)
-            .supplementary_size(
-                RelocatableVec::<ScheduledTimepoint>::const_memory_size(capacity)
-                    + UniqueIndexSet::const_memory_size(capacity),
-            )
-            .initializer(
-                |state: &mut MaybeUninit<SimulationClockState>, allocator: &mut BumpAllocator| {
-                    state.write(SimulationClockState {
-                        creation_time: self.config.creation_time,
-                        nanoseconds_since_creation: AtomicU64::new(0),
-                        scheduled_timepoints: unsafe {
-                            RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
-                        },
-                        index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
-                        global_generation_counter: AtomicU64::new(1),
-                        name_id: AtomicU64::new(0),
-                    });
-                    let state = unsafe { state.assume_init_mut() };
-
-                    if unsafe { state.scheduled_timepoints.init(allocator) }.is_err()
-                        || unsafe { state.index_list.init(allocator).is_err() }
-                    {
-                        error!(from self, "Unable to initialize the simulation clock state.");
-                        return false;
-                    }
-
-                    for _i in 0..capacity {
-                        unsafe {
-                            state
-                                .scheduled_timepoints
-                                .push_unchecked(ScheduledTimepoint {
-                                    trigger_name: FileName::new_unchecked_const(b"empty"),
-                                    timeout_in_ns_after_creation: 0,
-                                    generation_counter: AtomicU64::new(0),
-                                });
-                        }
-                    }
-
-                    true
-                },
-            )
-            .open_or_create(),
-            with TimeControllerBuilderOpenOrCreateError::InternalError,
-            "Unable to open/create the simulation clock state."))
     }
 }
 
