@@ -89,6 +89,10 @@ impl<E: Event> ClockBuilder<E, PosixClock<E>> for Builder {
         }
     }
 
+    fn event_config(self, _config: <E>::Configuration) -> Self {
+        self
+    }
+
     fn config(mut self, config: &PosixTimeControllerConfig) -> Self {
         self.config = *config;
         self

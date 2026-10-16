@@ -18,7 +18,7 @@ use crate::{
         ScheduleOnHandle, SteppedClock, TimeController, TimeControllerBuilder,
         TimeControllerBuilderCreateError, TimeControllerBuilderOpenError,
         TimeControllerBuilderOpenOrCreateError, Timeout,
-        internal::{create_reactor_attachment, create_waiter},
+        internal::{create_notifier, create_reactor_attachment, create_waiter},
     },
     dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
@@ -181,6 +181,7 @@ pub struct SimulationClockState {
 pub struct SimulationClockBuilder<E: Event> {
     name: FileName,
     config: TimeControllerConfig,
+    event_config: E::Configuration,
     _event: PhantomData<E>,
 }
 
@@ -192,6 +193,7 @@ where
         Self {
             name: *name,
             config: TimeControllerConfig::default(),
+            event_config: E::Configuration::default(),
             _event: PhantomData,
         }
     }
@@ -201,12 +203,17 @@ where
         self
     }
 
+    fn event_config(mut self, config: <E>::Configuration) -> Self {
+        self.event_config = config;
+        self
+    }
+
     fn open_clock(self) -> Result<SimulationClock<E>, ClockBuilderOpenClockError> {
         match self.open_or_create_clock_state_storage() {
             Ok(storage) => Ok(SimulationClock {
                 name: self.name,
                 state: storage,
-                _event: PhantomData,
+                event_config: self.event_config,
             }),
             Err(_) => {
                 fail!(from self, with ClockBuilderOpenClockError::InternalError,
@@ -292,7 +299,7 @@ impl<E: Event> SimulationClockBuilder<E> {
 pub struct SimulationClock<E: Event> {
     name: FileName,
     state: Storage<SimulationClockState>,
-    _event: PhantomData<E>,
+    event_config: E::Configuration,
 }
 
 unsafe impl<E: Event> Send for SimulationClock<E> {}
@@ -319,6 +326,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         timeout: Timeout,
         listener_name: &FileName,
     ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError> {
+        let msg = "Failed to schedule a timeout on a listener";
         let state = self.state.get();
         let timeout = self.translate_timeout(timeout);
 
@@ -331,7 +339,9 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
             Err(_) => fatal_panic!("This should never happen! Failed to obtain current time."),
             Ok(tp) => {
                 if timeout <= tp {
-                    let notifier = E::NotifierBuilder::new(&listener_name).open().unwrap();
+                    let notifier =
+                        create_notifier::<E>(listener_name, &self.event_config, self, msg).unwrap(); // TODO: don't fail
+
                     notifier.notify(EventId::new(0)).expect("notify successful");
                     return Ok(ScheduleOnHandle::TranslatedTimeout(Timeout::By(
                         Duration::ZERO,
@@ -370,7 +380,9 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
                                     .release_raw_index(index, ReleaseMode::Default);
                             }
                             // TODO: don't fail when notifier creation/notify fails
-                            let notifier = E::NotifierBuilder::new(&listener_name).open().unwrap();
+                            let notifier =
+                                create_notifier::<E>(&listener_name, &self.event_config, self, msg)
+                                    .unwrap();
                             notifier.notify(EventId::new(0)).expect("notify successful");
                         }
                         Err(_) => {
@@ -413,7 +425,7 @@ where
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
         let listener =
-            create_reactor_attachment::<E>(&listener_name, &E::Configuration::default()).unwrap();
+            create_reactor_attachment::<E>(&listener_name, &E::Configuration::default()).unwrap(); // TODO: don't fail
 
         // TODO: fail with new error code
         match self.now() {
@@ -541,7 +553,7 @@ where
         let id = self.state.get().name_id.fetch_add(1, Ordering::SeqCst);
         let listener_name =
             unsafe { FileName::new_unchecked_const(format!("{}_{}", self.name, id).as_bytes()) };
-        let listener = create_waiter::<E>(&listener_name, &E::Configuration::default()).unwrap();
+        let listener = create_waiter::<E>(&listener_name, &E::Configuration::default()).unwrap(); // TODO: don't fail
         let guard = self.schedule_on(timeout, &listener_name).unwrap();
         match guard {
             ScheduleOnHandle::TranslatedTimeout(_) => {
@@ -566,11 +578,11 @@ pub const TIME_CONTROLLER_STATE_NAME: FileName =
     unsafe { FileName::new_unchecked_const(b"time_controller") };
 
 impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
-    type TimeController = SimulationTimeController;
+    type TimeController = SimulationTimeController<E>;
 
     fn create_time_controller(
         self,
-    ) -> Result<SimulationTimeController, TimeControllerBuilderCreateError> {
+    ) -> Result<SimulationTimeController<E>, TimeControllerBuilderCreateError> {
         let origin = "SimulationTimeControllerBuilder::create_time_controller()";
         let msg = "Unable to create the time controller for the simulation clock";
 
@@ -589,7 +601,7 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
 
     fn open_time_controller(
         self,
-    ) -> Result<SimulationTimeController, TimeControllerBuilderOpenError> {
+    ) -> Result<SimulationTimeController<E>, TimeControllerBuilderOpenError> {
         let origin = "SimulationTimeControllerBuilder::open_time_controller()";
         let msg = "Unable to open the time controller for the simulation clock";
 
@@ -615,7 +627,11 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
                     Ordering::SeqCst,
                     Ordering::SeqCst,
                 ) {
-                    Ok(_) => Ok(SimulationTimeController { clock_state: s }),
+                    Ok(_) => Ok(SimulationTimeController {
+                        clock_state: s,
+                        event_config: self.event_config,
+                        config: self.config,
+                    }),
                     Err(_) => {
                         fail!(from origin, with TimeControllerBuilderOpenError::AlreadyOpenedByAnotherInstance,
                             "{msg} because it is already opened.");
@@ -627,7 +643,7 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
 
     fn open_or_create_time_controller(
         self,
-    ) -> Result<SimulationTimeController, TimeControllerBuilderOpenOrCreateError> {
+    ) -> Result<SimulationTimeController<E>, TimeControllerBuilderOpenOrCreateError> {
         let origin = "SimulationTimeControllerBuilder::open_or_create_time_controller()";
         let msg = "Unable to open/create the time controller for the simulation clock";
 
@@ -642,6 +658,8 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
         ) {
             Ok(_) => Ok(SimulationTimeController {
                 clock_state: storage,
+                event_config: self.event_config,
+                config: self.config,
             }),
             Err(_) => {
                 fail!(from origin, with TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance,
@@ -652,11 +670,13 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
 }
 
 #[derive(Debug)]
-pub struct SimulationTimeController {
+pub struct SimulationTimeController<E: Event> {
     clock_state: Storage<SimulationClockState>,
+    config: TimeControllerConfig,
+    event_config: E::Configuration,
 }
 
-impl Drop for SimulationTimeController {
+impl<E: Event> Drop for SimulationTimeController<E> {
     fn drop(&mut self) {
         self.clock_state
             .get()
@@ -665,7 +685,7 @@ impl Drop for SimulationTimeController {
     }
 }
 
-impl Abandonable for SimulationTimeController {
+impl<E: Event> Abandonable for SimulationTimeController<E> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
@@ -676,10 +696,12 @@ impl Abandonable for SimulationTimeController {
     }
 }
 
-impl TimeController for SimulationTimeController {
-    type E = UnixDatagramShmCountingBitSet;
+impl<E: Event> TimeController for SimulationTimeController<E> {
+    type E = E;
 
     fn advance(&self, duration: Duration) -> TimePoint {
+        let msg = "Failed to advance time";
+
         let state = self.clock_state.get();
         let old_simulated_time = state
             .nanoseconds_since_creation
@@ -707,9 +729,10 @@ impl TimeController for SimulationTimeController {
 
             if old_simulated_time + duration.as_nanos() as u64 >= timeout {
                 // TODO: add notifier config?
-                let notifier = <Self::E as Event>::NotifierBuilder::new(&trigger_name)
-                    .open()
-                    .unwrap(); // TODO: don't fail
+
+                let notifier =
+                    create_notifier::<Self::E>(&trigger_name, &self.event_config, self, msg)
+                        .unwrap(); // TODO: don't fail
                 notifier.notify(EventId::new(0)).expect("notify successful");
                 if state.generation_counters[i]
                     .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
@@ -728,7 +751,7 @@ impl TimeController for SimulationTimeController {
     }
 }
 
-impl NamedConceptMgmt for SimulationTimeController {
+impl<E: Event> NamedConceptMgmt for SimulationTimeController<E> {
     type Configuration = TimeControllerConfig;
 
     unsafe fn remove_cfg(
