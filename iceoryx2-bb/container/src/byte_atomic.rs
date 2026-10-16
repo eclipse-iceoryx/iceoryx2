@@ -127,6 +127,7 @@ impl<T> MaybeTorn<T> {
 }
 
 /// A runtime fixed-size, shared-memory compatible [`RelocatableByteAtomic`].
+#[derive(Debug)]
 pub struct RelocatableByteAtomic<T: AtomicCopy> {
     data_ptr: RelocatablePointer<AtomicU8>,
     capacity: usize,

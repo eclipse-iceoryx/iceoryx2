@@ -27,12 +27,13 @@ use crate::{
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
 use iceoryx2_bb_container::{
+    byte_atomic::RelocatableByteAtomic,
     queue::RelocatableContainer,
     vector::{RelocatableVec, Vector},
 };
-use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
 use iceoryx2_bb_elementary_traits::{
-    testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
+    atomic_copy::AtomicCopy, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_lock_free::mpmc::{
     unique_index_set::UniqueIndexSet, unique_index_set_enums::ReleaseMode,
@@ -48,7 +49,7 @@ use iceoryx2_log::{error, fail, fatal_panic};
 pub struct Guard<'a> {
     generation_counter: u64,
     index: u32,
-    scheduled_timepoints: &'a RelocatableVec<ScheduledTimepoint>,
+    generation_counters: &'a RelocatableVec<AtomicU64>,
     index_list: &'a UniqueIndexSet,
 }
 
@@ -56,8 +57,7 @@ impl<'a> ScheduleGuard<'a> for Guard<'a> {}
 
 impl<'a> Drop for Guard<'a> {
     fn drop(&mut self) {
-        if self.scheduled_timepoints[self.index as usize]
-            .generation_counter
+        if self.generation_counters[self.index as usize]
             .compare_exchange(
                 self.generation_counter,
                 0,
@@ -155,11 +155,10 @@ impl NamedConceptConfiguration for TimeControllerConfig {
 }
 
 #[repr(C)]
-#[derive(Debug, ZeroCopySend)]
+#[derive(Debug, ZeroCopySend, AtomicCopy, Clone, Copy)]
 pub(crate) struct ScheduledTimepoint {
     pub(crate) trigger_name: FileName,
     pub(crate) timeout_in_ns_after_creation: u64,
-    pub(crate) generation_counter: AtomicU64,
 }
 
 #[repr(C)]
@@ -167,7 +166,8 @@ pub(crate) struct ScheduledTimepoint {
 pub struct SimulationClockState {
     creation_time: TimePoint,
     nanoseconds_since_creation: AtomicU64,
-    scheduled_timepoints: RelocatableVec<ScheduledTimepoint>,
+    scheduled_timepoints: RelocatableVec<RelocatableByteAtomic<ScheduledTimepoint>>,
+    generation_counters: RelocatableVec<AtomicU64>,
     index_list: UniqueIndexSet,
     global_generation_counter: AtomicU64,
     name_id: AtomicU64,
@@ -232,7 +232,9 @@ impl<E: Event> SimulationClockBuilder<E> {
                 .config(&self.config.storage_config)
                 .has_ownership(false)
                 .supplementary_size(
-                    RelocatableVec::<ScheduledTimepoint>::const_memory_size(capacity)
+                    RelocatableVec::<RelocatableByteAtomic<ScheduledTimepoint>>::const_memory_size(capacity)
+                        + RelocatableByteAtomic::<ScheduledTimepoint>::const_memory_size() * capacity
+                        + RelocatableVec::<AtomicU64>::const_memory_size(capacity)
                         + UniqueIndexSet::const_memory_size(capacity),
                 )
                 .initializer(
@@ -241,8 +243,9 @@ impl<E: Event> SimulationClockBuilder<E> {
                             creation_time: self.config.creation_time,
                             nanoseconds_since_creation: AtomicU64::new(0),
                             scheduled_timepoints: unsafe {
-                                RelocatableVec::<ScheduledTimepoint>::new_uninit(capacity)
+                                RelocatableVec::<RelocatableByteAtomic<ScheduledTimepoint>>::new_uninit(capacity)
                             },
+                            generation_counters: unsafe { RelocatableVec::<AtomicU64>::new_uninit(capacity) },
                             index_list: unsafe { UniqueIndexSet::new_uninit(capacity) },
                             global_generation_counter: AtomicU64::new(1),
                             name_id: AtomicU64::new(0),
@@ -250,7 +253,8 @@ impl<E: Event> SimulationClockBuilder<E> {
                         let state = unsafe { state.assume_init_mut() };
 
                         if unsafe { state.scheduled_timepoints.init(allocator) }.is_err()
-                            || unsafe { state.index_list.init(allocator).is_err() }
+                            || unsafe { state.index_list.init(allocator) }.is_err()
+                            || unsafe { state.generation_counters.init(allocator) }.is_err()
                         {
                             error!(from self, "Unable to initialize the simulation clock state.");
                             return false;
@@ -260,12 +264,19 @@ impl<E: Event> SimulationClockBuilder<E> {
                             unsafe {
                                 state
                                     .scheduled_timepoints
-                                    .push_unchecked(ScheduledTimepoint {
-                                        trigger_name: FileName::new_unchecked_const(b"empty"),
-                                        timeout_in_ns_after_creation: 0,
-                                        generation_counter: AtomicU64::new(0),
-                                    });
+                                    .push_unchecked(RelocatableByteAtomic::<ScheduledTimepoint>::new_uninit());
+                                state.generation_counters.push_unchecked(AtomicU64::new(0));
                             }
+                        }
+                        for i in 0..capacity {
+                            if unsafe { state.scheduled_timepoints[i].init(allocator, ScheduledTimepoint {
+                                trigger_name: FileName::new_unchecked_const(b"empty"),
+                                timeout_in_ns_after_creation: 0,
+                                })
+                                }.is_err() {
+                                    error!(from self, "Unable to initialize the simulation clock state.");
+                                    return false;
+                                }
                         }
 
                         true
@@ -309,7 +320,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         timeout: Timeout,
         listener_name: &FileName,
     ) -> Result<ScheduleOnHandle<'a>, ClockListenerScheduleError> {
-        let state = unsafe { self.state.get_mut() };
+        let state = self.state.get();
         let timeout = self.translate_timeout(timeout);
 
         let counter = state
@@ -336,9 +347,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
 
         match self.now() {
             Err(_) => {
-                state.scheduled_timepoints[index as usize]
-                    .generation_counter
-                    .store(0, Ordering::SeqCst);
+                state.generation_counters[index as usize].store(0, Ordering::SeqCst);
                 unsafe {
                     state
                         .index_list
@@ -349,10 +358,12 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
             }
             Ok(tp) => {
                 if timeout <= tp {
-                    match state.scheduled_timepoints[index as usize]
-                        .generation_counter
-                        .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
-                    {
+                    match state.generation_counters[index as usize].compare_exchange(
+                        counter,
+                        0,
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
+                    ) {
                         Ok(_) => {
                             unsafe {
                                 state
@@ -377,7 +388,7 @@ impl<E: Event> ClockListenerSchedule for SimulationClock<E> {
         let guard = Guard {
             generation_counter: counter,
             index,
-            scheduled_timepoints: &state.scheduled_timepoints,
+            generation_counters: &state.generation_counters,
             index_list: &state.index_list,
         };
         Ok(ScheduleOnHandle::Guard(Box::new(guard)))
@@ -392,7 +403,7 @@ where
         &'a self,
         timeout: Timeout,
     ) -> Result<ScheduleHandle<'a>, ClockReactorScheduleError> {
-        let state = unsafe { self.state.get_mut() };
+        let state = self.state.get();
         let timeout = self.translate_timeout(timeout);
 
         let counter = state
@@ -423,9 +434,7 @@ where
 
         match self.now() {
             Err(_) => {
-                state.scheduled_timepoints[index as usize]
-                    .generation_counter
-                    .store(0, Ordering::SeqCst);
+                state.generation_counters[index as usize].store(0, Ordering::SeqCst);
                 unsafe {
                     state
                         .index_list
@@ -436,10 +445,12 @@ where
             }
             Ok(tp) => {
                 if timeout <= tp {
-                    match state.scheduled_timepoints[index as usize]
-                        .generation_counter
-                        .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
-                    {
+                    match state.generation_counters[index as usize].compare_exchange(
+                        counter,
+                        0,
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
+                    ) {
                         Ok(_) => unsafe {
                             state
                                 .index_list
@@ -459,7 +470,7 @@ where
         let guard = Guard {
             generation_counter: counter,
             index,
-            scheduled_timepoints: &state.scheduled_timepoints,
+            generation_counters: &state.generation_counters,
             index_list: &state.index_list,
         };
 
@@ -492,15 +503,12 @@ impl<E: Event> SimulationClock<E> {
         listener_name: &FileName,
         generation_counter: u64,
     ) -> Result<u32, ()> {
-        let state = unsafe { self.state.get_mut() };
-
         let timepoint = ScheduledTimepoint {
             trigger_name: listener_name.clone(),
             timeout_in_ns_after_creation: timeout.as_nanos() as u64, // TODO: make u128?
-            generation_counter: AtomicU64::new(generation_counter),
         };
 
-        let index = match unsafe { state.index_list.acquire_raw_index() } {
+        let index = match unsafe { self.state.get().index_list.acquire_raw_index() } {
             Ok(idx) => idx,
             Err(_) => {
                 // TODO: add test
@@ -510,7 +518,9 @@ impl<E: Event> SimulationClock<E> {
             }
         };
 
-        state.scheduled_timepoints[index as usize] = timepoint;
+        self.state.get().scheduled_timepoints[index as usize].write(timepoint);
+        self.state.get().generation_counters[index as usize]
+            .store(generation_counter, Ordering::SeqCst);
         Ok(index)
     }
 }
@@ -654,6 +664,7 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
                 }
             };
         if time_controller_state.get().load(Ordering::SeqCst) {
+            // println!("OHA");
             return Err(TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance);
         }
 
@@ -716,7 +727,7 @@ impl TimeController for SimulationTimeController {
     type E = UnixDatagramShmCountingBitSet;
 
     fn advance(&self, duration: Duration) -> TimePoint {
-        let state = unsafe { self.clock_state.get_mut() };
+        let state = self.clock_state.get();
         let old_simulated_time = state
             .nanoseconds_since_creation
             .fetch_add(duration.as_nanos() as u64, Ordering::SeqCst);
@@ -724,23 +735,22 @@ impl TimeController for SimulationTimeController {
         // iterate scheduled time points and notify
         let capacity = state.scheduled_timepoints.capacity();
         for i in 0..capacity {
-            let counter = state.scheduled_timepoints[i]
-                .generation_counter
-                .load(Ordering::SeqCst);
+            // let counter = state.scheduled_timepoints[i]
+            //     .generation_counter
+            //     .load(Ordering::SeqCst);
+            let counter = state.generation_counters[i].load(Ordering::SeqCst);
             if counter == 0 {
                 continue;
             }
 
-            let trigger_name = state.scheduled_timepoints[i].trigger_name.clone();
-            let timeout = state.scheduled_timepoints[i].timeout_in_ns_after_creation;
-            if state.scheduled_timepoints[i]
-                .generation_counter
-                .load(Ordering::SeqCst)
-                != counter
-            {
+            let timepoint = state.scheduled_timepoints[i].read();
+            if state.generation_counters[i].load(Ordering::SeqCst) != counter {
                 // guard deregistered trigger
                 continue;
             }
+            let timepoint = unsafe { timepoint.assume_consistent() };
+            let trigger_name = timepoint.trigger_name;
+            let timeout = timepoint.timeout_in_ns_after_creation;
 
             if old_simulated_time + duration.as_nanos() as u64 >= timeout {
                 // TODO: add notifier config?
@@ -748,8 +758,7 @@ impl TimeController for SimulationTimeController {
                     .open()
                     .unwrap(); // TODO: don't fail
                 notifier.notify(EventId::new(0)).expect("notify successful");
-                if state.scheduled_timepoints[i]
-                    .generation_counter
+                if state.generation_counters[i]
                     .compare_exchange(counter, 0, Ordering::SeqCst, Ordering::SeqCst)
                     .is_ok()
                 {
