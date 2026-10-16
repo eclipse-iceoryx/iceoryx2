@@ -23,6 +23,8 @@ enum class NodeWaitFailure : uint8_t {
     TerminationRequest,
     /// SIGINT signal was received
     Interrupt,
+    /// An internal error caused by the underlying mechanism
+    InternalError,
 };
 
 } // namespace iox2
