@@ -15,7 +15,6 @@ use core::time::Duration;
 extern crate alloc;
 use alloc::boxed::Box;
 
-use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
