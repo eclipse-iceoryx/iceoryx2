@@ -51,6 +51,8 @@ fn prompt_for_next_timeout(
 }
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
+
     let node = NodeBuilder::new().create::<ipc_simulated_clock::Service>()?;
     let time_controller = node.time_controller()?;
     let mut waiting_time_in_ms = 100.0f32;
