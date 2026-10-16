@@ -19,7 +19,7 @@ use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
-fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
+fn start_publishing<ServiceVariant: iceoryx2::service::Service>()
 -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ServiceVariant>()?;
 
@@ -27,35 +27,24 @@ fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
         .service_builder(&"Time/Controlled/Service".try_into()?)
         .publish_subscribe::<u64>()
         .open_or_create()?;
-    let event_service_sample_sent = node
+    let event_service = node
         .service_builder(&"Time/Controlled/Service/SampleSent".try_into()?)
         .event()
         .open_or_create()?;
-    let event_service_sample_received = node
-        .service_builder(&"Time/Controlled/Service/SampleReceived".try_into()?)
-        .event()
-        .open_or_create()?;
 
-    let subscriber = pubsub_service.subscriber_builder().create()?;
-    let listener = event_service_sample_sent.listener_builder().create()?;
-    let notifier = event_service_sample_received.notifier_builder().create()?;
+    let publisher = pubsub_service.publisher_builder().create()?;
+    let notifier = event_service.notifier_builder().create()?;
 
-    println!("subscriber start time: {}", node.now()?);
-    while listener.timed_wait(|_| {}, CYCLE_TIME).is_ok() {
-        let mut number_of_received_samples = 0;
-        cout!("[current time: {}] ", node.now()?);
-        while subscriber.receive()?.is_some() {
-            if number_of_received_samples == 0 {
-                coutln!("");
-            }
-            number_of_received_samples += 1;
-            coutln!("  received {} sample(s) ", number_of_received_samples);
-            notifier.notify()?;
-        }
+    let mut counter: u64 = 0;
 
-        if number_of_received_samples == 0 {
-            coutln!("nothing received ");
-        }
+    println!("sender start time: {}", node.now()?);
+    while node.wait(CYCLE_TIME).is_ok() {
+        counter += 1;
+
+        publisher.send_copy(counter)?;
+        notifier.notify()?;
+
+        coutln!("[current time: {}] Send sample {counter} ...", node.now()?);
     }
 
     coutln!("exit");
@@ -66,5 +55,5 @@ fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
-    start_subscribing::<ipc_simulated_clock::Service>()
+    start_publishing::<ipc_simulated_clock::Service>()
 }

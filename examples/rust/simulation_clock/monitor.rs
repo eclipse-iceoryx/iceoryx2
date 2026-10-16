@@ -47,11 +47,20 @@ where
     let on_event = |attachment_id: WaitSetAttachmentId<ServiceVariant>| {
         cout!("[current time: {}] ", node.now().unwrap());
         if attachment_id.has_event_from(&sample_sent_attachment) {
+            listener_sample_sent.try_wait(|_| {}).unwrap();
             coutln!("sample was sent");
         } else if attachment_id.has_missed_deadline(&sample_sent_attachment) {
             coutln!("sample sent notification deadline missed");
         } else if attachment_id.has_event_from(&sample_received_attachment) {
-            coutln!("sample was received");
+            listener_sample_sent
+                .try_wait(|event_id| {
+                    if event_id.id == EventId::new(0) {
+                        coutln!("{} samples were received", event_id.count)
+                    } else if event_id.id == EventId::new(1) {
+                        coutln!("{} times the timeout was hit", event_id.count);
+                    }
+                })
+                .unwrap();
         } else if attachment_id.has_missed_deadline(&sample_received_attachment) {
             coutln!("sample received notification deadline missed");
         }
