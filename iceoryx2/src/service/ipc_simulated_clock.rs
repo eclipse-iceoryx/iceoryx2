@@ -44,7 +44,7 @@ impl crate::service::Service for Service {
     type BlackboardPayload = shared_memory::recommended::Ipc<BumpAllocator>;
     type UniqueId = crate::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<Service>;
     type NameGenerator = crate::name_generator::default_name_generator::DefaultNameGenerator;
-    type Clock = clock::posix::PosixClock<Self::Event>;
+    type Clock = clock::simulation_clock::SimulationClock<Self::Event>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {}

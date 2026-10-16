@@ -175,6 +175,7 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::process::ProcessId;
 use iceoryx2_bb_posix::signal::SignalHandler;
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
@@ -182,6 +183,7 @@ use iceoryx2_cal::clock::ClockBlockingSleepError;
 use iceoryx2_cal::clock::ClockListenerSchedule;
 use iceoryx2_cal::clock::ClockListenerScheduleError;
 use iceoryx2_cal::clock::ClockNow;
+use iceoryx2_cal::clock::ClockNowError;
 use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::ClockReactorScheduleError;
 use iceoryx2_cal::clock::TimeControllerBuilder;
@@ -1344,6 +1346,11 @@ impl<Service: service::Service> Node<Service> {
         }
 
         Ok(())
+    }
+
+    /// Returns the current time.
+    pub fn now(&self) -> Result<TimePoint, ClockNowError> {
+        self.shared.state.clock.now()
     }
 
     /// Waits until the cycle time has passed. It returns [`NodeWaitFailure::TerminationRequest`]
