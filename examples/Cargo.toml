@@ -296,6 +296,10 @@ path = "rust/service_variant_customization/publisher.rs"
 # simulated clock
 
 [[example]]
+name = "simulated_clock_monitor"
+path = "rust/simulated_clock/monitor.rs"
+
+[[example]]
 name = "simulated_clock_subscriber"
 path = "rust/simulated_clock/subscriber.rs"
 
