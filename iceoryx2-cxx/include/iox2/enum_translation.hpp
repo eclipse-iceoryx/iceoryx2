@@ -232,6 +232,8 @@ constexpr auto from<int, iox2::NodeWaitFailure>(const int value) noexcept -> iox
         return iox2::NodeWaitFailure::TerminationRequest;
     case iox2_node_wait_failure_e_INTERRUPT:
         return iox2::NodeWaitFailure::Interrupt;
+    case iox2_node_wait_failure_e_INTERNAL_ERROR:
+        return iox2::NodeWaitFailure::InternalError;
     }
 
     IOX2_UNREACHABLE();
@@ -245,6 +247,8 @@ constexpr auto from<iox2::NodeWaitFailure, iox2_node_wait_failure_e>(const iox2:
         return iox2_node_wait_failure_e_TERMINATION_REQUEST;
     case iox2::NodeWaitFailure::Interrupt:
         return iox2_node_wait_failure_e_INTERRUPT;
+    case iox2::NodeWaitFailure::InternalError:
+        return iox2_node_wait_failure_e_INTERNAL_ERROR;
     }
 
     IOX2_UNREACHABLE();
