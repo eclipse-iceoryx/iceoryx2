@@ -24,7 +24,7 @@ use crate::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
         posix_shared_memory::Storage,
     },
-    event::{Event, EventId, Notifier, NotifierBuilder, UnixDatagramShmCountingBitSet},
+    event::{Event, EventId, Notifier, UnixDatagramShmCountingBitSet},
     named_concept::{NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt},
 };
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
@@ -630,7 +630,6 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
                     Ok(_) => Ok(SimulationTimeController {
                         clock_state: s,
                         event_config: self.event_config,
-                        config: self.config,
                     }),
                     Err(_) => {
                         fail!(from origin, with TimeControllerBuilderOpenError::AlreadyOpenedByAnotherInstance,
@@ -659,7 +658,6 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
             Ok(_) => Ok(SimulationTimeController {
                 clock_state: storage,
                 event_config: self.event_config,
-                config: self.config,
             }),
             Err(_) => {
                 fail!(from origin, with TimeControllerBuilderOpenOrCreateError::AlreadyOpenedByAnotherInstance,
@@ -672,7 +670,6 @@ impl<E: Event> TimeControllerBuilder for SimulationClockBuilder<E> {
 #[derive(Debug)]
 pub struct SimulationTimeController<E: Event> {
     clock_state: Storage<SimulationClockState>,
-    config: TimeControllerConfig,
     event_config: E::Configuration,
 }
 

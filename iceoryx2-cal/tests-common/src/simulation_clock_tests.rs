@@ -37,7 +37,6 @@ use iceoryx2_cal::testing::*;
 struct TestFixture {
     name: FileName,
     config: TimeControllerConfig,
-    storage_config: <Storage<SimulationClockState> as NamedConceptMgmt>::Configuration,
 }
 
 impl TestFixture {
@@ -50,7 +49,6 @@ impl TestFixture {
             config: TimeControllerConfig::default()
                 .storage_config(storage_config.clone())
                 .capacity(10),
-            storage_config,
         }
     }
 
@@ -350,9 +348,9 @@ fn schedule_on_notifies_listener_when_timeout_has_already_expired() {
     let listener = <UnixDatagramShmCountingBitSet as Event>::ListenerBuilder::new(&listener_name)
         .create(clock.clone())
         .unwrap();
-    let timeout = Timeout::By(duration);
+    let timeout = Timeout::At(TimePoint::from_nanos(40));
 
-    let _ = time_controller.advance(2 * duration);
+    let _ = time_controller.advance(duration);
 
     let handle = clock.schedule_on(timeout, &listener_name);
     assert_that!(handle, is_ok);
@@ -458,7 +456,7 @@ fn guard_deregisters_timeout() {
 fn schedule_returns_zero_timeout_when_passed_timeout_has_already_expired() {
     let test = TestFixture::new();
     let duration = Duration::from_nanos(100);
-    let timeout = Timeout::By(duration);
+    let timeout = Timeout::At(TimePoint::from_nanos(50));
 
     let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
         .config(test.config())
@@ -471,7 +469,7 @@ fn schedule_returns_zero_timeout_when_passed_timeout_has_already_expired() {
             .unwrap(),
     );
 
-    let _ = time_controller.advance(2 * duration);
+    let _ = time_controller.advance(duration);
 
     let handle = clock.schedule(timeout).unwrap();
     let t = match handle {
@@ -581,7 +579,7 @@ fn blocking_sleep_does_not_block_when_timeout_expired() {
     let test = TestFixture::new();
     let _watchdog = Watchdog::new();
     let duration = Duration::from_millis(1);
-    let timeout = Timeout::By(duration);
+    let timeout = Timeout::At(TimePoint::from_nanos(100));
 
     let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
         .config(test.config())
@@ -592,7 +590,7 @@ fn blocking_sleep_does_not_block_when_timeout_expired() {
         .open_clock()
         .unwrap();
 
-    let _ = time_controller.advance(2 * duration);
+    let _ = time_controller.advance(duration);
 
     assert_that!(clock.blocking_sleep(timeout), is_ok);
 }
@@ -602,7 +600,7 @@ fn blocking_sleep_blocks_until_timeout_has_expired() {
     let test = TestFixture::new();
     let _watchdog = Watchdog::new();
     let duration = Duration::from_millis(12);
-    let timeout = Timeout::By(duration);
+    let timeout = Timeout::At(TimePoint::from_millis(12));
 
     let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
         .config(test.config())
