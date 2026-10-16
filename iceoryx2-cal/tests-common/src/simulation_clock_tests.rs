@@ -12,15 +12,17 @@
 
 use alloc::sync::Arc;
 use core::time::Duration;
-use iceoryx2_bb_posix::thread::thread_scope;
-use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_cal::reactor::Reactor;
 
-use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_posix::barrier::BarrierBuilder;
+use iceoryx2_bb_posix::barrier::BarrierHandle;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_posix::ipc_capable::Handle;
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::testing::generate_file_path;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::clock::simulation_clock::*;
 use iceoryx2_cal::clock::*;
@@ -31,6 +33,7 @@ use iceoryx2_cal::event::{
     Event, ListenerBuilder, ListenerWaitInterface, UnixDatagramShmCountingBitSet,
 };
 use iceoryx2_cal::named_concept::*;
+use iceoryx2_cal::reactor::Reactor;
 use iceoryx2_cal::reactor::ReactorBuilder;
 use iceoryx2_cal::testing::*;
 
@@ -63,9 +66,6 @@ impl TestFixture {
 
 impl Drop for TestFixture {
     fn drop(&mut self) {
-        // clean up time controller state
-        cleanup_time_controller_state(self.config());
-
         // clean up clock state storage
         cleanup_clock_state(self.name(), self.config());
     }
@@ -85,21 +85,6 @@ fn cleanup_clock_state(name: &FileName, config: &TimeControllerConfig) {
         name,
     )
     .config(config.get_storage_config())
-    .open(AccessMode::ReadWrite)
-    {
-        Ok(s) => s.acquire_ownership(),
-        Err(_) => {}
-    };
-}
-
-fn cleanup_time_controller_state(config: &TimeControllerConfig) {
-    let state_config = <Storage<AtomicBool> as NamedConceptMgmt>::Configuration::default()
-        .prefix(config.get_prefix())
-        .path_hint(config.get_path_hint());
-    match <Storage<AtomicBool> as DynamicStorage<AtomicBool>>::Builder::new(
-        &TIME_CONTROLLER_STATE_NAME,
-    )
-    .config(&state_config)
     .open(AccessMode::ReadWrite)
     {
         Ok(s) => s.acquire_ownership(),
@@ -325,7 +310,6 @@ fn now_returns_current_time_with_configured_creation_time() {
     assert_that!(clock.now().unwrap(), eq tp + (3 * duration));
 
     cleanup_clock_state(&name, &config);
-    cleanup_time_controller_state(&config);
 }
 
 #[test]
@@ -625,4 +609,97 @@ fn blocking_sleep_blocks_until_timeout_has_expired() {
     assert_that!(clock.blocking_sleep(timeout), is_ok);
     let end = clock.now().unwrap();
     assert_that!(end - start, time_at_least duration);
+}
+
+#[test]
+fn concurrent_time_controller_creation_succeeds_once() {
+    let test = TestFixture::new();
+    let _watchdog = Watchdog::new();
+    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
+    const NUMBER_OF_ITERATIONS: usize = 25;
+    let mut time_controllers = Vec::new();
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
+
+    thread_scope(|s| {
+        for _ in 0..number_of_threads {
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    let time_controller =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+                            .config(test.config())
+                            .create_time_controller();
+                    if time_controller.is_ok() {
+                        time_controllers.push(time_controller.unwrap());
+                    }
+                }
+            })?;
+        }
+        for _ in 0..number_of_threads {
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    let time_controller =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+                            .config(test.config())
+                            .open_or_create_time_controller();
+                    if time_controller.is_ok() {
+                        time_controllers.push(time_controller.unwrap());
+                    }
+                }
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(time_controllers, len 1);
+}
+
+#[test]
+fn concurrent_time_controller_opening_succeeds_once() {
+    let test = TestFixture::new();
+    let _watchdog = Watchdog::new();
+    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
+    const NUMBER_OF_ITERATIONS: usize = 25;
+    let mut time_controllers = Vec::new();
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
+
+    thread_scope(|s| {
+        for _ in 0..number_of_threads {
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    let _time_controller =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+                            .config(test.config())
+                            .create_time_controller();
+                }
+            })?;
+        }
+        for _ in 0..number_of_threads {
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    let time_controller =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+                            .config(test.config())
+                            .open_time_controller();
+                    if time_controller.is_ok() {
+                        time_controllers.push(time_controller.unwrap());
+                    }
+                }
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(time_controllers, len 1);
 }
