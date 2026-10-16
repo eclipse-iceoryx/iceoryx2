@@ -300,12 +300,12 @@ name = "simulation_clock_monitor"
 path = "rust/simulation_clock/monitor.rs"
 
 [[example]]
-name = "simulation_clock_subscriber"
-path = "rust/simulation_clock/subscriber.rs"
+name = "simulation_clock_receiver"
+path = "rust/simulation_clock/receiver.rs"
 
 [[example]]
-name = "simulation_clock_publisher"
-path = "rust/simulation_clock/publisher.rs"
+name = "simulation_clock_sender"
+path = "rust/simulation_clock/sender.rs"
 
 [[example]]
 name = "simulation_clock_time_controller"
