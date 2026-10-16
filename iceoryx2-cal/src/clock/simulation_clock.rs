@@ -203,8 +203,8 @@ where
         self
     }
 
-    fn event_config(mut self, config: <E>::Configuration) -> Self {
-        self.event_config = config;
+    fn event_config(mut self, config: &<E>::Configuration) -> Self {
+        self.event_config = config.clone();
         self
     }
 
