@@ -203,6 +203,7 @@ use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::clock_config;
+use crate::service::config_scheme::event_config;
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
@@ -1226,9 +1227,11 @@ where
     pub fn time_controller(
         &self,
     ) -> Result<TimeController<Service>, TimeControllerBuilderOpenOrCreateError> {
+        let event_config = event_config::<Service>(self.shared.config());
         let clock_config = clock_config::<Service>(self.shared.config());
         <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
             .config(&clock_config)
+            .event_config(&event_config)
             .open_or_create_time_controller()
     }
 }
@@ -1718,9 +1721,11 @@ impl NodeBuilder {
             with NodeCreationFailure::UnableToGenerateUniqueNodeId,
             "{msg} since the UniqueNodeId could not be generated.");
 
+        let event_config = event_config::<Service>(config);
         let clock_config = clock_config::<Service>(config);
         let clock = match <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
             .config(&clock_config)
+            .event_config(&event_config)
             .open_clock()
         {
             Ok(clock) => clock,
