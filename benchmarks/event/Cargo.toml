@@ -18,3 +18,11 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-cal = { workspace = true }
 
 clap = { workspace = true }
+
+
+[features]
+default = ["std"]
+
+std = [
+  "iceoryx2-cal/std",
+]
