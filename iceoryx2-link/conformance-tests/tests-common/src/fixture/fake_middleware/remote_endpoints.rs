@@ -41,34 +41,39 @@ pub(crate) fn endpoint_for<T: WireForm>(service: &ServiceDescription) -> FakeEnd
     }
 }
 
-/// Remote endpoints on the endpoint `service` maps to on `middleware`,
-/// speaking payloads as `T` has the middleware encode them.
-pub(crate) fn remote_endpoints_on<T: WireForm>(
-    middleware: &FakeMiddleware,
+/// Remote endpoints on the fake middleware's endpoint of a service. Their
+/// messages are in the wire form the translator `T` expects.
+pub(crate) struct FakeRemoteEndpoints<T> {
     service: ServiceDescription,
-) -> RemoteServiceEndpoints<T> {
-    let remote = middleware.remote_endpoints(&endpoint_for::<T>(&service));
-    let header = match service.types() {
-        ServiceTypes::PublishSubscribe(types) => types.user_header.size,
-        ServiceTypes::Event => 0,
-    };
-    RemoteServiceEndpoints {
-        service,
-        remote,
-        header_size: header,
-        _translator: PhantomData,
+    description: FakeEndpointDescription,
+    remote: FakeEndpoints,
+    header_size: usize,
+    _translator: PhantomData<T>,
+}
+
+impl<T: WireForm> FakeRemoteEndpoints<T> {
+    /// Creates remote endpoints on `middleware`'s endpoint of `service`.
+    pub(crate) fn on(middleware: &FakeMiddleware, service: ServiceDescription) -> Self {
+        let description = endpoint_for::<T>(&service);
+        let remote = middleware.remote_endpoints(&description);
+        let header_size = match service.types() {
+            ServiceTypes::PublishSubscribe(types) => types.user_header.size,
+            ServiceTypes::Event => 0,
+        };
+        Self {
+            service,
+            description,
+            remote,
+            header_size,
+            _translator: PhantomData,
+        }
     }
 }
 
-/// Remote endpoints on a fake middleware, on one endpoint.
-pub(crate) struct RemoteMessageEndpoints {
-    pub(crate) description: FakeEndpointDescription,
-    pub(crate) remote: FakeEndpoints,
-}
-
-/// The fake middleware carries any bytes so a message is its own value.
-impl MessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
-    for RemoteMessageEndpoints
+/// The value of a message is its bytes. The fake middleware imposes no
+/// form of its own on them.
+impl<T: WireForm> MessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+    for FakeRemoteEndpoints<T>
 {
     type Value = Vec<u8>;
 
@@ -97,47 +102,38 @@ impl MessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
     }
 }
 
-/// Remote endpoints on a fake middleware, on the endpoint of
-/// one service, speaking payloads as `T` has the middleware encode them.
-pub(crate) struct RemoteServiceEndpoints<T> {
-    pub(crate) service: ServiceDescription,
-    pub(crate) remote: FakeEndpoints,
-    header_size: usize,
-    _translator: PhantomData<T>,
-}
-
-impl<W: WireForm> DiscoverableEndpoints for RemoteServiceEndpoints<W> {
+impl<T: WireForm> DiscoverableEndpoints for FakeRemoteEndpoints<T> {
     fn service(&self) -> &ServiceDescription {
         &self.service
     }
 }
 
-impl<W: WireForm> PropagatesPayloads<Payload> for RemoteServiceEndpoints<W> {
+impl<T: WireForm> PropagatesPayloads<Payload> for FakeRemoteEndpoints<T> {
     fn send_payload(&self, payload: Payload) {
         let mut message = alloc::vec![0; self.header_size];
-        message.extend_from_slice(&W::encode_payload(payload));
+        message.extend_from_slice(&T::encode_payload(payload));
         self.remote.send(&message);
     }
 
     fn receive_payload(&self) -> Option<Payload> {
         let message = self.remote.receive()?;
         let (_, payload) = message.split_at(self.header_size);
-        Some(W::decode_payload(payload.try_into().expect("a payload")))
+        Some(T::decode_payload(payload.try_into().expect("a payload")))
     }
 }
 
-impl<W: WireForm> PropagatesPayloadsWithHeaders<Header, Payload> for RemoteServiceEndpoints<W> {
+impl<T: WireForm> PropagatesPayloadsWithHeaders<Header, Payload> for FakeRemoteEndpoints<T> {
     fn send_with_header(&self, header: Header, payload: Payload) {
         self.remote
-            .send(&[W::encode_header(header), W::encode_payload(payload)].concat());
+            .send(&[T::encode_header(header), T::encode_payload(payload)].concat());
     }
 
     fn receive_with_header(&self) -> Option<(Header, Payload)> {
         let message = self.remote.receive()?;
         let (header, payload) = message.split_at(self.header_size);
         Some((
-            W::decode_header(header.try_into().expect("a header")),
-            W::decode_payload(payload.try_into().expect("a payload")),
+            T::decode_header(header.try_into().expect("a header")),
+            T::decode_payload(payload.try_into().expect("a payload")),
         ))
     }
 }
