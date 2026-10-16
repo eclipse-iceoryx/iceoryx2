@@ -24,28 +24,28 @@ fn start_publishing<ServiceVariant: iceoryx2::service::Service>()
 -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ServiceVariant>()?;
 
-    let service = node
+    let pubsub_service = node
         .service_builder(&"Time/Controlled/Service".try_into()?)
-        .publish_subscribe::<TransmissionData>()
+        .publish_subscribe::<u64>()
+        .open_or_create()?;
+    let event_service = node
+        .service_builder(&"Time/Controlled/Service/SampleSent".try_into()?)
+        .event()
         .open_or_create()?;
 
-    let publisher = service.publisher_builder().create()?;
+    let publisher = pubsub_service.publisher_builder().create()?;
+    let notifier = event_service.notifier_builder().create()?;
 
     let mut counter: u64 = 0;
 
+    println!("publisher start time: {}", node.now()?);
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
-        let sample = publisher.loan_uninit()?;
 
-        let sample = sample.write_payload(TransmissionData {
-            x: counter as i32,
-            y: counter as i32 * 3,
-            funky: counter as f64 * 812.12,
-        });
+        publisher.send_copy(counter)?;
+        notifier.notify()?;
 
-        sample.send()?;
-
-        coutln!("Send sample {counter} ...");
+        coutln!("[current time: {}] Send sample {counter} ...", node.now()?);
     }
 
     coutln!("exit");

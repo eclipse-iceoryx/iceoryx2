@@ -15,7 +15,6 @@ use core::time::Duration;
 extern crate alloc;
 use alloc::boxed::Box;
 
-use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
@@ -24,18 +23,38 @@ fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
 -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ServiceVariant>()?;
 
-    let service = node
+    let pubsub_service = node
         .service_builder(&"Time/Controlled/Service".try_into()?)
-        .publish_subscribe::<TransmissionData>()
+        .publish_subscribe::<u64>()
+        .open_or_create()?;
+    let event_service_sample_sent = node
+        .service_builder(&"Time/Controlled/Service/SampleSent".try_into()?)
+        .event()
+        .open_or_create()?;
+    let event_service_sample_received = node
+        .service_builder(&"Time/Controlled/Service/SampleReceived".try_into()?)
+        .event()
         .open_or_create()?;
 
-    let subscriber = service.subscriber_builder().create()?;
+    let subscriber = pubsub_service.subscriber_builder().create()?;
+    let listener = event_service_sample_sent.listener_builder().create()?;
+    let notifier = event_service_sample_received.notifier_builder().create()?;
 
-    coutln!("Subscriber ready to receive data!");
+    println!("subscriber start time: {}", node.now()?);
+    while listener.timed_wait(|_| {}, CYCLE_TIME).is_ok() {
+        let mut number_of_received_samples = 0;
+        cout!("[current time: {}] ", node.now()?);
+        while subscriber.receive()?.is_some() {
+            if number_of_received_samples == 0 {
+                coutln!("");
+            }
+            number_of_received_samples += 1;
+            coutln!("  received {} sample(s) ", number_of_received_samples);
+            notifier.notify()?;
+        }
 
-    while node.wait(CYCLE_TIME).is_ok() {
-        while let Some(sample) = subscriber.receive()? {
-            coutln!("received: {:?}", *sample);
+        if number_of_received_samples == 0 {
+            coutln!("nothing received ");
         }
     }
 

@@ -24,21 +24,27 @@ enum PromptResult {
 }
 
 fn prompt_for_next_timeout(
+    now: TimePoint,
     previous_value: f32,
 ) -> Result<PromptResult, Box<dyn core::error::Error>> {
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
 
-    print!(" > enter time advance in ms [{previous_value}] ");
+    print!(" [current time: {now}] enter time advance in ms [{previous_value}] ::: ");
     stdout.flush().expect("stdout is writable");
 
     let mut byte = [0u8; 1];
-    stdin.read_exact(&mut byte)?;
-    if byte[0] == b'e' || byte[0] == b'q' {
-        return Ok(PromptResult::Exit);
+    let mut input = String::new();
+    'read: loop {
+        stdin.read_exact(&mut byte)?;
+        match byte[0] {
+            b'\n' => break 'read,
+            b'e' | b'q' => return Ok(PromptResult::Exit),
+            c => input.push(c as char),
+        }
     }
 
-    match String::from_utf8_lossy(&byte).parse::<f32>() {
+    match input.trim().parse::<f32>() {
         Ok(v) => Ok(PromptResult::WaitingTime(v.max(0.0))),
         Err(_) => Ok(PromptResult::WaitingTime(previous_value)),
     }
@@ -51,7 +57,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     println!("type 'q' or 'e' to exit");
     loop {
-        match prompt_for_next_timeout(waiting_time_in_ms)? {
+        match prompt_for_next_timeout(node.now()?, waiting_time_in_ms)? {
             PromptResult::WaitingTime(t) => waiting_time_in_ms = t,
             PromptResult::Exit => break,
         }
