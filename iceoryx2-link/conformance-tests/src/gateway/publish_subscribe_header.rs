@@ -13,9 +13,9 @@
 use iceoryx2_bb_testing_macros::conformance_tests;
 
 /// The user header crossing a middleware that carries it intact. Opted
-/// into by a fixture whose remote is a [`SampleEndpoints`].
+/// into by a fixture whose remote is a [`PropagatesPayloadsWithHeaders`].
 ///
-/// [`SampleEndpoints`]: crate::fixture::SampleEndpoints
+/// [`PropagatesPayloadsWithHeaders`]: crate::fixture::PropagatesPayloadsWithHeaders
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod gateway_publish_subscribe_header {
@@ -25,8 +25,7 @@ pub mod gateway_publish_subscribe_header {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
 
-    use crate::fixture::{DiscoverableEndpoints, GatewayFixture, SampleEndpoints};
-
+    use crate::fixture::{DiscoverableEndpoints, GatewayFixture, PropagatesPayloadsWithHeaders};
     use crate::parameters::{Header, PayloadShape, PublishSubscribeService, Value};
     use crate::testing::{Side, describe, retry, side};
 
@@ -38,7 +37,8 @@ pub mod gateway_publish_subscribe_header {
         X: PublishSubscribeService<Header: From<u64>>,
         F: GatewayFixture<
                 S,
-                RemoteEndpoints: DiscoverableEndpoints + SampleEndpoints<Header<X>, Value<X>>,
+                RemoteEndpoints: DiscoverableEndpoints
+                                     + PropagatesPayloadsWithHeaders<Header<X>, Value<X>>,
             >,
     >() {
         let header = Header::<X>::from(3);
@@ -74,7 +74,7 @@ pub mod gateway_publish_subscribe_header {
         let subscriber = X::create_subscriber(&service);
 
         // === REMOTE TO LOCAL ===
-        remote.send_sample(header, payload.clone());
+        remote.send_with_header(header, payload.clone());
         retry(
             || {
                 link.propagate().expect("propagation succeeds");
@@ -99,7 +99,8 @@ pub mod gateway_publish_subscribe_header {
         X: PublishSubscribeService<Header: From<u64>>,
         F: GatewayFixture<
                 S,
-                RemoteEndpoints: DiscoverableEndpoints + SampleEndpoints<Header<X>, Value<X>>,
+                RemoteEndpoints: DiscoverableEndpoints
+                                     + PropagatesPayloadsWithHeaders<Header<X>, Value<X>>,
             >,
     >() {
         let header = Header::<X>::from(3);
@@ -139,7 +140,7 @@ pub mod gateway_publish_subscribe_header {
         retry(
             || {
                 link.propagate().expect("propagation succeeds");
-                match remote.receive_sample() {
+                match remote.receive_with_header() {
                     Some((received_header, received_payload))
                         if received_header == header && received_payload == payload =>
                     {

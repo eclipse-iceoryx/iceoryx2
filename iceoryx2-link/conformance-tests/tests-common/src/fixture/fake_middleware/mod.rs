@@ -14,7 +14,7 @@ mod remote_endpoints;
 mod wire_form;
 use remote_endpoints::endpoint_for;
 pub(crate) use remote_endpoints::{
-    RemoteMessageEndpoints, RemotePayloadEndpoints, remote_endpoints_on,
+    RemoteMessageEndpoints, RemoteServiceEndpoints, remote_endpoints_on,
 };
 pub(crate) use wire_form::{Payload, WireForm};
 
@@ -69,7 +69,7 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
 impl<S: Service, T: WireForm> GatewayFixture<S> for FakeMiddlewareFixture<T> {
     type Mapping = FakeMapping;
     type Translator = T;
-    type RemoteEndpoints = RemotePayloadEndpoints<T>;
+    type RemoteEndpoints = RemoteServiceEndpoints<T>;
 
     fn mapping(&self) -> Self::Mapping {
         FakeMapping
@@ -79,7 +79,7 @@ impl<S: Service, T: WireForm> GatewayFixture<S> for FakeMiddlewareFixture<T> {
         T::default()
     }
 
-    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> RemotePayloadEndpoints<T> {
+    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> RemoteServiceEndpoints<T> {
         remote_endpoints_on(&self.middleware, service.clone())
     }
 }

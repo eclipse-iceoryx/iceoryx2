@@ -51,11 +51,11 @@
 //! impl<S: Service> GatewayFixture<S> for MyMiddlewareFixture {
 //!     type Mapping = MyMapping;
 //!     type Translator = MyTranslator;
-//!     type RemoteEndpoints = MyRemotePayloadEndpoints;
+//!     type RemoteEndpoints = MyRemoteEndpoints;
 //!
 //!     fn mapping(&self) -> MyMapping { ... }
 //!     fn translator(&self) -> MyTranslator { ... }
-//!     fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> MyRemotePayloadEndpoints { ... }
+//!     fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> MyRemoteEndpoints { ... }
 //! }
 //! ```
 //!
@@ -104,6 +104,8 @@ pub mod tunnel;
 
 pub use adapter::{AdapterFixture, MessageEndpoints};
 pub use carrier::CarrierFixture;
-pub use gateway::{DiscoverableEndpoints, GatewayFixture, PayloadEndpoints, SampleEndpoints};
+pub use gateway::{
+    DiscoverableEndpoints, GatewayFixture, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+};
 pub use link::{GatewayLinkFixture, LinkFixture, TunnelLinkFixture};
 pub use tunnel::TunnelFixture;
