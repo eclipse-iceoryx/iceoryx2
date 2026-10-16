@@ -308,6 +308,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                     "{msg} with {config:?} due to an internal error. [{e:?}]");
             }
         };
+        // Receiver needs to remove the named pipe after destruction
+        receiver.acquire_ownership();
 
         Ok(Self {
             name: *name,
