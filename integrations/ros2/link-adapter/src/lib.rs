@@ -69,8 +69,8 @@ pub(crate) mod ros_message;
 pub(crate) mod typesupport;
 
 pub use adapter::Ros2Adapter;
-pub use config::{Config, TopicName, TypeName};
-pub use endpoint_description::{TopicDescription, TopicSettings, TopicTypes};
+pub use config::{Config, ServiceName, TopicName, TypeName};
+pub use endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
 pub use endpoints::PublishSubscribeEndpoints;
 pub use iceoryx2_link_backend::AllowList;
 pub use mapping::{PrefixMapping, StaticMapping};

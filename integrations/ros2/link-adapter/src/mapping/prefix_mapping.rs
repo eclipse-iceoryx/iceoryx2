@@ -19,7 +19,7 @@ use iceoryx2_link_backend::service_description::{Identified, PatternSettings, Se
 use iceoryx2_log::warn;
 
 use crate::config::TopicName;
-use crate::endpoint_description::TopicSettings;
+use crate::endpoint_description::{EndpointName, TopicSettings};
 use crate::qos::QosProfile;
 
 const TOPIC_PREFIX: &str = "ros2://topics";
@@ -75,15 +75,18 @@ impl Mapping for PrefixMapping {
     type Error = Infallible;
 
     fn local(&self, remote: &TopicSettings) -> Result<Option<ServiceSettings>, Self::Error> {
-        if !self.allowlist.admits(remote.topic.as_str()) {
+        let EndpointName::Topic(topic) = &remote.name else {
+            return Ok(None);
+        };
+        if !self.allowlist.admits(topic.as_str()) {
             return Ok(None);
         }
-        let name = match service_name(remote.topic.as_str()) {
+        let name = match service_name(topic.as_str()) {
             Ok(name) => name,
             Err(error) => {
                 warn!(
                     "Topic '{}' cannot be mapped to a valid iceoryx2 service name and is not covered: {}",
-                    remote.topic.as_str(),
+                    topic.as_str(),
                     error
                 );
                 return Ok(None);
@@ -106,7 +109,7 @@ impl Mapping for PrefixMapping {
             return Ok(None);
         }
         Ok(Some(TopicSettings {
-            topic,
+            name: EndpointName::Topic(topic),
             qos: QosProfile::from(settings),
         }))
     }

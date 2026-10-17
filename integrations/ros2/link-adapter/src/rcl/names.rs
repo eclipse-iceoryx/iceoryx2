@@ -315,7 +315,6 @@ impl TopicName {
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ServiceName(TopicOrServiceName);
 
-#[allow(dead_code)] // the request-response endpoints follow
 impl ServiceName {
     /// Creates a new ROS 2 service name from the given string.
     ///
@@ -339,6 +338,7 @@ impl ServiceName {
     ///
     /// The caller must guarantee `service` is a well-formed ROS 2 service
     /// name e.g. it came straight from an rcl graph query.
+    #[allow(dead_code)] // the request-response endpoints follow
     pub unsafe fn new_unchecked(service: &str) -> Self {
         Self(unsafe { TopicOrServiceName::new_unchecked(service) })
     }

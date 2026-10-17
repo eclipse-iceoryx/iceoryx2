@@ -13,21 +13,37 @@
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::Identified;
 
-use crate::config::{TopicName, TypeName};
+use crate::config::{ServiceName, TopicName, TypeName};
 use crate::qos::QosProfile;
+
+/// The name of a ROS 2 endpoint.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum EndpointName {
+    Topic(TopicName),
+    Service(ServiceName),
+}
+
+impl core::fmt::Display for EndpointName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Topic(topic) => topic.fmt(f),
+            Self::Service(service) => service.fmt(f),
+        }
+    }
+}
 
 /// The settings of a ROS 2 endpoint.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TopicSettings {
-    pub topic: TopicName,
+    pub name: EndpointName,
     pub qos: QosProfile,
 }
 
 impl Identified for TopicSettings {
-    type Id = TopicName;
+    type Id = EndpointName;
 
-    fn id(&self) -> TopicName {
-        self.topic.clone()
+    fn id(&self) -> EndpointName {
+        self.name.clone()
     }
 }
 

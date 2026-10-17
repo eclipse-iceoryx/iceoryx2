@@ -75,6 +75,65 @@ impl From<rcl::TopicName> for TopicName {
     }
 }
 
+/// A ROS 2 service name, e.g. `/add_two_ints`, validated against the ROS 2
+/// service naming rules.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct ServiceName(rcl::ServiceName);
+
+impl ServiceName {
+    /// Creates a service name, validating it against the ROS 2 service
+    /// naming rules.
+    pub fn new(service: &str) -> Result<Self, NameError> {
+        let origin = origin!("ServiceName::new");
+
+        let service = fail!(
+            from origin,
+            when rcl::ServiceName::new(service),
+            "Invalid ROS 2 service name '{}'", service
+        );
+
+        Ok(Self(service))
+    }
+
+    /// The service name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl core::fmt::Display for ServiceName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl TryFrom<String> for ServiceName {
+    type Error = NameError;
+
+    fn try_from(service: String) -> Result<Self, NameError> {
+        Self::new(&service)
+    }
+}
+
+impl From<ServiceName> for String {
+    fn from(service: ServiceName) -> Self {
+        service.as_str().to_string()
+    }
+}
+
+impl From<&ServiceName> for rcl::ServiceName {
+    fn from(service: &ServiceName) -> Self {
+        service.0.clone()
+    }
+}
+
+impl From<rcl::ServiceName> for ServiceName {
+    fn from(service: rcl::ServiceName) -> Self {
+        Self(service)
+    }
+}
+
 /// A ROS 2 type name of the form `package/msg/Message`, `package/srv/Service`
 /// or `package/action/Action`, e.g. `geometry_msgs/msg/Twist`.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
