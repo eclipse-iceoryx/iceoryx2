@@ -17,8 +17,9 @@ use crate::qos::QosProfile;
 use crate::rcl::{NodeName, RclNode, RclNodeBuilder, RclPublisherBuilder, RclSubscriptionBuilder};
 use crate::typesupport;
 
+pub use crate::rcl::message_info::MessageInfo;
 pub use crate::rcl::publisher::RclPublisher;
-pub use crate::rcl::subscription::{MessageInfo, RclSubscription};
+pub use crate::rcl::subscription::RclSubscription;
 
 /// A ROS 2 node that the gateway communicates with in tests.
 #[derive(Debug)]

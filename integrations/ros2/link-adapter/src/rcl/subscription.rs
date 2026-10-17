@@ -25,7 +25,7 @@ use iceoryx2_log::{fail, origin};
 
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{Gid, RclError, TopicName, qos};
+use crate::rcl::{MessageInfo, RclError, TopicName, qos};
 use crate::rcutils::LoanAllocator;
 use crate::typesupport::MessageTypeSupport;
 
@@ -85,25 +85,6 @@ impl core::fmt::Display for TakeError {
 }
 
 impl core::error::Error for TakeError {}
-
-/// Per-message metadata accompanying a take.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct MessageInfo {
-    /// The originating DDS writer's ID.
-    pub gid: Gid,
-    pub source_timestamp_ns: i64,
-    pub sequence_number: u64,
-}
-
-impl From<&rmw_message_info_t> for MessageInfo {
-    fn from(info: &rmw_message_info_t) -> Self {
-        Self {
-            gid: Gid::from(&info.publisher_gid),
-            source_timestamp_ns: info.source_timestamp,
-            sequence_number: info.publication_sequence_number,
-        }
-    }
-}
 
 /// Builder for [`RclSubscription`].
 #[derive(Debug)]
