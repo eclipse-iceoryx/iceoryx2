@@ -26,6 +26,7 @@ pub use crate::service::{
 };
 pub use crate::signal_handling_mode::SignalHandlingMode;
 pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};
+
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_container::semantic_string::SemanticStringError;
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
@@ -41,6 +42,7 @@ pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 pub use iceoryx2_bb_posix::process::ProcessId;
 pub use iceoryx2_bb_print::{cerr, cerrln, cout, coutln};
+pub use iceoryx2_bb_si_units::TimePoint;
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 pub use iceoryx2_log::LogLevel;
 pub use iceoryx2_log::set_log_level;

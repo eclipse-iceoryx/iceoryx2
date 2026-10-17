@@ -23,6 +23,7 @@
 //!   [`TimeController`] calls [`TimeController::advance()`].
 
 pub mod posix;
+pub mod simulation_clock;
 
 use crate::{
     event::{Event, ListenerBuilder, ListenerWaitInterface, NamedConceptBuilder, NamedConceptMgmt},
@@ -63,14 +64,14 @@ enum_gen! {
 }
 
 enum_gen! {
-/// Error returned by [`ClockBuilder::open_clock()`]
+/// Error returned by [`ClockListenerSchedule::schedule_on()`]
     ClockListenerScheduleError
   entry:
     ClockScheduleCapacityExceeded
 }
 
 enum_gen! {
-/// Error returned by [`ClockBuilder::open_clock()`]
+/// Error returned by [`ClockReactorSchedule::schedule()`]
     ClockReactorScheduleError
   entry:
     ClockScheduleCapacityExceeded
@@ -80,6 +81,7 @@ enum_gen! {
 /// Error returned by [`TimeControllerBuilder::create()`]
     TimeControllerBuilderCreateError
   entry:
+    AlreadyCreatedByAnotherInstance,
     InternalError
 }
 
@@ -88,6 +90,7 @@ enum_gen! {
     TimeControllerBuilderOpenError
   entry:
     AlreadyOpenedByAnotherInstance,
+    TimeControllerDoesNotExist,
     InternalError
 }
 
@@ -154,7 +157,7 @@ pub trait SteppedClock {}
 
 /// Builder that acquires a [`Clock`] and, where the implementation supports it, its [`TimeController`].
 ///
-/// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by  multiple processes.
+/// The [`Clock`] is identified by name so that the same [`Clock`] can be acquired by multiple processes.
 ///
 /// [`FreeRunningClock`] implementations do not support a [`TimeController`].
 pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
@@ -162,6 +165,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     fn new(name: &FileName) -> Self;
     /// Sets the custom configuration of the [`Clock`].
     fn config(self, config: &C::Configuration) -> Self;
+    fn event_config(self, config: &E::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
     fn open_clock(self) -> Result<C, ClockBuilderOpenClockError>;
 }
@@ -199,6 +203,7 @@ pub enum ScheduleOnHandle<'a> {
     /// The user provided [`Event::Listener`](crate::event::Listener) is when the [`Timeout`] has
     /// passed and the [`ScheduleGuard`] is still alive.
     Guard(Box<dyn ScheduleGuard<'a>>),
+    // TODO: Update documentation: TranslatedTimeout(0) is returned by stepped clock when timeout is expired before scheduling
 }
 
 /// Trait that defines an interface to acquire the current time.
@@ -287,6 +292,10 @@ pub trait TimeController: NamedConceptMgmt + Abandonable {
 
 #[doc(hidden)]
 pub mod internal {
+    use iceoryx2_log::debug;
+
+    use crate::event::{NotifierBuilder, NotifierOpenError};
+
     use super::*;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -301,7 +310,7 @@ pub mod internal {
         origin: &str,
         msg: &str,
     ) -> Result<Box<E::Listener>, CreateTriggerError> {
-        let clock = fail!(from origin, 
+        let clock = fail!(from origin,
                     when crate::testing::create_stub_clock::<crate::clock::posix::PosixClock<crate::event::InternalStubEvent>>(),
                     with CreateTriggerError::FailedToOpenStubClock,
                     "{msg} {name} since the stub clock could not be opened.");
@@ -327,6 +336,20 @@ pub mod internal {
             origin!("create_reactor_attachment()"),
             "Failed to create reactor attachment",
         )?)
+    }
+
+    pub fn create_notifier<E: Event>(
+        name: &FileName,
+        config: &E::Configuration,
+        origin: &impl Debug,
+        msg: &str,
+    ) -> Result<E::Notifier, NotifierOpenError> {
+        E::NotifierBuilder::new(name)
+            .config(config)
+            .open()
+            .inspect_err(
+                |e| debug!(from origin, "{msg} since the notifier could not be opened. [{e:?}]"),
+            )
     }
 
     pub fn create_waiter<E: Event + 'static>(

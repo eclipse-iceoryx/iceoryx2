@@ -111,8 +111,8 @@ use crate::constants::MAX_ATTRIBUTES;
 mod key {
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
-    use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+    use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+    use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 
     use crate::constants::MAX_ATTRIBUTE_KEY_LENGTH;
 
@@ -140,8 +140,8 @@ pub type AttributeKey = key::FixedString;
 mod value {
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
-    use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+    use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+    use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 
     use crate::constants::MAX_ATTRIBUTE_VALUE_LENGTH;
 

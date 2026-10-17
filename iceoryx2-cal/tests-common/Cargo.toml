@@ -30,10 +30,12 @@ std = [
 [dependencies]
 iceoryx2-cal = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
+iceoryx2-bb-si-units = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
