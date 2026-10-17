@@ -37,7 +37,11 @@ fn start_publishing<ServiceVariant: iceoryx2::service::Service>()
 
     let mut counter: u64 = 0;
 
-    println!("sender start time: {}", node.now()?);
+    println!(
+        "{} ::: sender start time: {}",
+        core::any::type_name::<ServiceVariant>(),
+        node.now()?
+    );
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
 
@@ -52,8 +56,23 @@ fn start_publishing<ServiceVariant: iceoryx2::service::Service>()
     Ok(())
 }
 
+fn print_help() {
+    coutln!("provide one argument, either:");
+    coutln!("  - 'sim' to use the simulation clock or");
+    coutln!("  - 'real' to use the real clock");
+}
+
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
+    let args: Vec<String> = std::env::args().collect();
 
-    start_publishing::<ipc_simulated_clock::Service>()
+    if args.len() == 2 && args[1] == "sim" {
+        start_publishing::<ipc_simulated_clock::Service>()?;
+    } else if args.len() == 2 && args[1] == "real" {
+        start_publishing::<ipc::Service>()?;
+    } else {
+        print_help();
+    }
+
+    Ok(())
 }

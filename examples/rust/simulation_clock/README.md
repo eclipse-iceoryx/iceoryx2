@@ -65,20 +65,32 @@ Open four separate terminals and start one process in each.
 
 ### Terminal 1: Sender
 
-```
-cargo run --example simulation_clock_sender
+```sh
+# simulation clock
+cargo run --example simulation_clock_sender sim
+
+# real clock
+cargo run --example simulation_clock_sender real
 ```
 
 ### Terminal 2: Receiver
 
 ```
-cargo run --example simulation_clock_receiver
+# simulation clock
+cargo run --example simulation_clock_receiver sim
+
+# real clock
+cargo run --example simulation_clock_receiver real
 ```
 
 ### Terminal 3: Monitor
 
 ```
-cargo run --example simulation_clock_monitor
+# simulation clock
+cargo run --example simulation_clock_monitor sim
+
+# real clock
+cargo run --example simulation_clock_monitor real
 ```
 
 ### Terminal 4: Time Controller

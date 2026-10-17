@@ -40,7 +40,11 @@ fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
     let listener = event_service_sample_sent.listener_builder().create()?;
     let notifier = event_service_sample_received.notifier_builder().create()?;
 
-    println!("receiver start time: {}", node.now()?);
+    println!(
+        "{} ::: receiver start time: {}",
+        core::any::type_name::<ServiceVariant>(),
+        node.now()?
+    );
     while listener.timed_wait(|_| {}, CYCLE_TIME).is_ok() {
         let mut number_of_received_samples = 0;
         cout!("[current time: {}] ", node.now()?);
@@ -64,8 +68,23 @@ fn start_subscribing<ServiceVariant: iceoryx2::service::Service>()
     Ok(())
 }
 
+fn print_help() {
+    coutln!("provide one argument, either:");
+    coutln!("  - 'sim' to use the simulation clock or");
+    coutln!("  - 'real' to use the real clock");
+}
+
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
+    let args: Vec<String> = std::env::args().collect();
 
-    start_subscribing::<ipc_simulated_clock::Service>()
+    if args.len() == 2 && args[1] == "sim" {
+        start_subscribing::<ipc_simulated_clock::Service>()?;
+    } else if args.len() == 2 && args[1] == "real" {
+        start_subscribing::<ipc::Service>()?;
+    } else {
+        print_help();
+    }
+
+    Ok(())
 }
