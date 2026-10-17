@@ -28,8 +28,8 @@ use iceoryx2::testing::{generate_isolated_config, generate_service_name};
 use iceoryx2_integrations_ros2_link_adapter::qos::Durability;
 use iceoryx2_integrations_ros2_link_adapter::testing::PeerNode;
 use iceoryx2_integrations_ros2_link_adapter::{
-    Config, EndpointName, QosProfile, Ros2Adapter, TopicDescription, TopicName, TopicSettings,
-    TopicTypes, TypeName,
+    Config, EndpointDescription, EndpointName, EndpointSettings, MessageType, QosProfile,
+    Ros2Adapter, TopicName, TypeName,
 };
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{EndpointTypes, Translator};
@@ -60,7 +60,7 @@ pub struct Ros2Fixture<M, T> {
 }
 
 impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture<M, T> {
-    type SampleTypes = TopicTypes;
+    type SampleTypes = MessageType;
     type Adapter = Ros2Adapter;
     type RemoteEndpoints = RclEndpoints<T>;
 
@@ -108,12 +108,12 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
             durability: Durability::TransientLocal,
             ..QosProfile::default()
         };
-        let description = TopicDescription {
-            settings: TopicSettings {
+        let description = EndpointDescription {
+            settings: EndpointSettings {
                 name: EndpointName::Topic(topic),
                 qos: qos.clone(),
             },
-            types: EndpointTypes::PublishSubscribe(TopicTypes {
+            types: EndpointTypes::PublishSubscribe(MessageType {
                 type_name: TypeName::new(<T::Message as RmwMessage>::TYPE_NAME)
                     .expect("a valid type name"),
             }),
@@ -151,7 +151,7 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
         );
 
         let qos = settings.qos.clone();
-        let endpoints = RclEndpoints::new(&self.peer, TopicDescription { settings, types }, qos);
+        let endpoints = RclEndpoints::new(&self.peer, EndpointDescription { settings, types }, qos);
 
         MappedRclEndpoints {
             service: service.clone(),

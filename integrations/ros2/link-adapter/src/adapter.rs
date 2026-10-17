@@ -21,7 +21,9 @@ use iceoryx2_log::{fail, origin, warn};
 use crate::NODE_NAME;
 use crate::config::Config;
 use crate::config::{NameError, TypeName};
-use crate::endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
+use crate::endpoint_description::{
+    EndpointDescription, EndpointName, EndpointSettings, MessageType,
+};
 use crate::endpoints;
 use crate::qos::QosProfile;
 use crate::rcl::{
@@ -144,7 +146,7 @@ fn response_type(srv: &rcl::TypeName) -> Result<TypeName, NameError> {
 impl Ros2Adapter {
     /// Lists the topics of the graph that another node publishes or
     /// subscribes to.
-    fn list_topics(&self, callback: &mut dyn FnMut(&TopicDescription)) -> Result<(), ListError> {
+    fn list_topics(&self, callback: &mut dyn FnMut(&EndpointDescription)) -> Result<(), ListError> {
         let origin = origin!("Ros2Adapter::list_topics");
 
         let graph = fail!(
@@ -194,12 +196,12 @@ impl Ros2Adapter {
             };
 
             // Hand the descriptions to the gateway.
-            callback(&TopicDescription {
-                settings: TopicSettings {
+            callback(&EndpointDescription {
+                settings: EndpointSettings {
                     name: EndpointName::Topic(topic.clone().into()),
                     qos: remote.qos.clone(),
                 },
-                types: EndpointTypes::PublishSubscribe(TopicTypes {
+                types: EndpointTypes::PublishSubscribe(MessageType {
                     type_name: type_name.clone().into(),
                 }),
             });
@@ -212,7 +214,10 @@ impl Ros2Adapter {
     ///
     /// The graph does not tell a service's QoS. Every ROS 2 service runs on
     /// the default profile, which is listed.
-    fn list_services(&self, callback: &mut dyn FnMut(&TopicDescription)) -> Result<(), ListError> {
+    fn list_services(
+        &self,
+        callback: &mut dyn FnMut(&EndpointDescription),
+    ) -> Result<(), ListError> {
         let origin = origin!("Ros2Adapter::list_services");
 
         let graph = fail!(
@@ -285,14 +290,14 @@ impl Ros2Adapter {
             };
 
             // Hand the descriptions to the gateway.
-            callback(&TopicDescription {
-                settings: TopicSettings {
+            callback(&EndpointDescription {
+                settings: EndpointSettings {
                     name: EndpointName::Service(service.into()),
                     qos: QosProfile::default(),
                 },
                 types: EndpointTypes::RequestResponse {
-                    request: TopicTypes { type_name: request },
-                    response: TopicTypes {
+                    request: MessageType { type_name: request },
+                    response: MessageType {
                         type_name: response,
                     },
                 },
@@ -306,15 +311,15 @@ impl Ros2Adapter {
 impl Adapter for Ros2Adapter {
     type ListError = ListError;
     type OpenError = OpenError;
-    type EndpointSettings = TopicSettings;
-    type EndpointTypes = EndpointTypes<TopicTypes>;
+    type EndpointSettings = EndpointSettings;
+    type EndpointTypes = EndpointTypes<MessageType>;
     type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
     type RequestResponseEndpoints = UnsupportedEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn endpoints(
         &self,
-        callback: &mut dyn FnMut(&TopicDescription),
+        callback: &mut dyn FnMut(&EndpointDescription),
     ) -> Result<(), Self::ListError> {
         self.list_topics(callback)?;
         self.list_services(callback)
@@ -322,7 +327,7 @@ impl Adapter for Ros2Adapter {
 
     fn publish_subscribe(
         &mut self,
-        description: &TopicDescription,
+        description: &EndpointDescription,
     ) -> Result<Self::PublishSubscribeEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::publish_subscribe");
 
@@ -381,7 +386,7 @@ impl Adapter for Ros2Adapter {
 
     fn request_response(
         &mut self,
-        description: &TopicDescription,
+        description: &EndpointDescription,
     ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::request_response");
 
@@ -394,7 +399,7 @@ impl Adapter for Ros2Adapter {
 
     fn event(
         &mut self,
-        description: &TopicDescription,
+        description: &EndpointDescription,
     ) -> Result<Self::EventEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::event");
 

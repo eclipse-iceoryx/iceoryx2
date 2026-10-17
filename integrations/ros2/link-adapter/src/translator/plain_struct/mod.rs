@@ -23,7 +23,7 @@ use iceoryx2_log::{fail, origin};
 
 use super::{EmptyHeader, MirroredHeader, TranslationError};
 use crate::config::TypeName;
-use crate::endpoint_description::TopicTypes;
+use crate::endpoint_description::MessageType;
 use crate::typesupport;
 
 /// The translator for services whose payload is the C struct rosidl
@@ -41,11 +41,11 @@ pub struct PlainStructTranslator {
 }
 
 impl Translator<SampleShape> for PlainStructTranslator {
-    type RemoteTypes = TopicTypes;
+    type RemoteTypes = MessageType;
     type Transcoders = SampleTranscoders<EmptyHeader, CdrTranscoder>;
     type Error = TranslationError;
 
-    fn local(&self, remote: &TopicTypes) -> Result<LocalTypes<SampleShape>, Self::Error> {
+    fn local(&self, remote: &MessageType) -> Result<LocalTypes<SampleShape>, Self::Error> {
         let origin = origin!("PlainStructTranslator::local");
 
         let layout = fail!(
@@ -65,7 +65,7 @@ impl Translator<SampleShape> for PlainStructTranslator {
         })
     }
 
-    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<TopicTypes, Self::Error> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<MessageType, Self::Error> {
         let origin = origin!("PlainStructTranslator::remote");
 
         let TypeIdentifier::Name(payload_name) = &local.payload.identifier else {
@@ -82,13 +82,13 @@ impl Translator<SampleShape> for PlainStructTranslator {
             "Payload type '{}' is not a ROS 2 type name", payload_name
         );
 
-        Ok(TopicTypes { type_name })
+        Ok(MessageType { type_name })
     }
 
     fn transcoders(
         &self,
         local: &LocalTypes<SampleShape>,
-        remote: &TopicTypes,
+        remote: &MessageType,
     ) -> Result<Self::Transcoders, Self::Error> {
         let origin = origin!("PlainStructTranslator::transcoders");
 

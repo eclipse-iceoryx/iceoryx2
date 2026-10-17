@@ -18,9 +18,9 @@ use iceoryx2_integrations_ros2_link_adapter::testing::{
     PeerNode, RclPublisher, RclSubscription, take_serialized,
 };
 use iceoryx2_integrations_ros2_link_adapter::{
-    EndpointName, QosProfile, TopicDescription, TopicSettings, TopicTypes,
+    EndpointDescription, EndpointName, EndpointSettings, MessageType, QosProfile,
 };
-use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
+use iceoryx2_link_adapter::EndpointTypes;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{
     Describable, Discoverable, PropagatesMessages, PropagatesPayloads,
@@ -37,14 +37,14 @@ pub const POLL_PERIOD: Duration = Duration::from_millis(10);
 /// of the types defined by the translator under test `T`. Required to
 /// support tests against remote endpoints implementing [`PropagatesMessages`].
 pub struct RclEndpoints<T> {
-    description: TopicDescription,
+    description: EndpointDescription,
     publisher: RclPublisher,
     subscription: RclSubscription,
     _translator: PhantomData<T>,
 }
 
 impl<T> RclEndpoints<T> {
-    pub(super) fn new(peer: &PeerNode, description: TopicDescription, qos: QosProfile) -> Self {
+    pub(super) fn new(peer: &PeerNode, description: EndpointDescription, qos: QosProfile) -> Self {
         let EndpointDescription { settings, types } = &description;
         let (EndpointName::Topic(topic), EndpointTypes::PublishSubscribe(types)) =
             (&settings.name, types)
@@ -65,10 +65,10 @@ impl<T> RclEndpoints<T> {
 }
 
 impl<T: TranslatorUnderTest> Describable for RclEndpoints<T> {
-    type Settings = TopicSettings;
-    type Types = EndpointTypes<TopicTypes>;
+    type Settings = EndpointSettings;
+    type Types = EndpointTypes<MessageType>;
 
-    fn description(&self) -> &TopicDescription {
+    fn description(&self) -> &EndpointDescription {
         &self.description
     }
 

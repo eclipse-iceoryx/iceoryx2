@@ -18,9 +18,9 @@
 //! through [r2r_rcl](https://docs.rs/r2r_rcl), so it runs on whatever RMW
 //! the installation provides.
 //!
-//! * The topics of the graph are the endpoints. A [`TopicDescription`]
-//!   carries a topic's name, QoS profile and message type, taken from the
-//!   discovered publishers and subscriptions.
+//! * Discovery lists the topics and services on the graph. An
+//!   [`EndpointDescription`] carries a topic's or service's name, QoS profile
+//!   and message types.
 //! * The gateway's own endpoints on a topic are a publisher and a
 //!   subscription matching the description's QoS. Messages are taken in their
 //!   serialized form straight into a loaned sample, with the message info
@@ -70,7 +70,7 @@ pub(crate) mod typesupport;
 
 pub use adapter::Ros2Adapter;
 pub use config::{Config, ServiceName, TopicName, TypeName};
-pub use endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
+pub use endpoint_description::{EndpointDescription, EndpointName, EndpointSettings, MessageType};
 pub use endpoints::PublishSubscribeEndpoints;
 pub use iceoryx2_link_backend::AllowList;
 pub use mapping::{PrefixMapping, StaticMapping};

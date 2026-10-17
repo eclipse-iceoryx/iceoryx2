@@ -19,7 +19,7 @@ use iceoryx2_link_backend::service_description::{Identified, PatternSettings, Se
 use iceoryx2_log::warn;
 
 use crate::config::TopicName;
-use crate::endpoint_description::{EndpointName, TopicSettings};
+use crate::endpoint_description::{EndpointName, EndpointSettings};
 use crate::qos::QosProfile;
 
 const TOPIC_PREFIX: &str = "ros2://topics";
@@ -71,10 +71,10 @@ impl PrefixMapping {
 }
 
 impl Mapping for PrefixMapping {
-    type EndpointSettings = TopicSettings;
+    type EndpointSettings = EndpointSettings;
     type Error = Infallible;
 
-    fn local(&self, remote: &TopicSettings) -> Result<Option<ServiceSettings>, Self::Error> {
+    fn local(&self, remote: &EndpointSettings) -> Result<Option<ServiceSettings>, Self::Error> {
         let EndpointName::Topic(topic) = &remote.name else {
             return Ok(None);
         };
@@ -98,7 +98,7 @@ impl Mapping for PrefixMapping {
         )))
     }
 
-    fn remote(&self, local: &ServiceSettings) -> Result<Option<TopicSettings>, Self::Error> {
+    fn remote(&self, local: &ServiceSettings) -> Result<Option<EndpointSettings>, Self::Error> {
         let PatternSettings::PublishSubscribe(settings) = &local.pattern else {
             return Ok(None);
         };
@@ -108,7 +108,7 @@ impl Mapping for PrefixMapping {
         if !self.allowlist.admits(topic.as_str()) {
             return Ok(None);
         }
-        Ok(Some(TopicSettings {
+        Ok(Some(EndpointSettings {
             name: EndpointName::Topic(topic),
             qos: QosProfile::from(settings),
         }))

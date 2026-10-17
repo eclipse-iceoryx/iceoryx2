@@ -15,7 +15,7 @@ use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVar
 use iceoryx2_integrations_ros2_link_adapter::translator::{
     EmptyHeader, TranslationError as HeaderError,
 };
-use iceoryx2_integrations_ros2_link_adapter::{MirroredHeader, TopicTypes, TypeName};
+use iceoryx2_integrations_ros2_link_adapter::{MessageType, MirroredHeader, TypeName};
 use iceoryx2_link_adapter::{
     LocalTypes, SampleBytesRef, SampleShape, SampleTranscoders, TranscodeError, Transcoder,
     Translator,
@@ -76,13 +76,13 @@ pub struct FlatbufferTranslator {
 }
 
 impl Translator<SampleShape> for FlatbufferTranslator {
-    type RemoteTypes = TopicTypes;
+    type RemoteTypes = MessageType;
     /// Specify the transcoder for both the user header and the payload.
     type Transcoders = SampleTranscoders<EmptyHeader, FlatbufferTranscoder>;
     type Error = TranslationError;
 
     /// The local types corresponding to a topic's type.
-    fn local(&self, remote: &TopicTypes) -> Result<LocalTypes<SampleShape>, TranslationError> {
+    fn local(&self, remote: &MessageType) -> Result<LocalTypes<SampleShape>, TranslationError> {
         let origin = origin!("FlatbufferTranslator::local");
 
         // Map a topic type to a schema.
@@ -105,7 +105,7 @@ impl Translator<SampleShape> for FlatbufferTranslator {
     }
 
     /// The topic type corresponding to a service's local types.
-    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<TopicTypes, TranslationError> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<MessageType, TranslationError> {
         let origin = origin!("FlatbufferTranslator::remote");
 
         // Only flatbuffer payloads are translated.
@@ -128,7 +128,7 @@ impl Translator<SampleShape> for FlatbufferTranslator {
             );
         };
 
-        Ok(TopicTypes {
+        Ok(MessageType {
             type_name: TypeName::new(type_name).expect("the paired type names are valid"),
         })
     }
@@ -138,7 +138,7 @@ impl Translator<SampleShape> for FlatbufferTranslator {
     fn transcoders(
         &self,
         local: &LocalTypes<SampleShape>,
-        remote: &TopicTypes,
+        remote: &MessageType,
     ) -> Result<Self::Transcoders, TranslationError> {
         let origin = origin!("FlatbufferTranslator::transcoders");
 

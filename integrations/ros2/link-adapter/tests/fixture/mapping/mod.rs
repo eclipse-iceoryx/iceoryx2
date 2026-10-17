@@ -16,13 +16,13 @@ mod static_mapping;
 pub use prefix_mapping::PrefixMapped;
 pub use static_mapping::StaticMapped;
 
-use iceoryx2_integrations_ros2_link_adapter::TopicSettings;
+use iceoryx2_integrations_ros2_link_adapter::EndpointSettings;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
 
 /// A mapping under test. It also names the services it covers.
 pub trait MappingUnderTest: PublishSubscribeName + 'static {
-    type Mapping: Mapping<EndpointSettings = TopicSettings>;
+    type Mapping: Mapping<EndpointSettings = EndpointSettings>;
 
     /// The mapping for services with the payload type `payload_type`.
     fn mapping(payload_type: &str) -> Self::Mapping;
