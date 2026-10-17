@@ -287,6 +287,8 @@ pub enum WaitSetRunError {
     InsufficientCapacity,
     /// Insufficient resources to add another attachment to the [`WaitSet`].
     InsufficientResources,
+    /// An attachment failed.
+    AttachmentFailed,
 }
 
 impl core::fmt::Display for WaitSetRunError {
@@ -988,6 +990,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             Err(ReactorWaitError::CapacityExceeded) => {
                 fail!(from self, with WaitSetRunError::InsufficientCapacity,
                     "{msg} since the capacity of the underlying reactor is insufficient.");
+            }
+            Err(ReactorWaitError::ListenerAttachmentError) => {
+                fail!(from self, with WaitSetRunError::AttachmentFailed,
+                    "{msg} since a listener could not be attached.");
             }
         }
     }

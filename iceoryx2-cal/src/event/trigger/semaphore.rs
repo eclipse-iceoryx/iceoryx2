@@ -282,6 +282,14 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
                 fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
                     "{msg} since the clock schedule is full.");
             }
+            Err(ClockListenerScheduleError::NotificationFailed) => {
+                fail!(from self, with ListenerWaitError::NotificationError,
+                    "{msg} since the notification failed.");
+            }
+            Err(ClockListenerScheduleError::InternalError) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                    "{msg} due to an internal error.");
+            }
         }
     }
 

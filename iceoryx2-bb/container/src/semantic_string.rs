@@ -21,7 +21,8 @@
 //! extern crate alloc;
 //!
 //! pub use iceoryx2_bb_container::semantic_string::SemanticString;
-//! use iceoryx2_bb_derive_macros::ZeroCopySend;
+//! use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+//! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 //! use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 //!
 //! use iceoryx2_bb_container::semantic_string;
@@ -406,7 +407,7 @@ macro_rules! semantic_string {
     } => {
         $(#[$documentation])*
         #[repr(C)]
-        #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend)]
+        #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend, AtomicCopy)]
         pub struct $string_name {
             value: iceoryx2_bb_container::string::StaticString<$capacity>
         }

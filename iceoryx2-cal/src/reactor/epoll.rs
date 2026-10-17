@@ -205,6 +205,14 @@ impl Reactor for EpollReactor {
                 fail!(from self, with ReactorWaitError::ClockScheduleCapacityExceeded,
                     "{msg} since the clocks schedule capacity is exceeded.");
             }
+            Err(ClockReactorScheduleError::ListenerAttachmentFailed) => {
+                fail!(from self, with ReactorWaitError::ListenerAttachmentError,
+                    "{msg} since the listener could not be attached.");
+            }
+            Err(ClockReactorScheduleError::InternalError) => {
+                fail!(from self, with ReactorWaitError::InternalError,
+                    "{msg} since an internal error occured.");
+            }
         }
     }
 
