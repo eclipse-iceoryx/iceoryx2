@@ -213,6 +213,18 @@ def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUnin
     return self.__loan_slice_uninit(number_of_elements)
 
 
+def truncate(self: Any, number_of_elements: int) -> None:
+    """
+    Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+
+    It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    Fails when it is called for data types which are not a slice.
+    """
+    assert get_origin(self.__payload_type_details) is Slice
+
+    self.__truncate(number_of_elements)
+
+
 def initial_max_slice_len(
     self: PortFactoryPublisher, value: int
 ) -> PortFactoryPublisher:
@@ -347,12 +359,14 @@ SampleMut.payload = payload
 SampleMut.user_header = user_header
 SampleMut.payload_bytes = payload_bytes
 SampleMut.payload_root = payload_root
+SampleMut.truncate = truncate
 
 SampleMutUninit.write_payload = write_payload
 SampleMutUninit.payload = payload
 SampleMutUninit.user_header = user_header
 SampleMutUninit.flatbuffer_builder = flatbuffer_builder
 SampleMutUninit.assume_init = assume_init
+SampleMutUninit.truncate = truncate
 SampleMutUninit.__del__ = _sample_mut_uninit_del
 
 ServiceBuilder.publish_subscribe = publish_subscribe
