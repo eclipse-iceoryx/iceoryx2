@@ -10,101 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Relays publish-subscribe samples between the local service and the
-//! middleware's endpoints.
-//!
-//! A sample recevied from the local service is either passed directly to the
-//! endpoint, or transcoded into a scratch, which is passed instead.
-//!
-//! ```text
-//!   sample from the local port
-//!            │
-//!            │
-//!     SampleBytesRef
-//!            │
-//!            ├── as is ────────────────────────────────────────▶ sent via the endpoint
-//!            │
-//!            │               ┌────────────────────────┐
-//!            └── encoded ──▶ │ SampleBytes            │ ───────▶ sent via the endpoint
-//!                            │   header: Vec<u8>      │
-//!                            │     impl Region        │
-//!                            │   payload: Vec<u8>     │
-//!                            │     impl Region        │
-//!                            └────────────────────────┘
-//! ```
-//!
-//! A message received from the middleware is either written directly into a
-//! sample loaned from the local service, or into a scratch buffer and then
-//! decoded into the sample.
-//!
-//! Both paths write through a pending loan, which acquires the loan once the
-//! payload length and the direction it is written in are known.
-//!
-//! ```text
-//!                         message from the endpoint
-//!                                     │
-//!                                     │
-//!                 ┌───────────────────┴────────────────────┐
-//!               as-is                                   decoded
-//!                 │                                        │
-//!                 ▼                                        ▼
-//!     ┌────────────────────────┐               ┌────────────────────────┐
-//!     │ LoanBackedDestination  │               │ SampleBytes            │
-//!     │   impl TakeDestination │               │   impl TakeDestination │
-//!     │ SplitDestination       │               └────────────────────────┘
-//!     │   impl TakeDestination │                            │
-//!     └────────────────────────┘                            ▼
-//!                 │                          ┌──────────────────────────┐
-//!                 │                          │ LoanBackedRegion         │
-//!                 │                          │   impl ForwardRegion     │
-//!                 │                          │   impl BackwardRegion    │
-//!                 │                          └──────────────────────────┘
-//!                 │                                        │
-//!   the endpoint fills the sample            a transcoder fills the sample
-//!                 └───────────────────┬────────────────────┘
-//!                                     │
-//!                                     │  loans and fills
-//!                                     │
-//!                                     ▼
-//!                                                         sized forward   ┌─────────────────────────────────────────┐  resized
-//!                         ┌────────────────────────┐   ┌────────────────▶ │ PendingLoan::Loaned                     │ ◀──┐
-//!                         │ PendingLoan::Unloaned  │   │                  │   LoanedWritableSample::WrittenForward  │ ───┘
-//!                         │   impl LoanableSample  │───┤                  │     impl WritableSample                 │
-//!                         └────────────────────────┘   │                  │     impl ForwardRegion                  │ ──assume_init()──▶ SampleMut sent via the local port
-//!                                     │                │                  └─────────────────────────────────────────┘
-//!                                     │                │  sized backward  ┌─────────────────────────────────────────┐  resized
-//!                                     │                └────────────────▶ │ PendingLoan::Loaned                     │ ◀──┐
-//!                                     │                                   │   LoanedWritableSample::WrittenBackward │ ───┘
-//!                                     │                                   │     impl WritableSample                 │
-//!                                     │                                   │     impl BackwardRegion                 │ ──assume_init()──▶ SampleMut sent via the local port
-//!                                     │                                   └─────────────────────────────────────────┘
-//!                                     │  loan refused
-//!                                     │                                   ┌─────────────────────────────────────────┐
-//!                                     └─────────────────────────────────▶ │ PendingLoan::Refused                    │ ─────────────▶ the receive fails
-//!                                                                         │   LoanError                             │
-//!                                                                         └─────────────────────────────────────────┘
-//! ```
-
-use alloc::vec::Vec;
 use core::marker::PhantomData;
-use core::ops::{Deref, DerefMut};
 
 use iceoryx2::service::Service;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
     Adapter, EndpointDescription, EndpointTypes, LoanableSample, PublishSubscribeEndpoints,
-    SampleBytes, SampleBytesRef, SampleBytesRefMut, SampleLengths, TakeDestination, TakeOutcome,
-    TranscodeError, Transcoder,
+    SampleBytesRef, TakeOutcome,
 };
-use iceoryx2_link_adapter::{SampleShape, SampleTranscoders, TranscodesSamples, Translator};
+use iceoryx2_link_adapter::{SampleShape, TranscodesSamples, Translator};
 use iceoryx2_link_backend::relay::{PublishSubscribeRelay, ReceiveOutcome, RelayBuilder};
 use iceoryx2_link_backend::service_description::{PublishSubscribeDescription, SampleTypes};
 use iceoryx2_link_backend::wire::publish_subscribe::Sample;
 use iceoryx2_link_backend::wire::publish_subscribe::payload_bytes;
-use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
-use iceoryx2_link_backend::wire::sample::{WritableSample, user_header_bytes};
+use iceoryx2_link_backend::wire::sample::user_header_bytes;
 use iceoryx2_log::{fail, fatal_panic, origin};
 
+use crate::relay::transcoding::Transcoding;
 use crate::relay::{CreationError, ReceiveError, SendError};
 
 /// Creates relays over an adapter's endpoints.
@@ -166,13 +88,10 @@ where
 
 /// Moves publish-subscribe samples over the gateway's endpoints,
 /// translating them on the way.
-pub struct Relay<S, E, X: Translator<SampleShape>> {
+pub struct Relay<S, E, X: Translator<SampleShape, Transcoders: TranscodesSamples>> {
     endpoints: E,
-    transcoders: X::Transcoders,
-    types: SampleTypes,
-    /// Reused buffers holding the middleware form of the regions being
-    /// transcoded.
-    scratch: SampleBytes,
+    transcoding: Transcoding<X::Transcoders>,
+    header_size: usize,
     _service: PhantomData<S>,
 }
 
@@ -185,9 +104,8 @@ impl<
     pub(crate) fn new(endpoints: E, transcoders: X::Transcoders, types: SampleTypes) -> Self {
         Self {
             endpoints,
-            transcoders,
-            types,
-            scratch: SampleBytes::default(),
+            transcoding: Transcoding::new(transcoders, &types),
+            header_size: types.user_header.size,
             _service: PhantomData,
         }
     }
@@ -208,35 +126,14 @@ impl<
         let local = SampleBytesRef {
             // SAFETY: the sample belongs to the service this relay was built
             // for, whose description states the user header size.
-            header: unsafe { user_header_bytes(sample.user_header(), self.types.user_header.size) },
+            header: unsafe { user_header_bytes(sample.user_header(), self.header_size) },
             payload: payload_bytes(sample),
         };
-
-        // Encode the transcoded regions into the scratch, the others are
-        // published from the sample.
-        let scratch = &mut self.scratch;
-        let wire = match self.transcoders.for_samples() {
-            SampleTranscoders::TranscodeNone => local,
-            SampleTranscoders::TranscodeHeader(header_transcoder) => {
-                Self::encode_header(header_transcoder, local, &mut scratch.header)?;
-                SampleBytesRef {
-                    header: &scratch.header,
-                    payload: local.payload,
-                }
-            }
-            SampleTranscoders::TranscodePayload(payload_transcoder) => {
-                Self::encode_payload(payload_transcoder, local, &mut scratch.payload)?;
-                SampleBytesRef {
-                    header: local.header,
-                    payload: &scratch.payload,
-                }
-            }
-            SampleTranscoders::TranscodeBoth(header_transcoder, payload_transcoder) => {
-                Self::encode_header(header_transcoder, local, &mut scratch.header)?;
-                Self::encode_payload(payload_transcoder, local, &mut scratch.payload)?;
-                scratch.as_ref()
-            }
-        };
+        let wire = fail!(
+            from origin,
+            when self.transcoding.encode(local),
+            "Failed to encode a sample"
+        );
 
         fail!(
             from origin,
@@ -252,607 +149,28 @@ impl<
         &mut self,
         loanable: L,
     ) -> Result<ReceiveOutcome<L::InitializedSample>, Self::ReceiveError> {
-        let header_size = self.types.user_header.size;
-        match self.transcoders.for_samples() {
-            SampleTranscoders::TranscodeNone => {
-                Self::receive_with_no_region_transcoded(&mut self.endpoints, header_size, loanable)
-            }
-            SampleTranscoders::TranscodeHeader(header_transcoder) => {
-                Self::receive_with_header_transcoded(
-                    &mut self.endpoints,
-                    &mut self.scratch,
-                    header_transcoder,
-                    loanable,
-                )
-            }
-            SampleTranscoders::TranscodePayload(payload_transcoder) => {
-                Self::receive_with_payload_transcoded(
-                    &mut self.endpoints,
-                    &mut self.scratch,
-                    header_size,
-                    payload_transcoder,
-                    loanable,
-                )
-            }
-            SampleTranscoders::TranscodeBoth(header_transcoder, payload_transcoder) => {
-                Self::receive_with_both_regions_transcoded(
-                    &mut self.endpoints,
-                    &mut self.scratch,
-                    header_transcoder,
-                    payload_transcoder,
-                    loanable,
-                )
-            }
-        }
-    }
-}
+        let origin = origin!("Relay::receive");
 
-impl<
-    S: Service,
-    E: PublishSubscribeEndpoints,
-    X: Translator<SampleShape, Transcoders: TranscodesSamples>,
-> Relay<S, E, X>
-{
-    /// Takes a message straight into the loan.
-    fn receive_with_no_region_transcoded<L: LoanableSample>(
-        endpoints: &mut E,
-        header_size: usize,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
-        let origin = origin!("Relay::receive_with_no_region_transcoded");
-
-        let mut loan = PendingLoan::new(loanable);
+        let mut decode = self.transcoding.decode(loanable);
         let outcome = fail!(
             from origin,
-            when endpoints.take(&mut LoanBackedDestination::new(&mut loan, header_size)),
+            when self.endpoints.take(&mut decode.input()),
             with ReceiveError::Endpoints,
             "Failed to take a message"
         );
         match outcome {
             TakeOutcome::Taken => {
-                // SAFETY: the take wrote the header and the payload into the
-                // loaned sample.
-                Ok(ReceiveOutcome::Sample(unsafe {
-                    loan.into_writable_sample().assume_init()
-                }))
+                let sample = fail!(
+                    from origin,
+                    when decode.output(),
+                    "Failed to decode a message"
+                );
+                Ok(ReceiveOutcome::Sample(sample))
             }
-            TakeOutcome::Declined => Err(loan.refusal()),
+            TakeOutcome::Declined => Err(decode.refusal()),
             TakeOutcome::Skipped => Ok(ReceiveOutcome::Skipped),
             TakeOutcome::Empty => Ok(ReceiveOutcome::Empty),
         }
-    }
-
-    /// Takes the payload straight into the loan and the header into the
-    /// scratch, then decodes the header into the loan.
-    fn receive_with_header_transcoded<L: LoanableSample>(
-        endpoints: &mut E,
-        scratch: &mut SampleBytes,
-        header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
-        let origin = origin!("Relay::receive_with_header_transcoded");
-
-        let mut loan = PendingLoan::new(loanable);
-        let outcome = fail!(
-            from origin,
-            when endpoints.take(&mut SplitDestination::new(&mut loan, &mut scratch.header)),
-            with ReceiveError::Endpoints,
-            "Failed to take a message"
-        );
-        match outcome {
-            TakeOutcome::Taken => {}
-            TakeOutcome::Declined => return Err(loan.refusal()),
-            TakeOutcome::Skipped => return Ok(ReceiveOutcome::Skipped),
-            TakeOutcome::Empty => return Ok(ReceiveOutcome::Empty),
-        }
-
-        let mut writable_sample = loan.into_writable_sample();
-        Self::decode_header(header_transcoder, scratch.as_ref(), &mut writable_sample)?;
-
-        // SAFETY: the header and the payload were both written into the
-        // loaned sample above.
-        Ok(ReceiveOutcome::Sample(unsafe {
-            writable_sample.assume_init()
-        }))
-    }
-
-    /// Takes a message into the scratch, then decodes the payload into the
-    /// loan and copies the header.
-    fn receive_with_payload_transcoded<L: LoanableSample>(
-        endpoints: &mut E,
-        scratch: &mut SampleBytes,
-        header_size: usize,
-        payload_transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
-        let origin = origin!("Relay::receive_with_payload_transcoded");
-
-        let outcome = fail!(
-            from origin,
-            when endpoints.take(&mut *scratch),
-            with ReceiveError::Endpoints,
-            "Failed to take a message"
-        );
-        match outcome {
-            TakeOutcome::Taken => {}
-            TakeOutcome::Declined => {
-                fatal_panic!(
-                    from origin,
-                    "The endpoints reported a declined take into the relay's scratch buffers, which accept any length. This cannot occur with correctly implemented endpoints."
-                );
-            }
-            TakeOutcome::Skipped => return Ok(ReceiveOutcome::Skipped),
-            TakeOutcome::Empty => return Ok(ReceiveOutcome::Empty),
-        }
-        let wire = scratch.as_ref();
-
-        let mut writable_sample = Self::decode_payload(payload_transcoder, wire, loanable)?;
-        Self::copy_header(wire, &mut writable_sample, header_size)?;
-
-        // SAFETY: the header and the payload were both written into the
-        // loaned sample above.
-        Ok(ReceiveOutcome::Sample(unsafe {
-            writable_sample.assume_init()
-        }))
-    }
-
-    /// Takes a message into the scratch, then decodes the payload and the
-    /// header into the loan.
-    fn receive_with_both_regions_transcoded<L: LoanableSample>(
-        endpoints: &mut E,
-        scratch: &mut SampleBytes,
-        header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
-        payload_transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
-        loanable: L,
-    ) -> Result<ReceiveOutcome<L::InitializedSample>, ReceiveError> {
-        let origin = origin!("Relay::receive_with_both_regions_transcoded");
-
-        let outcome = fail!(
-            from origin,
-            when endpoints.take(&mut *scratch),
-            with ReceiveError::Endpoints,
-            "Failed to take a message"
-        );
-        match outcome {
-            TakeOutcome::Taken => {}
-            TakeOutcome::Declined => {
-                fatal_panic!(
-                    from origin,
-                    "The endpoints reported a declined take into the relay's scratch buffers, which accept any length. This cannot occur with correctly implemented endpoints."
-                );
-            }
-            TakeOutcome::Skipped => return Ok(ReceiveOutcome::Skipped),
-            TakeOutcome::Empty => return Ok(ReceiveOutcome::Empty),
-        }
-        let wire = scratch.as_ref();
-
-        let mut writable_sample = Self::decode_payload(payload_transcoder, wire, loanable)?;
-        Self::decode_header(header_transcoder, wire, &mut writable_sample)?;
-
-        // SAFETY: the header and the payload were both written into the
-        // loaned sample above.
-        Ok(ReceiveOutcome::Sample(unsafe {
-            writable_sample.assume_init()
-        }))
-    }
-
-    /// Encodes the `local` header into `scratch`.
-    fn encode_header(
-        header_transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
-        local: SampleBytesRef<'_>,
-        scratch: &mut Vec<u8>,
-    ) -> Result<(), SendError> {
-        let origin = origin!("Relay::encode_header");
-
-        fail!(
-            from origin,
-            when header_transcoder.encode(local, scratch),
-            with SendError::Transcode,
-            "Failed to encode the header of a sample"
-        );
-
-        Ok(())
-    }
-
-    /// Encodes the `local` payload into `scratch`.
-    fn encode_payload(
-        payload_transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
-        local: SampleBytesRef<'_>,
-        scratch: &mut Vec<u8>,
-    ) -> Result<(), SendError> {
-        let origin = origin!("Relay::encode_payload");
-
-        fail!(
-            from origin,
-            when payload_transcoder.encode(local, scratch),
-            with SendError::Transcode,
-            "Failed to encode the payload of a sample"
-        );
-
-        Ok(())
-    }
-
-    /// Decodes the header of `wire` into the loaned sample.
-    fn decode_header<W: WritableSample>(
-        transcoder: &<X::Transcoders as TranscodesSamples>::HeaderTranscoder,
-        wire: SampleBytesRef<'_>,
-        loaned: &mut W,
-    ) -> Result<(), ReceiveError> {
-        let origin = origin!("Relay::decode_header");
-
-        let mut header = loaned.as_mut().header;
-        match transcoder.decode(wire, &mut header) {
-            Ok(()) => Ok(()),
-            Err(TranscodeError::Refused) => {
-                fail!(
-                    from origin,
-                    with ReceiveError::Malformed,
-                    "The header of a message does not fit the service"
-                );
-            }
-            Err(TranscodeError::Transcoder(_)) => {
-                fail!(
-                    from origin,
-                    with ReceiveError::Transcode,
-                    "Failed to decode the header of a message"
-                );
-            }
-        }
-    }
-
-    /// Loans a sample for the decoded payload of `wire` and decodes it
-    /// there.
-    fn decode_payload<L: LoanableSample>(
-        transcoder: &<X::Transcoders as TranscodesSamples>::PayloadTranscoder,
-        wire: SampleBytesRef<'_>,
-        loanable: L,
-    ) -> Result<LoanedWritableSample<L>, ReceiveError> {
-        let origin = origin!("Relay::decode_payload");
-
-        let mut loan = PendingLoan::new(loanable);
-        match transcoder.decode(wire, &mut loan) {
-            Ok(()) => Ok(loan.into_writable_sample()),
-            Err(TranscodeError::Refused) => {
-                fail!(
-                    from origin,
-                    with loan.refusal(),
-                    "The payload of a message was refused"
-                );
-            }
-            Err(TranscodeError::Transcoder(_)) => {
-                fail!(
-                    from origin,
-                    with ReceiveError::Transcode,
-                    "Failed to decode the payload of a message"
-                );
-            }
-        }
-    }
-
-    /// Copies the header of `wire` into the loaned sample as it is.
-    fn copy_header<W: WritableSample>(
-        wire: SampleBytesRef<'_>,
-        writable_sample: &mut W,
-        header_size: usize,
-    ) -> Result<(), ReceiveError> {
-        let origin = origin!("Relay::copy_header");
-
-        if wire.header.len() != header_size {
-            fail!(
-                from origin,
-                with ReceiveError::Malformed,
-                "A header of {} bytes does not fit the service", wire.header.len()
-            );
-        }
-        writable_sample.as_mut().header.copy_from_slice(wire.header);
-
-        Ok(())
-    }
-}
-
-/// A loan that is deferred until its size is known.
-///
-/// The size and direction in which the bytes shall be filled must be specified
-/// when acquiring the loan.
-enum PendingLoan<L: LoanableSample> {
-    Unloaned(L),
-    Loaned(LoanedWritableSample<L>),
-    Refused(ReceiveError),
-}
-
-impl<L: LoanableSample> PendingLoan<L> {
-    fn new(loanable: L) -> Self {
-        Self::Unloaned(loanable)
-    }
-
-    /// Loans for the requested size, or if already loaned, attempts to resize
-    /// the loan forward.
-    fn loan_or_resize_forward(&mut self, len: usize) -> Result<(), ResizeError> {
-        let origin = origin!("PendingLoan::loan_or_resize_forward");
-
-        match core::mem::replace(self, Self::Refused(ReceiveError::Malformed)) {
-            Self::Unloaned(loanable) => match loanable.loan_forward(len) {
-                Ok(loaned) => {
-                    *self = Self::Loaned(LoanedWritableSample::WrittenForward(loaned));
-                    Ok(())
-                }
-                Err(refusal) => {
-                    let refusal = ResizeError::from(refusal);
-                    *self = Self::Refused(refusal.into());
-                    fail!(
-                        from origin,
-                        with refusal,
-                        "Failed to loan a sample for a payload of {} bytes", len
-                    );
-                }
-            },
-            Self::Loaned(LoanedWritableSample::WrittenForward(mut loaned)) => {
-                match loaned.resize(len) {
-                    Ok(()) => {
-                        *self = Self::Loaned(LoanedWritableSample::WrittenForward(loaned));
-                        Ok(())
-                    }
-                    Err(refusal) => {
-                        *self = Self::Refused(refusal.into());
-                        fail!(
-                            from origin,
-                            with refusal,
-                            "The loaned payload cannot be resized to {} bytes", len
-                        );
-                    }
-                }
-            }
-            Self::Refused(refusal) => {
-                *self = Self::Refused(refusal);
-                fail!(
-                    from origin,
-                    with ResizeError::UnsupportedLength,
-                    "The loan was refused for the given length"
-                );
-            }
-            other => {
-                *self = other;
-                fail!(
-                    from origin,
-                    with ResizeError::DirectionUnsupported,
-                    "The sample is loaned for a payload written from its end"
-                );
-            }
-        }
-    }
-
-    /// Loans for the requested size, or if already loaned, attempts to resize
-    /// the loan backward.
-    fn loan_or_resize_backward(&mut self, len: usize) -> Result<(), ResizeError> {
-        let origin = origin!("PendingLoan::loan_or_resize_backward");
-
-        match core::mem::replace(self, Self::Refused(ReceiveError::Malformed)) {
-            Self::Unloaned(loanable) => match loanable.loan_backward(len) {
-                Ok(loaned) => {
-                    *self = Self::Loaned(LoanedWritableSample::WrittenBackward(loaned));
-                    Ok(())
-                }
-                Err(refusal) => {
-                    let refusal = ResizeError::from(refusal);
-                    *self = Self::Refused(refusal.into());
-                    fail!(
-                        from origin,
-                        with refusal,
-                        "Failed to loan a sample for a payload of {} bytes", len
-                    );
-                }
-            },
-            Self::Loaned(LoanedWritableSample::WrittenBackward(mut loaned)) => {
-                match loaned.resize(len) {
-                    Ok(()) => {
-                        *self = Self::Loaned(LoanedWritableSample::WrittenBackward(loaned));
-                        Ok(())
-                    }
-                    Err(refusal) => {
-                        *self = Self::Refused(refusal.into());
-                        fail!(
-                            from origin,
-                            with refusal,
-                            "The loaned payload cannot be resized to {} bytes", len
-                        );
-                    }
-                }
-            }
-            Self::Refused(refusal) => {
-                *self = Self::Refused(refusal);
-                fail!(
-                    from origin,
-                    with ResizeError::UnsupportedLength,
-                    "The loan was refused for the given length"
-                );
-            }
-            other => {
-                *self = other;
-                fail!(
-                    from origin,
-                    with ResizeError::DirectionUnsupported,
-                    "The sample is loaned for a payload written from its front"
-                );
-            }
-        }
-    }
-
-    /// Reference to the bytes of the payload.
-    fn payload(&self) -> &[u8] {
-        match self {
-            Self::Loaned(loaned) => loaned.as_ref().payload,
-            Self::Unloaned(_) | Self::Refused(_) => &[],
-        }
-    }
-
-    /// Mutable reference to the bytes of the payload.
-    fn payload_mut(&mut self) -> &mut [u8] {
-        match self {
-            Self::Loaned(loaned) => loaned.as_mut().payload,
-            Self::Unloaned(_) | Self::Refused(_) => &mut [],
-        }
-    }
-
-    /// Retrieve a writable sample backed by a loan.
-    ///
-    /// Panics if the loan was never made.
-    fn into_writable_sample(self) -> LoanedWritableSample<L> {
-        let origin = origin!("PendingLoan::into_writable_sample");
-        match self {
-            Self::Loaned(loaned) => loaned,
-            Self::Unloaned(_) | Self::Refused(_) => {
-                fatal_panic!(from origin, "A message was written without a loan")
-            }
-        }
-    }
-
-    /// Why the loan refused.
-    ///
-    /// Panics unless the loan was refused.
-    fn refusal(&self) -> ReceiveError {
-        let origin = origin!("PendingLoan::refusal");
-        match self {
-            Self::Refused(refusal) => *refusal,
-            Self::Unloaned(_) | Self::Loaned(_) => {
-                fatal_panic!(
-                    from origin,
-                    "A refusal was reported despite a successful loan. This is a coding error."
-                )
-            }
-        }
-    }
-}
-
-impl<L: LoanableSample> Region for PendingLoan<L> {
-    type ForwardRegion<'a>
-        = LoanBackedRegion<'a, L>
-    where
-        Self: 'a;
-    type BackwardRegion<'a>
-        = LoanBackedRegion<'a, L>
-    where
-        Self: 'a;
-
-    fn forward(&mut self) -> Self::ForwardRegion<'_> {
-        LoanBackedRegion(self)
-    }
-
-    fn backward(&mut self) -> Self::BackwardRegion<'_> {
-        LoanBackedRegion(self)
-    }
-}
-
-/// Regions of the loaned bytes.
-struct LoanBackedRegion<'a, L: LoanableSample>(&'a mut PendingLoan<L>);
-
-impl<L: LoanableSample> Deref for LoanBackedRegion<'_, L> {
-    type Target = [u8];
-
-    fn deref(&self) -> &[u8] {
-        self.0.payload()
-    }
-}
-
-impl<L: LoanableSample> DerefMut for LoanBackedRegion<'_, L> {
-    fn deref_mut(&mut self) -> &mut [u8] {
-        self.0.payload_mut()
-    }
-}
-
-impl<L: LoanableSample> ForwardRegion for LoanBackedRegion<'_, L> {
-    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
-        self.0.loan_or_resize_forward(len)
-    }
-}
-
-impl<L: LoanableSample> BackwardRegion for LoanBackedRegion<'_, L> {
-    fn resize(&mut self, len: usize) -> Result<(), ResizeError> {
-        self.0.loan_or_resize_backward(len)
-    }
-}
-
-/// The loaned sample, writable from either end.
-enum LoanedWritableSample<L: LoanableSample> {
-    WrittenForward(L::ForwardWritableSample),
-    WrittenBackward(L::BackwardWritableSample),
-}
-
-impl<L: LoanableSample> WritableSample for LoanedWritableSample<L> {
-    type InitializedSample = L::InitializedSample;
-
-    fn as_ref(&self) -> SampleBytesRef<'_> {
-        match self {
-            Self::WrittenForward(loaned) => loaned.as_ref(),
-            Self::WrittenBackward(loaned) => loaned.as_ref(),
-        }
-    }
-
-    fn as_mut(&mut self) -> SampleBytesRefMut<'_> {
-        match self {
-            Self::WrittenForward(loaned) => loaned.as_mut(),
-            Self::WrittenBackward(loaned) => loaned.as_mut(),
-        }
-    }
-
-    unsafe fn assume_init(self) -> L::InitializedSample {
-        match self {
-            // SAFETY: the caller wrote the header and the payload.
-            Self::WrittenForward(loaned) => unsafe { loaned.assume_init() },
-            // SAFETY: the caller wrote the header and the payload.
-            Self::WrittenBackward(loaned) => unsafe { loaned.assume_init() },
-        }
-    }
-}
-
-/// A take destination that writes both regions into a loaned sample.
-///
-/// The size of the header must match that expected by the service.
-struct LoanBackedDestination<'l, L: LoanableSample> {
-    loan: &'l mut PendingLoan<L>,
-    header_size: usize,
-}
-
-impl<'l, L: LoanableSample> LoanBackedDestination<'l, L> {
-    fn new(loan: &'l mut PendingLoan<L>, header_size: usize) -> Self {
-        Self { loan, header_size }
-    }
-}
-
-impl<'a, L: LoanableSample> TakeDestination<'a> for &'a mut LoanBackedDestination<'_, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
-        if lengths.header != self.header_size {
-            *self.loan = PendingLoan::Refused(ReceiveError::Malformed);
-            return None;
-        }
-        self.loan.loan_or_resize_forward(lengths.payload).ok()?;
-        match self.loan {
-            PendingLoan::Loaned(loaned) => Some(loaned.as_mut()),
-            _ => None,
-        }
-    }
-}
-
-/// A take destination that writes the payload into the loaned sample and
-/// a header that needs decoding into a scratch buffer.
-struct SplitDestination<'l, 's, L: LoanableSample> {
-    loan: &'l mut PendingLoan<L>,
-    scratch: &'s mut Vec<u8>,
-}
-
-impl<'l, 's, L: LoanableSample> SplitDestination<'l, 's, L> {
-    fn new(loan: &'l mut PendingLoan<L>, scratch: &'s mut Vec<u8>) -> Self {
-        Self { loan, scratch }
-    }
-}
-
-impl<'a, L: LoanableSample> TakeDestination<'a> for &'a mut SplitDestination<'_, '_, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
-        self.loan.loan_or_resize_forward(lengths.payload).ok()?;
-        self.scratch.resize(lengths.header, 0);
-        Some(SampleBytesRefMut {
-            header: self.scratch,
-            payload: self.loan.payload_mut(),
-        })
     }
 }
 
@@ -870,12 +188,18 @@ mod tests {
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_adapter::LocalTypes;
+    use iceoryx2_link_adapter::{
+        SampleLengths, SampleTranscoders, TakeDestination, TranscodeError, Transcoder,
+    };
     use iceoryx2_link_backend::service_description::TypeDescription;
     use iceoryx2_link_backend::wire::publish_subscribe::{
         LoanFn, Publisher, SampleMut, SampleMutUninit, Subscriber, UnloanedSample,
         payload_bytes_mut, user_header_bytes_mut,
     };
+    use iceoryx2_link_backend::wire::region::{BackwardRegion, ForwardRegion, Region, ResizeError};
     use iceoryx2_link_backend::wire::sample::{Header, Payload};
+
+    use crate::relay::transcoding::PendingLoan;
 
     /// The header type of the service under test, behind the untyped marker.
     type HeaderType = u64;
