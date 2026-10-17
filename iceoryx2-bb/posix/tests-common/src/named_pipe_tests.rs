@@ -123,7 +123,7 @@ pub fn creating_named_pipe_on_existing_pipe_creation_mode_create_exclusive_fails
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
     let test = TestFixture::new();
-    test.create_named_pipe(test.file(), CreationMode::PurgeAndCreate);
+    let _existing_pipe = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     let result = NamedPipeBuilder::new(test.file())
         .creation_mode(CreationMode::CreateExclusive)
@@ -211,7 +211,7 @@ pub fn has_ownership_works() {
     let test = TestFixture::new();
     let sut = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
-    assert_that!(sut.has_ownership(), eq false);
+    assert_that!(sut.has_ownership(), eq true);
 }
 
 #[test]
@@ -257,6 +257,23 @@ pub fn does_exist_check_works() {
 }
 
 #[test]
+pub fn set_ownership_on_creation_works() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = generate_file_path();
+    // Ownership is by default true, we disable it here on creation
+    let sut = NamedPipeBuilder::new(&test_named_pipe_path)
+        .has_ownership(false)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create();
+
+    assert_that!(sut, is_ok);
+
+    drop(sut.unwrap());
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq true);
+}
+
+#[test]
 pub fn remove_self_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
 
@@ -280,7 +297,7 @@ pub fn pipe_exist_after_drop_without_ownership_works() {
         .create()
         .unwrap();
     drop(sut);
-    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq true);
+    assert_that!(NamedPipe::does_exist(&test_named_pipe_path).unwrap(), eq false);
 }
 
 #[test]
@@ -340,7 +357,7 @@ pub fn simple_read_write_from_with_different_fds_works() {
 fn try_read_on_empty_pipe_works() {
     test_requires!(POSIX_SUPPORT_NAMED_PIPE);
     let test = TestFixture::new();
-    test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
+    let _sut_writer = test.create_named_pipe(test.file(), CreationMode::CreateExclusive);
 
     let sut_reader = test.open_named_pipe(test.file());
     let mut read_buffer: [u8; 53] = [0u8; 53];

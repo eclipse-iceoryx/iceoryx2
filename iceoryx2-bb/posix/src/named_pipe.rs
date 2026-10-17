@@ -243,7 +243,7 @@ impl NamedPipeBuilder {
             file_path: *file_path,
             access_mode: NAMED_PIPE_ACCESS_MODE,
             permission: Permission::OWNER_READ_WRITE,
-            has_ownership: false,
+            has_ownership: true,
             owner: None,
             group: None,
         }
