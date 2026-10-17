@@ -177,6 +177,7 @@ pub trait ClockBuilder<E: Event, C: Clock<E>>: Sized {
     fn new(name: &FileName) -> Self;
     /// Sets the custom configuration of the [`Clock`].
     fn config(self, config: &C::Configuration) -> Self;
+    /// Sets the custom event configuration.
     fn event_config(self, config: &E::Configuration) -> Self;
     /// Acquires the [`Clock`] with the name this builder was created for.
     fn open_clock(self) -> Result<C, ClockBuilderOpenClockError>;
@@ -203,8 +204,9 @@ pub trait TimeControllerBuilder {
 /// The handle is returned by [`ClockListenerSchedule::schedule_on()`], describing how a scheduled
 /// [`Timeout`] is exposed to other concepts (typically the [`Event::Listener`](crate::event::Listener))
 ///
-/// * [`ScheduleOnHandle::TranslatedTimeout`]: the clock is a [`FreeRunningClock`] and the translated timeout
-///   can be forwarded unchanged to the underlying mechanism.
+/// * [`ScheduleOnHandle::TranslatedTimeout`]: When the clock is a [`FreeRunningClock`], the translated timeout
+///   can be forwarded unchanged to the underlying mechanism. When the clock is a [`SteppedClock`], the timeout
+///   will be zero which means that the timeout has already expired while scheduling and the listener was notified.
 /// * [`ScheduleOnHandle::Guard`]: the clock is a [`SteppedClock`] and the
 ///   [`Event::Listener`](crate::event::Listener) is activated when the scheduled time is reached.
 ///   If the provided [`ScheduleGuard`] goes out of scope, registered timout is removed from the [`Clock`]
@@ -215,7 +217,6 @@ pub enum ScheduleOnHandle<'a> {
     /// The user provided [`Event::Listener`](crate::event::Listener) is when the [`Timeout`] has
     /// passed and the [`ScheduleGuard`] is still alive.
     Guard(Box<dyn ScheduleGuard<'a>>),
-    // TODO: Update documentation: TranslatedTimeout(0) is returned by stepped clock when timeout is expired before scheduling
 }
 
 /// Trait that defines an interface to acquire the current time.
