@@ -27,6 +27,9 @@ use crate::{
     event::{Event, EventId, Notifier, UnixDatagramShmCountingBitSet},
     named_concept::{NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt},
 };
+use alloc::boxed::Box;
+use alloc::format;
+use alloc::vec::Vec;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
 use iceoryx2_bb_container::{
