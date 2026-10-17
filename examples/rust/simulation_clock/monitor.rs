@@ -37,7 +37,11 @@ where
     let listener_sample_sent = event_service_sample_sent.listener_builder().create()?;
     let listener_sample_received = event_service_sample_received.listener_builder().create()?;
 
-    println!("monitor start time: {}", node.now()?);
+    println!(
+        "{} ::: monitor start time: {}",
+        core::any::type_name::<ServiceVariant>(),
+        node.now()?
+    );
 
     let waitset = node.waitset_builder().create()?;
     let sample_sent_attachment = waitset.attach_deadline(&listener_sample_sent, DEADLINE)?;
@@ -75,8 +79,23 @@ where
     Ok(())
 }
 
+fn print_help() {
+    coutln!("provide one argument, either:");
+    coutln!("  - 'sim' to use the simulation clock or");
+    coutln!("  - 'real' to use the real clock");
+}
+
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
+    let args: Vec<String> = std::env::args().collect();
 
-    start_monitoring::<ipc_simulated_clock::Service>()
+    if args.len() == 2 && args[1] == "sim" {
+        start_monitoring::<ipc_simulated_clock::Service>()?;
+    } else if args.len() == 2 && args[1] == "real" {
+        start_monitoring::<ipc::Service>()?;
+    } else {
+        print_help();
+    }
+
+    Ok(())
 }
