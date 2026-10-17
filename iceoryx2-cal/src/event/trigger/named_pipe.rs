@@ -58,12 +58,6 @@ const PIPE_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE
 const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Debug)]
-#[repr(C)]
-pub struct NamedPipeMgmt {
-    handler: NamedPipe,
-}
-
-#[derive(Debug)]
 pub struct NamedPipeHandle<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
     sender: NamedPipe,
     _data_1: PhantomData<E>,
@@ -137,10 +131,13 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
         config: &super::Configuration,
         _mgmt: &(),
     ) -> Result<Self, NotifierOpenError> {
-        let origin = "NamedPipeHandler::open()";
+        let origin = "NamedPipeHandle::open()";
         let msg = "Unable to connect to named pipe";
         let full_path = config.path_for(name);
-        let sender = match NamedPipeBuilder::new(&full_path).open_existing() {
+        let sender = match NamedPipeBuilder::new(&full_path)
+            .has_ownership(false)
+            .open_existing()
+        {
             Ok(v) => v,
             Err(NamedPipeOpenError::InterruptedBySignal) => {
                 fail!(from origin, with NotifierOpenError::Interrupt,
@@ -169,6 +166,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn has_ownership(&self) -> bool {
+        self.sender.has_ownership()
+    }
+
+    fn acquire_ownership(&self) {
+        self.sender.acquire_ownership();
+    }
+
+    fn release_ownership(&self) {
+        self.sender.release_ownership();
     }
 }
 
@@ -289,6 +298,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         // create named Pipe
         let full_path = config.path_for(name);
         let receiver = match NamedPipeBuilder::new(&full_path)
+            .has_ownership(true)
             .creation_mode(CreationMode::CreateExclusive)
             .permission(PIPE_PERMISSIONS)
             .create()
@@ -309,8 +319,6 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                     "{msg} with {config:?} due to an internal error. [{e:?}]");
             }
         };
-        // Receiver needs to remove the named pipe after destruction
-        receiver.acquire_ownership();
 
         Ok(Self {
             name: *name,
@@ -319,6 +327,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn has_ownership(&self) -> bool {
+        self.receiver.has_ownership()
+    }
+
+    fn acquire_ownership(&self) {
+        self.receiver.acquire_ownership();
+    }
+
+    fn release_ownership(&self) {
+        self.receiver.release_ownership();
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {

@@ -103,6 +103,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         })
     }
 
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
+
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         let msg = "Failed to deliver notification";
         match self.semaphore.post() {
@@ -235,6 +247,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
