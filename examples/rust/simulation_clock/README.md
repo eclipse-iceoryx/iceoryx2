@@ -1,24 +1,20 @@
 # Simulation Clock
 
-This example demonstrates the clock abstraction in iceoryx2, how a system can be
-run under a POSIX clock or a simulated clock that is explicitly controlled by
-another process.
+This example demonstrates the clock abstraction in iceoryx2 and shows how a
+system can run using either a POSIX clock or a simulated clock that is
+explicitly controlled by another process.
 
-The example consists of 4 separate processes:
+The example consists of three communicating processes:
 
-- `sender` - sends data to the receiver and with every sent sample it notifies
-  the `monitor` and the `receiver`
-- `receiver` - waits with a timeout of 1s to receive data from the `sender`. If
-  the timeout was hit it sends event id 1 to the monitor, if a sample was
-  received it sends event id 0 to the monitor.
-- `monitor` - monitors with 2 listeners on a waitset if samples are sent,
-  received or if a timeout was missed.
-- `time controller` - controls the clock and explicitly advances the time
-  interactively
+- **`sender`** - Sends a sample to the receiver every second and notifies the
+  monitor whenever a sample is sent.
+- **`receiver`** - Waits up to 2 seconds to receive a sample from the sender. It
+  notifies the monitor with event ID `0` when a sample is received or event ID
+  `1` when the timeout expires.
+- **`monitor`** - Uses a waitset with two listeners to monitor sent and received
+  samples, including receiver timeouts.
 
-## Communication View
-
-```ascii
+```
                 +-----------------------------+
                 | monitor                     |
                 +- - - - - - - - - - - - - - -+
@@ -31,20 +27,15 @@ The example consists of 4 separate processes:
 +- - - - - - - -+  |                          +- - - - - - - -+  |
 |   notifier    | -+------------------------> |   listener    |  |
 |   publisher   | --------------------------> |   subscriber  |  |
-+---------------+         - - - - - -         |   notifier    | -+
-                          :  clock  :         +---------------+
-                          - - - - - -
-
-
-
-                      +-----------------+
-                      | time controller |
-                      +-----------------+
++---------------+                             |   notifier    | -+
+                                              +---------------+
 ```
 
-## Clock View
+A fourth process, the **`time controller`**, controls the simulated clock.
+Instead of relying on the passage of real time, it allows the user to advance
+the clock explicitly.
 
-```ascii
+```
                  +---------------------------+
                  | monitor                   |
                  +- - - - - - - - - - - - - -+
@@ -67,3 +58,52 @@ The example consists of 4 separate processes:
                       | time controller |
                       +-----------------+
 ```
+
+## How to Run
+
+Open four separate terminals and start one process in each.
+
+### Terminal 1: Sender
+
+```
+cargo run --example simulation_clock_sender
+```
+
+### Terminal 2: Receiver
+
+```
+cargo run --example simulation_clock_receiver
+```
+
+### Terminal 3: Monitor
+
+```
+cargo run --example simulation_clock_monitor
+```
+
+### Terminal 4: Time Controller
+
+```
+cargo run --example simulation_clock_time_controller
+```
+
+The sender waits one second between samples and notifies the monitor whenever a
+sample is sent. The receiver waits up to two seconds for the next sample. If no
+sample arrives within that time, it reports a timeout. The monitor observes the
+notifications from both processes and reports whether samples were sent,
+received, or missed.
+
+Using the time controller, you can advance the simulated clock in discrete
+steps. For example, advancing the clock by one hour causes processes waiting for
+a one-second timeout to wake up, as their deadlines have long since passed.
+
+From the sender's perspective, which is supposed to send a sample every second,
+this looks as if the operating system had not scheduled it for an entire hour.
+
+While this is an extreme example, it illustrates a real-world scenario: under
+heavy system load, the operating system may be unable to schedule every process
+on time. As a result, processes can wake up significantly later than expected.
+
+The simulated clock makes it possible to reproduce such timing scenarios in a
+controlled and predictable way, without having to create the corresponding
+system load or wait for real time to pass.
