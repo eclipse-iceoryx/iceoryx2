@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 use core::time::Duration;
 
 use iceoryx2_bb_posix::barrier::BarrierBuilder;
@@ -81,15 +82,13 @@ fn create_time_controller_config() -> TimeControllerConfig {
 }
 
 fn cleanup_clock_state(name: &FileName, config: &TimeControllerConfig) {
-    match <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(
-        name,
-    )
-    .config(config.get_storage_config())
-    .open(AccessMode::ReadWrite)
+    if let Ok(s) =
+        <Storage<SimulationClockState> as DynamicStorage<SimulationClockState>>::Builder::new(name)
+            .config(config.get_storage_config())
+            .open(AccessMode::ReadWrite)
     {
-        Ok(s) => s.acquire_ownership(),
-        Err(_) => {}
-    };
+        s.acquire_ownership();
+    }
 }
 
 #[test]
@@ -636,12 +635,12 @@ fn concurrent_time_controller_creation_succeeds_once() {
             s.thread_builder().spawn(|| {
                 barrier.wait();
                 for _ in 0..NUMBER_OF_ITERATIONS {
-                    let time_controller =
+                    if let Ok(time_controller) =
                         SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
                             .config(test.config())
-                            .create_time_controller();
-                    if time_controller.is_ok() {
-                        time_controllers.push(time_controller.unwrap());
+                            .create_time_controller()
+                    {
+                        time_controllers.push(time_controller);
                     }
                 }
             })?;
@@ -650,12 +649,12 @@ fn concurrent_time_controller_creation_succeeds_once() {
             s.thread_builder().spawn(|| {
                 barrier.wait();
                 for _ in 0..NUMBER_OF_ITERATIONS {
-                    let time_controller =
+                    if let Ok(time_controller) =
                         SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
                             .config(test.config())
-                            .open_or_create_time_controller();
-                    if time_controller.is_ok() {
-                        time_controllers.push(time_controller.unwrap());
+                            .open_or_create_time_controller()
+                    {
+                        time_controllers.push(time_controller);
                     }
                 }
             })?;
@@ -695,12 +694,12 @@ fn concurrent_time_controller_opening_succeeds_once() {
             s.thread_builder().spawn(|| {
                 barrier.wait();
                 for _ in 0..NUMBER_OF_ITERATIONS {
-                    let time_controller =
+                    if let Ok(time_controller) =
                         SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
                             .config(test.config())
-                            .open_time_controller();
-                    if time_controller.is_ok() {
-                        time_controllers.push(time_controller.unwrap());
+                            .open_time_controller()
+                    {
+                        time_controllers.push(time_controller);
                     }
                 }
             })?;

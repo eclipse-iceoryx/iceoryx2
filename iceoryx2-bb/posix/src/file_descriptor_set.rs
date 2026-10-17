@@ -259,7 +259,6 @@ impl FileDescriptorSet {
         event: FileEvent,
         fd_callback: F,
     ) -> Result<usize, FileDescriptorSetWaitError> {
-        println!("file_descriptor_set");
         let mut raw_timeout = timeout.as_timeval();
         self.wait(&mut raw_timeout, event, fd_callback)
     }

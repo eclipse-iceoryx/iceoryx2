@@ -490,7 +490,7 @@ impl<E: Event> SimulationClock<E> {
         generation_counter: u64,
     ) -> Result<u32, ()> {
         let timepoint = ScheduledTimepoint {
-            trigger_name: listener_name.clone(),
+            trigger_name: *listener_name,
             timeout_in_ns_after_creation: timeout.as_nanos() as u64, // TODO: make u128?
         };
 
@@ -537,11 +537,11 @@ where
         match guard {
             ScheduleOnHandle::TranslatedTimeout(_) => {
                 // timeout has already expired
-                return Ok(());
+                Ok(())
             }
             ScheduleOnHandle::Guard(_g) => {
                 match listener.blocking_wait(&mut |_| {}) {
-                    Ok(_) => return Ok(()),
+                    Ok(_) => Ok(()),
                     Err(_) => {
                         // TODO: distinct errors
                         fail!(from self, with ClockBlockingSleepError::InternalError, "");
