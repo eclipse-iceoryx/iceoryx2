@@ -33,4 +33,5 @@ mod serialize_trait_tests;
 mod shared_memory_trait_tests;
 mod shm_allocator_trait_tests;
 mod static_storage_trait_tests;
+mod trigger_trait_tests;
 mod zero_copy_connection_trait_tests;
