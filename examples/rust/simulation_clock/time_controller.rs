@@ -54,9 +54,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
     let node = NodeBuilder::new().create::<ipc_simulated_clock::Service>()?;
-    let time_controller = node.time_controller()?;
-    let mut waiting_time_in_ms = 100.0f32;
 
+    // Acquire the time controller to explicitly advance the clock. This is only possible if the
+    // `Service::Clock` is a `SteppedClock` like the simulation clock.
+    let time_controller = node.time_controller()?;
+
+    let mut waiting_time_in_ms = 100.0f32;
     println!("type 'q' or 'e' to exit");
     loop {
         match prompt_for_next_timeout(node.now()?, waiting_time_in_ms)? {
@@ -64,6 +67,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             PromptResult::Exit => break,
         }
 
+        /// Advances the time by the user given waiting_time_in_ms.
         time_controller.advance(Duration::from_secs_f32(waiting_time_in_ms / 1000.0));
     }
 
