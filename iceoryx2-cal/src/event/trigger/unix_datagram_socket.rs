@@ -158,6 +158,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
             _data_2: PhantomData,
         })
     }
+
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
 }
 
 #[derive(Debug)]
@@ -301,6 +313,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {

@@ -77,6 +77,18 @@ impl<
         unimplemented!()
     }
 
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
+
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
         unimplemented!()
     }
@@ -113,6 +125,18 @@ impl<
         _mgmt: &Mgmt,
     ) -> Result<Self, NotifierOpenError> {
         unimplemented!()
+    }
+
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
     }
 }
 

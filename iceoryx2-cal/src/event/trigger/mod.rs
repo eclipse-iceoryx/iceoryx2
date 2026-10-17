@@ -31,6 +31,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
 
+pub mod named_pipe;
 pub mod semaphore;
 pub mod socket_pair;
 pub mod stub;
@@ -99,6 +100,9 @@ pub trait WaiterInterface<
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
     fn empty_buffer(&self) -> Result<(), ListenerWaitError>;
     fn clock(&self) -> &dyn ClockNow;
+    fn has_ownership(&self) -> bool;
+    fn acquire_ownership(&self);
+    fn release_ownership(&self);
 }
 
 pub trait HandlerInterface<
@@ -113,4 +117,7 @@ pub trait HandlerInterface<
         mgmt: &Mgmt,
     ) -> Result<Self, NotifierOpenError>;
     fn notify(&self) -> Result<(), NotifierNotifyError>;
+    fn has_ownership(&self) -> bool;
+    fn acquire_ownership(&self);
+    fn release_ownership(&self);
 }

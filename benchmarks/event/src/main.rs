@@ -16,6 +16,9 @@ use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::thread::ThreadBuilder;
 
+mod named_pipe_service;
+use named_pipe_service::NamedPipeEventService;
+
 fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error::Error>> {
     let service_name_a2b = ServiceName::new("a2b")?;
     let service_name_b2a = ServiceName::new("b2a")?;
@@ -133,6 +136,9 @@ struct Args {
     /// Run benchmark for the process local setup
     #[clap(long)]
     bench_local: bool,
+    /// Run benchmark with named pipe events
+    #[clap(long)]
+    bench_pipe: bool,
     /// The greatest supported EventId
     #[clap(short, long, default_value_t = EVENT_ID_MAX_VALUE)]
     max_event_id: usize,
@@ -173,6 +179,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     if args.bench_local || args.bench_all {
         perform_benchmark::<local::Service>(&args)?;
         perform_benchmark::<local_threadsafe::Service>(&args)?;
+        at_least_one_benchmark_did_run = true;
+    }
+
+    if args.bench_pipe || args.bench_all {
+        perform_benchmark::<NamedPipeEventService>(&args)?;
         at_least_one_benchmark_did_run = true;
     }
 

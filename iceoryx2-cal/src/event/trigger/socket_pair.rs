@@ -114,6 +114,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         })
     }
 
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
+
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to send notification";
         match self.sender.try_send(&[0u8]) {
@@ -272,6 +284,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
