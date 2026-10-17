@@ -65,20 +65,6 @@ fn validate_namespace(namespace: &str) -> Result<(), NameError> {
     Ok(())
 }
 
-/// Checks a string against the ROS 2 topic name grammar: a non-empty,
-/// `/`-separated path of name tokens, either absolute or relative.
-fn validate_topic(topic: &str) -> Result<(), NameError> {
-    let origin = origin!("validate_topic");
-    if topic.is_empty() {
-        fail!(from origin, with NameError::Empty, "A topic name is empty");
-    }
-    let path = topic.strip_prefix('/').unwrap_or(topic);
-    if path.is_empty() || !all_segments_valid(path) {
-        fail!(from origin, with NameError::InvalidToken, "Topic name '{}' has a segment that is not a name token", topic);
-    }
-    Ok(())
-}
-
 /// Checks a string against the ROS 2 type name grammar, `package/kind/Type`
 /// with `kind` one of `msg`, `srv` and `action`, where `package` and `Type`
 /// are each a valid name token.
@@ -206,10 +192,61 @@ impl NodeNamespace {
     }
 }
 
+/// A name of the grammar ROS 2 topics and services share: a non-empty,
+/// `/`-separated path of name tokens, either absolute (leading `/`) or
+/// relative.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+struct TopicOrServiceName(Cow<'static, CStr>);
+
+impl TopicOrServiceName {
+    fn new(name: &str) -> Result<Self, NameError> {
+        let origin = origin!("TopicOrServiceName::new");
+        if name.is_empty() {
+            fail!(from origin, with NameError::Empty, "A topic or service name is empty");
+        }
+        let path = name.strip_prefix('/').unwrap_or(name);
+        if path.is_empty() || !all_segments_valid(path) {
+            fail!(from origin, with NameError::InvalidToken, "Name '{}' has a segment that is not a name token", name);
+        }
+        Ok(Self(owned(name)))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is well-formed.
+    unsafe fn new_unchecked(name: &str) -> Self {
+        Self(owned(name))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is well-formed.
+    unsafe fn from_c_str_unchecked(name: &CStr) -> Self {
+        Self(Cow::Owned(name.to_owned()))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is well-formed.
+    const unsafe fn from_c_str_static_unchecked(name: &'static CStr) -> Self {
+        Self(Cow::Borrowed(name))
+    }
+
+    fn as_c_str(&self) -> &CStr {
+        &self.0
+    }
+
+    fn as_str(&self) -> &str {
+        self.0
+            .to_str()
+            .expect("a validated ROS 2 name is valid UTF-8")
+    }
+}
+
 /// A ROS 2 topic name: a non-empty, `/`-separated path of name tokens, either
 /// absolute (leading `/`) or relative.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct TopicName(Cow<'static, CStr>);
+pub struct TopicName(TopicOrServiceName);
 
 impl TopicName {
     /// Creates a new ROS 2 topic name from the given string.
@@ -224,13 +261,13 @@ impl TopicName {
     pub fn new(topic: &str) -> Result<Self, NameError> {
         let origin = origin!("TopicName::new");
 
-        fail!(from origin,
-            when validate_topic(topic),
+        let name = fail!(from origin,
+            when TopicOrServiceName::new(topic),
             "Failed to create topic name from '{}'",
             topic
         );
 
-        Ok(Self(owned(topic)))
+        Ok(Self(name))
     }
 
     /// Wraps an already-valid topic name without re-checking it.
@@ -240,7 +277,7 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn new_unchecked(topic: &str) -> Self {
-        Self(owned(topic))
+        Self(unsafe { TopicOrServiceName::new_unchecked(topic) })
     }
 
     /// Wraps an already-valid topic name from a C string without re-checking it.
@@ -250,7 +287,7 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn from_c_str_unchecked(topic: &CStr) -> Self {
-        Self(Cow::Owned(topic.to_owned()))
+        Self(unsafe { TopicOrServiceName::from_c_str_unchecked(topic) })
     }
 
     /// Wraps a static, already-valid topic name at compile time.
@@ -260,18 +297,70 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub const unsafe fn from_c_str_static_unchecked(topic: &'static CStr) -> Self {
-        Self(Cow::Borrowed(topic))
+        Self(unsafe { TopicOrServiceName::from_c_str_static_unchecked(topic) })
     }
 
     pub fn as_c_str(&self) -> &CStr {
-        &self.0
+        self.0.as_c_str()
     }
 
     /// The name as a string slice.
     pub fn as_str(&self) -> &str {
-        self.0
-            .to_str()
-            .expect("a validated ROS 2 name is valid UTF-8")
+        self.0.as_str()
+    }
+}
+
+/// A ROS 2 service name: a non-empty, `/`-separated path of name tokens,
+/// either absolute (leading `/`) or relative.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ServiceName(TopicOrServiceName);
+
+#[allow(dead_code)] // the request-response endpoints follow
+impl ServiceName {
+    /// Creates a new ROS 2 service name from the given string.
+    ///
+    /// A valid service name is a non-empty, `/`-separated path of name
+    /// tokens, either absolute (starting with `/`) or relative.
+    pub fn new(service: &str) -> Result<Self, NameError> {
+        let origin = origin!("ServiceName::new");
+
+        let name = fail!(from origin,
+            when TopicOrServiceName::new(service),
+            "Failed to create service name from '{}'",
+            service
+        );
+
+        Ok(Self(name))
+    }
+
+    /// Wraps an already-valid service name without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `service` is a well-formed ROS 2 service
+    /// name e.g. it came straight from an rcl graph query.
+    pub unsafe fn new_unchecked(service: &str) -> Self {
+        Self(unsafe { TopicOrServiceName::new_unchecked(service) })
+    }
+
+    /// Wraps an already-valid service name from a C string without
+    /// re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `service` is a well-formed ROS 2 service
+    /// name e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(service: &CStr) -> Self {
+        Self(unsafe { TopicOrServiceName::from_c_str_unchecked(service) })
+    }
+
+    pub fn as_c_str(&self) -> &CStr {
+        self.0.as_c_str()
+    }
+
+    /// The name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 
@@ -390,6 +479,25 @@ mod tests {
                 TopicName::new(topic),
                 Err(NameError::InvalidToken),
                 "{topic}"
+            );
+        }
+    }
+
+    #[test]
+    fn service_accepts_valid_services() {
+        for service in ["/add_two_ints", "/ns/add_two_ints", "add_two_ints"] {
+            assert!(ServiceName::new(service).is_ok(), "{service}");
+        }
+    }
+
+    #[test]
+    fn service_rejects_invalid_services() {
+        assert_eq!(ServiceName::new(""), Err(NameError::Empty));
+        for service in ["/", "/add_two_ints/", "/0add", "with-dash"] {
+            assert_eq!(
+                ServiceName::new(service),
+                Err(NameError::InvalidToken),
+                "{service}"
             );
         }
     }

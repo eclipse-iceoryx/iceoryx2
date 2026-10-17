@@ -13,13 +13,14 @@
 use std::ffi::CStr;
 
 use r2r_rcl::{
-    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_publishers_info_by_topic,
-    rcl_get_subscriptions_info_by_topic, rcl_get_topic_names_and_types,
-    rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
-    rcl_get_zero_initialized_node, rcl_guard_condition_t, rcl_init, rcl_init_options_fini,
-    rcl_init_options_init, rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini,
-    rcl_node_get_default_options, rcl_node_get_graph_guard_condition, rcl_node_init, rcl_node_t,
-    rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator, rcutils_string_array_t,
+    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_count_clients, rcl_count_services,
+    rcl_get_publishers_info_by_topic, rcl_get_subscriptions_info_by_topic,
+    rcl_get_topic_names_and_types, rcl_get_zero_initialized_context,
+    rcl_get_zero_initialized_init_options, rcl_get_zero_initialized_node, rcl_guard_condition_t,
+    rcl_init, rcl_init_options_fini, rcl_init_options_init, rcl_names_and_types_fini,
+    rcl_names_and_types_t, rcl_node_fini, rcl_node_get_default_options,
+    rcl_node_get_graph_guard_condition, rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown,
+    rcutils_get_default_allocator, rcutils_string_array_t,
     rmw_get_zero_initialized_topic_endpoint_info_array, rmw_topic_endpoint_info_array_fini,
     rmw_topic_endpoint_info_array_t,
 };
@@ -28,7 +29,7 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::{fail, origin, warn};
 
 use crate::qos::QosProfile;
-use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, qos};
+use crate::rcl::{NodeName, NodeNamespace, RclError, ServiceName, TopicName, TypeName, qos};
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -124,6 +125,46 @@ impl RclNode {
 
             Ok(names_and_types)
         }
+    }
+
+    /// The number of service servers of `service` on the graph.
+    #[allow(dead_code)] // the request-response endpoints follow
+    pub fn service_count(&self, service: &ServiceName) -> Result<usize, GraphError> {
+        let origin = origin!("RclNode::service_count");
+
+        let mut count = 0;
+        let ret =
+            unsafe { rcl_count_services(self.node.get(), service.as_c_str().as_ptr(), &mut count) };
+        if ret != RCL_RET_OK as rcl_ret_t {
+            fail!(
+                from origin,
+                with GraphError::Query,
+                "Failed to count the servers of service '{}': {}",
+                service.as_str(),
+                RclError::from(ret)
+            );
+        }
+        Ok(count)
+    }
+
+    /// The number of service clients of `service` on the graph.
+    #[allow(dead_code)] // the request-response endpoints follow
+    pub fn client_count(&self, service: &ServiceName) -> Result<usize, GraphError> {
+        let origin = origin!("RclNode::client_count");
+
+        let mut count = 0;
+        let ret =
+            unsafe { rcl_count_clients(self.node.get(), service.as_c_str().as_ptr(), &mut count) };
+        if ret != RCL_RET_OK as rcl_ret_t {
+            fail!(
+                from origin,
+                with GraphError::Query,
+                "Failed to count the clients of service '{}': {}",
+                service.as_str(),
+                RclError::from(ret)
+            );
+        }
+        Ok(count)
     }
 
     /// The publishers on `topic` known to the graph.
