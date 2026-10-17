@@ -95,7 +95,7 @@ impl Ros2Adapter {
         for type_name in &config.preload_types {
             fail!(
                 from origin,
-                when typesupport::load(type_name.as_str()),
+                when typesupport::get::<typesupport::MessageKind>(type_name.as_str()),
                 with CreationError::TypeSupport,
                 "Failed to preload typesupport for type '{}'", type_name.as_str()
             );
@@ -212,7 +212,7 @@ impl Adapter for Ros2Adapter {
         let type_name = types.type_name.as_str();
         let type_support = fail!(
             from origin,
-            when typesupport::load(type_name),
+            when typesupport::get::<typesupport::MessageKind>(type_name),
             with OpenError::TypeSupport,
             "Failed to load typesupport for type '{}'", type_name
         );

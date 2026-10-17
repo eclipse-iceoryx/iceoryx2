@@ -23,7 +23,7 @@ use r2r_rcl::{
     rmw_serialized_message_t,
 };
 
-use crate::typesupport::TypeSupport;
+use crate::typesupport::MessageTypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TranscodeFailure {
@@ -46,7 +46,7 @@ impl core::error::Error for TranscodeFailure {}
 #[derive(Debug)]
 pub struct CdrTranscoder {
     pub(super) type_name: String,
-    pub(super) type_support: Rc<TypeSupport>,
+    pub(super) type_support: Rc<MessageTypeSupport>,
     /// The layout of the type's C struct.
     pub(super) layout: Layout,
 }

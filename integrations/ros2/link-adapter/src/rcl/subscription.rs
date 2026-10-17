@@ -17,8 +17,7 @@ use r2r_rcl::{
     RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, rcl_get_zero_initialized_subscription,
     rcl_serialized_message_t, rcl_subscription_fini, rcl_subscription_get_default_options,
     rcl_subscription_get_publisher_count, rcl_subscription_init,
-    rcl_subscription_set_on_new_message_callback, rcl_take_serialized_message, rcutils_allocator_t,
-    rmw_message_info_t,
+    rcl_subscription_set_on_new_message_callback, rcl_take_serialized_message, rmw_message_info_t,
 };
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
@@ -27,7 +26,8 @@ use iceoryx2_log::{fail, origin};
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
 use crate::rcl::{Gid, RclError, TopicName, qos};
-use crate::typesupport::TypeSupport;
+use crate::rcutils::LoanAllocator;
+use crate::typesupport::MessageTypeSupport;
 
 /// A callback invoked with the number of newly-arrived messages. The RMW
 /// calls it from a middleware thread.
@@ -110,14 +110,18 @@ impl From<&rmw_message_info_t> for MessageInfo {
 pub struct RclSubscriptionBuilder<'a> {
     node: Rc<RclNode>,
     topic: &'a TopicName,
-    type_support: Rc<TypeSupport>,
+    type_support: Rc<MessageTypeSupport>,
     qos: QosProfile,
 }
 
 impl<'a> RclSubscriptionBuilder<'a> {
     /// Begins building a subscription on `node` for the given topic and
     /// typesupport.
-    pub fn new(node: Rc<RclNode>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
+    pub fn new(
+        node: Rc<RclNode>,
+        topic: &'a TopicName,
+        type_support: Rc<MessageTypeSupport>,
+    ) -> Self {
         Self {
             node,
             topic,
@@ -172,7 +176,7 @@ pub struct RclSubscription {
     callback: Option<Box<NewMessageCallback>>,
     node: Rc<RclNode>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
-    _type_support: Rc<TypeSupport>,
+    _type_support: Rc<MessageTypeSupport>,
 }
 
 impl core::fmt::Debug for RclSubscription {
@@ -234,12 +238,12 @@ impl RclSubscription {
     {
         let origin = origin!("RclSubscription::take_into");
 
-        let mut loan: Option<F> = Some(loan);
+        let mut loan = LoanAllocator::new(loan);
         let mut message = rcl_serialized_message_t {
             buffer: core::ptr::null_mut(),
             buffer_length: 0,
             buffer_capacity: 0,
-            allocator: loan_allocator::<F>(&mut loan),
+            allocator: loan.allocator(),
         };
         let mut message_info = rmw_message_info_t::default();
 
@@ -255,9 +259,7 @@ impl RclSubscription {
             return Ok(None);
         }
         if ret != RCL_RET_OK as i32 {
-            // A consumed loan closure means the buffer request was declined,
-            // which surfaces as an allocation error.
-            if loan.is_none() {
+            if loan.declined() {
                 fail!(from origin,
                     with TakeError::LoanDeclined,
                     "Failed to take serialized message into loaned buffer"
@@ -319,55 +321,4 @@ impl Drop for RclSubscription {
 unsafe extern "C" fn on_new_message_trampoline(user_data: *const c_void, number_of_events: usize) {
     let callback = unsafe { &*(user_data as *const NewMessageCallback) };
     callback(number_of_events);
-}
-
-/// An `rcutils` allocator that satisfies the single grow-from-empty request
-/// of a take by handing out the loaned buffer.
-fn loan_allocator<F: FnOnce(usize) -> Option<*mut u8>>(
-    loan: &mut Option<F>,
-) -> rcutils_allocator_t {
-    unsafe extern "C" fn allocate<F: FnOnce(usize) -> Option<*mut u8>>(
-        size: usize,
-        state: *mut c_void,
-    ) -> *mut c_void {
-        // Recover the provided loan function and call it to get the buffer
-        // with the correct size in iceoryx2 shared memory.
-        let loan = unsafe { &mut *(state as *mut Option<F>) };
-        match loan.take().and_then(|loan| loan(size)) {
-            Some(buffer) => buffer as *mut c_void,
-            None => core::ptr::null_mut(),
-        }
-    }
-
-    unsafe extern "C" fn reallocate<F: FnOnce(usize) -> Option<*mut u8>>(
-        pointer: *mut c_void,
-        size: usize,
-        state: *mut c_void,
-    ) -> *mut c_void {
-        if !pointer.is_null() {
-            // Growing an already-loaned buffer is not possible.
-            return core::ptr::null_mut();
-        }
-        unsafe { allocate::<F>(size, state) }
-    }
-
-    unsafe extern "C" fn deallocate(_pointer: *mut c_void, _state: *mut c_void) {
-        // The loaned buffer stays owned by the lender.
-    }
-
-    unsafe extern "C" fn zero_allocate(
-        _number_of_elements: usize,
-        _size_of_element: usize,
-        _state: *mut c_void,
-    ) -> *mut c_void {
-        core::ptr::null_mut()
-    }
-
-    rcutils_allocator_t {
-        allocate: Some(allocate::<F>),
-        deallocate: Some(deallocate),
-        reallocate: Some(reallocate::<F>),
-        zero_allocate: Some(zero_allocate),
-        state: loan as *mut Option<F> as *mut c_void,
-    }
 }

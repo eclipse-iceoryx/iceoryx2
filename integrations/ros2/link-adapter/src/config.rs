@@ -75,8 +75,8 @@ impl From<rcl::TopicName> for TopicName {
     }
 }
 
-/// A ROS 2 message type name of the form `package/msg/Message`, e.g.
-/// `geometry_msgs/msg/Twist`.
+/// A ROS 2 type name of the form `package/msg/Message`, `package/srv/Service`
+/// or `package/action/Action`, e.g. `geometry_msgs/msg/Twist`.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct TypeName(rcl::TypeName);

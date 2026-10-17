@@ -79,8 +79,9 @@ fn validate_topic(topic: &str) -> Result<(), NameError> {
     Ok(())
 }
 
-/// Checks a string against the ROS 2 type name grammar: `package/msg/Message`,
-/// where `package` and `Message` are each a valid name token.
+/// Checks a string against the ROS 2 type name grammar, `package/kind/Type`
+/// with `kind` one of `msg`, `srv` and `action`, where `package` and `Type`
+/// are each a valid name token.
 fn validate_type(type_name: &str) -> Result<(), NameError> {
     let origin = origin!("validate_type");
     if type_name.is_empty() {
@@ -89,11 +90,11 @@ fn validate_type(type_name: &str) -> Result<(), NameError> {
     let mut segments = type_name.split('/');
     let well_formed = matches!(
         (segments.next(), segments.next(), segments.next(), segments.next()),
-        (Some(package), Some("msg"), Some(message), None)
-            if is_valid_token(package) && is_valid_token(message)
+        (Some(package), Some("msg" | "srv" | "action"), Some(name), None)
+            if is_valid_token(package) && is_valid_token(name)
     );
     if !well_formed {
-        fail!(from origin, with NameError::InvalidToken, "Type name '{}' is not of the form package/msg/Message", type_name);
+        fail!(from origin, with NameError::InvalidToken, "Type name '{}' is not of the form package/msg/Message, package/srv/Service or package/action/Action", type_name);
     }
     Ok(())
 }
@@ -274,17 +275,18 @@ impl TopicName {
     }
 }
 
-/// A ROS 2 message type name of the form `package/msg/Message`, e.g.
-/// `std_msgs/msg/String`. The `package` and `Message` parts are valid name
-/// tokens.
+/// A ROS 2 type name of the form `package/msg/Message`, `package/srv/Service`
+/// or `package/action/Action`, e.g. `std_msgs/msg/String`. The `package` and
+/// the type parts are valid name tokens.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TypeName(Cow<'static, CStr>);
 
 impl TypeName {
-    /// Creates a new ROS 2 message type name from the given string.
+    /// Creates a new ROS 2 type name from the given string.
     ///
-    /// A valid type name has the form `package/msg/Message`, where `package`
-    /// and `Message` are each a valid name token.
+    /// A valid type name has the form `package/msg/Message`,
+    /// `package/srv/Service` or `package/action/Action`, where `package` and
+    /// the type are each a valid name token.
     pub fn new(type_name: &str) -> Result<Self, NameError> {
         let origin = origin!("TypeName::new");
 
@@ -398,6 +400,9 @@ mod tests {
             "std_msgs/msg/String",
             "geometry_msgs/msg/Twist",
             "my_pkg/msg/Vector3",
+            "example_interfaces/srv/AddTwoInts",
+            "example_interfaces/srv/AddTwoInts_Request",
+            "action_tutorials_interfaces/action/Fibonacci",
         ] {
             assert!(TypeName::new(type_name).is_ok(), "{type_name}");
         }
@@ -409,7 +414,6 @@ mod tests {
         for type_name in [
             "std_msgs/String",
             "std_msgs/msg/String/extra",
-            "std_msgs/srv/Thing",
             "/msg/String",
             "std_msgs/msg/",
             "std_msgs/msg/0String",

@@ -61,6 +61,11 @@ pub mod translator;
 #[allow(unsafe_code)]
 pub(crate) mod rcl;
 #[allow(unsafe_code)]
+pub(crate) mod rcutils;
+#[allow(unsafe_code)]
+#[allow(dead_code)] // the request-response endpoints follow
+pub(crate) mod ros_message;
+#[allow(unsafe_code)]
 pub(crate) mod typesupport;
 
 pub use adapter::Ros2Adapter;
