@@ -132,6 +132,11 @@
 //!         }
 //!         Err(NodeWaitFailure::Interrupt) => {
 //!             println!("Someone send an interrupt signal ...");
+//!             break;
+//!         }
+//!         Err(e) => {
+//!             println!("Failure while waiting. [{e:?}]");
+//!             break;
 //!         }
 //!     }
 //! }
