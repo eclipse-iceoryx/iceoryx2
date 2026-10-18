@@ -67,8 +67,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             PromptResult::Exit => break,
         }
 
-        /// Advances the time by the user given waiting_time_in_ms.
-        time_controller.advance(Duration::from_secs_f32(waiting_time_in_ms / 1000.0));
+        // Advances the time by the user given waiting_time_in_ms.
+        time_controller.advance(Duration::from_secs_f32(waiting_time_in_ms / 1000.0))?;
     }
 
     Ok(())

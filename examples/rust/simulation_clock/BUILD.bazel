@@ -47,6 +47,7 @@ rust_binary(
         "//examples/rust:examples-common",
         "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-cal",
         "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
@@ -60,6 +61,7 @@ rust_binary(
         "//examples/rust:examples-common",
         "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-cal",
         "//iceoryx2-log/log:iceoryx2-log",
     ],
 )

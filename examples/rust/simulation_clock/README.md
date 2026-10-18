@@ -6,15 +6,15 @@ explicitly controlled by another process.
 
 The example consists of three communicating processes:
 
-- **`sender`** - Sends a sample to the receiver every second and notifies the
+* **`sender`** - Sends a sample to the receiver every second and notifies the
   monitor whenever a sample is sent.
-- **`receiver`** - Waits up to 2 seconds to receive a sample from the sender. It
+* **`receiver`** - Waits up to 2 seconds to receive a sample from the sender. It
   notifies the monitor with event ID `0` when a sample is received or event ID
   `1` when the timeout expires.
-- **`monitor`** - Uses a waitset with two listeners to monitor sent and received
+* **`monitor`** - Uses a waitset with two listeners to monitor sent and received
   samples, including receiver timeouts.
 
-```
+```ascii
                 +-----------------------------+
                 | monitor                     |
                 +- - - - - - - - - - - - - - -+
@@ -35,7 +35,7 @@ A fourth process, the **`time controller`**, controls the simulated clock.
 Instead of relying on the passage of real time, it allows the user to advance
 the clock explicitly.
 
-```
+```ascii
                  +---------------------------+
                  | monitor                   |
                  +- - - - - - - - - - - - - -+
@@ -75,7 +75,7 @@ cargo run --example simulation_clock_sender real
 
 ### Terminal 2: Receiver
 
-```
+```sh
 # simulation clock
 cargo run --example simulation_clock_receiver sim
 
@@ -85,7 +85,7 @@ cargo run --example simulation_clock_receiver real
 
 ### Terminal 3: Monitor
 
-```
+```sh
 # simulation clock
 cargo run --example simulation_clock_monitor sim
 
@@ -95,7 +95,7 @@ cargo run --example simulation_clock_monitor real
 
 ### Terminal 4: Time Controller
 
-```
+```sh
 cargo run --example simulation_clock_time_controller
 ```
 
