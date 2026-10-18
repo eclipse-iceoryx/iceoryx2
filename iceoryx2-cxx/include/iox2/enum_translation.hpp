@@ -2163,6 +2163,8 @@ constexpr auto from<int, iox2::ListenerWaitError>(const int value) noexcept -> i
         return iox2::ListenerWaitError::InternalFailure;
     case iox2_listener_wait_error_e_CLOCK_SCHEDULE_CAPACITY_EXCEEDED:
         return iox2::ListenerWaitError::ClockScheduleCapacityExceeded;
+    case iox2_listener_wait_error_e_NOTIFICATION_ERROR:
+        return iox2::ListenerWaitError::NotificationError;
     }
 
     IOX2_UNREACHABLE();
@@ -2180,6 +2182,8 @@ constexpr auto from<iox2::ListenerWaitError, iox2_listener_wait_error_e>(const i
         return iox2_listener_wait_error_e_INTERNAL_FAILURE;
     case iox2::ListenerWaitError::ClockScheduleCapacityExceeded:
         return iox2_listener_wait_error_e_CLOCK_SCHEDULE_CAPACITY_EXCEEDED;
+    case iox2::ListenerWaitError::NotificationError:
+        return iox2_listener_wait_error_e_NOTIFICATION_ERROR;
     }
 
     IOX2_UNREACHABLE();
@@ -2843,6 +2847,8 @@ constexpr auto from<int, iox2::WaitSetRunError>(const int value) noexcept -> iox
         return iox2::WaitSetRunError::InsufficientCapacity;
     case iox2_waitset_run_error_e_INSUFFICIENT_RESOURCES:
         return iox2::WaitSetRunError::InsufficientResources;
+    case iox2_waitset_run_error_e_ATTACHMENT_FAILED:
+        return iox2::WaitSetRunError::AttachmentFailed;
     }
 
     IOX2_UNREACHABLE();
@@ -2868,6 +2874,8 @@ constexpr auto from<iox2::WaitSetRunError, iox2_waitset_run_error_e>(const iox2:
         return iox2_waitset_run_error_e_INSUFFICIENT_CAPACITY;
     case iox2::WaitSetRunError::InsufficientResources:
         return iox2_waitset_run_error_e_INSUFFICIENT_RESOURCES;
+    case iox2::WaitSetRunError::AttachmentFailed:
+        return iox2_waitset_run_error_e_ATTACHMENT_FAILED;
     }
 
     IOX2_UNREACHABLE();

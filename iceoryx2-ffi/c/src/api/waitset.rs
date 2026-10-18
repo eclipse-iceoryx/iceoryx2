@@ -42,6 +42,7 @@ pub enum iox2_waitset_run_error_e {
     INSUFFICIENT_CAPACITY,
     INSUFFICIENT_RESOURCES,
     INTERRUPT,
+    ATTACHMENT_FAILED,
 }
 
 impl IntoCInt for WaitSetRunError {
@@ -61,6 +62,7 @@ impl IntoCInt for WaitSetRunError {
             WaitSetRunError::InsufficientCapacity => {
                 iox2_waitset_run_error_e::INSUFFICIENT_CAPACITY
             }
+            WaitSetRunError::AttachmentFailed => iox2_waitset_run_error_e::ATTACHMENT_FAILED,
         }) as c_int
     }
 }

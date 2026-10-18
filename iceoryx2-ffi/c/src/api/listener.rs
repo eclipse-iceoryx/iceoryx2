@@ -41,6 +41,7 @@ pub enum iox2_listener_wait_error_e {
     INTERNAL_FAILURE,
     INTERRUPT_SIGNAL,
     CLOCK_SCHEDULE_CAPACITY_EXCEEDED,
+    NOTIFICATION_ERROR,
 }
 
 impl IntoCInt for ListenerWaitError {
@@ -52,6 +53,7 @@ impl IntoCInt for ListenerWaitError {
             ListenerWaitError::ClockScheduleCapacityExceeded => {
                 iox2_listener_wait_error_e::CLOCK_SCHEDULE_CAPACITY_EXCEEDED
             }
+            ListenerWaitError::NotificationError => iox2_listener_wait_error_e::NOTIFICATION_ERROR,
         }) as c_int
     }
 }

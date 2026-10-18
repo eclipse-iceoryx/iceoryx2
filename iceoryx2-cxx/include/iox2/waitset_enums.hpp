@@ -67,6 +67,8 @@ enum class WaitSetRunError : uint8_t {
     InsufficientCapacity,
     /// Insufficient resources to add another attachment to the [`WaitSet`].
     InsufficientResources,
+    /// An attachment failed.
+    AttachmentFailed,
 };
 
 } // namespace iox2

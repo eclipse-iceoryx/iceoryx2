@@ -62,6 +62,7 @@ pub enum ReactorWaitError {
     CapacityExceeded,
     InsufficientResources,
     InternalError,
+    ListenerAttachmentError,
 }
 
 impl core::fmt::Display for ReactorWaitError {

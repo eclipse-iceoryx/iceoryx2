@@ -88,6 +88,7 @@ pub enum ListenerWaitError {
     InternalFailure,
     ClockScheduleCapacityExceeded,
     InterruptSignal,
+    NotificationError,
 }
 
 impl core::fmt::Display for ListenerWaitError {
