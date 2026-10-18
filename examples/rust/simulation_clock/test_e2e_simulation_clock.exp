@@ -22,14 +22,24 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-### spawn cargo run --example publish_subscribe_publisher
-### set id_publisher $spawn_id
-### 
-### spawn cargo run --example publish_subscribe_subscriber
-### 
-### #### Test Assertion
-### 
-### expect_output_from $id_publisher "Send sample*"
-### expect_output "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }*"
-### 
-### show_test_passed
+spawn cargo run --example simulation_clock_sender -- real
+set id_sender $spawn_id
+
+spawn cargo run --example simulation_clock_receiver -- real
+set id_receiver $spawn_id
+
+spawn cargo run --example simulation_clock_monitor -- real
+set id_monitor $spawn_id
+
+spawn cargo run --example simulation_clock_time_controller
+set id_time_controller $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_sender "*Send sample*"
+expect_output_from $id_receiver "*received*sample*"
+expect_output_from $id_monitor "*samples were received"
+expect_output_from $id_monitor "*sample was sent"
+expect_output_from $id_time_controller "*enter time advance in ms*"
+
+show_test_passed

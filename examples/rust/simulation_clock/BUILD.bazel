@@ -13,9 +13,9 @@
 load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 
 rust_binary(
-    name = "publisher",
+    name = "sender",
     srcs = [
-        "publisher.rs",
+        "sender.rs",
     ],
     deps = [
         "//examples/rust:examples-common",
@@ -26,9 +26,9 @@ rust_binary(
 )
 
 rust_binary(
-    name = "subscriber",
+    name = "receiver",
     srcs = [
-        "subscriber.rs",
+        "receiver.rs",
     ],
     deps = [
         "//examples/rust:examples-common",
