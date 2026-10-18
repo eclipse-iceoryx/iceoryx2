@@ -124,6 +124,14 @@ fn time_controller_can_be_opened_once() {
         .config(test.config())
         .create_time_controller()
         .unwrap();
+
+    // add additional clock that opens the clock internals so that OSes like windows, that remove
+    // all shm's when no process is using them, also pass the test
+    let _clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
+        .config(test.config())
+        .open_clock()
+        .unwrap();
+
     drop(time_controller);
 
     let sut1 = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())

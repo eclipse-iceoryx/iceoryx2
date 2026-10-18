@@ -525,7 +525,7 @@ where
             Ok(l) => l,
             Err(e) => {
                 fail!(from self, with ClockBlockingSleepError::ScheduleTimeoutFailed,
-                    "{msg} because the timeout could the listener could not be created: {e:?}");
+                    "{msg} because the listener could not be created: {e:?}");
             }
         };
         let guard = fail!(from self, when self.schedule_on(timeout, &listener_name),
