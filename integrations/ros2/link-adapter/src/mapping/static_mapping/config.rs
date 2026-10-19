@@ -11,27 +11,46 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2_link_backend::service_description::PublishSubscribeSettings;
+use iceoryx2_link_backend::service_description::{
+    PublishSubscribeSettings, RequestResponseSettings,
+};
 use serde::{Deserialize, Serialize};
 
-use crate::config::{TopicName, TypeName};
+use crate::config::{self, TopicName, TypeName};
 use crate::qos::QosProfile;
 
+/// The iceoryx2 side of a topic entry, a publish-subscribe service.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IceoryxSettings {
+pub struct IceoryxPublishSubscribeSettings {
     pub service_name: ServiceName,
     pub payload_type: String,
     /// Defaults to `iceoryx2` defaults if omitted.
-    #[serde(default = "default_settings")]
+    #[serde(default = "default_publish_subscribe_settings")]
     pub settings: PublishSubscribeSettings,
 }
 
-fn default_settings() -> PublishSubscribeSettings {
+fn default_publish_subscribe_settings() -> PublishSubscribeSettings {
     PublishSubscribeSettings::from_config(&iceoryx2::config::Config::default())
 }
 
+/// The iceoryx2 side of a service entry, a request-response service.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RosSettings {
+pub struct IceoryxRequestResponseSettings {
+    pub service_name: ServiceName,
+    pub request_type: String,
+    pub response_type: String,
+    /// Defaults to `iceoryx2` defaults if omitted.
+    #[serde(default = "default_request_response_settings")]
+    pub settings: RequestResponseSettings,
+}
+
+fn default_request_response_settings() -> RequestResponseSettings {
+    RequestResponseSettings::from_config(&iceoryx2::config::Config::default())
+}
+
+/// The ROS 2 side of a topic entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RosTopicSettings {
     pub topic: TopicName,
     #[serde(rename = "type")]
     pub type_name: TypeName,
@@ -43,16 +62,47 @@ pub struct RosSettings {
     pub qos: QosProfile,
 }
 
+/// The ROS 2 side of a service entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Entry {
-    pub iceoryx2: IceoryxSettings,
-    pub ros2: RosSettings,
+pub struct RosServiceSettings {
+    pub service: config::ServiceName,
+    #[serde(rename = "type")]
+    pub type_name: TypeName,
+    /// The QoS of the gateway's client and server on the service. The graph
+    /// does not tell a service's QoS, so it is not checked against remote
+    /// endpoints.
+    #[serde(default)]
+    pub qos: QosProfile,
+}
+
+/// A publish-subscribe service paired with a ROS 2 topic.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicEntry {
+    pub iceoryx2: IceoryxPublishSubscribeSettings,
+    pub ros2: RosTopicSettings,
+}
+
+/// A request-response service paired with a ROS 2 service.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceEntry {
+    pub iceoryx2: IceoryxRequestResponseSettings,
+    pub ros2: RosServiceSettings,
+}
+
+/// One entry of the mapping, told apart by whether `ros2` names a `topic`
+/// or a `service`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Entry {
+    Topic(TopicEntry),
+    Service(ServiceEntry),
 }
 
 /// Configuration schema of a [`StaticMapping`](super::StaticMapping).
 ///
-/// One entry per service and topic pair, loadable from any format serde
-/// supports. e.g. In TOML (showing every field):
+/// One entry per pair of an iceoryx2 service and a ROS 2 topic or service,
+/// loadable from any format serde supports. e.g. In TOML (showing every
+/// field):
 ///
 /// ```toml
 /// [[mapping]]
@@ -74,12 +124,31 @@ pub struct Entry {
 /// ros2.qos.deadline = "100ms"
 /// ros2.qos.lifespan = "1s"
 /// ros2.qos.liveliness_lease_duration = "500ms"
+///
+/// [[mapping]]
+/// iceoryx2.service_name = "AddTwoInts"
+/// iceoryx2.request_type = "example_interfaces/srv/AddTwoInts_Request"
+/// iceoryx2.response_type = "example_interfaces/srv/AddTwoInts_Response"
+/// iceoryx2.settings.max_servers = 2
+/// iceoryx2.settings.max_clients = 8
+/// iceoryx2.settings.max_nodes = 20
+/// iceoryx2.settings.max_active_requests_per_client = 4
+/// iceoryx2.settings.max_response_buffer_size = 2
+/// iceoryx2.settings.max_borrowed_responses_per_pending_response = 2
+/// iceoryx2.settings.max_loaned_requests = 2
+/// iceoryx2.settings.safe_overflow_for_requests = true
+/// iceoryx2.settings.safe_overflow_for_responses = true
+/// iceoryx2.settings.fire_and_forget_requests = false
+/// ros2.service = "/add_two_ints"
+/// ros2.type = "example_interfaces/srv/AddTwoInts"
+/// ros2.qos.reliability = "Reliable"
 /// ```
 ///
-/// Names and types are required. The `settings` table is optional as a
-/// whole and takes the `iceoryx2` configuration's defaults when omitted.
-/// Every `qos` field is optional on its own and takes the ROS 2 system
-/// default when omitted.
+/// Names and types are required. Whether an entry pairs a topic or a
+/// service follows from the `ros2.topic` or `ros2.service` key. The
+/// `settings` table is optional as a whole and takes the `iceoryx2`
+/// configuration's defaults when omitted. Every `qos` field is optional on
+/// its own and takes the ROS 2 system default when omitted.
 ///
 /// Possible QoS values are:
 ///

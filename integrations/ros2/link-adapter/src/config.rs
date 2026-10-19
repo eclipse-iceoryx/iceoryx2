@@ -188,8 +188,8 @@ impl From<rcl::TypeName> for TypeName {
 /// Configuration for the `Ros2Adapter`.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    /// Message types whose typesupport is resolved during backend creation.
-    /// Types left out are resolved on first use instead.
+    /// Message and service types whose typesupport is resolved during
+    /// backend creation. Types left out are resolved on first use instead.
     ///
     /// Types listed here which cannot be resolved cause an error on creation
     /// and thus fails quickly on misconfiguration.
