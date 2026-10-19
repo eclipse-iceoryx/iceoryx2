@@ -3,3 +3,10 @@ iceoryx2.service_name = "Chatter"
 iceoryx2.payload_type = "std_msgs/msg/String"
 ros2.topic = "/chatter"
 ros2.type = "std_msgs/msg/String"
+
+[[mapping]]
+iceoryx2.service_name = "AddTwoInts"
+iceoryx2.request_type = "example_interfaces/srv/AddTwoInts_Request"
+iceoryx2.response_type = "example_interfaces/srv/AddTwoInts_Response"
+ros2.service = "/add_two_ints"
+ros2.type = "example_interfaces/srv/AddTwoInts"

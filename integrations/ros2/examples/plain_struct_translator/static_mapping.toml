@@ -3,3 +3,10 @@ iceoryx2.service_name = "CmdVel"
 iceoryx2.payload_type = "geometry_msgs/msg/Twist"
 ros2.topic = "/cmd_vel"
 ros2.type = "geometry_msgs/msg/Twist"
+
+[[mapping]]
+iceoryx2.service_name = "AddTwoInts"
+iceoryx2.request_type = "example_interfaces/srv/AddTwoInts_Request"
+iceoryx2.response_type = "example_interfaces/srv/AddTwoInts_Response"
+ros2.service = "/add_two_ints"
+ros2.type = "example_interfaces/srv/AddTwoInts"

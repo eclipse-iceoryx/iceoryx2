@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Applications whose services carry the C struct rosidl generates for a
-//! ROS 2 message, serialized by the gateway's plain-struct translator.
+//! Applications whose services carry the C structs rosidl generates for
+//! ROS 2 messages, serialized by the gateway's plain-struct translator.
 
 use iceoryx2::prelude::*;
 use rosidl_runtime_rs::{Message, RmwMessage};
@@ -27,5 +27,39 @@ pub struct Twist(pub ros_env::geometry_msgs::msg::rmw::Twist);
 unsafe impl ZeroCopySend for Twist {
     unsafe fn type_name() -> &'static str {
         <<ros_env::geometry_msgs::msg::Twist as Message>::RmwMsg as RmwMessage>::TYPE_NAME
+    }
+}
+
+/// Shared-memory payload for the request of `example_interfaces/srv/AddTwoInts`.
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct AddTwoIntsRequest(pub ros_env::example_interfaces::srv::rmw::AddTwoInts_Request);
+
+impl AddTwoIntsRequest {
+    pub fn new(a: i64, b: i64) -> Self {
+        Self(ros_env::example_interfaces::srv::rmw::AddTwoInts_Request { a, b })
+    }
+}
+
+unsafe impl ZeroCopySend for AddTwoIntsRequest {
+    unsafe fn type_name() -> &'static str {
+        <ros_env::example_interfaces::srv::rmw::AddTwoInts_Request as RmwMessage>::TYPE_NAME
+    }
+}
+
+/// Shared-memory payload for the response of `example_interfaces/srv/AddTwoInts`.
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct AddTwoIntsResponse(pub ros_env::example_interfaces::srv::rmw::AddTwoInts_Response);
+
+impl AddTwoIntsResponse {
+    pub fn new(sum: i64) -> Self {
+        Self(ros_env::example_interfaces::srv::rmw::AddTwoInts_Response { sum })
+    }
+}
+
+unsafe impl ZeroCopySend for AddTwoIntsResponse {
+    unsafe fn type_name() -> &'static str {
+        <ros_env::example_interfaces::srv::rmw::AddTwoInts_Response as RmwMessage>::TYPE_NAME
     }
 }

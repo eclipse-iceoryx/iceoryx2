@@ -1,0 +1,69 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set MAPPING integrations/ros2/examples/passthrough_translator/static_mapping.toml
+
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    --bin iox2-link-gateway-ros2 2>@1
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    --example passthrough_static_mapping_client 2>@1
+
+#### Test
+
+set timeout 30
+
+set env(IOX2_LOG_LEVEL) trace
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    --bin iox2-link-gateway-ros2 -- \
+    --static-mapping ${MAPPING} --monitor
+set id_gateway $spawn_id
+drain_output $id_gateway
+unset env(IOX2_LOG_LEVEL)
+
+expect_output_from $id_gateway "Gateway started"
+
+spawn ros2 run demo_nodes_cpp add_two_ints_server
+set id_server $spawn_id
+
+expect_output_from $id_gateway "Opened RequestResponse bridge of \"AddTwoInts\""
+
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    --example passthrough_static_mapping_client
+set id_client $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_client "received: 5"
+
+#### Shutdown
+
+send -i $id_client $SIGINT
+expect -i $id_client eof
+
+send -i $id_server $SIGINT
+expect -i $id_server eof
+
+send -i $id_gateway $SIGINT
+expect_output_from $id_gateway "Gateway stopped"
+expect -i $id_gateway eof
+
+show_test_passed
