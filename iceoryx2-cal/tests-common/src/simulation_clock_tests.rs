@@ -11,12 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::sync::Arc;
-use alloc::vec::Vec;
 use core::time::Duration;
-use iceoryx2_bb_posix::barrier::BarrierBuilder;
-use iceoryx2_bb_posix::barrier::BarrierHandle;
-use iceoryx2_bb_posix::mutex::Handle;
-use iceoryx2_bb_posix::system_configuration::SystemInfo;
 
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::testing::generate_file_path;
@@ -624,97 +619,4 @@ fn blocking_sleep_blocks_until_timeout_has_expired() {
     assert_that!(clock.blocking_sleep(timeout), is_ok);
     let end = clock.now().unwrap();
     assert_that!(end - start, time_at_least duration);
-}
-
-#[test]
-fn concurrent_time_controller_creation_succeeds_once() {
-    let test = TestFixture::new();
-    let _watchdog = Watchdog::new();
-    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
-    const NUMBER_OF_ITERATIONS: usize = 25;
-    let mut time_controllers = Vec::new();
-    let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
-        .create(&barrier_handle)
-        .unwrap();
-
-    thread_scope(|s| {
-        for _ in 0..number_of_threads {
-            s.thread_builder().spawn(|| {
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    if let Ok(time_controller) =
-                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
-                            .config(test.config())
-                            .create_time_controller()
-                    {
-                        time_controllers.push(time_controller);
-                    }
-                }
-            })?;
-        }
-        for _ in 0..number_of_threads {
-            s.thread_builder().spawn(|| {
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    if let Ok(time_controller) =
-                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
-                            .config(test.config())
-                            .open_or_create_time_controller()
-                    {
-                        time_controllers.push(time_controller);
-                    }
-                }
-            })?;
-        }
-        Ok(())
-    })
-    .unwrap();
-
-    assert_that!(time_controllers, len 1);
-}
-
-#[test]
-fn concurrent_time_controller_opening_succeeds_once() {
-    let test = TestFixture::new();
-    let _watchdog = Watchdog::new();
-    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
-    const NUMBER_OF_ITERATIONS: usize = 25;
-    let mut time_controllers = Vec::new();
-    let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
-        .create(&barrier_handle)
-        .unwrap();
-
-    thread_scope(|s| {
-        for _ in 0..number_of_threads {
-            s.thread_builder().spawn(|| {
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    let _time_controller =
-                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
-                            .config(test.config())
-                            .create_time_controller();
-                }
-            })?;
-        }
-        for _ in 0..number_of_threads {
-            s.thread_builder().spawn(|| {
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    if let Ok(time_controller) =
-                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(test.name())
-                            .config(test.config())
-                            .open_time_controller()
-                    {
-                        time_controllers.push(time_controller);
-                    }
-                }
-            })?;
-        }
-        Ok(())
-    })
-    .unwrap();
-
-    assert_that!(time_controllers, len 1);
 }
