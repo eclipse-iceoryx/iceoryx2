@@ -14,6 +14,7 @@
 -->
 
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Propagate request-response services through the link gateway
+* [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Update the ROS 2 link adapter to support request-response
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Add flatbuffer translation example for the ROS 2 gateway
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
 * [#2031](https://github.com/eclipse-iceoryx/iceoryx2/issues/2031) Notify the event service named after a service when the link delivered samples to it
