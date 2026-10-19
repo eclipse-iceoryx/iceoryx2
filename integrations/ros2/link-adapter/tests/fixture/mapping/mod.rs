@@ -18,10 +18,10 @@ pub use static_mapping::StaticMapped;
 
 use iceoryx2_integrations_ros2_link_adapter::EndpointSettings;
 use iceoryx2_link_adapter::Mapping;
-use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
+use iceoryx2_link_conformance_tests::parameters::{PublishSubscribeName, RequestResponseName};
 
 /// A mapping under test. It also names the services it covers.
-pub trait MappingUnderTest: PublishSubscribeName + 'static {
+pub trait MappingUnderTest: PublishSubscribeName + RequestResponseName + 'static {
     type Mapping: Mapping<EndpointSettings = EndpointSettings>;
 
     /// The mapping for services with the payload type `payload_type`,

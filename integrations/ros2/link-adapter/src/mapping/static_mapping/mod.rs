@@ -195,13 +195,17 @@ impl Mapping for StaticMapping {
             return Ok(None);
         };
 
+        // The graph tells a topic's QoS and not a service's, so only a
+        // topic's is checked against its entry.
         let entry = &self.entries[index];
-        if !entry.qos().admits(&remote.qos) {
+        if let Entry::Topic(topic) = entry
+            && !topic.ros2.qos.admits(&remote.qos)
+        {
             fail!(
                 from origin,
-                with Mismatch::Qos { entry: entry.qos().clone(), listed: remote.qos.clone() },
-                "'{}' has the QoS {:?}, its entry defines {:?}",
-                remote.name, remote.qos, entry.qos()
+                with Mismatch::Qos { entry: topic.ros2.qos.clone(), listed: remote.qos.clone() },
+                "Topic '{}' has the QoS {:?}, its entry defines {:?}",
+                remote.name, remote.qos, topic.ros2.qos
             );
         }
 

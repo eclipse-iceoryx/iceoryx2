@@ -84,7 +84,7 @@ pub struct Ros2Adapter {
     wake: Arc<Mutex<Option<WakeHandle>>>,
     /// Wakes the link on graph changes.
     graph_listener: Option<GraphListener>,
-    node: Rc<RclNode>,
+    pub(crate) node: Rc<RclNode>,
 }
 
 impl Ros2Adapter {

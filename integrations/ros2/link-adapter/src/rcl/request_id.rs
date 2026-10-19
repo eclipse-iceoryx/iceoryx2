@@ -14,6 +14,9 @@ use r2r_rcl::rmw_request_id_t;
 
 use crate::rcl::ParticipantPrefix;
 
+/// The number of bytes of a GUID.
+const GUID_NUMBER_OF_BYTES: usize = 16;
+
 /// The number an rcl client assigns to each request it sends.
 pub type SequenceNumber = i64;
 
@@ -21,7 +24,7 @@ pub type SequenceNumber = i64;
 /// the sequence number the client assigned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RequestId {
-    pub writer_guid: [u8; 16],
+    pub writer_guid: [u8; GUID_NUMBER_OF_BYTES],
     pub sequence_number: SequenceNumber,
 }
 
