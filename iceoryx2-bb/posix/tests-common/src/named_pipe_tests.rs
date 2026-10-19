@@ -26,6 +26,7 @@ use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::user::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_system_types::path::SemanticString;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -104,6 +105,19 @@ pub fn opening_file_as_named_pipe_fails() {
 
     assert_that!(result, is_err);
     assert_that!(result.err().unwrap(), eq NamedPipeOpenError::FileTypeNotNamedPipe);
+}
+
+#[test]
+pub fn creating_named_pipe_with_empty_path_fails() {
+    test_requires!(POSIX_SUPPORT_NAMED_PIPE);
+
+    let test_named_pipe_path = unsafe { FilePath::new_unchecked(b"") };
+    let result = NamedPipeBuilder::new(&test_named_pipe_path)
+        .creation_mode(CreationMode::CreateExclusive)
+        .create();
+
+    assert_that!(result, is_err);
+    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::CreateFiFoError(CreateFiFoError::PartsOfThePathDoNotExist));
 }
 
 #[test]

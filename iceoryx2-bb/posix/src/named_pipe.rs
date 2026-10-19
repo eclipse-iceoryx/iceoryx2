@@ -71,17 +71,13 @@ use iceoryx2_pal_posix::*;
 
 enum_gen! {  NamedPipeOpenFdError
   entry:
-    InterruptedBySignal,
     InsufficientPermissions,
-    InvalidFileDescriptor,
-    SynchronizedIONotSupported,
-    FileDescriptorDoesNotSupportMemoryMappings,
-    FileIsADirectory,
+    InterruptedBySignal,
     TooManySymbolicLinksInPath,
     PerProcessFileHandleLimitReached,
     FileDoesNotExist,
-    FileTooBig,
-    InsufficientResources,
+    FilesytemIsReadOnly,
+    InvalidFileDescriptor,
     UnknownError(i32)
 }
 
@@ -99,18 +95,7 @@ enum_gen! { CreateFiFoError
 
 enum_gen! { NamedPipeOpenError
   entry:
-    InsufficientPermissions,
-    InterruptedBySignal,
-    InvalidFileDescriptor,
-    SynchronizedIONotSupported,
-    FileDescriptorDoesNotSupportMemoryMappings,
-    FileIsADirectory,
-    TooManySymbolicLinksInPath,
-    PerProcessFileHandleLimitReached,
-    FileDoesNotExist,
     FileTypeNotNamedPipe,
-    FileTooBig,
-    InsufficientResources,
     UnknownError(i32)
   mapping:
     NamedPipeOpenFdError,
@@ -127,20 +112,13 @@ enum_gen! { NamedPipeCreationError
     GroupError,
     FileSetOwnerError,
     FileSetPermissionError,
-    FileRemoveError,
-    MetadataFromPathError
+    FileRemoveError
 }
 
 enum_gen! { NamedPipeReadError
   entry:
     InterruptedBySignal,
     IOerror,
-    InvalidFileDescriptor,
-    FileTooBig,
-    InsufficientResources,
-    InsufficientMemory,
-    NonExistingOrIncapableDevice,
-    OpenedWithoutReadAccessMode,
     UnknownError(i32)
   mapping:
     FileDescriptorSetAddError,
@@ -152,12 +130,9 @@ enum_gen! { NamedPipeWriteError
   entry:
     OpenedWithoutWriteAccessMode,
     InterruptedBySignal,
-    WriteBufferTooBig,
     IOerror,
     NoSpaceLeft,
-    InsufficientResources,
-    NonExistingOrIncapableDevice,
-    InsufficientPermissions,
+    ReceivingPipeEndNotOpened,
     UnknownError(i32)
   mapping:
     NamedPipeSetPropertyError
@@ -166,9 +141,6 @@ enum_gen! { NamedPipeWriteError
 enum_gen! { NamedPipeSetPropertyError
   entry:
     InvalidFileDescriptor,
-    InvalidCmd,
-    FileTooBig,
-    InterruptedBySignal,
     UnknownError(i32)
 }
 
@@ -324,7 +296,6 @@ impl NamedPipeCreationBuilder {
     }
 }
 
-/// ####### Section NamedPipe
 /// Opens, creates or send/receive with a named Pipe. Can be created by the [`NamedPipeBuilder`].
 #[derive(Debug)]
 pub struct NamedPipe {
@@ -375,7 +346,7 @@ impl NamedPipe {
                 }
                 Errno::ENOENT => {
                     fail!(with CreateFiFoError::PartsOfThePathDoNotExist,
-                        "{msg} since parts of the path do not exist.");
+                        "{msg} since the path or parts of it do not exist.");
                 }
                 Errno::ENOSPC => {
                     fail!(with CreateFiFoError::NoSpaceLeft,
@@ -455,18 +426,6 @@ impl NamedPipe {
                     fail!( with NamedPipeOpenFdError::InterruptedBySignal,
                         "{msg} since an interrupt signal was raised.");
                 }
-                Errno::EINVAL => {
-                    fail!( with NamedPipeOpenFdError::SynchronizedIONotSupported,
-                        "{msg} since the file does not support synchronized IO.");
-                }
-                Errno::EIO => {
-                    fail!( with NamedPipeOpenFdError::FileDescriptorDoesNotSupportMemoryMappings,
-                        "{msg} since the file does not support memory mappings.");
-                }
-                Errno::EISDIR => {
-                    fail!( with NamedPipeOpenFdError::FileIsADirectory,
-                        "{msg} since the file is a directory.");
-                }
                 Errno::ELOOP => {
                     fail!( with NamedPipeOpenFdError::TooManySymbolicLinksInPath,
                         "{msg} since there are too many symbolic links in the path.");
@@ -479,13 +438,9 @@ impl NamedPipe {
                     fail!( with NamedPipeOpenFdError::FileDoesNotExist,
                         "{msg} since the file does not exist.");
                 }
-                Errno::EOVERFLOW => {
-                    fail!( with NamedPipeOpenFdError::FileTooBig,
-                        "{msg} since the file is too big.");
-                }
-                Errno::ENOMEM => {
-                    fail!( with NamedPipeOpenFdError::InsufficientResources,
-                        "{msg} due to insufficient resources.");
+                Errno::EROFS => {
+                    fail!(with NamedPipeOpenFdError::FilesytemIsReadOnly,
+                        "{msg} since the file resides on a read-only filesystem.");
                 }
                 e => {
                     fail!(with NamedPipeOpenFdError::UnknownError(e as i32),
@@ -577,18 +532,6 @@ impl NamedPipe {
                     fail!(with NamedPipeSetPropertyError::InvalidFileDescriptor,
                         "{msg} since an invalid file-descriptor was provided.");
                 }
-                Errno::EINVAL => {
-                    fail!(with NamedPipeSetPropertyError::InvalidCmd,
-                        "{msg} since command is invalid.");
-                }
-                Errno::EOVERFLOW => {
-                    fail!(with NamedPipeSetPropertyError::FileTooBig,
-                        "{msg} since it is too large to be represented with 'off_t'.");
-                }
-                Errno::EINTR => {
-                    fail!(with NamedPipeSetPropertyError::InterruptedBySignal,
-                        "{msg} since an interrupt signal was received.");
-                }
                 e => {
                     fail!(with NamedPipeSetPropertyError::UnknownError(e as i32),
                         "{msg} due to an unknown failure ({e:?}).");
@@ -644,26 +587,6 @@ impl NamedPipe {
                 fail!(with NamedPipeReadError::IOerror,
                     "{msg} due to an I/O error.");
             }
-            Errno::EISDIR => {
-                fail!(with NamedPipeReadError::InvalidFileDescriptor,
-                    "{msg} since an invalid file-descriptor was provided.");
-            }
-            Errno::EOVERFLOW => {
-                fail!(with NamedPipeReadError::FileTooBig,
-                    "{msg} since it is too large to be represented with 'off_t'.");
-            }
-            Errno::ENOBUFS => {
-                fail!(with NamedPipeReadError::InsufficientResources,
-                    "{msg} due to insufficient resources to perform the operation.");
-            }
-            Errno::ENOMEM => {
-                fail!(with NamedPipeReadError::InsufficientMemory,
-                    "{msg} due to insufficient memory.");
-            }
-            Errno::ENXIO => {
-                fail!(with NamedPipeReadError::NonExistingOrIncapableDevice,
-                    "{msg} since the device either does not exist or is not capable of that operation.");
-            }
             e => {
                 fail!(with NamedPipeReadError::UnknownError(e as i32),
                     "{msg} due to an unknown failure ({e:?}).");
@@ -709,10 +632,7 @@ impl NamedPipe {
                 fail!(from self, with NamedPipeReadError::InterruptedBySignal,
                     "{} since an interrupt signal was received.", msg);
             }
-            Err(_) => {
-                fail!(from self, with NamedPipeReadError::UnknownError(-1),
-                    "{} since an unknown failure occurred.", msg);
-            }
+            Err(e) => Err(NamedPipeReadError::FileDescriptorSetWaitError(e)),
             Ok(_) => received_bytes,
         }
     }
@@ -743,10 +663,7 @@ impl NamedPipe {
         }
 
         match posix::Errno::get() {
-            Errno::EFBIG => {
-                fail!(with NamedPipeWriteError::WriteBufferTooBig,
-                    "{msg} since the named pipe size would then exceed the internal maximum file size limit.");
-            }
+            Errno::EAGAIN => Ok(0),
             Errno::EINTR => {
                 fail!(with NamedPipeWriteError::InterruptedBySignal,
                     "{msg} since an interrupt signal was received.");
@@ -759,17 +676,9 @@ impl NamedPipe {
                 fail!(with NamedPipeWriteError::NoSpaceLeft,
                     "{msg} since there is no space left on the named pipe device.");
             }
-            Errno::ENOBUFS => {
-                fail!(with NamedPipeWriteError::InsufficientResources,
-                    "{msg} due to insufficient resources to perform the operation.");
-            }
-            Errno::ENXIO => {
-                fail!(with NamedPipeWriteError::NonExistingOrIncapableDevice,
-                    "{msg} since the device either does not exist or is not capable of that operation.");
-            }
-            Errno::EACCES => {
-                fail!(with NamedPipeWriteError::InsufficientPermissions,
-                    "{msg} due to insufficient permissions.");
+            Errno::EPIPE => {
+                fail!(with NamedPipeWriteError::ReceivingPipeEndNotOpened,
+                    "{msg} since the other end of the pipe is not open for reading.");
             }
             e => {
                 fail!(with NamedPipeWriteError::UnknownError(e as i32),
