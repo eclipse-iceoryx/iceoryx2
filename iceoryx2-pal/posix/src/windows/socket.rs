@@ -594,10 +594,48 @@ pub unsafe fn getsockname(socket: int, address: *mut sockaddr, address_len: *mut
     0
 }
 
+/// A stream socket whose peer closed the connection is readable, and peeking at it reads zero
+/// bytes. Windows still accepts one send in this state and reports the reset only on the
+/// next call, while POSIX fails the first send with `EPIPE`.
+unsafe fn has_closed_peer(socket: windows_sys::Win32::Networking::WinSock::SOCKET) -> bool {
+    use windows_sys::Win32::Networking::WinSock::{SO_TYPE, WSAECONNRESET};
+
+    let mut read_set = fd_set::new_zeroed();
+    read_set.fd_count = 1;
+    read_set.fd_array[0] = socket;
+    let no_wait = timeval::new_zeroed();
+    let (number_of_readable_sockets, _) = unsafe {
+        win32call! { winsock windows_sys::Win32::Networking::WinSock::select(0, &mut read_set, core::ptr::null_mut(), core::ptr::null_mut(), &no_wait) }
+    };
+    if number_of_readable_sockets <= 0 {
+        return false;
+    }
+
+    let mut byte = 0u8;
+    let (received_bytes, _) = unsafe {
+        win32call! { winsock windows_sys::Win32::Networking::WinSock::recv(socket, &mut byte, 1, MSG_PEEK), ignore WSAEWOULDBLOCK, WSAECONNRESET }
+    };
+    if received_bytes != 0 {
+        return false;
+    }
+
+    let mut socket_type: int = 0;
+    let mut option_length = core::mem::size_of::<int>() as int;
+    let (result, _) = unsafe {
+        win32call! { winsock windows_sys::Win32::Networking::WinSock::getsockopt(socket, SOL_SOCKET, SO_TYPE, (&mut socket_type as *mut int).cast(), &mut option_length) }
+    };
+    result == 0 && socket_type == SOCK_STREAM
+}
+
 pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int) -> ssize_t {
     unsafe {
         match HandleTranslator::get_instance().get_socket(socket) {
             Some(s) => {
+                if has_closed_peer(s.fd) {
+                    Errno::set(Errno::EPIPE);
+                    return -1;
+                }
+
                 if let Some(mut timeout) = s.send_timeout {
                     let mut remaining_time = Duration::from_secs(timeout.tv_sec as _)
                         + Duration::from_micros(timeout.tv_usec as _);
