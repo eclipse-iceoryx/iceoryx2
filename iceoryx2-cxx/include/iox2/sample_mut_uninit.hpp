@@ -77,6 +77,11 @@ class SampleMutUninit {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+    /// It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    void truncate(uint64_t number_of_elements);
+
     /// Writes the payload to the sample
     template <typename T = Payload,
               typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), T>>
@@ -203,6 +208,12 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> bb::MutableSlice<ValueType> {
     return m_sample.payload_mut();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline void SampleMutUninit<S, Payload, UserHeader>::truncate(uint64_t number_of_elements) {
+    m_sample.truncate(number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

@@ -468,6 +468,90 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
 }
 // NOLINTEND(readability-function-cognitive-complexity)
 
+TYPED_TEST(ServicePublishSubscribeTest, truncated_loan_slice_uninit_delivers_its_first_elements) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+    constexpr uint64_t TRUNCATED_LENGTH = 4;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<DummyData>>().create().value();
+
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_subscriber = service.subscriber_builder().create().value();
+
+    auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).value();
+    send_sample.truncate(TRUNCATED_LENGTH);
+    ASSERT_THAT(send_sample.payload_mut().number_of_elements(), Eq(TRUNCATED_LENGTH));
+
+    uint64_t iterations = 0;
+    for (auto& item : send_sample.payload_mut()) {
+        new (&item) DummyData { DummyData::DEFAULT_VALUE_A + iterations, iterations % 2 == 0 };
+        ++iterations;
+    }
+
+    send(assume_init(std::move(send_sample))).value();
+
+    auto recv_result = sut_subscriber.receive().value();
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    iterations = 0;
+    for (const auto& item : recv_sample.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ++iterations;
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, truncated_loan_slice_delivers_its_first_elements) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+    constexpr uint64_t TRUNCATED_LENGTH = 4;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<DummyData>>().create().value();
+
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_subscriber = service.subscriber_builder().create().value();
+
+    auto send_sample = sut_publisher.loan_slice(SLICE_MAX_LENGTH).value();
+    send_sample.truncate(TRUNCATED_LENGTH);
+    ASSERT_THAT(send_sample.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+
+    send(std::move(send_sample)).value();
+
+    auto recv_result = sut_subscriber.receive().value();
+    ASSERT_TRUE(recv_result.has_value());
+    ASSERT_THAT(recv_result.value().payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, truncating_a_slice_sample_never_grows_it) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t SLICE_MAX_LENGTH = 10;
+    constexpr uint64_t TRUNCATED_LENGTH = 4;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<DummyData>>().create().value();
+
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+
+    auto sample = sut_publisher.loan_slice(SLICE_MAX_LENGTH).value();
+    sample.truncate(SLICE_MAX_LENGTH + 1);
+    ASSERT_THAT(sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    sample.truncate(TRUNCATED_LENGTH);
+    sample.truncate(SLICE_MAX_LENGTH);
+    ASSERT_THAT(sample.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;

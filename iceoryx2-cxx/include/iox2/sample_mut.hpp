@@ -101,6 +101,11 @@ class SampleMut {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+    /// It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    void truncate(uint64_t number_of_elements);
+
   private:
     template <ServiceType, typename, typename>
     friend class Publisher;
@@ -237,6 +242,12 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> bb::MutableSlice
     }
 
     return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), length);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline void SampleMut<S, Payload, UserHeader>::truncate(uint64_t number_of_elements) {
+    iox2_sample_mut_truncate(&m_handle, number_of_elements);
 }
 
 #if IOX2_FEATURE_FLATBUFFERS

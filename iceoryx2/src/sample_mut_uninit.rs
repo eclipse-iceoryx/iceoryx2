@@ -548,6 +548,42 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
         }
     }
 
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are
+    /// sent. It has no effect when `number_of_elements` is not smaller than the current number of
+    /// elements, since the payload can only shrink. The loaned memory keeps its size.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<[u8]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
+    ///
+    /// let message = b"hello";
+    /// let mut sample = publisher.loan_slice_uninit(16)?;
+    /// for (element, byte) in sample.payload_mut().iter_mut().zip(message) {
+    ///     element.write(*byte);
+    /// }
+    /// sample.truncate(message.len());
+    ///
+    /// let sample = unsafe { sample.assume_init() };
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn truncate(&mut self, number_of_elements: usize) {
+        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
+        header.truncate(number_of_elements as u64);
+    }
+
     /// Extracts the value of the slice of [`core::mem::MaybeUninit<Payload>`] and labels the sample as initialized
     ///
     /// # Safety

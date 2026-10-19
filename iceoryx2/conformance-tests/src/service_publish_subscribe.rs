@@ -3032,6 +3032,110 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
+    pub fn truncated_uninitialized_slice_sample_delivers_its_first_elements<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for n in [0, MAX_ELEMENTS / 2, MAX_ELEMENTS] {
+            let mut sample = publisher.loan_slice_uninit(MAX_ELEMENTS).unwrap();
+            sample.truncate(n);
+            assert_that!(sample.payload(), len n);
+            sample.write_from_fn(|i| i as u64 * 25).send().unwrap();
+
+            let recv_sample = subscriber.receive().unwrap().unwrap();
+
+            assert_that!(recv_sample.payload(), len n);
+            for (i, element) in recv_sample.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn truncated_initialized_slice_sample_delivers_its_first_elements<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for n in [0, MAX_ELEMENTS / 2, MAX_ELEMENTS] {
+            let mut sample = publisher.loan_slice(MAX_ELEMENTS).unwrap();
+            for (i, element) in sample.payload_mut().iter_mut().enumerate() {
+                *element = i as u64 * 25;
+            }
+            sample.truncate(n);
+            assert_that!(sample.payload(), len n);
+            sample.send().unwrap();
+
+            let recv_sample = subscriber.receive().unwrap().unwrap();
+
+            assert_that!(recv_sample.payload(), len n);
+            for (i, element) in recv_sample.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn truncating_a_slice_sample_never_grows_it<Sut: Service>() {
+        const LOANED_ELEMENTS: usize = 10;
+        const TRUNCATED_ELEMENTS: usize = 4;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_max_slice_len(LOANED_ELEMENTS)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_slice_uninit(LOANED_ELEMENTS).unwrap();
+        sample.truncate(LOANED_ELEMENTS + 1);
+        assert_that!(sample.payload(), len LOANED_ELEMENTS);
+        sample.truncate(TRUNCATED_ELEMENTS);
+        sample.truncate(LOANED_ELEMENTS);
+        assert_that!(sample.payload(), len TRUNCATED_ELEMENTS);
+        sample.write_from_fn(|i| i as u64).send().unwrap();
+
+        let recv_sample = subscriber.receive().unwrap().unwrap();
+
+        assert_that!(recv_sample.payload(), len TRUNCATED_ELEMENTS);
+    }
+
+    #[conformance_test]
     pub fn slice_aligned_service_works<Sut: Service>() {
         const MAX_ELEMENTS: usize = 91;
         const ALIGNMENT: usize = 64;

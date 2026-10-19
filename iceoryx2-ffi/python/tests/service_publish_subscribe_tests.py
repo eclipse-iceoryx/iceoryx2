@@ -356,6 +356,104 @@ def test_non_slice_type_forbids_use_of_slice_api(
     with pytest.raises(AssertionError):
         publisher.loan_slice_uninit(1)
 
+    sample = publisher.loan_uninit()
+
+    with pytest.raises(AssertionError):
+        sample.truncate(0)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_truncated_uninitialized_slice_sample_delivers_its_first_elements(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    max_elements = 8
+    truncated_elements = 3
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    publisher = service.publisher_builder().initial_max_slice_len(max_elements).create()
+    subscriber = service.subscriber_builder().create()
+
+    sample_uninit = publisher.loan_slice_uninit(max_elements)
+    sample_uninit.truncate(truncated_elements)
+    assert sample_uninit.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        sample_uninit.payload()[i] = i * 25
+    sample_uninit.assume_init().send()
+
+    received_sample = subscriber.receive()
+    assert received_sample is not None
+    assert received_sample.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        assert received_sample.payload()[i] == i * 25
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_truncated_initialized_slice_sample_delivers_its_first_elements(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    max_elements = 8
+    truncated_elements = 3
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    publisher = service.publisher_builder().initial_max_slice_len(max_elements).create()
+    subscriber = service.subscriber_builder().create()
+
+    sample_uninit = publisher.loan_slice_uninit(max_elements)
+    for i in range(0, max_elements):
+        sample_uninit.payload()[i] = i * 25
+    sample = sample_uninit.assume_init()
+    sample.truncate(truncated_elements)
+    assert sample.payload().len() == truncated_elements
+    sample.send()
+
+    received_sample = subscriber.receive()
+    assert received_sample is not None
+    assert received_sample.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        assert received_sample.payload()[i] == i * 25
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_truncating_a_slice_sample_never_grows_it(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    max_elements = 8
+    truncated_elements = 3
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    publisher = service.publisher_builder().initial_max_slice_len(max_elements).create()
+
+    sample = publisher.loan_slice_uninit(max_elements)
+    sample.truncate(max_elements + 1)
+    assert sample.payload().len() == max_elements
+    sample.truncate(truncated_elements)
+    sample.truncate(max_elements)
+    assert sample.payload().len() == truncated_elements
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_history_is_delivered_with_update_connections(

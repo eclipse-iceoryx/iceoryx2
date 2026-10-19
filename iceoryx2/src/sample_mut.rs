@@ -461,4 +461,37 @@ impl<
     pub fn payload_mut(&mut self) -> &mut [Payload] {
         &mut *self
     }
+
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are
+    /// sent. It has no effect when `number_of_elements` is not smaller than the current number of
+    /// elements, since the payload can only shrink. The loaned memory keeps its size.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<[u8]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
+    ///
+    /// let message = b"hello";
+    /// let mut sample = publisher.loan_slice(16)?;
+    /// sample.payload_mut()[..message.len()].copy_from_slice(message);
+    /// sample.truncate(message.len());
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn truncate(&mut self, number_of_elements: usize) {
+        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
+        header.truncate(number_of_elements as u64);
+    }
 }

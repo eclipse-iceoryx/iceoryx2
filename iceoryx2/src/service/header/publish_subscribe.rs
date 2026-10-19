@@ -74,6 +74,12 @@ impl Header {
         }
     }
 
+    /// Lowers the number of elements of a slice payload. It is meant for dynamic data types, a
+    /// payload that is not a slice always has one element.
+    pub(crate) fn truncate(&mut self, number_of_elements: u64) {
+        self.number_of_elements = self.number_of_elements.min(number_of_elements);
+    }
+
     /// Returns the [`UniquePublisherId`] of the source
     /// [`Publisher`](crate::port::publisher::Publisher).
     pub fn publisher_id(&self) -> UniquePublisherId {

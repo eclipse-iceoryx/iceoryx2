@@ -76,6 +76,15 @@ impl SampleMut {
         }
     }
 
+    pub fn __truncate(&self, number_of_elements: usize) {
+        match &mut *self.value.lock() {
+            SampleMutType::Ipc(Some(v)) => v.truncate(number_of_elements),
+            SampleMutType::Local(Some(v)) => v.truncate(number_of_elements),
+            _ => fatal_panic!(from "SampleMut::__truncate()",
+                "Accessing a released sample."),
+        }
+    }
+
     #[getter]
     /// Returns the `HeaderPublishSubscribe` of the `Sample`.
     pub fn header(&self) -> HeaderPublishSubscribe {

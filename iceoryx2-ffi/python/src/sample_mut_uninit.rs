@@ -82,6 +82,15 @@ impl SampleMutUninit {
         }
     }
 
+    pub fn __truncate(&self, number_of_elements: usize) {
+        match &mut *self.value.lock() {
+            SampleMutUninitType::Ipc(Some(v)) => v.truncate(number_of_elements),
+            SampleMutUninitType::Local(Some(v)) => v.truncate(number_of_elements),
+            _ => fatal_panic!(from "SampleMutUninit::__truncate()",
+                "Accessing a released sample."),
+        }
+    }
+
     #[getter]
     pub fn __available_payload_memory(&self) -> usize {
         match &*self.value.lock() {
