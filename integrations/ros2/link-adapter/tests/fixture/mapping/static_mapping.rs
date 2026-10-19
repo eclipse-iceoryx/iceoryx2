@@ -31,7 +31,7 @@ impl StaticMapped {
 impl MappingUnderTest for StaticMapped {
     type Mapping = StaticMapping;
 
-    fn mapping(payload_type: &str) -> StaticMapping {
+    fn mapping(payload_type: &str, _: &iceoryx2::config::Config) -> StaticMapping {
         let PublishSubscribeSettings {
             max_subscribers,
             max_publishers,

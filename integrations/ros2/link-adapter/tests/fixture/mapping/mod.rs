@@ -24,6 +24,7 @@ use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
 pub trait MappingUnderTest: PublishSubscribeName + 'static {
     type Mapping: Mapping<EndpointSettings = EndpointSettings>;
 
-    /// The mapping for services with the payload type `payload_type`.
-    fn mapping(payload_type: &str) -> Self::Mapping;
+    /// The mapping for services with the payload type `payload_type`,
+    /// created with the iceoryx2 configuration `config`.
+    fn mapping(payload_type: &str, config: &iceoryx2::config::Config) -> Self::Mapping;
 }

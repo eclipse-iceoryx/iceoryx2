@@ -83,7 +83,7 @@ pub fn create_gateway(
                 when create(
                     iceoryx_config,
                     &config,
-                    PrefixMapping::new(allowlist(cli)),
+                    PrefixMapping::new(allowlist(cli), iceoryx_config.clone()),
                     PassthroughTranslator { header },
                     cli,
                 ),
@@ -101,7 +101,7 @@ pub fn create_gateway(
                 when create(
                     iceoryx_config,
                     &config,
-                    PrefixMapping::new(allowlist(cli)),
+                    PrefixMapping::new(allowlist(cli), iceoryx_config.clone()),
                     PlainStructTranslator { header },
                     cli,
                 ),

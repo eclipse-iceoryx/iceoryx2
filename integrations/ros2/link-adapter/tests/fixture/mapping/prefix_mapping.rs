@@ -26,8 +26,8 @@ pub struct PrefixMapped;
 impl MappingUnderTest for PrefixMapped {
     type Mapping = PrefixMapping;
 
-    fn mapping(_: &str) -> PrefixMapping {
-        PrefixMapping::new(AllowList::all())
+    fn mapping(_: &str, config: &iceoryx2::config::Config) -> PrefixMapping {
+        PrefixMapping::new(AllowList::all(), config.clone())
     }
 }
 

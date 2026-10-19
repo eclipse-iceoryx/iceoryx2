@@ -35,9 +35,13 @@ const TOPIC_PREFIX: &str = "ros2://topics";
 /// ```
 ///
 /// Service settings and QoS profiles overlap only partially, so each side
-/// is approximated from the other and the rest is left default. Suitable for
-/// prototyping. A [`StaticMapping`](crate::mapping::StaticMapping) is
-/// recommended for production deployments and gives full control.
+/// is approximated from the other. Settings the QoS does not provide
+/// take the defaults of the iceoryx2 configuration the mapping is created
+/// with. QoS the settings do not provide takes the ROS 2 system defaults.
+///
+/// This mapping is suitable for prototyping. A
+/// [`StaticMapping`](crate::mapping::StaticMapping) is recommended for
+/// production deployments and gives full control.
 ///
 /// Service settings to topic QoS (with
 /// `depth = max(subscriber_max_buffer_size, history_size)`):
@@ -61,12 +65,15 @@ const TOPIC_PREFIX: &str = "ros2://topics";
 #[derive(Debug, Default, Clone)]
 pub struct PrefixMapping {
     allowlist: AllowList,
+    config: iceoryx2::config::Config,
 }
 
 impl PrefixMapping {
-    /// Creates a mapping covering the topics `allowlist` admits.
-    pub fn new(allowlist: AllowList) -> Self {
-        Self { allowlist }
+    /// Creates a mapping covering the topics `allowlist` admits. The
+    /// settings a QoS profile does not provide take the defaults of
+    /// `config`.
+    pub fn new(allowlist: AllowList, config: iceoryx2::config::Config) -> Self {
+        Self { allowlist, config }
     }
 }
 
@@ -94,7 +101,7 @@ impl Mapping for PrefixMapping {
         };
         Ok(Some(ServiceSettings::new(
             name,
-            PatternSettings::PublishSubscribe((&remote.qos).into()),
+            PatternSettings::PublishSubscribe(remote.qos.publish_subscribe_settings(&self.config)),
         )))
     }
 

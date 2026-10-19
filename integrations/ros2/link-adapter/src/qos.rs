@@ -140,28 +140,32 @@ impl From<&PublishSubscribeSettings> for QosProfile {
     }
 }
 
-impl From<&QosProfile> for PublishSubscribeSettings {
-    fn from(profile: &QosProfile) -> Self {
-        let defaults = iceoryx2::config::Config::default()
-            .defaults
-            .publish_subscribe;
+impl QosProfile {
+    /// The publish-subscribe settings approximating the profile. The settings
+    /// that the profile does not describe is taken from the defaults of
+    /// `config`.
+    pub fn publish_subscribe_settings(
+        &self,
+        config: &iceoryx2::config::Config,
+    ) -> PublishSubscribeSettings {
+        let defaults = &config.defaults.publish_subscribe;
 
-        let depth = match profile.history {
+        let depth = match self.history {
             History::KeepLast(depth) => depth,
             History::SystemDefault | History::KeepAll => defaults.subscriber_max_buffer_size,
         };
 
-        Self {
+        PublishSubscribeSettings {
             max_subscribers: defaults.max_subscribers,
             max_publishers: defaults.max_publishers,
             max_nodes: defaults.max_nodes,
-            history_size: match profile.durability {
+            history_size: match self.durability {
                 Durability::TransientLocal => depth,
                 Durability::SystemDefault | Durability::Volatile => defaults.publisher_history_size,
             },
             subscriber_max_buffer_size: depth,
             subscriber_max_borrowed_samples: defaults.subscriber_max_borrowed_samples,
-            safe_overflow: !matches!(profile.history, History::KeepAll),
+            safe_overflow: !matches!(self.history, History::KeepAll),
         }
     }
 }

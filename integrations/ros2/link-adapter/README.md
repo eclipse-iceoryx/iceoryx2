@@ -77,7 +77,9 @@ use iceoryx2_link_gateway::Gateway;
 
 let node = NodeBuilder::new().create::<ipc::Service>()?;
 
-let mapping = PrefixMapping::new(AllowList::all());
+// The settings a topic's QoS does not determine take the defaults of
+// the iceoryx2 configuration.
+let mapping = PrefixMapping::new(AllowList::all(), iceoryx2::config::Config::global_config().clone());
 // A static mapping instead, from its configuration:
 // let config: static_mapping::Config = toml::from_str(&content)?;
 // let mapping = StaticMapping::new(config)?;

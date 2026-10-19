@@ -130,7 +130,7 @@ impl<S: Service, M: MappingUnderTest, T: TranslatorUnderTest> GatewayFixture<S>
     type RemoteEndpoints = MappedRclEndpoints<T>;
 
     fn mapping(&self) -> M::Mapping {
-        M::mapping(<T::Message as RmwMessage>::TYPE_NAME)
+        M::mapping(<T::Message as RmwMessage>::TYPE_NAME, &self.config())
     }
 
     fn translator(&self) -> T::Translator {
