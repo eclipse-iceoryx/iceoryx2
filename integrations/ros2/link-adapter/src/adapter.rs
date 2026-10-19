@@ -27,9 +27,10 @@ use crate::endpoint_description::{
 use crate::endpoints;
 use crate::qos::QosProfile;
 use crate::rcl::{
-    self, EndpointInfo, GraphListener, RclNode, RclNodeBuilder, RclPublisherBuilder,
-    RclSubscriptionBuilder, TopicName,
+    self, EndpointInfo, GraphListener, RclClientBuilder, RclNode, RclNodeBuilder,
+    RclPublisherBuilder, RclServiceBuilder, RclSubscriptionBuilder, TopicName,
 };
+use crate::ros_message::RosMessage;
 use crate::typesupport;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,6 +65,8 @@ pub enum OpenError {
     TypeSupport,
     Publisher,
     Subscription,
+    Client,
+    Service,
     Callback,
     UnsupportedPattern,
 }
@@ -114,13 +117,13 @@ impl Ros2Adapter {
     }
 }
 
+/// Whether a topic belongs to the topics every ROS 2 node publishes on.
 fn is_internal_topic(topic: &TopicName) -> bool {
     const INTERNAL_TOPICS: [&str; 2] = ["/rosout", "/parameter_events"];
     INTERNAL_TOPICS.contains(&topic.as_str())
 }
 
-/// Whether a service type belongs to the services every ROS 2 node serves
-/// for its parameters and type descriptions.
+/// Whether a service type belongs to the services every ROS 2 node serves.
 fn is_internal_service(type_name: &rcl::TypeName) -> bool {
     const INTERNAL_PACKAGES: [&str; 2] =
         ["rcl_interfaces/srv/", "type_description_interfaces/srv/"];
@@ -213,7 +216,7 @@ impl Ros2Adapter {
     /// Lists the services of the graph that another node serves or calls.
     ///
     /// The graph does not tell a service's QoS. Every ROS 2 service runs on
-    /// the default profile, which is listed.
+    /// the default profile.
     fn list_services(
         &self,
         callback: &mut dyn FnMut(&EndpointDescription),
@@ -232,7 +235,7 @@ impl Ros2Adapter {
         // other node must be asked for its services explicitly.
         //
         // Counting the servers and clients of a service is only available
-        // from `iron` or later.
+        // from `jazzy` or later.
         let own = self.node.fully_qualified_name();
         let nodes = fail!(
             from origin,
@@ -314,7 +317,7 @@ impl Adapter for Ros2Adapter {
     type EndpointSettings = EndpointSettings;
     type EndpointTypes = EndpointTypes<MessageType>;
     type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
-    type RequestResponseEndpoints = UnsupportedEndpoints;
+    type RequestResponseEndpoints = endpoints::RequestResponseEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn endpoints(
@@ -390,11 +393,83 @@ impl Adapter for Ros2Adapter {
     ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::request_response");
 
+        let (EndpointName::Service(service), EndpointTypes::RequestResponse { request, response }) =
+            (&description.settings.name, &description.types)
+        else {
+            fail!(
+                from origin,
+                with OpenError::UnsupportedPattern,
+                "'{}' is not a request-response service", description.settings.name
+            );
+        };
+
+        // Get the typesupport. The service's type is the request type
+        // without its suffix.
+        let Some(service_type) = request.type_name.as_str().strip_suffix("_Request") else {
+            fail!(
+                from origin,
+                with OpenError::TypeSupport,
+                "The type '{}' is not the request type of a service", request.type_name.as_str()
+            );
+        };
+        let type_support = fail!(
+            from origin,
+            when typesupport::get::<typesupport::ServiceKind>(service_type),
+            with OpenError::TypeSupport,
+            "Failed to load typesupport for service type '{}'", service_type
+        );
+        let request = fail!(
+            from origin,
+            when RosMessage::new(request.type_name.as_str()),
+            with OpenError::TypeSupport,
+            "Failed to load typesupport for type '{}'", request.type_name.as_str()
+        );
+        let response = fail!(
+            from origin,
+            when RosMessage::new(response.type_name.as_str()),
+            with OpenError::TypeSupport,
+            "Failed to load typesupport for type '{}'", response.type_name.as_str()
+        );
+
+        // Create the endpoints.
+        let service_name = rcl::ServiceName::from(service);
+        let mut client = fail!(
+            from origin,
+            when RclClientBuilder::new(Rc::clone(&self.node), &service_name, Rc::clone(&type_support))
+                .qos(description.settings.qos.clone())
+                .create(),
+            with OpenError::Client,
+            "Failed to create the client on service '{}'", service_name.as_str()
+        );
+        let mut server = fail!(
+            from origin,
+            when RclServiceBuilder::new(Rc::clone(&self.node), &service_name, type_support)
+                .qos(description.settings.qos.clone())
+                .create(),
+            with OpenError::Service,
+            "Failed to create the server on service '{}'", service_name.as_str()
+        );
+
+        // Wake the link on every response and request received if a wake is
+        // attached.
+        let wake = Arc::clone(&self.wake);
         fail!(
             from origin,
-            with OpenError::UnsupportedPattern,
-            "The ROS 2 adapter does not support request-response yet, '{}' cannot be opened as one", description.settings.name
+            when client.on_new_response(Box::new(move |_| signal(&wake))),
+            with OpenError::Callback,
+            "Failed to register the new-response callback on service '{}'", service_name.as_str()
         );
+        let wake = Arc::clone(&self.wake);
+        fail!(
+            from origin,
+            when server.on_new_request(Box::new(move |_| signal(&wake))),
+            with OpenError::Callback,
+            "Failed to register the new-request callback on service '{}'", service_name.as_str()
+        );
+
+        Ok(endpoints::RequestResponseEndpoints::new(
+            client, server, request, response,
+        ))
     }
 
     fn event(

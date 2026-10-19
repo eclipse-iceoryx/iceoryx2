@@ -13,7 +13,6 @@
 //! Safe wrappers around the `r2r_rcl` bindings, covering what the gateway
 //! needs from `rcl`.
 
-#[allow(dead_code)] // the request-response endpoints follow
 pub(crate) mod client;
 pub(crate) mod error;
 pub(crate) mod gid;
@@ -23,15 +22,11 @@ pub(crate) mod names;
 pub(crate) mod node;
 pub(crate) mod publisher;
 pub(crate) mod qos;
-#[allow(dead_code)] // the request-response endpoints follow
 pub(crate) mod request_id;
-#[allow(dead_code)] // the request-response endpoints follow
 pub(crate) mod service;
-#[allow(dead_code)] // the request-response endpoints follow
 pub(crate) mod service_info;
 pub(crate) mod subscription;
 
-#[allow(unused_imports)] // the request-response endpoints follow
 pub(crate) use client::{RclClient, RclClientBuilder};
 pub(crate) use error::RclError;
 pub(crate) use gid::{Gid, ParticipantPrefix};
@@ -40,8 +35,7 @@ pub(crate) use message_info::MessageInfo;
 pub(crate) use names::*;
 pub(crate) use node::{EndpointInfo, RclNode, RclNodeBuilder};
 pub(crate) use publisher::{RclPublisher, RclPublisherBuilder};
-pub(crate) use request_id::RequestId;
-#[allow(unused_imports)] // the request-response endpoints follow
+pub(crate) use request_id::{RequestId, SequenceNumber};
 pub(crate) use service::{RclService, RclServiceBuilder};
 pub(crate) use service_info::ServiceInfo;
 pub(crate) use subscription::{RclSubscription, RclSubscriptionBuilder};

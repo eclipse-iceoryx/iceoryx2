@@ -11,5 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod publish_subscribe;
+pub mod request_response;
 
 pub use publish_subscribe::{PublishSubscribeEndpoints, PublishSubscribeEndpointsError};
+pub use request_response::{RequestResponseEndpoints, RequestResponseEndpointsError};

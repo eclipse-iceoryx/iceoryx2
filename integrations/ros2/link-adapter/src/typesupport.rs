@@ -88,7 +88,6 @@ pub type IntrospectionTypeSupport = TypeSupport<IntrospectionKind>;
 
 /// The typesupport of a ROS 2 service, covering its request and its
 /// response.
-#[allow(dead_code)] // the request-response endpoints follow
 pub type ServiceTypeSupport = TypeSupport<ServiceKind>;
 
 impl IntrospectionTypeSupport {

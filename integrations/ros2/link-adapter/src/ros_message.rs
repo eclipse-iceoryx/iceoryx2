@@ -151,8 +151,8 @@ impl RosMessage {
     /// Deserializes the CDR bytes `cdr` into the message.
     ///
     /// Fails when the rmw rejects the bytes for the type.
-    pub(crate) fn deserialize(&mut self, cdr: &[u8]) -> Result<(), DeserializeError> {
-        let origin = origin!("RosMessage::deserialize");
+    pub(crate) fn deserialize_from(&mut self, cdr: &[u8]) -> Result<(), DeserializeError> {
+        let origin = origin!("RosMessage::deserialize_from");
 
         let serialized = rmw_serialized_message_t {
             // The rmw reads the buffer through a const message, the pointer

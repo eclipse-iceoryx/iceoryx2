@@ -25,7 +25,7 @@ use iceoryx2_log::{fail, origin};
 
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{RclError, ServiceInfo, ServiceName, qos};
+use crate::rcl::{RclError, SequenceNumber, ServiceInfo, ServiceName, qos};
 use crate::ros_message::RosMessage;
 use crate::typesupport::ServiceTypeSupport;
 
@@ -119,7 +119,8 @@ impl<'a> RclClientBuilder<'a> {
         let origin = origin!("RclClientBuilder::create");
 
         unsafe {
-            // The client with the builder's QoS over the default options.
+            // The builder's profile replaces the QoS in rcl's default options.
+            // The other options keep their defaults.
             let client = Box::new(UnsafeCell::new(rcl_get_zero_initialized_client()));
             let mut options = rcl_client_get_default_options();
             qos::apply(&self.qos, &mut options.qos);
@@ -207,7 +208,7 @@ impl RclClient {
     /// `request` must be of the service's request type, which rcl does not
     /// check. Returns the sequence number rcl assigned to the request, which
     /// the response carries back in its [`ServiceInfo`].
-    pub fn send_request(&self, request: &RosMessage) -> Result<i64, SendError> {
+    pub fn send_request(&self, request: &RosMessage) -> Result<SequenceNumber, SendError> {
         let origin = origin!("RclClient::send_request");
 
         let mut sequence_number = 0;
