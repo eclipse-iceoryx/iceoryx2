@@ -99,6 +99,15 @@ cargo run --example simulation_clock_monitor real
 cargo run --example simulation_clock_time_controller
 ```
 
+> [!CAUTION]
+> When the time controller is not stopped by entering `e` or `q`, the
+> underlying resources will remain and cannot be reopened by the time
+> controller. In this case, you need to stop all processes, remove all iceoryx2
+>> resources with
+> `sudo rm -rf /dev/shm/iox2_*; sudo rm -rf /tmp/iceoryx2` and restart the
+> example.
+> This is only a temporary workaround until the feature #2100 is finalized.
+
 The sender waits one second between samples and notifies the monitor whenever a
 sample is sent. The receiver waits up to two seconds for the next sample. If no
 sample arrives within that time, it reports a timeout. The monitor observes the

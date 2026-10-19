@@ -1382,11 +1382,11 @@ impl<Service: service::Service> Node<Service> {
             }
             Err(ClockBlockingSleepError::InterruptedBySignal) => {
                 fail!(from self, with NodeWaitFailure::Interrupt,
-                        "{msg} {cycle_time:?} since a interrupt signal was received.");
+                        "{msg} {cycle_time:?} since an interrupt signal was received.");
             }
             Err(v) => {
                 fail!(from self, with NodeWaitFailure::InternalError,
-                    "{msg} {cycle_time:?} in main event look, caused by ({v:?}).");
+                    "{msg} {cycle_time:?} in main event loop, caused by ({v:?}).");
             }
         }
     }
