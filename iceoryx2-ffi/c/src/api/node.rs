@@ -97,6 +97,7 @@ impl IntoCInt for ServiceRemoveError {
 pub enum iox2_node_wait_failure_e {
     INTERRUPT = IOX2_OK as isize + 1,
     TERMINATION_REQUEST,
+    INTERNAL_ERROR,
 }
 
 impl IntoCInt for NodeWaitFailure {
@@ -104,6 +105,7 @@ impl IntoCInt for NodeWaitFailure {
         (match self {
             NodeWaitFailure::TerminationRequest => iox2_node_wait_failure_e::TERMINATION_REQUEST,
             NodeWaitFailure::Interrupt => iox2_node_wait_failure_e::INTERRUPT,
+            NodeWaitFailure::InternalError => iox2_node_wait_failure_e::INTERNAL_ERROR,
         }) as c_int
     }
 }

@@ -132,6 +132,11 @@
 //!         }
 //!         Err(NodeWaitFailure::Interrupt) => {
 //!             println!("Someone send an interrupt signal ...");
+//!             break;
+//!         }
+//!         Err(e) => {
+//!             println!("Failure while waiting. [{e:?}]");
+//!             break;
 //!         }
 //!     }
 //! }
@@ -175,6 +180,7 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::process::ProcessId;
 use iceoryx2_bb_posix::signal::SignalHandler;
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::bag::BagFamily;
 use iceoryx2_cal::bag::BagHandleFamily;
@@ -182,6 +188,7 @@ use iceoryx2_cal::clock::ClockBlockingSleepError;
 use iceoryx2_cal::clock::ClockListenerSchedule;
 use iceoryx2_cal::clock::ClockListenerScheduleError;
 use iceoryx2_cal::clock::ClockNow;
+use iceoryx2_cal::clock::ClockNowError;
 use iceoryx2_cal::clock::ClockReactorSchedule;
 use iceoryx2_cal::clock::ClockReactorScheduleError;
 use iceoryx2_cal::clock::TimeControllerBuilder;
@@ -201,6 +208,7 @@ use crate::prelude::MessagingPattern;
 use crate::service::ServiceRemoveError;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::clock_config;
+use crate::service::config_scheme::event_config;
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
@@ -256,6 +264,8 @@ pub enum NodeWaitFailure {
     Interrupt,
     /// A termination signal `SIGTERM` was received.
     TerminationRequest,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalError,
 }
 
 impl core::fmt::Display for NodeWaitFailure {
@@ -1224,9 +1234,11 @@ where
     pub fn time_controller(
         &self,
     ) -> Result<TimeController<Service>, TimeControllerBuilderOpenOrCreateError> {
+        let event_config = event_config::<Service>(self.shared.config());
         let clock_config = clock_config::<Service>(self.shared.config());
         <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
             .config(&clock_config)
+            .event_config(&event_config)
             .open_or_create_time_controller()
     }
 }
@@ -1346,11 +1358,16 @@ impl<Service: service::Service> Node<Service> {
         Ok(())
     }
 
+    /// Returns the current time.
+    pub fn now(&self) -> Result<TimePoint, ClockNowError> {
+        self.shared.state.clock.now()
+    }
+
     /// Waits until the cycle time has passed. It returns [`NodeWaitFailure::TerminationRequest`]
     /// when a `SIGTERM` signal was received or [`NodeWaitFailure::Interrupt`] when a `SIGINT`
     /// signal was received.
     pub fn wait(&self, cycle_time: Duration) -> Result<(), NodeWaitFailure> {
-        let msg = "Unable to wait on node";
+        let msg = "Unable to wait on node with cycle time";
         self.handle_termination_request(msg)?;
 
         match self
@@ -1365,12 +1382,11 @@ impl<Service: service::Service> Node<Service> {
             }
             Err(ClockBlockingSleepError::InterruptedBySignal) => {
                 fail!(from self, with NodeWaitFailure::Interrupt,
-                        "{msg} since a interrupt signal was received.");
+                        "{msg} {cycle_time:?} since an interrupt signal was received.");
             }
             Err(v) => {
-                fatal_panic!(from self,
-                    "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",
-                    cycle_time, v);
+                fail!(from self, with NodeWaitFailure::InternalError,
+                    "{msg} {cycle_time:?} in main event loop, caused by ({v:?}).");
             }
         }
     }
@@ -1711,9 +1727,11 @@ impl NodeBuilder {
             with NodeCreationFailure::UnableToGenerateUniqueNodeId,
             "{msg} since the UniqueNodeId could not be generated.");
 
+        let event_config = event_config::<Service>(config);
         let clock_config = clock_config::<Service>(config);
         let clock = match <Service::Clock as Clock<Service::Event>>::Builder::new(&CLOCK_NAME)
             .config(&clock_config)
+            .event_config(&event_config)
             .open_clock()
         {
             Ok(clock) => clock,

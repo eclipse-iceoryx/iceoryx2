@@ -13,9 +13,9 @@
 load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 
 rust_binary(
-    name = "publisher",
+    name = "sender",
     srcs = [
-        "publisher.rs",
+        "sender.rs",
     ],
     deps = [
         "//examples/rust:examples-common",
@@ -26,14 +26,28 @@ rust_binary(
 )
 
 rust_binary(
-    name = "subscriber",
+    name = "receiver",
     srcs = [
-        "subscriber.rs",
+        "receiver.rs",
     ],
     deps = [
         "//examples/rust:examples-common",
         "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-log/log:iceoryx2-log",
+    ],
+)
+
+rust_binary(
+    name = "monitor",
+    srcs = [
+        "monitor.rs",
+    ],
+    deps = [
+        "//examples/rust:examples-common",
+        "//iceoryx2",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-cal",
         "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
@@ -47,6 +61,7 @@ rust_binary(
         "//examples/rust:examples-common",
         "//iceoryx2",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-cal",
         "//iceoryx2-log/log:iceoryx2-log",
     ],
 )
