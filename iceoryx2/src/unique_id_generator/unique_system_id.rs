@@ -17,8 +17,11 @@ use iceoryx2_cal::dynamic_storage::{
     DynamicStorageCreateError, DynamicStorageOpenError, DynamicStorageOpenOrCreateError,
 };
 
-use crate::node::global_management_segment::GlobalManagementSegment;
 pub use crate::unique_id_generator::*;
+use crate::{
+    node::global_management_segment::GlobalManagementSegment,
+    unique_id_generator::testing::TestingUniqueIdGenerator,
+};
 
 /// Generator for a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
 #[derive(Debug)]
@@ -80,4 +83,8 @@ impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Se
     ) -> Result<iceoryx2_bb_posix::clock::Time, UniqueIdGeneratorDetailsError> {
         Ok(UniqueSystemId::from(id.value()).creation_time())
     }
+}
+
+impl<Service: service::Service> TestingUniqueIdGenerator for UniqueSystemIdGenerator<Service> {
+    fn remove_resources(_config: &Config) {}
 }

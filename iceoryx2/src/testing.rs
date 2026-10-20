@@ -25,6 +25,7 @@ use crate::service::config_scheme::{
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::service_hash::ServiceHash;
 use crate::service::static_config;
+use crate::unique_id_generator::testing::TestingUniqueIdGenerator;
 use crate::waitset::WaitSetBuilder;
 use crate::{
     config::Config,
@@ -279,6 +280,8 @@ fn remove_all_node_resource_directories(global_config: &Config) {
 }
 
 pub unsafe fn remove_all_resources<S: crate::service::Service>(global_config: &Config) {
+    <S::UniqueId as TestingUniqueIdGenerator>::remove_resources(global_config);
+
     let c = dynamic_config_storage_config::<S>(global_config);
     unsafe { remove_all_concept_resources::<S::DynamicStorage<DynamicConfig<S::Bag>>>(&c) };
 
