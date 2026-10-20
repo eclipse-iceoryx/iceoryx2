@@ -12,10 +12,7 @@
 
 mod remote_endpoints;
 mod wire_form;
-use remote_endpoints::endpoint_for;
-pub(crate) use remote_endpoints::{
-    RemoteMessageEndpoints, RemotePayloadEndpoints, remote_endpoints_on,
-};
+pub(crate) use remote_endpoints::FakeRemoteEndpoints;
 pub(crate) use wire_form::{Payload, WireForm};
 
 use core::marker::PhantomData;
@@ -40,7 +37,7 @@ pub(crate) struct FakeMiddlewareFixture<T> {
 impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
     type SampleTypes = FakeSampleTypes;
     type Adapter = FakeAdapter;
-    type RemoteEndpoints = RemoteMessageEndpoints;
+    type RemoteEndpoints = FakeRemoteEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -54,22 +51,18 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
     }
 
     fn remote_endpoints(&mut self) -> Self::RemoteEndpoints {
-        let description = endpoint_for::<T>(&describe::<Local, FixedSizePayload<Payload>, ()>(
+        let service = describe::<Local, FixedSizePayload<Payload>, ()>(
             &generate_service_name(),
             &Config::default(),
-        ));
-        let remote = self.middleware.remote_endpoints(&description);
-        RemoteMessageEndpoints {
-            description,
-            remote,
-        }
+        );
+        FakeRemoteEndpoints::on(&self.middleware, service)
     }
 }
 
 impl<S: Service, T: WireForm> GatewayFixture<S> for FakeMiddlewareFixture<T> {
     type Mapping = FakeMapping;
     type Translator = T;
-    type RemoteEndpoints = RemotePayloadEndpoints<T>;
+    type RemoteEndpoints = FakeRemoteEndpoints<T>;
 
     fn mapping(&self) -> Self::Mapping {
         FakeMapping
@@ -79,7 +72,7 @@ impl<S: Service, T: WireForm> GatewayFixture<S> for FakeMiddlewareFixture<T> {
         T::default()
     }
 
-    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> RemotePayloadEndpoints<T> {
-        remote_endpoints_on(&self.middleware, service.clone())
+    fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> FakeRemoteEndpoints<T> {
+        FakeRemoteEndpoints::on(&self.middleware, service.clone())
     }
 }

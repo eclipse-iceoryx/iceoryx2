@@ -51,11 +51,11 @@
 //! impl<S: Service> GatewayFixture<S> for MyMiddlewareFixture {
 //!     type Mapping = MyMapping;
 //!     type Translator = MyTranslator;
-//!     type RemoteEndpoints = MyRemotePayloadEndpoints;
+//!     type RemoteEndpoints = MyRemoteEndpoints;
 //!
 //!     fn mapping(&self) -> MyMapping { ... }
 //!     fn translator(&self) -> MyTranslator { ... }
-//!     fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> MyRemotePayloadEndpoints { ... }
+//!     fn remote_endpoints_on(&mut self, service: &ServiceDescription) -> MyRemoteEndpoints { ... }
 //! }
 //! ```
 //!
@@ -77,7 +77,7 @@
 //!     MyMiddlewareFixture
 //! );
 //! instantiate_conformance_tests!(
-//!     iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+//!     iceoryx2_link_conformance_tests::gateway_publish_subscribe,
 //!     Ipc,
 //!     PublishSubscribe<AnyName, FixedSizePayload<u64>, u64>,
 //!     MyMiddlewareFixture
@@ -104,6 +104,8 @@ pub mod tunnel;
 
 pub use adapter::{AdapterFixture, MessageEndpoints};
 pub use carrier::CarrierFixture;
-pub use gateway::{DiscoverableEndpoints, GatewayFixture, PayloadEndpoints, SampleEndpoints};
+pub use gateway::{
+    Discoverable, GatewayFixture, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+};
 pub use link::{GatewayLinkFixture, LinkFixture, TunnelLinkFixture};
 pub use tunnel::TunnelFixture;

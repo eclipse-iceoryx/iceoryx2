@@ -14,7 +14,7 @@
 //! and ROS 2.
 //!
 //! Each [`Ros2Adapter`] holds one ROS 2 node, through which the gateway
-//! joins the graph like any other ROS 2 application. It speaks `rcl`
+//! joins the graph like any other ROS 2 application. It calls `rcl`
 //! through [r2r_rcl](https://docs.rs/r2r_rcl), so it runs on whatever RMW
 //! the installation provides.
 //!

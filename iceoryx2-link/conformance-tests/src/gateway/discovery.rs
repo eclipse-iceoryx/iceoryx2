@@ -21,7 +21,7 @@ pub mod gateway_discovery {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
 
-    use crate::fixture::{DiscoverableEndpoints, GatewayFixture};
+    use crate::fixture::{Discoverable, GatewayFixture};
 
     use crate::parameters::AnyService;
     use crate::testing::{Side, rejecting, retry, service_exists, side};
@@ -32,7 +32,7 @@ pub mod gateway_discovery {
     pub fn a_remote_endpoint_is_mirrored<
         S: Service,
         X: AnyService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable>,
     >() {
         let mut fixture = F::new();
 
@@ -62,7 +62,7 @@ pub mod gateway_discovery {
     pub fn a_remote_endpoint_the_filter_rejects_is_not_mirrored<
         S: Service,
         X: AnyService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable>,
     >() {
         let mut fixture = F::new();
 
@@ -98,7 +98,7 @@ pub mod gateway_discovery {
     pub fn a_withdrawn_remote_endpoint_is_unbridged<
         S: Service,
         X: AnyService,
-        F: GatewayFixture<S, RemoteEndpoints: DiscoverableEndpoints>,
+        F: GatewayFixture<S, RemoteEndpoints: Discoverable>,
     >() {
         let mut fixture = F::new();
 

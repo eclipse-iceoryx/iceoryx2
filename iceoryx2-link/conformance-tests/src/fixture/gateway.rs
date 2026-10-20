@@ -52,7 +52,7 @@ pub trait GatewayFixture<S: Service>: AdapterFixture {
 }
 
 /// Remote endpoints the link can discover, where a service maps to.
-pub trait DiscoverableEndpoints {
+pub trait Discoverable {
     /// The service the endpoints map to.
     fn service(&self) -> &ServiceDescription;
 
@@ -64,9 +64,8 @@ pub trait DiscoverableEndpoints {
     }
 }
 
-/// Remote endpoints speaking the payloads of the service they map to, of
-/// type `P` locally.
-pub trait PayloadEndpoints<P>: DiscoverableEndpoints {
+/// Remote endpoints that propagate publish-subscribe payloads of type `P`.
+pub trait PropagatesPayloads<P>: Discoverable {
     /// Sends a payload.
     fn send_payload(&self, payload: P);
 
@@ -74,12 +73,12 @@ pub trait PayloadEndpoints<P>: DiscoverableEndpoints {
     fn receive_payload(&self) -> Option<P>;
 }
 
-/// Remote endpoints speaking whole samples, a header and a payload, on a
-/// middleware that carries the header intact.
-pub trait SampleEndpoints<H, P>: PayloadEndpoints<P> {
-    /// Sends a sample.
-    fn send_sample(&self, header: H, payload: P);
+/// Remote endpoints that propagate publish-subscribe payloads and user headers
+/// of types `H` and `P`.
+pub trait PropagatesPayloadsWithHeaders<H, P>: PropagatesPayloads<P> {
+    /// Sends a payload with its header.
+    fn send_with_header(&self, header: H, payload: P);
 
-    /// The next sample pending, if any, its header and its payload.
-    fn receive_sample(&self) -> Option<(H, P)>;
+    /// The next payload pending, if any, with its header.
+    fn receive_with_header(&self) -> Option<(H, P)>;
 }

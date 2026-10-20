@@ -58,7 +58,7 @@ mod ipc {
                     Ros2Fixture<PrefixMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, NoHeader>,
                     Ros2Fixture<PrefixMapped, PlainStruct>
@@ -87,7 +87,7 @@ mod ipc {
                     Ros2Fixture<PrefixMapped, PlainStructWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<PrefixMapped, PlainStructWithHeader>
@@ -108,7 +108,7 @@ mod ipc {
                     Ros2Fixture<StaticMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, NoHeader>,
                     Ros2Fixture<StaticMapped, PlainStruct>
@@ -137,7 +137,7 @@ mod ipc {
                     Ros2Fixture<StaticMapped, PlainStructWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<StaticMapped, PlainStructWithHeader>
@@ -162,7 +162,7 @@ mod ipc {
                     Ros2Fixture<PrefixMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<PrefixMapped, SerializedString, NoHeader>,
                     Ros2Fixture<PrefixMapped, Passthrough>
@@ -191,7 +191,7 @@ mod ipc {
                     Ros2Fixture<PrefixMapped, PassthroughWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<PrefixMapped, SerializedString, RosHeader>,
                     Ros2Fixture<PrefixMapped, PassthroughWithHeader>
@@ -212,7 +212,7 @@ mod ipc {
                     Ros2Fixture<StaticMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<StaticMapped, SerializedString, NoHeader>,
                     Ros2Fixture<StaticMapped, Passthrough>
@@ -241,7 +241,7 @@ mod ipc {
                     Ros2Fixture<StaticMapped, PassthroughWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<StaticMapped, SerializedString, RosHeader>,
                     Ros2Fixture<StaticMapped, PassthroughWithHeader>
@@ -270,7 +270,7 @@ mod local {
                     Ros2Fixture<PrefixMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, NoHeader>,
                     Ros2Fixture<PrefixMapped, PlainStruct>
@@ -299,7 +299,7 @@ mod local {
                     Ros2Fixture<PrefixMapped, PlainStructWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<PrefixMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<PrefixMapped, PlainStructWithHeader>
@@ -320,7 +320,7 @@ mod local {
                     Ros2Fixture<StaticMapped, PlainStruct>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, NoHeader>,
                     Ros2Fixture<StaticMapped, PlainStruct>
@@ -349,7 +349,7 @@ mod local {
                     Ros2Fixture<StaticMapped, PlainStructWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
                     Ros2Fixture<StaticMapped, PlainStructWithHeader>
@@ -374,7 +374,7 @@ mod local {
                     Ros2Fixture<PrefixMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<PrefixMapped, SerializedString, NoHeader>,
                     Ros2Fixture<PrefixMapped, Passthrough>
@@ -403,7 +403,7 @@ mod local {
                     Ros2Fixture<PrefixMapped, PassthroughWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<PrefixMapped, SerializedString, RosHeader>,
                     Ros2Fixture<PrefixMapped, PassthroughWithHeader>
@@ -424,7 +424,7 @@ mod local {
                     Ros2Fixture<StaticMapped, Passthrough>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<StaticMapped, SerializedString, NoHeader>,
                     Ros2Fixture<StaticMapped, Passthrough>
@@ -453,7 +453,7 @@ mod local {
                     Ros2Fixture<StaticMapped, PassthroughWithHeader>
                 );
                 instantiate_conformance_tests!(
-                    iceoryx2_link_conformance_tests::gateway_publish_subscribe_payload,
+                    iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<StaticMapped, SerializedString, RosHeader>,
                     Ros2Fixture<StaticMapped, PassthroughWithHeader>
