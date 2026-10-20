@@ -13,6 +13,7 @@
 use alloc::sync::Arc;
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueServiceId};
+use crate::name_generator::testing::TestingNameGenerator;
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
@@ -281,6 +282,7 @@ fn remove_all_node_resource_directories(global_config: &Config) {
 
 pub unsafe fn remove_all_resources<S: crate::service::Service>(global_config: &Config) {
     <S::UniqueId as TestingUniqueIdGenerator>::remove_resources(global_config);
+    <S::NameGenerator as TestingNameGenerator>::remove_resources(global_config);
 
     let c = dynamic_config_storage_config::<S>(global_config);
     unsafe { remove_all_concept_resources::<S::DynamicStorage<DynamicConfig<S::Bag>>>(&c) };
