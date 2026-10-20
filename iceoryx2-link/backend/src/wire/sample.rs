@@ -465,7 +465,6 @@ impl<U: UninitializedSample> WritableSample for LoanedSample<U> {
         // SAFETY: the header size for this service is provided by the
         // service's own description.
         let header = unsafe { user_header_bytes(self.sample.user_header(), self.header_size) };
-
         let payload = payload_bytes_uninit(&self.sample);
 
         SampleBytesRef {
@@ -717,5 +716,129 @@ mod tests {
             assert_that!(fits(&types, 0, length), eq true);
         }
         assert_that!(fits(&types, 1, LENGTHS[2]), eq false);
+    }
+}
+
+/// Tests the handling of uninitialized memory over heap memory, which
+/// is tracked by miri.
+///
+/// A shared-memory chunk cannot be validated by miri, but heap memory is the
+/// stricter case. Its bytes are uninitialized where a shared-memory chunk's
+/// already hold values.
+///
+/// Run them under miri with:
+///
+/// ```sh
+/// cargo +nightly miri test -p iceoryx2-link-backend uninitialized_memory
+/// ```
+#[cfg(test)]
+mod uninitialized_memory_tests {
+    use super::*;
+
+    use alloc::boxed::Box;
+    use alloc::string::String;
+    use core::convert::Infallible;
+
+    use iceoryx2::service::static_config::message_type_details::TypeDetail;
+    use iceoryx2_bb_testing::assert_that;
+
+    use crate::service_description::TypeDescription;
+
+    /// A sample over heap memory in the state iceoryx2 loans them.
+    /// The header is initialized and the payload is [`MaybeUninit`].
+    struct HeapSample {
+        header: Header,
+        payload: Box<PayloadUninit>,
+    }
+
+    impl HeapSample {
+        fn uninit(len: usize) -> Self {
+            Self {
+                header: Header::default(),
+                payload: Box::new_uninit_slice(len),
+            }
+        }
+    }
+
+    /// No flatbuffer is built in a heap sample.
+    struct NoFlatbufferMemory;
+
+    impl Deref for NoFlatbufferMemory {
+        type Target = [u8];
+
+        fn deref(&self) -> &[u8] {
+            &[]
+        }
+    }
+
+    impl DerefMut for NoFlatbufferMemory {
+        fn deref_mut(&mut self) -> &mut [u8] {
+            &mut []
+        }
+    }
+
+    impl FlatbufferMemory for NoFlatbufferMemory {
+        fn grow(&mut self, _: usize) -> Result<(), ResizeError> {
+            Err(ResizeError::Exhausted)
+        }
+    }
+
+    impl UninitializedSample for HeapSample {
+        type InitializedSample = Box<Payload>;
+        type FlatbufferMemory = NoFlatbufferMemory;
+
+        fn user_header(&self) -> &Header {
+            &self.header
+        }
+
+        fn user_header_mut(&mut self) -> &mut Header {
+            &mut self.header
+        }
+
+        fn payload(&self) -> &PayloadUninit {
+            &self.payload
+        }
+
+        fn payload_mut(&mut self) -> &mut PayloadUninit {
+            &mut self.payload
+        }
+
+        fn flatbuffer_memory(&self) -> NoFlatbufferMemory {
+            NoFlatbufferMemory
+        }
+
+        fn finish_serialized(&mut self, _: *const u8) {}
+
+        unsafe fn assume_init(self) -> Box<Payload> {
+            unsafe { self.payload.assume_init() }
+        }
+    }
+
+    /// The loan forms byte views over the payload before it is written.
+    #[test]
+    fn a_forward_loan_over_uninitialized_memory_is_written_before_it_is_read() {
+        const PAYLOAD: &[u8] = b"written";
+
+        let types = SampleTypes {
+            payload: TypeDescription {
+                variant: TypeVariant::Dynamic,
+                identifier: TypeIdentifier::Name(String::from("u8")),
+                size: 1,
+                alignment: 1,
+            },
+            user_header: TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize)),
+        };
+        let unloaned =
+            UnloanedSample::new(&types, |len| Ok::<_, Infallible>(HeapSample::uninit(len)));
+
+        let mut writable = unloaned
+            .loan_forward(PAYLOAD.len())
+            .expect("the sample is loaned");
+        writable.as_mut().payload.copy_from_slice(PAYLOAD);
+        assert_that!(writable.as_ref().payload, eq PAYLOAD);
+
+        // SAFETY: the header is written by the loan and the payload above.
+        let initialized = unsafe { writable.assume_init() };
+        assert_that!(initialized.len(), eq PAYLOAD.len());
     }
 }
