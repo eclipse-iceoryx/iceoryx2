@@ -134,10 +134,13 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
         config: &super::Configuration,
         _mgmt: &(),
     ) -> Result<Self, NotifierOpenError> {
-        let origin = "NamedPipeHandler::open()";
+        let origin = "NamedPipeHandle::open()";
         let msg = "Unable to connect to named pipe";
         let full_path = config.path_for(name);
-        let sender = match NamedPipeBuilder::new(&full_path).open_existing() {
+        let sender = match NamedPipeBuilder::new(&full_path)
+            .has_ownership(false)
+            .open_existing()
+        {
             Ok(v) => v,
             Err(NamedPipeOpenError::InterruptedBySignal) => {
                 fail!(from origin, with NotifierOpenError::Interrupt,
@@ -282,6 +285,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         // create named Pipe
         let full_path = config.path_for(name);
         let receiver = match NamedPipeBuilder::new(&full_path)
+            .has_ownership(true)
             .creation_mode(CreationMode::CreateExclusive)
             .permission(PIPE_PERMISSIONS)
             .create()
