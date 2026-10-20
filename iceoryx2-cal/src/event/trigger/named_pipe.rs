@@ -31,7 +31,9 @@ use iceoryx2_bb_posix::{
     file::{CreationMode, File, FileRemoveError},
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
-    named_pipe::{NamedPipe, NamedPipeBuilder, NamedPipeOpenError, NamedPipeWriteError},
+    named_pipe::{
+        NamedPipe, NamedPipeBuilder, NamedPipeOpenError, NamedPipeOpenFdError, NamedPipeWriteError,
+    },
     permission::Permission,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -96,7 +98,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
         let msg = "Unable to send notification";
         match self.sender.write(&[0u8]) {
             Ok(1) => Ok(()),
-            Ok(0) | Err(NamedPipeWriteError::InsufficientResources) => {
+            Ok(0) => {
                 fail!(from self, with NotifierNotifyError::BufferIsFull,
                     "{msg} since data could not be sent through the named pipe.");
             }
@@ -110,13 +112,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
                     with NotifierNotifyError::Interrupt,
                     "{msg} since an interrupt signal was raised.");
             }
-            Err(NamedPipeWriteError::InsufficientPermissions) => {
+            Err(NamedPipeWriteError::OpenedWithoutWriteAccessMode) => {
                 fail!(from self,
                     with NotifierNotifyError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");
             }
-            Err(NamedPipeWriteError::OpenedWithoutWriteAccessMode)
-            | Err(NamedPipeWriteError::NonExistingOrIncapableDevice) => {
+            Err(NamedPipeWriteError::ReceivingPipeEndNotOpened) => {
                 fail!(from self,
                     with NotifierNotifyError::Disconnected,
                     "{msg} since the other side is disconnected.");
@@ -142,21 +143,23 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
             .open_existing()
         {
             Ok(v) => v,
-            Err(NamedPipeOpenError::InterruptedBySignal) => {
+            Err(NamedPipeOpenError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::InterruptedBySignal,
+            )) => {
                 fail!(from origin, with NotifierOpenError::Interrupt,
                     "{msg} with {config:?} since an interrupt signal was raised.");
             }
-            Err(NamedPipeOpenError::InsufficientPermissions) => {
+            Err(NamedPipeOpenError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::InsufficientPermissions,
+            )) => {
                 fail!(from origin, with NotifierOpenError::InsufficientPermissions,
                     "{msg} with {config:?} due to insufficient permissions.");
             }
-            Err(NamedPipeOpenError::FileIsADirectory) => {
+            Err(NamedPipeOpenError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::FileDoesNotExist,
+            )) => {
                 fail!(from origin, with NotifierOpenError::DoesNotExist,
                     "{msg} with {config:?} since path to the named pipe does not exist.");
-            }
-            Err(NamedPipeOpenError::FileDoesNotExist) => {
-                fail!(from origin, with NotifierOpenError::DoesNotExist,
-                    "{msg} with {config:?} since the file for the named pipe does not exist.");
             }
             Err(e) => {
                 fail!(from origin, with NotifierOpenError::InternalFailure,
@@ -300,6 +303,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
             Err(NamedPipeCreationError::CreateFiFoError(CreateFiFoError::AlreadyExist)) => {
                 fail!(from origin, with ListenerCreateError::AlreadyExists,
                     "{msg} with {config:?} since it already exists.");
+            }
+            Err(NamedPipeCreationError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::InterruptedBySignal,
+            )) => {
+                fail!(from origin, with ListenerCreateError::Interrupt,
+                    "{msg} since an interrupt signal was raised.");
             }
             Err(e) => {
                 fail!(from origin, with ListenerCreateError::InternalFailure,
