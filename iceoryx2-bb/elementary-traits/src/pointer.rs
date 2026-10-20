@@ -19,7 +19,7 @@ use crate::allocator::Allocation;
 
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
-pub trait Pointer<T: Debug>: Allocation + Debug + Clone + Eq + PartialEq {
+pub trait Pointer<T: Debug>: Allocation + Debug + Eq + PartialEq {
     /// Return a pointer to the underlying const type
     ///
     fn as_ptr(&self) -> *const T;

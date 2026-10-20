@@ -24,14 +24,14 @@ pub use flatbuffers::Allocator;
 pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 
 #[derive(Debug)]
-pub struct ResizableMemoryBuilder<P: Pointer<u8>> {
+pub struct ResizableMemoryBuilder<P: Pointer<u8> + Clone> {
     ptr: P,
     strategy: AllocationStrategy,
     initial_layout: Layout,
     reserved_header_len: usize,
 }
 
-impl<P: Pointer<u8>> ResizableMemoryBuilder<P> {
+impl<P: Pointer<u8> + Clone> ResizableMemoryBuilder<P> {
     pub fn new(ptr: P) -> Self {
         Self {
             ptr,
@@ -77,7 +77,7 @@ impl<P: Pointer<u8>> ResizableMemoryBuilder<P> {
     }
 }
 
-pub struct ResizableMemory<P: Pointer<u8>, A: Grow<P>> {
+pub struct ResizableMemory<P: Pointer<u8> + Clone, A: Grow<P>> {
     ptr: P,
     strategy: AllocationStrategy,
     allocatable: A,
@@ -85,7 +85,7 @@ pub struct ResizableMemory<P: Pointer<u8>, A: Grow<P>> {
     reserved_header_len: usize,
 }
 
-impl<P: Pointer<u8>, A: Grow<P>> Debug for ResizableMemory<P, A> {
+impl<P: Pointer<u8> + Clone, A: Grow<P>> Debug for ResizableMemory<P, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -100,7 +100,7 @@ impl<P: Pointer<u8>, A: Grow<P>> Debug for ResizableMemory<P, A> {
     }
 }
 
-impl<P: Pointer<u8>, A: Grow<P>> Deref for ResizableMemory<P, A> {
+impl<P: Pointer<u8> + Clone, A: Grow<P>> Deref for ResizableMemory<P, A> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -110,7 +110,7 @@ impl<P: Pointer<u8>, A: Grow<P>> Deref for ResizableMemory<P, A> {
     }
 }
 
-impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
+impl<P: Pointer<u8> + Clone, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             core::slice::from_raw_parts_mut(
@@ -121,7 +121,7 @@ impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
     }
 }
 
-impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
+impl<P: Pointer<u8> + Clone, A: Grow<P>> ResizableMemory<P, A> {
     /// Grows the memory downwards to the specified `new_size`.
     ///
     /// - `in_use_front` indicates how many bytes are in use at the front of the
@@ -158,7 +158,7 @@ impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
     }
 }
 
-unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
+unsafe impl<P: Pointer<u8> + Clone, A: Grow<P>> Allocator for ResizableMemory<P, A> {
     type Error = AllocationGrowError;
 
     fn grow_downwards(&mut self) -> Result<(), Self::Error> {
