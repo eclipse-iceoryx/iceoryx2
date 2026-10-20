@@ -19,6 +19,7 @@
 * [#2078](https://github.com/eclipse-iceoryx/iceoryx2/issues/2078) Allocate the sample reference counters of a grown data segment only when the data segment grows
 * [#2082](https://github.com/eclipse-iceoryx/iceoryx2/issues/2082) Keep the contents of a static storage in memory and close its file
 * [#2084](https://github.com/eclipse-iceoryx/iceoryx2/issues/2084) Stop iterating a slot map after its last element
+* [#2094](https://github.com/eclipse-iceoryx/iceoryx2/issues/2094) Add a process-local trigger concept to `iceoryx2-cal` with an implementation based on a socket pair
 * [#2098](https://github.com/eclipse-iceoryx/iceoryx2/issues/2098) Close the file descriptor of a dynamic storage once its shared memory is mapped
 * [#2114](https://github.com/eclipse-iceoryx/iceoryx2/issues/2114) Truncate a loaned slice sample so that only its first elements are sent
 
@@ -35,6 +36,7 @@
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
 * [#2050](https://github.com/eclipse-iceoryx/iceoryx2/issues/2050) Find CLI commands in the folder of the running binary and prefer them over the ones in `PATH`
 * [#2062](https://github.com/eclipse-iceoryx/iceoryx2/issues/2062) Grant DELETE rights to the file owner in the Windows DACL
+* [#2094](https://github.com/eclipse-iceoryx/iceoryx2/issues/2094) Fail a send to a socket pair on Windows when its peer is gone, like on POSIX
 
 ### Refactoring
 

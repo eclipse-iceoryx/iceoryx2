@@ -42,6 +42,17 @@ pub fn try_receive_never_blocks() {
 }
 
 #[test]
+pub fn sending_to_a_dropped_peer_fails() {
+    let _watchdog = Watchdog::new();
+
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
+    drop(sut_rhs);
+
+    let result = sut_lhs.try_send(b"!hello hypnotoad!");
+    assert_that!(result.err(), eq Some(StreamingSocketPairSendError::Disconnected));
+}
+
+#[test]
 pub fn send_receive_works() {
     let _watchdog = Watchdog::new();
 
