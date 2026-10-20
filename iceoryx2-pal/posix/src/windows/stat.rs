@@ -82,3 +82,8 @@ pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
         0
     }
 }
+
+// TODO iox2-#2046: Implement Windows support
+pub unsafe fn mkfifo(path: *const c_char, mode: mode_t) -> int {
+    unimplemented!("mkfifo")
+}
