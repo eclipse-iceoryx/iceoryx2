@@ -13,6 +13,7 @@
 use alloc::format;
 
 use crate::{
+    clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
@@ -22,6 +23,7 @@ use crate::{
     },
     named_concept::NamedConceptRemoveError,
 };
+use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -36,6 +38,7 @@ use iceoryx2_bb_posix::{
     },
     permission::Permission,
 };
+use iceoryx2_bb_si_units::TimePoint;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{fail, trace};
@@ -177,7 +180,9 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
 
 #[derive(Debug)]
 pub struct NamedPipeWaiter<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
+    name: FileName,
     receiver: NamedPipe,
+    clock: Arc<dyn ClockListenerSchedule>,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
 }
@@ -201,6 +206,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { NamedPipe::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
+        unsafe { core::ptr::drop_in_place(&mut this.clock) };
     }
 }
 
@@ -263,6 +269,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         name: &FileName,
         config: &super::Configuration,
         _mgmt: &mut core::mem::MaybeUninit<()>,
+        clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
         let origin = "NamedPipeWaiter::create()";
         let msg = "Unable to create named pipe trigger";
@@ -317,7 +324,9 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         };
 
         Ok(Self {
+            name: *name,
             receiver,
+            clock,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
@@ -340,19 +349,42 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         }
     }
 
-    fn timed_wait(&self, timeout: core::time::Duration) -> Result<(), ListenerWaitError> {
+    fn timed_wait(
+        &self,
+        timeout: core::time::Duration,
+        now: TimePoint,
+    ) -> Result<(), ListenerWaitError> {
         let msg = "Unable to wait with a timeout for a notification";
         let mut buffer = [0u8; READ_BUFFER_SIZE as usize];
-        match self.receiver.timed_read(&mut buffer, timeout) {
-            Ok(READ_BUFFER_SIZE) => self.empty_buffer(),
-            Ok(_) => Ok(()),
-            Err(NamedPipeReadError::InterruptedBySignal) => {
-                fail!(from self, with ListenerWaitError::InterruptSignal,
-                    "{msg} since an interrupt signal was raised.");
+
+        match self.clock.schedule_on(Timeout::By(timeout), &self.name) {
+            Ok(ScheduleOnHandle::TranslatedTimeout(t)) => {
+                let translated_timeout = t.as_duration(now);
+                match self.receiver.timed_read(&mut buffer, translated_timeout) {
+                    Ok(READ_BUFFER_SIZE) => self.empty_buffer(),
+                    Ok(_) => Ok(()),
+                    Err(NamedPipeReadError::InterruptedBySignal) => {
+                        fail!(from self, with ListenerWaitError::InterruptSignal,
+                            "{msg} since an interrupt signal was raised.");
+                    }
+                    Err(e) => {
+                        fail!(from self, with ListenerWaitError::InternalFailure,
+                            "{msg} due to an internal failure. [{e:?}]");
+                    }
+                }
             }
-            Err(e) => {
+            Ok(ScheduleOnHandle::Guard(_guard)) => self.blocking_wait(),
+            Err(ClockListenerScheduleError::ClockScheduleCapacityExceeded) => {
+                fail!(from self, with ListenerWaitError::ClockScheduleCapacityExceeded,
+                    "{msg} since the clock schedule is full.");
+            }
+            Err(ClockListenerScheduleError::NotificationFailed) => {
+                fail!(from self, with ListenerWaitError::NotificationError,
+                    "{msg} since the notification failed.");
+            }
+            Err(ClockListenerScheduleError::InternalError) => {
                 fail!(from self, with ListenerWaitError::InternalFailure,
-                    "{msg} due to an internal failure. [{e:?}]");
+                    "{msg} due to an internal error.");
             }
         }
     }
@@ -372,6 +404,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                     "{msg} due to an internal failure. [{e:?}]");
             }
         }
+    }
+
+    fn clock(&self) -> &dyn crate::clock::ClockNow {
+        &*self.clock
     }
 }
 
