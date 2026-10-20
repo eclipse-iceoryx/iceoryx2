@@ -238,7 +238,8 @@ pub trait NamedConceptMgmt: Debug {
     fn remove_path_hint(value: &Path) -> Result<(), NamedConceptPathHintRemoveError>;
 }
 
-pub(crate) fn remove_path_hint(value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
+#[doc(hidden)]
+pub fn remove_path_hint(value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
     let origin = format!("remove_path_hint({value:?})");
     let msg = "Unable to remove path hint";
     match Directory::remove_empty(value) {

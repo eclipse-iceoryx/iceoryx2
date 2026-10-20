@@ -23,6 +23,7 @@ use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryOpenError, DirectoryReadError},
     file::{File, FileRemoveError},
     file_type::FileType,
+    metadata::MetadataFromPathError,
     process_state::{
         ProcessCleaner, ProcessCleanerCreateError, ProcessGuard, ProcessGuardCreateError,
         ProcessMonitor, ProcessMonitorCreateError, ProcessMonitorStateError, ProcessState,
@@ -114,6 +115,10 @@ impl NamedConceptMgmt for FileLockMonitoring {
 
         match File::does_exist(&process_state_path) {
             Ok(v) => Ok(v),
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
             Err(e) => {
                 fail!(from origin, with NamedConceptDoesExistError::InternalError,
                     "{} due to an internal failure ({:?}).", msg, e);
