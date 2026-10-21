@@ -138,15 +138,6 @@ impl<T: Debug> RelocatablePointer<T> {
     }
 }
 
-impl<T: Debug> Clone for RelocatablePointer<T> {
-    fn clone(&self) -> Self {
-        Self {
-            distance: AtomicIsize::new(self.distance.load(Ordering::Relaxed)),
-            _phantom: PhantomData,
-        }
-    }
-}
-
 impl<T: Debug> PartialEq for RelocatablePointer<T> {
     fn eq(&self, other: &Self) -> bool {
         self.distance.load(Ordering::Relaxed) == other.distance.load(Ordering::Relaxed)
