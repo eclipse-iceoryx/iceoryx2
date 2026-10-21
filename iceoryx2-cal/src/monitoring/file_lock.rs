@@ -223,7 +223,7 @@ impl MonitoringMonitor for Monitor {
             | Err(ProcessMonitorStateError::ProcessMonitorOpenError(
                 ProcessMonitorOpenError::Interrupt,
             )) => {
-                fail!(from self, with MonitoringStateError::Interrupt,
+                fail!(from self, with MonitoringStateError::InterruptedBySignal,
                     "{} since an interrupt signal was received.", msg);
             }
             Err(ProcessMonitorStateError::ProcessMonitorOpenError(
@@ -327,7 +327,7 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
                 name: self.name,
             }),
             Err(ProcessCleanerCreateError::Interrupt) => {
-                fail!(from self, with MonitoringCreateCleanerError::Interrupt,
+                fail!(from self, with MonitoringCreateCleanerError::InterruptedBySignal,
                     "{} since an interrupt signal was received.", msg);
             }
             Err(ProcessCleanerCreateError::ProcessIsStillAlive) => {
