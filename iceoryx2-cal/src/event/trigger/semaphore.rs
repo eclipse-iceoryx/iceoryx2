@@ -237,6 +237,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         })
     }
 
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
+
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
         let msg = "Failed to try wait on the unnamed semaphore";
         match self.semaphore.try_wait() {

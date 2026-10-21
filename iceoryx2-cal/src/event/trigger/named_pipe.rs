@@ -326,6 +326,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         })
     }
 
+    fn has_ownership(&self) -> bool {
+        self.receiver.has_ownership()
+    }
+
+    fn acquire_ownership(&self) {
+        self.receiver.acquire_ownership();
+    }
+
+    fn release_ownership(&self) {
+        self.receiver.release_ownership();
+    }
+
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
         let msg = "Unable to try wait for a notification";
         let mut buffer = [0u8; READ_BUFFER_SIZE as usize];

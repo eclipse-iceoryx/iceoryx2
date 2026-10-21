@@ -77,6 +77,18 @@ impl<
         unimplemented!()
     }
 
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
+
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
         unimplemented!()
     }

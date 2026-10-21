@@ -274,6 +274,18 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         })
     }
 
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
+    }
+
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
         let msg = "Unable to try wait for a notification";
         let mut buffer = [0u8; RECEIVE_BUFFER_SIZE];

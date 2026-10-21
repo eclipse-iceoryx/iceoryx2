@@ -100,6 +100,9 @@ pub trait WaiterInterface<
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
     fn empty_buffer(&self) -> Result<(), ListenerWaitError>;
     fn clock(&self) -> &dyn ClockNow;
+    fn has_ownership(&self) -> bool;
+    fn acquire_ownership(&self);
+    fn release_ownership(&self);
 }
 
 pub trait HandlerInterface<
