@@ -55,6 +55,8 @@ enum class NodeCreationFailure : uint8_t {
     UnableToOpenOrCreateNameGenerator,
     /// The [`Clock`] used for all time related operations could not be opened.
     FailedToOpenClock,
+    /// A [`Signal`] was raised while creating the [`Node`]
+    InterruptedBySignal,
 };
 
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of

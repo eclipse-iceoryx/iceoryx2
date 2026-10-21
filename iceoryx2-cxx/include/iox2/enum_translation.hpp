@@ -129,6 +129,8 @@ constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept ->
         return iox2::NodeCreationFailure::UnableToOpenOrCreateNameGenerator;
     case iox2_node_creation_failure_e_FAILED_TO_OPEN_CLOCK:
         return iox2::NodeCreationFailure::FailedToOpenClock;
+    case iox2_node_creation_failure_e_INTERRUPTED_BY_SIGNAL:
+        return iox2::NodeCreationFailure::InterruptedBySignal;
     }
 
     IOX2_UNREACHABLE();
@@ -151,6 +153,8 @@ from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(const iox2::NodeCr
         return iox2_node_creation_failure_e_UNABLE_TO_OPEN_OR_CREATE_NAME_GENERATOR;
     case iox2::NodeCreationFailure::FailedToOpenClock:
         return iox2_node_creation_failure_e_FAILED_TO_OPEN_CLOCK;
+    case iox2::NodeCreationFailure::InterruptedBySignal:
+        return iox2_node_creation_failure_e_INTERRUPTED_BY_SIGNAL;
     }
 
     IOX2_UNREACHABLE();
