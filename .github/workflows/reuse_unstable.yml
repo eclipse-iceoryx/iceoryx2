@@ -16,7 +16,7 @@ on:
 jobs:
   unstable:
     continue-on-error: true
-    timeout-minutes: 90
+    timeout-minutes: 180
     runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout sources
