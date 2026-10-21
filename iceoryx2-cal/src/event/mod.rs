@@ -182,6 +182,8 @@ pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
         self,
         clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<T::Listener, ListenerCreateError>;
+
+    fn open(self, clock: Arc<dyn ClockListenerSchedule>) -> Result<T::Listener, ListenerOpenError>;
 }
 
 pub trait Event: Sized + NamedConceptMgmt + Debug {

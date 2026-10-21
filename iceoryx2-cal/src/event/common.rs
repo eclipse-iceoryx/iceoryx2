@@ -17,8 +17,9 @@ use crate::{
     },
     event::{
         DEFAULT_MAX_EVENT_ID, Event, EventId, Listener, ListenerBuilder, ListenerCreateError,
-        ListenerWaitError, ListenerWaitInterface, NamedConcept, NamedConceptBuilder,
-        NamedConceptMgmt, Notifier, NotifierBuilder, NotifierNotifyError, NotifierOpenError,
+        ListenerOpenError, ListenerWaitError, ListenerWaitInterface, NamedConcept,
+        NamedConceptBuilder, NamedConceptMgmt, Notifier, NotifierBuilder, NotifierNotifyError,
+        NotifierOpenError,
         event_state::{EventActivation, EventState},
         trigger::{HandlerInterface, State, WaiterInterface, stub::Stub},
     },
@@ -699,9 +700,11 @@ impl<
         let msg = "Failed to create listener";
         let state_size = E::memory_size(self.event_id_max.as_value() + 1);
         let mut waiter = None;
+        // TODO this actually needs to be set by the service IS_PERSISTENT flag
+        let has_ownership: bool = !W::SUPPORT_PERSISTENCY;
         let storage = match Storage::Builder::new(&self.name)
             .config(&self.config.to_storage_config())
-            .has_ownership(true)
+            .has_ownership(has_ownership)
             .supplementary_size(state_size)
             .initializer(|value, allocator| {
                 value.write(State {
@@ -718,7 +721,11 @@ impl<
                     &mut unsafe { value.assume_init_mut() }.handle,
                     clock
                 ) {
-                    Ok(w) => waiter = Some(w),
+                    Ok(w) => {
+                        if !has_ownership {
+                            w.release_ownership();
+                        }
+                        waiter = Some(w)},
                     Err(e) => {
                         debug!(from self, "{msg} since the underlying mechanism could not be initialized. [{e:?}]");
                         return false;
@@ -755,6 +762,48 @@ impl<
         Ok(Waiter {
             storage,
             waiter: waiter.unwrap(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        })
+    }
+
+    fn open(
+        self,
+        clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event>::Listener, ListenerOpenError> {
+        let msg = "Failed to open listener";
+
+        // TODO this actually needs to be set by the service IS_PERSISTENT flag
+        if !W::SUPPORT_PERSISTENCY {
+            return Err(ListenerOpenError::InternalFailure);
+        }
+        let storage = match Storage::Builder::new(&self.name)
+            .config(&self.config.to_storage_config())
+            .open(AccessMode::ReadWrite)
+        {
+            Ok(storage) => storage,
+            Err(e) => {
+                fail!(from self, with ListenerOpenError::InternalFailure,
+                      "{msg} due to an internal error. Root cause: {}", e);
+            }
+        };
+
+        let waiter = match W::open(
+            &self.name,
+            &self.config.to_trigger_config(),
+            &mut unsafe { storage.get_mut() }.handle,
+            clock,
+        ) {
+            Ok(w) => w,
+            Err(e) => {
+                debug!(from self, "{msg} since the underlying mechanism could not be opened. [{e:?}]");
+                return Err(ListenerOpenError::InternalFailure);
+            }
+        };
+
+        Ok(Waiter {
+            storage,
+            waiter,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })

@@ -206,12 +206,24 @@ impl<Service: service::Service> Listener<Service> {
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(service.shared_node().config());
 
-        let listener = fail!(from origin,
+        let listener_open_result =
+            <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name)
+                .config(&event_config)
+                .event_id_max(EventId::new(
+                    service.static_config().event().event_id_max_value,
+                ))
+                .open(service.shared_node().clock());
+
+        let listener = if let Ok(listener) = listener_open_result {
+            listener
+        } else {
+            fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
                                 .event_id_max(EventId::new(service.static_config().event().event_id_max_value))
                                 .create(service.shared_node().clock()),
                              with ListenerCreateError::ResourceCreationFailed,
-                             "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
+                             "{} since the underlying event concept \"{}\" could not be created.", msg, event_name)
+        };
         let listener = Service::ArcThreadSafetyPolicy::new(listener);
         let listener = match listener {
             Ok(v) => v,
