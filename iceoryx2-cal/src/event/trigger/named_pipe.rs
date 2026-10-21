@@ -60,12 +60,6 @@ const PIPE_PERMISSIONS: Permission = Permission::OWNER_READ_WRITE
 const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Debug)]
-#[repr(C)]
-pub struct NamedPipeMgmt {
-    handler: NamedPipe,
-}
-
-#[derive(Debug)]
 pub struct NamedPipeHandle<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
     sender: NamedPipe,
     _data_1: PhantomData<E>,
