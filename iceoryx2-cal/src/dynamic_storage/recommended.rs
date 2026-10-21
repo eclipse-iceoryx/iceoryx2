@@ -13,13 +13,13 @@
 /// Provides the recommended inter-process
 /// [`DynamicStorage`](crate::dynamic_storage::DynamicStorage) concept
 /// implementation for the target.
-pub type Ipc<T> = crate::dynamic_storage::posix_shared_memory::Storage<T>;
+pub type Ipc<T> = crate::dynamic_storage::file::Storage<T>;
 
 /// Provides the recommended persistent inter-process
 /// [`DynamicStorage`](crate::dynamic_storage::DynamicStorage) concept
 /// implementation for the target.
 #[cfg(not(target_os = "windows"))]
-pub type PersistentIpc<T> = crate::dynamic_storage::posix_shared_memory::Storage<T>;
+pub type PersistentIpc<T> = crate::dynamic_storage::file::Storage<T>;
 #[cfg(target_os = "windows")]
 pub type PersistentIpc<T> = crate::dynamic_storage::file::Storage<T>;
 

@@ -64,10 +64,10 @@ pub type InternalStubEvent = EventImpl<
 
 pub type NamedPipeBitSet = GenericNamedPipeTrigger<
     RelocatableBitSet,
-    dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, ()>>,
+    dynamic_storage::file::Storage<State<RelocatableBitSet, ()>>,
 >;
 
 pub type NamedPipeCountingBitSet = GenericNamedPipeTrigger<
     RelocatableCountingBitSet,
-    dynamic_storage::posix_shared_memory::Storage<State<RelocatableCountingBitSet, ()>>,
+    dynamic_storage::file::Storage<State<RelocatableCountingBitSet, ()>>,
 >;

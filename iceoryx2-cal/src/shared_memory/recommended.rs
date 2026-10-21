@@ -13,7 +13,7 @@
 /// Provides the recommended inter-process
 /// [`SharedMemory`](crate::shared_memory::SharedMemory) concept
 /// implementation for the target.
-pub type Ipc<Allocator> = crate::shared_memory::posix::Memory<Allocator>;
+pub type Ipc<Allocator> = crate::shared_memory::file::Memory<Allocator>;
 
 /// Provides the recommended process-local
 /// [`SharedMemory`](crate::shared_memory::SharedMemory) concept

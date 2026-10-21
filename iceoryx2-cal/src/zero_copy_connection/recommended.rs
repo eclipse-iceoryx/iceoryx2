@@ -13,7 +13,7 @@
 /// Provides the recommended inter-process
 /// [`ZeroCopyConnection`](crate::zero_copy_connection::ZeroCopyConnection)
 /// concept implementation for the target.
-pub type Ipc = crate::zero_copy_connection::posix_shared_memory::Connection;
+pub type Ipc = crate::zero_copy_connection::file::Connection;
 
 /// Provides the recommended process-local
 /// [`ZeroCopyConnection`](crate::zero_copy_connection::ZeroCopyConnection)

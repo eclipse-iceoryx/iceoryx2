@@ -12,7 +12,7 @@
 
 /// Provides the recommended inter-process [`Event`](crate::event::Event) concept implementation
 /// for the target.
-pub type Ipc = crate::event::UnixDatagramShmCountingBitSet;
+pub type Ipc = crate::event::NamedPipeCountingBitSet;
 
 /// Provides the recommended process-local [`Event`](crate::event::Event) concept implementation
 /// for the target.
