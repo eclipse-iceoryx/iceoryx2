@@ -1,0 +1,68 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use std::fmt::Debug;
+
+use iceoryx2::prelude::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+
+#[derive(Debug, Clone)]
+pub struct CustomServiceVariant {}
+
+impl iceoryx2::service::Service for CustomServiceVariant {
+    type StaticStorage = iceoryx2_cal::static_storage::recommended::Ipc;
+    type ConfigSerializer = iceoryx2_cal::serialize::recommended::Recommended;
+    type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
+        iceoryx2_cal::dynamic_storage::recommended::PersistentIpc<T>;
+    type Bag = iceoryx2_cal::bag::recommended::Recommended;
+    // use a dynamic storage based on a file
+    type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
+        iceoryx2_cal::dynamic_storage::file::Storage<T>;
+    type ServiceNameHasher = iceoryx2_cal::hash::recommended::Recommended;
+    // instead of using POSIX shared memory, we use a file
+    type SharedMemory = iceoryx2_cal::shared_memory::file::Memory<
+        iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator,
+    >;
+    // instead of using resizable shared memory based on POSIX shared memory, we
+    // use a variant based on a file
+    type ResizableSharedMemory = iceoryx2_cal::resizable_shared_memory::dynamic::DynamicMemory<
+        iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator,
+        iceoryx2_cal::shared_memory::file::Memory<
+            iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator,
+        >,
+    >;
+    // instead of using a connection based on POSIX shared memory, we use a
+    // variant based on a file
+    type Connection = iceoryx2_cal::zero_copy_connection::file::Connection;
+    type Event = iceoryx2_cal::event::recommended::Ipc;
+    type Monitoring = iceoryx2_cal::monitoring::recommended::Ipc;
+    type Reactor = iceoryx2_cal::reactor::recommended::Ipc;
+    type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
+        iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<T>;
+    // the blackboard mgmt segment is replaced with a file based version
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
+        iceoryx2_cal::dynamic_storage::file::Storage<KeyType>;
+    // the blackboard payload is replaced with a file based version
+    type BlackboardPayload = iceoryx2_cal::shared_memory::file::Memory<
+        iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+    >;
+    type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<
+        CustomServiceVariant,
+    >;
+    type NameGenerator = iceoryx2::name_generator::default_name_generator::DefaultNameGenerator;
+    type Clock = iceoryx2_cal::clock::posix::PosixClock<Self::Event>;
+}
+
+impl iceoryx2::service::internal::ServiceInternal<CustomServiceVariant> for CustomServiceVariant {}
+
+pub type IpcService = CustomServiceVariant;
+pub type LocalService = iceoryx2::service::local_threadsafe::Service;
