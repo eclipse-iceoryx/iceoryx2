@@ -19,7 +19,7 @@ namespace iox2 {
 /// Defines the action that shall be take when data cannot be delivered.
 enum class BackpressureAction : uint8_t {
     /// Use an action which is derived from the `BackpressureStrategy`
-    FollowBackpressureyStrategy,
+    FollowBackpressureStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
     /// Discard the data for the receiver which cause the incident and continue

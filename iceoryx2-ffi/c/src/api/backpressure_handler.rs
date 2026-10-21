@@ -39,7 +39,7 @@ impl From<iox2_backpressure_action_e> for BackpressureAction {
     fn from(value: iox2_backpressure_action_e) -> Self {
         match value {
             iox2_backpressure_action_e::FOLLOW_BACKPRESSUREY_STRATEGY => {
-                BackpressureAction::FollowBackpressureyStrategy
+                BackpressureAction::FollowBackpressureStrategy
             }
             iox2_backpressure_action_e::RETRY => BackpressureAction::Retry,
             iox2_backpressure_action_e::DISCARD_DATA => BackpressureAction::DiscardData,

@@ -39,6 +39,7 @@
 * [#2062](https://github.com/eclipse-iceoryx/iceoryx2/issues/2062) Grant DELETE rights to the file owner in the Windows DACL
 * [#2094](https://github.com/eclipse-iceoryx/iceoryx2/issues/2094) Fail a send to a socket pair on Windows when its peer is gone, like on POSIX
 * [#2124](https://github.com/eclipse-iceoryx/iceoryx2/issues/2124) Remove clone impl from RelocatablePointer
+* [#2137](https://github.com/eclipse-iceoryx/iceoryx2/issues/2137) Fix typo in `BackpressureAction` enum
 
 ### Refactoring
 
@@ -157,6 +158,16 @@
     // new
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     let waitset = node.waitset_builder().create()?;
+    ```
+
+3. The `BackpressureAction` enum had a typo in `FollowBackpressureyStrategy`
+
+    ```rust
+    // old
+    let bp_action = BackpressureAction::FollowBackpressureyStrategy;
+
+    // new
+    let bp_action = BackpressureAction::FollowBackpressureStrategy;
     ```
 
 <!-- markdownlint-enable MD013 -->

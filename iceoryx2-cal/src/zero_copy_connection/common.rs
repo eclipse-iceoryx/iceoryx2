@@ -778,7 +778,7 @@ pub mod details {
                                 retry_counter,
                                 start.elapsed().unwrap_or(Duration::MAX),
                             ) {
-                                BackpressureToReceiverAction::FollowBackpressureyStrategy => {
+                                BackpressureToReceiverAction::FollowBackpressureStrategy => {
                                     match backpressure_action_for_strategy {
                                         BackpressureToReceiverAction::Retry => {
                                             retry_until_delivered = true;

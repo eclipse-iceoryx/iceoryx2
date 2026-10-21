@@ -281,7 +281,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                             chunk.offset(),
                             chunk.size(),
                             channel_id,
-                            |_, _| BackpressureToReceiverAction::FollowBackpressureyStrategy,
+                            |_, _| BackpressureToReceiverAction::FollowBackpressureStrategy,
                             BackpressureToReceiverAction::Retry,
                         )
                     }
