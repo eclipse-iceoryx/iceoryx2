@@ -260,7 +260,7 @@ impl FileDescriptorBased for FileDescriptor {
 
 enum_gen! { FileTryLockError
   entry:
-    Interrupt,
+    InterruptedBySignal,
     ExceedsMaximumNumberOfLockedRegionsInSystem,
     InvalidFileDescriptorOrWrongOpenMode,
     DeadlockConditionDetected,
@@ -270,7 +270,7 @@ enum_gen! { FileTryLockError
 
 enum_gen! { FileGetLockStateError
   entry:
-    Interrupt,
+    InterruptedBySignal,
     UnknownError(i32)
 }
 
@@ -398,7 +398,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
                     "{msg} since the file-descriptor is invalid or not opened in the correct access mode.");
             }
             Errno::EINTR => {
-                fail!(from self, with FileTryLockError::Interrupt,
+                fail!(from self, with FileTryLockError::InterruptedBySignal,
                     "{msg} since an interrupt signal was raised.");
             }
             Errno::ENOLCK => {
@@ -432,7 +432,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
         } == -1
         {
             handle_errno!(FileGetLockStateError, from self,
-                Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
+                Errno::EINTR => (InterruptedBySignal, "{} since an interrupt signal was received.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             )
         }

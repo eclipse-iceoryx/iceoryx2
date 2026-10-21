@@ -365,7 +365,7 @@ enum_gen! {
 impl From<FileGetLockStateError> for ProcessMonitorStateError {
     fn from(value: FileGetLockStateError) -> Self {
         match value {
-            FileGetLockStateError::Interrupt => ProcessMonitorStateError::Interrupt,
+            FileGetLockStateError::InterruptedBySignal => ProcessMonitorStateError::Interrupt,
             FileGetLockStateError::UnknownError(_) => ProcessMonitorStateError::InternalError,
         }
     }
@@ -519,7 +519,7 @@ impl ProcessGuardBuilder {
                 fail!(from origin, with ProcessGuardCreateError::ContractViolation,
                         "{} since another process holds the lock of a process state that is in initialization.", msg);
             }
-            Err(FileTryLockError::Interrupt) => {
+            Err(FileTryLockError::InterruptedBySignal) => {
                 fail!(from origin, with ProcessGuardCreateError::Interrupt,
                         "{} since an interrupt signal was received while locking the file.", msg);
             }
@@ -1258,7 +1258,7 @@ impl ProcessCleaner {
                 fail!(from origin, with ProcessCleanerCreateError::OwnedByAnotherProcess,
                     "{} since another process already has instantiated a ProcessCleaner.", msg);
             }
-            Err(FileTryLockError::Interrupt) => {
+            Err(FileTryLockError::InterruptedBySignal) => {
                 fail!(from origin, with ProcessCleanerCreateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
             }

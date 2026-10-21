@@ -96,6 +96,7 @@ pub enum State {
 /// [`MonitoringBuilder::token()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateTokenError {
+    InterruptedBySignal,
     InsufficientPermissions,
     AlreadyExists,
     SystemCorrupted,
@@ -114,7 +115,7 @@ impl core::error::Error for MonitoringCreateTokenError {}
 /// [`MonitoringBuilder::cleaner()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateCleanerError {
-    Interrupt,
+    InterruptedBySignal,
     InstanceStillAlive,
     AlreadyOwnedByAnotherInstance,
     IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
@@ -134,8 +135,8 @@ impl core::error::Error for MonitoringCreateCleanerError {}
 /// [`MonitoringBuilder::monitor()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateMonitorError {
+    InterruptedBySignal,
     InsufficientPermissions,
-    Interrupt,
     ConceptNameNotSupportedOnPlatform,
     InternalError,
 }
@@ -152,7 +153,7 @@ impl core::error::Error for MonitoringCreateMonitorError {}
 /// [`MonitoringMonitor::state()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringStateError {
-    Interrupt,
+    InterruptedBySignal,
     InsufficientPermissions,
     InternalError,
 }

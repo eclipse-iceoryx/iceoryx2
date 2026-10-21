@@ -247,6 +247,8 @@ pub enum NodeCreationFailure {
     UnableToOpenOrCreateNameGenerator,
     /// The [`Clock`] used for all time related operations could not be opened.
     FailedToOpenClock,
+    /// A [`Signal`](iceoryx2_bb_posix::signal::Signal) was raised while creating the [`Node`]
+    InterruptedBySignal,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -782,7 +784,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
                 fail!(from self, with NodeCleanupFailure::ResourcesAlreadyCleanedUp,
                     "{} since another instance has already cleaned up all resources.", msg);
             }
-            Err(MonitoringCreateCleanerError::Interrupt) => {
+            Err(MonitoringCreateCleanerError::InterruptedBySignal) => {
                 fail!(from self, with NodeCleanupFailure::Interrupt,
                     "{} since an interrupt signal was received.", msg);
             }
@@ -1475,7 +1477,7 @@ impl<Service: service::Service> Node<Service> {
                 fail!(from origin, with NodeListFailure::InsufficientPermissions,
                     "{} due to insufficient permissions to acquire the nodes state.", msg);
             }
-            MonitoringStateError::Interrupt => {
+            MonitoringStateError::InterruptedBySignal => {
                 fail!(from origin, with NodeListFailure::Interrupt,
                     "{} due to an interrupt signal while acquiring the nodes state.", msg);
             }
@@ -1503,7 +1505,7 @@ impl<Service: service::Service> Node<Service> {
                 fail!(from origin, with NodeListFailure::InsufficientPermissions,
                         "{} due to insufficient permissions while acquiring the node state.", msg);
             }
-            MonitoringCreateMonitorError::Interrupt => {
+            MonitoringCreateMonitorError::InterruptedBySignal => {
                 fail!(from origin, with NodeListFailure::Interrupt,
                         "{} since an interrupt was received while acquiring the node state.", msg);
             }
@@ -1798,6 +1800,10 @@ impl NodeBuilder {
             Err(MonitoringCreateTokenError::SystemCorrupted) => {
                 fail!(from self, with NodeCreationFailure::SystemCorrupted,
                     "{msg} since some external instance removed the underlying resources of the monitoring token.");
+            }
+            Err(MonitoringCreateTokenError::InterruptedBySignal) => {
+                fail!(from self, with NodeCreationFailure::InterruptedBySignal,
+                    "{msg} since a signal was raised.");
             }
         }
     }
