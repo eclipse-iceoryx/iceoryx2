@@ -133,7 +133,7 @@ jobs:
   freebsd:
     needs: [static-code-analysis-rust-nightly]
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     strategy:
       matrix:
         freebsd_version: ["15.0"]

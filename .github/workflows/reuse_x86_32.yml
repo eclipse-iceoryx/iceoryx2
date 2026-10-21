@@ -15,7 +15,7 @@ on:
 
 jobs:
     x86_32:
-      timeout-minutes: 60
+      timeout-minutes: 180
       runs-on: ${{ inputs.os }}
       steps:
       - name: Checkout sources
