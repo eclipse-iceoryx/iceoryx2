@@ -3016,7 +3016,7 @@ template <>
 constexpr auto from<iox2::BackpressureAction, iox2_backpressure_action_e>(const iox2::BackpressureAction value) noexcept
     -> iox2_backpressure_action_e {
     switch (value) {
-    case iox2::BackpressureAction::FollowBackpressureyStrategy:
+    case iox2::BackpressureAction::FollowBackpressureStrategy:
         return iox2_backpressure_action_e_FOLLOW_BACKPRESSUREY_STRATEGY;
     case iox2::BackpressureAction::Retry:
         return iox2_backpressure_action_e_RETRY;

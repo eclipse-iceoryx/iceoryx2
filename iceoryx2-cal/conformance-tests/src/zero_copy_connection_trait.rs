@@ -47,7 +47,7 @@ pub mod zero_copy_connection_trait {
     const NUMBER_OF_SAMPLES: usize = 2345;
 
     fn follow_backpressure_stratety(_: u64, _: Duration) -> BackpressureToReceiverAction {
-        BackpressureToReceiverAction::FollowBackpressureyStrategy
+        BackpressureToReceiverAction::FollowBackpressureStrategy
     }
 
     #[conformance_test]

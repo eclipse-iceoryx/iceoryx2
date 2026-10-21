@@ -60,7 +60,7 @@ pub use iceoryx2_cal::zero_copy_connection::BackpressureToReceiverAction;
 pub enum BackpressureAction {
     /// Use an action which is derived from the
     /// [`BackpressureStrategy`](crate::port::backpressure_strategy::BackpressureStrategy)
-    FollowBackpressureyStrategy,
+    FollowBackpressureStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
     /// Discard the data for the receiver which cause the incident and continue
@@ -75,8 +75,8 @@ pub enum BackpressureAction {
 impl From<BackpressureAction> for BackpressureToReceiverAction {
     fn from(value: BackpressureAction) -> Self {
         match value {
-            BackpressureAction::FollowBackpressureyStrategy => {
-                BackpressureToReceiverAction::FollowBackpressureyStrategy
+            BackpressureAction::FollowBackpressureStrategy => {
+                BackpressureToReceiverAction::FollowBackpressureStrategy
             }
             BackpressureAction::Retry => BackpressureToReceiverAction::Retry,
             BackpressureAction::DiscardData => BackpressureToReceiverAction::DiscardPointerOffset,

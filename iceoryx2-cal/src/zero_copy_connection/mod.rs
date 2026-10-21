@@ -137,7 +137,7 @@ impl core::error::Error for ZeroCopyReleaseError {}
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum BackpressureToReceiverAction {
     /// Use an action which is derived from the `BackpressureStrategy`
-    FollowBackpressureyStrategy,
+    FollowBackpressureStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
     /// Discard the [`PointerOffset`] for the [`ZeroCopyReceiver`] which cause the incident

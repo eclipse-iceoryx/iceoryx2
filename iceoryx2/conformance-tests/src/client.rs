@@ -782,7 +782,7 @@ pub mod client {
                         let handler_call_count = handler_call_count.clone();
                         move |_| {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            BackpressureAction::FollowBackpressureyStrategy
+                            BackpressureAction::FollowBackpressureStrategy
                         }
                     })
             },
@@ -836,7 +836,7 @@ pub mod client {
                         let call_count = call_count.clone();
                         move |_| {
                             call_count.fetch_add(1, Ordering::Relaxed);
-                            BackpressureAction::FollowBackpressureyStrategy
+                            BackpressureAction::FollowBackpressureStrategy
                         }
                     })
                     .create()
