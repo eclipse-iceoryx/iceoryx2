@@ -15,7 +15,8 @@ use crate::{
     clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
-        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+        ListenerCreateError, ListenerOpenError, ListenerWaitError, NotifierNotifyError,
+        NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
         trigger::{HandlerInterface, State, WaiterInterface},
@@ -235,6 +236,15 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn open(
+        _name: &FileName,
+        _config: &super::Configuration,
+        _mgmt: &mut core::mem::MaybeUninit<SemaphoreMgmt>,
+        _clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<Self, ListenerOpenError> {
+        unimplemented!()
     }
 
     fn has_ownership(&self) -> bool {

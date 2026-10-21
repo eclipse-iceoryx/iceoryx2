@@ -20,7 +20,8 @@ use crate::{
 };
 use crate::{
     event::{
-        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+        ListenerCreateError, ListenerOpenError, ListenerWaitError, NotifierNotifyError,
+        NotifierOpenError,
         trigger::{Configuration, HandlerInterface},
     },
     named_concept::NamedConceptRemoveError,
@@ -74,6 +75,15 @@ impl<
         _mgmt: &mut MaybeUninit<Mgmt>,
         _clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError> {
+        unimplemented!()
+    }
+
+    fn open(
+        _name: &FileName,
+        _config: &Configuration,
+        _mgmt: &mut MaybeUninit<Mgmt>,
+        _clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<Self, ListenerOpenError> {
         unimplemented!()
     }
 
