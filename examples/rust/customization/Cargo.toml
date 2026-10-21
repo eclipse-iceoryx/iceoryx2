@@ -1,0 +1,12 @@
+[package]
+# name = "iceoryx2-customization-ffi-service-types"
+name = "iceoryx"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.89"
+version = "0.0.1"
+
+[dependencies]
+iceoryx2 = { path = "../../../iceoryx2" }
+iceoryx2-cal = { path = "../../../iceoryx2-cal" }
+iceoryx2-bb-elementary-traits = { path = "../../../iceoryx2-bb/elementary-traits" }

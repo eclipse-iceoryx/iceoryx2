@@ -1,0 +1,16 @@
+[package]
+name = "iceoryx2-ffi-service-types"
+description = "iceoryx2: [internal] defines the services types for the language bindings"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx = { version = "*" }
