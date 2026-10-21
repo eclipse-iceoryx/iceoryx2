@@ -16,6 +16,7 @@ use crate::{
         common::EventImpl,
         trigger::{
             State,
+            named_pipe::GenericNamedPipeTrigger,
             semaphore::{GenericSemaphoreTrigger, SemaphoreMgmt},
             socket_pair::GenericSocketPairTrigger,
             stub::{Stub, StubMgmt},
@@ -59,4 +60,14 @@ pub type InternalStubEvent = EventImpl<
     >,
     Stub,
     Stub,
+>;
+
+pub type NamedPipeBitSet = GenericNamedPipeTrigger<
+    RelocatableBitSet,
+    dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, ()>>,
+>;
+
+pub type NamedPipeCountingBitSet = GenericNamedPipeTrigger<
+    RelocatableCountingBitSet,
+    dynamic_storage::posix_shared_memory::Storage<State<RelocatableCountingBitSet, ()>>,
 >;

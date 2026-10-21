@@ -14,5 +14,15 @@ version = { workspace = true }
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"]}
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-cal = { workspace = true }
 
 clap = { workspace = true }
+
+
+[features]
+default = ["std"]
+
+std = [
+  "iceoryx2-cal/std",
+]
