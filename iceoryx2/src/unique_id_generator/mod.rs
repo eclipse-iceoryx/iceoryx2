@@ -119,7 +119,7 @@ impl core::fmt::Display for UniqueIdGeneratorDetailsError {
 impl core::error::Error for UniqueIdGeneratorDetailsError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
-pub trait UniqueIdGenerator: Sized + Debug + testing::TestingUniqueIdGenerator {
+pub trait UniqueIdGenerator: Sized + Debug + internal::UniqueIdGeneratorResources {
     /// Opens an existing [`UniqueIdGenerator`] or creates it for a specific [`service::Service`].
     fn open_or_create<Service: service::Service>(
         config: &Config,
@@ -178,8 +178,8 @@ pub enum Entity {
 }
 
 #[doc(hidden)]
-pub mod testing {
-    pub trait TestingUniqueIdGenerator {
+pub mod internal {
+    pub trait UniqueIdGeneratorResources {
         fn remove_resources(config: &crate::config::Config);
     }
 }

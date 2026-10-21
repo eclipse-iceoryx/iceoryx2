@@ -13,7 +13,7 @@
 use iceoryx2::config::Config;
 use iceoryx2::port::port_name::PortName;
 use iceoryx2::service::{self, ipc};
-use iceoryx2::unique_id_generator::testing::TestingUniqueIdGenerator;
+use iceoryx2::unique_id_generator::internal::UniqueIdGeneratorResources;
 use iceoryx2::unique_id_generator::*;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -39,7 +39,7 @@ impl UniqueIdGenerator for TestUniqueId {
     }
 }
 
-impl TestingUniqueIdGenerator for TestUniqueId {
+impl UniqueIdGeneratorResources for TestUniqueId {
     fn remove_resources(_config: &Config) {}
 }
 

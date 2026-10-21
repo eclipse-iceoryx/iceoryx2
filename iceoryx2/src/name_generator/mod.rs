@@ -36,7 +36,7 @@ impl core::fmt::Display for NameGeneratorOpenOrCreateError {
 impl core::error::Error for NameGeneratorOpenOrCreateError {}
 
 /// Generates [`NodeName`]s and [`PortName`]s.
-pub trait NameGenerator: Debug + Sized + testing::TestingNameGenerator {
+pub trait NameGenerator: Debug + Sized + internal::NameGeneratorResources {
     /// Opens an existing [`NameGenerator`] or creates it.
     fn open_or_create(config: &Config) -> Result<Self, NameGeneratorOpenOrCreateError>;
 
@@ -48,8 +48,8 @@ pub trait NameGenerator: Debug + Sized + testing::TestingNameGenerator {
 }
 
 #[doc(hidden)]
-pub mod testing {
-    pub trait TestingNameGenerator {
+pub mod internal {
+    pub trait NameGeneratorResources {
         fn remove_resources(config: &crate::config::Config);
     }
 }

@@ -13,7 +13,7 @@
 use alloc::sync::Arc;
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueServiceId};
-use crate::name_generator::testing::TestingNameGenerator;
+use crate::name_generator::internal::NameGeneratorResources;
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
@@ -26,7 +26,7 @@ use crate::service::config_scheme::{
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::service_hash::ServiceHash;
 use crate::service::static_config;
-use crate::unique_id_generator::testing::TestingUniqueIdGenerator;
+use crate::unique_id_generator::internal::UniqueIdGeneratorResources;
 use crate::waitset::WaitSetBuilder;
 use crate::{
     config::Config,
@@ -265,24 +265,26 @@ unsafe fn remove_all_concept_resources<Concept: NamedConceptMgmt>(config: &Conce
 
 fn remove_all_node_resource_directories(global_config: &Config) {
     let node_resource_path = global_config.global.node_dir();
-    let node_resource_dir = Directory::new(&node_resource_path).unwrap();
-    for entry in node_resource_dir.contents().unwrap() {
-        if entry.metadata().file_type() == FileType::Directory
-            && entry
-                .name()
-                .to_string()
-                .starts_with(&global_config.global.prefix.to_string())
-        {
-            let mut entry_path = node_resource_path;
-            entry_path.add_path_entry(&entry.name().into()).unwrap();
-            Directory::remove(&entry_path).unwrap();
+    let node_resource_dir = Directory::new(&node_resource_path);
+    if let Ok(dir) = node_resource_dir {
+        for entry in dir.contents().unwrap() {
+            if entry.metadata().file_type() == FileType::Directory
+                && entry
+                    .name()
+                    .to_string()
+                    .starts_with(&global_config.global.prefix.to_string())
+            {
+                let mut entry_path = node_resource_path;
+                entry_path.add_path_entry(&entry.name().into()).unwrap();
+                Directory::remove(&entry_path).unwrap();
+            }
         }
     }
 }
 
 pub unsafe fn remove_all_resources<S: crate::service::Service>(global_config: &Config) {
-    <S::UniqueId as TestingUniqueIdGenerator>::remove_resources(global_config);
-    <S::NameGenerator as TestingNameGenerator>::remove_resources(global_config);
+    <S::UniqueId as UniqueIdGeneratorResources>::remove_resources(global_config);
+    <S::NameGenerator as NameGeneratorResources>::remove_resources(global_config);
 
     let c = dynamic_config_storage_config::<S>(global_config);
     unsafe { remove_all_concept_resources::<S::DynamicStorage<DynamicConfig<S::Bag>>>(&c) };

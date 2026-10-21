@@ -12,7 +12,7 @@
 
 //! Generates default [`NodeName`]s and [`PortName`]s.
 
-use crate::name_generator::testing::TestingNameGenerator;
+use crate::name_generator::internal::NameGeneratorResources;
 pub use crate::name_generator::*;
 
 /// Generator for default [`NodeName`]s and [`PortName`]s.
@@ -33,6 +33,6 @@ impl NameGenerator for DefaultNameGenerator {
     }
 }
 
-impl TestingNameGenerator for DefaultNameGenerator {
+impl NameGeneratorResources for DefaultNameGenerator {
     fn remove_resources(_config: &Config) {}
 }

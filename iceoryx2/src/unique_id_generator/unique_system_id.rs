@@ -20,7 +20,7 @@ use iceoryx2_cal::dynamic_storage::{
 pub use crate::unique_id_generator::*;
 use crate::{
     node::global_management_segment::GlobalManagementSegment,
-    unique_id_generator::testing::TestingUniqueIdGenerator,
+    unique_id_generator::internal::UniqueIdGeneratorResources,
 };
 
 /// Generator for a system-wide [`UniqueId`]. For a detailed documentation, see [`UniqueSystemId`].
@@ -85,6 +85,6 @@ impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Se
     }
 }
 
-impl<Service: service::Service> TestingUniqueIdGenerator for UniqueSystemIdGenerator<Service> {
+impl<Service: service::Service> UniqueIdGeneratorResources for UniqueSystemIdGenerator<Service> {
     fn remove_resources(_config: &Config) {}
 }
