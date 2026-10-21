@@ -214,6 +214,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
     for NamedPipeWaiter<E, Storage>
 {
     const IS_FILE_DESCRIPTOR_BASED: bool = true;
+    const SUPPORT_PERSISTENCY: bool = true;
 
     unsafe fn remove(
         name: &FileName,

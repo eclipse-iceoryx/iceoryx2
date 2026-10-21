@@ -55,6 +55,7 @@ impl<
 > WaiterInterface<E, Mgmt, Storage> for Stub
 {
     const IS_FILE_DESCRIPTOR_BASED: bool = false;
+    const SUPPORT_PERSISTENCY: bool = false;
 
     unsafe fn remove(
         _name: &FileName,
