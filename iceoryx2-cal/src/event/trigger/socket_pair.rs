@@ -203,6 +203,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     WaiterInterface<E, SocketPairMgmt, Storage> for SocketPairWaiter<E, Storage>
 {
     const IS_FILE_DESCRIPTOR_BASED: bool = true;
+    const SUPPORT_PERSISTENCY: bool = false;
 
     unsafe fn remove(
         _name: &FileName,

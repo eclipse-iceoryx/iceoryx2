@@ -78,6 +78,7 @@ pub trait WaiterInterface<
 >: Send + Sync + Debug + Abandonable
 {
     const IS_FILE_DESCRIPTOR_BASED: bool;
+    const SUPPORT_PERSISTENCY: bool;
 
     /// # Safety
     ///

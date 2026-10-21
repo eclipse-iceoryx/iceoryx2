@@ -197,6 +197,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
     for UnixDatagramWaiter<E, Storage>
 {
     const IS_FILE_DESCRIPTOR_BASED: bool = true;
+    const SUPPORT_PERSISTENCY: bool = false;
 
     unsafe fn remove(
         name: &FileName,
