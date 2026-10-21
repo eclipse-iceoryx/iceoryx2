@@ -60,6 +60,7 @@ iceoryx2-bb-print = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-ffi-macros = { workspace = true }
+iceoryx2-ffi-service-types = { workspace = true }
 iceoryx2-log = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 
