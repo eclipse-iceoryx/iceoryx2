@@ -120,10 +120,8 @@ impl core::error::Error for UniqueIdGeneratorDetailsError {}
 
 /// Generates [`UniqueId`]s whose [`UniqueId::unique_value()`]s are unique, at least within a single process.
 pub trait UniqueIdGenerator: Sized + Debug + internal::UniqueIdGeneratorResources {
-    /// Opens an existing [`UniqueIdGenerator`] or creates it for a specific [`service::Service`].
-    fn open_or_create<Service: service::Service>(
-        config: &Config,
-    ) -> Result<Self, UniqueIdGeneratorOpenOrCreateError>;
+    /// Opens an existing [`UniqueIdGenerator`] or creates it.
+    fn open_or_create(config: &Config) -> Result<Self, UniqueIdGeneratorOpenOrCreateError>;
 
     /// Generates a [`UniqueId`].
     fn generate(&self, entity: &Entity) -> Result<UniqueId, UniqueIdGeneratorGenerateError>;

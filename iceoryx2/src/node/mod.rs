@@ -1722,7 +1722,7 @@ impl NodeBuilder {
             None => name_generator.generate_node_name(),
         };
 
-        let id_generator = fail!(from self, when Service::UniqueId::open_or_create::<Service>(config),
+        let id_generator = fail!(from self, when Service::UniqueId::open_or_create(config),
             with NodeCreationFailure::UnableToGenerateUniqueNodeId,
             "{msg} since the unique id generator could not be opened.");
         let node_id = fail!(from self, when UniqueNodeId::new::<Service>(name, &id_generator),

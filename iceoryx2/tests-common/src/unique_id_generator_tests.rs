@@ -12,7 +12,6 @@
 
 use iceoryx2::config::Config;
 use iceoryx2::port::port_name::PortName;
-use iceoryx2::service::{self, ipc};
 use iceoryx2::unique_id_generator::internal::UniqueIdGeneratorResources;
 use iceoryx2::unique_id_generator::*;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -26,9 +25,7 @@ static COUNTER: AtomicU64 = AtomicU64::new(0);
 struct TestUniqueId {}
 
 impl UniqueIdGenerator for TestUniqueId {
-    fn open_or_create<Service: service::Service>(
-        _config: &Config,
-    ) -> Result<Self, UniqueIdGeneratorOpenOrCreateError> {
+    fn open_or_create(_config: &Config) -> Result<Self, UniqueIdGeneratorOpenOrCreateError> {
         Ok(Self {})
     }
 
@@ -53,7 +50,7 @@ fn unique_id_can_be_created_from_value() {
 #[test]
 fn pid_returns_error_when_not_implemented() {
     let config = Config::global_config();
-    let id_generator = TestUniqueId::open_or_create::<ipc::Service>(config).unwrap();
+    let id_generator = TestUniqueId::open_or_create(config).unwrap();
     let id = id_generator
         .generate(&Entity::Client(PortName::new_empty()))
         .unwrap();
@@ -65,7 +62,7 @@ fn pid_returns_error_when_not_implemented() {
 #[test]
 fn creation_time_returns_error_when_not_implemented() {
     let config = Config::global_config();
-    let id_generator = TestUniqueId::open_or_create::<ipc::Service>(config).unwrap();
+    let id_generator = TestUniqueId::open_or_create(config).unwrap();
     let id = id_generator
         .generate(&Entity::Client(PortName::new_empty()))
         .unwrap();
