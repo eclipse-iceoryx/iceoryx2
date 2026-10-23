@@ -13,8 +13,8 @@
 use core::ops::Deref;
 
 use crate::service_description::{
-    EventSettings, PatternSettings, PublishSubscribeSettings, SampleTypes, ServiceDescription,
-    ServiceDescriptor, ServiceTypes,
+    EventSettings, PatternSettings, PublishSubscribeSettings, RequestResponseSettings,
+    RequestResponseTypes, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
 };
 
 /// A description seen as the pattern its halves are of, each arm giving
@@ -23,6 +23,7 @@ use crate::service_description::{
 pub enum MessagingPattern<'a> {
     PublishSubscribe(PublishSubscribeDescription<'a>),
     Event(EventDescription<'a>),
+    RequestResponse(RequestResponseDescription<'a>),
 }
 
 impl<'a> MessagingPattern<'a> {
@@ -40,6 +41,13 @@ impl<'a> MessagingPattern<'a> {
                 Self::Event(EventDescription {
                     description,
                     settings,
+                })
+            }
+            (PatternSettings::RequestResponse(settings), ServiceTypes::RequestResponse(types)) => {
+                Self::RequestResponse(RequestResponseDescription {
+                    description,
+                    settings,
+                    types,
                 })
             }
             _ => unreachable!("a description is composed of settings and types of one pattern"),
@@ -95,6 +103,36 @@ impl<'a> EventDescription<'a> {
 }
 
 impl Deref for EventDescription<'_> {
+    type Target = ServiceDescription;
+
+    fn deref(&self) -> &Self::Target {
+        self.description
+    }
+}
+
+/// A description known to be of a request-response service.
+#[derive(Clone, Copy)]
+pub struct RequestResponseDescription<'a> {
+    description: &'a ServiceDescription,
+    settings: &'a RequestResponseSettings,
+    types: &'a RequestResponseTypes,
+}
+
+impl<'a> RequestResponseDescription<'a> {
+    pub fn settings(&self) -> &'a RequestResponseSettings {
+        self.settings
+    }
+
+    pub fn types(&self) -> &'a RequestResponseTypes {
+        self.types
+    }
+
+    pub fn descriptor(&self) -> ServiceDescriptor {
+        ServiceDescriptor::from(self.description)
+    }
+}
+
+impl Deref for RequestResponseDescription<'_> {
     type Target = ServiceDescription;
 
     fn deref(&self) -> &Self::Target {

@@ -13,7 +13,9 @@ use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_link_backend::resolver::{self, Resolution};
-use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceDescriptor};
+use iceoryx2_link_backend::service_description::{
+    ServiceDescription, ServiceDescriptor, ServiceTypes,
+};
 use iceoryx2_log::{origin, warn};
 
 use crate::OfferId;
@@ -23,12 +25,15 @@ use crate::OfferId;
 pub enum Refusal {
     /// The peers offer the service under differing types.
     Disputed,
+    /// The tunnel does not carry the pattern.
+    UnsupportedPattern,
 }
 
 impl core::fmt::Display for Refusal {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Refusal::Disputed => write!(f, "has differing types among its peers"),
+            Refusal::UnsupportedPattern => write!(f, "has a pattern the tunnel does not carry"),
         }
     }
 }
@@ -66,9 +71,13 @@ impl<S: Service> resolver::Resolver<S> for Resolver {
     ) -> Resolution<ServiceDescriptor, Refusal> {
         let origin = origin!("Resolver::resolve");
 
-        // A peer offering the local service under other types never
-        // receives its samples, the channel is keyed by the types.
+        // A local service is exported under its own description.
         if let Some(local) = local {
+            if !supported_pattern(local.types()) {
+                return Resolution::Refused(Refusal::UnsupportedPattern);
+            }
+            // A peer offering the local service under other types never
+            // receives its samples, the channel is keyed by the types.
             if remotes.any(|offered| offered.types != *local.types()) {
                 warn!(
                     from origin,
@@ -78,9 +87,14 @@ impl<S: Service> resolver::Resolver<S> for Resolver {
             }
             return Resolution::Exported(ServiceDescriptor::from(local));
         }
+
+        // A remote service the peers agree on is imported with the local defaults.
         let Some(first) = remotes.next() else {
             return Resolution::OutOfScope;
         };
+        if !supported_pattern(&first.types) {
+            return Resolution::Refused(Refusal::UnsupportedPattern);
+        }
         if remotes.any(|offered| offered.types != first.types) {
             return Resolution::Refused(Refusal::Disputed);
         }
@@ -91,6 +105,11 @@ impl<S: Service> resolver::Resolver<S> for Resolver {
         );
         Resolution::Imported(mirror, first.clone())
     }
+}
+
+/// Whether the tunnel supports the pattern of these types.
+fn supported_pattern(types: &ServiceTypes) -> bool {
+    !matches!(types, ServiceTypes::RequestResponse(_))
 }
 
 #[cfg(test)]

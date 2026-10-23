@@ -13,4 +13,5 @@
 pub mod event;
 pub mod publish_subscribe;
 pub mod region;
+pub mod request_response;
 pub mod sample;

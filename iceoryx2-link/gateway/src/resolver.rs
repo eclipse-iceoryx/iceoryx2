@@ -84,6 +84,9 @@ impl<M: Mapping, T: Translators> Resolver<M, T> {
                 EndpointTypes::<T>::PublishSubscribe(self.translator.samples().remote(types)?)
             }
             ServiceTypes::Event => EndpointTypes::<T>::Event,
+            ServiceTypes::RequestResponse(_) => {
+                unreachable!("the gateway does not translate request-response types yet")
+            }
         })
     }
 
@@ -182,6 +185,7 @@ impl<S: Service, M: Mapping, T: Translators> resolver::Resolver<S> for Resolver<
         let pattern = match settings.pattern {
             PatternSettings::PublishSubscribe(_) => Pattern::PublishSubscribe,
             PatternSettings::Event(_) => Pattern::Event,
+            PatternSettings::RequestResponse(_) => Pattern::RequestResponse,
         };
         Ok(Some(ServiceHash::new::<S::ServiceNameHasher>(
             &settings.id(),

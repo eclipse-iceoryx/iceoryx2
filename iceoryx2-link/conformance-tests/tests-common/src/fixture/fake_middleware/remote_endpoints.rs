@@ -34,6 +34,9 @@ pub(crate) fn endpoint_for<T: WireForm>(service: &ServiceDescription) -> FakeEnd
                 .expect("the fake translators never fail"),
         ),
         ServiceTypes::Event => EndpointTypes::Event,
+        ServiceTypes::RequestResponse(_) => {
+            unimplemented!("the fake middleware has no request-response endpoints")
+        }
     };
     EndpointDescription {
         types,
@@ -59,6 +62,9 @@ impl<T: WireForm> FakeRemoteEndpoints<T> {
         let header_size = match service.types() {
             ServiceTypes::PublishSubscribe(types) => types.user_header.size,
             ServiceTypes::Event => 0,
+            ServiceTypes::RequestResponse(_) => {
+                unimplemented!("the fake middleware has no request-response endpoints")
+            }
         };
         Self {
             service,

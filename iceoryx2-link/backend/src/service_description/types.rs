@@ -24,8 +24,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ServiceTypes {
     PublishSubscribe(SampleTypes),
-    /// An event service has no types, a notification carries an id.
     Event,
+    RequestResponse(RequestResponseTypes),
 }
 
 impl ServiceTypes {
@@ -36,7 +36,7 @@ impl ServiceTypes {
 
         match self {
             ServiceTypes::PublishSubscribe(types) => types,
-            ServiceTypes::Event => fatal_panic!(
+            ServiceTypes::Event | ServiceTypes::RequestResponse(_) => fatal_panic!(
                 from origin,
                 "Tried to convert service types of another pattern to publish-subscribe types"
             ),
@@ -94,6 +94,13 @@ impl SampleTypes {
         );
         Ok((payload, user_header))
     }
+}
+
+/// The sample types used by one request-respone service.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct RequestResponseTypes {
+    pub request: SampleTypes,
+    pub response: SampleTypes,
 }
 
 /// The layout of one type detail, whose size and alignment
