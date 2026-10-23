@@ -24,7 +24,7 @@ use iceoryx2_link_backend::service_description::{
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{
     Adapter, EndpointDescription, EndpointTypes, PublishSubscribeEndpoints, SampleBytesRef,
-    TakeDestination, TakeOutcome, UnsupportedEndpoints,
+    SampleDestination, TakeOutcome, UnsupportedEndpoints,
 };
 use iceoryx2_link_adapter::{LocalTypes, NoTranscoder, SampleShape, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::Identified;
@@ -246,7 +246,10 @@ impl PublishSubscribeEndpoints for NoEndpoints {
         Ok(())
     }
 
-    fn take<'a>(&mut self, _: impl TakeDestination<'a>) -> Result<TakeOutcome, Self::Failure> {
+    fn take<'a>(
+        &mut self,
+        _: impl SampleDestination<'a>,
+    ) -> Result<TakeOutcome<()>, Self::Failure> {
         Ok(TakeOutcome::Empty)
     }
 }

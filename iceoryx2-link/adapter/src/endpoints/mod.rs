@@ -17,5 +17,38 @@ mod unsupported;
 
 pub use endpoint_description::{EndpointDescription, EndpointTypes};
 pub use event::EventEndpoints;
-pub use publish_subscribe::{PublishSubscribeEndpoints, TakeDestination, TakeOutcome};
+pub use publish_subscribe::PublishSubscribeEndpoints;
 pub use unsupported::UnsupportedEndpoints;
+
+use crate::{SampleBytes, SampleBytesRefMut, SampleLengths};
+
+/// Where a taken sample's bytes are written.
+pub trait SampleDestination<'a> {
+    /// The locations for a sample of `lengths`.
+    ///
+    /// Returns `None` if the destination cannot honor the requested lengths.
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>>;
+}
+
+impl<'a> SampleDestination<'a> for &'a mut SampleBytes {
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'a>> {
+        self.header.resize(lengths.header, 0);
+        self.payload.resize(lengths.payload, 0);
+        Some(self.as_mut())
+    }
+}
+
+/// The possible outcomes taking from the middleware may provide.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TakeOutcome<Details> {
+    /// The sample was written into the destination with optional details
+    /// describing the take.
+    Taken(Details),
+    /// The destination declined the sample.
+    Declined,
+    /// A sample was taken and dropped as one not meant for the link. More
+    /// may be pending.
+    Skipped,
+    /// Nothing was pending.
+    Empty,
+}

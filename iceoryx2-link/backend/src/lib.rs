@@ -49,6 +49,7 @@
 //!     type Resolver<'a> = &'a MyResolver where Self: 'a;
 //!     type PublishSubscribeRelay = MyPublishSubscribeRelay;
 //!     type EventRelay = MyEventRelay;
+//!     type RequestResponseRelay = MyRequestResponseRelay;
 //!     type RelayFactory<'a> = MyRelayFactory<'a> where Self: 'a;
 //!
 //!     fn generation(&self) -> Generation {

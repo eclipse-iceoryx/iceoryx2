@@ -159,7 +159,7 @@ impl<
             "Failed to take a message"
         );
         match outcome {
-            TakeOutcome::Taken => {
+            TakeOutcome::Taken(()) => {
                 let sample = fail!(
                     from origin,
                     when decode.output(),
@@ -189,7 +189,7 @@ mod tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_adapter::LocalTypes;
     use iceoryx2_link_adapter::{
-        SampleLengths, SampleTranscoders, TakeDestination, TranscodeError, Transcoder,
+        SampleDestination, SampleLengths, SampleTranscoders, TranscodeError, Transcoder,
     };
     use iceoryx2_link_backend::service_description::TypeDescription;
     use iceoryx2_link_backend::wire::publish_subscribe::{
@@ -261,8 +261,8 @@ mod tests {
 
         fn take<'a>(
             &mut self,
-            destination: impl TakeDestination<'a>,
-        ) -> Result<TakeOutcome, Self::Failure> {
+            destination: impl SampleDestination<'a>,
+        ) -> Result<TakeOutcome<()>, Self::Failure> {
             let Some(message) = self.pending.take() else {
                 return Ok(TakeOutcome::Empty);
             };
@@ -274,7 +274,7 @@ mod tests {
             };
             regions.header.copy_from_slice(&message.header);
             regions.payload.copy_from_slice(&message.payload);
-            Ok(TakeOutcome::Taken)
+            Ok(TakeOutcome::Taken(()))
         }
     }
 

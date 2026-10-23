@@ -45,7 +45,7 @@ pub mod adapter_publish_subscribe {
     fn take<E: PublishSubscribeEndpoints>(endpoints: &mut E) -> Option<Vec<u8>> {
         let mut bytes = SampleBytes::default();
         match endpoints.take(&mut bytes).expect("taking succeeds") {
-            TakeOutcome::Taken => Some(bytes.payload),
+            TakeOutcome::Taken(()) => Some(bytes.payload),
             TakeOutcome::Declined | TakeOutcome::Skipped | TakeOutcome::Empty => None,
         }
     }

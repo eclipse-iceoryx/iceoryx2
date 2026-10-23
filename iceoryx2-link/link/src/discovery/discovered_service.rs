@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::collections::BTreeMap;
-use alloc::collections::btree_map::Values;
+use alloc::collections::btree_map::{Keys, Values};
 use core::iter::Map;
 
 use iceoryx2::service::service_hash::ServiceHash;
@@ -39,6 +39,10 @@ pub(crate) struct RemoteObservation<RemoteDescription> {
     pub(super) seen: Epoch,
 }
 
+/// The IDs of the discovered remotes.
+pub(crate) type RemoteIds<'a, RemoteId, RemoteDescription> =
+    Keys<'a, RemoteId, RemoteObservation<RemoteDescription>>;
+
 /// The description each remote listed the service with.
 pub(crate) type RemoteDescriptions<'a, RemoteId, RemoteDescription> = Map<
     Values<'a, RemoteId, RemoteObservation<RemoteDescription>>,
@@ -57,11 +61,13 @@ pub(crate) struct DiscoveredService<RemoteId, RemoteDescription, Refusal> {
 }
 
 /// A discovered service for which a bridge can be established.
-pub(crate) struct BridgeableService<'a, RemoteDescription> {
+pub(crate) struct BridgeableService<'a, RemoteId, RemoteDescription> {
     pub(crate) hash: &'a ServiceHash,
     pub(crate) local_description: &'a ServiceDescription,
     /// The remote the service is relayed against.
     pub(crate) remote_description: &'a RemoteDescription,
+    /// The ids of every remote offering the service.
+    pub(crate) remotes: RemoteIds<'a, RemoteId, RemoteDescription>,
     /// The epoch the resolution was decided in.
     pub(crate) resolved: Epoch,
 }

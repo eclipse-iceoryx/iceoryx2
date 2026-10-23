@@ -181,7 +181,7 @@ impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Dis
     /// resolution was decided in.
     pub(crate) fn bridgeable(
         &self,
-    ) -> impl Iterator<Item = BridgeableService<'_, RemoteDescription>> {
+    ) -> impl Iterator<Item = BridgeableService<'_, RemoteId, RemoteDescription>> {
         self.entries.iter().filter_map(|(hash, entry)| {
             let (local_description, remote_description) = match &entry.resolution {
                 Resolution::Exported(remote) => (&entry.local.as_ref()?.description, remote),
@@ -193,6 +193,7 @@ impl<RemoteId: Ord + Clone + Display, RemoteDescription: PartialEq, Refusal: Dis
                 hash,
                 local_description,
                 remote_description,
+                remotes: entry.remotes.keys(),
                 resolved: entry.resolved,
             })
         })
@@ -585,6 +586,13 @@ mod tests {
         }
 
         let bridgeable: Vec<ServiceHash> = sut.bridgeable().map(|entry| *entry.hash).collect();
+        let remotes_of_imported: Vec<u8> = sut
+            .bridgeable()
+            .find(|entry| *entry.hash == imported.hash())
+            .expect("the imported service is bridgeable")
+            .remotes
+            .copied()
+            .collect();
         let exported_hashes: Vec<ServiceHash> = sut
             .exported()
             .map(|exported| exported.description.hash())
@@ -593,6 +601,7 @@ mod tests {
         let mut expected = alloc::vec![exported.hash(), imported.hash()];
         expected.sort();
         assert_that!(bridgeable, eq expected);
+        assert_that!(remotes_of_imported, eq alloc::vec![FIRST_REMOTE]);
         assert_that!(exported_hashes, eq alloc::vec![exported.hash()]);
     }
 }

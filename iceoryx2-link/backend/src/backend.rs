@@ -16,7 +16,7 @@ use core::fmt::Display;
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 
-use crate::relay::{EventRelay, PublishSubscribeRelay, RelayFactory};
+use crate::relay::{EventRelay, PublishSubscribeRelay, RelayFactory, RequestResponseRelay};
 use crate::resolver::Resolver;
 use crate::service_description::ServiceDescription;
 use iceoryx2_bb_elementary::generation::Generation;
@@ -61,11 +61,13 @@ pub trait Backend<S: Service> {
         Self: 'a;
     type PublishSubscribeRelay: PublishSubscribeRelay<S>;
     type EventRelay: EventRelay<S>;
+    type RequestResponseRelay: RequestResponseRelay<S, RemoteId = Self::RemoteId>;
     type RelayFactory<'a>: RelayFactory<
             S,
             RemoteDescription = RemoteDescription<S, Self>,
             PublishSubscribeRelay = Self::PublishSubscribeRelay,
             EventRelay = Self::EventRelay,
+            RequestResponseRelay = Self::RequestResponseRelay,
         >
     where
         Self: 'a;

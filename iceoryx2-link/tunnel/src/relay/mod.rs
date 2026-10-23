@@ -17,10 +17,12 @@ use core::error::Error;
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
-use iceoryx2_link_backend::relay::RelayFactory;
+use iceoryx2_link_backend::relay::{RelayFactory, UnsupportedRelay, UnsupportedRelayBuilder};
 use iceoryx2_link_backend::service_description::{
-    EventDescription, PublishSubscribeDescription, ServiceDescriptor,
+    EventDescription, PublishSubscribeDescription, RequestResponseDescription, ServiceDescriptor,
 };
+
+use crate::OfferId;
 
 use iceoryx2_link_carrier::Carrier;
 
@@ -50,6 +52,11 @@ impl<'a, S: Service, C: Carrier> RelayFactory<S> for Factory<'a, S, C> {
         = event::Builder<'b, S, C>
     where
         Self: 'b;
+    type RequestResponseRelay = UnsupportedRelay<S, OfferId>;
+    type RequestResponseBuilder<'b>
+        = UnsupportedRelayBuilder<S, OfferId>
+    where
+        Self: 'b;
 
     fn publish_subscribe<'b>(
         &'b mut self,
@@ -71,6 +78,18 @@ impl<'a, S: Service, C: Carrier> RelayFactory<S> for Factory<'a, S, C> {
         Self: 'b,
     {
         event::Builder::new(self.carrier, description, descriptor)
+    }
+
+    /// The tunnel does not bridge request-response yet.
+    fn request_response<'b>(
+        &'b mut self,
+        _: RequestResponseDescription<'b>,
+        _: &'b ServiceDescriptor,
+    ) -> Self::RequestResponseBuilder<'b>
+    where
+        Self: 'b,
+    {
+        UnsupportedRelayBuilder::new()
     }
 }
 

@@ -18,7 +18,6 @@ use iceoryx2::service::Service;
 use iceoryx2::service::builder::publish_subscribe;
 use iceoryx2::service::header::payload_header::PayloadHeader;
 use iceoryx2::service::service_name::ServiceName;
-use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_link_backend::relay::ReceiveOutcome;
 use iceoryx2_link_backend::service_description::{
     PublishSubscribeSettings, SampleTypes, TypeDescription, TypeIdentifier,
@@ -28,6 +27,8 @@ use iceoryx2_link_backend::wire::publish_subscribe::{
 };
 use iceoryx2_link_backend::wire::sample::{Header, Payload, UnloanedSample};
 use iceoryx2_log::{fail, origin};
+
+use super::number_of_elements;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -251,17 +252,6 @@ fn loan<S: Service>(
     Ok(sample)
 }
 
-/// The number of payload elements `number_of_bytes` holds.
-fn number_of_elements(payload: &TypeDescription, number_of_bytes: usize) -> Option<usize> {
-    match payload.variant {
-        TypeVariant::FixedSize => (number_of_bytes == payload.size).then_some(1),
-        TypeVariant::Dynamic => {
-            let whole = payload.size != 0 && number_of_bytes.is_multiple_of(payload.size);
-            whole.then(|| number_of_bytes / payload.size)
-        }
-    }
-}
-
 fn apply_settings<S: Service>(
     builder: publish_subscribe::Builder<Payload, Header, S>,
     settings: &PublishSubscribeSettings,
@@ -285,7 +275,7 @@ mod tests {
     use iceoryx2::service::local;
     use iceoryx2::service::marker::Flatbuffer;
     use iceoryx2::service::messaging_pattern::MessagingPattern;
-    use iceoryx2::service::static_config::message_type_details::TypeDetail;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_posix::testing::create_typed_file_with_content;
     use iceoryx2_bb_testing::assert_that;
@@ -294,37 +284,6 @@ mod tests {
         PatternSettings, ServiceDescription, ServiceTypes, TypeIdentifier,
     };
     use iceoryx2_link_backend::wire::sample::{LoanableSample, WritableSample};
-
-    const ALIGNMENT: usize = 1;
-
-    fn payload(variant: TypeVariant, size: usize) -> TypeDescription {
-        TypeDescription {
-            variant,
-            identifier: TypeIdentifier::Name("test_type".into()),
-            size,
-            alignment: ALIGNMENT,
-        }
-    }
-
-    #[test]
-    fn fixed_size_payload_holds_exactly_one_element() {
-        const ELEMENT_SIZE: usize = 8;
-
-        let payload = payload(TypeVariant::FixedSize, ELEMENT_SIZE);
-        assert_that!(number_of_elements(&payload, ELEMENT_SIZE), eq Some(1));
-        assert_that!(number_of_elements(&payload, 0), eq None);
-        assert_that!(number_of_elements(&payload, 2 * ELEMENT_SIZE), eq None);
-    }
-
-    #[test]
-    fn dynamic_payload_holds_whole_elements() {
-        const ELEMENT_SIZE: usize = 4;
-
-        let payload = payload(TypeVariant::Dynamic, ELEMENT_SIZE);
-        assert_that!(number_of_elements(&payload, 0), eq Some(0));
-        assert_that!(number_of_elements(&payload, 3 * ELEMENT_SIZE), eq Some(3));
-        assert_that!(number_of_elements(&payload, ELEMENT_SIZE + ELEMENT_SIZE / 2), eq None);
-    }
 
     #[test]
     fn flatbuffer_samples_round_trip_through_the_ports() {

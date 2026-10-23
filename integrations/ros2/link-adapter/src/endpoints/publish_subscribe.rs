@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_adapter::{SampleBytesRef, SampleLengths, TakeDestination, TakeOutcome};
+use iceoryx2_link_adapter::{SampleBytesRef, SampleDestination, SampleLengths, TakeOutcome};
 use iceoryx2_log::{fail, origin};
 
 use crate::rcl::subscription::TakeError as RclTakeError;
@@ -75,8 +75,8 @@ impl iceoryx2_link_adapter::PublishSubscribeEndpoints for PublishSubscribeEndpoi
     /// as a [`RosHeader`].
     fn take<'a>(
         &mut self,
-        destination: impl TakeDestination<'a>,
-    ) -> Result<TakeOutcome, Self::Failure> {
+        destination: impl SampleDestination<'a>,
+    ) -> Result<TakeOutcome<()>, Self::Failure> {
         let origin = origin!("PublishSubscribeEndpoints::take");
 
         // Provide the payload location to the rmw as the buffer to write the
@@ -139,7 +139,7 @@ impl iceoryx2_link_adapter::PublishSubscribeEndpoints for PublishSubscribeEndpoi
         let header = RosHeader::from(info);
         header_location.copy_from_slice(bytes_of(&header));
 
-        Ok(TakeOutcome::Taken)
+        Ok(TakeOutcome::Taken(()))
     }
 }
 
