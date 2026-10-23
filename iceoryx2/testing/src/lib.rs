@@ -34,6 +34,7 @@ unsafe impl<S: iceoryx2::service::Service> Sync for Test<S> {}
 impl<Service: iceoryx2::service::Service> Drop for Test<Service> {
     fn drop(&mut self) {
         Self::cleanup_dead_nodes(&self.config);
+        unsafe { remove_all_resources::<Service>(&self.config) };
         unsafe { remove_global_mgmt_segment::<Service>(&self.config).unwrap() };
     }
 }

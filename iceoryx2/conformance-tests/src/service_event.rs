@@ -1797,8 +1797,8 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn create_fails_when_notifier_created_event_exceeds_max_event_id<Sut: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         const MAX: usize = 5;
 
         let service_name = generate_service_name();
@@ -1814,8 +1814,8 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn create_fails_when_notifier_dropped_event_exceeds_max_event_id<Sut: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         const MAX: usize = 5;
 
         let service_name = generate_service_name();
@@ -1831,8 +1831,8 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn create_fails_when_notifier_dead_event_exceeds_max_event_id<Sut: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         const MAX: usize = 5;
 
         let service_name = generate_service_name();
@@ -1848,8 +1848,8 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn create_succeeds_when_lifecycle_event_ids_within_max_event_id<Sut: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         const MAX: usize = 5;
 
         let service_name = generate_service_name();
