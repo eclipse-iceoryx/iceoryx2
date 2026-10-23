@@ -14,7 +14,8 @@ use crate::{
     clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::{self, DynamicStorage},
     event::{
-        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+        ListenerCreateError, ListenerOpenError, ListenerWaitError, NotifierNotifyError,
+        NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
         trigger::{Configuration, HandlerInterface, State, WaiterInterface},
@@ -202,6 +203,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     WaiterInterface<E, SocketPairMgmt, Storage> for SocketPairWaiter<E, Storage>
 {
     const IS_FILE_DESCRIPTOR_BASED: bool = true;
+    const SUPPORT_PERSISTENCY: bool = false;
 
     unsafe fn remove(
         _name: &FileName,
@@ -272,6 +274,27 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn open(
+        _name: &FileName,
+        _config: &super::Configuration,
+        _mgmt: &mut core::mem::MaybeUninit<SocketPairMgmt>,
+        _clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<Self, ListenerOpenError> {
+        unimplemented!()
+    }
+
+    fn has_ownership(&self) -> bool {
+        unimplemented!();
+    }
+
+    fn acquire_ownership(&self) {
+        unimplemented!();
+    }
+
+    fn release_ownership(&self) {
+        unimplemented!();
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
