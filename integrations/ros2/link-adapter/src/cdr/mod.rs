@@ -13,13 +13,42 @@
 //! The XCDR1 encoding of ROS 2 messages.
 //!
 //! A message is the 4-byte encapsulation header followed by its members in
-//! definition order. Primitives are aligned to their size relative to the
-//! byte after the header. A sequence is a `u32` length followed by its
-//! elements, a string a `u32` length followed by its bytes and a NUL.
+//! definition order.
+//!
+//! * A primitive is aligned to its size, counted from the byte after the
+//!   header.
+//! * An array is its elements.
+//! * A sequence is a `u32` length followed by its elements. An empty
+//!   sequence is its length alone.
+//! * A string is a `u32` length followed by its bytes and a NUL.
+//!
+//! The rmw reports its size estimate as the length, so a message may be
+//! followed by bytes that are not part of it.
 
+mod reader;
 mod writer;
 
+pub use reader::{Endianness, ReadError, Reader};
 pub use writer::{WriteError, Writer};
 
+use core::ops::Range;
+
+/// The bytes of the encapsulation header holding the representation
+/// identifier.
+const IDENTIFIER_BYTES: Range<usize> = 0..2;
+/// The bytes of the encapsulation header holding the representation
+/// options, reserved and always zero.
+const OPTIONS_BYTES: Range<usize> = 2..4;
 /// The length of the encapsulation header.
-pub(crate) const ENCAPSULATION_LEN: usize = 4;
+const ENCAPSULATION_LEN: usize = OPTIONS_BYTES.end;
+
+/// The representation identifier of big-endian plain CDR.
+const CDR_BE: [u8; 2] = [0x00, 0x00];
+/// The representation identifier of little-endian plain CDR.
+const CDR_LE: [u8; 2] = [0x00, 0x01];
+/// The representation identifier of plain CDR in the host's byte order,
+/// the one the writer stamps.
+#[cfg(target_endian = "little")]
+const CDR_NE: [u8; 2] = CDR_LE;
+#[cfg(target_endian = "big")]
+const CDR_NE: [u8; 2] = CDR_BE;

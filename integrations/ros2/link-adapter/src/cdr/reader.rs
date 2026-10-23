@@ -1,0 +1,406 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use iceoryx2_log::{fail, origin};
+
+use super::{CDR_BE, CDR_LE, ENCAPSULATION_LEN, IDENTIFIER_BYTES};
+
+/// The byte order a message is encoded in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Endianness {
+    Little,
+    Big,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReadError {
+    /// The bytes end before the value does.
+    Truncated,
+    /// The header names an encapsulation other than plain CDR.
+    UnsupportedEncapsulation,
+    /// A string has no length or no terminating NUL.
+    InvalidString,
+    /// A bool is neither 0 nor 1.
+    InvalidBool,
+}
+
+impl core::fmt::Display for ReadError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReadError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReadError {}
+
+/// An XCDR1 reader over the bytes of a message.
+#[derive(Debug)]
+pub struct Reader<'a> {
+    bytes: &'a [u8],
+    /// The offset of the next byte to read, counted from the start of the
+    /// header.
+    cursor: usize,
+    endianness: Endianness,
+}
+
+impl<'a> Reader<'a> {
+    /// A reader over the message `bytes`, in the byte order their
+    /// encapsulation header names.
+    ///
+    /// Fails when the bytes hold no header or the header names an
+    /// encapsulation other than plain CDR.
+    pub fn new(bytes: &'a [u8]) -> Result<Self, ReadError> {
+        let origin = origin!("cdr::Reader::new");
+
+        let Some(header) = bytes.get(..ENCAPSULATION_LEN) else {
+            fail!(
+                from origin,
+                with ReadError::Truncated,
+                "The {} bytes do not hold the encapsulation header", bytes.len()
+            );
+        };
+        let endianness = match &header[IDENTIFIER_BYTES] {
+            identifier if identifier == CDR_LE => Endianness::Little,
+            identifier if identifier == CDR_BE => Endianness::Big,
+            other => {
+                fail!(
+                    from origin,
+                    with ReadError::UnsupportedEncapsulation,
+                    "The representation identifier {:#04x}{:02x} is not plain CDR", other[0], other[1]
+                );
+            }
+        };
+
+        Ok(Self {
+            bytes,
+            cursor: ENCAPSULATION_LEN,
+            endianness,
+        })
+    }
+
+    pub fn endianness(&self) -> Endianness {
+        self.endianness
+    }
+
+    /// Whether every byte of the message has been read.
+    pub fn is_exhausted(&self) -> bool {
+        self.cursor == self.bytes.len()
+    }
+
+    pub fn read_bool(&mut self) -> Result<bool, ReadError> {
+        let origin = origin!("cdr::Reader::read_bool");
+
+        let byte = fail!(
+            from origin,
+            when self.read_u8(),
+            "Unable to read the byte of a bool"
+        );
+        match byte {
+            0 => Ok(false),
+            1 => Ok(true),
+            other => {
+                fail!(
+                    from origin,
+                    with ReadError::InvalidBool,
+                    "The byte {} is not a bool", other
+                );
+            }
+        }
+    }
+
+    pub fn read_u8(&mut self) -> Result<u8, ReadError> {
+        let origin = origin!("cdr::Reader::read_u8");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<u8>() }>(),
+            "Unable to read a u8"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => u8::from_le_bytes(bytes),
+            Endianness::Big => u8::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_i8(&mut self) -> Result<i8, ReadError> {
+        let origin = origin!("cdr::Reader::read_i8");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<i8>() }>(),
+            "Unable to read a i8"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => i8::from_le_bytes(bytes),
+            Endianness::Big => i8::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_u16(&mut self) -> Result<u16, ReadError> {
+        let origin = origin!("cdr::Reader::read_u16");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<u16>() }>(),
+            "Unable to read a u16"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => u16::from_le_bytes(bytes),
+            Endianness::Big => u16::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_i16(&mut self) -> Result<i16, ReadError> {
+        let origin = origin!("cdr::Reader::read_i16");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<i16>() }>(),
+            "Unable to read a i16"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => i16::from_le_bytes(bytes),
+            Endianness::Big => i16::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_u32(&mut self) -> Result<u32, ReadError> {
+        let origin = origin!("cdr::Reader::read_u32");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<u32>() }>(),
+            "Unable to read a u32"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => u32::from_le_bytes(bytes),
+            Endianness::Big => u32::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_i32(&mut self) -> Result<i32, ReadError> {
+        let origin = origin!("cdr::Reader::read_i32");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<i32>() }>(),
+            "Unable to read a i32"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => i32::from_le_bytes(bytes),
+            Endianness::Big => i32::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_u64(&mut self) -> Result<u64, ReadError> {
+        let origin = origin!("cdr::Reader::read_u64");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<u64>() }>(),
+            "Unable to read a u64"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => u64::from_le_bytes(bytes),
+            Endianness::Big => u64::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_i64(&mut self) -> Result<i64, ReadError> {
+        let origin = origin!("cdr::Reader::read_i64");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<i64>() }>(),
+            "Unable to read a i64"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => i64::from_le_bytes(bytes),
+            Endianness::Big => i64::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_f32(&mut self) -> Result<f32, ReadError> {
+        let origin = origin!("cdr::Reader::read_f32");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<f32>() }>(),
+            "Unable to read a f32"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => f32::from_le_bytes(bytes),
+            Endianness::Big => f32::from_be_bytes(bytes),
+        })
+    }
+
+    pub fn read_f64(&mut self) -> Result<f64, ReadError> {
+        let origin = origin!("cdr::Reader::read_f64");
+
+        let bytes = fail!(
+            from origin,
+            when self.read_scalar::<{ size_of::<f64>() }>(),
+            "Unable to read a f64"
+        );
+        Ok(match self.endianness {
+            Endianness::Little => f64::from_le_bytes(bytes),
+            Endianness::Big => f64::from_be_bytes(bytes),
+        })
+    }
+
+    /// Reads the length prefix of a sequence.
+    pub fn read_length(&mut self) -> Result<usize, ReadError> {
+        let origin = origin!("cdr::Reader::read_length");
+
+        let number_of_elements = fail!(
+            from origin,
+            when self.read_u32(),
+            "Unable to read a length prefix"
+        );
+
+        Ok(number_of_elements as usize)
+    }
+
+    /// Reads a string, returning its bytes without the terminating NUL.
+    ///
+    /// Fails when the string has no length or no NUL.
+    pub fn read_string(&mut self) -> Result<&'a [u8], ReadError> {
+        let origin = origin!("cdr::Reader::read_string");
+
+        let number_of_bytes = fail!(
+            from origin,
+            when self.read_length(),
+            "Unable to read the length of a string"
+        );
+        let bytes = fail!(
+            from origin,
+            when self.read_bytes(number_of_bytes),
+            "Unable to read the {} bytes of a string", number_of_bytes
+        );
+        let Some((0, string)) = bytes.split_last() else {
+            fail!(
+                from origin,
+                with ReadError::InvalidString,
+                "A string of {} bytes is not NUL terminated", number_of_bytes
+            );
+        };
+        Ok(string)
+    }
+
+    /// Reads a sequence of primitives of `size` bytes each, returning its
+    /// elements as they lie in the message, in the message's byte order.
+    ///
+    /// Fails when the message ends before the sequence does.
+    pub fn read_sequence(&mut self, size: usize) -> Result<&'a [u8], ReadError> {
+        let origin = origin!("cdr::Reader::read_sequence");
+
+        let number_of_elements = fail!(
+            from origin,
+            when self.read_length(),
+            "Unable to read the length of a sequence"
+        );
+        self.read_array(number_of_elements, size)
+    }
+
+    /// Reads the elements of an array of `number_of_elements` primitives of
+    /// `size` bytes each as they lie in the message, in the message's byte
+    /// order. An array has no length prefix.
+    ///
+    /// Fails when the message ends before the array does.
+    pub fn read_array(
+        &mut self,
+        number_of_elements: usize,
+        size: usize,
+    ) -> Result<&'a [u8], ReadError> {
+        let origin = origin!("cdr::Reader::read_array");
+
+        if number_of_elements == 0 {
+            return Ok(&[]);
+        }
+        fail!(
+            from origin,
+            when self.align(size),
+            "Unable to skip the padding of an array of elements of {} bytes", size
+        );
+        let Some(number_of_bytes) = number_of_elements.checked_mul(size) else {
+            fail!(
+                from origin,
+                with ReadError::Truncated,
+                "The message cannot hold {} elements of {} bytes", number_of_elements, size
+            );
+        };
+        self.read_bytes(number_of_bytes)
+    }
+
+    /// Reads a primitive aligned to its size.
+    fn read_scalar<const N: usize>(&mut self) -> Result<[u8; N], ReadError> {
+        let origin = origin!("cdr::Reader::read_scalar");
+
+        fail!(
+            from origin,
+            when self.align(N),
+            "Unable to skip the padding of a primitive of {} bytes", N
+        );
+        let bytes = fail!(
+            from origin,
+            when self.read_bytes(N),
+            "Unable to read a primitive of {} bytes", N
+        );
+
+        Ok(bytes.try_into().expect("the slice is N bytes long"))
+    }
+
+    /// Skips the padding up to a multiple of `alignment` after the header.
+    fn align(&mut self, alignment: usize) -> Result<(), ReadError> {
+        let read = self.cursor - ENCAPSULATION_LEN;
+        let padding = read.next_multiple_of(alignment) - read;
+        self.advance(padding)
+    }
+
+    /// The next `number_of_bytes` of the message.
+    ///
+    /// Fails when fewer remain.
+    fn read_bytes(&mut self, number_of_bytes: usize) -> Result<&'a [u8], ReadError> {
+        let origin = origin!("cdr::Reader::read_bytes");
+
+        let start = self.cursor;
+        fail!(
+            from origin,
+            when self.advance(number_of_bytes),
+            "Unable to read {} bytes", number_of_bytes
+        );
+
+        Ok(&self.bytes[start..self.cursor])
+    }
+
+    /// Moves the cursor over the next `number_of_bytes` of the message.
+    ///
+    /// Fails when fewer remain.
+    fn advance(&mut self, number_of_bytes: usize) -> Result<(), ReadError> {
+        let origin = origin!("cdr::Reader::advance");
+
+        let Some(end) = self
+            .cursor
+            .checked_add(number_of_bytes)
+            .filter(|end| *end <= self.bytes.len())
+        else {
+            fail!(
+                from origin,
+                with ReadError::Truncated,
+                "The message ends {} bytes before the value does",
+                number_of_bytes.saturating_sub(self.bytes.len() - self.cursor)
+            );
+        };
+        self.cursor = end;
+
+        Ok(())
+    }
+}

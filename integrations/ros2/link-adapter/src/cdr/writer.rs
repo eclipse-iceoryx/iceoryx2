@@ -13,13 +13,7 @@
 use iceoryx2_link_backend::wire::region::{ForwardRegion, ResizeError};
 use iceoryx2_log::{fail, origin};
 
-use super::ENCAPSULATION_LEN;
-
-/// The encapsulation header of plain CDR in the host's byte order.
-#[cfg(target_endian = "little")]
-const ENCAPSULATION: [u8; ENCAPSULATION_LEN] = [0x00, 0x01, 0x00, 0x00];
-#[cfg(target_endian = "big")]
-const ENCAPSULATION: [u8; ENCAPSULATION_LEN] = [0x00, 0x00, 0x00, 0x00];
+use super::{CDR_NE, ENCAPSULATION_LEN, IDENTIFIER_BYTES, OPTIONS_BYTES};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError {
@@ -66,7 +60,7 @@ impl<R: ForwardRegion> Writer<R> {
             to WriteError,
             "The region rejected the {} bytes of the encapsulation header", ENCAPSULATION_LEN
         );
-        region[..ENCAPSULATION_LEN].copy_from_slice(&ENCAPSULATION);
+        write_encapsulation_header(&mut region[..ENCAPSULATION_LEN]);
 
         Ok(Self {
             region,
@@ -270,4 +264,10 @@ impl<R: ForwardRegion> Writer<R> {
 
         Ok(start)
     }
+}
+
+/// Writes the encapsulation header of the host's byte order into `header`.
+fn write_encapsulation_header(header: &mut [u8]) {
+    header[IDENTIFIER_BYTES].copy_from_slice(&CDR_NE);
+    header[OPTIONS_BYTES].fill(0);
 }
