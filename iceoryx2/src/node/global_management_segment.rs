@@ -14,6 +14,7 @@ extern crate alloc;
 
 use crate::{config::Config, service::Service};
 use alloc::format;
+use core::mem::MaybeUninit;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -32,6 +33,12 @@ const GLOBAL_MGMT_NAME: FileName = unsafe { FileName::new_unchecked_const(b"node
 #[repr(C)]
 struct State {
     node_counter: AtomicU32,
+}
+
+impl State {
+    fn initialize(state: &mut MaybeUninit<Self>) {
+        state.write(Self::default());
+    }
 }
 
 #[derive(Debug)]
@@ -53,7 +60,10 @@ impl<S: Service> GlobalManagementSegment<S> {
         .config(&config)
         .timeout(global_config.global.creation_timeout)
         .enable_global_access(true)
-        .initializer(|_, _| true)
+        .initializer(|state, _| {
+            State::initialize(state);
+            true
+        })
         .open_or_create()
         {
             Ok(storage) => storage,
@@ -109,5 +119,26 @@ impl<S: Service> GlobalManagementSegment<S> {
             .prefix(&global_config.global.prefix)
             .suffix(&suffix)
             .path_hint(global_config.global.root_path())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn initialize_sets_node_counter_to_zero_when_memory_contains_other_bytes() {
+        let mut state = MaybeUninit::<State>::uninit();
+        unsafe {
+            state
+                .as_mut_ptr()
+                .cast::<u8>()
+                .write_bytes(0xa5, core::mem::size_of::<State>())
+        };
+
+        State::initialize(&mut state);
+
+        let state = unsafe { state.assume_init_ref() };
+        assert_eq!(state.node_counter.load(Ordering::Relaxed), 0);
     }
 }
