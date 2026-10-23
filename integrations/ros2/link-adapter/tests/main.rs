@@ -9,6 +9,7 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+mod cdr_cursor_tests;
 mod fixture;
 mod ros2_adapter_tests;
 

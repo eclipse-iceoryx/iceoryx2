@@ -21,6 +21,7 @@ pub use payload::{
     AddTwoIntsRequest, AddTwoIntsResponse, SerializedAddTwoIntsRequest,
     SerializedAddTwoIntsResponse, SerializedString, UInt64,
 };
+pub use serialization::{deserialize, serialize};
 pub use translation::{Passthrough, PassthroughWithHeader, PlainStruct, PlainStructWithHeader};
 
 pub use iceoryx2_integrations_ros2_link_adapter::testing::supports_pattern;
