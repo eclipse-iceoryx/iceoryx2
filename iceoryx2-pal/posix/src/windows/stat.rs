@@ -76,7 +76,12 @@ pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
             security_attributes.lpSecurityDescriptor
         ));
         if has_file_security_set == FALSE {
-            return -1;
+            // SetFileSecurityA cannot open a bound AF_UNIX socket path, so it
+            // fails for a just-bound datagram socket. This layer does not enforce
+            // POSIX path permissions on Windows (the umask above is a no-op) and
+            // the only other caller ignores the result, so a failure is reported
+            // as success rather than failing the caller's bind.
+            return 0;
         }
 
         0
