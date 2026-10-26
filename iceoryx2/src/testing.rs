@@ -10,18 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::fmt::Debug;
+
 use alloc::sync::Arc;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueServiceId};
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
-use crate::service::config_scheme::{
-    blackboard_data_config, blackboard_mgmt_config, connection_config, data_segment_config,
-    dynamic_config_storage_config, event_config, node_details_path, node_monitoring_config,
-    port_tag_config, resizable_data_segment_config, service_tag_config,
-    static_config_storage_config,
-};
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::service_hash::ServiceHash;
 use crate::service::static_config;
@@ -46,6 +43,97 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptDoesExistError, NamedConceptRemoveError};
 use iceoryx2_cal::static_storage::StaticStorageCreateError;
+
+pub fn dynamic_config_storage_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::DynamicStorage<DynamicConfig<Service::Bag>> as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::dynamic_config_storage_config::<Service>(global_config)
+}
+
+pub fn static_config_storage_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::static_config_storage_config::<Service>(global_config)
+}
+
+pub fn clock_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::Clock as Clock<Service::Event>>::Configuration {
+    crate::service::config_scheme::clock_config::<Service>(global_config)
+}
+
+pub fn connection_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::Connection as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::connection_config::<Service>(global_config)
+}
+
+pub fn event_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::Event as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::event_config::<Service>(global_config)
+}
+
+pub fn data_segment_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::SharedMemory as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::data_segment_config::<Service>(global_config)
+}
+
+pub fn resizable_data_segment_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::ResizableSharedMemory as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::resizable_data_segment_config::<Service>(global_config)
+}
+
+pub fn node_monitoring_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::Monitoring as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::node_monitoring_config::<Service>(global_config)
+}
+
+pub fn node_details_path(
+    global_config: &Config,
+    node_id: &UniqueNodeId,
+) -> iceoryx2_bb_system_types::path::Path {
+    crate::service::config_scheme::node_details_path(global_config, node_id)
+}
+
+pub fn node_details_config<Service: crate::service::Service>(
+    global_config: &Config,
+    node_id: &UniqueNodeId,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::node_details_config::<Service>(global_config, node_id)
+}
+
+pub fn port_tag_config<Service: crate::service::Service>(
+    global_config: &Config,
+    node_id: &UniqueNodeId,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::port_tag_config::<Service>(global_config, node_id)
+}
+
+pub fn service_tag_config<Service: crate::service::Service>(
+    global_config: &Config,
+    node_id: &UniqueNodeId,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::service_tag_config::<Service>(global_config, node_id)
+}
+
+pub fn blackboard_mgmt_config<
+    Service: crate::service::Service,
+    T: ZeroCopySend + Send + Sync + Debug + 'static,
+>(
+    global_config: &Config,
+) -> <Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::blackboard_mgmt_config::<Service, T>(global_config)
+}
+
+pub fn blackboard_data_config<Service: crate::service::Service>(
+    global_config: &Config,
+) -> <Service::BlackboardPayload as NamedConceptMgmt>::Configuration {
+    crate::service::config_scheme::blackboard_data_config::<Service>(global_config)
+}
 
 pub fn static_config_name(service_hash: &ServiceHash) -> FileName {
     crate::service::naming_scheme::static_config_name(service_hash)
