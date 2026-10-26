@@ -86,6 +86,7 @@ pub mod sample {
     #[conformance_test]
     pub fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let test_context = TestContext::<Sut>::new();
+        let service = test_context.service;
 
         let service_name = test_context.service_name;
 
@@ -94,7 +95,7 @@ pub mod sample {
         assert_that!(sample, is_some);
 
         let config = test_context.context.config().clone();
-        drop(test_context);
+        drop(service);
 
         let test_context = TestContext::<Sut>::new_with_custom_config(config);
 
