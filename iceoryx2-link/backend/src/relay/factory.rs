@@ -14,8 +14,10 @@ use core::error::Error;
 
 use iceoryx2::service::Service;
 
-use crate::relay::{EventRelay, PublishSubscribeRelay};
-use crate::service_description::{EventDescription, PublishSubscribeDescription};
+use crate::relay::{EventRelay, PublishSubscribeRelay, RequestResponseRelay};
+use crate::service_description::{
+    EventDescription, PublishSubscribeDescription, RequestResponseDescription,
+};
 
 /// Configures and creates one relay.
 pub trait RelayBuilder {
@@ -38,6 +40,10 @@ pub trait RelayFactory<S: Service> {
     type EventBuilder<'a>: RelayBuilder<Relay = Self::EventRelay> + 'a
     where
         Self: 'a;
+    type RequestResponseRelay: RequestResponseRelay<S>;
+    type RequestResponseBuilder<'a>: RelayBuilder<Relay = Self::RequestResponseRelay> + 'a
+    where
+        Self: 'a;
 
     /// Initiate the build for a publish-subscribe relay.
     fn publish_subscribe<'a>(
@@ -54,6 +60,15 @@ pub trait RelayFactory<S: Service> {
         description: EventDescription<'a>,
         remote: &'a Self::RemoteDescription,
     ) -> Self::EventBuilder<'a>
+    where
+        Self: 'a;
+
+    /// Initiate the build for a request-response relay.
+    fn request_response<'a>(
+        &'a mut self,
+        description: RequestResponseDescription<'a>,
+        remote: &'a Self::RemoteDescription,
+    ) -> Self::RequestResponseBuilder<'a>
     where
         Self: 'a;
 }

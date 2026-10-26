@@ -61,6 +61,52 @@ impl core::fmt::Display for ClientRequestId {
     }
 }
 
+/// A request of a local client. It goes out to every server on the
+/// opposing side.
+#[derive(Debug)]
+pub enum OutboundRequest<'a, S: Service> {
+    /// The active request of one local client.
+    Request(&'a ActiveRequest<S>),
+    /// The local client dropped the request.
+    Abandoned,
+}
+
+/// A response of a local server to a request from the opposing side. It
+/// goes back to the request's origin.
+#[derive(Debug)]
+pub enum OutboundResponse<'a, S: Service> {
+    /// A response one local server sent to the request.
+    Response(&'a Response<S>),
+    /// Every local server ended its stream for the request.
+    End,
+}
+
+/// A request of a client on the opposing side. It comes in for the local
+/// servers.
+#[derive(Debug)]
+pub enum InboundRequest<S: Service, RemoteId> {
+    /// A request for the local servers from the client of `origin` on the
+    /// opposing side.
+    Request {
+        request: RequestMut<S>,
+        origin: RemoteId,
+    },
+    /// The client on the opposing side let go of the request, no response
+    /// reaches it anymore.
+    Abandoned,
+}
+
+/// A response of a server on the opposing side to a local client's
+/// request. It comes in for that client.
+#[derive(Debug)]
+pub enum InboundResponse<S: Service, RemoteId> {
+    /// A response for the local client.
+    Response(ResponseMut<S>),
+    /// The servers of `responder` on the opposing side sent their last
+    /// response.
+    End { responder: RemoteId },
+}
+
 /// A loanable request for the local servers.
 pub trait LoanableRequest<S: Service>: LoanableSample<InitializedSample = RequestMut<S>> {}
 
