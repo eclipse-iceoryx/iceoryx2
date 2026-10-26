@@ -13,7 +13,14 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_posix::barrier::BarrierBuilder;
+use iceoryx2_bb_posix::barrier::BarrierHandle;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_posix::ipc_capable::Handle;
+use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_si_units::TimePoint;
@@ -619,4 +626,119 @@ fn blocking_sleep_blocks_until_timeout_has_expired() {
     assert_that!(clock.blocking_sleep(timeout), is_ok);
     let end = clock.now().unwrap();
     assert_that!(end - start, time_at_least duration);
+}
+
+#[test]
+fn concurrent_time_controller_creation_succeeds_once() {
+    let test = TestFixture::new();
+    let name = test.name();
+    let config = test.config();
+    let _watchdog = Watchdog::new();
+    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16);
+    const NUMBER_OF_ITERATIONS: usize = 25;
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
+    let mutex_handle = MutexHandle::new();
+    let time_controller_storage: Arc<
+        Mutex<Option<SimulationTimeController<UnixDatagramShmCountingBitSet>>>,
+    > = Arc::new(MutexBuilder::new().create(None, &mutex_handle).unwrap());
+    let success_counter = AtomicU64::new(0);
+
+    thread_scope(|s| {
+        for _ in 0..number_of_threads {
+            let storage = time_controller_storage.clone();
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    if let Ok(time_controller) =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+                            .config(config)
+                            .create_time_controller()
+                    {
+                        success_counter.fetch_add(1, Ordering::Relaxed);
+                        let mut s = storage.lock().unwrap();
+                        assert_that!((*s).replace(time_controller), is_none);
+                    }
+                }
+            })?;
+        }
+        for _ in 0..number_of_threads {
+            let storage = time_controller_storage.clone();
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    if let Ok(time_controller) =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+                            .config(config)
+                            .open_or_create_time_controller()
+                    {
+                        success_counter.fetch_add(1, Ordering::Relaxed);
+                        let mut s = storage.lock().unwrap();
+                        assert_that!((*s).replace(time_controller), is_none);
+                    }
+                }
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(success_counter.load(Ordering::Relaxed), eq 1);
+    assert_that!(time_controller_storage.lock().unwrap(), is_some);
+}
+
+#[test]
+fn concurrent_time_controller_opening_succeeds_once() {
+    let test = TestFixture::new();
+    let name = test.name();
+    let config = test.config();
+    let _watchdog = Watchdog::new();
+    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16);
+    const NUMBER_OF_ITERATIONS: usize = 25;
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
+    let mutex_handle = MutexHandle::new();
+    let time_controller_storage: Arc<
+        Mutex<Option<SimulationTimeController<UnixDatagramShmCountingBitSet>>>,
+    > = Arc::new(MutexBuilder::new().create(None, &mutex_handle).unwrap());
+    let success_counter = AtomicU64::new(0);
+
+    let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+        .config(config)
+        .create_time_controller()
+        .unwrap();
+    let _clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+        .config(config)
+        .open_clock()
+        .unwrap();
+    drop(time_controller);
+
+    thread_scope(|s| {
+        for _ in 0..number_of_threads {
+            s.thread_builder().spawn(|| {
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    let storage = time_controller_storage.clone();
+                    if let Ok(time_controller) =
+                        SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+                            .config(config)
+                            .open_time_controller()
+                    {
+                        success_counter.fetch_add(1, Ordering::Relaxed);
+                        let mut s = storage.lock().unwrap();
+                        assert_that!((*s).replace(time_controller), is_none);
+                    }
+                }
+            })?;
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(success_counter.load(Ordering::Relaxed), eq 1);
+    assert_that!(time_controller_storage.lock().unwrap(), is_some);
 }
