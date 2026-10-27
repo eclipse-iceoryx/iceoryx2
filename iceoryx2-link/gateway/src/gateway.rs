@@ -65,7 +65,12 @@ where
     type PublishSubscribeRelay =
         relay::publish_subscribe::Relay<S, A::PublishSubscribeEndpoints, T::SampleTranslator>;
     type EventRelay = UnsupportedRelay<S>;
-    type RequestResponseRelay = UnsupportedRelay<S, <M::EndpointSettings as Identified>::Id>;
+    type RequestResponseRelay = relay::request_response::Relay<
+        S,
+        A::RequestResponseEndpoints,
+        T::SampleTranslator,
+        <M::EndpointSettings as Identified>::Id,
+    >;
     type RelayFactory<'a>
         = Factory<'a, S, A, M, T>
     where

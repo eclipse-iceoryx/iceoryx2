@@ -14,7 +14,7 @@ use iceoryx2::service::messaging_pattern::MessagingPattern as Pattern;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_link_backend::resolver::{self, Resolution};
 use iceoryx2_link_backend::service_description::{
-    Identified, PatternSettings, ServiceDescription, ServiceTypes,
+    Identified, PatternSettings, RequestResponseTypes, ServiceDescription, ServiceTypes,
 };
 
 use iceoryx2_link_adapter::EndpointDescription;
@@ -83,10 +83,11 @@ impl<M: Mapping, T: Translators> Resolver<M, T> {
             ServiceTypes::PublishSubscribe(types) => {
                 EndpointTypes::<T>::PublishSubscribe(self.translator.samples().remote(types)?)
             }
+            ServiceTypes::RequestResponse(types) => EndpointTypes::<T>::RequestResponse {
+                request: self.translator.samples().remote(&types.request)?,
+                response: self.translator.samples().remote(&types.response)?,
+            },
             ServiceTypes::Event => EndpointTypes::<T>::Event,
-            ServiceTypes::RequestResponse(_) => {
-                unreachable!("the gateway does not translate request-response types yet")
-            }
         })
     }
 
@@ -98,6 +99,12 @@ impl<M: Mapping, T: Translators> Resolver<M, T> {
         Ok(match types {
             EndpointTypes::<T>::PublishSubscribe(types) => {
                 ServiceTypes::PublishSubscribe(self.translator.samples().local(types)?)
+            }
+            EndpointTypes::<T>::RequestResponse { request, response } => {
+                ServiceTypes::RequestResponse(RequestResponseTypes {
+                    request: self.translator.samples().local(request)?,
+                    response: self.translator.samples().local(response)?,
+                })
             }
             EndpointTypes::<T>::Event => ServiceTypes::Event,
         })
@@ -159,6 +166,9 @@ impl<M: Mapping, T: Translators> Resolver<M, T> {
                 PatternSettings::PublishSubscribe(settings),
                 ServiceTypes::PublishSubscribe(types),
             ) => ServiceDescription::compose_publish_subscribe::<S>(name, settings, types),
+            (PatternSettings::RequestResponse(settings), ServiceTypes::RequestResponse(types)) => {
+                ServiceDescription::compose_request_response::<S>(name, settings, types)
+            }
             (PatternSettings::Event(settings), ServiceTypes::Event) => {
                 ServiceDescription::compose_event::<S>(name, settings)
             }
@@ -215,7 +225,10 @@ impl<S: Service, M: Mapping, T: Translators> resolver::Resolver<S> for Resolver<
 
 /// Whether the gateway bridges services of these types' pattern.
 fn bridged(types: &ServiceTypes) -> bool {
-    matches!(types, ServiceTypes::PublishSubscribe(_))
+    matches!(
+        types,
+        ServiceTypes::PublishSubscribe(_) | ServiceTypes::RequestResponse(_)
+    )
 }
 
 #[cfg(test)]

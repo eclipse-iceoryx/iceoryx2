@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod publish_subscribe;
+pub mod request_response;
 mod transcoding;
 
 use core::error::Error;
@@ -55,9 +56,14 @@ where
         = UnsupportedRelayBuilder<S>
     where
         Self: 'b;
-    type RequestResponseRelay = UnsupportedRelay<S, <M::EndpointSettings as Identified>::Id>;
+    type RequestResponseRelay = request_response::Relay<
+        S,
+        A::RequestResponseEndpoints,
+        T::SampleTranslator,
+        <M::EndpointSettings as Identified>::Id,
+    >;
     type RequestResponseBuilder<'b>
-        = UnsupportedRelayBuilder<S, <M::EndpointSettings as Identified>::Id>
+        = request_response::Builder<'b, S, A, M, T::SampleTranslator>
     where
         Self: 'b;
 
@@ -90,23 +96,28 @@ where
         UnsupportedRelayBuilder::new()
     }
 
-    /// The gateway does not bridge request-response yet.
     fn request_response<'b>(
         &'b mut self,
-        _: RequestResponseDescription<'b>,
-        _: &'b Self::RemoteDescription,
+        request_response_description: RequestResponseDescription<'b>,
+        endpoint_description: &'b Self::RemoteDescription,
     ) -> Self::RequestResponseBuilder<'b>
     where
         Self: 'b,
     {
-        UnsupportedRelayBuilder::new()
+        request_response::Builder {
+            adapter: self.adapter,
+            translator: self.translator.samples(),
+            request_response_description,
+            endpoint_description,
+            _service: PhantomData,
+        }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreationError {
     /// The translator has no translation for the service.
-    PublishSubscribeTranslation,
+    Translation,
     /// The adapter could not open the endpoints.
     Endpoints,
 }
@@ -123,8 +134,10 @@ impl Error for CreationError {}
 pub enum SendError {
     /// The transcoder could not encode the sample.
     Transcode,
-    /// The endpoints could not publish the message.
+    /// The endpoints could not send the message.
     Endpoints,
+    /// No request with the id was taken from the middleware.
+    UnknownRequest,
 }
 
 impl core::fmt::Display for SendError {

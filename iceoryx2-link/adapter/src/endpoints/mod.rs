@@ -13,11 +13,15 @@
 mod endpoint_description;
 mod event;
 mod publish_subscribe;
+mod request_response;
 mod unsupported;
 
 pub use endpoint_description::{EndpointDescription, EndpointTypes};
 pub use event::EventEndpoints;
 pub use publish_subscribe::PublishSubscribeEndpoints;
+pub use request_response::{
+    RequestDestination, RequestResponseEndpoints, ResponseDestination, ResponseKind,
+};
 pub use unsupported::UnsupportedEndpoints;
 
 use crate::{SampleBytes, SampleBytesRefMut, SampleLengths};
@@ -38,7 +42,7 @@ impl<'a> SampleDestination<'a> for &'a mut SampleBytes {
     }
 }
 
-/// The possible outcomes taking from the middleware may provide.
+/// The possible outcomes of taking data from the middleware.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TakeOutcome<Details> {
     /// The sample was written into the destination with optional details

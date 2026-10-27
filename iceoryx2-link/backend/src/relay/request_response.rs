@@ -27,17 +27,19 @@ pub trait RequestResponseRelay<S: Service> {
     type SendError: Error;
     type ReceiveError: Error;
 
-    /// Sends the next message of the request `id` to the opposing side.
+    /// Sends the request `id` of a local client, or its abandonment, to
+    /// the opposing side.
     fn send_request(
         &mut self,
         id: ClientRequestId,
         request: OutboundRequest<'_, S>,
     ) -> Result<(), Self::SendError>;
 
-    /// Receives the next message of the request stream into `loanable`.
+    /// Receives one request from the opposing side, or the abandonment of
+    /// one, into the request `loanable` loans.
     ///
-    /// A request is identified by the id the local client gave the loaned
-    /// request.
+    /// The request is returned with the id the link's own client gave the
+    /// loaned request, so the responses can be routed back to it.
     #[allow(clippy::type_complexity)] // the full outcome stays visible to implementers
     fn receive_request<L: LoanableRequest<S>>(
         &mut self,
@@ -47,19 +49,20 @@ pub trait RequestResponseRelay<S: Service> {
         Self::ReceiveError,
     >;
 
-    /// Sends the next message of the response stream of the request `id`
-    /// to the opposing side.
+    /// Sends a response of a local server to the request `id`, or the end
+    /// of its response stream, back to the remote client that sent the
+    /// request.
     fn send_response(
         &mut self,
         id: ClientRequestId,
         response: OutboundResponse<'_, S>,
     ) -> Result<(), Self::SendError>;
 
-    /// Receives the next message of the response stream into the loanable
-    /// of its request.
+    /// Receives one response from the opposing side, or the end of a
+    /// response stream, into the loan `loanable` provides for its request.
     ///
     /// `loanable` yields `None` when the request is no longer held. The
-    /// message is then consumed and reported as skipped.
+    /// response is then consumed and reported as skipped.
     #[allow(clippy::type_complexity)] // the full outcome stays visible to implementers
     fn receive_response<L: LoanableResponse<S>>(
         &mut self,

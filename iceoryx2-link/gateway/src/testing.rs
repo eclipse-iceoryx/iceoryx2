@@ -260,6 +260,7 @@ impl Adapter for StubAdapter {
     type EndpointSettings = StubEndpointSettings;
     type EndpointTypes = EndpointTypes<SampleTypes>;
     type PublishSubscribeEndpoints = NoEndpoints;
+    type RequestResponseEndpoints = UnsupportedEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn generation(&self) -> Generation {
@@ -281,6 +282,13 @@ impl Adapter for StubAdapter {
         _: &StubEndpointDescription,
     ) -> Result<NoEndpoints, Self::OpenError> {
         Ok(NoEndpoints)
+    }
+
+    fn request_response(
+        &mut self,
+        _: &StubEndpointDescription,
+    ) -> Result<UnsupportedEndpoints, Self::OpenError> {
+        Err(core::fmt::Error)
     }
 
     fn event(

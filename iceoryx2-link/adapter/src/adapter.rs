@@ -15,7 +15,9 @@ use core::error::Error;
 use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_link_backend::service_description::Identified;
 
-use crate::{EndpointDescription, EventEndpoints, PublishSubscribeEndpoints};
+use crate::{
+    EndpointDescription, EventEndpoints, PublishSubscribeEndpoints, RequestResponseEndpoints,
+};
 
 /// The abstraction over the middleware a gateway connects `iceoryx2` to.
 pub trait Adapter {
@@ -24,6 +26,7 @@ pub trait Adapter {
     type EndpointSettings: Clone + PartialEq + Identified;
     type EndpointTypes: Clone + PartialEq;
     type PublishSubscribeEndpoints: PublishSubscribeEndpoints;
+    type RequestResponseEndpoints: RequestResponseEndpoints;
     type EventEndpoints: EventEndpoints;
 
     /// The generation of the middleware's endpoints. A tracked one moves
@@ -47,6 +50,12 @@ pub trait Adapter {
         &mut self,
         description: &EndpointDescription<Self::EndpointSettings, Self::EndpointTypes>,
     ) -> Result<Self::PublishSubscribeEndpoints, Self::OpenError>;
+
+    /// The gateway's request-response endpoints matching `description`.
+    fn request_response(
+        &mut self,
+        description: &EndpointDescription<Self::EndpointSettings, Self::EndpointTypes>,
+    ) -> Result<Self::RequestResponseEndpoints, Self::OpenError>;
 
     /// The gateway's event endpoints matching `description`.
     fn event(
