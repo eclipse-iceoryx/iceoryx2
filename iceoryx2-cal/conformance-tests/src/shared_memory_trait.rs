@@ -40,7 +40,6 @@ const SHM_CONFIG: AllocatorConfig = AllocatorConfig {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod shared_memory_trait {
-
     use super::*;
 
     #[conformance_test]
@@ -186,7 +185,7 @@ pub mod shared_memory_trait {
         let name_2 = generate_file_path().file_name();
 
         let sut_1 = Sut::Builder::new(&name_1)
-            .size(1024)
+            .size(DEFAULT_SIZE)
             .has_ownership(true)
             .config(&config)
             .create(&SHM_CONFIG)
@@ -194,7 +193,7 @@ pub mod shared_memory_trait {
         sut_1.release_ownership();
 
         let sut_2 = Sut::Builder::new(&name_2)
-            .size(1024)
+            .size(DEFAULT_SIZE)
             .has_ownership(false)
             .config(&config)
             .create(&SHM_CONFIG)
@@ -221,7 +220,7 @@ pub mod shared_memory_trait {
         let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut = Sut::Builder::new(&name)
-            .size(1024)
+            .size(DEFAULT_SIZE)
             .has_ownership(false)
             .config(&config)
             .create(&SHM_CONFIG)

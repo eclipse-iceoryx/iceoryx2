@@ -12,11 +12,13 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use crate::shm_allocator::{ContentPlacement, InitializedShmAllocator};
+use crate::shm_allocator::{Borrowable, ContentPlacement, InitializedShmAllocator};
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 
-use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
+use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_container::vector::RelocatableVec;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationGrowError};
@@ -52,6 +54,7 @@ pub struct PoolAllocator {
     base_address: usize,
     max_supported_alignment_by_memory: usize,
     number_of_used_buckets: AtomicUsize,
+    chunk_reference_counter: RelocatableVec<AtomicU64>,
 }
 
 impl PoolAllocator {
@@ -72,6 +75,23 @@ impl PoolAllocator {
             self.allocator.deallocate_bucket(NonNull::new_unchecked(
                 (offset.offset() + self.allocator.start_address() as usize) as *mut u8,
             ));
+        }
+    }
+
+    fn chunk_index(&self, ptr: PointerOffset) -> usize {
+        ptr.offset() / self.allocator.bucket_size()
+    }
+}
+
+impl Borrowable for PoolAllocator {
+    fn borrow(&self, ptr: PointerOffset) {
+        self.chunk_reference_counter[self.chunk_index(ptr)].fetch_add(1, Ordering::Relaxed);
+    }
+
+    unsafe fn release(&self, ptr: PointerOffset) {
+        if self.chunk_reference_counter[self.chunk_index(ptr)].fetch_sub(1, Ordering::Relaxed) == 1
+        {
+            unsafe { self.deallocate_bucket(ptr) };
         }
     }
 }
@@ -236,6 +256,11 @@ impl ShmAllocator for PoolAllocator {
         iceoryx2_bb_memory::pool_allocator::PoolAllocator::memory_size(
             config.bucket_layout,
             memory_size,
+        ) + RelocatableVec::<AtomicU64>::const_memory_size(
+            iceoryx2_bb_memory::pool_allocator::PoolAllocator::min_required_buckets(
+                config.bucket_layout,
+                memory_size,
+            ),
         )
     }
 
@@ -259,6 +284,14 @@ impl ShmAllocator for PoolAllocator {
             base_address: (managed_memory.as_ptr() as *mut u8) as usize,
             max_supported_alignment_by_memory,
             number_of_used_buckets: AtomicUsize::new(0),
+            chunk_reference_counter: unsafe {
+                RelocatableVec::new_uninit(
+                    iceoryx2_bb_memory::pool_allocator::PoolAllocator::min_required_buckets(
+                        config.bucket_layout,
+                        managed_memory.len(),
+                    ),
+                )
+            },
         }
     }
 
@@ -280,6 +313,10 @@ impl ShmAllocator for PoolAllocator {
         fail!(from self, when unsafe { self.allocator.init(mgmt_allocator)  },
             with ShmAllocatorInitError::AllocationFailed,
             "{} since the allocation of the allocator management memory failed.", msg);
+
+        fail!(from self, when unsafe { self.chunk_reference_counter.init(mgmt_allocator) },
+            with ShmAllocatorInitError::AllocationFailed,
+            "{} since the allocation of the memory chunk reference counter memory failed.", msg);
 
         Ok(())
     }

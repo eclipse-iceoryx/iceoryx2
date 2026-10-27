@@ -166,13 +166,15 @@ impl PoolAllocator {
         Ok(())
     }
 
-    pub fn memory_size(bucket_layout: Layout, size: usize) -> usize {
-        let min_required_buckets = size / bucket_layout.size();
-
-        UniqueIndexSet::memory_size(min_required_buckets)
+    pub fn min_required_buckets(bucket_layout: Layout, memory_size: usize) -> usize {
+        memory_size / bucket_layout.size()
     }
 
-    fn calc_number_of_buckets(bucket_layout: Layout, ptr: NonNull<u8>, size: usize) -> usize {
+    pub fn memory_size(bucket_layout: Layout, size: usize) -> usize {
+        UniqueIndexSet::memory_size(Self::min_required_buckets(bucket_layout, size))
+    }
+
+    pub fn calc_number_of_buckets(bucket_layout: Layout, ptr: NonNull<u8>, size: usize) -> usize {
         let adjusted_start = align(ptr.as_ptr() as usize, bucket_layout.align());
         let bucket_size = align(bucket_layout.size(), bucket_layout.align());
 
