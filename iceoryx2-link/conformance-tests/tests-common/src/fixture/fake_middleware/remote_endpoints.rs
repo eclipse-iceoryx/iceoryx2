@@ -16,7 +16,8 @@ use core::marker::PhantomData;
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceTypes};
 use iceoryx2_link_conformance_tests::fixture::{
-    Discoverable, MessageEndpoints, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+    Discoverable, PropagatesPayloads, PropagatesPayloadsWithHeaders,
+    PublishSubscribeMessageEndpoints,
 };
 use iceoryx2_link_testing::{
     FakeEndpointDescription, FakeEndpointSettings, FakeMiddleware, FakePublishSubscribeEndpoints,
@@ -78,7 +79,8 @@ impl<T: WireForm> FakeRemoteEndpoints<T> {
 
 /// The value of a message is its bytes. The fake middleware imposes no
 /// form of its own on them.
-impl<T: WireForm> MessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+impl<T: WireForm>
+    PublishSubscribeMessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
     for FakeRemoteEndpoints<T>
 {
     type Value = Vec<u8>;

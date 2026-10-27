@@ -25,7 +25,7 @@ pub trait AdapterFixture {
     type Adapter: Adapter<EndpointTypes = EndpointTypes<Self::SampleTypes>>;
     /// Remote endpoints of the middleware that send and receive its
     /// messages as bytes in its form.
-    type RemoteEndpoints: MessageEndpoints<
+    type RemotePublishSubscribeEndpoints: PublishSubscribeMessageEndpoints<
             <Self::Adapter as Adapter>::EndpointSettings,
             EndpointTypes<Self::SampleTypes>,
         >;
@@ -42,12 +42,12 @@ pub trait AdapterFixture {
     fn adapter(&mut self) -> Self::Adapter;
 
     /// Remote endpoints under a new description. Gone once dropped.
-    fn remote_endpoints(&mut self) -> Self::RemoteEndpoints;
+    fn remote_publish_subscribe_endpoints(&mut self) -> Self::RemotePublishSubscribeEndpoints;
 }
 
 /// Remote endpoints that send and receive the middleware's messages as
 /// values. They encode a value as the bytes the gateway's endpoints handle.
-pub trait MessageEndpoints<S, T> {
+pub trait PublishSubscribeMessageEndpoints<S, T> {
     /// The value of a message.
     type Value: Clone + PartialEq + Debug;
 

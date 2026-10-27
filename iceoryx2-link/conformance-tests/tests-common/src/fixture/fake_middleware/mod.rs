@@ -37,7 +37,7 @@ pub(crate) struct FakeMiddlewareFixture<T> {
 impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
     type SampleTypes = FakeSampleTypes;
     type Adapter = FakeAdapter;
-    type RemoteEndpoints = FakeRemoteEndpoints<T>;
+    type RemotePublishSubscribeEndpoints = FakeRemoteEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -50,7 +50,7 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
         self.middleware.adapter()
     }
 
-    fn remote_endpoints(&mut self) -> Self::RemoteEndpoints {
+    fn remote_publish_subscribe_endpoints(&mut self) -> Self::RemotePublishSubscribeEndpoints {
         let service = describe::<Local, FixedSizePayload<Payload>, ()>(
             &generate_service_name(),
             &Config::default(),

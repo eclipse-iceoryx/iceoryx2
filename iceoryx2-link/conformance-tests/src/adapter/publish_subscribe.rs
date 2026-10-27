@@ -24,7 +24,7 @@ pub mod adapter_publish_subscribe {
         Adapter, PublishSubscribeEndpoints, SampleBytes, SampleBytesRef, TakeOutcome,
     };
 
-    use crate::fixture::{AdapterFixture, MessageEndpoints};
+    use crate::fixture::{AdapterFixture, PublishSubscribeMessageEndpoints};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -57,7 +57,7 @@ pub mod adapter_publish_subscribe {
         // === SETUP ===
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let mut own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");
@@ -88,7 +88,7 @@ pub mod adapter_publish_subscribe {
         // === SETUP ===
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let mut own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");
@@ -118,7 +118,7 @@ pub mod adapter_publish_subscribe {
         // === SETUP ===
         // The gateways endpoints and matching remote endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let mut own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");

@@ -24,7 +24,7 @@ pub mod adapter_discovery {
     use iceoryx2_link_adapter::Adapter;
     use iceoryx2_link_backend::service_description::Identified;
 
-    use crate::fixture::{AdapterFixture, MessageEndpoints};
+    use crate::fixture::{AdapterFixture, PublishSubscribeMessageEndpoints};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -45,7 +45,7 @@ pub mod adapter_discovery {
         // === SETUP ===
         // One adapter and remote endpoints on the middleware.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let id = remote.description().settings.id();
 
         // === LIST ===
@@ -80,7 +80,7 @@ pub mod adapter_discovery {
         assert_that!(adapter.generation(), eq initial);
 
         // Remote endpoints arriving moves the generation.
-        let _remote = fixture.remote_endpoints();
+        let _remote = fixture.remote_publish_subscribe_endpoints();
         retry(
             || match adapter.generation() != initial {
                 true => Ok(()),
@@ -103,7 +103,7 @@ pub mod adapter_discovery {
         // === SETUP ===
         // One adapter listing the endpoint of remote endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         retry(
             || match listed(&mut adapter).is_empty() {
                 false => Ok(()),
@@ -135,7 +135,7 @@ pub mod adapter_discovery {
         // An endpoint remote endpoints once were on, now held open only
         // by an adapter.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let description = remote.description().clone();
         drop(remote);
         let _endpoint = adapter
@@ -154,7 +154,7 @@ pub mod adapter_discovery {
         // === SETUP ===
         // One remote endpoints and one adapter on the same endpoint.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let id = remote.description().settings.id();
         let _endpoint = adapter
             .publish_subscribe(remote.description())

@@ -22,7 +22,7 @@ pub mod adapter_wake {
     use iceoryx2_link_adapter::Adapter;
     use iceoryx2_link_backend::Reactive;
 
-    use crate::fixture::{AdapterFixture, MessageEndpoints};
+    use crate::fixture::{AdapterFixture, PublishSubscribeMessageEndpoints};
     use crate::testing::{WakeSource, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -44,7 +44,7 @@ pub mod adapter_wake {
 
         // === JOIN ===
         // Remote endpoints joining wakes the adapter.
-        let _remote = fixture.remote_endpoints();
+        let _remote = fixture.remote_publish_subscribe_endpoints();
 
         retry(
             || match source.woken() {
@@ -67,7 +67,7 @@ pub mod adapter_wake {
         // An adapter beside remote endpoints, waiting on its
         // wake after the join was heard.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_publish_subscribe_endpoints();
         let _own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");

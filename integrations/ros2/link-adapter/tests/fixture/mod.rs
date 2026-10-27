@@ -61,7 +61,7 @@ pub struct Ros2Fixture<M, T> {
 impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture<M, T> {
     type SampleTypes = TopicTypes;
     type Adapter = Ros2Adapter;
-    type RemoteEndpoints = RclEndpoints<T>;
+    type RemotePublishSubscribeEndpoints = RclEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -94,7 +94,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
         Ros2Adapter::new(&config).expect("the adapter is created")
     }
 
-    fn remote_endpoints(&mut self) -> RclEndpoints<T> {
+    fn remote_publish_subscribe_endpoints(&mut self) -> RclEndpoints<T> {
         let topic = TopicName::new(&format!("/{}", generate_service_name().as_str()))
             .expect("a valid topic name");
         // Transient local durability keeps messages sent before matching

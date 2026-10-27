@@ -41,11 +41,11 @@
 //!
 //! impl AdapterFixture for MyMiddlewareFixture {
 //!     type Adapter = MyAdapter;
-//!     type RemoteEndpoints = MyRemoteMessageEndpoints;
+//!     type RemotePublishSubscribeEndpoints = MyRemoteMessageEndpoints;
 //!
 //!     fn new() -> Self { ... }
 //!     fn adapter(&mut self) -> MyAdapter { ... }
-//!     fn remote_endpoints(&mut self) -> MyRemoteMessageEndpoints { ... }
+//!     fn remote_publish_subscribe_endpoints(&mut self) -> MyRemoteMessageEndpoints { ... }
 //! }
 //!
 //! impl<S: Service> GatewayFixture<S> for MyMiddlewareFixture {
@@ -102,7 +102,7 @@ pub mod gateway;
 pub mod link;
 pub mod tunnel;
 
-pub use adapter::{AdapterFixture, MessageEndpoints};
+pub use adapter::{AdapterFixture, PublishSubscribeMessageEndpoints};
 pub use carrier::CarrierFixture;
 pub use gateway::{
     Discoverable, GatewayFixture, PropagatesPayloads, PropagatesPayloadsWithHeaders,
