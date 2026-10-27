@@ -32,6 +32,7 @@ pub mod serialize_trait;
 pub mod shared_memory_trait;
 pub mod shared_memory_with_dealloc_trait;
 pub mod shm_allocator_trait;
+pub mod shm_allocator_with_borrow_trait;
 pub mod static_storage_trait;
 pub mod trigger_trait;
 pub mod zero_copy_connection_trait;

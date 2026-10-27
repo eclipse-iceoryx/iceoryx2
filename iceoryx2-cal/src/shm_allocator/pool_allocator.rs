@@ -84,7 +84,7 @@ impl PoolAllocator {
 }
 
 impl<'shm_allocator> Borrowable for InitializedPoolAllocator<'shm_allocator> {
-    fn borrow(&self, ptr: PointerOffset) {
+    unsafe fn borrow(&self, ptr: PointerOffset) {
         self.0.chunk_reference_counter[self.0.chunk_index(ptr)].fetch_add(1, Ordering::Relaxed);
     }
 
@@ -116,7 +116,7 @@ impl<'shm_allocator> Allocate<PointerOffset> for InitializedPoolAllocator<'shm_a
         let ptr = PointerOffset::new(
             (chunk.as_ptr() as *const u8) as usize - self.0.allocator.start_address() as usize,
         );
-        self.borrow(ptr);
+        unsafe { self.borrow(ptr) };
 
         Ok(ptr)
     }

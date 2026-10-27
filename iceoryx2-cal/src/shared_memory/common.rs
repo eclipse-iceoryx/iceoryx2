@@ -527,7 +527,7 @@ pub mod details {
     where
         for<'a> Allocator::Initialized<'a>: Borrowable,
     {
-        fn borrow(&self, ptr: PointerOffset) {
+        unsafe fn borrow(&self, ptr: PointerOffset) {
             unsafe {
                 self.storage
                     .get()
