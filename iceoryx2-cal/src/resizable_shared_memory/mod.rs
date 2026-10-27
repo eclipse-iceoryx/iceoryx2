@@ -206,6 +206,7 @@ pub trait ResizableSharedMemory<
     + Allocate<ShmPointer>
     + Deallocate<ShmPointer>
     + Grow<ShmPointer>
+    + Borrowable
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].

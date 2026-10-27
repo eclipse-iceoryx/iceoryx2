@@ -138,9 +138,9 @@ pub mod shm_allocator_with_borrow_trait {
             unsafe { test.sut().assume_init().borrow(ptr.unwrap()) };
             unsafe { test.sut().assume_init().borrow(ptr.unwrap()) };
 
-            unsafe { test.sut().assume_init().release(ptr.unwrap()) };
-            unsafe { test.sut().assume_init().release(ptr.unwrap()) };
-            unsafe { test.sut().assume_init().release(ptr.unwrap()) };
+            assert_that!(unsafe { test.sut().assume_init().release(ptr.unwrap()) }, eq ReleaseState::Kept);
+            assert_that!(unsafe { test.sut().assume_init().release(ptr.unwrap()) }, eq ReleaseState::Kept);
+            assert_that!(unsafe { test.sut().assume_init().release(ptr.unwrap()) }, eq ReleaseState::Deallocated);
         }
     }
 

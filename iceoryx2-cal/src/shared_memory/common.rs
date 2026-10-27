@@ -538,14 +538,14 @@ pub mod details {
             };
         }
 
-        unsafe fn release(&self, ptr: PointerOffset) {
+        unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
                     .assume_init()
-                    .release(ptr);
+                    .release(ptr)
             }
         }
     }

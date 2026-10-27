@@ -12,7 +12,7 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use crate::shm_allocator::{Borrowable, ContentPlacement, InitializedShmAllocator};
+use crate::shm_allocator::{Borrowable, ContentPlacement, InitializedShmAllocator, ReleaseState};
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -88,11 +88,14 @@ impl<'shm_allocator> Borrowable for InitializedPoolAllocator<'shm_allocator> {
         self.0.chunk_reference_counter[self.0.chunk_index(ptr)].fetch_add(1, Ordering::Relaxed);
     }
 
-    unsafe fn release(&self, ptr: PointerOffset) {
+    unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState {
         if self.0.chunk_reference_counter[self.0.chunk_index(ptr)].fetch_sub(1, Ordering::Relaxed)
             == 1
         {
             unsafe { self.0.deallocate_bucket(ptr) };
+            ReleaseState::Deallocated
+        } else {
+            ReleaseState::Kept
         }
     }
 }

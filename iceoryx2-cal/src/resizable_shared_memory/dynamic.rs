@@ -42,7 +42,7 @@ use crate::shared_memory::{
 };
 use crate::shared_memory::{SharedMemoryForPoolAllocator, ShmPointer};
 use crate::shm_allocator::pool_allocator::PoolAllocator;
-use crate::shm_allocator::{Borrowable, PointerOffset, SegmentId, ShmAllocator};
+use crate::shm_allocator::{Borrowable, PointerOffset, ReleaseState, SegmentId, ShmAllocator};
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -818,6 +818,20 @@ where
                 }
             }
         }
+    }
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    Borrowable for DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    unsafe fn borrow(&self, ptr: PointerOffset) {
+        todo!()
+    }
+
+    unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState {
+        todo!()
     }
 }
 

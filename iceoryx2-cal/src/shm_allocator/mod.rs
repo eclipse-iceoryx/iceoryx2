@@ -58,6 +58,15 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
     pub config: Config,
 }
 
+/// States the outcome of the [`Borrowable::release()`] call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReleaseState {
+    /// Other instances have still borrowed the [`PointerOffset`] and it is kept.
+    Kept,
+    /// The last borrow was released and the [`PointerOffset`] was deallocated.
+    Deallocated,
+}
+
 /// Interface extension for a [`ShmAllocator`] to enable shared ownership tracking of memory chunks.
 pub trait Borrowable {
     /// Shall be called whenever a [`PointerOffset`] is shared with another entity.
@@ -76,7 +85,7 @@ pub trait Borrowable {
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
-    unsafe fn release(&self, ptr: PointerOffset);
+    unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState;
 }
 
 /// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized
