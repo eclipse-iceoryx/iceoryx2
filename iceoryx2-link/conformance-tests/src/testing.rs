@@ -84,7 +84,7 @@ pub fn retry<T>(
 
 /// The description of a publish-subscribe service of `Payload` under
 /// `Header`, as an application creating it with `config` would.
-pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
+pub fn describe_publish_subscribe<S: Service, Payload: PayloadShape, Header: TypeName>(
     name: &ServiceName,
     config: &Config,
 ) -> ServiceDescription {

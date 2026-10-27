@@ -25,7 +25,9 @@ pub mod gateway_publish_subscribe {
     use crate::fixture::{Discoverable, GatewayFixture, PropagatesPayloads};
 
     use crate::parameters::{Header, PayloadShape, PublishSubscribeService, Value};
-    use crate::testing::{Side, describe, notifications_of, retry, service_exists, side};
+    use crate::testing::{
+        Side, describe_publish_subscribe, notifications_of, retry, service_exists, side,
+    };
 
     const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -53,7 +55,7 @@ pub mod gateway_publish_subscribe {
         let service = X::create_service::<(), _>(&node, &service_name);
         let publisher = X::create_publisher(&service);
         let subscriber = X::create_subscriber(&service);
-        let description = describe::<S, X::Payload, ()>(&service_name, &config);
+        let description = describe_publish_subscribe::<S, X::Payload, ()>(&service_name, &config);
         retry(
             || {
                 link.discover().expect("discovery succeeds");
@@ -119,10 +121,11 @@ pub mod gateway_publish_subscribe {
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
 
-        let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
-            &X::service_name(),
-            &config,
-        ));
+        let remote = fixture.remote_endpoints_on(&describe_publish_subscribe::<
+            S,
+            X::Payload,
+            Header<X>,
+        >(&X::service_name(), &config));
         retry(
             || {
                 link.discover().expect("discovery succeeds");
@@ -201,7 +204,7 @@ pub mod gateway_publish_subscribe {
             .create()
             .expect("the listener is created");
 
-        let description = describe::<S, X::Payload, ()>(&service_name, &config);
+        let description = describe_publish_subscribe::<S, X::Payload, ()>(&service_name, &config);
         retry(
             || {
                 link.discover().expect("discovery succeeds");
@@ -264,7 +267,7 @@ pub mod gateway_publish_subscribe {
         let service = X::create_service::<(), _>(&node, &service_name);
         let subscriber = X::create_subscriber(&service);
 
-        let description = describe::<S, X::Payload, ()>(&service_name, &config);
+        let description = describe_publish_subscribe::<S, X::Payload, ()>(&service_name, &config);
         retry(
             || {
                 link.discover().expect("discovery succeeds");

@@ -25,7 +25,9 @@ use iceoryx2::testing::generate_service_name;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
 use iceoryx2_link_conformance_tests::parameters::FixedSizePayload;
-use iceoryx2_link_conformance_tests::testing::{describe, describe_request_response};
+use iceoryx2_link_conformance_tests::testing::{
+    describe_publish_subscribe, describe_request_response,
+};
 use iceoryx2_link_testing::{FakeAdapter, FakeMapping, FakeMiddleware, FakeSampleTypes};
 
 /// A fake middleware whose data `T` translates, and its adapters
@@ -56,7 +58,7 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
         let config = Config::default();
         let service = match pattern {
             MessagingPattern::PublishSubscribe => {
-                describe::<Local, FixedSizePayload<Payload>, ()>(&name, &config)
+                describe_publish_subscribe::<Local, FixedSizePayload<Payload>, ()>(&name, &config)
             }
             MessagingPattern::RequestResponse => describe_request_response::<
                 Local,
