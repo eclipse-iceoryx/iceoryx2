@@ -827,11 +827,35 @@ where
     Shm::Builder: Debug,
 {
     unsafe fn borrow(&self, ptr: PointerOffset) {
-        todo!()
+        let segment_id = SlotMapKey::new(ptr.segment_id().value() as usize);
+        let state = self.state_mut();
+        match state.shared_memory_map.get(segment_id) {
+            Some(entry) => {
+                unsafe { entry.shm.borrow(ptr) };
+            }
+            None => fatal_panic!(from self,
+                        "This should never happen! Unable to borrow {ptr:?} since the corresponding shared memory segment is not available!"),
+        }
     }
 
     unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState {
-        todo!()
+        let segment_id = SlotMapKey::new(ptr.segment_id().value() as usize);
+        let state = self.state_mut();
+        match state.shared_memory_map.get(segment_id) {
+            Some(entry) => {
+                let release_state = unsafe { entry.shm.release(ptr) };
+                if release_state == ReleaseState::Deallocated
+                    && entry.unregister_offset() == ShmEntryState::Empty
+                    && segment_id != state.current_idx
+                {
+                    state.shared_memory_map.remove(segment_id);
+                }
+
+                release_state
+            }
+            None => fatal_panic!(from self,
+                        "This should never happen! Unable to borrow {ptr:?} since the corresponding shared memory segment is not available!"),
+        }
     }
 }
 
