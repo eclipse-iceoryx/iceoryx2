@@ -66,7 +66,7 @@ pub trait Discoverable {
 }
 
 /// Remote endpoints that propagate publish-subscribe payloads of type `P`.
-pub trait PropagatesPayloads<P>: Discoverable {
+pub trait PropagatesPayloads<P> {
     /// Sends a payload.
     fn send_payload(&self, payload: P);
 
@@ -87,7 +87,7 @@ pub trait PropagatesPayloadsWithHeaders<H, P>: PropagatesPayloads<P> {
 /// Remote endpoints propagating the requests and responses of the
 /// request-response service they map to, of types `Q` and `R` locally, as
 /// its client and its server.
-pub trait PropagatesRequestResponse<Q, R>: Discoverable {
+pub trait PropagatesRequestResponse<Q, R> {
     /// The middleware's identity of a request.
     type RequestId: Copy + PartialEq + Debug;
 

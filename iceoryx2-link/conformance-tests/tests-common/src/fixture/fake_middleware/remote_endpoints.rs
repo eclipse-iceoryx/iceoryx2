@@ -16,9 +16,9 @@ use core::marker::PhantomData;
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceTypes};
 use iceoryx2_link_conformance_tests::fixture::{
-    Discoverable, PropagatesPayloads, PropagatesPayloadsWithHeaders, PropagatesRequestResponse,
-    PropagatesRequestResponseWithHeaders, RemotePublishSubscribeEndpoints,
-    RemoteRequestResponseEndpoints, ResponseMessage,
+    Describable, Discoverable, PropagatesMessages, PropagatesPayloads,
+    PropagatesPayloadsWithHeaders, PropagatesRequestResponse, PropagatesRequestResponseMessages,
+    PropagatesRequestResponseWithHeaders, ResponseMessage,
 };
 use iceoryx2_link_testing::{
     FakeEndpointDescription, FakeEndpointSettings, FakeMiddleware, FakePublishSubscribeEndpoints,
@@ -158,17 +158,19 @@ fn decoded_sample<W: WireForm>(message: &[u8], header_size: usize) -> (Header, P
     )
 }
 
-/// The value of a message is its bytes. The fake middleware imposes no
-/// form of its own on them.
-impl<T: WireForm>
-    RemotePublishSubscribeEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
-    for FakeRemoteEndpoints<T>
-{
-    type Value = Vec<u8>;
+impl<T: WireForm> Describable for FakeRemoteEndpoints<T> {
+    type Settings = FakeEndpointSettings;
+    type Types = EndpointTypes<FakeSampleTypes>;
 
     fn description(&self) -> &FakeEndpointDescription {
         &self.endpoint_description
     }
+}
+
+/// The value of a message is its bytes. The fake middleware imposes no
+/// form of its own on them.
+impl<T: WireForm> PropagatesMessages for FakeRemoteEndpoints<T> {
+    type Value = Vec<u8>;
 
     fn value(&self, n: u64) -> Vec<u8> {
         n.to_le_bytes().to_vec()
@@ -195,17 +197,10 @@ impl<T: WireForm>
 
 /// The value of a message is its bytes. The fake middleware imposes no
 /// form of its own on them.
-impl<T: WireForm>
-    RemoteRequestResponseEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
-    for FakeRemoteEndpoints<T>
-{
+impl<T: WireForm> PropagatesRequestResponseMessages for FakeRemoteEndpoints<T> {
     type Request = Vec<u8>;
     type Response = Vec<u8>;
     type RequestId = FakeRequestId;
-
-    fn description(&self) -> &FakeEndpointDescription {
-        &self.endpoint_description
-    }
 
     fn request(&self, n: u64) -> Vec<u8> {
         n.to_le_bytes().to_vec()

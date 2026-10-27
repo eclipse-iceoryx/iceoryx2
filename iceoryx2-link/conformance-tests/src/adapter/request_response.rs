@@ -18,6 +18,7 @@ pub mod adapter_request_response {
     use alloc::vec::Vec;
     use core::time::Duration;
 
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_adapter::{
@@ -25,7 +26,9 @@ pub mod adapter_request_response {
         SampleBytesRef, TakeOutcome,
     };
 
-    use crate::fixture::{AdapterFixture, RemoteRequestResponseEndpoints, ResponseMessage};
+    use crate::fixture::{
+        AdapterFixture, Describable, PropagatesRequestResponseMessages, ResponseMessage,
+    };
     use crate::testing::{ClientRequestIds, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -105,9 +108,7 @@ pub mod adapter_request_response {
 
     /// The id of the request the remote endpoints receive within the
     /// timeout.
-    fn received_request_id<S, T, R: RemoteRequestResponseEndpoints<S, T>>(
-        remote: &R,
-    ) -> R::RequestId {
+    fn received_request_id<R: PropagatesRequestResponseMessages>(remote: &R) -> R::RequestId {
         retry(
             || {
                 remote
@@ -121,13 +122,15 @@ pub mod adapter_request_response {
     }
 
     #[conformance_test]
-    pub fn requests_reach_the_adapter_from_the_remote_endpoints<F: AdapterFixture>() {
+    pub fn requests_reach_the_adapter_from_the_remote_endpoints<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesRequestResponseMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_request_response_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
         let mut own = adapter
             .request_response(remote.description())
             .expect("the adapter's endpoints open");
@@ -151,14 +154,16 @@ pub mod adapter_request_response {
     }
 
     #[conformance_test]
-    pub fn responses_reach_the_remote_endpoints_from_the_adapter<F: AdapterFixture>() {
+    pub fn responses_reach_the_remote_endpoints_from_the_adapter<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesRequestResponseMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // A request from the remote endpoints taken by the gateway's
         // endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_request_response_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
         let mut own = adapter
             .request_response(remote.description())
             .expect("the adapter's endpoints open");
@@ -206,13 +211,15 @@ pub mod adapter_request_response {
     }
 
     #[conformance_test]
-    pub fn requests_reach_the_remote_endpoints_from_the_adapter<F: AdapterFixture>() {
+    pub fn requests_reach_the_remote_endpoints_from_the_adapter<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesRequestResponseMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_request_response_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
         let mut own = adapter
             .request_response(remote.description())
             .expect("the adapter's endpoints open");
@@ -237,14 +244,16 @@ pub mod adapter_request_response {
     }
 
     #[conformance_test]
-    pub fn responses_reach_the_adapter_from_the_remote_endpoints<F: AdapterFixture>() {
+    pub fn responses_reach_the_adapter_from_the_remote_endpoints<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesRequestResponseMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // A request from the gateway's endpoints received by the remote
         // endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_request_response_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
         let mut own = adapter
             .request_response(remote.description())
             .expect("the adapter's endpoints open");
@@ -289,13 +298,15 @@ pub mod adapter_request_response {
     }
 
     #[conformance_test]
-    pub fn the_adapter_does_not_take_its_own_requests<F: AdapterFixture>() {
+    pub fn the_adapter_does_not_take_its_own_requests<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesRequestResponseMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // The gateway's endpoints and matching remote endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_request_response_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
         let mut own = adapter
             .request_response(remote.description())
             .expect("the adapter's endpoints open");
@@ -315,14 +326,16 @@ pub mod adapter_request_response {
     }
 
     #[conformance_test]
-    pub fn responses_to_requests_no_longer_held_are_skipped<F: AdapterFixture>() {
+    pub fn responses_to_requests_no_longer_held_are_skipped<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesRequestResponseMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // A request from the gateway's endpoints answered by the remote
         // endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_request_response_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
         let mut own = adapter
             .request_response(remote.description())
             .expect("the adapter's endpoints open");

@@ -15,6 +15,7 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2::config::Config;
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::testing::generate_isolated_config;
 use iceoryx2_link_adapter::{Adapter, EndpointDescription, EndpointTypes};
 
@@ -23,6 +24,12 @@ pub trait AdapterFixture {
     /// The middleware's types of a sample.
     type SampleTypes: Clone + PartialEq + 'static;
     type Adapter: Adapter<EndpointTypes = EndpointTypes<Self::SampleTypes>>;
+    /// Remote endpoints of a pattern. A suite bounds them by what it needs
+    /// of them.
+    type RemoteEndpoints: Describable<
+            Settings = <Self::Adapter as Adapter>::EndpointSettings,
+            Types = EndpointTypes<Self::SampleTypes>,
+        >;
 
     /// A fresh, isolated middleware.
     fn new() -> Self;
@@ -35,23 +42,27 @@ pub trait AdapterFixture {
     /// An adapter on the middleware.
     fn adapter(&mut self) -> Self::Adapter;
 
-    /// Creates remote publish-subscribe endpoints with a new description.
+    /// Creates remote endpoints of `pattern` with a new description.
     /// Dropping them removes them from the middleware.
-    fn remote_publish_subscribe_endpoints(
-        &mut self,
-    ) -> impl RemotePublishSubscribeEndpoints<
-        <Self::Adapter as Adapter>::EndpointSettings,
-        EndpointTypes<Self::SampleTypes>,
-    >;
+    fn remote_endpoints(&mut self, pattern: MessagingPattern) -> Self::RemoteEndpoints;
+}
 
-    /// Creates remote request-response endpoints with a new description.
-    /// Dropping them removes them from the middleware.
-    fn remote_request_response_endpoints(
-        &mut self,
-    ) -> impl RemoteRequestResponseEndpoints<
-        <Self::Adapter as Adapter>::EndpointSettings,
-        EndpointTypes<Self::SampleTypes>,
-    >;
+/// Remote endpoints with a description the gateway's endpoints open on.
+pub trait Describable {
+    /// The middleware's settings of an endpoint.
+    type Settings;
+    /// The middleware's types of an endpoint.
+    type Types;
+
+    /// The description of the endpoints.
+    fn description(&self) -> &EndpointDescription<Self::Settings, Self::Types>;
+
+    /// Waits until the gateway's endpoints opened on the description are
+    /// connected to these, or `timeout` passes. Immediate on a middleware
+    /// that delivers without matching first.
+    fn sync(&self, _timeout: Duration) -> bool {
+        true
+    }
 }
 
 /// A message of a response stream as the remote endpoints see it.
@@ -64,16 +75,13 @@ pub enum ResponseMessage<V> {
 /// Remote endpoints that send and receive the middleware's requests and
 /// responses as values. They encode values into the wire form the
 /// gateway's endpoints use.
-pub trait RemoteRequestResponseEndpoints<S, T> {
+pub trait PropagatesRequestResponseMessages {
     /// The value of a request.
     type Request: Clone + PartialEq + Debug;
     /// The value of a response.
     type Response: Clone + PartialEq + Debug;
     /// The middleware's identity of a request.
     type RequestId: Copy + PartialEq + Debug;
-
-    /// The description of the endpoints.
-    fn description(&self) -> &EndpointDescription<S, T>;
 
     /// The request the suites send for `n`. Different `n` give different
     /// requests.
@@ -110,24 +118,14 @@ pub trait RemoteRequestResponseEndpoints<S, T> {
     /// The next message of a response stream pending, if any, with the id
     /// of its request.
     fn receive_response(&self) -> Option<(Self::RequestId, ResponseMessage<Self::Response>)>;
-
-    /// Waits until the gateway's endpoints opened on the description are
-    /// connected to these, or `timeout` passes. Immediate on a middleware
-    /// that delivers without matching first.
-    fn sync(&self, _timeout: Duration) -> bool {
-        true
-    }
 }
 
 /// Remote endpoints that send and receive the middleware's messages as
 /// values. They encode values into the wire form the gateway's endpoints
 /// use.
-pub trait RemotePublishSubscribeEndpoints<S, T> {
+pub trait PropagatesMessages {
     /// The value of a message.
     type Value: Clone + PartialEq + Debug;
-
-    /// The description of the endpoints.
-    fn description(&self) -> &EndpointDescription<S, T>;
 
     /// The value the suites send for `n`. Different `n` give different
     /// values.
@@ -144,11 +142,4 @@ pub trait RemotePublishSubscribeEndpoints<S, T> {
 
     /// The value of the next message pending, if any.
     fn receive(&self) -> Option<Self::Value>;
-
-    /// Waits until the gateway's endpoints opened on the description are
-    /// connected to these, or `timeout` passes. Immediate on a middleware
-    /// that delivers without matching first.
-    fn sync(&self, _timeout: Duration) -> bool {
-        true
-    }
 }

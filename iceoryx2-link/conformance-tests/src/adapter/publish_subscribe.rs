@@ -18,13 +18,14 @@ pub mod adapter_publish_subscribe {
     use alloc::vec::Vec;
     use core::time::Duration;
 
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_adapter::{
         Adapter, PublishSubscribeEndpoints, SampleBytes, SampleBytesRef, TakeOutcome,
     };
 
-    use crate::fixture::{AdapterFixture, RemotePublishSubscribeEndpoints};
+    use crate::fixture::{AdapterFixture, Describable, PropagatesMessages};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -51,13 +52,15 @@ pub mod adapter_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn messages_reach_the_remote_endpoints_from_the_adapter<F: AdapterFixture>() {
+    pub fn messages_reach_the_remote_endpoints_from_the_adapter<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_publish_subscribe_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let mut own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");
@@ -82,13 +85,15 @@ pub mod adapter_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn messages_reach_the_adapter_from_the_remote_endpoints<F: AdapterFixture>() {
+    pub fn messages_reach_the_adapter_from_the_remote_endpoints<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // Remote endpoints and the gateway's endpoints to match.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_publish_subscribe_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let mut own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");
@@ -112,13 +117,15 @@ pub mod adapter_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn the_adapter_does_not_take_its_own_messages<F: AdapterFixture>() {
+    pub fn the_adapter_does_not_take_its_own_messages<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // The gateways endpoints and matching remote endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_publish_subscribe_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let mut own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");
