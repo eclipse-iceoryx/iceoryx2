@@ -107,8 +107,6 @@ use core::fmt::Debug;
 use core::ptr::NonNull;
 use core::{marker::PhantomData, mem::MaybeUninit};
 
-use alloc::vec::Vec;
-
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
@@ -150,7 +148,6 @@ use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::{self};
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
-use super::details::segment_state::SegmentState;
 use super::{LoanError, SendError};
 use crate::identifiers::UniquePublisherId;
 
@@ -277,12 +274,13 @@ impl<Service: service::Service> PublisherSharedState<Service> {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                self.sender.borrow_chunk(chunk.offset());
+                self.sender.data_segment.borrow(chunk.offset());
                 match history.push_with_overflow(OffsetAndSize::new(chunk)) {
                     None => (),
                     Some(old) => self
                         .sender
-                        .release_chunk(PointerOffset::from_value(old.offset)),
+                        .data_segment
+                        .release(PointerOffset::from_value(old.offset)),
                 }
             }
         }
@@ -355,10 +353,10 @@ impl<Service: service::Service> PublisherSharedState<Service> {
                         .try_send(offset, old_sample.size, ChannelId::new(0))
                     {
                         Ok(overflow) => {
-                            self.sender.borrow_chunk(offset);
+                            self.sender.data_segment.borrow(offset);
 
                             if let Some(old) = overflow {
-                                self.sender.release_chunk(old);
+                                self.sender.data_segment.release(old);
                             }
                         }
                         Err(e) => {
@@ -554,15 +552,6 @@ impl<
                 is_active: AtomicBool::new(true),
                 sender: Sender {
                     data_segment,
-                    segment_states: {
-                        let mut v: Vec<SegmentState> =
-                            Vec::with_capacity(max_number_of_segments as usize);
-                        v.push(SegmentState::new(number_of_samples));
-                        for _ in 1..max_number_of_segments {
-                            v.push(SegmentState::new_unallocated(number_of_samples))
-                        }
-                        v
-                    },
                     connections: (0..subscriber_list.capacity())
                         .map(|_| UnsafeCell::new(None))
                         .collect(),

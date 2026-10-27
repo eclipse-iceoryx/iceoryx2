@@ -49,7 +49,6 @@ use crate::{service, service::naming_scheme::connection_name};
 
 use super::chunk::ChunkMut;
 use super::data_segment::DataSegment;
-use super::segment_state::SegmentState;
 
 #[derive(Clone, Copy)]
 pub(crate) struct ReceiverDetails {
@@ -130,7 +129,6 @@ impl<Service: service::Service, Resource: ServiceResource> Connection<Service, R
 
 #[derive(Debug)]
 pub(crate) struct Sender<Service: service::Service, Resource: ServiceResource> {
-    pub(crate) segment_states: Vec<SegmentState>,
     pub(crate) data_segment: DataSegment<Service>,
     pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service, Resource>>>>,
     pub(crate) sender_port_id: u128,
@@ -162,17 +160,10 @@ impl<Service: service::Service, Resource: ServiceResource> Grow<ShmPointer>
         new_layout: Layout,
         content_placement: ContentPlacement,
     ) -> Result<ShmPointer, AllocationGrowError> {
-        let new_ptr = unsafe {
+        unsafe {
             self.data_segment
                 .grow(ptr, old_layout, new_layout, content_placement)
-        }?;
-
-        if ptr.offset != new_ptr.offset {
-            self.borrow_chunk(new_ptr.offset);
-            self.untrack_chunk(ptr.offset);
         }
-
-        Ok(new_ptr)
     }
 }
 
@@ -340,11 +331,11 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                     }
                 }
                 Ok(overflow) => {
-                    self.borrow_chunk(chunk.offset());
+                    self.data_segment.borrow(chunk.offset);
                     number_of_recipients += 1;
 
                     if let Some(old) = overflow {
-                        self.release_chunk(old)
+                        self.data_segment.release(old);
                     }
                 }
             }
@@ -444,7 +435,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
     }
 
     pub(crate) fn return_loaned_chunk(&self, distance_to_chunk: PointerOffset) {
-        self.release_chunk(distance_to_chunk);
+        self.data_segment.release(distance_to_chunk);
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
@@ -494,29 +485,13 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
             }
         };
 
-        let (ref_count, chunk_size) = self.borrow_chunk(shm_pointer.offset);
-        if ref_count != 0 {
-            fatal_panic!(from self,
-                "{} since the allocated chunk is already in use! This should never happen!", msg);
-        }
-
         self.loan_counter.fetch_add(1, Ordering::Relaxed);
         Ok(ChunkMut::new(
             &self.message_type_details,
             shm_pointer,
-            chunk_size,
+            self.data_segment
+                .bucket_size(shm_pointer.offset.segment_id()),
         ))
-    }
-
-    pub(crate) fn borrow_chunk(&self, offset: PointerOffset) -> (u64, usize) {
-        let segment_id = offset.segment_id();
-        let segment_state = &self.segment_states[segment_id.value() as usize];
-        let mut payload_size = segment_state.payload_size();
-        if segment_state.payload_size() == 0 {
-            payload_size = self.data_segment.bucket_size(segment_id);
-            segment_state.set_payload_size(payload_size);
-        }
-        (segment_state.borrow_chunk(offset.offset()), payload_size)
     }
 
     pub(crate) fn retrieve_returned_chunks(&self) {
@@ -527,7 +502,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
                     loop {
                         match connection.sender.reclaim(id) {
                             Ok(Some(ptr_dist)) => {
-                                self.release_chunk(ptr_dist);
+                                self.data_segment.release(ptr_dist);
                             }
                             Ok(None) => break,
                             Err(e) => {
@@ -540,18 +515,6 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         }
     }
 
-    pub(crate) fn untrack_chunk(&self, offset: PointerOffset) -> u64 {
-        self.segment_states[offset.segment_id().value() as usize].release_chunk(offset.offset())
-    }
-
-    pub(crate) fn release_chunk(&self, offset: PointerOffset) {
-        if self.untrack_chunk(offset) == 1 {
-            unsafe {
-                self.data_segment.deallocate_bucket(offset);
-            }
-        }
-    }
-
     fn remove_connection(&self, i: usize) {
         if let Some(connection) = self.get(i) {
             // # SAFETY: the receiver no longer exist, therefore we can
@@ -559,7 +522,7 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
             unsafe {
                 connection
                     .sender
-                    .acquire_used_offsets(|offset| self.release_chunk(offset))
+                    .acquire_used_offsets(|offset| self.data_segment.release(offset))
             };
 
             *self.get_mut(i) = None;

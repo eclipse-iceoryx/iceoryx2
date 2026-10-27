@@ -127,7 +127,6 @@ use super::{
     details::{
         data_segment::DataSegmentType,
         receiver::{Receiver, SenderDetails},
-        segment_state::SegmentState,
         sender::{ReceiverDetails, Sender},
     },
     update_connections::ConnectionFailure,
@@ -563,15 +562,6 @@ impl<
         let sender_max_borrowed_chunks = static_config.required_max_borrowed_chunks_per_client();
         let request_sender = Sender {
             data_segment,
-            segment_states: {
-                let mut v =
-                    alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
-                v.push(SegmentState::new(number_of_requests));
-                for _ in 1..max_number_of_segments {
-                    v.push(SegmentState::new_unallocated(number_of_requests))
-                }
-                v
-            },
             sender_port_id: client_id.value(),
             shared_node: service.shared_node().clone(),
             connections: (0..server_list.capacity())

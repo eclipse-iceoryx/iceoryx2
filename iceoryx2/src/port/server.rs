@@ -118,7 +118,6 @@ use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPE
 use iceoryx2_log::{fail, warn};
 
 use super::details::data_segment::DataSegment;
-use super::details::segment_state::SegmentState;
 use super::details::sender::{ReceiverDetails, Sender};
 use super::{
     ReceiveError,
@@ -478,15 +477,6 @@ impl<
             "{} since the server data segment could not be created.", msg);
 
         let response_sender = Sender {
-            segment_states: {
-                let mut v =
-                    alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
-                v.push(SegmentState::new(number_of_responses));
-                for _ in 1..max_number_of_segments {
-                    v.push(SegmentState::new_unallocated(number_of_responses))
-                }
-                v
-            },
             data_segment,
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))

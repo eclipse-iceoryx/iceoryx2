@@ -854,7 +854,7 @@ where
                 release_state
             }
             None => fatal_panic!(from self,
-                        "This should never happen! Unable to borrow {ptr:?} since the corresponding shared memory segment is not available!"),
+                        "This should never happen! Unable to release {ptr:?} since the corresponding shared memory segment is not available!"),
         }
     }
 }
