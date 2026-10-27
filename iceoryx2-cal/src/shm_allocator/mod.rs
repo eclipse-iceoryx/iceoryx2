@@ -56,6 +56,22 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
     pub config: Config,
 }
 
+/// Interface extension for a [`ShmAllocator`] to enable shared ownership tracking of memory chunks.
+pub trait Borrowable: Allocate<PointerOffset> + Deallocate<PointerOffset> {
+    /// Shall be called whenever a [`PointerOffset`] is shared with another entity.
+    fn borrow(&self, ptr: PointerOffset, layout: Layout);
+    /// Shall be called whenever a [`PointerOffset`] is no longer shared with another entity. If the
+    /// [`PointerOffset`] is no longer shared with anyone it is deallocated.
+    ///
+    /// # Safety
+    ///
+    ///  * `ptr` must be allocated previously with [`Allocate::allocate()`]
+    ///  * `layout` must have the same value as in the allocation or, when the memory was
+    ///    resized, the same value as it was resized to
+    ///
+    unsafe fn release(&self, ptr: PointerOffset, layout: Layout);
+}
+
 /// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized
 /// in place, every method on it is `unsafe` since the user must call [`ShmAllocator::init()`]
 /// before using it, otherwise it is undefined behavior.
