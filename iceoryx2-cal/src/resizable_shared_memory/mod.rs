@@ -106,13 +106,13 @@ use crate::named_concept::*;
 use crate::shared_memory::{
     SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
-use crate::shm_allocator::{PointerOffset, SegmentId, ShmAllocator};
+use crate::shm_allocator::{Borrowable, PointerOffset, SegmentId, ShmAllocator};
 
 /// Creates a [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`] and maps the
 /// [`ResizableSharedMemory`] read-only into the process space.
 pub trait ResizableSharedMemoryViewBuilder<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
     ResizableShmView: ResizableSharedMemoryView<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm> + Debug
@@ -135,7 +135,7 @@ pub trait ResizableSharedMemoryViewBuilder<
 /// removed.
 pub trait ResizableSharedMemoryBuilder<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm> + Debug
 {
@@ -195,7 +195,7 @@ pub trait ResizableSharedMemoryView<
 /// [`ResizableSharedMemoryView`]s.
 pub trait ResizableSharedMemory<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable,
 >:
     Sized
     + NamedConcept
@@ -231,7 +231,7 @@ pub trait ResizableSharedMemory<
 }
 
 pub trait ResizableSharedMemoryForPoolAllocator<
-    Shm: SharedMemory<PoolAllocator> + Deallocate<ShmPointer>,
+    Shm: SharedMemory<PoolAllocator> + Deallocate<ShmPointer> + Borrowable,
 >: ResizableSharedMemory<PoolAllocator, Shm>
 {
     /// Release previously allocated memory

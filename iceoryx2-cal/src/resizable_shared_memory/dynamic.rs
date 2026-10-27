@@ -42,7 +42,7 @@ use crate::shared_memory::{
 };
 use crate::shared_memory::{SharedMemoryForPoolAllocator, ShmPointer};
 use crate::shm_allocator::pool_allocator::PoolAllocator;
-use crate::shm_allocator::{PointerOffset, SegmentId, ShmAllocator};
+use crate::shm_allocator::{Borrowable, PointerOffset, SegmentId, ShmAllocator};
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -145,7 +145,7 @@ pub struct DynamicViewBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     config: ViewConfig<Allocator, Shm>,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicViewBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -167,7 +167,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryViewBuilder<
         Allocator,
         Shm,
@@ -219,7 +219,7 @@ where
     shared_state: SharedState,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicMemoryBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -246,7 +246,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryBuilder<Allocator, Shm, DynamicMemory<Allocator, Shm>>
     for DynamicMemoryBuilder<Allocator, Shm>
 where
@@ -365,7 +365,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -456,7 +456,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     NamedConceptMgmt for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -533,7 +533,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -746,7 +746,7 @@ where
     }
 }
 
-impl<Shm: SharedMemoryForPoolAllocator + Deallocate<ShmPointer>>
+impl<Shm: SharedMemoryForPoolAllocator + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryForPoolAllocator<Shm> for DynamicMemory<PoolAllocator, Shm>
 where
     Shm::Builder: Debug,
@@ -768,7 +768,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemory<Allocator, Shm> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -790,7 +790,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     Allocate<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -821,7 +821,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     Grow<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -896,7 +896,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     Deallocate<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,

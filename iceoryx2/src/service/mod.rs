@@ -278,6 +278,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::clock::Clock;
+use iceoryx2_cal::shm_allocator::Borrowable;
 
 use crate::config;
 use crate::name_generator::NameGenerator;
@@ -971,7 +972,7 @@ pub trait Service:
     type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static>: DynamicStorage<T>;
 
     /// The memory used to store the payload.
-    type SharedMemory: SharedMemoryForPoolAllocator;
+    type SharedMemory: SharedMemoryForPoolAllocator + Borrowable;
 
     /// The dynamic memory used to store dynamic payload
     type ResizableSharedMemory: ResizableSharedMemoryForPoolAllocator<Self::SharedMemory>;
