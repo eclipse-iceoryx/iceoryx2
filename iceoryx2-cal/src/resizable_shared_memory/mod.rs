@@ -112,7 +112,7 @@ use crate::shm_allocator::{PointerOffset, SegmentId, ShmAllocator};
 /// [`ResizableSharedMemory`] read-only into the process space.
 pub trait ResizableSharedMemoryViewBuilder<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
     ResizableShmView: ResizableSharedMemoryView<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm> + Debug
@@ -135,7 +135,7 @@ pub trait ResizableSharedMemoryViewBuilder<
 /// removed.
 pub trait ResizableSharedMemoryBuilder<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm> + Debug
 {
@@ -158,8 +158,10 @@ pub trait ResizableSharedMemoryBuilder<
 }
 
 /// A read-only view to a [`ResizableSharedMemory`]. Can be created by arbitrary many processes.
-pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Debug + Send + Abandonable
+pub trait ResizableSharedMemoryView<
+    Allocator: ShmAllocator,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
+>: Debug + Send + Abandonable
 {
     /// Registers a received [`PointerOffset`] at the [`ResizableSharedMemoryView`] and returns the
     /// absolute pointer to the data. If the segment of the received [`PointerOffset`] was not yet
@@ -191,7 +193,10 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 /// The [`ResizableSharedMemory`] can be only owned by exactly one process that is allowed to
 /// [`Allocate::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
-pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
+pub trait ResizableSharedMemory<
+    Allocator: ShmAllocator,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
+>:
     Sized
     + NamedConcept
     + NamedConceptMgmt
@@ -225,8 +230,9 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     fn allocation_strategy(&self) -> AllocationStrategy;
 }
 
-pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:
-    ResizableSharedMemory<PoolAllocator, Shm>
+pub trait ResizableSharedMemoryForPoolAllocator<
+    Shm: SharedMemory<PoolAllocator> + Deallocate<ShmPointer>,
+>: ResizableSharedMemory<PoolAllocator, Shm>
 {
     /// Release previously allocated memory
     ///

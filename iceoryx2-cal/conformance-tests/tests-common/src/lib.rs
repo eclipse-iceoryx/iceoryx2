@@ -31,6 +31,7 @@ mod reactor_trait_tests;
 mod resizable_shared_memory_trait_tests;
 mod serialize_trait_tests;
 mod shared_memory_trait_tests;
+mod shared_memory_with_dealloc_trait_tests;
 mod shm_allocator_trait_tests;
 mod static_storage_trait_tests;
 mod trigger_trait_tests;

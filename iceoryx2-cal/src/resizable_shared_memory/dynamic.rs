@@ -145,7 +145,7 @@ pub struct DynamicViewBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     config: ViewConfig<Allocator, Shm>,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicViewBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -167,7 +167,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
     ResizableSharedMemoryViewBuilder<
         Allocator,
         Shm,
@@ -219,7 +219,7 @@ where
     shared_state: SharedState,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicMemoryBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -246,7 +246,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
     ResizableSharedMemoryBuilder<Allocator, Shm, DynamicMemory<Allocator, Shm>>
     for DynamicMemoryBuilder<Allocator, Shm>
 where
@@ -365,7 +365,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -456,8 +456,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConceptMgmt
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+    NamedConceptMgmt for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -533,7 +533,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+    DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -745,8 +746,8 @@ where
     }
 }
 
-impl<Shm: SharedMemoryForPoolAllocator> ResizableSharedMemoryForPoolAllocator<Shm>
-    for DynamicMemory<PoolAllocator, Shm>
+impl<Shm: SharedMemoryForPoolAllocator + Deallocate<ShmPointer>>
+    ResizableSharedMemoryForPoolAllocator<Shm> for DynamicMemory<PoolAllocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -767,8 +768,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemory<Allocator, Shm>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+    ResizableSharedMemory<Allocator, Shm> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -789,8 +790,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Allocate<ShmPointer>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+    Allocate<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -820,8 +821,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Grow<ShmPointer>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+    Grow<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -895,8 +896,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Deallocate<ShmPointer>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>>
+    Deallocate<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {

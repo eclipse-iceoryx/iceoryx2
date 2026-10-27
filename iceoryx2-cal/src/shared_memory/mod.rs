@@ -189,7 +189,6 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     + Send
     + Abandonable
     + Allocate<ShmPointer>
-    + Deallocate<ShmPointer>
     + Grow<ShmPointer>
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
@@ -225,7 +224,9 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     }
 }
 
-pub trait SharedMemoryForPoolAllocator: SharedMemory<PoolAllocator> {
+pub trait SharedMemoryForPoolAllocator:
+    SharedMemory<PoolAllocator> + Deallocate<ShmPointer>
+{
     /// Release previously allocated memory
     ///
     /// # Safety

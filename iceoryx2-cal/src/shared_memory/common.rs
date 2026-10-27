@@ -507,6 +507,8 @@ pub mod details {
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
         Deallocate<ShmPointer> for Memory<Allocator, Storage>
+    where
+        for<'a> Allocator::Initialized<'a>: Deallocate<PointerOffset>,
     {
         unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout) {
             unsafe {
@@ -521,29 +523,29 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        Borrowable<ShmPointer> for Memory<Allocator, Storage>
+        Borrowable for Memory<Allocator, Storage>
     where
-        for<'a> Allocator::Initialized<'a>: Borrowable<ShmPointer>,
+        for<'a> Allocator::Initialized<'a>: Borrowable,
     {
-        fn borrow(&self, ptr: ShmPointer, layout: Layout) {
+        fn borrow(&self, ptr: PointerOffset) {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
                     .assume_init()
-                    .borrow(ptr, layout);
+                    .borrow(ptr);
             };
         }
 
-        unsafe fn release(&self, ptr: ShmPointer, layout: Layout) {
+        unsafe fn release(&self, ptr: PointerOffset) {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
                     .assume_init()
-                    .release(ptr, layout);
+                    .release(ptr);
             }
         }
     }

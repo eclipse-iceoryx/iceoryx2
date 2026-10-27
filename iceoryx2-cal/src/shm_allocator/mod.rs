@@ -21,7 +21,7 @@ pub use iceoryx2_bb_elementary_traits::allocator::{
     Allocation, AllocationError, AllocationGrowError,
 };
 use iceoryx2_bb_elementary_traits::{
-    allocator::{Allocate, ContentPlacement, Deallocate, Grow},
+    allocator::{Allocate, ContentPlacement, Grow},
     zero_copy_send::ZeroCopySend,
 };
 pub use pointer_offset::*;
@@ -59,19 +59,18 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
 }
 
 /// Interface extension for a [`ShmAllocator`] to enable shared ownership tracking of memory chunks.
-pub trait Borrowable<P: Allocation>: Allocate<P> + Deallocate<P> {
-    /// Shall be called whenever a [`Allocation`] is shared with another entity.
-    fn borrow(&self, ptr: P, layout: Layout);
-    /// Shall be called whenever a [`Allocation`] is no longer shared with another entity. If the
-    /// [`Allocation`] is no longer shared with anyone it is deallocated.
+pub trait Borrowable {
+    /// Shall be called whenever a [`PointerOffset`] is shared with another entity.
+    fn borrow(&self, ptr: PointerOffset);
+    /// Shall be called whenever a [`PointerOffset`] is no longer shared with another entity. If the
+    /// [`PointerOffset`] is no longer shared with anyone it is deallocated.
     ///
     /// # Safety
     ///
-    ///  * `ptr` must be allocated previously with [`Allocate::allocate()`]
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
-    unsafe fn release(&self, ptr: P, layout: Layout);
+    unsafe fn release(&self, ptr: PointerOffset);
 }
 
 /// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized
@@ -82,7 +81,7 @@ pub trait Borrowable<P: Allocation>: Allocate<P> + Deallocate<P> {
 /// `unsafe` [`ShmAllocator::assume_init()`] method ensures that the contract is satisfied and returns
 /// a reference to an object with a normal allocator interface.
 pub trait InitializedShmAllocator<'shm_allocator>:
-    Allocate<PointerOffset> + Deallocate<PointerOffset> + Grow<PointerOffset>
+    Allocate<PointerOffset> + Grow<PointerOffset>
 {
 }
 

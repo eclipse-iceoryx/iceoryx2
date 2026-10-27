@@ -364,7 +364,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
         .config(&shm_config)
         .has_ownership(true)
         .size(payload_size)
-        .create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default())
+        .create(&iceoryx2_cal::shm_allocator::bump_allocator::Config::default())
         {
             Ok(v) => v,
             Err(_) => {
