@@ -36,9 +36,7 @@ impl From<UniqueSystemIdCreationError> for UniqueIdGeneratorGenerateError {
 }
 
 impl<Service: service::Service> UniqueIdGenerator for UniqueSystemIdGenerator<Service> {
-    fn open_or_create<ServiceType: service::Service>(
-        config: &Config,
-    ) -> Result<Self, UniqueIdGeneratorOpenOrCreateError> {
+    fn open_or_create(config: &Config) -> Result<Self, UniqueIdGeneratorOpenOrCreateError> {
         let origin = "UniqueSystemIdGenerator::open()";
         let msg = "Unable to open the global management segment due to";
 
