@@ -18,7 +18,7 @@ use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize};
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_container::vector::RelocatableVec;
+use iceoryx2_bb_container::vector::{RelocatableVec, Vector};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationGrowError};
@@ -83,15 +83,16 @@ impl PoolAllocator {
     }
 }
 
-impl Borrowable for PoolAllocator {
+impl<'shm_allocator> Borrowable for InitializedPoolAllocator<'shm_allocator> {
     fn borrow(&self, ptr: PointerOffset) {
-        self.chunk_reference_counter[self.chunk_index(ptr)].fetch_add(1, Ordering::Relaxed);
+        self.0.chunk_reference_counter[self.0.chunk_index(ptr)].fetch_add(1, Ordering::Relaxed);
     }
 
     unsafe fn release(&self, ptr: PointerOffset) {
-        if self.chunk_reference_counter[self.chunk_index(ptr)].fetch_sub(1, Ordering::Relaxed) == 1
+        if self.0.chunk_reference_counter[self.0.chunk_index(ptr)].fetch_sub(1, Ordering::Relaxed)
+            == 1
         {
-            unsafe { self.deallocate_bucket(ptr) };
+            unsafe { self.0.deallocate_bucket(ptr) };
         }
     }
 }
@@ -111,17 +112,23 @@ impl<'shm_allocator> Allocate<PointerOffset> for InitializedPoolAllocator<'shm_a
         self.0
             .number_of_used_buckets
             .fetch_add(1, Ordering::Relaxed);
-        Ok(PointerOffset::new(
+
+        let ptr = PointerOffset::new(
             (chunk.as_ptr() as *const u8) as usize - self.0.allocator.start_address() as usize,
-        ))
+        );
+        self.borrow(ptr);
+
+        Ok(ptr)
     }
 }
 
 impl<'shm_allocator> Deallocate<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
     unsafe fn deallocate(&self, ptr: PointerOffset, _layout: Layout) {
-        unsafe {
-            self.0.deallocate_bucket(ptr);
-        }
+        let old_ref_count =
+            self.0.chunk_reference_counter[self.0.chunk_index(ptr)].swap(0, Ordering::Relaxed);
+        debug_assert!(old_ref_count == 1);
+
+        unsafe { self.0.deallocate_bucket(ptr) };
     }
 }
 
@@ -317,6 +324,12 @@ impl ShmAllocator for PoolAllocator {
         fail!(from self, when unsafe { self.chunk_reference_counter.init(mgmt_allocator) },
             with ShmAllocatorInitError::AllocationFailed,
             "{} since the allocation of the memory chunk reference counter memory failed.", msg);
+
+        for _ in 0..self.chunk_reference_counter.capacity() {
+            self.chunk_reference_counter
+                .push(AtomicU64::new(0))
+                .expect("Empty vector can be filled until capacity is reached.");
+        }
 
         Ok(())
     }
