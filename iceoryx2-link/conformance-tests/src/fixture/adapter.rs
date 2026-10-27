@@ -23,18 +23,6 @@ pub trait AdapterFixture {
     /// The middleware's types of a sample.
     type SampleTypes: Clone + PartialEq + 'static;
     type Adapter: Adapter<EndpointTypes = EndpointTypes<Self::SampleTypes>>;
-    /// Remote endpoints of the middleware that send and receive its
-    /// messages as bytes in its form.
-    type RemotePublishSubscribeEndpoints: PublishSubscribeMessageEndpoints<
-            <Self::Adapter as Adapter>::EndpointSettings,
-            EndpointTypes<Self::SampleTypes>,
-        >;
-    /// Remote request-response endpoints of the middleware that send and
-    /// receive its requests and responses as bytes in its form.
-    type RemoteRequestResponseEndpoints: RequestResponseMessageEndpoints<
-            <Self::Adapter as Adapter>::EndpointSettings,
-            EndpointTypes<Self::SampleTypes>,
-        >;
 
     /// A fresh, isolated middleware.
     fn new() -> Self;
@@ -49,11 +37,21 @@ pub trait AdapterFixture {
 
     /// Creates remote publish-subscribe endpoints with a new description.
     /// Dropping them removes them from the middleware.
-    fn remote_publish_subscribe_endpoints(&mut self) -> Self::RemotePublishSubscribeEndpoints;
+    fn remote_publish_subscribe_endpoints(
+        &mut self,
+    ) -> impl RemotePublishSubscribeEndpoints<
+        <Self::Adapter as Adapter>::EndpointSettings,
+        EndpointTypes<Self::SampleTypes>,
+    >;
 
     /// Creates remote request-response endpoints with a new description.
     /// Dropping them removes them from the middleware.
-    fn remote_request_response_endpoints(&mut self) -> Self::RemoteRequestResponseEndpoints;
+    fn remote_request_response_endpoints(
+        &mut self,
+    ) -> impl RemoteRequestResponseEndpoints<
+        <Self::Adapter as Adapter>::EndpointSettings,
+        EndpointTypes<Self::SampleTypes>,
+    >;
 }
 
 /// A message of a response stream as the remote endpoints see it.
@@ -66,7 +64,7 @@ pub enum ResponseMessage<V> {
 /// Remote endpoints that send and receive the middleware's requests and
 /// responses as values. They encode values into the wire form the
 /// gateway's endpoints use.
-pub trait RequestResponseMessageEndpoints<S, T> {
+pub trait RemoteRequestResponseEndpoints<S, T> {
     /// The value of a request.
     type Request: Clone + PartialEq + Debug;
     /// The value of a response.
@@ -124,7 +122,7 @@ pub trait RequestResponseMessageEndpoints<S, T> {
 /// Remote endpoints that send and receive the middleware's messages as
 /// values. They encode values into the wire form the gateway's endpoints
 /// use.
-pub trait PublishSubscribeMessageEndpoints<S, T> {
+pub trait RemotePublishSubscribeEndpoints<S, T> {
     /// The value of a message.
     type Value: Clone + PartialEq + Debug;
 

@@ -17,8 +17,8 @@ use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::{ServiceDescription, ServiceTypes};
 use iceoryx2_link_conformance_tests::fixture::{
     Discoverable, PropagatesPayloads, PropagatesPayloadsWithHeaders, PropagatesRequestResponse,
-    PropagatesRequestResponseWithHeaders, PublishSubscribeMessageEndpoints,
-    RequestResponseMessageEndpoints, ResponseMessage,
+    PropagatesRequestResponseWithHeaders, RemotePublishSubscribeEndpoints,
+    RemoteRequestResponseEndpoints, ResponseMessage,
 };
 use iceoryx2_link_testing::{
     FakeEndpointDescription, FakeEndpointSettings, FakeMiddleware, FakePublishSubscribeEndpoints,
@@ -161,7 +161,7 @@ fn decoded_sample<W: WireForm>(message: &[u8], header_size: usize) -> (Header, P
 /// The value of a message is its bytes. The fake middleware imposes no
 /// form of its own on them.
 impl<T: WireForm>
-    PublishSubscribeMessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+    RemotePublishSubscribeEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
     for FakeRemoteEndpoints<T>
 {
     type Value = Vec<u8>;
@@ -196,7 +196,7 @@ impl<T: WireForm>
 /// The value of a message is its bytes. The fake middleware imposes no
 /// form of its own on them.
 impl<T: WireForm>
-    RequestResponseMessageEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+    RemoteRequestResponseEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
     for FakeRemoteEndpoints<T>
 {
     type Request = Vec<u8>;

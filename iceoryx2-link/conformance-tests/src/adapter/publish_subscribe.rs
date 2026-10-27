@@ -24,7 +24,7 @@ pub mod adapter_publish_subscribe {
         Adapter, PublishSubscribeEndpoints, SampleBytes, SampleBytesRef, TakeOutcome,
     };
 
-    use crate::fixture::{AdapterFixture, PublishSubscribeMessageEndpoints};
+    use crate::fixture::{AdapterFixture, RemotePublishSubscribeEndpoints};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);

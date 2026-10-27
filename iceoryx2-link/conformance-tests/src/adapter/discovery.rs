@@ -24,7 +24,7 @@ pub mod adapter_discovery {
     use iceoryx2_link_adapter::Adapter;
     use iceoryx2_link_backend::service_description::Identified;
 
-    use crate::fixture::{AdapterFixture, PublishSubscribeMessageEndpoints};
+    use crate::fixture::{AdapterFixture, RemotePublishSubscribeEndpoints};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);

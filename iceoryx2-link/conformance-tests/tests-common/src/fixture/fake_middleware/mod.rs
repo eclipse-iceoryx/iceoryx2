@@ -21,11 +21,16 @@ use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2::service::local::Service as Local;
 use iceoryx2::testing::generate_service_name;
+use iceoryx2_link_adapter::EndpointTypes;
 use iceoryx2_link_backend::service_description::ServiceDescription;
-use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
+use iceoryx2_link_conformance_tests::fixture::{
+    AdapterFixture, GatewayFixture, RemotePublishSubscribeEndpoints, RemoteRequestResponseEndpoints,
+};
 use iceoryx2_link_conformance_tests::parameters::FixedSizePayload;
 use iceoryx2_link_conformance_tests::testing::{describe, describe_request_response};
-use iceoryx2_link_testing::{FakeAdapter, FakeMapping, FakeMiddleware, FakeSampleTypes};
+use iceoryx2_link_testing::{
+    FakeAdapter, FakeEndpointSettings, FakeMapping, FakeMiddleware, FakeSampleTypes,
+};
 
 /// A fake middleware whose data `T` translates, and its adapters
 /// and remote endpoints.
@@ -37,8 +42,6 @@ pub(crate) struct FakeMiddlewareFixture<T> {
 impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
     type SampleTypes = FakeSampleTypes;
     type Adapter = FakeAdapter;
-    type RemotePublishSubscribeEndpoints = FakeRemoteEndpoints<T>;
-    type RemoteRequestResponseEndpoints = FakeRemoteEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -51,15 +54,21 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
         self.middleware.adapter()
     }
 
-    fn remote_publish_subscribe_endpoints(&mut self) -> Self::RemotePublishSubscribeEndpoints {
+    fn remote_publish_subscribe_endpoints(
+        &mut self,
+    ) -> impl RemotePublishSubscribeEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+    {
         let service = describe::<Local, FixedSizePayload<Payload>, ()>(
             &generate_service_name(),
             &Config::default(),
         );
-        FakeRemoteEndpoints::on(&self.middleware, service)
+        FakeRemoteEndpoints::<T>::on(&self.middleware, service)
     }
 
-    fn remote_request_response_endpoints(&mut self) -> Self::RemoteRequestResponseEndpoints {
+    fn remote_request_response_endpoints(
+        &mut self,
+    ) -> impl RemoteRequestResponseEndpoints<FakeEndpointSettings, EndpointTypes<FakeSampleTypes>>
+    {
         let service = describe_request_response::<
             Local,
             FixedSizePayload<Payload>,
@@ -67,7 +76,7 @@ impl<T: WireForm> AdapterFixture for FakeMiddlewareFixture<T> {
             FixedSizePayload<Payload>,
             (),
         >(&generate_service_name(), &Config::default());
-        FakeRemoteEndpoints::on(&self.middleware, service)
+        FakeRemoteEndpoints::<T>::on(&self.middleware, service)
     }
 }
 

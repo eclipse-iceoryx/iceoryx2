@@ -23,7 +23,7 @@ use iceoryx2_integrations_ros2_link_adapter::{
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{
-    Discoverable, PropagatesPayloads, PublishSubscribeMessageEndpoints,
+    Discoverable, PropagatesPayloads, RemotePublishSubscribeEndpoints,
 };
 use iceoryx2_link_conformance_tests::parameters::PayloadShape;
 
@@ -35,7 +35,7 @@ pub const POLL_PERIOD: Duration = Duration::from_millis(10);
 
 /// A remote peer's RCL endpoints on a topic that communicates the wire form
 /// of the types defined by the translator under test `T`. Required to
-/// support tests against remote [`PublishSubscribeMessageEndpoints`].
+/// support tests against remote [`RemotePublishSubscribeEndpoints`].
 pub struct RclEndpoints<T> {
     description: TopicDescription,
     publisher: RclPublisher,
@@ -63,7 +63,7 @@ impl<T> RclEndpoints<T> {
 }
 
 impl<T: TranslatorUnderTest>
-    PublishSubscribeMessageEndpoints<TopicSettings, EndpointTypes<TopicTypes>> for RclEndpoints<T>
+    RemotePublishSubscribeEndpoints<TopicSettings, EndpointTypes<TopicTypes>> for RclEndpoints<T>
 {
     type Value = <T::Payload as PayloadShape>::Value;
 
@@ -139,7 +139,7 @@ impl<T: TranslatorUnderTest> Discoverable for MappedRclEndpoints<T> {
     }
 
     fn sync(&self, timeout: Duration) -> bool {
-        PublishSubscribeMessageEndpoints::sync(&self.endpoints, timeout)
+        RemotePublishSubscribeEndpoints::sync(&self.endpoints, timeout)
     }
 }
 

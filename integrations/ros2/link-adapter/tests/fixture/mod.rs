@@ -33,7 +33,9 @@ use iceoryx2_integrations_ros2_link_adapter::{
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{EndpointTypes, Translator};
 use iceoryx2_link_backend::service_description::{PublishSubscribeSettings, ServiceDescription};
-use iceoryx2_link_conformance_tests::fixture::{AdapterFixture, GatewayFixture};
+use iceoryx2_link_conformance_tests::fixture::{
+    AdapterFixture, GatewayFixture, RemotePublishSubscribeEndpoints,
+};
 use rosidl_runtime_rs::RmwMessage;
 
 use endpoints::{MappedRclEndpoints, RclEndpoints};
@@ -61,7 +63,6 @@ pub struct Ros2Fixture<M, T> {
 impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture<M, T> {
     type SampleTypes = TopicTypes;
     type Adapter = Ros2Adapter;
-    type RemotePublishSubscribeEndpoints = RclEndpoints<T>;
 
     fn new() -> Self {
         Self {
@@ -94,7 +95,9 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
         Ros2Adapter::new(&config).expect("the adapter is created")
     }
 
-    fn remote_publish_subscribe_endpoints(&mut self) -> RclEndpoints<T> {
+    fn remote_publish_subscribe_endpoints(
+        &mut self,
+    ) -> impl RemotePublishSubscribeEndpoints<TopicSettings, EndpointTypes<TopicTypes>> {
         let topic = TopicName::new(&format!("/{}", generate_service_name().as_str()))
             .expect("a valid topic name");
         // Transient local durability keeps messages sent before matching
@@ -114,7 +117,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
                     .expect("a valid type name"),
             }),
         };
-        RclEndpoints::new(&self.peer, description, qos)
+        RclEndpoints::<T>::new(&self.peer, description, qos)
     }
 }
 

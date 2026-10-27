@@ -22,7 +22,7 @@ pub mod adapter_wake {
     use iceoryx2_link_adapter::Adapter;
     use iceoryx2_link_backend::Reactive;
 
-    use crate::fixture::{AdapterFixture, PublishSubscribeMessageEndpoints};
+    use crate::fixture::{AdapterFixture, RemotePublishSubscribeEndpoints};
     use crate::testing::{WakeSource, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);

@@ -25,7 +25,7 @@ pub mod adapter_request_response {
         SampleBytesRef, TakeOutcome,
     };
 
-    use crate::fixture::{AdapterFixture, RequestResponseMessageEndpoints, ResponseMessage};
+    use crate::fixture::{AdapterFixture, RemoteRequestResponseEndpoints, ResponseMessage};
     use crate::testing::{ClientRequestIds, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -105,7 +105,7 @@ pub mod adapter_request_response {
 
     /// The id of the request the remote endpoints receive within the
     /// timeout.
-    fn received_request_id<S, T, R: RequestResponseMessageEndpoints<S, T>>(
+    fn received_request_id<S, T, R: RemoteRequestResponseEndpoints<S, T>>(
         remote: &R,
     ) -> R::RequestId {
         retry(
