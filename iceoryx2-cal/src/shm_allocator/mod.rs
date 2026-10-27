@@ -17,7 +17,9 @@ pub mod pool_allocator;
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
+pub use iceoryx2_bb_elementary_traits::allocator::{
+    Allocation, AllocationError, AllocationGrowError,
+};
 use iceoryx2_bb_elementary_traits::{
     allocator::{Allocate, ContentPlacement, Deallocate, Grow},
     zero_copy_send::ZeroCopySend,
@@ -57,11 +59,11 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
 }
 
 /// Interface extension for a [`ShmAllocator`] to enable shared ownership tracking of memory chunks.
-pub trait Borrowable: Allocate<PointerOffset> + Deallocate<PointerOffset> {
-    /// Shall be called whenever a [`PointerOffset`] is shared with another entity.
-    fn borrow(&self, ptr: PointerOffset, layout: Layout);
-    /// Shall be called whenever a [`PointerOffset`] is no longer shared with another entity. If the
-    /// [`PointerOffset`] is no longer shared with anyone it is deallocated.
+pub trait Borrowable<P: Allocation>: Allocate<P> + Deallocate<P> {
+    /// Shall be called whenever a [`Allocation`] is shared with another entity.
+    fn borrow(&self, ptr: P, layout: Layout);
+    /// Shall be called whenever a [`Allocation`] is no longer shared with another entity. If the
+    /// [`Allocation`] is no longer shared with anyone it is deallocated.
     ///
     /// # Safety
     ///
@@ -69,7 +71,7 @@ pub trait Borrowable: Allocate<PointerOffset> + Deallocate<PointerOffset> {
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
-    unsafe fn release(&self, ptr: PointerOffset, layout: Layout);
+    unsafe fn release(&self, ptr: P, layout: Layout);
 }
 
 /// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized

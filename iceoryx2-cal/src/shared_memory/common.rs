@@ -25,7 +25,8 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{debug, fail};
 
 use crate::dynamic_storage::*;
-pub use crate::shared_memory::*;
+use crate::shared_memory::*;
+use crate::shm_allocator::Borrowable;
 
 use crate::static_storage::file::{
     NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
@@ -515,6 +516,34 @@ pub mod details {
                     .assume_init_ref()
                     .assume_init()
                     .deallocate(ptr.offset, layout);
+            }
+        }
+    }
+
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Borrowable<ShmPointer> for Memory<Allocator, Storage>
+    where
+        for<'a> Allocator::Initialized<'a>: Borrowable<ShmPointer>,
+    {
+        fn borrow(&self, ptr: ShmPointer, layout: Layout) {
+            unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .assume_init_ref()
+                    .assume_init()
+                    .borrow(ptr, layout);
+            };
+        }
+
+        unsafe fn release(&self, ptr: ShmPointer, layout: Layout) {
+            unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .assume_init_ref()
+                    .assume_init()
+                    .release(ptr, layout);
             }
         }
     }

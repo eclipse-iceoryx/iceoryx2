@@ -21,6 +21,8 @@ pub mod shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
     use iceoryx2_bb_posix::file::AccessMode;
+    use iceoryx2_cal::shm_allocator::AllocationError;
+    use iceoryx2_cal::shm_allocator::AllocationGrowError;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;

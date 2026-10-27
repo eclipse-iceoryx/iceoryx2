@@ -38,11 +38,11 @@ use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
 use crate::shared_memory::{
-    PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
-    SharedMemoryOpenError, ShmAllocator,
+    SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, SharedMemoryOpenError,
 };
-use crate::shared_memory::{SegmentId, SharedMemoryForPoolAllocator, ShmPointer};
+use crate::shared_memory::{SharedMemoryForPoolAllocator, ShmPointer};
 use crate::shm_allocator::pool_allocator::PoolAllocator;
+use crate::shm_allocator::{PointerOffset, SegmentId, ShmAllocator};
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,

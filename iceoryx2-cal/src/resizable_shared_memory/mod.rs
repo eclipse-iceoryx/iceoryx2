@@ -104,9 +104,9 @@ use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
+    SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
-use crate::shm_allocator::{PointerOffset, ShmAllocator};
+use crate::shm_allocator::{PointerOffset, SegmentId, ShmAllocator};
 
 /// Creates a [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`] and maps the
 /// [`ResizableSharedMemory`] read-only into the process space.

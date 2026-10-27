@@ -64,10 +64,10 @@ pub mod recommended;
 
 use core::{fmt::Debug, time::Duration};
 
-pub use crate::shm_allocator::*;
+use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_elementary_traits::{
-    allocator::{Allocation, Deallocate, Grow},
+    allocator::{Deallocate, Grow},
     pointer::Pointer,
     testing::abandonable::Abandonable,
 };
