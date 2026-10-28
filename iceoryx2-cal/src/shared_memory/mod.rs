@@ -224,17 +224,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     }
 }
 
-pub trait SharedMemoryForPoolAllocator:
-    SharedMemory<PoolAllocator> + Deallocate<ShmPointer>
-{
-    /// Release previously allocated memory
-    ///
-    /// # Safety
-    ///
-    ///  * the offset must be acquired with [`Allocate::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
-    unsafe fn deallocate_bucket(&self, offset: PointerOffset);
-
+pub trait SharedMemoryForPoolAllocator: SharedMemory<PoolAllocator> {
     /// Returns the bucket size of the [`PoolAllocator`]
     fn bucket_size(&self) -> usize;
 }

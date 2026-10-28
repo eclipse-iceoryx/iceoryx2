@@ -751,12 +751,6 @@ impl<Shm: SharedMemoryForPoolAllocator + Deallocate<ShmPointer> + Borrowable>
 where
     Shm::Builder: Debug,
 {
-    unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-        unsafe {
-            self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
-        }
-    }
-
     fn bucket_size(&self, segment_id: SegmentId) -> usize {
         let segment_id_key = SlotMapKey::new(segment_id.value() as usize);
         match self.state_mut().shared_memory_map.get(segment_id_key) {

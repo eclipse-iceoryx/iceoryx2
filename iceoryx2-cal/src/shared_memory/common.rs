@@ -553,16 +553,6 @@ pub mod details {
     impl<Storage: DynamicStorage<AllocatorDetails<PoolAllocator>>> SharedMemoryForPoolAllocator
         for Memory<PoolAllocator, Storage>
     {
-        unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-            unsafe {
-                self.storage
-                    .get()
-                    .allocator
-                    .assume_init_ref()
-                    .deallocate_bucket(offset);
-            }
-        }
-
         fn bucket_size(&self) -> usize {
             unsafe { self.storage.get().allocator.assume_init_ref().bucket_size() }
         }

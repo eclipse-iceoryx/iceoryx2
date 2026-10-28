@@ -236,14 +236,6 @@ pub trait ResizableSharedMemoryForPoolAllocator<
     Shm: SharedMemory<PoolAllocator> + Deallocate<ShmPointer> + Borrowable,
 >: ResizableSharedMemory<PoolAllocator, Shm>
 {
-    /// Release previously allocated memory
-    ///
-    /// # Safety
-    ///
-    ///  * the offset must be acquired with [`Allocate::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
-    unsafe fn deallocate_bucket(&self, offset: PointerOffset);
-
     /// Returns the bucket size of the corresponding [`PoolAllocator`]
     fn bucket_size(&self, segment_id: SegmentId) -> usize;
 }
