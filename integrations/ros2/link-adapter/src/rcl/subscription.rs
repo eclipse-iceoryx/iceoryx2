@@ -21,6 +21,7 @@ use r2r_rcl::{
     rmw_message_info_t,
 };
 
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::{fail, origin};
 
 use crate::qos::QosProfile;
@@ -135,11 +136,11 @@ impl<'a> RclSubscriptionBuilder<'a> {
         let origin = origin!("RclSubscriptionBuilder::create");
 
         unsafe {
-            let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
+            let subscription = Box::new(UnsafeCell::new(rcl_get_zero_initialized_subscription()));
             let mut options = rcl_subscription_get_default_options();
             qos::apply(&self.qos, &mut options.qos);
             let ret = rcl_subscription_init(
-                subscription.as_mut(),
+                subscription.get(),
                 self.node.handle(),
                 self.type_support.handle(),
                 self.topic.as_c_str().as_ptr(),
@@ -154,7 +155,7 @@ impl<'a> RclSubscriptionBuilder<'a> {
             }
 
             Ok(RclSubscription {
-                subscription: Box::into_raw(subscription),
+                subscription,
                 callback: None,
                 node: self.node,
                 _type_support: self.type_support,
@@ -165,7 +166,7 @@ impl<'a> RclSubscriptionBuilder<'a> {
 
 /// Receives serialized messages from a ROS 2 topic.
 pub struct RclSubscription {
-    subscription: *mut r2r_rcl::rcl_subscription_t,
+    subscription: Box<UnsafeCell<r2r_rcl::rcl_subscription_t>>,
     /// The registered new-message callback. rcl holds a thin pointer to it as
     /// `user_data`, hence the box around the boxed closure.
     callback: Option<Box<NewMessageCallback>>,
@@ -177,7 +178,7 @@ pub struct RclSubscription {
 impl core::fmt::Debug for RclSubscription {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("RclSubscription")
-            .field("subscription", &self.subscription)
+            .field("subscription", &self.subscription.get())
             .field("callback", &self.callback.is_some())
             .field("node", &self.node)
             .finish_non_exhaustive()
@@ -197,7 +198,7 @@ impl RclSubscription {
 
         let ret = unsafe {
             rcl_subscription_set_on_new_message_callback(
-                self.subscription,
+                self.subscription.get(),
                 Some(on_new_message_trampoline),
                 user_data.cast(),
             )
@@ -244,7 +245,7 @@ impl RclSubscription {
 
         let ret = unsafe {
             rcl_take_serialized_message(
-                self.subscription,
+                self.subscription.get(),
                 &mut message,
                 &mut message_info,
                 core::ptr::null_mut(),
@@ -280,7 +281,8 @@ impl RclSubscription {
         let origin = origin!("RclSubscription::publisher_count");
 
         let mut count = 0;
-        let ret = unsafe { rcl_subscription_get_publisher_count(self.subscription, &mut count) };
+        let ret =
+            unsafe { rcl_subscription_get_publisher_count(self.subscription.get(), &mut count) };
         if ret != RCL_RET_OK as i32 {
             fail!(
                 from origin,
@@ -300,14 +302,13 @@ impl Drop for RclSubscription {
             // thread must not invoke a freed closure.
             if self.callback.is_some() {
                 let _ = rcl_subscription_set_on_new_message_callback(
-                    self.subscription,
+                    self.subscription.get(),
                     None,
                     core::ptr::null(),
                 );
             }
 
-            let mut subscription = Box::from_raw(self.subscription);
-            let _ = rcl_subscription_fini(subscription.as_mut(), self.node.handle());
+            let _ = rcl_subscription_fini(self.subscription.get(), self.node.handle());
         }
     }
 }
