@@ -17,19 +17,22 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod adapter_wake {
     use core::time::Duration;
 
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_adapter::Adapter;
     use iceoryx2_link_backend::Reactive;
 
-    use crate::fixture::{AdapterFixture, MessageEndpoints};
+    use crate::fixture::{AdapterFixture, Describable, PropagatesMessages};
     use crate::testing::{WakeSource, retry};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
     const VALUE: u64 = 7;
 
     #[conformance_test]
-    pub fn an_adapter_is_woken_by_remote_endpoints_joining<F: AdapterFixture>()
+    pub fn an_adapter_is_woken_by_remote_endpoints_joining<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >()
     where
         F::Adapter: Reactive,
     {
@@ -44,7 +47,7 @@ pub mod adapter_wake {
 
         // === JOIN ===
         // Remote endpoints joining wakes the adapter.
-        let _remote = fixture.remote_endpoints();
+        let _remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
 
         retry(
             || match source.woken() {
@@ -57,7 +60,9 @@ pub mod adapter_wake {
     }
 
     #[conformance_test]
-    pub fn an_adapter_is_woken_by_a_message<F: AdapterFixture>()
+    pub fn an_adapter_is_woken_by_a_message<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >()
     where
         F::Adapter: Reactive,
     {
@@ -67,7 +72,7 @@ pub mod adapter_wake {
         // An adapter beside remote endpoints, waiting on its
         // wake after the join was heard.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let _own = adapter
             .publish_subscribe(remote.description())
             .expect("the adapter's endpoints open");

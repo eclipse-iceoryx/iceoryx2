@@ -310,27 +310,28 @@ where
 
 /// The destinations of a take of a response. There is one per request the
 /// ports hold, and it decodes into the loan of that request.
-struct ResponseDestinations<'a, 't, S, L, X>
+struct ResponseDestinations<'take, 'transcoding, S, L, X>
 where
     S: Service,
     L: LoanableResponse<S>,
     X: TranscodesSamples,
 {
-    pending: &'a mut Option<PendingDecode<'t, L::Loanable, X>>,
-    transcoding: &'t mut Transcoding<X>,
+    pending: &'take mut Option<PendingDecode<'transcoding, L::Loanable, X>>,
+    transcoding: &'transcoding mut Transcoding<X>,
     loanable: L,
     _service: PhantomData<S>,
 }
 
-impl<'a, 't: 'a, S, L, X> ResponseDestination<'a> for ResponseDestinations<'a, 't, S, L, X>
+impl<'take, 'transcoding: 'take, S, L, X> ResponseDestination<'take>
+    for ResponseDestinations<'take, 'transcoding, S, L, X>
 where
     S: Service,
     L: LoanableResponse<S>,
     X: TranscodesSamples,
 {
-    type Destination = Destination<'a, 'a, L::Loanable>;
+    type Destination = Destination<'take, 'take, L::Loanable>;
 
-    fn of(self, id: ClientRequestId) -> Option<Destination<'a, 'a, L::Loanable>> {
+    fn of(self, id: ClientRequestId) -> Option<Destination<'take, 'take, L::Loanable>> {
         let loanable = self.loanable.of(id)?;
         let pending = self.pending.insert(self.transcoding.decode(loanable));
         Some(pending.input())

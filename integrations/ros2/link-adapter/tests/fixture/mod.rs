@@ -23,6 +23,7 @@ pub use translation::{Passthrough, PassthroughWithHeader, PlainStruct, PlainStru
 use core::marker::PhantomData;
 
 use iceoryx2::service::Service;
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::testing::{generate_isolated_config, generate_service_name};
 use iceoryx2_integrations_ros2_link_adapter::qos::Durability;
 use iceoryx2_integrations_ros2_link_adapter::testing::PeerNode;
@@ -94,7 +95,10 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
         Ros2Adapter::new(&config).expect("the adapter is created")
     }
 
-    fn remote_endpoints(&mut self) -> RclEndpoints<T> {
+    fn remote_endpoints(&mut self, pattern: MessagingPattern) -> RclEndpoints<T> {
+        if pattern != MessagingPattern::PublishSubscribe {
+            panic!("the fixture has no remote endpoints of {pattern:?}");
+        }
         let topic = TopicName::new(&format!("/{}", generate_service_name().as_str()))
             .expect("a valid topic name");
         // Transient local durability keeps messages sent before matching
@@ -114,7 +118,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
                     .expect("a valid type name"),
             }),
         };
-        RclEndpoints::new(&self.peer, description, qos)
+        RclEndpoints::<T>::new(&self.peer, description, qos)
     }
 }
 

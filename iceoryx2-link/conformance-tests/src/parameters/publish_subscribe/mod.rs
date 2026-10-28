@@ -32,7 +32,7 @@ use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_link_backend::service_description::ServiceDescription;
 
 use super::{AnyName, AnyService, FixedSizePayload, PayloadShape};
-use crate::testing::describe;
+use crate::testing::describe_publish_subscribe;
 
 /// The payload type the services of `X` are created with.
 pub type Payload<X> = <<X as PublishSubscribeService>::Payload as PayloadShape>::Type;
@@ -210,7 +210,7 @@ impl<N: PublishSubscribeName, P: PublishSubscribePayload, H: UserHeader> AnyServ
     }
 
     fn describe<S: Service>(name: &ServiceName, config: &Config) -> ServiceDescription {
-        describe::<S, P, H>(name, config)
+        describe_publish_subscribe::<S, P, H>(name, config)
     }
 
     fn create<S: Service>(node: &Node<S>, name: &ServiceName) -> Self::Handle<S> {

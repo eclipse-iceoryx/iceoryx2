@@ -49,21 +49,11 @@ pub fn endpoint_of(description: &ServiceDescription) -> FakeEndpointDescription 
         },
         types: match description.types() {
             ServiceTypes::PublishSubscribe(types) => EndpointTypes::PublishSubscribe(types.clone()),
+            ServiceTypes::RequestResponse(types) => EndpointTypes::RequestResponse {
+                request: types.request.clone(),
+                response: types.response.clone(),
+            },
             ServiceTypes::Event => EndpointTypes::Event,
-            ServiceTypes::RequestResponse(_) => {
-                unimplemented!("the fake middleware has no request-response endpoints")
-            }
         },
-    }
-}
-
-/// The size of the user header leading each message under `description`.
-pub fn header_size(description: &FakeEndpointDescription) -> usize {
-    match &description.types {
-        EndpointTypes::PublishSubscribe(types) => types.user_header.size,
-        EndpointTypes::RequestResponse { .. } => {
-            unimplemented!("the fake middleware has no request-response endpoints")
-        }
-        EndpointTypes::Event => 0,
     }
 }

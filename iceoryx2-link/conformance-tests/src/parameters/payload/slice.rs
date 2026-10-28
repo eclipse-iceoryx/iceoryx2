@@ -30,10 +30,10 @@ pub trait SliceElement: ZeroCopySend + TypeName + Debug + Copy + PartialEq + 'st
 }
 
 /// Raw bytes for backends without message types. The slice is the eight
-/// little endian bytes of `n`.
+/// big-endian bytes of `n`.
 impl SliceElement for u8 {
     fn slice(n: u64) -> Vec<u8> {
-        n.to_le_bytes().to_vec()
+        n.to_be_bytes().to_vec()
     }
 }
 

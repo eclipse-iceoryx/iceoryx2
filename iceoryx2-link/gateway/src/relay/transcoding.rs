@@ -169,9 +169,9 @@ impl<X: TranscodesSamples> Transcoding<X> {
 }
 
 /// A decode of one message into a loaned sample that awaits the message.
-pub(super) struct PendingDecode<'t, L: LoanableSample, X: TranscodesSamples> {
+pub(super) struct PendingDecode<'transcoding, L: LoanableSample, X: TranscodesSamples> {
     loan: PendingLoan<L>,
-    transcoding: &'t mut Transcoding<X>,
+    transcoding: &'transcoding mut Transcoding<X>,
 }
 
 impl<L: LoanableSample, X: TranscodesSamples> PendingDecode<'_, L, X> {
@@ -243,14 +243,16 @@ impl<L: LoanableSample, X: TranscodesSamples> PendingDecode<'_, L, X> {
 }
 
 /// Where a pending decode takes the message to.
-pub(super) enum Destination<'l, 's, L: LoanableSample> {
-    Loan(LoanBackedDestination<'l, L>),
-    Split(SplitDestination<'l, 's, L>),
-    Scratch(&'s mut SampleBytes),
+pub(super) enum Destination<'loan, 'scratch, L: LoanableSample> {
+    Loan(LoanBackedDestination<'loan, L>),
+    Split(SplitDestination<'loan, 'scratch, L>),
+    Scratch(&'scratch mut SampleBytes),
 }
 
-impl<'l, 's: 'l, L: LoanableSample> SampleDestination<'l> for Destination<'l, 's, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'l>> {
+impl<'loan, 'scratch: 'loan, L: LoanableSample> SampleDestination<'loan>
+    for Destination<'loan, 'scratch, L>
+{
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'loan>> {
         match self {
             Destination::Loan(destination) => destination.for_lengths(lengths),
             Destination::Split(destination) => destination.for_lengths(lengths),
@@ -563,7 +565,7 @@ impl<L: LoanableSample> Region for PendingLoan<L> {
 }
 
 /// Regions of the loaned bytes.
-pub(super) struct LoanBackedRegion<'a, L: LoanableSample>(&'a mut PendingLoan<L>);
+pub(super) struct LoanBackedRegion<'loan, L: LoanableSample>(&'loan mut PendingLoan<L>);
 
 impl<L: LoanableSample> Deref for LoanBackedRegion<'_, L> {
     type Target = [u8];
@@ -627,19 +629,19 @@ impl<L: LoanableSample> WritableSample for LoanedWritableSample<L> {
 /// A take destination that writes both regions into a loaned sample.
 ///
 /// The size of the header must match that expected by the service.
-pub(super) struct LoanBackedDestination<'l, L: LoanableSample> {
-    loan: &'l mut PendingLoan<L>,
+pub(super) struct LoanBackedDestination<'loan, L: LoanableSample> {
+    loan: &'loan mut PendingLoan<L>,
     header_size: usize,
 }
 
-impl<'l, L: LoanableSample> LoanBackedDestination<'l, L> {
-    fn new(loan: &'l mut PendingLoan<L>, header_size: usize) -> Self {
+impl<'loan, L: LoanableSample> LoanBackedDestination<'loan, L> {
+    fn new(loan: &'loan mut PendingLoan<L>, header_size: usize) -> Self {
         Self { loan, header_size }
     }
 }
 
-impl<'l, L: LoanableSample> SampleDestination<'l> for LoanBackedDestination<'l, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'l>> {
+impl<'loan, L: LoanableSample> SampleDestination<'loan> for LoanBackedDestination<'loan, L> {
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'loan>> {
         let Self { loan, header_size } = self;
         if lengths.header != header_size {
             *loan = PendingLoan::Refused(ReceiveError::Malformed);
@@ -655,19 +657,21 @@ impl<'l, L: LoanableSample> SampleDestination<'l> for LoanBackedDestination<'l, 
 
 /// A take destination that writes the payload into the loaned sample and
 /// a header that needs decoding into a scratch buffer.
-pub(super) struct SplitDestination<'l, 's, L: LoanableSample> {
-    loan: &'l mut PendingLoan<L>,
-    scratch: &'s mut Vec<u8>,
+pub(super) struct SplitDestination<'loan, 'scratch, L: LoanableSample> {
+    loan: &'loan mut PendingLoan<L>,
+    scratch: &'scratch mut Vec<u8>,
 }
 
-impl<'l, 's, L: LoanableSample> SplitDestination<'l, 's, L> {
-    fn new(loan: &'l mut PendingLoan<L>, scratch: &'s mut Vec<u8>) -> Self {
+impl<'loan, 'scratch, L: LoanableSample> SplitDestination<'loan, 'scratch, L> {
+    fn new(loan: &'loan mut PendingLoan<L>, scratch: &'scratch mut Vec<u8>) -> Self {
         Self { loan, scratch }
     }
 }
 
-impl<'l, 's: 'l, L: LoanableSample> SampleDestination<'l> for SplitDestination<'l, 's, L> {
-    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'l>> {
+impl<'loan, 'scratch: 'loan, L: LoanableSample> SampleDestination<'loan>
+    for SplitDestination<'loan, 'scratch, L>
+{
+    fn for_lengths(self, lengths: SampleLengths) -> Option<SampleBytesRefMut<'loan>> {
         let Self { loan, scratch } = self;
         loan.loan_or_resize_forward(lengths.payload).ok()?;
         scratch.resize(lengths.header, 0);

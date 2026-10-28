@@ -14,6 +14,9 @@
 //!
 //! * [`PublishSubscribe<N, P, H>`], services named by `N`, of the payload
 //!   `P` under the user header `H`.
+//! * [`RequestResponse<N, Q, QH, R, RH>`], services named by `N`, of the
+//!   request payload `Q` under the user header `QH` and the response
+//!   payload `R` under the user header `RH`.
 //! * [`Event<N>`], services named by `N`.
 //!
 //! A carrier or tunnel fixture carries anything, so it passes [`AnyName`]
@@ -94,13 +97,15 @@
 //! );
 //! ```
 //!
-//! The scenarios run against [`AnyService`], [`PublishSubscribeService`]
-//! and [`EventService`], which [`PublishSubscribe`] and [`Event`]
-//! implement. A fixture writes the name source and nothing more.
+//! The scenarios run against [`AnyService`], [`PublishSubscribeService`],
+//! [`RequestResponseService`] and [`EventService`], which
+//! [`PublishSubscribe`], [`RequestResponse`] and [`Event`] implement. A
+//! fixture writes the name source and nothing more.
 
 pub mod event;
 pub mod payload;
 pub mod publish_subscribe;
+pub mod request_response;
 
 pub use event::{Event, EventName, EventService};
 pub use payload::{FixedSizePayload, PayloadShape, SliceElement, SlicePayload};
@@ -108,6 +113,11 @@ pub(crate) use publish_subscribe::Foreign;
 pub use publish_subscribe::{
     Header, Payload, PublishSubscribe, PublishSubscribeName, PublishSubscribePayload,
     PublishSubscribeService, UserHeader, Value,
+};
+pub use request_response::{
+    CreatesRequestResponseService, Request, RequestHeader, RequestPayload, RequestResponse,
+    RequestResponseName, RequestResponseService, RequestValue, Response, ResponseHeader,
+    ResponsePayload, ResponseValue,
 };
 
 use alloc::vec::Vec;

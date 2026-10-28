@@ -9,58 +9,67 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-use alloc::vec::Vec;
 
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_adapter::{
-    PublishSubscribeEndpoints, SampleBytesRef, SampleDestination, SampleLengths, TakeOutcome,
+    EndpointTypes, PublishSubscribeEndpoints, SampleBytesRef, SampleDestination, SampleLengths,
+    TakeOutcome,
 };
 
-use crate::adapter::Error;
-use crate::adapter::middleware::FakeMiddleware;
+use crate::adapter::middleware::{EndpointId, FakeMiddleware, Message, MessageRef};
+use crate::adapter::{Error, FakeEndpointDescription};
 
 /// A publisher and subscription on a [`FakeMiddleware`], the
 /// gateway's or an application's.
-pub struct FakeEndpoints {
+pub struct FakePublishSubscribeEndpoints {
     middleware: FakeMiddleware,
     name: ServiceName,
-    id: u64,
+    id: EndpointId,
     header_size: usize,
 }
 
-impl FakeEndpoints {
+impl FakePublishSubscribeEndpoints {
     pub(super) fn new(
         middleware: FakeMiddleware,
-        name: ServiceName,
-        id: u64,
-        header_size: usize,
+        description: &FakeEndpointDescription,
+        id: EndpointId,
     ) -> Self {
+        let header_size = match &description.types {
+            EndpointTypes::PublishSubscribe(types) => types.user_header.size,
+            EndpointTypes::Event => 0,
+            EndpointTypes::RequestResponse { .. } => {
+                panic!(
+                    "the endpoints of {} are not publish-subscribe",
+                    description.settings.name
+                )
+            }
+        };
         Self {
             middleware,
-            name,
+            name: description.settings.name,
             id,
             header_size,
         }
     }
 }
 
-impl FakeEndpoints {
-    /// Sends a message to every other endpoint under the description.
-    pub fn send(&self, message: &[u8]) {
-        self.middleware.publish(&self.name, self.id, message);
+impl FakePublishSubscribeEndpoints {
+    /// Sends a message to every other endpoint with the description.
+    pub fn send(&self, message: MessageRef<'_>) {
+        self.middleware.send_sample(&self.name, self.id, message);
     }
 
     /// The next pending message, if any.
-    pub fn receive(&self) -> Option<Vec<u8>> {
-        self.middleware.receive(&self.name, self.id)
+    pub fn receive(&self) -> Option<Message> {
+        self.middleware.receive_sample(&self.name, self.id)
     }
 }
 
-impl PublishSubscribeEndpoints for FakeEndpoints {
+impl PublishSubscribeEndpoints for FakePublishSubscribeEndpoints {
     type Failure = Error;
 
     fn publish(&mut self, sample: SampleBytesRef<'_>) -> Result<(), Self::Failure> {
-        self.middleware.publish(
+        self.middleware.send_sample(
             &self.name,
             self.id,
             &[sample.header, sample.payload].concat(),
@@ -73,7 +82,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
         &mut self,
         destination: impl SampleDestination<'a>,
     ) -> Result<TakeOutcome<()>, Self::Failure> {
-        let Some(message) = self.middleware.receive(&self.name, self.id) else {
+        let Some(message) = self.middleware.receive_sample(&self.name, self.id) else {
             return Ok(TakeOutcome::Empty);
         };
         let (header, payload) = message.split_at(self.header_size.min(message.len()));
@@ -90,7 +99,7 @@ impl PublishSubscribeEndpoints for FakeEndpoints {
     }
 }
 
-impl Drop for FakeEndpoints {
+impl Drop for FakePublishSubscribeEndpoints {
     fn drop(&mut self) {
         self.middleware.leave(&self.name, self.id);
     }

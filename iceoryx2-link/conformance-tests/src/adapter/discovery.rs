@@ -18,13 +18,14 @@ pub mod adapter_discovery {
     use alloc::vec::Vec;
     use core::time::Duration;
 
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_elementary::generation::Generation;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_link_adapter::Adapter;
     use iceoryx2_link_backend::service_description::Identified;
 
-    use crate::fixture::{AdapterFixture, MessageEndpoints};
+    use crate::fixture::{AdapterFixture, Describable, PropagatesMessages};
     use crate::testing::retry;
 
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -39,13 +40,15 @@ pub mod adapter_discovery {
     }
 
     #[conformance_test]
-    pub fn remote_endpoints_are_listed<F: AdapterFixture>() {
+    pub fn remote_endpoints_are_listed<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // One adapter and remote endpoints on the middleware.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let id = remote.description().settings.id();
 
         // === LIST ===
@@ -61,7 +64,9 @@ pub mod adapter_discovery {
     }
 
     #[conformance_test]
-    pub fn the_generation_moves_on_endpoint_changes_and_holds_still_otherwise<F: AdapterFixture>() {
+    pub fn the_generation_moves_on_endpoint_changes_and_holds_still_otherwise<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
@@ -80,7 +85,7 @@ pub mod adapter_discovery {
         assert_that!(adapter.generation(), eq initial);
 
         // Remote endpoints arriving moves the generation.
-        let _remote = fixture.remote_endpoints();
+        let _remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         retry(
             || match adapter.generation() != initial {
                 true => Ok(()),
@@ -97,13 +102,15 @@ pub mod adapter_discovery {
     }
 
     #[conformance_test]
-    pub fn remote_endpoints_that_left_are_not_listed<F: AdapterFixture>() {
+    pub fn remote_endpoints_that_left_are_not_listed<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // One adapter listing the endpoint of remote endpoints.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         retry(
             || match listed(&mut adapter).is_empty() {
                 false => Ok(()),
@@ -128,14 +135,16 @@ pub mod adapter_discovery {
     }
 
     #[conformance_test]
-    pub fn the_gateways_own_endpoints_alone_are_not_listed<F: AdapterFixture>() {
+    pub fn the_gateways_own_endpoints_alone_are_not_listed<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // An endpoint remote endpoints once were on, now held open only
         // by an adapter.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let description = remote.description().clone();
         drop(remote);
         let _endpoint = adapter
@@ -148,13 +157,15 @@ pub mod adapter_discovery {
     }
 
     #[conformance_test]
-    pub fn remote_endpoints_beside_the_gateways_are_listed_once<F: AdapterFixture>() {
+    pub fn remote_endpoints_beside_the_gateways_are_listed_once<
+        F: AdapterFixture<RemoteEndpoints: Describable + PropagatesMessages>,
+    >() {
         let mut fixture = F::new();
 
         // === SETUP ===
         // One remote endpoints and one adapter on the same endpoint.
         let mut adapter = fixture.adapter();
-        let remote = fixture.remote_endpoints();
+        let remote = fixture.remote_endpoints(MessagingPattern::PublishSubscribe);
         let id = remote.description().settings.id();
         let _endpoint = adapter
             .publish_subscribe(remote.description())

@@ -27,7 +27,7 @@ pub mod gateway_publish_subscribe_with_headers {
 
     use crate::fixture::{Discoverable, GatewayFixture, PropagatesPayloadsWithHeaders};
     use crate::parameters::{Header, PayloadShape, PublishSubscribeService, Value};
-    use crate::testing::{Side, describe, retry, side};
+    use crate::testing::{Side, describe_publish_subscribe, retry, side};
 
     const TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -54,10 +54,11 @@ pub mod gateway_publish_subscribe_with_headers {
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
 
-        let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
-            &X::service_name(),
-            &config,
-        ));
+        let remote = fixture.remote_endpoints_on(&describe_publish_subscribe::<
+            S,
+            X::Payload,
+            Header<X>,
+        >(&X::service_name(), &config));
         retry(
             || {
                 link.discover().expect("discovery succeeds");
@@ -117,10 +118,11 @@ pub mod gateway_publish_subscribe_with_headers {
             mut link,
         } = side::<S, _>(fixture.config(), |_| fixture.gateway());
 
-        let remote = fixture.remote_endpoints_on(&describe::<S, X::Payload, Header<X>>(
-            &X::service_name(),
-            &config,
-        ));
+        let remote = fixture.remote_endpoints_on(&describe_publish_subscribe::<
+            S,
+            X::Payload,
+            Header<X>,
+        >(&X::service_name(), &config));
         retry(
             || {
                 link.discover().expect("discovery succeeds");

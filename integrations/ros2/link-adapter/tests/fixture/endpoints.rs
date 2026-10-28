@@ -23,7 +23,7 @@ use iceoryx2_integrations_ros2_link_adapter::{
 use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
 use iceoryx2_link_backend::service_description::ServiceDescription;
 use iceoryx2_link_conformance_tests::fixture::{
-    Discoverable, MessageEndpoints, PropagatesPayloads,
+    Describable, Discoverable, PropagatesMessages, PropagatesPayloads,
 };
 use iceoryx2_link_conformance_tests::parameters::PayloadShape;
 
@@ -35,7 +35,7 @@ pub const POLL_PERIOD: Duration = Duration::from_millis(10);
 
 /// A remote peer's RCL endpoints on a topic that communicates the wire form
 /// of the types defined by the translator under test `T`. Required to
-/// support tests against remote [`MessageEndpoints`].
+/// support tests against remote endpoints implementing [`PropagatesMessages`].
 pub struct RclEndpoints<T> {
     description: TopicDescription,
     publisher: RclPublisher,
@@ -62,40 +62,12 @@ impl<T> RclEndpoints<T> {
     }
 }
 
-impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, EndpointTypes<TopicTypes>>
-    for RclEndpoints<T>
-{
-    type Value = <T::Payload as PayloadShape>::Value;
+impl<T: TranslatorUnderTest> Describable for RclEndpoints<T> {
+    type Settings = TopicSettings;
+    type Types = EndpointTypes<TopicTypes>;
 
     fn description(&self) -> &TopicDescription {
         &self.description
-    }
-
-    fn value(&self, n: u64) -> Self::Value {
-        <T::Payload as PayloadShape>::value(n)
-    }
-
-    fn encode(&self, value: &Self::Value) -> Vec<u8> {
-        serialization::serialize(&T::Message::from(value.clone()))
-    }
-
-    fn decode(&self, bytes: &[u8]) -> Self::Value {
-        serialization::deserialize::<T::Message>(bytes).into()
-    }
-
-    fn send(&self, value: Self::Value) {
-        self.publisher
-            .publish(&self.encode(&value))
-            .expect("the peer publishes the message");
-    }
-
-    fn receive(&self) -> Option<Self::Value> {
-        loop {
-            let (message, info) = take_serialized(&self.subscription)?;
-            if info.gid != *self.publisher.gid() {
-                return Some(self.decode(&message));
-            }
-        }
     }
 
     /// Matched once the peer's publisher sees a subscription and its
@@ -127,6 +99,37 @@ impl<T: TranslatorUnderTest> MessageEndpoints<TopicSettings, EndpointTypes<Topic
     }
 }
 
+impl<T: TranslatorUnderTest> PropagatesMessages for RclEndpoints<T> {
+    type Value = <T::Payload as PayloadShape>::Value;
+
+    fn value(&self, n: u64) -> Self::Value {
+        <T::Payload as PayloadShape>::value(n)
+    }
+
+    fn encode(&self, value: &Self::Value) -> Vec<u8> {
+        serialization::serialize(&T::Message::from(value.clone()))
+    }
+
+    fn decode(&self, bytes: &[u8]) -> Self::Value {
+        serialization::deserialize::<T::Message>(bytes).into()
+    }
+
+    fn send(&self, value: Self::Value) {
+        self.publisher
+            .publish(&self.encode(&value))
+            .expect("the peer publishes the message");
+    }
+
+    fn receive(&self) -> Option<Self::Value> {
+        loop {
+            let (message, info) = take_serialized(&self.subscription)?;
+            if info.gid != *self.publisher.gid() {
+                return Some(self.decode(&message));
+            }
+        }
+    }
+}
+
 /// [`RclEndpoints`] on the topic a local service maps to.
 pub struct MappedRclEndpoints<T> {
     pub(super) service: ServiceDescription,
@@ -139,7 +142,7 @@ impl<T: TranslatorUnderTest> Discoverable for MappedRclEndpoints<T> {
     }
 
     fn sync(&self, timeout: Duration) -> bool {
-        MessageEndpoints::sync(&self.endpoints, timeout)
+        Describable::sync(&self.endpoints, timeout)
     }
 }
 

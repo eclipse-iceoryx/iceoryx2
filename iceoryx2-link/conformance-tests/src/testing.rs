@@ -19,63 +19,72 @@ use core::time::Duration;
 
 use iceoryx2::config::Config;
 use iceoryx2::node::{Node, NodeBuilder};
+use iceoryx2::port::client::Client;
 use iceoryx2::port::event_id::EventId;
 use iceoryx2::port::listener::Listener;
 use iceoryx2::service::Service;
 use iceoryx2::service::local;
 use iceoryx2::service::messaging_pattern::MessagingPattern;
+use iceoryx2::service::port_factory::request_response::PortFactory;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as Pattern;
-use iceoryx2::testing::generate_isolated_config;
+use iceoryx2::testing::{generate_isolated_config, generate_service_name};
 use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_link::Link;
 
 use crate::parameters::{PayloadShape, PublishSubscribeService};
-use iceoryx2_link_adapter::{LoanError, LoanableSample, SampleBytes};
+use iceoryx2_link_adapter::{ClientRequestId, LoanError, LoanableSample, SampleBytes};
 use iceoryx2_link_backend::service_description::{
-    PublishSubscribeSettings, SampleTypes, ServiceDescription, ServiceDescriptor, ServiceTypes,
-    TypeDescription, TypeIdentifier,
+    PublishSubscribeSettings, RequestResponseSettings, RequestResponseTypes, SampleTypes,
+    ServiceDescription, ServiceDescriptor, ServiceTypes, TypeDescription, TypeIdentifier,
 };
 use iceoryx2_link_backend::{Backend, WakeHandle, WakeService};
 
-/// Calls `attempt` until it succeeds or `timeout` passes. On timeout the
-/// error lists every distinct failure seen.
-pub fn retry(
-    mut attempt: impl FnMut() -> Result<(), &'static str>,
+/// Calls `attempt` until it succeeds or `timeout` passes, returning what
+/// the successful attempt did.
+///
+/// On timeout the error lists every distinct failure.
+pub fn retry<T>(
+    mut attempt: impl FnMut() -> Result<T, &'static str>,
     timeout: Duration,
-) -> Result<(), String> {
+) -> Result<T, String> {
     let mut failures = BTreeSet::<&'static str>::new();
+    let mut succeeded = None;
     let mut wait = AdaptiveWaitBuilder::new()
         .create()
         .expect("adaptive wait is created");
-    let succeeded = wait
-        .timed_wait_while(
-            || -> Result<bool, ()> {
-                match attempt() {
-                    Ok(()) => Ok(false),
-                    Err(failure) => {
-                        failures.insert(failure);
-                        Ok(true)
-                    }
+    wait.timed_wait_while(
+        || -> Result<bool, ()> {
+            match attempt() {
+                Ok(value) => {
+                    succeeded = Some(value);
+                    Ok(false)
                 }
-            },
-            timeout,
-        )
-        .expect("waiting succeeds");
-    if succeeded {
-        return Ok(());
+                Err(failure) => {
+                    failures.insert(failure);
+                    Ok(true)
+                }
+            }
+        },
+        timeout,
+    )
+    .expect("waiting succeeds");
+
+    if let Some(value) = succeeded {
+        return Ok(value);
     }
+
     failures.insert("timeout exceeded");
     Err(failures.into_iter().collect::<Vec<_>>().join(", "))
 }
 
 /// The description of a publish-subscribe service of `Payload` under
 /// `Header`, as an application creating it with `config` would.
-pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
+pub fn describe_publish_subscribe<S: Service, Payload: PayloadShape, Header: TypeName>(
     name: &ServiceName,
     config: &Config,
 ) -> ServiceDescription {
@@ -87,6 +96,83 @@ pub fn describe<S: Service, Payload: PayloadShape, Header: TypeName>(
             user_header: TypeDescription::from(&TypeDetail::new::<Header>(TypeVariant::FixedSize)),
         },
     )
+}
+
+/// The description of a request-response service whose requests are `Q`
+/// with the user header `QH` and whose responses are `R` with the user
+/// header `RH`, with the service settings `config` defaults to.
+pub fn describe_request_response<S, Q, QH, R, RH>(
+    name: &ServiceName,
+    config: &Config,
+) -> ServiceDescription
+where
+    S: Service,
+    Q: PayloadShape,
+    QH: TypeName,
+    R: PayloadShape,
+    RH: TypeName,
+{
+    ServiceDescription::compose_request_response::<S>(
+        *name,
+        RequestResponseSettings::from_config(config),
+        RequestResponseTypes {
+            request: SampleTypes {
+                payload: TypeDescription::from(&Q::type_detail()),
+                user_header: TypeDescription::from(&TypeDetail::new::<QH>(TypeVariant::FixedSize)),
+            },
+            response: SampleTypes {
+                payload: TypeDescription::from(&R::type_detail()),
+                user_header: TypeDescription::from(&TypeDetail::new::<RH>(TypeVariant::FixedSize)),
+            },
+        },
+    )
+}
+
+/// A source of request ids as iceoryx2 clients assign them.
+pub struct ClientRequestIds {
+    client: Client<local::Service, u64, (), u64, ()>,
+    _service: PortFactory<local::Service, u64, (), u64, ()>,
+    _node: Node<local::Service>,
+}
+
+impl Default for ClientRequestIds {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ClientRequestIds {
+    /// Creates a client of its own on a throwaway service, whose requests
+    /// provide the ids.
+    ///
+    /// There is no public constructor for a client id, so a request id can
+    /// only be read from the header of a request a real client sent.
+    pub fn new() -> Self {
+        let node = NodeBuilder::new()
+            .config(&generate_isolated_config())
+            .create::<local::Service>()
+            .expect("node is created");
+        let service = node
+            .service_builder(&generate_service_name())
+            .request_response::<u64, u64>()
+            .create()
+            .expect("service is created");
+        let client = service
+            .client_builder()
+            .create()
+            .expect("client is created");
+        Self {
+            client,
+            _service: service,
+            _node: node,
+        }
+    }
+
+    /// Produces a new [`ClientRequestId`].
+    pub fn next(&self) -> ClientRequestId {
+        let pending = self.client.send_copy(0).expect("request is sent");
+        ClientRequestId::of(pending.header())
+    }
 }
 
 /// The hash of the publish-subscribe service `name`.
@@ -176,6 +262,20 @@ pub fn side<S: Service, B: Backend<S>>(
 /// The hash of the publish-subscribe service `name`, with `S`'s hasher.
 pub fn hash_of<S: Service>(name: &ServiceName) -> ServiceHash {
     ServiceHash::new::<S::ServiceNameHasher>(name, MessagingPattern::PublishSubscribe)
+}
+
+/// The description of the existing service `name` of `pattern` in the
+/// local system `config` configures.
+pub fn description_of<S: Service>(
+    name: &ServiceName,
+    config: &Config,
+    pattern: MessagingPattern,
+) -> ServiceDescription {
+    let details = S::details(name, config, pattern)
+        .expect("the service details are read")
+        .expect("the service exists");
+    ServiceDescription::load::<S>(config, &details.static_details)
+        .expect("the service is described")
 }
 
 /// Whether the service `name` of `pattern` exists in the local system
