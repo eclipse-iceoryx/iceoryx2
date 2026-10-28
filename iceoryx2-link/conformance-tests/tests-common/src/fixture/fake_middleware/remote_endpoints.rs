@@ -173,7 +173,7 @@ impl<T: WireForm> PropagatesMessages for FakeRemoteEndpoints<T> {
     type Value = Vec<u8>;
 
     fn value(&self, n: u64) -> Vec<u8> {
-        n.to_le_bytes().to_vec()
+        n.to_be_bytes().to_vec()
     }
 
     fn encode(&self, value: &Vec<u8>) -> Vec<u8> {
@@ -203,11 +203,11 @@ impl<T: WireForm> PropagatesRequestResponseMessages for FakeRemoteEndpoints<T> {
     type RequestId = FakeRequestId;
 
     fn request(&self, n: u64) -> Vec<u8> {
-        n.to_le_bytes().to_vec()
+        n.to_be_bytes().to_vec()
     }
 
     fn response(&self, n: u64) -> Vec<u8> {
-        n.to_le_bytes().to_vec()
+        n.to_be_bytes().to_vec()
     }
 
     fn encode_request(&self, request: &Vec<u8>) -> Vec<u8> {
