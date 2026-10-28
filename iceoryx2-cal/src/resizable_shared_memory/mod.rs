@@ -32,14 +32,15 @@
 //! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_cal::resizable_shared_memory::*;
 //! use iceoryx2_bb_system_types::file_name::FileName;
-//! use iceoryx2_cal::shm_allocator::ShmAllocator;
-//! use iceoryx2_cal::shared_memory::SharedMemory;
+//! use iceoryx2_cal::shm_allocator::{Borrowable, ShmAllocator};
+//! use iceoryx2_cal::shared_memory::{SharedMemory, ShmPointer};
 //! use iceoryx2_cal::named_concept::*;
 //! use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+//! use iceoryx2_bb_elementary_traits::allocator::{Allocate, Deallocate, Grow};
 //! use core::alloc::Layout;
 //! use core::time::Duration;
 //!
-//! fn example<Alloc: ShmAllocator, Shm: SharedMemory<Alloc>, Memory: ResizableSharedMemory<Alloc, Shm>>(
+//! fn example<Alloc: ShmAllocator, Shm: SharedMemory<Alloc> + Deallocate<ShmPointer> + Borrowable, Memory: ResizableSharedMemory<Alloc, Shm>>(
 //!     name: &FileName
 //! ) {
 //!     // owner process creates a new memory
