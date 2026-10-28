@@ -928,7 +928,7 @@ where
             },
         }
 
-        unsafe { self.deallocate(old_pointer, old_layout) };
+        unsafe { self.release(old_pointer.offset) };
 
         Ok(new_pointer)
     }

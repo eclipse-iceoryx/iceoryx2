@@ -25,6 +25,7 @@ pub mod resizable_shared_memory_trait {
     use iceoryx2_cal::shared_memory::ShmPointer;
     use iceoryx2_cal::shm_allocator::AllocationError;
     use iceoryx2_cal::shm_allocator::Borrowable;
+    use iceoryx2_cal::shm_allocator::ReleaseState;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
@@ -1219,5 +1220,116 @@ pub mod resizable_shared_memory_trait {
             .unwrap();
 
         assert_that!(sut.allocation_strategy(), eq AllocationStrategy::BestFit);
+    }
+
+    #[conformance_test]
+    pub fn borrow_and_release_with_works<
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u64>())
+            .create()
+            .unwrap();
+
+        for _ in 0..10 {
+            let chunk = sut.allocate(Layout::new::<u64>()).unwrap();
+
+            unsafe { sut.borrow(chunk.offset) };
+            unsafe { sut.borrow(chunk.offset) };
+
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
+        }
+    }
+
+    #[conformance_test]
+    pub fn borrow_and_release_with_increasing_number_of_chunks_works<
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .max_chunk_layout_hint(Layout::new::<u64>())
+            .create()
+            .unwrap();
+
+        let mut chunks = vec![];
+        for _ in 0..10 {
+            let chunk = sut.allocate(Layout::new::<u64>()).unwrap();
+            chunks.push(chunk);
+
+            unsafe { sut.borrow(chunk.offset) };
+            unsafe { sut.borrow(chunk.offset) };
+
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+        }
+
+        for chunk in chunks {
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
+        }
+    }
+
+    #[conformance_test]
+    pub fn borrowing_and_growing_works<
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .max_chunk_layout_hint(Layout::new::<u64>())
+            .create()
+            .unwrap();
+
+        let mut resized_chunks = vec![];
+        let mut old_layout = Layout::new::<u64>();
+        let mut chunk = sut.allocate(old_layout).unwrap();
+        resized_chunks.push(chunk);
+        unsafe { sut.borrow(chunk.offset) };
+        unsafe { sut.borrow(chunk.offset) };
+
+        for n in 0..10 {
+            let new_layout = Layout::array::<u64>(n + 2).unwrap();
+            chunk = unsafe {
+                sut.grow(chunk, old_layout, new_layout, ContentPlacement::Back)
+                    .unwrap()
+            };
+
+            resized_chunks.push(chunk);
+            unsafe { sut.borrow(chunk.offset) };
+            unsafe { sut.borrow(chunk.offset) };
+
+            old_layout = new_layout;
+        }
+
+        let mut counter = 0;
+        for chunk in &resized_chunks[0..10] {
+            counter += 1;
+            println!("counter = {counter}");
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
+        }
+
+        assert_that!(unsafe { sut.release(resized_chunks[10].offset)}, eq ReleaseState::Kept);
+        assert_that!(unsafe { sut.release(resized_chunks[10].offset)}, eq ReleaseState::Kept);
+        assert_that!(unsafe { sut.release(resized_chunks[10].offset)}, eq ReleaseState::Deallocated);
     }
 }
