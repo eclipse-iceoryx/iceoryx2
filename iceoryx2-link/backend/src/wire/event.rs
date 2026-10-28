@@ -15,15 +15,15 @@ use iceoryx2::port::event_id::EventId;
 /// The size of an event id on the wire.
 pub const SIZE: usize = 8;
 
-/// An event id as eight little-endian bytes.
+/// An event id as eight big-endian bytes.
 pub fn encode(id: EventId) -> [u8; SIZE] {
-    (id.as_value() as u64).to_le_bytes()
+    (id.as_value() as u64).to_be_bytes()
 }
 
 /// The event id `bytes` encode.
 pub fn decode(bytes: &[u8]) -> Result<EventId, NotAnEventId> {
     let bytes: [u8; SIZE] = bytes.try_into().map_err(|_| NotAnEventId)?;
-    let value = usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| NotAnEventId)?;
+    let value = usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| NotAnEventId)?;
     Ok(EventId::new(value))
 }
 
