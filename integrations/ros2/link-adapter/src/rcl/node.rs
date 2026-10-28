@@ -13,8 +13,8 @@
 use std::ffi::CStr;
 
 use r2r_rcl::{
-    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_count_clients, rcl_count_services,
-    rcl_get_client_names_and_types_by_node, rcl_get_publishers_info_by_topic,
+    RCL_RET_NODE_NAME_NON_EXISTENT, RCL_RET_OK, rcl_context_fini, rcl_context_t,
+    rcl_get_client_names_and_types_by_node, rcl_get_node_names, rcl_get_publishers_info_by_topic,
     rcl_get_service_names_and_types, rcl_get_service_names_and_types_by_node,
     rcl_get_subscriptions_info_by_topic, rcl_get_topic_names_and_types,
     rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
@@ -22,7 +22,8 @@ use r2r_rcl::{
     rcl_init_options_init, rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini,
     rcl_node_get_default_options, rcl_node_get_graph_guard_condition, rcl_node_get_name,
     rcl_node_get_namespace, rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown,
-    rcutils_get_default_allocator, rcutils_string_array_t,
+    rcutils_get_default_allocator, rcutils_get_zero_initialized_string_array,
+    rcutils_string_array_fini, rcutils_string_array_t,
     rmw_get_zero_initialized_topic_endpoint_info_array, rmw_topic_endpoint_info_array_fini,
     rmw_topic_endpoint_info_array_t,
 };
@@ -31,7 +32,10 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::{fail, origin, warn};
 
 use crate::qos::QosProfile;
-use crate::rcl::{NodeName, NodeNamespace, RclError, ServiceName, TopicName, TypeName, qos};
+use crate::rcl::{
+    FullyQualifiedNodeName, NodeName, NodeNamespace, RclError, ServiceName, TopicName, TypeName,
+    qos,
+};
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -89,6 +93,18 @@ impl RclNode {
     /// stays alive as long as the node.
     pub(crate) fn graph_guard_condition(&self) -> *const rcl_guard_condition_t {
         unsafe { rcl_node_get_graph_guard_condition(self.node.get()) }
+    }
+
+    /// The fully qualified name of this node.
+    pub fn fully_qualified_name(&self) -> FullyQualifiedNodeName {
+        unsafe {
+            FullyQualifiedNodeName::new(
+                NodeName::from_c_str_unchecked(CStr::from_ptr(rcl_node_get_name(self.node.get()))),
+                NodeNamespace::from_c_str_unchecked(CStr::from_ptr(rcl_node_get_namespace(
+                    self.node.get(),
+                ))),
+            )
+        }
     }
 
     /// Query the ROS graph for all topics visible to this node and their type names.
@@ -157,9 +173,51 @@ impl RclNode {
         }
     }
 
-    /// The services this node serves.
-    pub fn own_servers(&self) -> Result<Vec<ServiceName>, GraphError> {
-        let origin = origin!("RclNode::own_servers");
+    /// The nodes on the graph.
+    pub fn nodes(&self) -> Result<Vec<FullyQualifiedNodeName>, GraphError> {
+        let origin = origin!("RclNode::nodes");
+
+        unsafe {
+            let mut names = rcutils_get_zero_initialized_string_array();
+            let mut namespaces = rcutils_get_zero_initialized_string_array();
+            let ret = rcl_get_node_names(
+                self.node.get(),
+                rcutils_get_default_allocator(),
+                &mut names,
+                &mut namespaces,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query the nodes of the graph: {}",
+                    RclError::from(ret)
+                );
+            }
+
+            let nodes = (0..names.size)
+                .map(|i| {
+                    FullyQualifiedNodeName::new(
+                        NodeName::from_c_str_unchecked(cstr_at(&names, i)),
+                        NodeNamespace::from_c_str_unchecked(cstr_at(&namespaces, i)),
+                    )
+                })
+                .collect();
+            let _ = rcutils_string_array_fini(&mut names);
+            let _ = rcutils_string_array_fini(&mut namespaces);
+
+            Ok(nodes)
+        }
+    }
+
+    /// The services `node` serves.
+    ///
+    /// None when the node has left the graph since it was listed.
+    pub fn servers_of(
+        &self,
+        node: &FullyQualifiedNodeName,
+    ) -> Result<Vec<ServiceName>, GraphError> {
+        let origin = origin!("RclNode::servers_of");
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
@@ -167,15 +225,19 @@ impl RclNode {
             let ret = rcl_get_service_names_and_types_by_node(
                 self.node.get(),
                 &mut allocator,
-                rcl_node_get_name(self.node.get()),
-                rcl_node_get_namespace(self.node.get()),
+                node.name().as_c_str().as_ptr(),
+                node.namespace().as_c_str().as_ptr(),
                 &mut rcl_names_and_types,
             );
+            if ret == RCL_RET_NODE_NAME_NON_EXISTENT as i32 {
+                return Ok(Vec::new());
+            }
             if ret != RCL_RET_OK as i32 {
                 fail!(
                     from origin,
                     with GraphError::Query,
-                    "Failed to query the node's own servers: {}",
+                    "Failed to query the servers of node {}: {}",
+                    node,
                     RclError::from(ret)
                 );
             }
@@ -187,9 +249,14 @@ impl RclNode {
         }
     }
 
-    /// The services this node has clients for.
-    pub fn own_clients(&self) -> Result<Vec<ServiceName>, GraphError> {
-        let origin = origin!("RclNode::own_clients");
+    /// The services `node` has clients for.
+    ///
+    /// None when the node has left the graph since it was listed.
+    pub fn clients_of(
+        &self,
+        node: &FullyQualifiedNodeName,
+    ) -> Result<Vec<ServiceName>, GraphError> {
+        let origin = origin!("RclNode::clients_of");
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
@@ -197,15 +264,19 @@ impl RclNode {
             let ret = rcl_get_client_names_and_types_by_node(
                 self.node.get(),
                 &mut allocator,
-                rcl_node_get_name(self.node.get()),
-                rcl_node_get_namespace(self.node.get()),
+                node.name().as_c_str().as_ptr(),
+                node.namespace().as_c_str().as_ptr(),
                 &mut rcl_names_and_types,
             );
+            if ret == RCL_RET_NODE_NAME_NON_EXISTENT as i32 {
+                return Ok(Vec::new());
+            }
             if ret != RCL_RET_OK as i32 {
                 fail!(
                     from origin,
                     with GraphError::Query,
-                    "Failed to query the node's own clients: {}",
+                    "Failed to query the clients of node {}: {}",
+                    node,
                     RclError::from(ret)
                 );
             }
@@ -215,44 +286,6 @@ impl RclNode {
 
             Ok(services)
         }
-    }
-
-    /// The number of service servers of `service` on the graph.
-    pub fn service_count(&self, service: &ServiceName) -> Result<usize, GraphError> {
-        let origin = origin!("RclNode::service_count");
-
-        let mut count = 0;
-        let ret =
-            unsafe { rcl_count_services(self.node.get(), service.as_c_str().as_ptr(), &mut count) };
-        if ret != RCL_RET_OK as rcl_ret_t {
-            fail!(
-                from origin,
-                with GraphError::Query,
-                "Failed to count the servers of service '{}': {}",
-                service.as_str(),
-                RclError::from(ret)
-            );
-        }
-        Ok(count)
-    }
-
-    /// The number of service clients of `service` on the graph.
-    pub fn client_count(&self, service: &ServiceName) -> Result<usize, GraphError> {
-        let origin = origin!("RclNode::client_count");
-
-        let mut count = 0;
-        let ret =
-            unsafe { rcl_count_clients(self.node.get(), service.as_c_str().as_ptr(), &mut count) };
-        if ret != RCL_RET_OK as rcl_ret_t {
-            fail!(
-                from origin,
-                with GraphError::Query,
-                "Failed to count the clients of service '{}': {}",
-                service.as_str(),
-                RclError::from(ret)
-            );
-        }
-        Ok(count)
     }
 
     /// The publishers on `topic` known to the graph.

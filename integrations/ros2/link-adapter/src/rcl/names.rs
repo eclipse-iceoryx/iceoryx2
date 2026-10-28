@@ -133,6 +133,16 @@ impl NodeName {
         Self(Cow::Borrowed(name))
     }
 
+    /// Wraps an already-valid node name from a C string without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is a well-formed ROS 2 node name,
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(name: &CStr) -> Self {
+        Self(Cow::Owned(name.to_owned()))
+    }
+
     pub fn as_c_str(&self) -> &CStr {
         &self.0
     }
@@ -187,8 +197,48 @@ impl NodeNamespace {
         Self(Cow::Borrowed(namespace))
     }
 
+    /// Wraps an already-valid namespace from a C string without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `namespace` is a well-formed ROS 2 node
+    /// namespace, e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(namespace: &CStr) -> Self {
+        Self(Cow::Owned(namespace.to_owned()))
+    }
+
     pub fn as_c_str(&self) -> &CStr {
         &self.0
+    }
+}
+
+/// A node's name within its namespace, which together identify it on the
+/// graph.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct FullyQualifiedNodeName {
+    name: NodeName,
+    namespace: NodeNamespace,
+}
+
+impl FullyQualifiedNodeName {
+    pub fn new(name: NodeName, namespace: NodeNamespace) -> Self {
+        Self { name, namespace }
+    }
+
+    pub fn name(&self) -> &NodeName {
+        &self.name
+    }
+
+    pub fn namespace(&self) -> &NodeNamespace {
+        &self.namespace
+    }
+}
+
+impl core::fmt::Display for FullyQualifiedNodeName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let namespace = self.namespace.as_c_str().to_string_lossy();
+        let name = self.name.as_c_str().to_string_lossy();
+        write!(f, "{}/{}", namespace.trim_end_matches('/'), name)
     }
 }
 

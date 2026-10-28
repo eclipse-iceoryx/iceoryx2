@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
@@ -220,18 +221,36 @@ impl Ros2Adapter {
             with ListError::Graph,
             "Failed to query the services of the graph"
         );
-        let own_servers = fail!(
+
+        // A service is listed when a node other than the gateway's serves or
+        // calls it. The graph query does not say which nodes do, so every
+        // other node must be asked for its services explicitly.
+        //
+        // Counting the servers and clients of a service is only available
+        // from `iron` or later.
+        let own = self.node.fully_qualified_name();
+        let nodes = fail!(
             from origin,
-            when self.node.own_servers(),
+            when self.node.nodes(),
             with ListError::Graph,
-            "Failed to query the gateway's own servers"
+            "Failed to query the nodes of the graph"
         );
-        let own_clients = fail!(
-            from origin,
-            when self.node.own_clients(),
-            with ListError::Graph,
-            "Failed to query the gateway's own clients"
-        );
+
+        let mut remote = BTreeSet::new();
+        for node in nodes.iter().filter(|node| **node != own) {
+            remote.extend(fail!(
+                from origin,
+                when self.node.servers_of(node),
+                with ListError::Graph,
+                "Failed to query the servers of node {}", node
+            ));
+            remote.extend(fail!(
+                from origin,
+                when self.node.clients_of(node),
+                with ListError::Graph,
+                "Failed to query the clients of node {}", node
+            ));
+        }
 
         for (service, types) in graph {
             // A service with several types has no single pair of C structs
@@ -250,23 +269,7 @@ impl Ros2Adapter {
                 continue;
             }
 
-            // The graph names no node per server or client. A service is
-            // listed when it has more of them than the gateway's own.
-            let servers = fail!(
-                from origin,
-                when self.node.service_count(&service),
-                with ListError::Graph,
-                "Failed to count the servers of service '{}'", service.as_str()
-            );
-            let clients = fail!(
-                from origin,
-                when self.node.client_count(&service),
-                with ListError::Graph,
-                "Failed to count the clients of service '{}'", service.as_str()
-            );
-            let own = usize::from(own_servers.contains(&service))
-                + usize::from(own_clients.contains(&service));
-            if servers + clients <= own {
+            if !remote.contains(&service) {
                 continue;
             }
 
