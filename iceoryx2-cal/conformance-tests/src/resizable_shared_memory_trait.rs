@@ -1320,10 +1320,7 @@ pub mod resizable_shared_memory_trait {
             old_layout = new_layout;
         }
 
-        let mut counter = 0;
         for chunk in &resized_chunks[0..10] {
-            counter += 1;
-            println!("counter = {counter}");
             assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
             assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
         }
