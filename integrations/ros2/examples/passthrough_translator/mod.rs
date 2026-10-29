@@ -32,3 +32,41 @@ pub fn as_bytes(payload: &[StdMsgStringByte]) -> &[u8] {
     // alignment carry over.
     unsafe { core::slice::from_raw_parts(payload.as_ptr().cast::<u8>(), payload.len()) }
 }
+
+/// The request payload is a byte slice holding the CDR-serialized request
+/// of `example_interfaces/srv/AddTwoInts`.
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct AddTwoIntsRequestByte(pub u8);
+
+unsafe impl ZeroCopySend for AddTwoIntsRequestByte {
+    unsafe fn type_name() -> &'static str {
+        <ros_env::example_interfaces::srv::rmw::AddTwoInts_Request as RmwMessage>::TYPE_NAME
+    }
+}
+
+/// Byte view of a CDR request slice.
+pub fn request_as_bytes(payload: &[AddTwoIntsRequestByte]) -> &[u8] {
+    // SAFETY: AddTwoIntsRequestByte is #[repr(transparent)] over u8, so
+    // length and alignment carry over.
+    unsafe { core::slice::from_raw_parts(payload.as_ptr().cast::<u8>(), payload.len()) }
+}
+
+/// The response payload is a byte slice holding the CDR-serialized response
+/// of `example_interfaces/srv/AddTwoInts`.
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct AddTwoIntsResponseByte(pub u8);
+
+unsafe impl ZeroCopySend for AddTwoIntsResponseByte {
+    unsafe fn type_name() -> &'static str {
+        <ros_env::example_interfaces::srv::rmw::AddTwoInts_Response as RmwMessage>::TYPE_NAME
+    }
+}
+
+/// Byte view of a CDR response slice.
+pub fn response_as_bytes(payload: &[AddTwoIntsResponseByte]) -> &[u8] {
+    // SAFETY: AddTwoIntsResponseByte is #[repr(transparent)] over u8, so
+    // length and alignment carry over.
+    unsafe { core::slice::from_raw_parts(payload.as_ptr().cast::<u8>(), payload.len()) }
+}

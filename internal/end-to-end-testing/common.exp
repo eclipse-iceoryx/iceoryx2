@@ -112,3 +112,15 @@ proc require_tool { TOOL } {
     }
 }
 
+# Skips the test when the environment variable is unset or does not match
+# the glob pattern.
+proc require_env { VARIABLE PATTERN } {
+    global env C_YELLOW C_OFF
+    if { ![info exists env(${VARIABLE})]
+         || ![string match ${PATTERN} $env(${VARIABLE})] } {
+        puts "${C_YELLOW}Requires '${VARIABLE}' matching '${PATTERN}', which is not set.${C_OFF}"
+        show_test_skipped
+        exit 77
+    }
+}
+

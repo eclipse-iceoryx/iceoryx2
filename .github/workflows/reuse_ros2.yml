@@ -48,8 +48,10 @@ jobs:
           # The message packages the workspace builds against. Installing them
           # upgrades them past a base image that predates their Rust crates.
           MSG_PKGS="ros-${{ inputs.ros-distro }}-builtin-interfaces ros-${{ inputs.ros-distro }}-std-msgs ros-${{ inputs.ros-distro }}-geometry-msgs ros-${{ inputs.ros-distro }}-sensor-msgs ros-${{ inputs.ros-distro }}-example-interfaces"
+          # The demo nodes the end-to-end tests of the examples run against.
+          DEMO_PKGS="ros-${{ inputs.ros-distro }}-demo-nodes-cpp"
           apt-get update
-          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev libflatbuffers-dev expect ros-dev-tools python3-pip "$RMW_PKG" $MSG_PKGS
+          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev libflatbuffers-dev expect ros-dev-tools python3-pip "$RMW_PKG" $MSG_PKGS $DEMO_PKGS
 
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0
