@@ -25,7 +25,8 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{debug, fail};
 
 use crate::dynamic_storage::*;
-pub use crate::shared_memory::*;
+use crate::shared_memory::*;
+use crate::shm_allocator::Borrowable;
 
 use crate::static_storage::file::{
     NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
@@ -506,6 +507,8 @@ pub mod details {
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
         Deallocate<ShmPointer> for Memory<Allocator, Storage>
+    where
+        for<'a> Allocator::Initialized<'a>: Deallocate<PointerOffset>,
     {
         unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout) {
             unsafe {
@@ -519,19 +522,37 @@ pub mod details {
         }
     }
 
-    impl<Storage: DynamicStorage<AllocatorDetails<PoolAllocator>>> SharedMemoryForPoolAllocator
-        for Memory<PoolAllocator, Storage>
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Borrowable for Memory<Allocator, Storage>
+    where
+        for<'a> Allocator::Initialized<'a>: Borrowable,
     {
-        unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
+        unsafe fn borrow(&self, ptr: PointerOffset) {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
-                    .deallocate_bucket(offset);
-            }
+                    .assume_init()
+                    .borrow(ptr);
+            };
         }
 
+        unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState {
+            unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .assume_init_ref()
+                    .assume_init()
+                    .release(ptr)
+            }
+        }
+    }
+
+    impl<Storage: DynamicStorage<AllocatorDetails<PoolAllocator>>> SharedMemoryForPoolAllocator
+        for Memory<PoolAllocator, Storage>
+    {
         fn bucket_size(&self) -> usize {
             unsafe { self.storage.get().allocator.assume_init_ref().bucket_size() }
         }

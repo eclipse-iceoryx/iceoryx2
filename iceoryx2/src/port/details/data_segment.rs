@@ -22,6 +22,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_cal::shm_allocator::Borrowable;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
     resizable_shared_memory::*,
@@ -166,6 +167,24 @@ impl<Service: service::Service> DataSegment<Service> {
         })
     }
 
+    pub(crate) fn borrow(&self, ptr: PointerOffset) {
+        match &self.memory {
+            MemoryType::Static(memory) => unsafe { memory.borrow(ptr) },
+            MemoryType::Dynamic(memory) => unsafe { memory.borrow(ptr) },
+        }
+    }
+
+    pub(crate) fn release(&self, ptr: PointerOffset) {
+        match &self.memory {
+            MemoryType::Static(memory) => unsafe {
+                memory.release(ptr);
+            },
+            MemoryType::Dynamic(memory) => unsafe {
+                memory.release(ptr);
+            },
+        }
+    }
+
     pub(crate) fn allocate(&self, layout: Layout) -> Result<ShmPointer, AllocationError> {
         let msg = "Unable to allocate memory from the data segment";
         match &self.memory {
@@ -181,15 +200,6 @@ impl<Service: service::Service> DataSegment<Service> {
         match &self.memory {
             MemoryType::Static(_) => AllocationStrategy::Static,
             MemoryType::Dynamic(memory) => memory.allocation_strategy(),
-        }
-    }
-
-    pub(crate) unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-        unsafe {
-            match &self.memory {
-                MemoryType::Static(memory) => memory.deallocate_bucket(offset),
-                MemoryType::Dynamic(memory) => memory.deallocate_bucket(offset),
-            }
         }
     }
 

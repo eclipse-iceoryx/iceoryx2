@@ -33,6 +33,7 @@ pub mod details {
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_log::{fail, fatal_panic};
 
+    use crate::shm_allocator::SegmentId;
     pub use crate::zero_copy_connection::*;
 
     use crate::dynamic_storage::{
@@ -40,7 +41,6 @@ pub mod details {
         DynamicStorageOpenOrCreateError,
     };
     use crate::named_concept::*;
-    use crate::shared_memory::SegmentId;
 
     use self::used_chunk_list::RelocatableUsedChunkList;
 

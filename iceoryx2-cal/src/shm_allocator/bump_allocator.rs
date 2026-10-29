@@ -54,12 +54,6 @@ impl<'shm_allocator> Allocate<PointerOffset> for InitializedBumpAllocator<'shm_a
     }
 }
 
-impl<'shm_allocator> Deallocate<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
-    unsafe fn deallocate(&self, _ptr: PointerOffset, _layout: Layout) {
-        unsafe { self.0.allocator.reset() };
-    }
-}
-
 impl<'shm_allocator> Grow<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
     unsafe fn grow(
         &self,

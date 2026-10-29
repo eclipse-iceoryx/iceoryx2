@@ -16,5 +16,4 @@ pub mod chunk_mut_shared_state;
 pub mod data_segment;
 pub mod data_segment_shared_state;
 pub mod receiver;
-pub mod segment_state;
 pub mod sender;

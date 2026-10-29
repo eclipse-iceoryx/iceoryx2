@@ -17,9 +17,11 @@ pub mod pool_allocator;
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
+pub use iceoryx2_bb_elementary_traits::allocator::{
+    Allocation, AllocationError, AllocationGrowError,
+};
 use iceoryx2_bb_elementary_traits::{
-    allocator::{Allocate, ContentPlacement, Deallocate, Grow},
+    allocator::{Allocate, ContentPlacement, Grow},
     zero_copy_send::ZeroCopySend,
 };
 pub use pointer_offset::*;
@@ -56,6 +58,36 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
     pub config: Config,
 }
 
+/// States the outcome of the [`Borrowable::release()`] call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReleaseState {
+    /// Other instances have still borrowed the [`PointerOffset`] and it is kept.
+    Kept,
+    /// The last borrow was released and the [`PointerOffset`] was deallocated.
+    Deallocated,
+}
+
+/// Interface extension for a [`ShmAllocator`] to enable shared ownership tracking of memory chunks.
+pub trait Borrowable {
+    /// Shall be called whenever a [`PointerOffset`] is shared with another entity.
+    ///
+    /// # Safety
+    ///
+    ///  * `ptr` must have been allocated with [`Allocate::allocate()`]
+    ///
+    unsafe fn borrow(&self, ptr: PointerOffset);
+    /// Shall be called whenever a [`PointerOffset`] is no longer shared with another entity. If the
+    /// [`PointerOffset`] is no longer shared with anyone it is deallocated.
+    ///
+    /// # Safety
+    ///
+    ///  * `ptr` must have been allocated with [`Allocate::allocate()`]
+    ///  * `layout` must have the same value as in the allocation or, when the memory was
+    ///    resized, the same value as it was resized to
+    ///
+    unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState;
+}
+
 /// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized
 /// in place, every method on it is `unsafe` since the user must call [`ShmAllocator::init()`]
 /// before using it, otherwise it is undefined behavior.
@@ -64,7 +96,7 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
 /// `unsafe` [`ShmAllocator::assume_init()`] method ensures that the contract is satisfied and returns
 /// a reference to an object with a normal allocator interface.
 pub trait InitializedShmAllocator<'shm_allocator>:
-    Allocate<PointerOffset> + Deallocate<PointerOffset> + Grow<PointerOffset>
+    Allocate<PointerOffset> + Grow<PointerOffset>
 {
 }
 

@@ -20,10 +20,7 @@ use iceoryx2_bb_elementary_traits::allocator::{
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_cal::{
-    shm_allocator::{ShmAllocator, pool_allocator::*},
-    zero_copy_connection::PointerOffset,
-};
+use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocator, pool_allocator::*};
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
 const BUCKET_CONFIG: Layout = unsafe { Layout::from_size_align_unchecked(32, 4) };

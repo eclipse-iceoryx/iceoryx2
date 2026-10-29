@@ -22,11 +22,15 @@ pub mod resizable_shared_memory_trait {
     use core::alloc::Layout;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::file::AccessMode;
+    use iceoryx2_cal::shared_memory::ShmPointer;
     use iceoryx2_cal::shm_allocator::AllocationError;
+    use iceoryx2_cal::shm_allocator::Borrowable;
+    use iceoryx2_cal::shm_allocator::ReleaseState;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
+    use iceoryx2_bb_elementary_traits::allocator::Deallocate;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -39,7 +43,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn create_and_open_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -75,7 +79,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_more_layout_than_hinted_when_no_other_chunks_are_in_use_releases_smaller_segment<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -99,7 +103,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_more_layout_than_hinted_when_other_chunks_are_in_use_does_not_releases_smaller_segment<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -125,7 +129,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_more_than_hinted_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -170,7 +174,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn deallocate_removes_unused_segments_on_creator_side<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -195,7 +199,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn unregister_removes_unused_segments_on_viewer_side<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -219,7 +223,7 @@ pub mod resizable_shared_memory_trait {
     }
 
     pub fn allocate_more_than_hinted_with_increasing_chunk_size_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >(
         strategy: AllocationStrategy,
@@ -269,7 +273,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_more_than_hinted_with_increasing_chunk_size_and_best_fit_strategy_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         allocate_more_than_hinted_with_increasing_chunk_size_works::<Shm, Sut>(
@@ -279,7 +283,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_more_than_hinted_with_increasing_chunk_size_and_power_of_two_strategy_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         allocate_more_than_hinted_with_increasing_chunk_size_works::<Shm, Sut>(
@@ -288,7 +292,7 @@ pub mod resizable_shared_memory_trait {
     }
 
     pub fn allocate_with_sufficient_chunk_hint_and_increasing_size<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >(
         strategy: AllocationStrategy,
@@ -338,7 +342,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_power_of_two<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         allocate_with_sufficient_chunk_hint_and_increasing_size::<Shm, Sut>(
@@ -348,7 +352,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_best_fit<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         allocate_with_sufficient_chunk_hint_and_increasing_size::<Shm, Sut>(
@@ -357,7 +361,7 @@ pub mod resizable_shared_memory_trait {
     }
 
     pub fn allocate_with_sufficient_chunk_hint_and_increasing_alignment<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >(
         strategy: AllocationStrategy,
@@ -409,7 +413,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_power_of_two<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         allocate_with_sufficient_chunk_hint_and_increasing_alignment::<Shm, Sut>(
@@ -419,7 +423,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_best_fit<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         allocate_with_sufficient_chunk_hint_and_increasing_alignment::<Shm, Sut>(
@@ -429,7 +433,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn deallocate_last_segment_does_not_release_it<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -452,7 +456,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn static_allocation_strategy_does_not_resize_available_chunks<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -472,7 +476,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn static_allocation_strategy_does_not_increase_available_chunks<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -494,7 +498,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn list_works_when_the_start_segment_is_no_longer_used<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 33;
@@ -533,7 +537,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn does_exist_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 1;
@@ -559,7 +563,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn does_exist_works_when_the_start_segment_is_no_longer_used<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 25;
@@ -596,7 +600,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn remove_with_multiple_segments_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const NUMBER_OF_STORAGES: usize = 26;
@@ -635,7 +639,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn open_when_zero_segment_not_available_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         const TEST_VALUE: u32 = 89123523;
@@ -672,7 +676,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn creator_releases_resizable_shared_memory_when_it_goes_out_of_scope<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -693,7 +697,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn view_does_not_releases_resizable_shared_memory_when_it_goes_out_of_scope<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -721,7 +725,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn when_max_number_of_reallocations_is_exceeded_another_allocation_fails<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -753,7 +757,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn register_offset_in_view_maps_required_segments<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -819,7 +823,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn unregister_offset_in_view_releases_unused_segments<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -862,7 +866,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn unregister_offset_in_reverse_order_in_view_releases_unused_segments<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -905,7 +909,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn register_segment_that_was_resized_on_the_first_allocation_leads_to_a_unmap_of_the_old_segment_on_viewer_side<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let config = generate_isolated_config::<Sut::Configuration>();
@@ -943,7 +947,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn abandoning_creator_keeps_resources_alive<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
@@ -982,7 +986,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn abandoning_view_has_no_effect<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1009,7 +1013,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn resizing_chunks_in_same_segment_with_content_at_front_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1043,7 +1047,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn resizing_chunks_in_same_segment_with_content_at_back_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1077,7 +1081,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn resizing_chunks_accross_segments_with_content_at_front_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1111,7 +1115,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn resizing_chunks_accross_segments_with_content_at_back_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1145,7 +1149,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn shrinking_chunk_with_grow_fails<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1170,7 +1174,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn grow_chunk_to_same_size_works<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1203,7 +1207,7 @@ pub mod resizable_shared_memory_trait {
 
     #[conformance_test]
     pub fn allocation_strategy_can_be_obtained<
-        Shm: SharedMemory<DefaultAllocator>,
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
         let storage_name = generate_file_path().file_name();
@@ -1216,5 +1220,113 @@ pub mod resizable_shared_memory_trait {
             .unwrap();
 
         assert_that!(sut.allocation_strategy(), eq AllocationStrategy::BestFit);
+    }
+
+    #[conformance_test]
+    pub fn borrow_and_release_with_works<
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u64>())
+            .create()
+            .unwrap();
+
+        for _ in 0..10 {
+            let chunk = sut.allocate(Layout::new::<u64>()).unwrap();
+
+            unsafe { sut.borrow(chunk.offset) };
+            unsafe { sut.borrow(chunk.offset) };
+
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
+        }
+    }
+
+    #[conformance_test]
+    pub fn borrow_and_release_with_increasing_number_of_chunks_works<
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .max_chunk_layout_hint(Layout::new::<u64>())
+            .create()
+            .unwrap();
+
+        let mut chunks = vec![];
+        for _ in 0..10 {
+            let chunk = sut.allocate(Layout::new::<u64>()).unwrap();
+            chunks.push(chunk);
+
+            unsafe { sut.borrow(chunk.offset) };
+            unsafe { sut.borrow(chunk.offset) };
+
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+        }
+
+        for chunk in chunks {
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
+        }
+    }
+
+    #[conformance_test]
+    pub fn borrowing_and_growing_works<
+        Shm: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer> + Borrowable,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut::Configuration>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .max_chunk_layout_hint(Layout::new::<u64>())
+            .create()
+            .unwrap();
+
+        let mut resized_chunks = vec![];
+        let mut old_layout = Layout::new::<u64>();
+        let mut chunk = sut.allocate(old_layout).unwrap();
+        resized_chunks.push(chunk);
+        unsafe { sut.borrow(chunk.offset) };
+        unsafe { sut.borrow(chunk.offset) };
+
+        for n in 0..10 {
+            let new_layout = Layout::array::<u64>(n + 2).unwrap();
+            chunk = unsafe {
+                sut.grow(chunk, old_layout, new_layout, ContentPlacement::Back)
+                    .unwrap()
+            };
+
+            resized_chunks.push(chunk);
+            unsafe { sut.borrow(chunk.offset) };
+            unsafe { sut.borrow(chunk.offset) };
+
+            old_layout = new_layout;
+        }
+
+        for chunk in &resized_chunks[0..10] {
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Kept);
+            assert_that!(unsafe { sut.release(chunk.offset)}, eq ReleaseState::Deallocated);
+        }
+
+        assert_that!(unsafe { sut.release(resized_chunks[10].offset)}, eq ReleaseState::Kept);
+        assert_that!(unsafe { sut.release(resized_chunks[10].offset)}, eq ReleaseState::Kept);
+        assert_that!(unsafe { sut.release(resized_chunks[10].offset)}, eq ReleaseState::Deallocated);
     }
 }

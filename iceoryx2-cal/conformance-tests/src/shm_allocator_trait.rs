@@ -18,7 +18,7 @@ pub mod shm_allocator_trait {
     use alloc::collections::btree_set::BTreeSet;
     use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-    use iceoryx2_bb_elementary_traits::allocator::{Allocate, ContentPlacement, Deallocate, Grow};
+    use iceoryx2_bb_elementary_traits::allocator::{Allocate, ContentPlacement, Grow};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
@@ -109,12 +109,6 @@ pub mod shm_allocator_trait {
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
         let distance = unsafe { test.sut().assume_init().allocate(layout) };
         assert_that!(distance, is_ok);
-
-        unsafe {
-            test.sut()
-                .assume_init()
-                .deallocate(distance.unwrap(), layout);
-        }
     }
 
     #[conformance_test]
@@ -125,8 +119,6 @@ pub mod shm_allocator_trait {
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
         let distance = unsafe { test.sut().assume_init().allocate(layout).unwrap() };
         assert_that!(distance.offset(), eq 0);
-
-        unsafe { test.sut().assume_init().deallocate(distance, layout) };
     }
 
     #[conformance_test]
@@ -138,12 +130,6 @@ pub mod shm_allocator_trait {
             unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, test.sut().max_alignment()) };
         let distance = unsafe { test.sut().assume_init().allocate(layout) };
         assert_that!(distance, is_ok);
-
-        unsafe {
-            test.sut()
-                .assume_init()
-                .deallocate(distance.unwrap(), layout);
-        }
     }
 
     #[conformance_test]

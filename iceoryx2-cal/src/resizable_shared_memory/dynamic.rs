@@ -38,11 +38,11 @@ use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
 use crate::shared_memory::{
-    PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
-    SharedMemoryOpenError, ShmAllocator,
+    SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, SharedMemoryOpenError,
 };
-use crate::shared_memory::{SegmentId, SharedMemoryForPoolAllocator, ShmPointer};
+use crate::shared_memory::{SharedMemoryForPoolAllocator, ShmPointer};
 use crate::shm_allocator::pool_allocator::PoolAllocator;
+use crate::shm_allocator::{Borrowable, PointerOffset, ReleaseState, SegmentId, ShmAllocator};
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -145,7 +145,7 @@ pub struct DynamicViewBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     config: ViewConfig<Allocator, Shm>,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicViewBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -167,7 +167,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryViewBuilder<
         Allocator,
         Shm,
@@ -219,7 +219,7 @@ where
     shared_state: SharedState,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicMemoryBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -246,7 +246,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryBuilder<Allocator, Shm, DynamicMemory<Allocator, Shm>>
     for DynamicMemoryBuilder<Allocator, Shm>
 where
@@ -365,7 +365,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -456,8 +456,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConceptMgmt
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    NamedConceptMgmt for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -533,7 +533,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -745,17 +746,11 @@ where
     }
 }
 
-impl<Shm: SharedMemoryForPoolAllocator> ResizableSharedMemoryForPoolAllocator<Shm>
-    for DynamicMemory<PoolAllocator, Shm>
+impl<Shm: SharedMemoryForPoolAllocator + Deallocate<ShmPointer> + Borrowable>
+    ResizableSharedMemoryForPoolAllocator<Shm> for DynamicMemory<PoolAllocator, Shm>
 where
     Shm::Builder: Debug,
 {
-    unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-        unsafe {
-            self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
-        }
-    }
-
     fn bucket_size(&self, segment_id: SegmentId) -> usize {
         let segment_id_key = SlotMapKey::new(segment_id.value() as usize);
         match self.state_mut().shared_memory_map.get(segment_id_key) {
@@ -767,8 +762,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemory<Allocator, Shm>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    ResizableSharedMemory<Allocator, Shm> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -789,8 +784,8 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Allocate<ShmPointer>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    Allocate<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -820,8 +815,46 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Grow<ShmPointer>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    Borrowable for DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    unsafe fn borrow(&self, ptr: PointerOffset) {
+        let segment_id = SlotMapKey::new(ptr.segment_id().value() as usize);
+        let state = self.state_mut();
+        match state.shared_memory_map.get(segment_id) {
+            Some(entry) => {
+                unsafe { entry.shm.borrow(ptr) };
+            }
+            None => fatal_panic!(from self,
+                        "This should never happen! Unable to borrow {ptr:?} since the corresponding shared memory segment is not available!"),
+        }
+    }
+
+    unsafe fn release(&self, ptr: PointerOffset) -> ReleaseState {
+        let segment_id = SlotMapKey::new(ptr.segment_id().value() as usize);
+        let state = self.state_mut();
+        match state.shared_memory_map.get(segment_id) {
+            Some(entry) => {
+                let release_state = unsafe { entry.shm.release(ptr) };
+                if release_state == ReleaseState::Deallocated
+                    && entry.unregister_offset() == ShmEntryState::Empty
+                    && segment_id != state.current_idx
+                {
+                    state.shared_memory_map.remove(segment_id);
+                }
+
+                release_state
+            }
+            None => fatal_panic!(from self,
+                        "This should never happen! Unable to release {ptr:?} since the corresponding shared memory segment is not available!"),
+        }
+    }
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    Grow<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
@@ -889,14 +922,14 @@ where
             },
         }
 
-        unsafe { self.deallocate(old_pointer, old_layout) };
+        unsafe { self.release(old_pointer.offset) };
 
         Ok(new_pointer)
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Deallocate<ShmPointer>
-    for DynamicMemory<Allocator, Shm>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable>
+    Deallocate<ShmPointer> for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {

@@ -32,14 +32,15 @@
 //! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_cal::resizable_shared_memory::*;
 //! use iceoryx2_bb_system_types::file_name::FileName;
-//! use iceoryx2_cal::shm_allocator::ShmAllocator;
-//! use iceoryx2_cal::shared_memory::SharedMemory;
+//! use iceoryx2_cal::shm_allocator::{Borrowable, ShmAllocator};
+//! use iceoryx2_cal::shared_memory::{SharedMemory, ShmPointer};
 //! use iceoryx2_cal::named_concept::*;
 //! use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+//! use iceoryx2_bb_elementary_traits::allocator::{Allocate, Deallocate, Grow};
 //! use core::alloc::Layout;
 //! use core::time::Duration;
 //!
-//! fn example<Alloc: ShmAllocator, Shm: SharedMemory<Alloc>, Memory: ResizableSharedMemory<Alloc, Shm>>(
+//! fn example<Alloc: ShmAllocator, Shm: SharedMemory<Alloc> + Deallocate<ShmPointer> + Borrowable, Memory: ResizableSharedMemory<Alloc, Shm>>(
 //!     name: &FileName
 //! ) {
 //!     // owner process creates a new memory
@@ -104,15 +105,15 @@ use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
+    SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
-use crate::shm_allocator::{PointerOffset, ShmAllocator};
+use crate::shm_allocator::{Borrowable, PointerOffset, SegmentId, ShmAllocator};
 
 /// Creates a [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`] and maps the
 /// [`ResizableSharedMemory`] read-only into the process space.
 pub trait ResizableSharedMemoryViewBuilder<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
     ResizableShmView: ResizableSharedMemoryView<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm> + Debug
@@ -135,7 +136,7 @@ pub trait ResizableSharedMemoryViewBuilder<
 /// removed.
 pub trait ResizableSharedMemoryBuilder<
     Allocator: ShmAllocator,
-    Shm: SharedMemory<Allocator>,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm> + Debug
 {
@@ -158,8 +159,10 @@ pub trait ResizableSharedMemoryBuilder<
 }
 
 /// A read-only view to a [`ResizableSharedMemory`]. Can be created by arbitrary many processes.
-pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Debug + Send + Abandonable
+pub trait ResizableSharedMemoryView<
+    Allocator: ShmAllocator,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer>,
+>: Debug + Send + Abandonable
 {
     /// Registers a received [`PointerOffset`] at the [`ResizableSharedMemoryView`] and returns the
     /// absolute pointer to the data. If the segment of the received [`PointerOffset`] was not yet
@@ -191,7 +194,10 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 /// The [`ResizableSharedMemory`] can be only owned by exactly one process that is allowed to
 /// [`Allocate::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
-pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
+pub trait ResizableSharedMemory<
+    Allocator: ShmAllocator,
+    Shm: SharedMemory<Allocator> + Deallocate<ShmPointer> + Borrowable,
+>:
     Sized
     + NamedConcept
     + NamedConceptMgmt
@@ -201,6 +207,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     + Allocate<ShmPointer>
     + Deallocate<ShmPointer>
     + Grow<ShmPointer>
+    + Borrowable
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].
@@ -225,17 +232,10 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     fn allocation_strategy(&self) -> AllocationStrategy;
 }
 
-pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:
-    ResizableSharedMemory<PoolAllocator, Shm>
+pub trait ResizableSharedMemoryForPoolAllocator<
+    Shm: SharedMemory<PoolAllocator> + Deallocate<ShmPointer> + Borrowable,
+>: ResizableSharedMemory<PoolAllocator, Shm>
 {
-    /// Release previously allocated memory
-    ///
-    /// # Safety
-    ///
-    ///  * the offset must be acquired with [`Allocate::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
-    unsafe fn deallocate_bucket(&self, offset: PointerOffset);
-
     /// Returns the bucket size of the corresponding [`PoolAllocator`]
     fn bucket_size(&self, segment_id: SegmentId) -> usize;
 }

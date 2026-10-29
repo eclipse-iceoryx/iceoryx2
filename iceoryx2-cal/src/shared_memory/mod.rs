@@ -64,10 +64,10 @@ pub mod recommended;
 
 use core::{fmt::Debug, time::Duration};
 
-pub use crate::shm_allocator::*;
+use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_elementary_traits::{
-    allocator::{Allocation, Deallocate, Grow},
+    allocator::{Deallocate, Grow},
     pointer::Pointer,
     testing::abandonable::Abandonable,
 };
@@ -189,7 +189,6 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     + Send
     + Abandonable
     + Allocate<ShmPointer>
-    + Deallocate<ShmPointer>
     + Grow<ShmPointer>
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
@@ -226,14 +225,6 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
 }
 
 pub trait SharedMemoryForPoolAllocator: SharedMemory<PoolAllocator> {
-    /// Release previously allocated memory
-    ///
-    /// # Safety
-    ///
-    ///  * the offset must be acquired with [`Allocate::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
-    unsafe fn deallocate_bucket(&self, offset: PointerOffset);
-
     /// Returns the bucket size of the [`PoolAllocator`]
     fn bucket_size(&self) -> usize;
 }

@@ -19,6 +19,7 @@ use core::any::Any;
 use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary_traits::allocator::Deallocate;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
@@ -38,6 +39,8 @@ use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryBuilder;
 use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryViewBuilder;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shared_memory::SharedMemoryBuilder;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::Borrowable;
 use iceoryx2_cal::shm_allocator::ShmAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::StaticStorage;
@@ -285,12 +288,14 @@ impl<T: SharedMemory<PoolAllocator> + 'static> NamedConceptTest for SharedMemory
 }
 
 pub struct ResizableSharedMemoryTest<
-    S: SharedMemory<PoolAllocator> + 'static,
+    S: SharedMemory<PoolAllocator> + Deallocate<ShmPointer> + Borrowable + 'static,
     T: ResizableSharedMemory<PoolAllocator, S> + 'static,
 >(PhantomData<T>, PhantomData<S>);
 
-impl<S: SharedMemory<PoolAllocator> + 'static, T: ResizableSharedMemory<PoolAllocator, S> + 'static>
-    NamedConceptTest for ResizableSharedMemoryTest<S, T>
+impl<
+    S: SharedMemory<PoolAllocator> + Deallocate<ShmPointer> + Borrowable + 'static,
+    T: ResizableSharedMemory<PoolAllocator, S> + 'static,
+> NamedConceptTest for ResizableSharedMemoryTest<S, T>
 {
     type Sut = T;
 
