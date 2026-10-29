@@ -11,3 +11,7 @@ repositories:
     type: git
     url: https://github.com/ros2/rcl_interfaces.git
     version: jazzy
+  example_interfaces:
+    type: git
+    url: https://github.com/ros2/example_interfaces.git
+    version: jazzy
