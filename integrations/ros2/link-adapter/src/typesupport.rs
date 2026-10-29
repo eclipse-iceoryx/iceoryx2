@@ -43,7 +43,7 @@ pub trait TypeSupportKind: private::Sealed + Sized + 'static {
     type Handle;
     /// The typesupport library of a package, `lib<package>__<LIBRARY>.so`.
     const LIBRARY: &'static str;
-    /// The getter of a handle in it, `<LIBRARY>__<GETTER>__<package>__<kind>__<Type>`.
+    /// The getter of a handle in it, `<LIBRARY>__<GETTER>__<package>__<interface>__<Type>`.
     const GETTER: &'static str;
 
     /// The typesupports of this kind opened so far, one map per thread.
@@ -88,7 +88,6 @@ pub type IntrospectionTypeSupport = TypeSupport<IntrospectionKind>;
 
 /// The typesupport of a ROS 2 service, covering its request and its
 /// response.
-#[allow(dead_code)] // the request-response endpoints follow
 pub type ServiceTypeSupport = TypeSupport<ServiceKind>;
 
 impl IntrospectionTypeSupport {
@@ -175,6 +174,42 @@ pub(crate) fn get<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<
     result
 }
 
+/// Opens every typesupport of `type_name` needed by the gateway.
+///
+/// A message needs its message typesupport. A service needs:
+///
+/// * its service typesupport, which creates the client and the server
+/// * the message typesupports of its request and response, which serialize
+///   and deserialize each direction
+/// * the introspection typesupports of both to initialize the structs that
+///   the rmw accepts, there is no 'send serialized' equivalent
+pub(crate) fn preload(type_name: &str) -> Result<(), LoadError> {
+    let origin = origin!("preload");
+
+    let parts = fail!(
+        from origin,
+        when split_type_name(type_name),
+        "Invalid ROS 2 type name '{}'",
+        type_name
+    );
+    match parts.interface {
+        Interface::Message => {
+            get::<MessageKind>(type_name)?;
+        }
+        Interface::Service => {
+            get::<ServiceKind>(type_name)?;
+            for message in [
+                format!("{type_name}_Request"),
+                format!("{type_name}_Response"),
+            ] {
+                get::<MessageKind>(&message)?;
+                get::<IntrospectionKind>(&message)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Opens the typesupport library of `type_name` and calls the getter of
 /// kind `K` in it for the handle.
 ///
@@ -182,14 +217,24 @@ pub(crate) fn get<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<
 fn open<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<K>>, LoadError> {
     let origin = origin!("open");
 
-    let (package, kind, name) = fail!(
+    let TypeNameParts {
+        package,
+        interface,
+        name,
+    } = fail!(
         from origin,
         when split_type_name(type_name),
         "Invalid ROS 2 type name '{}'",
         type_name
     );
+
     let library_name = format!("lib{package}__{}.so", K::LIBRARY);
-    let symbol_name = format!("{}__{}__{package}__{kind}__{name}", K::LIBRARY, K::GETTER);
+    let symbol_name = format!(
+        "{}__{}__{package}__{}__{name}",
+        K::LIBRARY,
+        K::GETTER,
+        interface.as_str()
+    );
 
     // The library is found via the sourced environment's LD_LIBRARY_PATH.
     let library = match unsafe { Library::new(&library_name) } {
@@ -236,16 +281,57 @@ fn open<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<K>>, LoadE
     }))
 }
 
-/// The package, the kind (`msg` or `srv`) and the type of a type name.
-fn split_type_name(type_name: &str) -> Result<(&str, &str, &str), LoadError> {
+/// The interface a type name names, its middle segment. ROS 2 defines
+/// messages, services and actions as its interfaces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Interface {
+    Message,
+    Service,
+}
+
+impl Interface {
+    /// The segment of a type name and symbol naming the interface.
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Message => "msg",
+            Self::Service => "srv",
+        }
+    }
+}
+
+/// The segments of a type name, `package/interface/Type`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TypeNameParts<'a> {
+    package: &'a str,
+    interface: Interface,
+    name: &'a str,
+}
+
+/// The segments of a type name.
+fn split_type_name(type_name: &str) -> Result<TypeNameParts<'_>, LoadError> {
     let origin = origin!("split_type_name");
 
     let mut parts = type_name.split('/');
     match (parts.next(), parts.next(), parts.next(), parts.next()) {
-        (Some(package), Some(kind @ ("msg" | "srv")), Some(name), None)
+        (Some(package), Some(interface), Some(name), None)
             if !package.is_empty() && !name.is_empty() =>
         {
-            Ok((package, kind, name))
+            let interface = match interface {
+                "msg" => Interface::Message,
+                "srv" => Interface::Service,
+                _ => {
+                    fail!(
+                        from origin,
+                        with LoadError::InvalidTypeName { type_name: type_name.to_string() },
+                        "Type name '{}' is not of the form package/msg/Message or package/srv/Service", type_name
+                    );
+                }
+            };
+            Ok(TypeNameParts {
+                package,
+                interface,
+                name,
+            })
         }
         _ => {
             fail!(
@@ -266,17 +352,25 @@ mod private {
 
 #[cfg(test)]
 mod tests {
-    use super::split_type_name;
+    use super::{Interface, TypeNameParts, split_type_name};
 
     #[test]
     fn split_type_name_accepts_message_and_service_types() {
         assert_eq!(
             split_type_name("std_msgs/msg/String").unwrap(),
-            ("std_msgs", "msg", "String")
+            TypeNameParts {
+                package: "std_msgs",
+                interface: Interface::Message,
+                name: "String",
+            }
         );
         assert_eq!(
             split_type_name("example_interfaces/srv/AddTwoInts_Request").unwrap(),
-            ("example_interfaces", "srv", "AddTwoInts_Request")
+            TypeNameParts {
+                package: "example_interfaces",
+                interface: Interface::Service,
+                name: "AddTwoInts_Request",
+            }
         );
     }
 

@@ -17,6 +17,7 @@
 mod conformance_test;
 mod conformance_tests;
 mod internal;
+mod requires;
 mod requires_std;
 mod test;
 mod tests;
@@ -31,6 +32,11 @@ pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn tests(attr: TokenStream, item: TokenStream) -> TokenStream {
     tests::proc_macro(attr, item)
+}
+
+#[proc_macro_attribute]
+pub fn requires(attr: TokenStream, item: TokenStream) -> TokenStream {
+    requires::proc_macro(attr, item)
 }
 
 #[proc_macro_attribute]

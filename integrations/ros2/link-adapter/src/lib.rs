@@ -18,9 +18,15 @@
 //! through [r2r_rcl](https://docs.rs/r2r_rcl), so it runs on whatever RMW
 //! the installation provides.
 //!
-//! * The topics of the graph are the endpoints. A [`TopicDescription`]
-//!   carries a topic's name, QoS profile and message type, taken from the
-//!   discovered publishers and subscriptions.
+//! <div class="warning">
+//!
+//! Support for request-response is only available for `rmw_fastrtps`.
+//!
+//! </div>
+//!
+//! * Discovery lists the topics and services on the graph. An
+//!   [`EndpointDescription`] carries a topic's or service's name, QoS profile
+//!   and message types.
 //! * The gateway's own endpoints on a topic are a publisher and a
 //!   subscription matching the description's QoS. Messages are taken in their
 //!   serialized form straight into a loaned sample, with the message info
@@ -63,21 +69,20 @@ pub(crate) mod rcl;
 #[allow(unsafe_code)]
 pub(crate) mod rcutils;
 #[allow(unsafe_code)]
-#[allow(dead_code)] // the request-response endpoints follow
 pub(crate) mod ros_message;
 #[allow(unsafe_code)]
 pub(crate) mod typesupport;
 
 pub use adapter::Ros2Adapter;
-pub use config::{Config, ServiceName, TopicName, TypeName};
-pub use endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
-pub use endpoints::PublishSubscribeEndpoints;
+pub use config::{Config, NodeName, ServiceName, TopicName, TypeName};
+pub use endpoint_description::{EndpointDescription, EndpointName, EndpointSettings, MessageType};
+pub use endpoints::{PublishSubscribeEndpoints, RequestResponseEndpoints};
 pub use iceoryx2_link_backend::AllowList;
 pub use mapping::{PrefixMapping, StaticMapping};
 pub use qos::QosProfile;
 pub use translator::{CdrTranscoder, MirroredHeader, PassthroughTranslator, PlainStructTranslator};
 
-/// The name of the ROS 2 node representing the gateway.
+/// The name of the ROS 2 node representing the gateway unless configured otherwise.
 #[allow(unsafe_code)]
 const NODE_NAME: rcl::NodeName =
     unsafe { rcl::NodeName::from_c_str_static_unchecked(c"iceoryx2_gateway") };

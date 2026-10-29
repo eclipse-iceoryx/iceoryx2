@@ -64,6 +64,43 @@ pub struct TestCase {
 }
 inventory::collect!(TestCase);
 
+/// A condition the tests of a module and its submodules need to run.
+pub struct Requirement {
+    pub module: &'static str,
+    /// Returns OK or the reason the requirement is not met.
+    pub check: fn() -> Result<(), &'static str>,
+}
+inventory::collect!(Requirement);
+
+/// The reason the tests of `module` cannot run, if any.
+///
+/// The requirements registered on the module and on its parent modules are
+/// checked, and the reason of the first one that is not met is returned.
+pub fn unmet_requirement(module: &str) -> Option<&'static str> {
+    inventory::iter::<Requirement>()
+        .filter(|requirement| {
+            module == requirement.module
+                || module
+                    .strip_prefix(requirement.module)
+                    .is_some_and(|rest| rest.starts_with("::"))
+        })
+        .find_map(|requirement| (requirement.check)().err())
+}
+
+/// The modules whose requirement is not met, each with the reason, sorted by
+/// module.
+pub fn unmet_requirements() -> alloc::vec::Vec<(&'static str, &'static str)> {
+    let mut unmet = inventory::iter::<Requirement>()
+        .filter_map(|requirement| {
+            (requirement.check)()
+                .err()
+                .map(|reason| (requirement.module, reason))
+        })
+        .collect::<alloc::vec::Vec<_>>();
+    unmet.sort_unstable();
+    unmet
+}
+
 pub mod internal {
     #[cfg(any(target_os = "linux", target_os = "nto"))]
     pub use iceoryx2_pal_posix::posix::abort;

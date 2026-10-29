@@ -10,14 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing_macros::requires;
 use iceoryx2_integrations_ros2_link_adapter::ros_header::RosHeader;
 use iceoryx2_link_conformance_tests::fixture::GatewayLinkFixture;
-use iceoryx2_link_conformance_tests::parameters::{FixedSizePayload, PublishSubscribe};
+use iceoryx2_link_conformance_tests::parameters::{
+    FixedSizePayload, PublishSubscribe, RequestResponse,
+};
 
 use crate::fixture::{
-    Passthrough, PassthroughWithHeader, PlainStruct, PlainStructWithHeader, PrefixMapped,
-    Ros2Fixture, SerializedString, StaticMapped, UInt64,
+    AddTwoIntsRequest, AddTwoIntsResponse, Passthrough, PassthroughWithHeader, PlainStruct,
+    PlainStructWithHeader, PrefixMapped, Ros2Fixture, SerializedAddTwoIntsRequest,
+    SerializedAddTwoIntsResponse, SerializedString, StaticMapped, UInt64,
 };
 
 type Ipc = iceoryx2::service::ipc::Service;
@@ -34,6 +39,15 @@ instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::adapter_publish_subscribe,
     Ros2Fixture<PrefixMapped, PlainStruct>
 );
+#[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+mod request_response {
+    use super::*;
+
+    instantiate_conformance_tests!(
+        iceoryx2_link_conformance_tests::adapter_request_response,
+        Ros2Fixture<PrefixMapped, PlainStruct>
+    );
+}
 instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::adapter_wake,
     Ros2Fixture<PrefixMapped, PlainStruct>
@@ -93,6 +107,90 @@ mod ipc {
                     Ros2Fixture<PrefixMapped, PlainStructWithHeader>
                 );
             }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStructWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStructWithHeader>
+                );
+            }
         }
 
         mod static_mapping {
@@ -140,6 +238,90 @@ mod ipc {
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
+                    Ros2Fixture<StaticMapped, PlainStructWithHeader>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PlainStructWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
                     Ros2Fixture<StaticMapped, PlainStructWithHeader>
                 );
             }
@@ -197,6 +379,90 @@ mod ipc {
                     Ros2Fixture<PrefixMapped, PassthroughWithHeader>
                 );
             }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PassthroughWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PassthroughWithHeader>
+                );
+            }
         }
 
         mod static_mapping {
@@ -244,6 +510,90 @@ mod ipc {
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Ipc,
                     PublishSubscribe<StaticMapped, SerializedString, RosHeader>,
+                    Ros2Fixture<StaticMapped, PassthroughWithHeader>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PassthroughWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Ipc,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
                     Ros2Fixture<StaticMapped, PassthroughWithHeader>
                 );
             }
@@ -305,6 +655,90 @@ mod local {
                     Ros2Fixture<PrefixMapped, PlainStructWithHeader>
                 );
             }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, PlainStruct>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStructWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PlainStructWithHeader>
+                );
+            }
         }
 
         mod static_mapping {
@@ -352,6 +786,90 @@ mod local {
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<StaticMapped, FixedSizePayload<UInt64>, RosHeader>,
+                    Ros2Fixture<StaticMapped, PlainStructWithHeader>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PlainStruct>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        NoHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, PlainStruct>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PlainStructWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        FixedSizePayload<AddTwoIntsRequest>,
+                        RosHeader,
+                        FixedSizePayload<AddTwoIntsResponse>,
+                        RosHeader,
+                    >,
                     Ros2Fixture<StaticMapped, PlainStructWithHeader>
                 );
             }
@@ -409,6 +927,90 @@ mod local {
                     Ros2Fixture<PrefixMapped, PassthroughWithHeader>
                 );
             }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<PrefixMapped, Passthrough>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PassthroughWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        PrefixMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<PrefixMapped, PassthroughWithHeader>
+                );
+            }
         }
 
         mod static_mapping {
@@ -456,6 +1058,90 @@ mod local {
                     iceoryx2_link_conformance_tests::gateway_publish_subscribe,
                     Local,
                     PublishSubscribe<StaticMapped, SerializedString, RosHeader>,
+                    Ros2Fixture<StaticMapped, PassthroughWithHeader>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, Passthrough>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_discovery,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::link_wake,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        NoHeader,
+                        SerializedAddTwoIntsResponse,
+                        NoHeader,
+                    >,
+                    GatewayLinkFixture<Ros2Fixture<StaticMapped, Passthrough>>
+                );
+            }
+
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+            mod request_response_with_ros_header {
+                use super::*;
+
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_discovery,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
+                    Ros2Fixture<StaticMapped, PassthroughWithHeader>
+                );
+                instantiate_conformance_tests!(
+                    iceoryx2_link_conformance_tests::gateway_request_response,
+                    Local,
+                    RequestResponse<
+                        StaticMapped,
+                        SerializedAddTwoIntsRequest,
+                        RosHeader,
+                        SerializedAddTwoIntsResponse,
+                        RosHeader,
+                    >,
                     Ros2Fixture<StaticMapped, PassthroughWithHeader>
                 );
             }

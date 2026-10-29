@@ -13,6 +13,9 @@ bindings to `rcl`.
 
 Verified with Jazzy (`rmw_fastrtps_cpp`) and Humble (`rmw_cyclonedds_cpp`).
 
+> [!IMPORTANT]
+> Support for request-response is only available for `rmw_fastrtps_cpp`.
+
 ## Coupling to ROS 2 workspaces
 
 The crate links `rcl` at build time and loads message typesupport
@@ -25,12 +28,14 @@ against. Rebuild if switching distributions.
 A mapping maps service names to topics, and service settings with QoS.
 
 * `PrefixMapping` covers a service named `ros2://topics/<topic>` as the
-  topic `/<topic>`, for the topics its allow list passes. Settings and QoS
-  are approximated from each other. Intended for development and
+  topic `/<topic>` and a service named `ros2://services/<service>` as the
+  ROS 2 service `/<service>`, for the names its allow list passes. Settings
+  and QoS are approximated from each other where they overlap, the rest
+  takes the iceoryx2 configuration's defaults. Intended for development and
   prototyping.
 * `StaticMapping` covers only the services listed in its configuration.
-  Each entry pairs one `iceoryx2` service, its name, payload type and
-  settings, with one ROS 2 topic, its name, message type and QoS. The
+  Each entry pairs one `iceoryx2` service, its name, payload types and
+  settings, with one ROS 2 topic or service, its name, type and QoS. The
   entries are exact, a service or topic found with other settings than its
   entry states is refused. The configuration loads from any format serde
   supports, e.g. TOML:
@@ -41,6 +46,13 @@ A mapping maps service names to topics, and service settings with QoS.
   iceoryx2.payload_type = "geometry_msgs/msg/Twist"
   ros2.topic = "/cmd_vel"
   ros2.type = "geometry_msgs/msg/Twist"
+
+  [[mapping]]
+  iceoryx2.service_name = "AddTwoInts"
+  iceoryx2.request_type = "example_interfaces/srv/AddTwoInts_Request"
+  iceoryx2.response_type = "example_interfaces/srv/AddTwoInts_Response"
+  ros2.service = "/add_two_ints"
+  ros2.type = "example_interfaces/srv/AddTwoInts"
   ```
 
   See [`static-mapping.example.toml`](../link-gateway-cli/static-mapping.example.toml)
@@ -77,7 +89,9 @@ use iceoryx2_link_gateway::Gateway;
 
 let node = NodeBuilder::new().create::<ipc::Service>()?;
 
-let mapping = PrefixMapping::new(AllowList::all());
+// The settings a topic's QoS does not determine take the defaults of
+// the iceoryx2 configuration.
+let mapping = PrefixMapping::new(AllowList::all(), iceoryx2::config::Config::global_config().clone());
 // A static mapping instead, from its configuration:
 // let config: static_mapping::Config = toml::from_str(&content)?;
 // let mapping = StaticMapping::new(config)?;

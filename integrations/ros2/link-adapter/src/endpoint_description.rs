@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_link_adapter::{EndpointDescription, EndpointTypes};
+use iceoryx2_link_adapter::EndpointTypes;
 use iceoryx2_link_backend::service_description::Identified;
 
 use crate::config::{ServiceName, TopicName, TypeName};
@@ -34,12 +34,12 @@ impl core::fmt::Display for EndpointName {
 
 /// The settings of a ROS 2 endpoint.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TopicSettings {
+pub struct EndpointSettings {
     pub name: EndpointName,
     pub qos: QosProfile,
 }
 
-impl Identified for TopicSettings {
+impl Identified for EndpointSettings {
     type Id = EndpointName;
 
     fn id(&self) -> EndpointName {
@@ -47,11 +47,12 @@ impl Identified for TopicSettings {
     }
 }
 
-/// The types of a ROS 2 endpoint.
+/// The message type of a ROS 2 endpoint.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TopicTypes {
+pub struct MessageType {
     pub type_name: TypeName,
 }
 
 /// The description of a ROS 2 endpoint.
-pub type TopicDescription = EndpointDescription<TopicSettings, EndpointTypes<TopicTypes>>;
+pub type EndpointDescription =
+    iceoryx2_link_adapter::EndpointDescription<EndpointSettings, EndpointTypes<MessageType>>;

@@ -12,12 +12,27 @@
 
 use r2r_rcl::rmw_request_id_t;
 
+use crate::rcl::ParticipantPrefix;
+
+/// The number of bytes of a GUID.
+const GUID_NUMBER_OF_BYTES: usize = 16;
+
+/// The number an rcl client assigns to each request it sends.
+pub type SequenceNumber = i64;
+
 /// Identifies a request at a ROS 2 service by the requesting client and
 /// the sequence number the client assigned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RequestId {
-    pub writer_guid: [u8; 16],
-    pub sequence_number: i64,
+    pub writer_guid: [u8; GUID_NUMBER_OF_BYTES],
+    pub sequence_number: SequenceNumber,
+}
+
+impl RequestId {
+    /// The participant of the client that sent the request.
+    pub fn participant_prefix(&self) -> ParticipantPrefix {
+        ParticipantPrefix::of_guid(&self.writer_guid)
+    }
 }
 
 /// The element type rmw declares for a request id's GUID, which is `i8` in

@@ -12,23 +12,37 @@
 
 use std::collections::BTreeSet;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Once};
+
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 
 use iceoryx2_link_adapter::{Adapter, EndpointTypes, UnsupportedEndpoints};
 use iceoryx2_link_backend::{Reactive, WakeHandle};
 use iceoryx2_log::{fail, origin, warn};
 
-use crate::NODE_NAME;
 use crate::config::Config;
 use crate::config::{NameError, TypeName};
-use crate::endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
+use crate::endpoint_description::{
+    EndpointDescription, EndpointName, EndpointSettings, MessageType,
+};
 use crate::endpoints;
 use crate::qos::QosProfile;
 use crate::rcl::{
-    self, EndpointInfo, GraphListener, RclNode, RclNodeBuilder, RclPublisherBuilder,
-    RclSubscriptionBuilder, TopicName,
+    self, EndpointInfo, GraphListener, RclClientBuilder, RclNode, RclNodeBuilder,
+    RclPublisherBuilder, RclServiceBuilder, RclSubscriptionBuilder, TopicName,
 };
+use crate::ros_message::RosMessage;
 use crate::typesupport;
+
+const SUPPORTS_PUBLISH_SUBSCRIBE: [&str; 3] = [
+    "rmw_fastrtps_cpp",
+    "rmw_fastrtps_dynamic_cpp",
+    "rmw_cyclonedds_cpp",
+];
+const SUPPORTS_REQUEST_RESPONSE: [&str; 2] = ["rmw_fastrtps_cpp", "rmw_fastrtps_dynamic_cpp"];
+
+/// Warns once per process that the rmw does not propagate request-response.
+static UNSUPPORTED_RMW_WARNING: Once = Once::new();
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreationError {
@@ -62,8 +76,11 @@ pub enum OpenError {
     TypeSupport,
     Publisher,
     Subscription,
+    Client,
+    Service,
     Callback,
     UnsupportedPattern,
+    UnsupportedRmw,
 }
 
 impl core::fmt::Display for OpenError {
@@ -79,10 +96,21 @@ pub struct Ros2Adapter {
     wake: Arc<Mutex<Option<WakeHandle>>>,
     /// Wakes the link on graph changes.
     graph_listener: Option<GraphListener>,
-    node: Rc<RclNode>,
+    pub(crate) node: Rc<RclNode>,
 }
 
 impl Ros2Adapter {
+    /// Whether the adapter propagates services of `pattern` on the rmw the
+    /// process runs on.
+    pub fn supports(pattern: MessagingPattern) -> bool {
+        let rmws: &[&str] = match pattern {
+            MessagingPattern::PublishSubscribe => &SUPPORTS_PUBLISH_SUBSCRIBE,
+            MessagingPattern::RequestResponse => &SUPPORTS_REQUEST_RESPONSE,
+            _ => &[],
+        };
+        rmws.contains(&rcl::rmw::implementation_identifier())
+    }
+
     /// Creates the adapter's node and preloads the typesupport for types
     /// specified in the `config`.
     pub fn new(config: &Config) -> Result<Self, CreationError> {
@@ -90,15 +118,26 @@ impl Ros2Adapter {
 
         let node = fail!(
             from origin,
-            when RclNodeBuilder::new(NODE_NAME).rosout(config.rosout).create(),
+            when RclNodeBuilder::new(rcl::NodeName::from(&config.node_name))
+                .rosout(config.rosout)
+                .create(),
             with CreationError::Node,
             "Failed to create the ROS 2 node"
         );
 
+        if !Self::supports(MessagingPattern::RequestResponse) {
+            UNSUPPORTED_RMW_WARNING.call_once(|| {
+                warn!(
+                    "Request-response services are not propagated on {}, only on rmw_fastrtps",
+                    rcl::rmw::implementation_identifier()
+                );
+            });
+        }
+
         for type_name in &config.preload_types {
             fail!(
                 from origin,
-                when typesupport::get::<typesupport::MessageKind>(type_name.as_str()),
+                when typesupport::preload(type_name.as_str()),
                 with CreationError::TypeSupport,
                 "Failed to preload typesupport for type '{}'", type_name.as_str()
             );
@@ -112,13 +151,13 @@ impl Ros2Adapter {
     }
 }
 
+/// Whether a topic belongs to the topics every ROS 2 node publishes on.
 fn is_internal_topic(topic: &TopicName) -> bool {
     const INTERNAL_TOPICS: [&str; 2] = ["/rosout", "/parameter_events"];
     INTERNAL_TOPICS.contains(&topic.as_str())
 }
 
-/// Whether a service type belongs to the services every ROS 2 node serves
-/// for its parameters and type descriptions.
+/// Whether a service type belongs to the services every ROS 2 node serves.
 fn is_internal_service(type_name: &rcl::TypeName) -> bool {
     const INTERNAL_PACKAGES: [&str; 2] =
         ["rcl_interfaces/srv/", "type_description_interfaces/srv/"];
@@ -127,8 +166,9 @@ fn is_internal_service(type_name: &rcl::TypeName) -> bool {
         .any(|package| type_name.as_str().starts_with(package))
 }
 
-fn is_own(endpoint: &EndpointInfo) -> bool {
-    NODE_NAME.as_c_str().to_str() == Ok(endpoint.node_name.as_str())
+/// Whether `endpoint` belongs to the node named `own`.
+fn is_own(own: &rcl::NodeName, endpoint: &EndpointInfo) -> bool {
+    own.as_str() == endpoint.node_name
 }
 
 /// The request type of the ROS 2 service with the type `srv`.
@@ -144,7 +184,7 @@ fn response_type(srv: &rcl::TypeName) -> Result<TypeName, NameError> {
 impl Ros2Adapter {
     /// Lists the topics of the graph that another node publishes or
     /// subscribes to.
-    fn list_topics(&self, callback: &mut dyn FnMut(&TopicDescription)) -> Result<(), ListError> {
+    fn list_topics(&self, callback: &mut dyn FnMut(&EndpointDescription)) -> Result<(), ListError> {
         let origin = origin!("Ros2Adapter::list_topics");
 
         let graph = fail!(
@@ -154,6 +194,7 @@ impl Ros2Adapter {
             "Failed to query the topics of the graph"
         );
 
+        let own = self.node.fully_qualified_name();
         for (topic, types) in graph {
             // ROS 2's own topics have no consumer on the iceoryx2 side.
             if is_internal_topic(&topic) {
@@ -188,18 +229,18 @@ impl Ros2Adapter {
             let Some(remote) = publishers
                 .iter()
                 .chain(subscriptions.iter())
-                .find(|endpoint| !is_own(endpoint))
+                .find(|endpoint| !is_own(own.name(), endpoint))
             else {
                 continue;
             };
 
             // Hand the descriptions to the gateway.
-            callback(&TopicDescription {
-                settings: TopicSettings {
+            callback(&EndpointDescription {
+                settings: EndpointSettings {
                     name: EndpointName::Topic(topic.clone().into()),
                     qos: remote.qos.clone(),
                 },
-                types: EndpointTypes::PublishSubscribe(TopicTypes {
+                types: EndpointTypes::PublishSubscribe(MessageType {
                     type_name: type_name.clone().into(),
                 }),
             });
@@ -211,9 +252,16 @@ impl Ros2Adapter {
     /// Lists the services of the graph that another node serves or calls.
     ///
     /// The graph does not tell a service's QoS. Every ROS 2 service runs on
-    /// the default profile, which is listed.
-    fn list_services(&self, callback: &mut dyn FnMut(&TopicDescription)) -> Result<(), ListError> {
+    /// the default profile.
+    fn list_services(
+        &self,
+        callback: &mut dyn FnMut(&EndpointDescription),
+    ) -> Result<(), ListError> {
         let origin = origin!("Ros2Adapter::list_services");
+
+        if !Self::supports(MessagingPattern::RequestResponse) {
+            return Ok(());
+        }
 
         let graph = fail!(
             from origin,
@@ -227,7 +275,7 @@ impl Ros2Adapter {
         // other node must be asked for its services explicitly.
         //
         // Counting the servers and clients of a service is only available
-        // from `iron` or later.
+        // from `jazzy` or later.
         let own = self.node.fully_qualified_name();
         let nodes = fail!(
             from origin,
@@ -285,14 +333,14 @@ impl Ros2Adapter {
             };
 
             // Hand the descriptions to the gateway.
-            callback(&TopicDescription {
-                settings: TopicSettings {
+            callback(&EndpointDescription {
+                settings: EndpointSettings {
                     name: EndpointName::Service(service.into()),
                     qos: QosProfile::default(),
                 },
                 types: EndpointTypes::RequestResponse {
-                    request: TopicTypes { type_name: request },
-                    response: TopicTypes {
+                    request: MessageType { type_name: request },
+                    response: MessageType {
                         type_name: response,
                     },
                 },
@@ -306,15 +354,15 @@ impl Ros2Adapter {
 impl Adapter for Ros2Adapter {
     type ListError = ListError;
     type OpenError = OpenError;
-    type EndpointSettings = TopicSettings;
-    type EndpointTypes = EndpointTypes<TopicTypes>;
+    type EndpointSettings = EndpointSettings;
+    type EndpointTypes = EndpointTypes<MessageType>;
     type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
-    type RequestResponseEndpoints = UnsupportedEndpoints;
+    type RequestResponseEndpoints = endpoints::RequestResponseEndpoints;
     type EventEndpoints = UnsupportedEndpoints;
 
     fn endpoints(
         &self,
-        callback: &mut dyn FnMut(&TopicDescription),
+        callback: &mut dyn FnMut(&EndpointDescription),
     ) -> Result<(), Self::ListError> {
         self.list_topics(callback)?;
         self.list_services(callback)
@@ -322,7 +370,7 @@ impl Adapter for Ros2Adapter {
 
     fn publish_subscribe(
         &mut self,
-        description: &TopicDescription,
+        description: &EndpointDescription,
     ) -> Result<Self::PublishSubscribeEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::publish_subscribe");
 
@@ -381,20 +429,100 @@ impl Adapter for Ros2Adapter {
 
     fn request_response(
         &mut self,
-        description: &TopicDescription,
+        description: &EndpointDescription,
     ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::request_response");
 
+        if !Self::supports(MessagingPattern::RequestResponse) {
+            fail!(
+                from origin,
+                with OpenError::UnsupportedRmw,
+                "Request-response services are not propagated on {}", rcl::rmw::implementation_identifier()
+            );
+        }
+
+        let (EndpointName::Service(service), EndpointTypes::RequestResponse { request, response }) =
+            (&description.settings.name, &description.types)
+        else {
+            fail!(
+                from origin,
+                with OpenError::UnsupportedPattern,
+                "'{}' is not a request-response service", description.settings.name
+            );
+        };
+
+        // Get the typesupport. The service's type is the request type
+        // without its suffix.
+        let Some(service_type) = request.type_name.as_str().strip_suffix("_Request") else {
+            fail!(
+                from origin,
+                with OpenError::TypeSupport,
+                "The type '{}' is not the request type of a service", request.type_name.as_str()
+            );
+        };
+        let type_support = fail!(
+            from origin,
+            when typesupport::get::<typesupport::ServiceKind>(service_type),
+            with OpenError::TypeSupport,
+            "Failed to load typesupport for service type '{}'", service_type
+        );
+        let request = fail!(
+            from origin,
+            when RosMessage::new(request.type_name.as_str()),
+            with OpenError::TypeSupport,
+            "Failed to load typesupport for type '{}'", request.type_name.as_str()
+        );
+        let response = fail!(
+            from origin,
+            when RosMessage::new(response.type_name.as_str()),
+            with OpenError::TypeSupport,
+            "Failed to load typesupport for type '{}'", response.type_name.as_str()
+        );
+
+        // Create the endpoints.
+        let service_name = rcl::ServiceName::from(service);
+        let mut client = fail!(
+            from origin,
+            when RclClientBuilder::new(Rc::clone(&self.node), &service_name, Rc::clone(&type_support))
+                .qos(description.settings.qos.clone())
+                .create(),
+            with OpenError::Client,
+            "Failed to create the client on service '{}'", service_name.as_str()
+        );
+        let mut server = fail!(
+            from origin,
+            when RclServiceBuilder::new(Rc::clone(&self.node), &service_name, type_support)
+                .qos(description.settings.qos.clone())
+                .create(),
+            with OpenError::Service,
+            "Failed to create the server on service '{}'", service_name.as_str()
+        );
+
+        // Wake the link on every response and request received if a wake is
+        // attached.
+        let wake = Arc::clone(&self.wake);
         fail!(
             from origin,
-            with OpenError::UnsupportedPattern,
-            "The ROS 2 adapter does not support request-response yet, '{}' cannot be opened as one", description.settings.name
+            when client.on_new_response(Box::new(move |_| signal(&wake))),
+            with OpenError::Callback,
+            "Failed to register the new-response callback on service '{}'", service_name.as_str()
         );
+        let wake = Arc::clone(&self.wake);
+        fail!(
+            from origin,
+            when server.on_new_request(Box::new(move |_| signal(&wake))),
+            with OpenError::Callback,
+            "Failed to register the new-request callback on service '{}'", service_name.as_str()
+        );
+
+        Ok(endpoints::RequestResponseEndpoints::new(
+            client, server, request, response,
+        ))
     }
 
     fn event(
         &mut self,
-        description: &TopicDescription,
+        description: &EndpointDescription,
     ) -> Result<Self::EventEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::event");
 

@@ -8,7 +8,8 @@ iceoryx2.payload_type = "geometry_msgs/msg/Twist"
 ros2.topic = "/cmd_vel"
 ros2.type = "geometry_msgs/msg/Twist"
 
-# Full mapping: every available option.
+# Full topic mapping: a publish-subscribe service paired with a ROS 2 topic.
+# Unset settings and QoS fall back to the defaults.
 [[mapping]]
 iceoryx2.service_name = "LidarFront"
 iceoryx2.payload_type = "foxglove::PointCloud"
@@ -28,3 +29,23 @@ ros2.qos.liveliness = "Automatic"          # or "ManualByTopic", "SystemDefault"
 ros2.qos.deadline = "500ms"                # <value><unit>; units: ns, us, ms, s
 ros2.qos.lifespan = "2s"                   # unset = no bound
 ros2.qos.liveliness_lease_duration = "1s"
+
+# Full service mapping: a request-response service paired with a ROS 2 service.
+# Unset settings and QoS fall back to the defaults.
+[[mapping]]
+iceoryx2.service_name = "AddTwoInts"
+iceoryx2.request_type = "example_interfaces/srv/AddTwoInts_Request"
+iceoryx2.response_type = "example_interfaces/srv/AddTwoInts_Response"
+iceoryx2.settings.max_servers = 2
+iceoryx2.settings.max_clients = 8
+iceoryx2.settings.max_nodes = 20
+iceoryx2.settings.max_active_requests_per_client = 4
+iceoryx2.settings.max_response_buffer_size = 2
+iceoryx2.settings.max_borrowed_responses_per_pending_response = 2
+iceoryx2.settings.max_loaned_requests = 2
+iceoryx2.settings.safe_overflow_for_requests = true
+iceoryx2.settings.safe_overflow_for_responses = true
+iceoryx2.settings.fire_and_forget_requests = false
+ros2.service = "/add_two_ints"
+ros2.type = "example_interfaces/srv/AddTwoInts"
+ros2.qos.reliability = "Reliable"

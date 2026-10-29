@@ -185,11 +185,67 @@ impl From<rcl::TypeName> for TypeName {
     }
 }
 
+/// A ROS 2 node name, e.g. `iceoryx2_gateway`, validated against the ROS 2
+/// node naming rules.
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct NodeName(rcl::NodeName);
+
+impl NodeName {
+    /// Creates a node name, validating it against the ROS 2 node naming
+    /// rules.
+    pub fn new(node: &str) -> Result<Self, NameError> {
+        let origin = origin!("NodeName::new");
+
+        let node = fail!(
+            from origin,
+            when rcl::NodeName::new(node),
+            "Invalid ROS 2 node name '{}'", node
+        );
+
+        Ok(Self(node))
+    }
+
+    /// The node name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl core::fmt::Display for NodeName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl TryFrom<String> for NodeName {
+    type Error = NameError;
+
+    fn try_from(node: String) -> Result<Self, NameError> {
+        Self::new(&node)
+    }
+}
+
+impl From<NodeName> for String {
+    fn from(node: NodeName) -> Self {
+        node.as_str().to_string()
+    }
+}
+
+impl From<&NodeName> for rcl::NodeName {
+    fn from(node: &NodeName) -> Self {
+        node.0.clone()
+    }
+}
+
 /// Configuration for the `Ros2Adapter`.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    /// Message types whose typesupport is resolved during backend creation.
-    /// Types left out are resolved on first use instead.
+    /// The name of the gateway's node, `iceoryx2_gateway` unless set.
+    #[serde(default = "node_name_default")]
+    pub node_name: NodeName,
+    /// Message and service types whose typesupport is resolved during
+    /// backend creation. Types left out are resolved on first use instead.
     ///
     /// Types listed here which cannot be resolved cause an error on creation
     /// and thus fails quickly on misconfiguration.
@@ -203,10 +259,15 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            node_name: node_name_default(),
             preload_types: Vec::new(),
             rosout: rosout_default(),
         }
     }
+}
+
+fn node_name_default() -> NodeName {
+    NodeName(crate::NODE_NAME)
 }
 
 fn rosout_default() -> bool {

@@ -17,7 +17,7 @@ use iceoryx2_log::{fail, origin};
 
 use super::{EmptyHeader, MirroredHeader, TranslationError};
 use crate::config::TypeName;
-use crate::endpoint_description::TopicTypes;
+use crate::endpoint_description::MessageType;
 
 /// The translator for services whose payload is the CDR bytes of a ROS 2
 /// message.
@@ -32,18 +32,18 @@ pub struct PassthroughTranslator {
 }
 
 impl Translator<SampleShape> for PassthroughTranslator {
-    type RemoteTypes = TopicTypes;
+    type RemoteTypes = MessageType;
     type Transcoders = SampleTranscoders<EmptyHeader, NoTranscoder>;
     type Error = TranslationError;
 
-    fn local(&self, remote: &TopicTypes) -> Result<LocalTypes<SampleShape>, TranslationError> {
+    fn local(&self, remote: &MessageType) -> Result<LocalTypes<SampleShape>, TranslationError> {
         Ok(SampleTypes {
             payload: cdr_payload_type(remote.type_name.as_str()),
             user_header: self.header.type_description(),
         })
     }
 
-    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<TopicTypes, TranslationError> {
+    fn remote(&self, local: &LocalTypes<SampleShape>) -> Result<MessageType, TranslationError> {
         let origin = origin!("PassthroughTranslator::remote");
 
         // The payload's type name must be a ROS 2 message type.
@@ -72,13 +72,13 @@ impl Translator<SampleShape> for PassthroughTranslator {
             );
         }
 
-        Ok(TopicTypes { type_name })
+        Ok(MessageType { type_name })
     }
 
     fn transcoders(
         &self,
         local: &LocalTypes<SampleShape>,
-        remote: &TopicTypes,
+        remote: &MessageType,
     ) -> Result<Self::Transcoders, TranslationError> {
         let origin = origin!("PassthroughTranslator::transcoders");
 
@@ -130,8 +130,8 @@ mod tests {
 
     const TYPE_NAME: &str = "std_msgs/msg/String";
 
-    fn topic() -> TopicTypes {
-        TopicTypes {
+    fn message_type() -> MessageType {
+        MessageType {
             type_name: TypeName::new(TYPE_NAME).expect("a valid type name"),
         }
     }
@@ -155,7 +155,7 @@ mod tests {
     fn a_topic_is_mirrored_as_the_cdr_bytes_without_a_header() {
         let sut = PassthroughTranslator::default();
 
-        let local = sut.local(&topic());
+        let local = sut.local(&message_type());
 
         assert_that!(local, eq Ok(sample(cdr_payload_type(TYPE_NAME), no_user_header())));
     }
@@ -166,7 +166,7 @@ mod tests {
             header: MirroredHeader::RosHeader,
         };
 
-        let local = sut.local(&topic());
+        let local = sut.local(&message_type());
 
         assert_that!(local, eq Ok(sample(cdr_payload_type(TYPE_NAME), ros_header())));
     }
@@ -177,7 +177,7 @@ mod tests {
 
         let remote = sut.remote(&sample(cdr_payload_type(TYPE_NAME), no_user_header()));
 
-        assert_that!(remote, eq Ok(topic()));
+        assert_that!(remote, eq Ok(message_type()));
     }
 
     #[test]
@@ -197,7 +197,10 @@ mod tests {
         let sut = PassthroughTranslator::default();
 
         let transcoders = sut
-            .transcoders(&sample(cdr_payload_type(TYPE_NAME), ros_header()), &topic())
+            .transcoders(
+                &sample(cdr_payload_type(TYPE_NAME), ros_header()),
+                &message_type(),
+            )
             .expect("the service translates");
 
         assert_that!(matches!(transcoders, SampleTranscoders::TranscodeNone), eq true);
@@ -210,7 +213,7 @@ mod tests {
         let transcoders = sut
             .transcoders(
                 &sample(cdr_payload_type(TYPE_NAME), no_user_header()),
-                &topic(),
+                &message_type(),
             )
             .expect("the service translates");
 
@@ -222,7 +225,10 @@ mod tests {
         let sut = PassthroughTranslator::default();
         let header = TypeDescription::from(&TypeDetail::new::<u64>(TypeVariant::FixedSize));
 
-        let transcoders = sut.transcoders(&sample(cdr_payload_type(TYPE_NAME), header), &topic());
+        let transcoders = sut.transcoders(
+            &sample(cdr_payload_type(TYPE_NAME), header),
+            &message_type(),
+        );
 
         assert_that!(transcoders.is_err(), eq true);
         assert_that!(

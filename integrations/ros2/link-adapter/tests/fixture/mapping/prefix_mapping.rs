@@ -13,12 +13,14 @@
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::testing::generate_service_name;
 use iceoryx2_integrations_ros2_link_adapter::{AllowList, PrefixMapping};
-use iceoryx2_link_conformance_tests::parameters::PublishSubscribeName;
+use iceoryx2_link_conformance_tests::parameters::{PublishSubscribeName, RequestResponseName};
 
 use super::MappingUnderTest;
 
-/// The prefix of the services the prefix mapping covers.
-const SERVICE_PREFIX: &str = "ros2://topics";
+/// The prefix of the services the prefix mapping maps to topics.
+const TOPIC_PREFIX: &str = "ros2://topics";
+/// The prefix of the services the prefix mapping maps to ROS 2 services.
+const SERVICE_PREFIX: &str = "ros2://services";
 
 /// Tests the prefix mapping with an allow list admitting every topic.
 pub struct PrefixMapped;
@@ -26,12 +28,20 @@ pub struct PrefixMapped;
 impl MappingUnderTest for PrefixMapped {
     type Mapping = PrefixMapping;
 
-    fn mapping(_: &str) -> PrefixMapping {
-        PrefixMapping::new(AllowList::all())
+    fn mapping(_: &str, config: &iceoryx2::config::Config) -> PrefixMapping {
+        PrefixMapping::new(AllowList::all(), config.clone())
     }
 }
 
 impl PublishSubscribeName for PrefixMapped {
+    fn service_name() -> ServiceName {
+        let unique = generate_service_name();
+        ServiceName::new(&format!("{TOPIC_PREFIX}/{}", unique.as_str()))
+            .expect("a valid service name")
+    }
+}
+
+impl RequestResponseName for PrefixMapped {
     fn service_name() -> ServiceName {
         let unique = generate_service_name();
         ServiceName::new(&format!("{SERVICE_PREFIX}/{}", unique.as_str()))

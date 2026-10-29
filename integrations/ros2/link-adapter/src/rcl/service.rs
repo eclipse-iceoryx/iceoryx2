@@ -25,7 +25,7 @@ use iceoryx2_log::{fail, origin};
 
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{RclError, RequestId, ServiceInfo, ServiceName, qos};
+use crate::rcl::{ParticipantPrefix, RclError, RequestId, ServiceInfo, ServiceName, qos};
 use crate::ros_message::RosMessage;
 use crate::typesupport::ServiceTypeSupport;
 
@@ -173,6 +173,11 @@ impl core::fmt::Debug for RclService {
 }
 
 impl RclService {
+    /// The participant of the node the server belongs to.
+    pub fn participant_prefix(&self) -> &ParticipantPrefix {
+        self.node.participant_prefix()
+    }
+
     /// Registers `callback` for new requests arriving at the service.
     ///
     /// The rmw invokes it from a middleware thread with the number of new

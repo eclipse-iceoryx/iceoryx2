@@ -17,8 +17,8 @@ use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_integrations_ros2_link_adapter::mapping::static_mapping;
 use iceoryx2_integrations_ros2_link_adapter::{
-    AllowList, Config as AdapterConfig, MirroredHeader, PassthroughTranslator,
-    PlainStructTranslator, PrefixMapping, Ros2Adapter, StaticMapping, TopicSettings, TopicTypes,
+    AllowList, Config as AdapterConfig, EndpointSettings, MessageType, MirroredHeader,
+    PassthroughTranslator, PlainStructTranslator, PrefixMapping, Ros2Adapter, StaticMapping,
     TypeName,
 };
 use iceoryx2_link::{Link, WakeCreationError};
@@ -43,8 +43,8 @@ pub trait GatewayInstance {
 
 impl<M, T> GatewayInstance for Ros2Gateway<M, T>
 where
-    M: Mapping<EndpointSettings = TopicSettings>,
-    T: Translator<SampleShape, RemoteTypes = TopicTypes, Transcoders: TranscodesSamples>,
+    M: Mapping<EndpointSettings = EndpointSettings>,
+    T: Translator<SampleShape, RemoteTypes = MessageType, Transcoders: TranscodesSamples>,
 {
     fn node(&self) -> &Node<ipc::Service> {
         Link::node(self)
@@ -83,7 +83,7 @@ pub fn create_gateway(
                 when create(
                     iceoryx_config,
                     &config,
-                    PrefixMapping::new(allowlist(cli)),
+                    PrefixMapping::new(allowlist(cli), iceoryx_config.clone()),
                     PassthroughTranslator { header },
                     cli,
                 ),
@@ -101,7 +101,7 @@ pub fn create_gateway(
                 when create(
                     iceoryx_config,
                     &config,
-                    PrefixMapping::new(allowlist(cli)),
+                    PrefixMapping::new(allowlist(cli), iceoryx_config.clone()),
                     PlainStructTranslator { header },
                     cli,
                 ),
@@ -167,8 +167,8 @@ fn create<M, T>(
     cli: &Cli,
 ) -> anyhow::Result<Ros2Gateway<M, T>>
 where
-    M: Mapping<EndpointSettings = TopicSettings>,
-    T: Translator<SampleShape, RemoteTypes = TopicTypes, Transcoders: TranscodesSamples>,
+    M: Mapping<EndpointSettings = EndpointSettings>,
+    T: Translator<SampleShape, RemoteTypes = MessageType, Transcoders: TranscodesSamples>,
 {
     let node = fail!(
         from ORIGIN,

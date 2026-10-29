@@ -330,6 +330,19 @@ pub fn generate_inventory_submission(
     }
 }
 
+/// Generate an inventory submission for a requirement on the tests of the
+/// module the submission is placed in.
+pub fn generate_requirement_submission(check: &syn::Expr) -> TokenStream {
+    quote! {
+        ::iceoryx2_bb_testing::inventory::submit! {
+            ::iceoryx2_bb_testing::Requirement {
+                module: module_path!(),
+                check: || #check,
+            }
+        }
+    }
+}
+
 fn extract_run_mode(attrs: &[Attribute]) -> RunMode {
     let ignore = attrs.iter().find(|attr| attr.path().is_ident("ignore"));
     let should_panic = attrs

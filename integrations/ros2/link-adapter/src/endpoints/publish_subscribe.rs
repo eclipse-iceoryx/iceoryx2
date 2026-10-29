@@ -15,11 +15,13 @@ use iceoryx2_log::{fail, origin};
 
 use crate::rcl::subscription::TakeError as RclTakeError;
 use crate::rcl::{RclPublisher, RclSubscription};
-use crate::ros_header::RosHeader;
+use crate::ros_header::{RosHeader, bytes_of};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PublishSubscribeEndpointsError {
+    /// rcl refused to publish the message.
     Publish,
+    /// rcl failed to take a pending message.
     Take,
     /// The rmw took the message without writing it into the memory it
     /// was given.
@@ -140,17 +142,5 @@ impl iceoryx2_link_adapter::PublishSubscribeEndpoints for PublishSubscribeEndpoi
         header_location.copy_from_slice(bytes_of(&header));
 
         Ok(TakeOutcome::Taken(()))
-    }
-}
-
-/// The bytes of a header.
-fn bytes_of(header: &RosHeader) -> &[u8] {
-    // SAFETY: `RosHeader` is `repr(C)` with no padding, sixteen bytes of gid,
-    // an `i64` and a `u64`, so its bytes are all initialized.
-    unsafe {
-        core::slice::from_raw_parts(
-            (header as *const RosHeader).cast::<u8>(),
-            core::mem::size_of::<RosHeader>(),
-        )
     }
 }

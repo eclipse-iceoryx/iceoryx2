@@ -12,7 +12,7 @@
 
 pub use iceoryx2_integrations_ros2_interop::ros_header::{DDS_GUID_LEN, RosHeader};
 
-use crate::rcl::MessageInfo;
+use crate::rcl::{MessageInfo, ServiceInfo};
 
 impl From<MessageInfo> for RosHeader {
     fn from(info: MessageInfo) -> Self {
@@ -26,5 +26,28 @@ impl From<MessageInfo> for RosHeader {
             source_timestamp_ns: info.source_timestamp_ns,
             sequence_number: info.sequence_number,
         }
+    }
+}
+
+impl From<ServiceInfo> for RosHeader {
+    fn from(info: ServiceInfo) -> Self {
+        Self {
+            gid: info.request_id.writer_guid,
+            source_timestamp_ns: info.source_timestamp_ns,
+            sequence_number: info.request_id.sequence_number as u64,
+        }
+    }
+}
+
+/// The bytes of a header.
+#[allow(unsafe_code)]
+pub(crate) fn bytes_of(header: &RosHeader) -> &[u8] {
+    // SAFETY: `RosHeader` is `repr(C)` with no padding, sixteen bytes of gid,
+    // an `i64` and a `u64`, so its bytes are all initialized.
+    unsafe {
+        core::slice::from_raw_parts(
+            (header as *const RosHeader).cast::<u8>(),
+            core::mem::size_of::<RosHeader>(),
+        )
     }
 }
