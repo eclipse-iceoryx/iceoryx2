@@ -18,6 +18,9 @@ cd ${REPO_ROOT}
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+# Request-response is propagated on rmw_fastrtps only.
+require_env RMW_IMPLEMENTATION "rmw_fastrtps*"
+
 #### Test Setup
 
 set MAPPING integrations/ros2/examples/plain_struct_translator/static_mapping.toml
