@@ -23,6 +23,7 @@ pub(crate) mod node;
 pub(crate) mod publisher;
 pub(crate) mod qos;
 pub(crate) mod request_id;
+pub(crate) mod rmw;
 pub(crate) mod service;
 pub(crate) mod service_info;
 pub(crate) mod subscription;

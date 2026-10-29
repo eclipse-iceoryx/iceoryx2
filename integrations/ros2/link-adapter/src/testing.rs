@@ -12,6 +12,8 @@
 
 use std::rc::Rc;
 
+use iceoryx2::service::messaging_pattern::MessagingPattern;
+
 use crate::adapter::Ros2Adapter;
 use crate::config::{ServiceName, TopicName, TypeName};
 use crate::qos::QosProfile;
@@ -29,6 +31,17 @@ pub use crate::rcl::request_id::{RequestId, SequenceNumber};
 pub use crate::rcl::service::RclService;
 pub use crate::rcl::service_info::ServiceInfo;
 pub use crate::rcl::subscription::RclSubscription;
+
+/// Whether the adapter propagates services of `pattern` on the rmw the
+/// process runs on.
+pub fn supports_pattern(pattern: MessagingPattern) -> Result<(), &'static str> {
+    match pattern {
+        MessagingPattern::RequestResponse if !Ros2Adapter::supports(pattern) => {
+            Err("request-response services are propagated on rmw_fastrtps only")
+        }
+        _ => Ok(()),
+    }
+}
 
 /// A handle to query information on the ROS 2 graph.
 ///

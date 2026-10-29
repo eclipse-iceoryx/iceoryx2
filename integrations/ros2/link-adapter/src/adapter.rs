@@ -12,7 +12,9 @@
 
 use std::collections::BTreeSet;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Once};
+
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 
 use iceoryx2_link_adapter::{Adapter, EndpointTypes, UnsupportedEndpoints};
 use iceoryx2_link_backend::{Reactive, WakeHandle};
@@ -32,6 +34,16 @@ use crate::rcl::{
 };
 use crate::ros_message::RosMessage;
 use crate::typesupport;
+
+const SUPPORTS_PUBLISH_SUBSCRIBE: [&str; 3] = [
+    "rmw_fastrtps_cpp",
+    "rmw_fastrtps_dynamic_cpp",
+    "rmw_cyclonedds_cpp",
+];
+const SUPPORTS_REQUEST_RESPONSE: [&str; 2] = ["rmw_fastrtps_cpp", "rmw_fastrtps_dynamic_cpp"];
+
+/// Warns once per process that the rmw does not propagate request-response.
+static UNSUPPORTED_RMW_WARNING: Once = Once::new();
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreationError {
@@ -69,6 +81,7 @@ pub enum OpenError {
     Service,
     Callback,
     UnsupportedPattern,
+    UnsupportedRmw,
 }
 
 impl core::fmt::Display for OpenError {
@@ -88,6 +101,17 @@ pub struct Ros2Adapter {
 }
 
 impl Ros2Adapter {
+    /// Whether the adapter propagates services of `pattern` on the rmw the
+    /// process runs on.
+    pub fn supports(pattern: MessagingPattern) -> bool {
+        let rmws: &[&str] = match pattern {
+            MessagingPattern::PublishSubscribe => &SUPPORTS_PUBLISH_SUBSCRIBE,
+            MessagingPattern::RequestResponse => &SUPPORTS_REQUEST_RESPONSE,
+            _ => &[],
+        };
+        rmws.contains(&rcl::rmw::implementation_identifier())
+    }
+
     /// Creates the adapter's node and preloads the typesupport for types
     /// specified in the `config`.
     pub fn new(config: &Config) -> Result<Self, CreationError> {
@@ -99,6 +123,15 @@ impl Ros2Adapter {
             with CreationError::Node,
             "Failed to create the ROS 2 node"
         );
+
+        if !Self::supports(MessagingPattern::RequestResponse) {
+            UNSUPPORTED_RMW_WARNING.call_once(|| {
+                warn!(
+                    "Request-response services are not propagated on {}, only on rmw_fastrtps",
+                    rcl::rmw::implementation_identifier()
+                );
+            });
+        }
 
         for type_name in &config.preload_types {
             fail!(
@@ -222,6 +255,10 @@ impl Ros2Adapter {
         callback: &mut dyn FnMut(&EndpointDescription),
     ) -> Result<(), ListError> {
         let origin = origin!("Ros2Adapter::list_services");
+
+        if !Self::supports(MessagingPattern::RequestResponse) {
+            return Ok(());
+        }
 
         let graph = fail!(
             from origin,
@@ -392,6 +429,14 @@ impl Adapter for Ros2Adapter {
         description: &EndpointDescription,
     ) -> Result<Self::RequestResponseEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::request_response");
+
+        if !Self::supports(MessagingPattern::RequestResponse) {
+            fail!(
+                from origin,
+                with OpenError::UnsupportedRmw,
+                "Request-response services are not propagated on {}", rcl::rmw::implementation_identifier()
+            );
+        }
 
         let (EndpointName::Service(service), EndpointTypes::RequestResponse { request, response }) =
             (&description.settings.name, &description.types)

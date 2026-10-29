@@ -18,6 +18,12 @@
 //! through [r2r_rcl](https://docs.rs/r2r_rcl), so it runs on whatever RMW
 //! the installation provides.
 //!
+//! <div class="warning">
+//!
+//! Support for request-response is only available for `rmw_fastrtps`.
+//!
+//! </div>
+//!
 //! * Discovery lists the topics and services on the graph. An
 //!   [`EndpointDescription`] carries a topic's or service's name, QoS profile
 //!   and message types.

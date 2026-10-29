@@ -18,11 +18,13 @@ pub use config::{
 
 use std::collections::HashMap;
 
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_backend::service_description::{Identified, PatternSettings, ServiceSettings};
 use iceoryx2_log::{fail, origin};
 
+use crate::adapter::Ros2Adapter;
 use crate::config::TypeName;
 use crate::endpoint_description::{EndpointName, EndpointSettings};
 use crate::qos::QosProfile;
@@ -224,6 +226,13 @@ impl Mapping for StaticMapping {
 
         let entry = &self.entries[index];
         let settings = entry.pattern_settings();
+
+        if let PatternSettings::RequestResponse(_) = settings
+            && !Ros2Adapter::supports(MessagingPattern::RequestResponse)
+        {
+            return Ok(None);
+        }
+
         if local.pattern != settings {
             fail!(
                 from origin,
@@ -244,7 +253,7 @@ impl Mapping for StaticMapping {
 mod tests {
     use super::*;
 
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_link_backend::service_description::{
         PublishSubscribeSettings, RequestResponseSettings,
     };
@@ -423,6 +432,8 @@ mod tests {
 
     #[test]
     fn a_request_response_service_with_the_entrys_settings_maps_to_its_ros_service() {
+        test_requires!(Ros2Adapter::supports(MessagingPattern::RequestResponse));
+
         let sut = mapping();
 
         let remote = sut.remote(&request_response_service_settings(
@@ -434,6 +445,8 @@ mod tests {
 
     #[test]
     fn a_request_response_service_with_other_settings_is_refused() {
+        test_requires!(Ros2Adapter::supports(MessagingPattern::RequestResponse));
+
         let sut = mapping();
 
         let remote = sut.remote(&request_response_service_settings(

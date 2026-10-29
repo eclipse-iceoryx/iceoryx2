@@ -12,6 +12,7 @@
 
 use core::convert::Infallible;
 
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_backend::AllowList;
@@ -20,6 +21,7 @@ use iceoryx2_link_backend::service_description::{
 };
 use iceoryx2_log::warn;
 
+use crate::adapter::Ros2Adapter;
 use crate::config::{self, TopicName};
 use crate::endpoint_description::{EndpointName, EndpointSettings};
 use crate::qos::QosProfile;
@@ -126,6 +128,12 @@ impl Mapping for PrefixMapping {
     }
 
     fn remote(&self, local: &ServiceSettings) -> Result<Option<EndpointSettings>, Self::Error> {
+        if let PatternSettings::RequestResponse(_) = local.pattern
+            && !Ros2Adapter::supports(MessagingPattern::RequestResponse)
+        {
+            return Ok(None);
+        }
+
         let service_name = local.id();
         let prefix = match &local.pattern {
             PatternSettings::PublishSubscribe(_) => TOPIC_PREFIX,

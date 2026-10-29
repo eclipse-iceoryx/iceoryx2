@@ -23,6 +23,8 @@ pub use payload::{
 };
 pub use translation::{Passthrough, PassthroughWithHeader, PlainStruct, PlainStructWithHeader};
 
+pub use iceoryx2_integrations_ros2_link_adapter::testing::supports_pattern;
+
 use core::marker::PhantomData;
 use std::rc::Rc;
 

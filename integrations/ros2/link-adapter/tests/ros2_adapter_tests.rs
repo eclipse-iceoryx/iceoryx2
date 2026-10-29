@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_testing::instantiate_conformance_tests;
+use iceoryx2_bb_testing_macros::requires;
 use iceoryx2_integrations_ros2_link_adapter::ros_header::RosHeader;
 use iceoryx2_link_conformance_tests::fixture::GatewayLinkFixture;
 use iceoryx2_link_conformance_tests::parameters::{
@@ -37,10 +39,15 @@ instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::adapter_publish_subscribe,
     Ros2Fixture<PrefixMapped, PlainStruct>
 );
-instantiate_conformance_tests!(
-    iceoryx2_link_conformance_tests::adapter_request_response,
-    Ros2Fixture<PrefixMapped, PlainStruct>
-);
+#[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
+mod request_response {
+    use super::*;
+
+    instantiate_conformance_tests!(
+        iceoryx2_link_conformance_tests::adapter_request_response,
+        Ros2Fixture<PrefixMapped, PlainStruct>
+    );
+}
 instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::adapter_wake,
     Ros2Fixture<PrefixMapped, PlainStruct>
@@ -101,6 +108,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -154,6 +162,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -233,6 +242,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -286,6 +296,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -369,6 +380,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -422,6 +434,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -501,6 +514,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -554,6 +568,7 @@ mod ipc {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -641,6 +656,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -694,6 +710,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -773,6 +790,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -826,6 +844,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -909,6 +928,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -962,6 +982,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
@@ -1041,6 +1062,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response {
                 use super::*;
 
@@ -1094,6 +1116,7 @@ mod local {
                 );
             }
 
+            #[requires(crate::fixture::supports_pattern(MessagingPattern::RequestResponse))]
             mod request_response_with_ros_header {
                 use super::*;
 
