@@ -9,15 +9,18 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::thread::LocalKey;
 
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, origin};
 
 use libloading::Library;
-use r2r_rcl::rosidl_message_type_support_t;
+use r2r_rcl::{
+    rosidl_message_type_support_t, rosidl_service_type_support_t,
+    rosidl_typesupport_introspection_c__MessageMembers as MessageMembers,
+};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum LoadError {
@@ -35,65 +38,136 @@ impl core::fmt::Display for LoadError {
 
 impl core::error::Error for LoadError {}
 
+/// The kinds of typesupport that can be loaded.
+pub trait TypeSupportKind: private::Sealed + Sized + 'static {
+    type Handle;
+    /// The typesupport library of a package, `lib<package>__<LIBRARY>.so`.
+    const LIBRARY: &'static str;
+    /// The getter of a handle in it, `<LIBRARY>__<GETTER>__<package>__<kind>__<Type>`.
+    const GETTER: &'static str;
+
+    /// The typesupports of this kind opened so far, one map per thread.
+    fn opened() -> &'static LocalKey<RefCell<OpenedTypeSupports<Self>>>;
+}
+
 /// A resolved ROS 2 *typesupport* handle.
 ///
-/// In ROS 2 a "typesupport" is the per-message-type descriptor that rcl and
-/// the underlying middleware (DDS) need in order to work with a type. The
-/// `rosidl` code generator emits two of them for every `.msg` definition.
-/// The regular typesupport carries the function table to (de)serialize the
-/// type and the introspection typesupport a description of its fields and
-/// the layout of its generated C struct. Both are described by the same C
-/// handle type, so `TypeSupport` represents either.
+/// In ROS 2 a "typesupport" is the per-type descriptor that rcl and the
+/// underlying middleware (DDS) need in order to work with a type. There are
+/// three kinds of typesupports that can be generated with `rosidl`, which
+/// are distinguished here via [`TypeSupportKind`].
 ///
-/// The gateway must handle whatever message types the user bridges, known only
-/// by *name* (a string from config or graph discovery) at runtime, never at
-/// compile time. ROS ships each package's typesupports as one compiled shared
-/// object each (`lib<pkg>__rosidl_typesupport_c.so`, ...) exporting a
-/// C getter function per type, so the only way to obtain the handle for a
-/// given name is to `dlopen` that library and resolve the getter symbol at
-/// runtime. Without the handle, rcl cannot create a publisher or
-/// subscription that DDS peers will match.
+/// A message's typesupport provides the mechanisms for a type's
+/// (de)serialization. A service's typesupport does the same for its request
+/// and response types. The introspection typesupport provides mechanisms to
+/// describe the C struct of the type.
 ///
-/// The handle points into the loaded library's memory, so the `Library` is
-/// kept alive here. Resolved handles are cached and handed out as shares of
-/// one `Rc<TypeSupport>`, keeping each library loaded for as long as any
-/// share survives.
+/// Types are identified by name. The typesupport library of a type is
+/// loaded by its name at runtime. Opened handles are cached and shared
+/// between endpoints of the same type. Once loaded, the library stays open for
+/// as long as the gateway runs.
 #[derive(Debug)]
-pub struct TypeSupport {
-    handle: *const rosidl_message_type_support_t,
+pub struct TypeSupport<K: TypeSupportKind> {
+    /// The rosidl handle to the loaded typesupport.
+    handle: *const K::Handle,
+    /// The loaded library the handle points into.
     _library: Library,
 }
 
-impl TypeSupport {
-    pub(crate) fn handle(&self) -> *const rosidl_message_type_support_t {
+impl<K: TypeSupportKind> TypeSupport<K> {
+    pub(crate) fn handle(&self) -> *const K::Handle {
         self.handle
     }
 }
 
-thread_local! {
-    /// Cached typesupport resolution results, including failures.
-    static TYPESUPPORT: RefCell<HashMap<String, Result<Rc<TypeSupport>, LoadError>>> =
-        RefCell::new(HashMap::new());
+/// The typesupport of a ROS 2 message.
+pub type MessageTypeSupport = TypeSupport<MessageKind>;
 
-    /// Cached introspection typesupport resolution results, including
-    /// failures.
-    static INTROSPECTION: RefCell<HashMap<String, Result<Rc<TypeSupport>, LoadError>>> =
-        RefCell::new(HashMap::new());
+/// The introspection typesupport of a ROS 2 message.
+pub type IntrospectionTypeSupport = TypeSupport<IntrospectionKind>;
+
+/// The typesupport of a ROS 2 service, covering its request and its
+/// response.
+#[allow(dead_code)] // the request-response endpoints follow
+pub type ServiceTypeSupport = TypeSupport<ServiceKind>;
+
+impl IntrospectionTypeSupport {
+    /// The members of the type's C struct.
+    pub(crate) fn members(&self) -> *const MessageMembers {
+        // SAFETY: the handle points into the loaded library, and the data of
+        // an introspection typesupport is the members struct rosidl
+        // generates.
+        unsafe { (*self.handle).data }.cast::<MessageMembers>()
+    }
 }
 
-/// Returns the typesupport handle of `type_name`, driving rcl endpoint
-/// creation and `rmw_serialize`/`rmw_deserialize`.
+/// The typesupports of one kind opened so far, by type name, failed opens
+/// kept and not retried.
+pub type OpenedTypeSupports<K> = HashMap<String, Result<Rc<TypeSupport<K>>, LoadError>>;
+
+/// The typesupport of a message.
+#[derive(Debug)]
+pub struct MessageKind;
+
+impl TypeSupportKind for MessageKind {
+    type Handle = rosidl_message_type_support_t;
+    const LIBRARY: &'static str = "rosidl_typesupport_c";
+    const GETTER: &'static str = "get_message_type_support_handle";
+
+    fn opened() -> &'static LocalKey<RefCell<OpenedTypeSupports<Self>>> {
+        thread_local! {
+            static OPENED: RefCell<OpenedTypeSupports<MessageKind>> = RefCell::new(HashMap::new());
+        }
+        &OPENED
+    }
+}
+
+/// The introspection typesupport of a message.
+#[derive(Debug)]
+pub struct IntrospectionKind;
+
+impl TypeSupportKind for IntrospectionKind {
+    type Handle = rosidl_message_type_support_t;
+    const LIBRARY: &'static str = "rosidl_typesupport_introspection_c";
+    const GETTER: &'static str = "get_message_type_support_handle";
+
+    fn opened() -> &'static LocalKey<RefCell<OpenedTypeSupports<Self>>> {
+        thread_local! {
+            static OPENED: RefCell<OpenedTypeSupports<IntrospectionKind>> = RefCell::new(HashMap::new());
+        }
+        &OPENED
+    }
+}
+
+/// The typesupport of a service.
+#[derive(Debug)]
+pub struct ServiceKind;
+
+impl TypeSupportKind for ServiceKind {
+    type Handle = rosidl_service_type_support_t;
+    const LIBRARY: &'static str = "rosidl_typesupport_c";
+    const GETTER: &'static str = "get_service_type_support_handle";
+
+    fn opened() -> &'static LocalKey<RefCell<OpenedTypeSupports<Self>>> {
+        thread_local! {
+            static OPENED: RefCell<OpenedTypeSupports<ServiceKind>> = RefCell::new(HashMap::new());
+        }
+        &OPENED
+    }
+}
+
+/// The typesupport of kind `K` of `type_name`, opened on first use.
 ///
-/// Failed resolutions are cached and not retried.
-pub(crate) fn load(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    if let Some(result) = TYPESUPPORT.with(|cache| cache.borrow().get(type_name).cloned()) {
+/// A failed open is kept and not retried.
+pub(crate) fn get<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<K>>, LoadError> {
+    if let Some(result) = K::opened().with(|opened| opened.borrow().get(type_name).cloned()) {
         return result;
     }
 
-    let result = resolve(type_name);
+    let result = open::<K>(type_name);
 
-    TYPESUPPORT.with(|cache| {
-        cache
+    K::opened().with(|opened| {
+        opened
             .borrow_mut()
             .insert(type_name.to_string(), result.clone());
     });
@@ -101,86 +175,23 @@ pub(crate) fn load(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
     result
 }
 
-/// Returns the introspection typesupport handle of `type_name`, describing
-/// the members of the type's C struct.
+/// Opens the typesupport library of `type_name` and calls the getter of
+/// kind `K` in it for the handle.
 ///
-/// Failed resolutions are cached and not retried.
-pub(crate) fn load_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    if let Some(result) = INTROSPECTION.with(|cache| cache.borrow().get(type_name).cloned()) {
-        return result;
-    }
+/// The library is kept with the handle it keeps valid.
+fn open<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<K>>, LoadError> {
+    let origin = origin!("open");
 
-    let result = resolve_introspection(type_name);
-
-    INTROSPECTION.with(|cache| {
-        cache
-            .borrow_mut()
-            .insert(type_name.to_string(), result.clone());
-    });
-
-    result
-}
-
-/// Resolves the typesupport handle of `type_name` from its shared library.
-fn resolve(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    let origin = origin!("resolve");
-
-    let (package, message) = fail!(
+    let (package, kind, name) = fail!(
         from origin,
         when split_type_name(type_name),
         "Invalid ROS 2 type name '{}'",
         type_name
     );
+    let library_name = format!("lib{package}__{}.so", K::LIBRARY);
+    let symbol_name = format!("{}__{}__{package}__{kind}__{name}", K::LIBRARY, K::GETTER);
 
-    let handle = fail!(
-        from origin,
-        when load_handle(
-            type_name,
-            format!("lib{package}__rosidl_typesupport_c.so"),
-            format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}"),
-        ),
-        "Failed to load the typesupport of '{}'", type_name
-    );
-    Ok(Rc::new(handle))
-}
-
-/// Resolves the introspection typesupport handle of `type_name` from its
-/// shared library.
-fn resolve_introspection(type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
-    let origin = origin!("resolve_introspection");
-
-    let (package, message) = fail!(
-        from origin,
-        when split_type_name(type_name),
-        "Invalid ROS 2 type name '{}'",
-        type_name
-    );
-
-    let handle = fail!(
-        from origin,
-        when load_handle(
-            type_name,
-            format!("lib{package}__rosidl_typesupport_introspection_c.so"),
-            format!(
-                "rosidl_typesupport_introspection_c__get_message_type_support_handle__{package}__msg__{message}"
-            ),
-        ),
-        "Failed to load the introspection typesupport of '{}'", type_name
-    );
-    Ok(Rc::new(handle))
-}
-
-/// Loads `library_name` and retrieves the handle pointer that `symbol_name`
-/// returns.
-fn load_handle(
-    type_name: &str,
-    library_name: String,
-    symbol_name: String,
-) -> Result<TypeSupport, LoadError> {
-    let origin = origin!("load_handle");
-
-    // Load the typesupport library, found via the sourced environment's
-    // LD_LIBRARY_PATH.
+    // The library is found via the sourced environment's LD_LIBRARY_PATH.
     let library = match unsafe { Library::new(&library_name) } {
         Ok(library) => library,
         Err(error) => {
@@ -194,22 +205,20 @@ fn load_handle(
         }
     };
 
-    // Get the typesupport handle from the loaded library.
     let handle = {
-        let get_handle: libloading::Symbol<
-            unsafe extern "C" fn() -> *const rosidl_message_type_support_t,
-        > = match unsafe { library.get(symbol_name.as_bytes()) } {
-            Ok(symbol) => symbol,
-            Err(error) => {
-                fail!(
-                    from origin,
-                    with LoadError::SymbolNotFound { symbol: symbol_name },
-                    "Failed to resolve typesupport symbol for type '{}': {}",
-                    type_name,
-                    error
-                );
-            }
-        };
+        let get_handle: libloading::Symbol<unsafe extern "C" fn() -> *const K::Handle> =
+            match unsafe { library.get(symbol_name.as_bytes()) } {
+                Ok(symbol) => symbol,
+                Err(error) => {
+                    fail!(
+                        from origin,
+                        with LoadError::SymbolNotFound { symbol: symbol_name },
+                        "Failed to resolve typesupport symbol for type '{}': {}",
+                        type_name,
+                        error
+                    );
+                }
+            };
         unsafe { get_handle() }
     };
     if handle.is_null() {
@@ -221,30 +230,38 @@ fn load_handle(
         );
     }
 
-    Ok(TypeSupport {
+    Ok(Rc::new(TypeSupport {
         handle,
         _library: library,
-    })
+    }))
 }
 
-fn split_type_name(type_name: &str) -> Result<(&str, &str), LoadError> {
+/// The package, the kind (`msg` or `srv`) and the type of a type name.
+fn split_type_name(type_name: &str) -> Result<(&str, &str, &str), LoadError> {
     let origin = origin!("split_type_name");
 
     let mut parts = type_name.split('/');
     match (parts.next(), parts.next(), parts.next(), parts.next()) {
-        (Some(package), Some("msg"), Some(message), None)
-            if !package.is_empty() && !message.is_empty() =>
+        (Some(package), Some(kind @ ("msg" | "srv")), Some(name), None)
+            if !package.is_empty() && !name.is_empty() =>
         {
-            Ok((package, message))
+            Ok((package, kind, name))
         }
         _ => {
             fail!(
                 from origin,
                 with LoadError::InvalidTypeName { type_name: type_name.to_string() },
-                "Type name '{}' is not of the form package/msg/Message", type_name
+                "Type name '{}' is not of the form package/msg/Message or package/srv/Service", type_name
             );
         }
     }
+}
+
+mod private {
+    pub trait Sealed {}
+    impl Sealed for super::MessageKind {}
+    impl Sealed for super::IntrospectionKind {}
+    impl Sealed for super::ServiceKind {}
 }
 
 #[cfg(test)]
@@ -252,10 +269,14 @@ mod tests {
     use super::split_type_name;
 
     #[test]
-    fn split_type_name_accepts_message_types() {
+    fn split_type_name_accepts_message_and_service_types() {
         assert_eq!(
             split_type_name("std_msgs/msg/String").unwrap(),
-            ("std_msgs", "String")
+            ("std_msgs", "msg", "String")
+        );
+        assert_eq!(
+            split_type_name("example_interfaces/srv/AddTwoInts_Request").unwrap(),
+            ("example_interfaces", "srv", "AddTwoInts_Request")
         );
     }
 
@@ -263,7 +284,7 @@ mod tests {
     fn split_type_name_rejects_other_formats() {
         for invalid in [
             "std_msgs/String",
-            "std_msgs/srv/String",
+            "std_msgs/action/Thing",
             "/msg/String",
             "std_msgs/msg/",
             "std_msgs/msg/String/extra",

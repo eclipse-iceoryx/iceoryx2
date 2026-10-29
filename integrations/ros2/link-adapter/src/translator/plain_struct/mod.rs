@@ -115,7 +115,7 @@ impl Translator<SampleShape> for PlainStructTranslator {
         // Typesupport to use for (de)serialization.
         let type_support = fail!(
             from origin,
-            when typesupport::load(type_name),
+            when typesupport::get::<typesupport::MessageKind>(type_name),
             with TranslationError::TypeSupport,
             "Failed to load typesupport for type '{}'", type_name
         );

@@ -21,7 +21,7 @@ use iceoryx2_link_backend::service_description::{Identified, PatternSettings, Se
 use iceoryx2_log::{fail, origin};
 
 use crate::config::{TopicName, TypeName};
-use crate::endpoint_description::TopicSettings;
+use crate::endpoint_description::{EndpointName, TopicSettings};
 use crate::qos::QosProfile;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -131,7 +131,10 @@ impl Mapping for StaticMapping {
     fn local(&self, remote: &TopicSettings) -> Result<Option<ServiceSettings>, Mismatch> {
         let origin = origin!("StaticMapping::local");
 
-        let Some(&index) = self.by_topic.get(&remote.topic) else {
+        let EndpointName::Topic(topic) = &remote.name else {
+            return Ok(None);
+        };
+        let Some(&index) = self.by_topic.get(topic) else {
             return Ok(None);
         };
 
@@ -141,7 +144,7 @@ impl Mapping for StaticMapping {
                 from origin,
                 with Mismatch::Qos { entry: entry.ros2.qos.clone(), listed: remote.qos.clone() },
                 "Topic '{}' has the QoS {:?}, its entry defines {:?}",
-                remote.topic, remote.qos, entry.ros2.qos
+                topic, remote.qos, entry.ros2.qos
             );
         }
 
@@ -172,7 +175,7 @@ impl Mapping for StaticMapping {
         }
 
         Ok(Some(TopicSettings {
-            topic: entry.ros2.topic.clone(),
+            name: EndpointName::Topic(entry.ros2.topic.clone()),
             qos: entry.ros2.qos.clone(),
         }))
     }
@@ -227,7 +230,7 @@ mod tests {
 
     fn topic_settings(qos: QosProfile) -> TopicSettings {
         TopicSettings {
-            topic: TopicName::new(TOPIC).expect("a valid topic name"),
+            name: EndpointName::Topic(TopicName::new(TOPIC).expect("a valid topic name")),
             qos,
         }
     }
@@ -297,7 +300,7 @@ mod tests {
         let sut = mapping();
 
         let local = sut.local(&TopicSettings {
-            topic: TopicName::new("/elsewhere").expect("a valid topic name"),
+            name: EndpointName::Topic(TopicName::new("/elsewhere").expect("a valid topic name")),
             qos: QosProfile::default(),
         });
         let remote = sut.remote(&ServiceSettings::new(

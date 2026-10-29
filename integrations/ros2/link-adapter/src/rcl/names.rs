@@ -65,22 +65,9 @@ fn validate_namespace(namespace: &str) -> Result<(), NameError> {
     Ok(())
 }
 
-/// Checks a string against the ROS 2 topic name grammar: a non-empty,
-/// `/`-separated path of name tokens, either absolute or relative.
-fn validate_topic(topic: &str) -> Result<(), NameError> {
-    let origin = origin!("validate_topic");
-    if topic.is_empty() {
-        fail!(from origin, with NameError::Empty, "A topic name is empty");
-    }
-    let path = topic.strip_prefix('/').unwrap_or(topic);
-    if path.is_empty() || !all_segments_valid(path) {
-        fail!(from origin, with NameError::InvalidToken, "Topic name '{}' has a segment that is not a name token", topic);
-    }
-    Ok(())
-}
-
-/// Checks a string against the ROS 2 type name grammar: `package/msg/Message`,
-/// where `package` and `Message` are each a valid name token.
+/// Checks a string against the ROS 2 type name grammar, `package/kind/Type`
+/// with `kind` one of `msg`, `srv` and `action`, where `package` and `Type`
+/// are each a valid name token.
 fn validate_type(type_name: &str) -> Result<(), NameError> {
     let origin = origin!("validate_type");
     if type_name.is_empty() {
@@ -89,11 +76,11 @@ fn validate_type(type_name: &str) -> Result<(), NameError> {
     let mut segments = type_name.split('/');
     let well_formed = matches!(
         (segments.next(), segments.next(), segments.next(), segments.next()),
-        (Some(package), Some("msg"), Some(message), None)
-            if is_valid_token(package) && is_valid_token(message)
+        (Some(package), Some("msg" | "srv" | "action"), Some(name), None)
+            if is_valid_token(package) && is_valid_token(name)
     );
     if !well_formed {
-        fail!(from origin, with NameError::InvalidToken, "Type name '{}' is not of the form package/msg/Message", type_name);
+        fail!(from origin, with NameError::InvalidToken, "Type name '{}' is not of the form package/msg/Message, package/srv/Service or package/action/Action", type_name);
     }
     Ok(())
 }
@@ -144,6 +131,16 @@ impl NodeName {
     /// The caller must guarantee `name` is a well-formed ROS 2 node name.
     pub const unsafe fn from_c_str_static_unchecked(name: &'static CStr) -> Self {
         Self(Cow::Borrowed(name))
+    }
+
+    /// Wraps an already-valid node name from a C string without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is a well-formed ROS 2 node name,
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(name: &CStr) -> Self {
+        Self(Cow::Owned(name.to_owned()))
     }
 
     pub fn as_c_str(&self) -> &CStr {
@@ -200,15 +197,106 @@ impl NodeNamespace {
         Self(Cow::Borrowed(namespace))
     }
 
+    /// Wraps an already-valid namespace from a C string without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `namespace` is a well-formed ROS 2 node
+    /// namespace, e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(namespace: &CStr) -> Self {
+        Self(Cow::Owned(namespace.to_owned()))
+    }
+
     pub fn as_c_str(&self) -> &CStr {
         &self.0
+    }
+}
+
+/// A node's name within its namespace, which together identify it on the
+/// graph.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct FullyQualifiedNodeName {
+    name: NodeName,
+    namespace: NodeNamespace,
+}
+
+impl FullyQualifiedNodeName {
+    pub fn new(name: NodeName, namespace: NodeNamespace) -> Self {
+        Self { name, namespace }
+    }
+
+    pub fn name(&self) -> &NodeName {
+        &self.name
+    }
+
+    pub fn namespace(&self) -> &NodeNamespace {
+        &self.namespace
+    }
+}
+
+impl core::fmt::Display for FullyQualifiedNodeName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let namespace = self.namespace.as_c_str().to_string_lossy();
+        let name = self.name.as_c_str().to_string_lossy();
+        write!(f, "{}/{}", namespace.trim_end_matches('/'), name)
+    }
+}
+
+/// A name of the grammar ROS 2 topics and services share: a non-empty,
+/// `/`-separated path of name tokens, either absolute (leading `/`) or
+/// relative.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+struct TopicOrServiceName(Cow<'static, CStr>);
+
+impl TopicOrServiceName {
+    fn new(name: &str) -> Result<Self, NameError> {
+        let origin = origin!("TopicOrServiceName::new");
+        if name.is_empty() {
+            fail!(from origin, with NameError::Empty, "A topic or service name is empty");
+        }
+        let path = name.strip_prefix('/').unwrap_or(name);
+        if path.is_empty() || !all_segments_valid(path) {
+            fail!(from origin, with NameError::InvalidToken, "Name '{}' has a segment that is not a name token", name);
+        }
+        Ok(Self(owned(name)))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is well-formed.
+    unsafe fn new_unchecked(name: &str) -> Self {
+        Self(owned(name))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is well-formed.
+    unsafe fn from_c_str_unchecked(name: &CStr) -> Self {
+        Self(Cow::Owned(name.to_owned()))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is well-formed.
+    const unsafe fn from_c_str_static_unchecked(name: &'static CStr) -> Self {
+        Self(Cow::Borrowed(name))
+    }
+
+    fn as_c_str(&self) -> &CStr {
+        &self.0
+    }
+
+    fn as_str(&self) -> &str {
+        self.0
+            .to_str()
+            .expect("a validated ROS 2 name is valid UTF-8")
     }
 }
 
 /// A ROS 2 topic name: a non-empty, `/`-separated path of name tokens, either
 /// absolute (leading `/`) or relative.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct TopicName(Cow<'static, CStr>);
+pub struct TopicName(TopicOrServiceName);
 
 impl TopicName {
     /// Creates a new ROS 2 topic name from the given string.
@@ -223,13 +311,13 @@ impl TopicName {
     pub fn new(topic: &str) -> Result<Self, NameError> {
         let origin = origin!("TopicName::new");
 
-        fail!(from origin,
-            when validate_topic(topic),
+        let name = fail!(from origin,
+            when TopicOrServiceName::new(topic),
             "Failed to create topic name from '{}'",
             topic
         );
 
-        Ok(Self(owned(topic)))
+        Ok(Self(name))
     }
 
     /// Wraps an already-valid topic name without re-checking it.
@@ -239,7 +327,7 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn new_unchecked(topic: &str) -> Self {
-        Self(owned(topic))
+        Self(unsafe { TopicOrServiceName::new_unchecked(topic) })
     }
 
     /// Wraps an already-valid topic name from a C string without re-checking it.
@@ -249,7 +337,7 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn from_c_str_unchecked(topic: &CStr) -> Self {
-        Self(Cow::Owned(topic.to_owned()))
+        Self(unsafe { TopicOrServiceName::from_c_str_unchecked(topic) })
     }
 
     /// Wraps a static, already-valid topic name at compile time.
@@ -259,32 +347,85 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub const unsafe fn from_c_str_static_unchecked(topic: &'static CStr) -> Self {
-        Self(Cow::Borrowed(topic))
+        Self(unsafe { TopicOrServiceName::from_c_str_static_unchecked(topic) })
     }
 
     pub fn as_c_str(&self) -> &CStr {
-        &self.0
+        self.0.as_c_str()
     }
 
     /// The name as a string slice.
     pub fn as_str(&self) -> &str {
-        self.0
-            .to_str()
-            .expect("a validated ROS 2 name is valid UTF-8")
+        self.0.as_str()
     }
 }
 
-/// A ROS 2 message type name of the form `package/msg/Message`, e.g.
-/// `std_msgs/msg/String`. The `package` and `Message` parts are valid name
-/// tokens.
+/// A ROS 2 service name: a non-empty, `/`-separated path of name tokens,
+/// either absolute (leading `/`) or relative.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ServiceName(TopicOrServiceName);
+
+impl ServiceName {
+    /// Creates a new ROS 2 service name from the given string.
+    ///
+    /// A valid service name is a non-empty, `/`-separated path of name
+    /// tokens, either absolute (starting with `/`) or relative.
+    pub fn new(service: &str) -> Result<Self, NameError> {
+        let origin = origin!("ServiceName::new");
+
+        let name = fail!(from origin,
+            when TopicOrServiceName::new(service),
+            "Failed to create service name from '{}'",
+            service
+        );
+
+        Ok(Self(name))
+    }
+
+    /// Wraps an already-valid service name without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `service` is a well-formed ROS 2 service
+    /// name e.g. it came straight from an rcl graph query.
+    #[allow(dead_code)] // the request-response endpoints follow
+    pub unsafe fn new_unchecked(service: &str) -> Self {
+        Self(unsafe { TopicOrServiceName::new_unchecked(service) })
+    }
+
+    /// Wraps an already-valid service name from a C string without
+    /// re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `service` is a well-formed ROS 2 service
+    /// name e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(service: &CStr) -> Self {
+        Self(unsafe { TopicOrServiceName::from_c_str_unchecked(service) })
+    }
+
+    pub fn as_c_str(&self) -> &CStr {
+        self.0.as_c_str()
+    }
+
+    /// The name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+/// A ROS 2 type name of the form `package/msg/Message`, `package/srv/Service`
+/// or `package/action/Action`, e.g. `std_msgs/msg/String`. The `package` and
+/// the type parts are valid name tokens.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TypeName(Cow<'static, CStr>);
 
 impl TypeName {
-    /// Creates a new ROS 2 message type name from the given string.
+    /// Creates a new ROS 2 type name from the given string.
     ///
-    /// A valid type name has the form `package/msg/Message`, where `package`
-    /// and `Message` are each a valid name token.
+    /// A valid type name has the form `package/msg/Message`,
+    /// `package/srv/Service` or `package/action/Action`, where `package` and
+    /// the type are each a valid name token.
     pub fn new(type_name: &str) -> Result<Self, NameError> {
         let origin = origin!("TypeName::new");
 
@@ -393,11 +534,33 @@ mod tests {
     }
 
     #[test]
+    fn service_accepts_valid_services() {
+        for service in ["/add_two_ints", "/ns/add_two_ints", "add_two_ints"] {
+            assert!(ServiceName::new(service).is_ok(), "{service}");
+        }
+    }
+
+    #[test]
+    fn service_rejects_invalid_services() {
+        assert_eq!(ServiceName::new(""), Err(NameError::Empty));
+        for service in ["/", "/add_two_ints/", "/0add", "with-dash"] {
+            assert_eq!(
+                ServiceName::new(service),
+                Err(NameError::InvalidToken),
+                "{service}"
+            );
+        }
+    }
+
+    #[test]
     fn type_name_accepts_valid_types() {
         for type_name in [
             "std_msgs/msg/String",
             "geometry_msgs/msg/Twist",
             "my_pkg/msg/Vector3",
+            "example_interfaces/srv/AddTwoInts",
+            "example_interfaces/srv/AddTwoInts_Request",
+            "action_tutorials_interfaces/action/Fibonacci",
         ] {
             assert!(TypeName::new(type_name).is_ok(), "{type_name}");
         }
@@ -409,7 +572,6 @@ mod tests {
         for type_name in [
             "std_msgs/String",
             "std_msgs/msg/String/extra",
-            "std_msgs/srv/Thing",
             "/msg/String",
             "std_msgs/msg/",
             "std_msgs/msg/0String",

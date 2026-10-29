@@ -26,7 +26,7 @@ use iceoryx2_log::{fail, origin};
 use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
 use crate::rcl::{Gid, RclError, TopicName, qos};
-use crate::typesupport::TypeSupport;
+use crate::typesupport::MessageTypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -61,14 +61,18 @@ impl core::error::Error for PublishError {}
 pub struct RclPublisherBuilder<'a> {
     node: Rc<RclNode>,
     topic: &'a TopicName,
-    type_support: Rc<TypeSupport>,
+    type_support: Rc<MessageTypeSupport>,
     qos: QosProfile,
 }
 
 impl<'a> RclPublisherBuilder<'a> {
     /// Begins building a publisher on `node` for the given topic and
     /// typesupport.
-    pub fn new(node: Rc<RclNode>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
+    pub fn new(
+        node: Rc<RclNode>,
+        topic: &'a TopicName,
+        type_support: Rc<MessageTypeSupport>,
+    ) -> Self {
         Self {
             node,
             topic,
@@ -155,7 +159,7 @@ pub struct RclPublisher {
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
     gid: Gid,
     /// Keeps the typesupport library loaded while the endpoint uses it.
-    _type_support: Rc<TypeSupport>,
+    _type_support: Rc<MessageTypeSupport>,
 }
 
 impl core::fmt::Debug for RclPublisher {

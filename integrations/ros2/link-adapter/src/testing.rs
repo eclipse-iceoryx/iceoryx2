@@ -17,8 +17,9 @@ use crate::qos::QosProfile;
 use crate::rcl::{NodeName, RclNode, RclNodeBuilder, RclPublisherBuilder, RclSubscriptionBuilder};
 use crate::typesupport;
 
+pub use crate::rcl::message_info::MessageInfo;
 pub use crate::rcl::publisher::RclPublisher;
-pub use crate::rcl::subscription::{MessageInfo, RclSubscription};
+pub use crate::rcl::subscription::RclSubscription;
 
 /// A ROS 2 node that the gateway communicates with in tests.
 #[derive(Debug)]
@@ -51,7 +52,8 @@ impl PeerNode {
         type_name: &TypeName,
         qos: QosProfile,
     ) -> RclPublisher {
-        let type_support = typesupport::load(type_name.as_str()).expect("the typesupport loads");
+        let type_support = typesupport::get::<typesupport::MessageKind>(type_name.as_str())
+            .expect("the typesupport loads");
         RclPublisherBuilder::new(Rc::clone(&self.node), &topic.into(), type_support)
             .qos(qos)
             .create()
@@ -65,7 +67,8 @@ impl PeerNode {
         type_name: &TypeName,
         qos: QosProfile,
     ) -> RclSubscription {
-        let type_support = typesupport::load(type_name.as_str()).expect("the typesupport loads");
+        let type_support = typesupport::get::<typesupport::MessageKind>(type_name.as_str())
+            .expect("the typesupport loads");
         RclSubscriptionBuilder::new(Rc::clone(&self.node), &topic.into(), type_support)
             .qos(qos)
             .create()

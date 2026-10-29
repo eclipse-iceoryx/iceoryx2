@@ -28,8 +28,8 @@ use iceoryx2::testing::{generate_isolated_config, generate_service_name};
 use iceoryx2_integrations_ros2_link_adapter::qos::Durability;
 use iceoryx2_integrations_ros2_link_adapter::testing::PeerNode;
 use iceoryx2_integrations_ros2_link_adapter::{
-    Config, QosProfile, Ros2Adapter, TopicDescription, TopicName, TopicSettings, TopicTypes,
-    TypeName,
+    Config, EndpointName, QosProfile, Ros2Adapter, TopicDescription, TopicName, TopicSettings,
+    TopicTypes, TypeName,
 };
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{EndpointTypes, Translator};
@@ -110,7 +110,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
         };
         let description = TopicDescription {
             settings: TopicSettings {
-                topic,
+                name: EndpointName::Topic(topic),
                 qos: qos.clone(),
             },
             types: EndpointTypes::PublishSubscribe(TopicTypes {

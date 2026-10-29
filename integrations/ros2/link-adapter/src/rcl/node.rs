@@ -13,13 +13,17 @@
 use std::ffi::CStr;
 
 use r2r_rcl::{
-    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_publishers_info_by_topic,
+    RCL_RET_NODE_NAME_NON_EXISTENT, RCL_RET_OK, rcl_context_fini, rcl_context_t,
+    rcl_get_client_names_and_types_by_node, rcl_get_node_names, rcl_get_publishers_info_by_topic,
+    rcl_get_service_names_and_types, rcl_get_service_names_and_types_by_node,
     rcl_get_subscriptions_info_by_topic, rcl_get_topic_names_and_types,
     rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
     rcl_get_zero_initialized_node, rcl_guard_condition_t, rcl_init, rcl_init_options_fini,
     rcl_init_options_init, rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini,
-    rcl_node_get_default_options, rcl_node_get_graph_guard_condition, rcl_node_init, rcl_node_t,
-    rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator, rcutils_string_array_t,
+    rcl_node_get_default_options, rcl_node_get_graph_guard_condition, rcl_node_get_name,
+    rcl_node_get_namespace, rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown,
+    rcutils_get_default_allocator, rcutils_get_zero_initialized_string_array,
+    rcutils_string_array_fini, rcutils_string_array_t,
     rmw_get_zero_initialized_topic_endpoint_info_array, rmw_topic_endpoint_info_array_fini,
     rmw_topic_endpoint_info_array_t,
 };
@@ -28,7 +32,10 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::{fail, origin, warn};
 
 use crate::qos::QosProfile;
-use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, qos};
+use crate::rcl::{
+    FullyQualifiedNodeName, NodeName, NodeNamespace, RclError, ServiceName, TopicName, TypeName,
+    qos,
+};
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -88,6 +95,18 @@ impl RclNode {
         unsafe { rcl_node_get_graph_guard_condition(self.node.get()) }
     }
 
+    /// The fully qualified name of this node.
+    pub fn fully_qualified_name(&self) -> FullyQualifiedNodeName {
+        unsafe {
+            FullyQualifiedNodeName::new(
+                NodeName::from_c_str_unchecked(CStr::from_ptr(rcl_node_get_name(self.node.get()))),
+                NodeNamespace::from_c_str_unchecked(CStr::from_ptr(rcl_node_get_namespace(
+                    self.node.get(),
+                ))),
+            )
+        }
+    }
+
     /// Query the ROS graph for all topics visible to this node and their type names.
     pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
         let origin = origin!("RclNode::topic_names_and_types");
@@ -123,6 +142,149 @@ impl RclNode {
             let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
 
             Ok(names_and_types)
+        }
+    }
+
+    /// Query the ROS graph for all services visible to this node and their type names.
+    pub fn service_names_and_types(&self) -> Result<Vec<(ServiceName, Vec<TypeName>)>, GraphError> {
+        let origin = origin!("RclNode::service_names_and_types");
+
+        unsafe {
+            let mut allocator = rcutils_get_default_allocator();
+            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let ret = rcl_get_service_names_and_types(
+                self.node.get(),
+                &mut allocator,
+                &mut rcl_names_and_types,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query service names and types: {}",
+                    RclError::from(ret)
+                );
+            }
+
+            let names_and_types = collect_service_names_and_types(&rcl_names_and_types);
+            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
+
+            Ok(names_and_types)
+        }
+    }
+
+    /// The nodes on the graph.
+    pub fn nodes(&self) -> Result<Vec<FullyQualifiedNodeName>, GraphError> {
+        let origin = origin!("RclNode::nodes");
+
+        unsafe {
+            let mut names = rcutils_get_zero_initialized_string_array();
+            let mut namespaces = rcutils_get_zero_initialized_string_array();
+            let ret = rcl_get_node_names(
+                self.node.get(),
+                rcutils_get_default_allocator(),
+                &mut names,
+                &mut namespaces,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query the nodes of the graph: {}",
+                    RclError::from(ret)
+                );
+            }
+
+            let nodes = (0..names.size)
+                .map(|i| {
+                    FullyQualifiedNodeName::new(
+                        NodeName::from_c_str_unchecked(cstr_at(&names, i)),
+                        NodeNamespace::from_c_str_unchecked(cstr_at(&namespaces, i)),
+                    )
+                })
+                .collect();
+            let _ = rcutils_string_array_fini(&mut names);
+            let _ = rcutils_string_array_fini(&mut namespaces);
+
+            Ok(nodes)
+        }
+    }
+
+    /// The services `node` serves.
+    ///
+    /// None when the node has left the graph since it was listed.
+    pub fn servers_of(
+        &self,
+        node: &FullyQualifiedNodeName,
+    ) -> Result<Vec<ServiceName>, GraphError> {
+        let origin = origin!("RclNode::servers_of");
+
+        unsafe {
+            let mut allocator = rcutils_get_default_allocator();
+            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let ret = rcl_get_service_names_and_types_by_node(
+                self.node.get(),
+                &mut allocator,
+                node.name().as_c_str().as_ptr(),
+                node.namespace().as_c_str().as_ptr(),
+                &mut rcl_names_and_types,
+            );
+            if ret == RCL_RET_NODE_NAME_NON_EXISTENT as i32 {
+                return Ok(Vec::new());
+            }
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query the servers of node {}: {}",
+                    node,
+                    RclError::from(ret)
+                );
+            }
+
+            let services = collect_service_names(&rcl_names_and_types);
+            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
+
+            Ok(services)
+        }
+    }
+
+    /// The services `node` has clients for.
+    ///
+    /// None when the node has left the graph since it was listed.
+    pub fn clients_of(
+        &self,
+        node: &FullyQualifiedNodeName,
+    ) -> Result<Vec<ServiceName>, GraphError> {
+        let origin = origin!("RclNode::clients_of");
+
+        unsafe {
+            let mut allocator = rcutils_get_default_allocator();
+            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let ret = rcl_get_client_names_and_types_by_node(
+                self.node.get(),
+                &mut allocator,
+                node.name().as_c_str().as_ptr(),
+                node.namespace().as_c_str().as_ptr(),
+                &mut rcl_names_and_types,
+            );
+            if ret == RCL_RET_NODE_NAME_NON_EXISTENT as i32 {
+                return Ok(Vec::new());
+            }
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query the clients of node {}: {}",
+                    node,
+                    RclError::from(ret)
+                );
+            }
+
+            let services = collect_service_names(&rcl_names_and_types);
+            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
+
+            Ok(services)
         }
     }
 
@@ -318,6 +480,38 @@ impl RclNodeBuilder {
             Ok(RclNode { node, context })
         }
     }
+}
+
+/// Reads the services and their types out of an rcl names-and-types array.
+///
+/// # Safety
+///
+/// `names_and_types` must be an initialized array from an rcl graph query.
+unsafe fn collect_service_names_and_types(
+    names_and_types: &rcl_names_and_types_t,
+) -> Vec<(ServiceName, Vec<TypeName>)> {
+    let mut services = Vec::with_capacity(names_and_types.names.size);
+    for i in 0..names_and_types.names.size {
+        let service =
+            unsafe { ServiceName::from_c_str_unchecked(cstr_at(&names_and_types.names, i)) };
+        let types = unsafe { collect_cstrs(&*names_and_types.types.add(i)) }
+            .into_iter()
+            .map(|type_name| unsafe { TypeName::from_c_str_unchecked(type_name) })
+            .collect();
+        services.push((service, types));
+    }
+    services
+}
+
+/// Reads the services out of an rcl names-and-types array.
+///
+/// # Safety
+///
+/// `names_and_types` must be an initialized array from an rcl graph query.
+unsafe fn collect_service_names(names_and_types: &rcl_names_and_types_t) -> Vec<ServiceName> {
+    (0..names_and_types.names.size)
+        .map(|i| unsafe { ServiceName::from_c_str_unchecked(cstr_at(&names_and_types.names, i)) })
+        .collect()
 }
 
 /// Borrows the string at `index` out of an rcutils string array.

@@ -61,11 +61,16 @@ pub mod translator;
 #[allow(unsafe_code)]
 pub(crate) mod rcl;
 #[allow(unsafe_code)]
+pub(crate) mod rcutils;
+#[allow(unsafe_code)]
+#[allow(dead_code)] // the request-response endpoints follow
+pub(crate) mod ros_message;
+#[allow(unsafe_code)]
 pub(crate) mod typesupport;
 
 pub use adapter::Ros2Adapter;
-pub use config::{Config, TopicName, TypeName};
-pub use endpoint_description::{TopicDescription, TopicSettings, TopicTypes};
+pub use config::{Config, ServiceName, TopicName, TypeName};
+pub use endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
 pub use endpoints::PublishSubscribeEndpoints;
 pub use iceoryx2_link_backend::AllowList;
 pub use mapping::{PrefixMapping, StaticMapping};

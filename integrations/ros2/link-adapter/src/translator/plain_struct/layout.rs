@@ -42,11 +42,11 @@ pub(super) fn layout_of(type_name: &str) -> Result<Layout, TranslationError> {
     let origin = origin!("PlainStructTranslator::layout_of");
     let introspection = fail!(
         from origin,
-        when typesupport::load_introspection(type_name),
+        when typesupport::get::<typesupport::IntrospectionKind>(type_name),
         with TranslationError::Introspection,
         "Failed to load introspection for type '{}'", type_name
     );
-    let members = unsafe { (*introspection.handle()).data }.cast::<MessageMembers>();
+    let members = introspection.members();
     match unsafe { introspected_layout(members) } {
         IntrospectedLayout::FixedSize(layout) => Ok(layout),
         IntrospectedLayout::Unsupported => {

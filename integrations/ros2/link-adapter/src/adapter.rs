@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
@@ -19,10 +20,12 @@ use iceoryx2_log::{fail, origin, warn};
 
 use crate::NODE_NAME;
 use crate::config::Config;
-use crate::endpoint_description::{TopicDescription, TopicSettings, TopicTypes};
+use crate::config::{NameError, TypeName};
+use crate::endpoint_description::{EndpointName, TopicDescription, TopicSettings, TopicTypes};
 use crate::endpoints;
+use crate::qos::QosProfile;
 use crate::rcl::{
-    EndpointInfo, GraphListener, RclNode, RclNodeBuilder, RclPublisherBuilder,
+    self, EndpointInfo, GraphListener, RclNode, RclNodeBuilder, RclPublisherBuilder,
     RclSubscriptionBuilder, TopicName,
 };
 use crate::typesupport;
@@ -95,7 +98,7 @@ impl Ros2Adapter {
         for type_name in &config.preload_types {
             fail!(
                 from origin,
-                when typesupport::load(type_name.as_str()),
+                when typesupport::get::<typesupport::MessageKind>(type_name.as_str()),
                 with CreationError::TypeSupport,
                 "Failed to preload typesupport for type '{}'", type_name.as_str()
             );
@@ -109,29 +112,40 @@ impl Ros2Adapter {
     }
 }
 
-fn is_internal(topic: &TopicName) -> bool {
+fn is_internal_topic(topic: &TopicName) -> bool {
     const INTERNAL_TOPICS: [&str; 2] = ["/rosout", "/parameter_events"];
     INTERNAL_TOPICS.contains(&topic.as_str())
+}
+
+/// Whether a service type belongs to the services every ROS 2 node serves
+/// for its parameters and type descriptions.
+fn is_internal_service(type_name: &rcl::TypeName) -> bool {
+    const INTERNAL_PACKAGES: [&str; 2] =
+        ["rcl_interfaces/srv/", "type_description_interfaces/srv/"];
+    INTERNAL_PACKAGES
+        .iter()
+        .any(|package| type_name.as_str().starts_with(package))
 }
 
 fn is_own(endpoint: &EndpointInfo) -> bool {
     NODE_NAME.as_c_str().to_str() == Ok(endpoint.node_name.as_str())
 }
 
-impl Adapter for Ros2Adapter {
-    type ListError = ListError;
-    type OpenError = OpenError;
-    type EndpointSettings = TopicSettings;
-    type EndpointTypes = EndpointTypes<TopicTypes>;
-    type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
-    type RequestResponseEndpoints = UnsupportedEndpoints;
-    type EventEndpoints = UnsupportedEndpoints;
+/// The request type of the ROS 2 service with the type `srv`.
+fn request_type(srv: &rcl::TypeName) -> Result<TypeName, NameError> {
+    TypeName::new(&format!("{}_Request", srv.as_str()))
+}
 
-    fn endpoints(
-        &self,
-        callback: &mut dyn FnMut(&TopicDescription),
-    ) -> Result<(), Self::ListError> {
-        let origin = origin!("Ros2Adapter::endpoints");
+/// The response type of the ROS 2 service with the type `srv`.
+fn response_type(srv: &rcl::TypeName) -> Result<TypeName, NameError> {
+    TypeName::new(&format!("{}_Response", srv.as_str()))
+}
+
+impl Ros2Adapter {
+    /// Lists the topics of the graph that another node publishes or
+    /// subscribes to.
+    fn list_topics(&self, callback: &mut dyn FnMut(&TopicDescription)) -> Result<(), ListError> {
+        let origin = origin!("Ros2Adapter::list_topics");
 
         let graph = fail!(
             from origin,
@@ -142,7 +156,7 @@ impl Adapter for Ros2Adapter {
 
         for (topic, types) in graph {
             // ROS 2's own topics have no consumer on the iceoryx2 side.
-            if is_internal(&topic) {
+            if is_internal_topic(&topic) {
                 continue;
             }
 
@@ -182,7 +196,7 @@ impl Adapter for Ros2Adapter {
             // Hand the descriptions to the gateway.
             callback(&TopicDescription {
                 settings: TopicSettings {
-                    topic: topic.clone().into(),
+                    name: EndpointName::Topic(topic.clone().into()),
                     qos: remote.qos.clone(),
                 },
                 types: EndpointTypes::PublishSubscribe(TopicTypes {
@@ -194,17 +208,131 @@ impl Adapter for Ros2Adapter {
         Ok(())
     }
 
+    /// Lists the services of the graph that another node serves or calls.
+    ///
+    /// The graph does not tell a service's QoS. Every ROS 2 service runs on
+    /// the default profile, which is listed.
+    fn list_services(&self, callback: &mut dyn FnMut(&TopicDescription)) -> Result<(), ListError> {
+        let origin = origin!("Ros2Adapter::list_services");
+
+        let graph = fail!(
+            from origin,
+            when self.node.service_names_and_types(),
+            with ListError::Graph,
+            "Failed to query the services of the graph"
+        );
+
+        // A service is listed when a node other than the gateway's serves or
+        // calls it. The graph query does not say which nodes do, so every
+        // other node must be asked for its services explicitly.
+        //
+        // Counting the servers and clients of a service is only available
+        // from `iron` or later.
+        let own = self.node.fully_qualified_name();
+        let nodes = fail!(
+            from origin,
+            when self.node.nodes(),
+            with ListError::Graph,
+            "Failed to query the nodes of the graph"
+        );
+
+        let mut remote = BTreeSet::new();
+        for node in nodes.iter().filter(|node| **node != own) {
+            remote.extend(fail!(
+                from origin,
+                when self.node.servers_of(node),
+                with ListError::Graph,
+                "Failed to query the servers of node {}", node
+            ));
+            remote.extend(fail!(
+                from origin,
+                when self.node.clients_of(node),
+                with ListError::Graph,
+                "Failed to query the clients of node {}", node
+            ));
+        }
+
+        for (service, types) in graph {
+            // A service with several types has no single pair of C structs
+            // to translate so is skipped.
+            let [service_type] = types.as_slice() else {
+                warn!(
+                    "Service '{}' has {} types and is not listed",
+                    service.as_str(),
+                    types.len()
+                );
+                continue;
+            };
+
+            // ROS 2's own services have no consumer on the iceoryx2 side.
+            if is_internal_service(service_type) {
+                continue;
+            }
+
+            if !remote.contains(&service) {
+                continue;
+            }
+
+            let (Ok(request), Ok(response)) =
+                (request_type(service_type), response_type(service_type))
+            else {
+                warn!(
+                    "Service '{}' has the type '{}' which names no request and response types and is not listed",
+                    service.as_str(),
+                    service_type.as_str()
+                );
+                continue;
+            };
+
+            // Hand the descriptions to the gateway.
+            callback(&TopicDescription {
+                settings: TopicSettings {
+                    name: EndpointName::Service(service.into()),
+                    qos: QosProfile::default(),
+                },
+                types: EndpointTypes::RequestResponse {
+                    request: TopicTypes { type_name: request },
+                    response: TopicTypes {
+                        type_name: response,
+                    },
+                },
+            });
+        }
+
+        Ok(())
+    }
+}
+
+impl Adapter for Ros2Adapter {
+    type ListError = ListError;
+    type OpenError = OpenError;
+    type EndpointSettings = TopicSettings;
+    type EndpointTypes = EndpointTypes<TopicTypes>;
+    type PublishSubscribeEndpoints = endpoints::PublishSubscribeEndpoints;
+    type RequestResponseEndpoints = UnsupportedEndpoints;
+    type EventEndpoints = UnsupportedEndpoints;
+
+    fn endpoints(
+        &self,
+        callback: &mut dyn FnMut(&TopicDescription),
+    ) -> Result<(), Self::ListError> {
+        self.list_topics(callback)?;
+        self.list_services(callback)
+    }
+
     fn publish_subscribe(
         &mut self,
         description: &TopicDescription,
     ) -> Result<Self::PublishSubscribeEndpoints, Self::OpenError> {
         let origin = origin!("Ros2Adapter::publish_subscribe");
 
-        let EndpointTypes::PublishSubscribe(types) = &description.types else {
+        let (EndpointName::Topic(topic), EndpointTypes::PublishSubscribe(types)) =
+            (&description.settings.name, &description.types)
+        else {
             fail!(
                 from origin,
                 with OpenError::UnsupportedPattern,
-                "Topic '{}' is not a publish-subscribe endpoint", description.settings.topic.as_str()
+                "'{}' is not a publish-subscribe topic", description.settings.name
             );
         };
 
@@ -212,13 +340,13 @@ impl Adapter for Ros2Adapter {
         let type_name = types.type_name.as_str();
         let type_support = fail!(
             from origin,
-            when typesupport::load(type_name),
+            when typesupport::get::<typesupport::MessageKind>(type_name),
             with OpenError::TypeSupport,
             "Failed to load typesupport for type '{}'", type_name
         );
 
         // Create the endpoints.
-        let topic = (&description.settings.topic).into();
+        let topic = topic.into();
         let publisher = fail!(
             from origin,
             when RclPublisherBuilder::new(Rc::clone(&self.node), &topic, Rc::clone(&type_support))
@@ -260,7 +388,7 @@ impl Adapter for Ros2Adapter {
         fail!(
             from origin,
             with OpenError::UnsupportedPattern,
-            "The ROS 2 adapter does not support request-response yet, '{}' cannot be opened as one", description.settings.topic
+            "The ROS 2 adapter does not support request-response yet, '{}' cannot be opened as one", description.settings.name
         );
     }
 
@@ -273,7 +401,7 @@ impl Adapter for Ros2Adapter {
         fail!(
             from origin,
             with OpenError::UnsupportedPattern,
-            "ROS 2 has no events, '{}' cannot be opened as one", description.settings.topic
+            "ROS 2 has no events, '{}' cannot be opened as one", description.settings.name
         );
     }
 }
