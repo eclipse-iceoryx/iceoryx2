@@ -61,8 +61,8 @@ CDR bytes the rmw puts on the wire. The adapter moves those bytes as they
 are:
 
 ```text
-send:  shared memory ──translator──▶ CDR ──rcl_publish_serialized_message──▶ wire
-take:  shared memory ◀──translator── CDR ◀──rcl_take_serialized_message──── wire
+send:  shared memory ───translator──▶ CDR ───rcl_publish_serialized_message──▶ wire
+take:  shared memory ◀──translator─── CDR ◀──rcl_take_serialized_message────── wire
 ```
 
 * The translator converts between the sample a local service carries and
@@ -191,8 +191,8 @@ deserialized in the adapter into the struct `rcl` takes, which the rmw
 serializes again for the wire:
 
 ```text
-send:  shared memory ──translator──▶ CDR ──rmw_deserialize──▶ rosidl struct ──rcl_send_*──▶ rmw ──serialize──▶ CDR on the wire
-take:  shared memory ◀──translator── CDR ◀──rmw_serialize── rosidl struct ◀──rcl_take_*── rmw ◀──deserialize── CDR on the wire
+send:  shared memory ───translator──▶ CDR ───rmw_deserialize──▶ rosidl struct ───rcl_send_*──▶ rmw ───serialize────▶ CDR on the wire
+take:  shared memory ◀──translator─── CDR ◀──rmw_serialize───── rosidl struct ◀──rcl_take_*─── rmw ◀──deserialize─── CDR on the wire
 ```
 
 * With the passthrough translator this is the one conversion a service
@@ -201,9 +201,9 @@ take:  shared memory ◀──translator── CDR ◀──rmw_serialize── 
   once:
 
 ```text
-topic,   plain struct:  iceoryx2 struct ──translator──▶ CDR ───────────────────────────────▶ rcl
+topic,   plain struct:  iceoryx2 struct ──translator──▶ CDR ──endpoints──▶ CDR ────────────▶ rcl
 service, plain struct:  iceoryx2 struct ──translator──▶ CDR ──endpoints──▶ rosidl struct ──▶ rcl
-service, passthrough:                                   CDR ──endpoints──▶ rosidl struct ──▶ rcl
+service, passthrough:   CDR ──────────────translator──▶ CDR ──endpoints──▶ rosidl struct ──▶ rcl
 ```
 
 An application may store the rosidl struct itself in shared memory. The
