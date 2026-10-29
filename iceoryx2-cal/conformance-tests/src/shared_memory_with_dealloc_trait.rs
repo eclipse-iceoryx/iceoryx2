@@ -42,6 +42,7 @@ const SHM_CONFIG: AllocatorConfig = AllocatorConfig {
 pub mod shared_memory_with_dealloc_trait {
     use super::*;
 
+    #[conformance_test]
     pub fn allocation_with_creator_works<
         Sut: SharedMemory<DefaultAllocator> + Deallocate<ShmPointer>,
     >() {
