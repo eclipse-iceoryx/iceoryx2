@@ -13,6 +13,7 @@
 use std::rc::Rc;
 
 use iceoryx2::service::messaging_pattern::MessagingPattern;
+use iceoryx2::testing::generate_node_name;
 
 use crate::adapter::Ros2Adapter;
 use crate::config::{ServiceName, TopicName, TypeName};
@@ -115,7 +116,7 @@ impl Default for PeerNode {
 
 impl PeerNode {
     pub fn new() -> Self {
-        let name = NodeName::new("iceoryx2_test_peer").expect("a valid node name");
+        let name = NodeName::new(generate_node_name().as_str()).expect("a valid node name");
         let node = RclNodeBuilder::new(name)
             .rosout(false)
             .create()

@@ -74,7 +74,7 @@ pub(crate) mod ros_message;
 pub(crate) mod typesupport;
 
 pub use adapter::Ros2Adapter;
-pub use config::{Config, ServiceName, TopicName, TypeName};
+pub use config::{Config, NodeName, ServiceName, TopicName, TypeName};
 pub use endpoint_description::{EndpointDescription, EndpointName, EndpointSettings, MessageType};
 pub use endpoints::{PublishSubscribeEndpoints, RequestResponseEndpoints};
 pub use iceoryx2_link_backend::AllowList;
@@ -82,7 +82,7 @@ pub use mapping::{PrefixMapping, StaticMapping};
 pub use qos::QosProfile;
 pub use translator::{CdrTranscoder, MirroredHeader, PassthroughTranslator, PlainStructTranslator};
 
-/// The name of the ROS 2 node representing the gateway.
+/// The name of the ROS 2 node representing the gateway unless configured otherwise.
 #[allow(unsafe_code)]
 const NODE_NAME: rcl::NodeName =
     unsafe { rcl::NodeName::from_c_str_static_unchecked(c"iceoryx2_gateway") };

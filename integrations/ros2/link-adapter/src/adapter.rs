@@ -20,7 +20,6 @@ use iceoryx2_link_adapter::{Adapter, EndpointTypes, UnsupportedEndpoints};
 use iceoryx2_link_backend::{Reactive, WakeHandle};
 use iceoryx2_log::{fail, origin, warn};
 
-use crate::NODE_NAME;
 use crate::config::Config;
 use crate::config::{NameError, TypeName};
 use crate::endpoint_description::{
@@ -119,7 +118,9 @@ impl Ros2Adapter {
 
         let node = fail!(
             from origin,
-            when RclNodeBuilder::new(NODE_NAME).rosout(config.rosout).create(),
+            when RclNodeBuilder::new(rcl::NodeName::from(&config.node_name))
+                .rosout(config.rosout)
+                .create(),
             with CreationError::Node,
             "Failed to create the ROS 2 node"
         );
@@ -165,8 +166,9 @@ fn is_internal_service(type_name: &rcl::TypeName) -> bool {
         .any(|package| type_name.as_str().starts_with(package))
 }
 
-fn is_own(endpoint: &EndpointInfo) -> bool {
-    NODE_NAME.as_c_str().to_str() == Ok(endpoint.node_name.as_str())
+/// Whether `endpoint` belongs to the node named `own`.
+fn is_own(own: &rcl::NodeName, endpoint: &EndpointInfo) -> bool {
+    own.as_str() == endpoint.node_name
 }
 
 /// The request type of the ROS 2 service with the type `srv`.
@@ -192,6 +194,7 @@ impl Ros2Adapter {
             "Failed to query the topics of the graph"
         );
 
+        let own = self.node.fully_qualified_name();
         for (topic, types) in graph {
             // ROS 2's own topics have no consumer on the iceoryx2 side.
             if is_internal_topic(&topic) {
@@ -226,7 +229,7 @@ impl Ros2Adapter {
             let Some(remote) = publishers
                 .iter()
                 .chain(subscriptions.iter())
-                .find(|endpoint| !is_own(endpoint))
+                .find(|endpoint| !is_own(own.name(), endpoint))
             else {
                 continue;
             };

@@ -146,6 +146,11 @@ impl NodeName {
     pub fn as_c_str(&self) -> &CStr {
         &self.0
     }
+
+    /// The name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0.to_str().unwrap_or_default()
+    }
 }
 
 /// A ROS 2 node namespace: an absolute, `/`-separated path of name tokens. The

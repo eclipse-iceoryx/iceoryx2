@@ -27,7 +27,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_integrations_ros2_examples::flatbuffer_translator::translator::FlatbufferTranslator;
 use iceoryx2_integrations_ros2_link_adapter::mapping::static_mapping;
 use iceoryx2_integrations_ros2_link_adapter::{
-    Config as AdapterConfig, MirroredHeader, Ros2Adapter, StaticMapping,
+    Config as AdapterConfig, MirroredHeader, NodeName, Ros2Adapter, StaticMapping,
 };
 use iceoryx2_link::Link;
 use iceoryx2_link_gateway::Gateway;
@@ -62,6 +62,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     // The adapter is the gateway's connection to ROS 2.
     let adapter = Ros2Adapter::new(&AdapterConfig {
+        // The name of the gateway's node on the ROS 2 graph.
+        node_name: NodeName::new("iceoryx2_gateway")?,
         // Configures the gateway to preload the typesupports for all types
         // defined by the mapping. If a typesupport is not found, the gateway
         // fails to initialize.

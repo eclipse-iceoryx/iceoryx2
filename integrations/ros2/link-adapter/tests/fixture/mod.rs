@@ -30,11 +30,11 @@ use std::rc::Rc;
 
 use iceoryx2::service::Service;
 use iceoryx2::service::messaging_pattern::MessagingPattern;
-use iceoryx2::testing::generate_isolated_config;
+use iceoryx2::testing::{generate_isolated_config, generate_node_name};
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_integrations_ros2_link_adapter::testing::{GraphHandle, PeerNode};
 use iceoryx2_integrations_ros2_link_adapter::{
-    Config, EndpointDescription, MessageType, Ros2Adapter,
+    Config, EndpointDescription, MessageType, NodeName, Ros2Adapter,
 };
 use iceoryx2_link_adapter::Mapping;
 use iceoryx2_link_adapter::{EndpointTypes, Translator};
@@ -109,6 +109,7 @@ impl<M: MappingUnderTest, T: TranslatorUnderTest> AdapterFixture for Ros2Fixture
 
     fn adapter(&mut self) -> Ros2Adapter {
         let config = Config {
+            node_name: NodeName::new(generate_node_name().as_str()).expect("a valid node name"),
             rosout: false,
             ..Config::default()
         };
