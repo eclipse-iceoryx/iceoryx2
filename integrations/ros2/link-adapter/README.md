@@ -13,6 +13,9 @@ bindings to `rcl`.
 
 Verified with Jazzy (`rmw_fastrtps_cpp`) and Humble (`rmw_cyclonedds_cpp`).
 
+> [!IMPORTANT]
+> Support for request-response is only available for `rmw_fastrtps_cpp`.
+
 ## Coupling to ROS 2 workspaces
 
 The crate links `rcl` at build time and loads message typesupport

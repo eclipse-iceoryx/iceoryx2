@@ -118,6 +118,25 @@ other, in both directions.
 
 ### Caveats
 
+#### Fast DDS only
+
+The adapter propagates request-response services on `rmw_fastrtps` only.
+On another rmw it lists no ROS 2 services, and the mappings skip
+local request-response services.
+
+The reason is the loopback described next, which the gateway's server
+resolves by recognizing its own client's requests. On `rmw_cyclonedds`
+nothing identifies them:
+
+* A request id holds no GUID. Its sixteen bytes are two DDS instance
+  handles, which are per-entity counters without a participant part.
+* The GID the rmw reports for a client is unrelated to its request ids.
+* Service readers cannot be told to ignore local writers, neither through
+  `rcl` nor through Cyclone's configuration.
+
+This holds on every ROS distribution, so a gateway on `rmw_cyclonedds` cannot
+tell its own client's requests apart.
+
 #### Loopback
 
 `rcl` delivers a request to every server on a service, the gateway's own
@@ -131,8 +150,8 @@ gateway client ──request──▶ ROS 2 server
 The gateway's server skips the requests of the gateway's own client. It
 recognizes them by their participant:
 
-* Every taken request comes with a request id, which holds a GUID of the
-  client.
+* Every taken request comes with a request id, which on `rmw_fastrtps`
+  holds a GUID of the client.
 * The first twelve bytes of a GUID are the participant prefix. Every
   endpoint of a node has the same one, and no other node shares the
   participant of the gateway's node.
