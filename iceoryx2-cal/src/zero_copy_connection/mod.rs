@@ -98,6 +98,7 @@ impl core::error::Error for ZeroCopySendError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopyReceiveError {
     ReceiveWouldExceedMaxBorrowValue,
+    ConnectionCorrupted,
 }
 
 impl core::fmt::Display for ZeroCopyReceiveError {
