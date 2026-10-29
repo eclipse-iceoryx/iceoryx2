@@ -417,7 +417,7 @@ mod failed_listing_tests {
     };
     use iceoryx2_link_backend::resolver::Resolver;
     use iceoryx2_link_backend::service_description::{
-        EventDescription, PublishSubscribeDescription,
+        EventDescription, PublishSubscribeDescription, RequestResponseDescription,
     };
     use iceoryx2_link_backend::{Announcement, OnRemote};
 
@@ -498,7 +498,9 @@ mod failed_listing_tests {
         type RemoteDescription = ();
         type PublishSubscribeRelay = UnsupportedRelay<ipc::Service>;
         type PublishSubscribeBuilder<'a> = UnsupportedRelayBuilder<ipc::Service>;
+        type RequestResponseRelay = UnsupportedRelay<ipc::Service, u8>;
         type EventRelay = EventStub;
+        type RequestResponseBuilder<'a> = UnsupportedRelayBuilder<ipc::Service, u8>;
         type EventBuilder<'a> = EventBuilderStub;
 
         fn publish_subscribe<'a>(
@@ -506,6 +508,17 @@ mod failed_listing_tests {
             _: PublishSubscribeDescription<'a>,
             _: &'a (),
         ) -> Self::PublishSubscribeBuilder<'a>
+        where
+            Self: 'a,
+        {
+            UnsupportedRelayBuilder::new()
+        }
+
+        fn request_response<'a>(
+            &'a mut self,
+            _: RequestResponseDescription<'a>,
+            _: &'a (),
+        ) -> Self::RequestResponseBuilder<'a>
         where
             Self: 'a,
         {
@@ -550,6 +563,7 @@ mod failed_listing_tests {
         type Refusal = String;
         type Resolver<'a> = Self;
         type PublishSubscribeRelay = UnsupportedRelay<ipc::Service>;
+        type RequestResponseRelay = UnsupportedRelay<ipc::Service, u8>;
         type EventRelay = EventStub;
         type RelayFactory<'a> = Self;
 

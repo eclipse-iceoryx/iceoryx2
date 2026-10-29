@@ -36,7 +36,6 @@
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 * [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Report per-service discovery errors instead of silently skipping unreadable services, while notifying listeners of changes observed before a failed scan
 * [#2021](https://github.com/eclipse-iceoryx/iceoryx2/issues/2021) Isolate the default std and no_std resource prefixes so discovery does not read the other domain's incompatible static configuration
-
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
