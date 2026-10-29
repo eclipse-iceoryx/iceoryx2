@@ -89,6 +89,7 @@ macro_rules! test_harness {
             let tests = $crate::inventory::iter::<$crate::TestCase>()
                 .map(|test_case| {
                     let test_fn = test_case.test_fn;
+                    let unmet_requirement = $crate::unmet_requirement(test_case.module);
                     let module = test_case
                         .module
                         .find("::")
@@ -111,9 +112,17 @@ macro_rules! test_harness {
                             }
                         }
                     })
-                    .with_ignored_flag(matches!(test_case.run_mode, $crate::RunMode::Ignore(_)))
+                    .with_ignored_flag(
+                        matches!(test_case.run_mode, $crate::RunMode::Ignore(_))
+                            || unmet_requirement.is_some(),
+                    )
                 })
                 .collect::<Vec<_>>();
+            if !args.list {
+                for (module, reason) in $crate::unmet_requirements() {
+                    $crate::internal::coutln!("ignoring the tests of {}: {}", module, reason);
+                }
+            }
             $crate::libtest_mimic::run(&args, tests).exit();
         }
     };
@@ -182,6 +191,11 @@ macro_rules! test_harness {
                         Some(r) => $crate::internal::coutln!("std only: {}", r),
                         None => $crate::internal::coutln!("std only"),
                     }
+                    continue;
+                }
+
+                if let Some(reason) = $crate::unmet_requirement(test.module) {
+                    $crate::internal::coutln!("ignored: {}", reason);
                     continue;
                 }
 

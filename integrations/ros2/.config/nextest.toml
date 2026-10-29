@@ -1,3 +1,4 @@
 [profile.default]
 fail-fast = false
 test-threads = 1
+status-level = "skip"
