@@ -34,7 +34,7 @@ pub(crate) mod subscription;
 #[allow(unused_imports)] // the request-response endpoints follow
 pub(crate) use client::{RclClient, RclClientBuilder};
 pub(crate) use error::RclError;
-pub(crate) use gid::Gid;
+pub(crate) use gid::{Gid, ParticipantPrefix};
 pub(crate) use graph_listener::GraphListener;
 pub(crate) use message_info::MessageInfo;
 pub(crate) use names::*;

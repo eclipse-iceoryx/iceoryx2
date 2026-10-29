@@ -13,19 +13,21 @@
 use std::ffi::CStr;
 
 use r2r_rcl::{
-    RCL_RET_NODE_NAME_NON_EXISTENT, RCL_RET_OK, rcl_context_fini, rcl_context_t,
-    rcl_get_client_names_and_types_by_node, rcl_get_node_names, rcl_get_publishers_info_by_topic,
-    rcl_get_service_names_and_types, rcl_get_service_names_and_types_by_node,
-    rcl_get_subscriptions_info_by_topic, rcl_get_topic_names_and_types,
-    rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
-    rcl_get_zero_initialized_node, rcl_guard_condition_t, rcl_init, rcl_init_options_fini,
+    RCL_RET_NODE_NAME_NON_EXISTENT, RCL_RET_OK, RMW_GID_STORAGE_SIZE, RMW_RET_OK, rcl_context_fini,
+    rcl_context_t, rcl_get_client_names_and_types_by_node, rcl_get_node_names,
+    rcl_get_publishers_info_by_topic, rcl_get_service_names_and_types,
+    rcl_get_service_names_and_types_by_node, rcl_get_subscriptions_info_by_topic,
+    rcl_get_topic_names_and_types, rcl_get_zero_initialized_context,
+    rcl_get_zero_initialized_init_options, rcl_get_zero_initialized_node,
+    rcl_get_zero_initialized_publisher, rcl_guard_condition_t, rcl_init, rcl_init_options_fini,
     rcl_init_options_init, rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini,
     rcl_node_get_default_options, rcl_node_get_graph_guard_condition, rcl_node_get_name,
-    rcl_node_get_namespace, rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown,
-    rcutils_get_default_allocator, rcutils_get_zero_initialized_string_array,
-    rcutils_string_array_fini, rcutils_string_array_t,
-    rmw_get_zero_initialized_topic_endpoint_info_array, rmw_topic_endpoint_info_array_fini,
-    rmw_topic_endpoint_info_array_t,
+    rcl_node_get_namespace, rcl_node_init, rcl_node_t, rcl_publisher_fini,
+    rcl_publisher_get_default_options, rcl_publisher_get_rmw_handle, rcl_publisher_init, rcl_ret_t,
+    rcl_shutdown, rcutils_get_default_allocator, rcutils_get_zero_initialized_string_array,
+    rcutils_string_array_fini, rcutils_string_array_t, rmw_get_gid_for_publisher,
+    rmw_get_zero_initialized_topic_endpoint_info_array, rmw_gid_t,
+    rmw_topic_endpoint_info_array_fini, rmw_topic_endpoint_info_array_t,
 };
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
@@ -33,9 +35,10 @@ use iceoryx2_log::{fail, origin, warn};
 
 use crate::qos::QosProfile;
 use crate::rcl::{
-    FullyQualifiedNodeName, NodeName, NodeNamespace, RclError, ServiceName, TopicName, TypeName,
-    qos,
+    FullyQualifiedNodeName, Gid, NodeName, NodeNamespace, ParticipantPrefix, RclError, ServiceName,
+    TopicName, TypeName, qos,
 };
+use crate::typesupport::{self, MessageKind};
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -44,11 +47,20 @@ const NO_ARGS: core::ffi::c_int = 0;
 /// as the underlying middleware names.
 const NO_DEMANGLE: bool = false;
 
+/// The topic a publisher is created on to read the node's participant, which
+/// every node publishes on and the gateway never propagates.
+const PARTICIPANT_PROBE_TOPIC: &core::ffi::CStr = c"/rosout";
+
+/// The type of the participant probe's publisher, which ships with `rcl`.
+const PARTICIPANT_PROBE_TYPE: &str = "rcl_interfaces/msg/Log";
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     InitOptions,
     Context,
     Node,
+    /// The node's participant could not be read.
+    ParticipantPrefix,
 }
 
 impl core::fmt::Display for CreationError {
@@ -78,11 +90,17 @@ impl core::error::Error for GraphError {}
 pub struct RclNode {
     node: Box<UnsafeCell<rcl_node_t>>,
     context: Box<UnsafeCell<rcl_context_t>>,
+    participant_prefix: ParticipantPrefix,
 }
 
 impl RclNode {
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
         self.node.get()
+    }
+
+    /// The participant the node's endpoints belong to.
+    pub fn participant_prefix(&self) -> &ParticipantPrefix {
+        &self.participant_prefix
     }
 
     pub(crate) fn context(&self) -> *mut rcl_context_t {
@@ -477,8 +495,77 @@ impl RclNodeBuilder {
                 );
             }
 
-            Ok(RclNode { node, context })
+            let participant_prefix = match read_participant_prefix(node.get()) {
+                Ok(participant_prefix) => participant_prefix,
+                Err(error) => {
+                    let _ = rcl_node_fini(node.get());
+                    let _ = rcl_shutdown(context.get());
+                    let _ = rcl_context_fini(context.get());
+                    fail!(
+                        from origin,
+                        with CreationError::ParticipantPrefix,
+                        "Failed to read the node's participant: {}",
+                        error
+                    );
+                }
+            };
+
+            Ok(RclNode {
+                node,
+                context,
+                participant_prefix,
+            })
         }
+    }
+}
+
+/// Reads the participant of `node` from the GID of a publisher created on
+/// the probe topic for that purpose and finalized at once.
+///
+/// A Fast DDS GID is a GUID whose prefix names the participant, which every
+/// endpoint of the node shares. The prefix is read from a publisher because
+/// Humble, the earliest supported distribution, reports GIDs for publishers
+/// only. Fails with a message when the probe's typesupport does not load,
+/// its publisher does not initialize or its GID cannot be read.
+///
+/// # Safety
+///
+/// `node` must be an initialized node.
+unsafe fn read_participant_prefix(node: *mut rcl_node_t) -> Result<ParticipantPrefix, String> {
+    let type_support = typesupport::get::<MessageKind>(PARTICIPANT_PROBE_TYPE)
+        .map_err(|error| format!("the probe's typesupport does not load: {error}"))?;
+
+    unsafe {
+        let mut publisher = rcl_get_zero_initialized_publisher();
+        let options = rcl_publisher_get_default_options();
+        let ret = rcl_publisher_init(
+            &mut publisher,
+            node,
+            type_support.handle(),
+            PARTICIPANT_PROBE_TOPIC.as_ptr(),
+            &options,
+        );
+        if ret != RCL_RET_OK as rcl_ret_t {
+            return Err(format!(
+                "the probe's publisher does not initialize: {}",
+                RclError::from(ret)
+            ));
+        }
+
+        let mut gid = rmw_gid_t {
+            implementation_identifier: core::ptr::null(),
+            data: [0; RMW_GID_STORAGE_SIZE as usize],
+        };
+        let ret = rmw_get_gid_for_publisher(rcl_publisher_get_rmw_handle(&publisher), &mut gid);
+        let _ = rcl_publisher_fini(&mut publisher, node);
+        if ret != RMW_RET_OK as i32 {
+            return Err(format!(
+                "the probe's GID cannot be read: {}",
+                RclError::from(ret)
+            ));
+        }
+
+        Ok(Gid::from(&gid).participant_prefix())
     }
 }
 
