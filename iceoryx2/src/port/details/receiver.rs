@@ -467,6 +467,11 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
                     "{} since it would exceed the maximum {} of borrowed chunks.",
                     msg, connection.receiver.max_borrowed_chunks());
             }
+            Err(ZeroCopyReceiveError::ConnectionCorrupted) => {
+                fail!(from self,
+                    with ReceiveError::ConnectionFailure(ConnectionFailure::FailedToEstablishConnection(ZeroCopyCreationError::ConnectionMaybeCorrupted)),
+                    "{msg} since the connection is corrupted.");
+            }
         }
     }
 
