@@ -21,4 +21,10 @@ if(NOT ICEORYX2_C_OPTIONS_AND_PARAMS_LISTED)
         DEFAULT_VALUE ""
     )
 
+    add_param(
+        NAME RUST_CUSTOM_FFI_SERVICE_TYPES
+        DESCRIPTION "The path to the crate with the custom ffi service types"
+        DEFAULT_VALUE ""
+    )
+
 endif()
