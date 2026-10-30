@@ -36,6 +36,7 @@
 * [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Update dependencies in zenoh: rustls-webpki from 0.103.13 to 0.103.16, webpki-roots and webpki-roots-certs from 1.0.7 to 1.0.10
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link
+* [#2040](https://github.com/eclipse-iceoryx/iceoryx2/issues/2040) Set the unix datagram socket permission with `chmod` after bind instead of a process-global umask that leaked to other threads
 * [#2044](https://github.com/eclipse-iceoryx/iceoryx2/issues/2044) Respect the order of `PATH` when looking up CLI commands
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
 * [#2050](https://github.com/eclipse-iceoryx/iceoryx2/issues/2050) Find CLI commands in the folder of the running binary and prefer them over the ones in `PATH`
