@@ -1,0 +1,118 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+set timeout 10
+
+# Check a complete request/notification/response cycle. Matching the entire
+# cycle prevents a later response from hiding a missed response or notification.
+proc expect_response { ID REQUEST } {
+    set pattern [format {send request %d \.\.\.\r?\n  number of received notifications from server: ([0-9]+)\r?\n  received response [0-9]+ for request %d *: TransmissionData \{[^\r\n]+\}\r?\n} $REQUEST $REQUEST]
+    expect {
+        -i $ID -re $pattern {
+            if {$expect_out(1,string) != 1} {
+                error "Request $REQUEST received $expect_out(1,string) notifications, expected exactly one"
+            }
+        }
+        -i $ID "Timeout while waiting for response from server" {
+            error "Request $REQUEST timed out"
+        }
+        timeout { error "Timed out waiting for request $REQUEST and its response" }
+        eof { error "Client exited before request $REQUEST received its response" }
+    }
+}
+
+proc cleanup { IDS } {
+    foreach id $IDS {
+        catch {exec kill -INT [exp_pid -i $id]}
+    }
+    set errors {}
+    foreach id $IDS {
+        catch {
+            expect {
+                -i $id eof {}
+                timeout {
+                    lappend errors "Child $id did not exit after SIGINT"
+                    catch {exec kill -KILL [exp_pid -i $id]}
+                    close -i $id
+                }
+            }
+        }
+        if {[catch {wait -i $id} status]} {
+            lappend errors "Could not wait for child $id: $status"
+        } elseif {[lindex $status 2] != 0 || [lindex $status 3] != 0 || [llength $status] > 4} {
+            lappend errors "Child $id failed: $status"
+        }
+    }
+    return $errors
+}
+
+set children {}
+set result [catch {
+    spawn target/ff/cc/build/examples/cxx/request_response_with_events/test_cxx_request_response_with_events_idle_listener
+    set id_idle $spawn_id
+    lappend children $id_idle
+    expect {
+        -i $id_idle "Idle listener ready!" {}
+        timeout { error "Idle listener did not become ready" }
+        eof { error "Idle listener exited before becoming ready" }
+    }
+
+    spawn target/ff/cc/build/examples/cxx/request_response_with_events/example_cxx_request_response_with_events_server
+    set id_server $spawn_id
+    lappend children $id_server
+    expect {
+        -i $id_server "Server ready to receive requests!" {}
+        timeout { error "Server did not become ready" }
+        eof { error "Server exited before becoming ready" }
+    }
+
+    spawn target/ff/cc/build/examples/cxx/request_response_with_events/example_cxx_request_response_with_events_client
+    set id_client1 $spawn_id
+    lappend children $id_client1
+    expect {
+        -i $id_client1 "Client ready to send requests!" {}
+        timeout { error "First client did not become ready" }
+        eof { error "First client exited before becoming ready" }
+    }
+
+    spawn target/ff/cc/build/examples/cxx/request_response_with_events/example_cxx_request_response_with_events_client
+    set id_client2 $spawn_id
+    lappend children $id_client2
+    expect {
+        -i $id_client2 "Client ready to send requests!" {}
+        timeout { error "Second client did not become ready" }
+        eof { error "Second client exited before becoming ready" }
+    }
+    # Both real clients run concurrently. The independent listener sends no
+    # requests and fails if any broadcast response notification reaches it.
+    for {set request 0} {$request < 3} {incr request} {
+        expect_response $id_client1 $request
+        expect_response $id_client2 $request
+    }
+} message]
+if {[info exists id_idle]} {
+    set children [concat [lrange $children 1 end] [list $id_idle]]
+}
+set cleanup_errors [cleanup $children]
+if {[llength $cleanup_errors] > 0} {
+    puts stderr "Child cleanup failed: $cleanup_errors"
+    set result 1
+}
+if {$result != 0} {
+    puts stderr "Test failed: $message"
+    exit 1
+}
+show_test_passed

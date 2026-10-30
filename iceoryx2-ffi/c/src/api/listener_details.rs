@@ -68,11 +68,11 @@ pub unsafe extern "C" fn iox2_listener_details_node_id(
     unsafe { &(*handle).node_id }
 }
 
-/// Returns the [`iox2_port_name_ptr`], an immutable pointer to the name of the listener.
+/// Returns a borrowed listener name. The pointer is valid only during the callback
+/// which provided `handle` and must not be retained after it returns.
 ///
 /// # Safety
-///
-/// * `handle` valid pointer to the listener details
+/// `handle` must point to listener details provided by a live callback.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_details_listener_name(
     handle: iox2_listener_details_ptr,

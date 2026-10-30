@@ -16,6 +16,7 @@
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Propagate request-response services through the link gateway
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Update the ROS 2 link adapter to support request-response
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Add flatbuffer translation example for the ROS 2 gateway
+* [#2001](https://github.com/eclipse-iceoryx/iceoryx2/issues/2001) Add listener traversal and single-listener notification APIs to C, C++, and Python bindings, with request-response event examples for C++ and Python
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
 * [#2031](https://github.com/eclipse-iceoryx/iceoryx2/issues/2031) Notify the event service named after a service when the link delivered samples to it
 * [#2078](https://github.com/eclipse-iceoryx/iceoryx2/issues/2078) Allocate the sample reference counters of a grown data segment only when the data segment grows
@@ -77,6 +78,7 @@
     conflicts when merging.
 -->
 
+* [#2001](https://github.com/eclipse-iceoryx/iceoryx2/issues/2001) Add retainable listener keys, callback-scoped mono notifiers, and listener names for filtering
 * [#2046](https://github.com/eclipse-iceoryx/iceoryx2/issues/2046) Add abstraction for named pipes to `iceoryx2-bb-posix` and concept for event-triggering
 * [#2076](https://github.com/eclipse-iceoryx/iceoryx2/issues/2076) Expose the names of ports in the port details of the C and C++ bindings
 * [#2108](https://github.com/eclipse-iceoryx/iceoryx2/issues/2108) Extend Python bindings with an API to serialize the iceoryx2 config to toml

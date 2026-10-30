@@ -71,6 +71,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/header_publish_subscribe.cpp
     src/header_request_response.cpp
     src/listener_details.cpp
+    src/listener_key.cpp
     src/log.cpp
     src/message_type_details.cpp
     src/messaging_pattern.cpp
@@ -79,6 +80,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/node_name.cpp
     src/node_state.cpp
     src/notifier.cpp
+    src/monofier.cpp
     src/notifier_details.cpp
     src/port_factory_event.cpp
     src/port_factory_notifier.cpp

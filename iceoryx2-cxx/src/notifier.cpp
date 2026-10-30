@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/notifier.hpp"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
 template <ServiceType S>
@@ -75,6 +76,41 @@ auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const -> bb::Exp
         return number_of_notified_listeners;
     }
 
+    return bb::err(bb::into<NotifierNotifyError>(result));
+}
+
+template <ServiceType S>
+void Notifier<S>::for_each_listener(
+    const bb::StaticFunction<CallbackProgression(MonofierView, ListenerDetailsView)>& callback) const {
+    auto ctx = internal::ctx(callback);
+    auto trampoline = [](iox2_callback_context context,
+                         iox2_monofier_ptr monofier,
+                         iox2_listener_details_ptr details) -> iox2_callback_progression_e {
+        auto* callback_context =
+            internal::ctx_cast<bb::StaticFunction<CallbackProgression(MonofierView, ListenerDetailsView)>>(context);
+        return bb::into<iox2_callback_progression_e>(
+            callback_context->value()(MonofierView(monofier), ListenerDetailsView(details)));
+    };
+    iox2_notifier_for_each_listener(&m_handle, trampoline, &ctx);
+}
+
+template <ServiceType S>
+auto Notifier<S>::notify_single_listener(const ListenerKey& key) const -> bb::Expected<void, NotifierNotifyError> {
+    auto result = iox2_notifier_notify_single_listener(&m_handle, &key.m_handle);
+    if (result == IOX2_OK) {
+        return {};
+    }
+    return bb::err(bb::into<NotifierNotifyError>(result));
+}
+
+template <ServiceType S>
+auto Notifier<S>::notify_single_listener_with_custom_event_id(const ListenerKey& key, EventId event_id) const
+    -> bb::Expected<void, NotifierNotifyError> {
+    auto result =
+        iox2_notifier_notify_single_listener_with_custom_event_id(&m_handle, &key.m_handle, &event_id.m_value);
+    if (result == IOX2_OK) {
+        return {};
+    }
     return bb::err(bb::into<NotifierNotifyError>(result));
 }
 
