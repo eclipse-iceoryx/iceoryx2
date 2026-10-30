@@ -18,6 +18,7 @@
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Add flatbuffer translation example for the ROS 2 gateway
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
 * [#2031](https://github.com/eclipse-iceoryx/iceoryx2/issues/2031) Notify the event service named after a service when the link delivered samples to it
+* [#2066](https://github.com/eclipse-iceoryx/iceoryx2/issues/2066) Add option to make resources persistent
 * [#2078](https://github.com/eclipse-iceoryx/iceoryx2/issues/2078) Allocate the sample reference counters of a grown data segment only when the data segment grows
 * [#2082](https://github.com/eclipse-iceoryx/iceoryx2/issues/2082) Keep the contents of a static storage in memory and close its file
 * [#2084](https://github.com/eclipse-iceoryx/iceoryx2/issues/2084) Stop iterating a slot map after its last element
@@ -33,6 +34,7 @@
     conflicts when merging.
 -->
 
+* [#486](https://github.com/eclipse-iceoryx/iceoryx2/issues/4486) Bazel on macOS was fixed with [#2057](https://github.com/eclipse-iceoryx/iceoryx2/issues/2057) for Bazel >= 8.5.0
 * [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Update dependencies in zenoh: rustls-webpki from 0.103.13 to 0.103.16, webpki-roots and webpki-roots-certs from 1.0.7 to 1.0.10
 * [#2018](https://github.com/eclipse-iceoryx/iceoryx2/issues/2018) Return `InvalidListenerKey` instead of panicking when notifying with a listener key whose index exceeds the service capacity
 * [#2028](https://github.com/eclipse-iceoryx/iceoryx2/issues/2028) Support services with a custom payload alignment in the link

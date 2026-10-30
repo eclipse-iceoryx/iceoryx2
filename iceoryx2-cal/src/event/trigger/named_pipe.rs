@@ -16,7 +16,8 @@ use crate::{
     clock::{ClockListenerSchedule, ClockListenerScheduleError, ScheduleOnHandle, Timeout},
     dynamic_storage::DynamicStorage,
     event::{
-        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+        ListenerCreateError, ListenerOpenError, ListenerWaitError, NotifierNotifyError,
+        NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
         trigger::{Configuration, HandlerInterface, State, WaiterInterface},
@@ -213,6 +214,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
     for NamedPipeWaiter<E, Storage>
 {
     const IS_FILE_DESCRIPTOR_BASED: bool = true;
+    const SUPPORT_PERSISTENCY: bool = true;
 
     unsafe fn remove(
         name: &FileName,
@@ -324,6 +326,65 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
             _data_1: PhantomData,
             _data_2: PhantomData,
         })
+    }
+
+    fn open(
+        name: &FileName,
+        config: &super::Configuration,
+        _mgmt: &mut core::mem::MaybeUninit<()>,
+        clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<Self, ListenerOpenError> {
+        let origin = "NamedPipeWaiter::open()";
+        let msg = "Unable to connect to named pipe";
+        let full_path = config.path_for(name);
+        let receiver = match NamedPipeBuilder::new(&full_path)
+            .has_ownership(false)
+            .open_existing()
+        {
+            Ok(v) => v,
+            Err(NamedPipeOpenError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::InterruptedBySignal,
+            )) => {
+                fail!(from origin, with ListenerOpenError::Interrupt,
+                    "{msg} with {config:?} since an interrupt signal was raised.");
+            }
+            Err(NamedPipeOpenError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::InsufficientPermissions,
+            )) => {
+                fail!(from origin, with ListenerOpenError::InsufficientPermissions,
+                    "{msg} with {config:?} due to insufficient permissions.");
+            }
+            Err(NamedPipeOpenError::NamedPipeOpenFdError(
+                NamedPipeOpenFdError::FileDoesNotExist,
+            )) => {
+                fail!(from origin, with ListenerOpenError::DoesNotExist,
+                    "{msg} with {config:?} since path to the named pipe does not exist.");
+            }
+            Err(e) => {
+                fail!(from origin, with ListenerOpenError::InternalFailure,
+                    "{msg} with {config:?} due to an internal failure. [{e:?}]");
+            }
+        };
+
+        Ok(Self {
+            name: *name,
+            receiver,
+            clock,
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        })
+    }
+
+    fn has_ownership(&self) -> bool {
+        self.receiver.has_ownership()
+    }
+
+    fn acquire_ownership(&self) {
+        self.receiver.acquire_ownership();
+    }
+
+    fn release_ownership(&self) {
+        self.receiver.release_ownership();
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {

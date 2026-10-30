@@ -116,6 +116,24 @@ impl core::fmt::Display for ListenerCreateError {
 
 impl core::error::Error for ListenerCreateError {}
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ListenerOpenError {
+    Interrupt,
+    DoesNotExist,
+    InsufficientPermissions,
+    VersionMismatch,
+    InitializationNotYetFinalized,
+    InternalFailure,
+}
+
+impl core::fmt::Display for ListenerOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}::{:?}", stringify!(Self), self)
+    }
+}
+
+impl core::error::Error for ListenerOpenError {}
+
 impl From<EventStateActivateError> for NotifierNotifyError {
     fn from(value: EventStateActivateError) -> Self {
         match value {
@@ -164,6 +182,8 @@ pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
         self,
         clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<T::Listener, ListenerCreateError>;
+
+    fn open(self, clock: Arc<dyn ClockListenerSchedule>) -> Result<T::Listener, ListenerOpenError>;
 }
 
 pub trait Event: Sized + NamedConceptMgmt + Debug {

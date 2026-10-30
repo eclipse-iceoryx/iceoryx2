@@ -12,7 +12,8 @@
 
 use crate::clock::{ClockListenerSchedule, ClockNow};
 use crate::event::{
-    EventId, ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+    EventId, ListenerCreateError, ListenerOpenError, ListenerWaitError, NotifierNotifyError,
+    NotifierOpenError,
 };
 use crate::named_concept::NamedConceptRemoveError;
 use crate::{dynamic_storage::DynamicStorage, event::event_state::EventState};
@@ -77,6 +78,7 @@ pub trait WaiterInterface<
 >: Send + Sync + Debug + Abandonable
 {
     const IS_FILE_DESCRIPTOR_BASED: bool;
+    const SUPPORT_PERSISTENCY: bool;
 
     /// # Safety
     ///
@@ -95,11 +97,20 @@ pub trait WaiterInterface<
         mgmt: &mut MaybeUninit<Mgmt>,
         clock: Arc<dyn ClockListenerSchedule>,
     ) -> Result<Self, ListenerCreateError>;
+    fn open(
+        name: &FileName,
+        config: &Configuration,
+        mgmt: &mut MaybeUninit<Mgmt>,
+        clock: Arc<dyn ClockListenerSchedule>,
+    ) -> Result<Self, ListenerOpenError>;
     fn try_wait(&self) -> Result<(), ListenerWaitError>;
     fn timed_wait(&self, timeout: Duration, now: TimePoint) -> Result<(), ListenerWaitError>;
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
     fn empty_buffer(&self) -> Result<(), ListenerWaitError>;
     fn clock(&self) -> &dyn ClockNow;
+    fn has_ownership(&self) -> bool;
+    fn acquire_ownership(&self);
+    fn release_ownership(&self);
 }
 
 pub trait HandlerInterface<
