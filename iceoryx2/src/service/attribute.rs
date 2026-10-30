@@ -89,8 +89,11 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! let services = ipc::Service::list(Config::global_config(), |service| {
-//!     println!("\n{:#?}", &service.static_details.attributes());
+//! ipc::Service::list(Config::global_config(), |service| {
+//!     match service {
+//!         Ok(service) => println!("\n{:#?}", service.static_details.attributes()),
+//!         Err(error) => eprintln!("Unable to acquire service details: {error}"),
+//!     }
 //!     CallbackProgression::Continue
 //! })?;
 //! # Ok(())

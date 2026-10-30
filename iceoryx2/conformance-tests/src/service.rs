@@ -32,7 +32,7 @@ pub mod service {
     };
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
-    use iceoryx2::service::{ServiceDetailsError, ServiceListError};
+    use iceoryx2::service::{ServiceDetailsError, ServiceListError, service_hash::ServiceHash};
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
@@ -42,6 +42,11 @@ pub mod service {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_cal::named_concept::{
+        NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
+    };
+    use iceoryx2_cal::serialize::Serialize;
+    use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageBuilder};
     use iceoryx2_testing::*;
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
@@ -982,6 +987,222 @@ pub mod service {
     "ServiceListError::InternalError");
     }
 
+    fn list_static_storage_config<Sut: Service>(
+        config: &Config,
+    ) -> <Sut::StaticStorage as NamedConceptMgmt>::Configuration {
+        let mut path = *config.global.root_path();
+        path.add_path_entry(&config.global.service.directory)
+            .unwrap();
+        <Sut::StaticStorage as NamedConceptMgmt>::Configuration::default()
+            .prefix(&config.global.prefix)
+            .suffix(&config.global.service.static_config_storage_suffix)
+            .path_hint(&path)
+    }
+
+    fn list_storage_builder<Sut: Service>(
+        config: &Config,
+        hash: &ServiceHash,
+    ) -> <Sut::StaticStorage as StaticStorage>::Builder {
+        <Sut::StaticStorage as StaticStorage>::Builder::new(&hash.as_str().try_into().unwrap())
+            .config(&list_static_storage_config::<Sut>(config))
+    }
+
+    #[conformance_test]
+    pub fn list_delivers_each_error_and_keeps_owned_successes<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let test = Factory::new();
+        let config = test.context().config();
+        let node = test.context().create_node();
+        let service = test
+            .create(&node, &generate_service_name(), &AttributeSpecifier::new())
+            .unwrap();
+        let mut storage = vec![];
+        let mut expected = vec![];
+        for _ in 0..2 {
+            let hash = ServiceHash::new::<Sut::ServiceNameHasher>(
+                &generate_service_name(),
+                Factory::messaging_pattern(),
+            );
+            storage.push(
+                list_storage_builder::<Sut>(config, &hash)
+                    .create(b"")
+                    .unwrap(),
+            );
+            expected.push(ServiceDetailsError::FailedToDeserializeStaticServiceInfo);
+        }
+        let mut successes = vec![];
+        let mut errors = vec![];
+        let result = Sut::list(config, |result| {
+            match result {
+                Ok(details) => successes.push(details),
+                Err(error) => errors.push(error),
+            }
+            CallbackProgression::Continue
+        });
+        assert_that!(result, is_ok);
+        assert_that!(successes.len(), eq 1);
+        assert_that!(successes[0].static_details.service_hash(), eq service.service_hash());
+        assert_that!(errors, eq expected);
+    }
+
+    #[conformance_test]
+    pub fn list_stops_after_detail_error_without_returning_it<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let test = Factory::new();
+        let config = test.context().config();
+        let mut storage = vec![];
+        for _ in 0..2 {
+            let hash = ServiceHash::new::<Sut::ServiceNameHasher>(
+                &generate_service_name(),
+                Factory::messaging_pattern(),
+            );
+            storage.push(
+                list_storage_builder::<Sut>(config, &hash)
+                    .create(b"")
+                    .unwrap(),
+            );
+        }
+        let mut reported = None;
+        let mut calls = 0;
+        let result = Sut::list(config, |result| {
+            calls += 1;
+            reported = Some(result.unwrap_err());
+            CallbackProgression::Stop
+        });
+        assert_that!(calls, eq 1);
+        assert_that!(reported, eq Some(ServiceDetailsError::FailedToDeserializeStaticServiceInfo));
+        assert_that!(result, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn list_skips_services_removed_after_enumeration<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let node = test.context().create_node();
+        let mut first = Some(
+            test.create(&node, &generate_service_name(), &AttributeSpecifier::new())
+                .unwrap(),
+        );
+        let mut second = Some(
+            test.create(&node, &generate_service_name(), &AttributeSpecifier::new())
+                .unwrap(),
+        );
+        let first_hash = *first.as_ref().unwrap().service_hash();
+        let mut calls = 0;
+        let result = Sut::list(test.context().config(), |result| {
+            let details = result.unwrap();
+            calls += 1;
+            // The list of storage names has already been acquired. Remove the other entry,
+            // independently of which of the two entries was read first.
+            if *details.static_details.service_hash() == first_hash {
+                drop(second.take());
+            } else {
+                drop(first.take());
+            }
+            CallbackProgression::Continue
+        });
+        assert_that!(result, is_ok);
+        assert_that!(calls, eq 1);
+    }
+
+    #[conformance_test]
+    pub fn list_skips_unfinished_static_storage<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let config = test.context().config();
+        let name = generate_service_name();
+        let hash = ServiceHash::new::<Sut::ServiceNameHasher>(&name, Factory::messaging_pattern());
+        let _locked = list_storage_builder::<Sut>(config, &hash)
+            .create_locked()
+            .unwrap();
+        assert_that!(
+            Sut::details(&name, config, Factory::messaging_pattern()).unwrap(),
+            is_none
+        );
+        let mut calls = 0;
+        assert_that!(
+            Sut::list(config, |_| {
+                calls += 1;
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+        assert_that!(calls, eq 0);
+    }
+
+    #[conformance_test]
+    pub fn list_returns_static_details_when_dynamic_storage_disappears<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let test = Factory::new();
+        let config = test.context().config();
+        let node = test.context().create_node();
+        let name = generate_service_name();
+        let service = test
+            .create(&node, &name, &AttributeSpecifier::new())
+            .unwrap();
+        let details = Sut::details(&name, config, Factory::messaging_pattern())
+            .unwrap()
+            .unwrap();
+        let hash = *details.static_details.service_hash();
+        let bytes = Sut::ConfigSerializer::serialize(&details.static_details).unwrap();
+        drop(service);
+        let _static_storage = list_storage_builder::<Sut>(config, &hash)
+            .create(&bytes)
+            .unwrap();
+        let mut calls = 0;
+        assert_that!(
+            Sut::list(config, |result| {
+                let details = result.unwrap();
+                assert_that!(details.static_details.service_hash(), eq & hash);
+                assert_that!(details.dynamic_details, is_none);
+                calls += 1;
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+        assert_that!(calls, eq 1);
+    }
+
+    #[conformance_test]
+    pub fn list_preserves_inconsistent_state_errors<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let config = test.context().config();
+        let node = test.context().create_node();
+        let name = generate_service_name();
+        let _service = test
+            .create(&node, &name, &AttributeSpecifier::new())
+            .unwrap();
+        let details = Sut::details(&name, config, Factory::messaging_pattern())
+            .unwrap()
+            .unwrap();
+        let bytes = Sut::ConfigSerializer::serialize(&details.static_details).unwrap();
+        let wrong_hash = ServiceHash::new::<Sut::ServiceNameHasher>(
+            &generate_service_name(),
+            Factory::messaging_pattern(),
+        );
+        let _storage = list_storage_builder::<Sut>(config, &wrong_hash)
+            .create(&bytes)
+            .unwrap();
+        let mut successes = 0;
+        let mut errors = vec![];
+        assert_that!(
+            Sut::list(config, |result| {
+                match result {
+                    Ok(_) => successes += 1,
+                    Err(error) => errors.push(error),
+                }
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+        assert_that!(successes, eq 1);
+        assert_that!(errors, eq vec![ServiceDetailsError::ServiceInInconsistentState]);
+    }
+
     #[conformance_test]
     pub fn list_services_works<Sut: Service, Factory: SutFactory<Sut>>() {
         const NUMBER_OF_SERVICES: usize = 16;
@@ -1004,11 +1225,13 @@ pub mod service {
 
         let mut listed_services = vec![];
         let result = Sut::list(test.context().config(), |service| {
+            let service = service.expect("service details are accessible");
             listed_services.push(*service.static_details.service_hash());
             CallbackProgression::Continue
         });
         assert_that!(result, is_ok);
 
+        assert_that!(listed_services.len(), eq NUMBER_OF_SERVICES);
         for s in listed_services {
             assert_that!(service_hashs, contains s);
         }
@@ -1035,6 +1258,7 @@ pub mod service {
 
         let mut service_counter = 0;
         let result = Sut::list(test.context().config(), |_service| {
+            let _service = _service.expect("service details are accessible");
             service_counter += 1;
             CallbackProgression::Stop
         });
@@ -1069,6 +1293,7 @@ pub mod service {
 
                         let mut found_me = false;
                         let result = Sut::list(test.context().config(), |s| {
+                            let s = s.expect("service details are accessible");
                             if sut.service_hash() == s.static_details.service_hash() {
                                 found_me = true;
                             }

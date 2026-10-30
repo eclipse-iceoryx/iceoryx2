@@ -1074,7 +1074,20 @@ pub trait Service:
         __internal_details::<Self>(config, &service_hash)
     }
 
-    /// Returns a list of all services created under a given [`config::Config`].
+    /// Visits services created under a given [`config::Config`].
+    ///
+    /// Each acquired [`ServiceDetails`] or detail lookup error is passed to the callback.
+    /// Returning [`CallbackProgression::Continue`] accepts the current result and continues.
+    /// Returning [`CallbackProgression::Stop`] stops the iteration and returns `Ok(())`,
+    /// regardless of whether the current result is a success or an error. To propagate a
+    /// detail lookup error, store it in the callback and handle it after this function returns.
+    /// A failure to enumerate the services is returned without calling the callback.
+    ///
+    /// Services that disappear before their details can be acquired, or whose static storage is
+    /// not yet initialized, are skipped. Missing dynamic storage does not prevent returning the
+    /// static details. The listing is not an atomic snapshot and its order is unspecified.
+    /// `Ok(())` does not imply that every service was read: the callback may have accepted errors
+    /// or stopped early. Callback side effects are not rolled back.
     ///
     /// # Example
     ///
@@ -1084,13 +1097,16 @@ pub trait Service:
     ///
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// ipc::Service::list(Config::global_config(), |service| {
-    ///     println!("\n{:#?}", &service);
+    ///     match service {
+    ///         Ok(service) => println!("\n{service:#?}"),
+    ///         Err(error) => eprintln!("Unable to acquire service details: {error}"),
+    ///     }
     ///     CallbackProgression::Continue
     /// })?;
     /// # Ok(())
     /// # }
     /// ```
-    fn list<F: FnMut(ServiceDetails<Self>) -> CallbackProgression>(
+    fn list<F: FnMut(Result<ServiceDetails<Self>, ServiceDetailsError>) -> CallbackProgression>(
         config: &config::Config,
         mut callback: F,
     ) -> Result<(), ServiceListError> {
@@ -1113,8 +1129,8 @@ pub trait Service:
                     continue;
                 }
             };
-            if let Ok(Some(service_details)) = __internal_details::<Self>(config, &hash)
-                && callback(service_details) == CallbackProgression::Stop
+            if let Some(details) = __internal_details::<Self>(config, &hash).transpose()
+                && callback(details) == CallbackProgression::Stop
             {
                 break;
             }
