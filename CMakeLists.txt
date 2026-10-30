@@ -186,10 +186,21 @@ else()
 
     include(iceoryx2-c/cmake/rust-ffi-c-byproduct-definitions.cmake)
 
+    set(RUST_FLAGS "RUSTFLAGS=")
+    set(CUSTOM_FFI_OVERRIDE "")
+    set(CONFIG_OPTION "")
+    # if("${RUST_CUSTOM_FFI_SERVICE_TYPES}" NOT STREQUAL "")
+        set(RUST_FLAGS "RUSTFLAGS=--cfg iceoryx2_customization_ffi_service_types")
+        set(CUSTOM_FFI_OVERRIDE "patch.crates-io.iceoryx.path=\"${CMAKE_CURRENT_LIST_DIR}/../iox2-extensions/extensions/resource-creator/ffi-service-types\"")
+        set(CONFIG_OPTION "--config")
+    # endif()
+
     # run cargo
     add_custom_target(
         iceoryx2-ffi-c-build-step ALL
-        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --no-default-features ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        # COMMAND "${CMAKE_COMMAND}" -E env ${RUST_FLAGS} cargo build ${RUST_BUILD_TYPE_FLAG} --no-default-features ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG} ${CONFIG_OPTION} ${CUSTOM_FFI_OVERRIDE}
+
+        COMMAND "${CMAKE_COMMAND}" -E env "RUSTFLAGS=--cfg iceoryx2_customization_ffi_service_types" cargo build ${RUST_BUILD_TYPE_FLAG} --no-default-features ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG} --config patch.crates-io.iceoryx.path=\"${CMAKE_CURRENT_LIST_DIR}/../iox2-extensions/extensions/resource-creator/ffi-service-types\"
         BYPRODUCTS
             ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
             ${ICEORYX2_C_STATIC_LIB_LINK_FILE}

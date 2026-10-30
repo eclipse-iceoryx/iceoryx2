@@ -17,6 +17,7 @@
 #include <iostream>
 
 struct TransmissionData {
+    static constexpr const char* IOX2_TYPE_NAME = "TransmissionData";
     std::int32_t x;
     std::int32_t y;
     double funky;
