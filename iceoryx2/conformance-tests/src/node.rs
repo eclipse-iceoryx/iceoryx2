@@ -397,6 +397,14 @@ pub mod node {
             .create::<S>()
             .unwrap();
 
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let listener = service.listener_builder().create().unwrap();
+
         let mut node_details = None;
         Node::<S>::list(node.config(), |node_state| {
             if let NodeState::Alive(node_view) = node_state
@@ -410,12 +418,26 @@ pub mod node {
 
         let result = DeadNodeView::<S>::__internal_try_remove_stale_resources(
             *node.id(),
+            node_details.clone().unwrap(),
+        );
+        assert_that!(result.err(), eq Some(NodeCleanupFailure::InternalError));
+
+        let result = DeadNodeView::<S>::__internal_blocking_remove_stale_resources(
+            *node.id(),
             node_details.unwrap(),
+            Duration::ZERO,
         );
-        assert_that!(
-            result.err(),
-            eq Some(NodeCleanupFailure::ResourcesAlreadyCleanedUp)
-        );
+        assert_that!(result.err(), eq Some(NodeCleanupFailure::InternalError));
+
+        // A second node must still be able to discover and use the live node's service.
+        let peer = test.create_node();
+        let peer_service = peer.service_builder(&service_name).event().open().unwrap();
+        let notifier = peer_service.notifier_builder().create().unwrap();
+        let event_id = EventId::new(0);
+        assert_that!(notifier.notify_with_custom_event_id(event_id).unwrap(), eq 1);
+        let mut received_event = None;
+        assert_that!(listener.try_wait(|event| received_event = Some(event.id)).unwrap(), eq 1);
+        assert_that!(received_event, eq Some(event_id));
 
         let mut node_is_alive = false;
         Node::<S>::list(node.config(), |node_state| {

@@ -123,7 +123,7 @@ pub enum iox2_node_cleanup_failure_e {
     INSUFFICIENT_PERMISSIONS,
     /// Trying to cleanup resources from a dead node which was using a different iceoryx2 version.
     VERSION_MISMATCH,
-    /// There are no stale resources to remove.
+    /// Another instance has successfully cleaned up all resources.
     RESOURCES_ALREADY_CLEANED_UP,
     /// Another instance has acquired the ownership of all resources and is currently cleaning up.
     ANOTHER_INSTANCE_IS_CLEANING_UP_THE_NODE,
