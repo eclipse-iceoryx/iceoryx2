@@ -118,7 +118,6 @@ enum_gen! { NamedPipeCreationError
     CurrentlyInUse,
     UnknownError(i32)
   mapping:
-    FileSetPermissionError,
     MetadataFromPathError
 }
 
@@ -320,7 +319,22 @@ impl NamedPipeCreationBuilder {
                     "{msg} since the files metadata could not be acquired due to an internal error. [{e:?}]");
             }
         };
-        fail!(from self.config, when named_pipe.set_permission(self.config.permission), "Failed to set permissions.");
+
+        match named_pipe.set_permission(self.config.permission) {
+            Ok(()) => (),
+            Err(FileSetPermissionError::InsufficientPermissions) => {
+                fail!(from self, with NamedPipeCreationError::InsufficientPermissions,
+                    "{msg} since the permissions could not be updated due to insufficient permissions.");
+            }
+            Err(FileSetPermissionError::ReadOnlyFilesystem) => {
+                fail!(from self, with NamedPipeCreationError::FilesytemIsReadOnly,
+                    "{msg} since the permissions could not be updated since the pipe is located on a read only file system.");
+            }
+            Err(e) => {
+                fail!(from self, with NamedPipeCreationError::UnknownError(0),
+                    "{msg} since the permission could not be updated due to an internal error. [{e:?}]");
+            }
+        }
 
         if self.config.owner.is_some() || self.config.group.is_some() {
             let owner_id = match self.config.owner.as_ref() {
