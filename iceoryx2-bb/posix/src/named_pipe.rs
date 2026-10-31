@@ -80,18 +80,6 @@ enum NamedPipeOpenFdError {
     UnknownError(i32),
 }
 
-enum_gen! { CreateFiFoError
-  entry:
-    InsufficientPermissions,
-    LoopInSymbolicLinks,
-    AlreadyExist,
-    PartsOfThePathDoNotExist,
-    NoSpaceLeft,
-    NotADirectory,
-    FilesytemIsReadOnly,
-    UnknownError(i32)
-}
-
 enum_gen! { NamedPipeOpenError
   entry:
     InsufficientPermissions,
@@ -133,10 +121,14 @@ enum_gen! { NamedPipeCreationError
     TooManySymbolicLinksInPath,
     PerProcessFileHandleLimitReached,
     FilesytemIsReadOnly,
+    LoopInSymbolicLinks,
+    AlreadyExist,
+    PartsOfThePathDoNotExist,
+    NoSpaceLeft,
+    NotADirectory,
     UnknownError(i32)
   mapping:
     NamedPipeOpenError,
-    CreateFiFoError,
     FileStatError,
     UserError,
     GroupError,
@@ -378,40 +370,47 @@ impl Drop for NamedPipe {
 }
 
 impl NamedPipe {
-    fn create_fifo(path: &FilePath, perm: &Permission) -> Result<(), CreateFiFoError> {
-        let msg = "Unable to create fifo special file";
+    fn create_fifo(origin: &str, msg: &str, path: &FilePath, perm: &Permission) -> Result<(), NamedPipeCreationError> {
         if unsafe { posix::mkfifo(path.as_c_str(), perm.as_mode()) } == -1 {
             match Errno::get() {
                 Errno::EACCES => {
-                    fail!(with CreateFiFoError::InsufficientPermissions,
+                    fail!(from origin,
+                        with NamedPipeCreationError::InsufficientPermissions,
                         "{msg} due to insufficient permissions.");
                 }
                 Errno::ELOOP => {
-                    fail!(with CreateFiFoError::LoopInSymbolicLinks,
+                    fail!(from origin,
+                        with NamedPipeCreationError::LoopInSymbolicLinks,
                         "{msg} due to a loop in the symbolic links.");
                 }
                 Errno::EEXIST => {
-                    fail!(with CreateFiFoError::AlreadyExist,
+                    fail!(from origin,
+                        with NamedPipeCreationError::AlreadyExist,
                         "{msg} since the named pipe already exists.");
                 }
                 Errno::ENOENT => {
-                    fail!(with CreateFiFoError::PartsOfThePathDoNotExist,
+                    fail!(from origin,
+                        with NamedPipeCreationError::PartsOfThePathDoNotExist,
                         "{msg} since the path or parts of it do not exist.");
                 }
                 Errno::ENOSPC => {
-                    fail!(with CreateFiFoError::NoSpaceLeft,
+                    fail!(from origin,
+                        with NamedPipeCreationError::NoSpaceLeft,
                         "{msg} since there is no space left on the target file-system.");
                 }
                 Errno::ENOTDIR => {
-                    fail!(with CreateFiFoError::NotADirectory,
+                    fail!(from origin,
+                        with NamedPipeCreationError::NotADirectory,
                         "{msg} since the provided pathname is not a path.");
                 }
                 Errno::EROFS => {
-                    fail!(with CreateFiFoError::FilesytemIsReadOnly,
+                    fail!(from origin,
+                        with NamedPipeCreationError::FilesytemIsReadOnly,
                         "{msg} since the parent directory resides on a read-only filesystem.");
                 }
                 e => {
-                    fail!(with CreateFiFoError::UnknownError(e as i32),
+                    fail!(from origin,
+                        with NamedPipeCreationError::UnknownError(e as i32),
                         "{msg} due to an unknown failure ({e:?}).");
                 }
             }
@@ -427,7 +426,7 @@ impl NamedPipe {
         let msg = "Unable to create named pipe";
 
         let create_fifo_fd = || -> Result<FileDescriptor, NamedPipeCreationError> {
-            NamedPipe::create_fifo(&config.file_path, &config.permission)?;
+            NamedPipe::create_fifo(origin, msg, &config.file_path, &config.permission)?;
             let file_descriptor = NamedPipe::open_fd(origin, msg, &config.file_path, &config.access_mode)?;
             Ok(file_descriptor)
         };

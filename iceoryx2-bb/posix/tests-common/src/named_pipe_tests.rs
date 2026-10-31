@@ -117,7 +117,7 @@ pub fn creating_named_pipe_with_empty_path_fails() {
         .create();
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::CreateFiFoError(CreateFiFoError::PartsOfThePathDoNotExist));
+    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::PartsOfThePathDoNotExist);
 }
 
 #[test]
@@ -144,7 +144,7 @@ pub fn creating_named_pipe_on_existing_pipe_creation_mode_create_exclusive_fails
         .create();
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::CreateFiFoError(CreateFiFoError::AlreadyExist));
+    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::AlreadyExist);
 }
 
 #[test]

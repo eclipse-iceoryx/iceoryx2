@@ -27,7 +27,7 @@ use alloc::sync::Arc;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_posix::named_pipe::{CreateFiFoError, NamedPipeCreationError, NamedPipeReadError};
+use iceoryx2_bb_posix::named_pipe::{NamedPipeCreationError, NamedPipeReadError};
 use iceoryx2_bb_posix::{
     directory::*,
     file::{CreationMode, File, FileRemoveError},
@@ -287,13 +287,11 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
             .create()
         {
             Ok(v) => v,
-            Err(NamedPipeCreationError::CreateFiFoError(
-                CreateFiFoError::InsufficientPermissions,
-            )) => {
+            Err(NamedPipeCreationError::InsufficientPermissions) => {
                 fail!(from origin, with ListenerCreateError::InsufficientPermissions,
                     "{msg} with {config:?} due to insufficient permissions.");
             }
-            Err(NamedPipeCreationError::CreateFiFoError(CreateFiFoError::AlreadyExist)) => {
+            Err(NamedPipeCreationError::AlreadyExist) => {
                 fail!(from origin, with ListenerCreateError::AlreadyExists,
                     "{msg} with {config:?} since it already exists.");
             }
