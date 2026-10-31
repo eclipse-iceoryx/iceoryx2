@@ -115,12 +115,12 @@ enum_gen! { NamedPipeCreationError
     NoSpaceLeft,
     NotADirectory,
     FileTypeNotNamedPipe,
+    CurrentlyInUse,
     UnknownError(i32)
   mapping:
     FileSetOwnerError,
     FileSetPermissionError,
-    MetadataFromPathError,
-    FileRemoveError
+    MetadataFromPathError
 }
 
 impl From<NamedPipeDoesExistError> for NamedPipeCreationError {
@@ -427,12 +427,11 @@ impl NamedPipe {
         config: &NamedPipeBuilder,
         creation_mode: &CreationMode,
     ) -> Result<NamedPipe, NamedPipeCreationError> {
-        let origin = "NamedPipe::create()";
         let msg = "Unable to create named pipe";
 
         let create_fifo_fd = || -> Result<FileDescriptor, NamedPipeCreationError> {
-            NamedPipe::create_fifo(origin, msg, &config.file_path, &config.permission)?;
-            let file_descriptor = NamedPipe::open_fd(origin, msg, &config.file_path, &config.access_mode)?;
+            NamedPipe::create_fifo(&format!("{config:?}"), msg, &config.file_path, &config.permission)?;
+            let file_descriptor = NamedPipe::open_fd(&format!("{config:?}"), msg, &config.file_path, &config.access_mode)?;
             Ok(file_descriptor)
         };
 
@@ -443,9 +442,29 @@ impl NamedPipe {
                           when NamedPipe::does_exist(&config.file_path), 
                           "{} since the named pipe existence verification failed.", msg)
                 {
-                    fail!(from config, 
-                          when File::remove(&config.file_path), 
-                          "{} since the removal of the already existing named pipe failed.", msg);
+                    match File::remove(&config.file_path) {
+                        Ok(_) | Err(FileRemoveError::FileDoesNotExist) => (),
+                        Err(FileRemoveError::InsufficientPermissions) => {
+                            fail!(from config, with NamedPipeCreationError::InsufficientPermissions,
+                                "{msg} since the existing pipe could not be purged due to insufficient permissions");
+                        }
+                        Err(FileRemoveError::CurrentlyInUse) => {
+                            fail!(from config, with NamedPipeCreationError::CurrentlyInUse,
+                                "{msg} since the existing pipe could not be purged since it is currently in use.");
+                        }
+                        Err(FileRemoveError::LoopInSymbolicLinks) => {
+                            fail!(from config, with NamedPipeCreationError::LoopInSymbolicLinks,
+                                "{msg} since the existing pipe could not be purged since there is a loop in the symbolic links.");
+                        }
+                        Err(FileRemoveError::PartOfReadOnlyFileSystem) => {
+                            fail!(from config, with NamedPipeCreationError::FilesytemIsReadOnly,
+                                "{msg} since the existing pipe could not be purged since it is located on a read only file system");
+                        }
+                        Err(e) => {
+                            fail!(from config, with NamedPipeCreationError::UnknownError(0),
+                                "{msg} since the existing pipe could not be purged due to an internal error. [{e:?}]");
+                        }
+                    }
                 }
                 create_fifo_fd()
             }
@@ -454,7 +473,7 @@ impl NamedPipe {
                             when NamedPipe::does_exist(&config.file_path), 
                             "{} since the named pipe existence verification failed.", msg)
                 {
-                    true => Ok(NamedPipe::open_fd(origin, msg, &config.file_path, &config.access_mode)?),
+                    true => Ok(NamedPipe::open_fd(&format!("{config:?}"), msg, &config.file_path, &config.access_mode)?),
                     false => create_fifo_fd(),
                 }
             }
