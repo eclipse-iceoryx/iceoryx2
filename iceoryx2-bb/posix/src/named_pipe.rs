@@ -160,11 +160,10 @@ impl From<NamedPipeOpenError> for NamedPipeCreationError {
 enum_gen! { NamedPipeReadError
   entry:
     InterruptedBySignal,
+    InsufficientPermissions,
+    InsufficientResources,
     IOerror,
     UnknownError(i32)
-  mapping:
-    FileDescriptorSetAddError,
-    FileDescriptorSetWaitError
 }
 
 enum_gen! { NamedPipeWriteError
@@ -703,7 +702,19 @@ impl NamedPipe {
             "{} since the named pipe could not activate the blocking mode.", msg);
 
         let fd_set = FileDescriptorSet::new();
-        let _guard = fd_set.add(self)?;
+        let _guard = match fd_set.add(self) {
+            Ok(g) => g,
+            Err(FileDescriptorSetAddError::CapacityExceeded) => {
+                fail!(from self, with NamedPipeReadError::InsufficientResources,
+                    "{} due to insufficient resources to attach the file descriptor to the internal file descriptor set.",
+                    msg);
+            }
+            Err(e) => {
+                fail!(from self, with NamedPipeReadError::InsufficientResources,
+                    "{} since an unknown error occurred while attaching the file descriptor to the internal file descriptor set. [{e:?}]",
+                    msg);
+            }
+        };
 
         let mut received_bytes = Ok(0);
         let receive_call = |_: &FileDescriptor| {
@@ -715,7 +726,16 @@ impl NamedPipe {
                 fail!(from self, with NamedPipeReadError::InterruptedBySignal,
                     "{} since an interrupt signal was received.", msg);
             }
-            Err(e) => Err(NamedPipeReadError::FileDescriptorSetWaitError(e)),
+            Err(FileDescriptorSetWaitError::InsufficientPermissions) => {
+                fail!(from self, with NamedPipeReadError::InsufficientPermissions,
+                    "{} due to insufficient permissions to wait on the underyling file descriptor set.",
+                    msg);
+            },
+            Err(e) => {
+                fail!(from self, with NamedPipeReadError::UnknownError(0),
+                    "{} due to an internal error while waiting on the underlying file descriptor set. [{e:?}]",
+                    msg);
+            }
             Ok(_) => received_bytes,
         }
     }
