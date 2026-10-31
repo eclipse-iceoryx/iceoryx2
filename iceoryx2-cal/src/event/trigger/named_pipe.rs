@@ -33,9 +33,7 @@ use iceoryx2_bb_posix::{
     file::{CreationMode, File, FileRemoveError},
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
-    named_pipe::{
-        NamedPipe, NamedPipeBuilder, NamedPipeOpenError, NamedPipeOpenFdError, NamedPipeWriteError,
-    },
+    named_pipe::{NamedPipe, NamedPipeBuilder, NamedPipeOpenError, NamedPipeWriteError},
     permission::Permission,
 };
 use iceoryx2_bb_si_units::TimePoint;
@@ -140,21 +138,15 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
             .open_existing()
         {
             Ok(v) => v,
-            Err(NamedPipeOpenError::NamedPipeOpenFdError(
-                NamedPipeOpenFdError::InterruptedBySignal,
-            )) => {
+            Err(NamedPipeOpenError::InterruptedBySignal) => {
                 fail!(from origin, with NotifierOpenError::Interrupt,
                     "{msg} with {config:?} since an interrupt signal was raised.");
             }
-            Err(NamedPipeOpenError::NamedPipeOpenFdError(
-                NamedPipeOpenFdError::InsufficientPermissions,
-            )) => {
+            Err(NamedPipeOpenError::InsufficientPermissions) => {
                 fail!(from origin, with NotifierOpenError::InsufficientPermissions,
                     "{msg} with {config:?} due to insufficient permissions.");
             }
-            Err(NamedPipeOpenError::NamedPipeOpenFdError(
-                NamedPipeOpenFdError::FileDoesNotExist,
-            )) => {
+            Err(NamedPipeOpenError::FileDoesNotExist) => {
                 fail!(from origin, with NotifierOpenError::DoesNotExist,
                     "{msg} with {config:?} since path to the named pipe does not exist.");
             }
@@ -305,9 +297,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
                 fail!(from origin, with ListenerCreateError::AlreadyExists,
                     "{msg} with {config:?} since it already exists.");
             }
-            Err(NamedPipeCreationError::NamedPipeOpenFdError(
-                NamedPipeOpenFdError::InterruptedBySignal,
-            )) => {
+            Err(NamedPipeCreationError::InterruptedBySignal) => {
                 fail!(from origin, with ListenerCreateError::Interrupt,
                     "{msg} since an interrupt signal was raised.");
             }

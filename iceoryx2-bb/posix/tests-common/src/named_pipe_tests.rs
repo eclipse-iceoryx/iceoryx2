@@ -84,7 +84,7 @@ pub fn opening_non_existing_named_pipe_fails() {
     let result = NamedPipeBuilder::new(&test_non_existing_named_pipe).open_existing();
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::NamedPipeOpenFdError(NamedPipeOpenFdError::FileDoesNotExist));
+    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::FileDoesNotExist);
 }
 
 #[test]
