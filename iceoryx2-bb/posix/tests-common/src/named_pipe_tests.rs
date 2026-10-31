@@ -260,7 +260,7 @@ pub fn does_exist_check_works() {
 
     let file_result = NamedPipe::does_exist(&dummy_file_path);
     assert_that!(file_result, is_err);
-    assert_that!(file_result.err().unwrap(), eq NamedPipeOpenError::FileTypeNotNamedPipe);
+    assert_that!(file_result.err().unwrap(), eq NamedPipeDoesExistError::FileTypeNotNamedPipe);
 
     // now a real pipe
     let _sut = NamedPipeBuilder::new(&test_named_pipe_path)

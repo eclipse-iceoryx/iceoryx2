@@ -69,15 +69,12 @@ use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::Errno;
 use iceoryx2_pal_posix::*;
 
-#[derive(Debug)]
-enum NamedPipeOpenFdError {
-    InsufficientPermissions,
-    InterruptedBySignal,
-    TooManySymbolicLinksInPath,
-    PerProcessFileHandleLimitReached,
-    FileDoesNotExist,
-    FilesytemIsReadOnly,
-    UnknownError(i32),
+enum_gen! { NamedPipeDoesExistError
+  entry:
+    FileTypeNotNamedPipe,
+    InsufficientPermissions
+  mapping:
+    MetadataFromPathError
 }
 
 enum_gen! { NamedPipeOpenError
@@ -94,22 +91,12 @@ enum_gen! { NamedPipeOpenError
     MetadataFromPathError
 }
 
-impl From<NamedPipeOpenFdError> for NamedPipeOpenError {
-    fn from(value: NamedPipeOpenFdError) -> Self {
+impl From<NamedPipeDoesExistError> for NamedPipeOpenError {
+    fn from(value: NamedPipeDoesExistError) -> Self {
         match value {
-            NamedPipeOpenFdError::InsufficientPermissions => {
-                NamedPipeOpenError::InsufficientPermissions
-            }
-            NamedPipeOpenFdError::InterruptedBySignal => NamedPipeOpenError::InterruptedBySignal,
-            NamedPipeOpenFdError::TooManySymbolicLinksInPath => {
-                NamedPipeOpenError::TooManySymbolicLinksInPath
-            }
-            NamedPipeOpenFdError::PerProcessFileHandleLimitReached => {
-                NamedPipeOpenError::PerProcessFileHandleLimitReached
-            }
-            NamedPipeOpenFdError::FileDoesNotExist => NamedPipeOpenError::FileDoesNotExist,
-            NamedPipeOpenFdError::FilesytemIsReadOnly => NamedPipeOpenError::FilesytemIsReadOnly,
-            NamedPipeOpenFdError::UnknownError(v) => NamedPipeOpenError::UnknownError(v),
+            NamedPipeDoesExistError::FileTypeNotNamedPipe => NamedPipeOpenError::FileTypeNotNamedPipe,
+            NamedPipeDoesExistError::InsufficientPermissions => NamedPipeOpenError::InsufficientPermissions,
+            NamedPipeDoesExistError::MetadataFromPathError(v) => NamedPipeOpenError::MetadataFromPathError(v)
         }
     }
 }
@@ -123,36 +110,52 @@ enum_gen! { NamedPipeCreationError
     FilesytemIsReadOnly,
     LoopInSymbolicLinks,
     AlreadyExist,
+    FileDoesNotExist,
     PartsOfThePathDoNotExist,
     NoSpaceLeft,
     NotADirectory,
+    FileTypeNotNamedPipe,
     UnknownError(i32)
   mapping:
-    NamedPipeOpenError,
     FileStatError,
     UserError,
     GroupError,
     FileSetOwnerError,
     FileSetPermissionError,
+    MetadataFromPathError,
     FileRemoveError
 }
 
-impl From<NamedPipeOpenFdError> for NamedPipeCreationError {
-    fn from(value: NamedPipeOpenFdError) -> Self {
+impl From<NamedPipeDoesExistError> for NamedPipeCreationError {
+    fn from(value: NamedPipeDoesExistError) -> Self {
+        match value {
+            NamedPipeDoesExistError::InsufficientPermissions => NamedPipeCreationError::InsufficientPermissions,
+            NamedPipeDoesExistError::FileTypeNotNamedPipe => NamedPipeCreationError::FileTypeNotNamedPipe,
+            NamedPipeDoesExistError::MetadataFromPathError(v) => NamedPipeCreationError::MetadataFromPathError(v)
+        }
+    }
+}
+
+impl From<NamedPipeOpenError> for NamedPipeCreationError {
+    fn from(value: NamedPipeOpenError) -> Self {
          match value {
-            NamedPipeOpenFdError::InsufficientPermissions => {
+            NamedPipeOpenError::InsufficientPermissions => {
                 NamedPipeCreationError::InsufficientPermissions
             }
-            NamedPipeOpenFdError::InterruptedBySignal => NamedPipeCreationError::InterruptedBySignal,
-            NamedPipeOpenFdError::TooManySymbolicLinksInPath => {
+            NamedPipeOpenError::InterruptedBySignal => NamedPipeCreationError::InterruptedBySignal,
+            NamedPipeOpenError::TooManySymbolicLinksInPath => {
                 NamedPipeCreationError::TooManySymbolicLinksInPath
             }
-            NamedPipeOpenFdError::PerProcessFileHandleLimitReached => {
+            NamedPipeOpenError::PerProcessFileHandleLimitReached => {
                 NamedPipeCreationError::PerProcessFileHandleLimitReached
             }
-            NamedPipeOpenFdError::FileDoesNotExist => NamedPipeCreationError::UnknownError(0),
-            NamedPipeOpenFdError::FilesytemIsReadOnly => NamedPipeCreationError::FilesytemIsReadOnly,
-            NamedPipeOpenFdError::UnknownError(v) => NamedPipeCreationError::UnknownError(v),
+            NamedPipeOpenError::FileTypeNotNamedPipe => {
+                NamedPipeCreationError::FileTypeNotNamedPipe
+            }
+            NamedPipeOpenError::FileDoesNotExist => NamedPipeCreationError::FileDoesNotExist,
+            NamedPipeOpenError::FilesytemIsReadOnly => NamedPipeCreationError::FilesytemIsReadOnly,
+            NamedPipeOpenError::UnknownError(v) => NamedPipeCreationError::UnknownError(v),
+            NamedPipeOpenError::MetadataFromPathError(v) => NamedPipeCreationError::MetadataFromPathError(v)
         }
     }
 }
@@ -434,14 +437,20 @@ impl NamedPipe {
         let file_descriptor = match creation_mode {
             CreationMode::CreateExclusive => create_fifo_fd(),
             CreationMode::PurgeAndCreate => {
-                if fail!(from config, when NamedPipe::does_exist(&config.file_path), "{} since the named pipe existence verification failed.", msg)
+                if fail!(from config, 
+                          when NamedPipe::does_exist(&config.file_path), 
+                          "{} since the named pipe existence verification failed.", msg)
                 {
-                    fail!(from config, when File::remove(&config.file_path), "{} since the removal of the already existing named pipe failed.", msg);
+                    fail!(from config, 
+                          when File::remove(&config.file_path), 
+                          "{} since the removal of the already existing named pipe failed.", msg);
                 }
                 create_fifo_fd()
             }
             CreationMode::OpenOrCreate => {
-                match fail!(from config, when NamedPipe::does_exist(&config.file_path), "{} since the named pipe existence verification failed.", msg)
+                match fail!(from config, 
+                            when NamedPipe::does_exist(&config.file_path), 
+                            "{} since the named pipe existence verification failed.", msg)
                 {
                     true => Ok(NamedPipe::open_fd(origin, msg, &config.file_path, &config.access_mode)?),
                     false => create_fifo_fd(),
@@ -463,7 +472,7 @@ impl NamedPipe {
         msg: &str,
         path: &FilePath,
         access_mode: &AccessMode,
-    ) -> Result<FileDescriptor, NamedPipeOpenFdError> {
+    ) -> Result<FileDescriptor, NamedPipeOpenError> {
         let file_descriptor =
             unsafe { posix::open(path.as_c_str(), access_mode.as_oflag() | posix::O_SYNC) };
 
@@ -471,37 +480,37 @@ impl NamedPipe {
             match Errno::get() {
                 Errno::EACCES => {
                     fail!(from origin,
-                        with NamedPipeOpenFdError::InsufficientPermissions,
+                        with NamedPipeOpenError::InsufficientPermissions,
                         "{msg} due to insufficient permissions.");
                 }
                 Errno::EINTR => {
                     fail!(from origin,
-                        with NamedPipeOpenFdError::InterruptedBySignal,
+                        with NamedPipeOpenError::InterruptedBySignal,
                         "{msg} since an interrupt signal was raised.");
                 }
                 Errno::ELOOP => {
                     fail!(from origin,
-                        with NamedPipeOpenFdError::TooManySymbolicLinksInPath,
+                        with NamedPipeOpenError::TooManySymbolicLinksInPath,
                         "{msg} since there are too many symbolic links in the path.");
                 }
                 Errno::EMFILE => {
                     fail!(from origin,
-                        with NamedPipeOpenFdError::PerProcessFileHandleLimitReached,
+                        with NamedPipeOpenError::PerProcessFileHandleLimitReached,
                         "{msg} since the process wide file handle limit was reached.");
                 }
                 Errno::ENOENT => {
                     fail!(from origin, 
-                        with NamedPipeOpenFdError::FileDoesNotExist,
+                        with NamedPipeOpenError::FileDoesNotExist,
                         "{msg} since the file does not exist.");
                 }
                 Errno::EROFS => {
                     fail!(from origin,
-                        with NamedPipeOpenFdError::FilesytemIsReadOnly,
+                        with NamedPipeOpenError::FilesytemIsReadOnly,
                         "{msg} since the file resides on a read-only filesystem.");
                 }
                 e => {
                     fail!(from origin,
-                        with NamedPipeOpenFdError::UnknownError(e as i32),
+                        with NamedPipeOpenError::UnknownError(e as i32),
                         "{msg} due to an unknown failure ({e:?}).");
                 }
             }
@@ -509,7 +518,7 @@ impl NamedPipe {
 
         match FileDescriptor::new(file_descriptor) {
             None => {
-                fail!(with NamedPipeOpenFdError::UnknownError(0),
+                fail!(with NamedPipeOpenError::UnknownError(0),
                     "This should never happen! {msg} since the posix 'open' returned a broken file descriptor.");
             }
             Some(fd) => Ok(fd),
@@ -560,7 +569,7 @@ impl NamedPipe {
 
     // Checks if the pipe exists at the given file_path and wether the type
     // is a named pipe.
-    pub fn does_exist(file_path: &FilePath) -> Result<bool, NamedPipeOpenError> {
+    pub fn does_exist(file_path: &FilePath) -> Result<bool, NamedPipeDoesExistError> {
         let origin = "NamedPipe::does_exist()";
         let msg = format!("Unable to determine if named pipe \"{file_path}\" exists");
 
@@ -568,7 +577,7 @@ impl NamedPipe {
             Ok(metadata) => {
                 if metadata.file_type() != FileType::FiFo {
                     fail!(from origin,
-                        with NamedPipeOpenError::FileTypeNotNamedPipe,
+                        with NamedPipeDoesExistError::FileTypeNotNamedPipe,
                         "{msg} since it has not the type FiFo.");
                 }
                 Ok(true)
@@ -576,10 +585,14 @@ impl NamedPipe {
             Err(MetadataFromPathError::DoesNotExist) => Ok(false),
             Err(MetadataFromPathError::InsufficientPermissions) => {
                 fail!(from origin,
-                    with NamedPipeOpenError::InsufficientPermissions,
+                    with NamedPipeDoesExistError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");
             }
-            Err(e) => Err(NamedPipeOpenError::MetadataFromPathError(e)),
+            Err(e) => {
+                fail!(from origin,
+                    with e.into(),
+                    "{msg} due to an internal failure while acquiring the file's metadata. [{e:?}]");
+            },
         }
     }
 
