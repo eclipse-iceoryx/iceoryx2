@@ -79,7 +79,7 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
 
     let security_attributes = from_mode_to_security_attributes(mode);
     unsafe {
-        let (handle, _) = win32call! {CreateFileA(
+        let (handle, open_error) = win32call! {CreateFileA(
             pathname as *const u8,
             access_mode,
             shared_mode,
@@ -92,6 +92,12 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
             ERROR_ACCESS_DENIED, ERROR_FILE_TOO_LARGE};
 
         if handle == INVALID_HANDLE_VALUE {
+            Errno::set(open_failure_errno(
+                pathname,
+                open_mode,
+                open_error,
+                Errno::get(),
+            ));
             return -1;
         }
 
@@ -100,6 +106,27 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
             lock_state: F_UNLCK,
         }))
     }
+}
+
+unsafe fn open_failure_errno(
+    pathname: *const c_char,
+    open_mode: u32,
+    open_error: u32,
+    original: Errno,
+) -> Errno {
+    // A concurrent removal can make an existing-file open fail with access denied.
+    // Only report absence when a subsequent query confirms the path no longer exists.
+    if open_error == ERROR_ACCESS_DENIED && open_mode == OPEN_EXISTING {
+        let attributes =
+            unsafe { windows_sys::Win32::Storage::FileSystem::GetFileAttributesA(pathname.cast()) };
+        if attributes == windows_sys::Win32::Storage::FileSystem::INVALID_FILE_ATTRIBUTES {
+            let error = unsafe { windows_sys::Win32::Foundation::GetLastError() };
+            if error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND {
+                return Errno::ENOENT;
+            }
+        }
+    }
+    original
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
@@ -479,6 +506,70 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn denied_open_reports_absence_only_after_file_disappears() {
+        let path = std::env::temp_dir().join(format!(
+            "iox2_denied_{}_{}.tmp",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let name = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let attributes = from_mode_to_security_attributes(posix::S_IWUSR);
+        unsafe {
+            let owner = CreateFileA(
+                name.as_ptr().cast(),
+                GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                &attributes,
+                CREATE_NEW,
+                FILE_ATTRIBUTE_NORMAL,
+                0,
+            );
+            assert_ne!(owner, INVALID_HANDLE_VALUE);
+            let denied = CreateFileA(
+                name.as_ptr().cast(),
+                GENERIC_READ,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                core::ptr::null(),
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                0,
+            );
+            let error = windows_sys::Win32::Foundation::GetLastError();
+            assert_eq!(denied, INVALID_HANDLE_VALUE);
+            assert_eq!(error, ERROR_ACCESS_DENIED);
+            assert!(matches!(
+                open_failure_errno(name.as_ptr().cast(), OPEN_EXISTING, error, Errno::EACCES),
+                Errno::EACCES
+            ));
+            assert_ne!(CloseHandle(owner), FALSE);
+            assert_ne!(
+                windows_sys::Win32::Storage::FileSystem::DeleteFileA(name.as_ptr().cast()),
+                FALSE
+            );
+            assert!(matches!(
+                open_failure_errno(name.as_ptr().cast(), OPEN_EXISTING, error, Errno::EACCES),
+                Errno::ENOENT
+            ));
+            assert!(matches!(
+                open_failure_errno(name.as_ptr().cast(), CREATE_NEW, error, Errno::EACCES),
+                Errno::EACCES
+            ));
+            assert!(matches!(
+                open_failure_errno(
+                    name.as_ptr().cast(),
+                    OPEN_EXISTING,
+                    ERROR_INVALID_HANDLE,
+                    Errno::EBADF
+                ),
+                Errno::EBADF
+            ));
+        }
+    }
 
     #[test]
     fn invalid_lock_probe_is_an_error_not_a_lock() {

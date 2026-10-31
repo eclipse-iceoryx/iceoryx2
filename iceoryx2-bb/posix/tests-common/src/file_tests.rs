@@ -326,6 +326,22 @@ pub fn remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
 
 #[cfg(target_os = "windows")]
 #[test]
+pub fn existing_file_access_denial_is_not_reported_as_missing() -> Result<(), FileError> {
+    create_test_directory();
+    let path = generate_file_path();
+    let _owner = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::CreateExclusive)
+        .permission(Permission::OWNER_WRITE)
+        .create()?;
+    assert_that!(FileBuilder::new(&path).open_existing(AccessMode::Read).err(),
+        eq Some(FileOpenError::InsufficientPermissions));
+    assert_that!(File::does_exist(&path)?, eq true);
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+#[test]
 pub fn permissions_use_open_file_handle_after_path_was_removed() -> Result<(), FileError> {
     let file_path = generate_file_path();
 
