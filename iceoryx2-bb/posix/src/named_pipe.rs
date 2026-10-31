@@ -118,7 +118,6 @@ enum_gen! { NamedPipeCreationError
     CurrentlyInUse,
     UnknownError(i32)
   mapping:
-    FileSetOwnerError,
     FileSetPermissionError,
     MetadataFromPathError
 }
@@ -334,8 +333,25 @@ impl NamedPipeCreationBuilder {
                 None => metadata.gid(),
             };
 
-            fail!(from self.config, when named_pipe.set_ownership(OwnershipBuilder::new().uid(owner_id).gid(group_id).create()),
-                "Failed to set ownership.");
+            match named_pipe.set_ownership(OwnershipBuilder::new().uid(owner_id).gid(group_id).create()) {
+                Ok(_) => (),
+                Err(FileSetOwnerError::InsufficientPermissions) => {
+                    fail!(from self, with NamedPipeCreationError::InsufficientPermissions,
+                        "{msg} since the owner could not be set due to insufficient permissions.");
+                }
+                Err(FileSetOwnerError::ReadOnlyFilesystem) => {
+                    fail!(from self, with NamedPipeCreationError::FilesytemIsReadOnly,
+                        "{msg} since the owner could not be set since the pipe is located on a read only file system.");
+                }
+                Err(FileSetOwnerError::Interrupt) => {
+                    fail!(from self, with NamedPipeCreationError::InterruptedBySignal,
+                        "{msg} since the owner could not be set since the operation was interrupted by a signal.");
+                }
+                Err(e) => {
+                    fail!(from self, with NamedPipeCreationError::UnknownError(0),
+                        "{msg} since the owner could not be set due to an internal error. [{e:?}]");
+                }
+            }
         }
 
         trace!(from self.config, "created");
