@@ -164,8 +164,7 @@ enum_gen! { NamedPipeReadError
     UnknownError(i32)
   mapping:
     FileDescriptorSetAddError,
-    FileDescriptorSetWaitError,
-    NamedPipeSetPropertyError
+    FileDescriptorSetWaitError
 }
 
 enum_gen! { NamedPipeWriteError
@@ -175,14 +174,6 @@ enum_gen! { NamedPipeWriteError
     IOerror,
     NoSpaceLeft,
     ReceivingPipeEndNotOpened,
-    UnknownError(i32)
-  mapping:
-    NamedPipeSetPropertyError
-}
-
-enum_gen! { NamedPipeSetPropertyError
-  entry:
-    InvalidFileDescriptor,
     UnknownError(i32)
 }
 
@@ -615,27 +606,22 @@ impl NamedPipe {
     }
 
     /// Set file status flags on a given filedescriptor
-    fn fcntl(&self, command: i32, value: i32, msg: &str) -> Result<i32, NamedPipeSetPropertyError> {
+    fn fcntl<E>(&self, command: i32, value: i32, origin: &str, msg: &str, unknown_error: E) -> Result<i32, E> {
         let result =
             unsafe { posix::fcntl_int(self.file_descriptor.native_handle(), command, value) };
 
         if result >= 0 {
             Ok(result)
         } else {
-            match Errno::get() {
-                Errno::EBADF => {
-                    fail!(with NamedPipeSetPropertyError::InvalidFileDescriptor,
-                        "{msg} since an invalid file-descriptor was provided.");
-                }
-                e => {
-                    fail!(with NamedPipeSetPropertyError::UnknownError(e as i32),
-                        "{msg} due to an unknown failure ({e:?}).");
-                }
-            }
+            fail!(from origin,
+                with unknown_error,
+                "{msg} due to an unknown failure ({:?}).", Errno::get());
         }
     }
 
-    fn set_non_blocking(&self, value: bool) -> Result<(), NamedPipeSetPropertyError> {
+    fn set_non_blocking<E: Copy>(&self, value: bool, unknown_error: E) -> Result<(), E> {
+        let origin = "NamedPipe::set_non_blocking()";
+        let msg = "Unable to set the blocking mode for the file descriptor";
         if self.is_non_blocking.load(Ordering::Relaxed) == value {
             return Ok(());
         }
@@ -643,14 +629,16 @@ impl NamedPipe {
         let current_flags = self.fcntl(
             posix::F_GETFL,
             0,
-            "Unable to acquire current named pipe filedescriptor flags",
+            origin,
+            msg,
+            unknown_error
         )?;
         let new_flags = match value {
             true => current_flags | posix::O_NONBLOCK,
             false => current_flags & !posix::O_NONBLOCK,
         };
 
-        self.fcntl(posix::F_SETFL, new_flags, "Unable to set blocking mode")?;
+        self.fcntl(posix::F_SETFL, new_flags, origin, msg, unknown_error)?;
         self.is_non_blocking.store(value, Ordering::Relaxed);
         Ok(())
     }
@@ -690,14 +678,14 @@ impl NamedPipe {
     }
 
     pub fn try_read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
-        fail!(from self, when self.set_non_blocking(true),
+        fail!(from self, when self.set_non_blocking(true, NamedPipeReadError::UnknownError(0)),
                 "Unable to try receive message since the named pipe could not bet set into unblocking state.");
         self.read(buf)
     }
 
     pub fn blocking_read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
         let msg = "Unable to blocking receive message";
-        fail!(from self, when self.set_non_blocking(false),
+        fail!(from self, when self.set_non_blocking(false, NamedPipeReadError::UnknownError(0)),
                 "{} since the named pipe could not bet set into blocking state.", msg);
         self.read(buf)
     }
@@ -711,7 +699,7 @@ impl NamedPipe {
     ) -> Result<u64, NamedPipeReadError> {
         let msg = "Failed to timed receive on named pipe";
 
-        fail!(from self, when self.set_non_blocking(false),
+        fail!(from self, when self.set_non_blocking(false, NamedPipeReadError::UnknownError(0)),
             "{} since the named pipe could not activate the blocking mode.", msg);
 
         let fd_set = FileDescriptorSet::new();
@@ -737,7 +725,7 @@ impl NamedPipe {
     pub fn write(&self, buf: &[u8]) -> Result<u64, NamedPipeWriteError> {
         let msg = "Unable to write content";
 
-        fail!(from self, when self.set_non_blocking(true),
+        fail!(from self, when self.set_non_blocking(true, NamedPipeWriteError::UnknownError(0)),
                 "{} since the named pipe could not bet set into non-blocking state.", msg);
 
         if self.access_mode != AccessMode::Write && self.access_mode != AccessMode::ReadWrite {
