@@ -23,7 +23,7 @@ pub mod node {
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
-        NodeCleanupFailure, NodeCreationFailure, NodeListFailure, NodeState, NodeView,
+        DeadNodeView, NodeCleanupFailure, NodeCreationFailure, NodeListFailure, NodeState, NodeView,
     };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
@@ -387,6 +387,70 @@ pub mod node {
         } else {
             test_fail!("Process internal nodes shall be always detected as alive.");
         }
+    }
+
+    #[conformance_test]
+    pub fn removing_stale_resources_of_live_node_does_not_remove_node<S: Service>() {
+        let test = Test::<S>::new();
+        let node = NodeBuilder::new()
+            .config(test.config())
+            .create::<S>()
+            .unwrap();
+
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let listener = service.listener_builder().create().unwrap();
+
+        let mut node_details = None;
+        Node::<S>::list(node.config(), |node_state| {
+            if let NodeState::Alive(node_view) = node_state
+                && node_view.id() == node.id()
+            {
+                node_details = node_view.details().clone();
+            }
+            CallbackProgression::Continue
+        })
+        .unwrap();
+
+        let result = DeadNodeView::<S>::__internal_try_remove_stale_resources(
+            *node.id(),
+            node_details.clone().unwrap(),
+        );
+        assert_that!(result.err(), eq Some(NodeCleanupFailure::InternalError));
+
+        let result = DeadNodeView::<S>::__internal_blocking_remove_stale_resources(
+            *node.id(),
+            node_details.unwrap(),
+            Duration::ZERO,
+        );
+        assert_that!(result.err(), eq Some(NodeCleanupFailure::InternalError));
+
+        // A second node must still be able to discover and use the live node's service.
+        let peer = test.create_node();
+        let peer_service = peer.service_builder(&service_name).event().open().unwrap();
+        let notifier = peer_service.notifier_builder().create().unwrap();
+        let event_id = EventId::new(0);
+        assert_that!(notifier.notify_with_custom_event_id(event_id).unwrap(), eq 1);
+        let mut received_event = None;
+        assert_that!(listener.try_wait(|event| received_event = Some(event.id)).unwrap(), eq 1);
+        assert_that!(received_event, eq Some(event_id));
+
+        let mut node_is_alive = false;
+        Node::<S>::list(node.config(), |node_state| {
+            if let NodeState::Alive(node_view) = node_state
+                && node_view.id() == node.id()
+            {
+                node_is_alive = true;
+            }
+            CallbackProgression::Continue
+        })
+        .unwrap();
+
+        assert_that!(node_is_alive, eq true);
     }
 
     #[conformance_test]

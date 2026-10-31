@@ -39,7 +39,7 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
         ignore ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND}
     };
     if attr == INVALID_FILE_ATTRIBUTES {
-        Errno::set(Errno::ENOENT);
+        Errno::set(unsafe { path_query_errno(path) });
         return -1;
     }
 
@@ -56,7 +56,7 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
         )) {
             (*buf).st_mode |= mode;
         } else {
-            Errno::set(Errno::ENOENT);
+            Errno::set(path_query_errno(path));
             return -1;
         }
     }
@@ -65,6 +65,22 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
 
 pub unsafe fn umask(mask: mode_t) -> mode_t {
     mode_t::MAX
+}
+
+unsafe fn path_query_errno(path: *const c_char) -> Errno {
+    let original = Errno::get();
+    // A concurrent removal can first cause access denial. Only report absence
+    // when a subsequent query explicitly confirms it; preserve other failures.
+    if matches!(original, Errno::EACCES) {
+        let attr = unsafe { GetFileAttributesA(path.cast()) };
+        let error = unsafe { windows_sys::Win32::Foundation::GetLastError() };
+        if attr == INVALID_FILE_ATTRIBUTES
+            && matches!(error, ERROR_FILE_NOT_FOUND | ERROR_PATH_NOT_FOUND)
+        {
+            return Errno::ENOENT;
+        }
+    }
+    original
 }
 
 pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
@@ -86,4 +102,86 @@ pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
 // TODO iox2-#2046: Implement Windows support
 pub unsafe fn mkfifo(path: *const c_char, mode: mode_t) -> int {
     unimplemented!("mkfifo")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use windows_sys::Win32::{
+        Foundation::{ERROR_ACCESS_DENIED, GetLastError},
+        Security::{
+            Authorization::{
+                ConvertStringSecurityDescriptorToSecurityDescriptorA, SDDL_REVISION_1,
+            },
+            GetFileSecurityA,
+        },
+        System::Memory::LocalFree,
+    };
+
+    #[test]
+    fn stat_distinguishes_denied_security_information_from_missing_file() {
+        let path = std::env::temp_dir().join(format!(
+            "iox2_stat_denied_{}_{}.tmp",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let name = alloc::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        std::fs::write(&path, b"metadata regression").unwrap();
+        unsafe {
+            let mut metadata = stat_t::new_zeroed();
+            assert_eq!(stat(name.as_ptr(), &mut metadata), 0);
+            // OWNER RIGHTS suppresses the owner's implicit READ_CONTROL grant. Keep
+            // the other owner rights, including DELETE, so the fixture can be removed.
+            let mut descriptor = core::ptr::null_mut();
+            assert_ne!(
+                ConvertStringSecurityDescriptorToSecurityDescriptorA(
+                    c"D:P(D;;RC;;;OW)(A;;FA;;;OW)".as_ptr().cast(),
+                    SDDL_REVISION_1,
+                    &mut descriptor,
+                    core::ptr::null_mut(),
+                ),
+                FALSE
+            );
+            let set_result =
+                SetFileSecurityA(name.as_ptr().cast(), DACL_SECURITY_INFORMATION, descriptor);
+            LocalFree(descriptor as isize);
+            assert_ne!(set_result, FALSE);
+            let attr = GetFileAttributesA(name.as_ptr().cast());
+            let mut buffer = [0u8; 1024];
+            let mut required = 0;
+            let security_result = GetFileSecurityA(
+                name.as_ptr().cast(),
+                DACL_SECURITY_INFORMATION,
+                buffer.as_mut_ptr().cast(),
+                buffer.len() as u32,
+                &mut required,
+            );
+            let security_error = GetLastError();
+            let denied_result = stat(name.as_ptr(), &mut metadata);
+            let denied_errno = Errno::get();
+            std::fs::remove_file(&path).unwrap();
+            // Model disappearance after a real denial but before classification.
+            Errno::set(denied_errno);
+            let disappeared_errno = path_query_errno(name.as_ptr());
+            Errno::set(Errno::EIO);
+            let other_errno = path_query_errno(name.as_ptr());
+            let missing_result = stat(name.as_ptr(), &mut metadata);
+            let missing_errno = Errno::get();
+            assert_ne!(attr, INVALID_FILE_ATTRIBUTES);
+            assert_eq!(security_result, FALSE);
+            assert_eq!(security_error, ERROR_ACCESS_DENIED);
+            assert_eq!(denied_result, -1);
+            assert!(
+                matches!(denied_errno, Errno::EACCES),
+                "denied errno: {denied_errno:?}"
+            );
+            assert_eq!(missing_result, -1);
+            assert!(matches!(missing_errno, Errno::ENOENT));
+            assert!(matches!(disappeared_errno, Errno::ENOENT));
+            assert!(matches!(other_errno, Errno::EIO));
+        }
+    }
 }

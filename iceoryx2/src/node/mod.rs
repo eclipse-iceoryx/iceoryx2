@@ -793,8 +793,9 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     "{} due to an internal error while acquiring monitoring cleaner.", msg);
             }
             Err(MonitoringCreateCleanerError::InstanceStillAlive) => {
-                fatal_panic!(from self,
-                        "This should never happen! {} since the Node is still alive.", msg);
+                // A contradictory liveness result must not be reported as successful cleanup.
+                fail!(from self, with NodeCleanupFailure::InternalError,
+                    "{} since the Node was detected as dead but is still alive.", msg);
             }
         }
     }
