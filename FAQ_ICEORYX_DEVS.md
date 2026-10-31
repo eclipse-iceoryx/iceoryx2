@@ -177,6 +177,28 @@ without specifying a linker for the target.
 just verify sdk clippy -- --target <target-triplet>
 ```
 
+## Locating rustdoc lints that print no file location
+
+Some rustdoc lints, e.g. `rustdoc::redundant_explicit_links`, print
+no `--> file:line:column` location. With `-D warnings` in the CI this
+is painful since the faulty link is unknown.
+
+The machine readable output of `cargo doc` contains the span of every
+diagnostic. Run `cargo doc` with `--message-format=json` and extract
+the primary spans with `jq`:
+
+```sh
+cargo doc --no-deps -p iceoryx2 --message-format=json \
+    | jq -r 'select(.message.level == "error" or .message.level == "warning") |
+        .message.spans[]? |
+        select(.is_primary) |
+        "\(.file_name):\(.line_start):\(.column_start): \(.message)"'
+```
+
+Note: rustdoc lints can also be reported for crates other than the
+workspace root, e.g. the `iceoryx2-bb-*` crates. Set `-p <crate>`
+accordingly.
+
 ## Crate names
 
 When adding a new crate to iceoryx2 it is recommended
