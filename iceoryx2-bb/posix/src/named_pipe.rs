@@ -45,7 +45,7 @@ use core::time::Duration;
 
 pub use crate::creation_mode::CreationMode;
 use crate::file::{
-    File, FileRemoveError, FileSetOwnerError, FileSetPermissionError, FileStatError,
+    File, FileRemoveError, FileSetOwnerError, FileSetPermissionError,
 };
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::{
@@ -53,10 +53,10 @@ use crate::file_descriptor_set::{
     SynchronousMultiplexing,
 };
 use crate::file_type::FileType;
-use crate::group::{Gid, GroupError};
+use crate::group::{Gid};
 use crate::metadata::{Metadata, MetadataFromPathError};
 use crate::ownership::OwnershipBuilder;
-use crate::user::{Uid, UserError};
+use crate::user::{Uid};
 pub use crate::{access_mode::AccessMode, permission::*};
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
@@ -117,9 +117,6 @@ enum_gen! { NamedPipeCreationError
     FileTypeNotNamedPipe,
     UnknownError(i32)
   mapping:
-    FileStatError,
-    UserError,
-    GroupError,
     FileSetOwnerError,
     FileSetPermissionError,
     MetadataFromPathError,
@@ -293,6 +290,7 @@ impl NamedPipeBuilder {
 
 /// Sets additional settings for pipes which are being newly created. Is returned when
 /// [`NamedPipeBuilder::creation_mode()`] is called in [`NamedPipeBuilder`].
+#[derive(Debug)]
 pub struct NamedPipeCreationBuilder {
     config: NamedPipeBuilder,
     creation_mode: CreationMode,
@@ -316,20 +314,34 @@ impl NamedPipeCreationBuilder {
 
     /// Creates a new named pipe
     pub fn create(self) -> Result<NamedPipe, NamedPipeCreationError> {
+        let msg = "Unable to create named pipe";
         let mut named_pipe = NamedPipe::create(&self.config, &self.creation_mode)?;
+        let metadata = match Metadata::from_path(&self.config.file_path.into()) {
+            Ok(v) => v,
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from self, with NamedPipeCreationError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to acquire the files metadata details.");
+            }
+            Err(MetadataFromPathError::DoesNotExist) => {
+                fail!(from self, with NamedPipeCreationError::FileDoesNotExist,
+                    "{msg} something seems to have deleted the newly created pipe. This could indicate a race condition.");
+            }
+            Err(e) => {
+                fail!(from self, with NamedPipeCreationError::MetadataFromPathError(e),
+                    "{msg} since the files metadata could not be acquired due to an internal error. [{e:?}]");
+            }
+        };
         fail!(from self.config, when named_pipe.set_permission(self.config.permission), "Failed to set permissions.");
 
         if self.config.owner.is_some() || self.config.group.is_some() {
-            let owner = fail!(from self.config, when named_pipe.ownership(), "Failed to acquire current owners.");
-
             let owner_id = match self.config.owner.as_ref() {
                 Some(v) => *v,
-                None => owner.uid(),
+                None => metadata.uid(),
             };
 
             let group_id = match self.config.group.as_ref() {
                 Some(v) => *v,
-                None => owner.gid(),
+                None => metadata.gid(),
             };
 
             fail!(from self.config, when named_pipe.set_ownership(OwnershipBuilder::new().uid(owner_id).gid(group_id).create()),
