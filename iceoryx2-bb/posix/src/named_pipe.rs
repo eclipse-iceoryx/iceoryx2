@@ -45,7 +45,7 @@ use core::time::Duration;
 
 pub use crate::creation_mode::CreationMode;
 use crate::file::{
-    File, FileRemoveError, FileSetOwnerError, FileSetPermissionError, FileStatError,
+    File, FileRemoveError, FileSetOwnerError, FileSetPermissionError,
 };
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::{
@@ -53,10 +53,10 @@ use crate::file_descriptor_set::{
     SynchronousMultiplexing,
 };
 use crate::file_type::FileType;
-use crate::group::{Gid, GroupError};
+use crate::group::{Gid};
 use crate::metadata::{Metadata, MetadataFromPathError};
 use crate::ownership::OwnershipBuilder;
-use crate::user::{Uid, UserError};
+use crate::user::{Uid};
 pub use crate::{access_mode::AccessMode, permission::*};
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
@@ -69,61 +69,99 @@ use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::Errno;
 use iceoryx2_pal_posix::*;
 
-enum_gen! {  NamedPipeOpenFdError
+enum_gen! { NamedPipeDoesExistError
+  entry:
+    FileTypeNotNamedPipe,
+    InsufficientPermissions
+  mapping:
+    MetadataFromPathError
+}
+
+enum_gen! { NamedPipeOpenError
+  entry:
+    InsufficientPermissions,
+    InterruptedBySignal,
+    FileTypeNotNamedPipe,
+    TooManySymbolicLinksInPath,
+    PerProcessFileHandleLimitReached,
+    FileDoesNotExist,
+    FilesytemIsReadOnly,
+    UnknownError(i32)
+  mapping:
+    MetadataFromPathError
+}
+
+impl From<NamedPipeDoesExistError> for NamedPipeOpenError {
+    fn from(value: NamedPipeDoesExistError) -> Self {
+        match value {
+            NamedPipeDoesExistError::FileTypeNotNamedPipe => NamedPipeOpenError::FileTypeNotNamedPipe,
+            NamedPipeDoesExistError::InsufficientPermissions => NamedPipeOpenError::InsufficientPermissions,
+            NamedPipeDoesExistError::MetadataFromPathError(v) => NamedPipeOpenError::MetadataFromPathError(v)
+        }
+    }
+}
+
+enum_gen! { NamedPipeCreationError
   entry:
     InsufficientPermissions,
     InterruptedBySignal,
     TooManySymbolicLinksInPath,
     PerProcessFileHandleLimitReached,
-    FileDoesNotExist,
     FilesytemIsReadOnly,
-    InvalidFileDescriptor,
-    UnknownError(i32)
-}
-
-enum_gen! { CreateFiFoError
-  entry:
-    InsufficientPermissions,
     LoopInSymbolicLinks,
     AlreadyExist,
+    FileDoesNotExist,
     PartsOfThePathDoNotExist,
     NoSpaceLeft,
     NotADirectory,
-    FilesytemIsReadOnly,
-    UnknownError(i32)
-}
-
-enum_gen! { NamedPipeOpenError
-  entry:
     FileTypeNotNamedPipe,
+    CurrentlyInUse,
     UnknownError(i32)
   mapping:
-    NamedPipeOpenFdError,
     MetadataFromPathError
 }
 
-enum_gen! { NamedPipeCreationError
-  mapping:
-    NamedPipeOpenError,
-    NamedPipeOpenFdError,
-    CreateFiFoError,
-    FileStatError,
-    UserError,
-    GroupError,
-    FileSetOwnerError,
-    FileSetPermissionError,
-    FileRemoveError
+impl From<NamedPipeDoesExistError> for NamedPipeCreationError {
+    fn from(value: NamedPipeDoesExistError) -> Self {
+        match value {
+            NamedPipeDoesExistError::InsufficientPermissions => NamedPipeCreationError::InsufficientPermissions,
+            NamedPipeDoesExistError::FileTypeNotNamedPipe => NamedPipeCreationError::FileTypeNotNamedPipe,
+            NamedPipeDoesExistError::MetadataFromPathError(v) => NamedPipeCreationError::MetadataFromPathError(v)
+        }
+    }
+}
+
+impl From<NamedPipeOpenError> for NamedPipeCreationError {
+    fn from(value: NamedPipeOpenError) -> Self {
+         match value {
+            NamedPipeOpenError::InsufficientPermissions => {
+                NamedPipeCreationError::InsufficientPermissions
+            }
+            NamedPipeOpenError::InterruptedBySignal => NamedPipeCreationError::InterruptedBySignal,
+            NamedPipeOpenError::TooManySymbolicLinksInPath => {
+                NamedPipeCreationError::TooManySymbolicLinksInPath
+            }
+            NamedPipeOpenError::PerProcessFileHandleLimitReached => {
+                NamedPipeCreationError::PerProcessFileHandleLimitReached
+            }
+            NamedPipeOpenError::FileTypeNotNamedPipe => {
+                NamedPipeCreationError::FileTypeNotNamedPipe
+            }
+            NamedPipeOpenError::FileDoesNotExist => NamedPipeCreationError::FileDoesNotExist,
+            NamedPipeOpenError::FilesytemIsReadOnly => NamedPipeCreationError::FilesytemIsReadOnly,
+            NamedPipeOpenError::UnknownError(v) => NamedPipeCreationError::UnknownError(v),
+            NamedPipeOpenError::MetadataFromPathError(v) => NamedPipeCreationError::MetadataFromPathError(v)
+        }
+    }
 }
 
 enum_gen! { NamedPipeReadError
   entry:
     InterruptedBySignal,
+    InsufficientPermissions,
+    InsufficientResources,
     IOerror,
     UnknownError(i32)
-  mapping:
-    FileDescriptorSetAddError,
-    FileDescriptorSetWaitError,
-    NamedPipeSetPropertyError
 }
 
 enum_gen! { NamedPipeWriteError
@@ -133,14 +171,6 @@ enum_gen! { NamedPipeWriteError
     IOerror,
     NoSpaceLeft,
     ReceivingPipeEndNotOpened,
-    UnknownError(i32)
-  mapping:
-    NamedPipeSetPropertyError
-}
-
-enum_gen! { NamedPipeSetPropertyError
-  entry:
-    InvalidFileDescriptor,
     UnknownError(i32)
 }
 
@@ -248,6 +278,7 @@ impl NamedPipeBuilder {
 
 /// Sets additional settings for pipes which are being newly created. Is returned when
 /// [`NamedPipeBuilder::creation_mode()`] is called in [`NamedPipeBuilder`].
+#[derive(Debug)]
 pub struct NamedPipeCreationBuilder {
     config: NamedPipeBuilder,
     creation_mode: CreationMode,
@@ -271,24 +302,70 @@ impl NamedPipeCreationBuilder {
 
     /// Creates a new named pipe
     pub fn create(self) -> Result<NamedPipe, NamedPipeCreationError> {
+        let msg = "Unable to create named pipe";
         let mut named_pipe = NamedPipe::create(&self.config, &self.creation_mode)?;
-        fail!(from self.config, when named_pipe.set_permission(self.config.permission), "Failed to set permissions.");
+        let metadata = match Metadata::from_path(&self.config.file_path.into()) {
+            Ok(v) => v,
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from self, with NamedPipeCreationError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to acquire the files metadata details.");
+            }
+            Err(MetadataFromPathError::DoesNotExist) => {
+                fail!(from self, with NamedPipeCreationError::FileDoesNotExist,
+                    "{msg} something seems to have deleted the newly created pipe. This could indicate a race condition.");
+            }
+            Err(e) => {
+                fail!(from self, with NamedPipeCreationError::MetadataFromPathError(e),
+                    "{msg} since the files metadata could not be acquired due to an internal error. [{e:?}]");
+            }
+        };
+
+        match named_pipe.set_permission(self.config.permission) {
+            Ok(()) => (),
+            Err(FileSetPermissionError::InsufficientPermissions) => {
+                fail!(from self, with NamedPipeCreationError::InsufficientPermissions,
+                    "{msg} since the permissions could not be updated due to insufficient permissions.");
+            }
+            Err(FileSetPermissionError::ReadOnlyFilesystem) => {
+                fail!(from self, with NamedPipeCreationError::FilesytemIsReadOnly,
+                    "{msg} since the permissions could not be updated since the pipe is located on a read only file system.");
+            }
+            Err(e) => {
+                fail!(from self, with NamedPipeCreationError::UnknownError(0),
+                    "{msg} since the permission could not be updated due to an internal error. [{e:?}]");
+            }
+        }
 
         if self.config.owner.is_some() || self.config.group.is_some() {
-            let owner = fail!(from self.config, when named_pipe.ownership(), "Failed to acquire current owners.");
-
             let owner_id = match self.config.owner.as_ref() {
                 Some(v) => *v,
-                None => owner.uid(),
+                None => metadata.uid(),
             };
 
             let group_id = match self.config.group.as_ref() {
                 Some(v) => *v,
-                None => owner.gid(),
+                None => metadata.gid(),
             };
 
-            fail!(from self.config, when named_pipe.set_ownership(OwnershipBuilder::new().uid(owner_id).gid(group_id).create()),
-                "Failed to set ownership.");
+            match named_pipe.set_ownership(OwnershipBuilder::new().uid(owner_id).gid(group_id).create()) {
+                Ok(_) => (),
+                Err(FileSetOwnerError::InsufficientPermissions) => {
+                    fail!(from self, with NamedPipeCreationError::InsufficientPermissions,
+                        "{msg} since the owner could not be set due to insufficient permissions.");
+                }
+                Err(FileSetOwnerError::ReadOnlyFilesystem) => {
+                    fail!(from self, with NamedPipeCreationError::FilesytemIsReadOnly,
+                        "{msg} since the owner could not be set since the pipe is located on a read only file system.");
+                }
+                Err(FileSetOwnerError::Interrupt) => {
+                    fail!(from self, with NamedPipeCreationError::InterruptedBySignal,
+                        "{msg} since the owner could not be set since the operation was interrupted by a signal.");
+                }
+                Err(e) => {
+                    fail!(from self, with NamedPipeCreationError::UnknownError(0),
+                        "{msg} since the owner could not be set due to an internal error. [{e:?}]");
+                }
+            }
         }
 
         trace!(from self.config, "created");
@@ -328,40 +405,47 @@ impl Drop for NamedPipe {
 }
 
 impl NamedPipe {
-    fn create_fifo(path: &FilePath, perm: &Permission) -> Result<(), CreateFiFoError> {
-        let msg = "Unable to create fifo special file";
+    fn create_fifo(origin: &str, msg: &str, path: &FilePath, perm: &Permission) -> Result<(), NamedPipeCreationError> {
         if unsafe { posix::mkfifo(path.as_c_str(), perm.as_mode()) } == -1 {
             match Errno::get() {
                 Errno::EACCES => {
-                    fail!(with CreateFiFoError::InsufficientPermissions,
+                    fail!(from origin,
+                        with NamedPipeCreationError::InsufficientPermissions,
                         "{msg} due to insufficient permissions.");
                 }
                 Errno::ELOOP => {
-                    fail!(with CreateFiFoError::LoopInSymbolicLinks,
+                    fail!(from origin,
+                        with NamedPipeCreationError::LoopInSymbolicLinks,
                         "{msg} due to a loop in the symbolic links.");
                 }
                 Errno::EEXIST => {
-                    fail!(with CreateFiFoError::AlreadyExist,
+                    fail!(from origin,
+                        with NamedPipeCreationError::AlreadyExist,
                         "{msg} since the named pipe already exists.");
                 }
                 Errno::ENOENT => {
-                    fail!(with CreateFiFoError::PartsOfThePathDoNotExist,
+                    fail!(from origin,
+                        with NamedPipeCreationError::PartsOfThePathDoNotExist,
                         "{msg} since the path or parts of it do not exist.");
                 }
                 Errno::ENOSPC => {
-                    fail!(with CreateFiFoError::NoSpaceLeft,
+                    fail!(from origin,
+                        with NamedPipeCreationError::NoSpaceLeft,
                         "{msg} since there is no space left on the target file-system.");
                 }
                 Errno::ENOTDIR => {
-                    fail!(with CreateFiFoError::NotADirectory,
+                    fail!(from origin,
+                        with NamedPipeCreationError::NotADirectory,
                         "{msg} since the provided pathname is not a path.");
                 }
                 Errno::EROFS => {
-                    fail!(with CreateFiFoError::FilesytemIsReadOnly,
+                    fail!(from origin,
+                        with NamedPipeCreationError::FilesytemIsReadOnly,
                         "{msg} since the parent directory resides on a read-only filesystem.");
                 }
                 e => {
-                    fail!(with CreateFiFoError::UnknownError(e as i32),
+                    fail!(from origin,
+                        with NamedPipeCreationError::UnknownError(e as i32),
                         "{msg} due to an unknown failure ({e:?}).");
                 }
             }
@@ -376,24 +460,50 @@ impl NamedPipe {
         let msg = "Unable to create named pipe";
 
         let create_fifo_fd = || -> Result<FileDescriptor, NamedPipeCreationError> {
-            NamedPipe::create_fifo(&config.file_path, &config.permission)?;
-            let file_descriptor = NamedPipe::open_fd(&config.file_path, &config.access_mode)?;
+            NamedPipe::create_fifo(&format!("{config:?}"), msg, &config.file_path, &config.permission)?;
+            let file_descriptor = NamedPipe::open_fd(&format!("{config:?}"), msg, &config.file_path, &config.access_mode)?;
             Ok(file_descriptor)
         };
 
         let file_descriptor = match creation_mode {
             CreationMode::CreateExclusive => create_fifo_fd(),
             CreationMode::PurgeAndCreate => {
-                if fail!(from config, when NamedPipe::does_exist(&config.file_path), "{} since the named pipe existence verification failed.", msg)
+                if fail!(from config, 
+                          when NamedPipe::does_exist(&config.file_path), 
+                          "{} since the named pipe existence verification failed.", msg)
                 {
-                    fail!(from config, when File::remove(&config.file_path), "{} since the removal of the already existing named pipe failed.", msg);
+                    match File::remove(&config.file_path) {
+                        Ok(_) | Err(FileRemoveError::FileDoesNotExist) => (),
+                        Err(FileRemoveError::InsufficientPermissions) => {
+                            fail!(from config, with NamedPipeCreationError::InsufficientPermissions,
+                                "{msg} since the existing pipe could not be purged due to insufficient permissions");
+                        }
+                        Err(FileRemoveError::CurrentlyInUse) => {
+                            fail!(from config, with NamedPipeCreationError::CurrentlyInUse,
+                                "{msg} since the existing pipe could not be purged since it is currently in use.");
+                        }
+                        Err(FileRemoveError::LoopInSymbolicLinks) => {
+                            fail!(from config, with NamedPipeCreationError::LoopInSymbolicLinks,
+                                "{msg} since the existing pipe could not be purged since there is a loop in the symbolic links.");
+                        }
+                        Err(FileRemoveError::PartOfReadOnlyFileSystem) => {
+                            fail!(from config, with NamedPipeCreationError::FilesytemIsReadOnly,
+                                "{msg} since the existing pipe could not be purged since it is located on a read only file system");
+                        }
+                        Err(e) => {
+                            fail!(from config, with NamedPipeCreationError::UnknownError(0),
+                                "{msg} since the existing pipe could not be purged due to an internal error. [{e:?}]");
+                        }
+                    }
                 }
                 create_fifo_fd()
             }
             CreationMode::OpenOrCreate => {
-                match fail!(from config, when NamedPipe::does_exist(&config.file_path), "{} since the named pipe existence verification failed.", msg)
+                match fail!(from config, 
+                            when NamedPipe::does_exist(&config.file_path), 
+                            "{} since the named pipe existence verification failed.", msg)
                 {
-                    true => Ok(NamedPipe::open_fd(&config.file_path, &config.access_mode)?),
+                    true => Ok(NamedPipe::open_fd(&format!("{config:?}"), msg, &config.file_path, &config.access_mode)?),
                     false => create_fifo_fd(),
                 }
             }
@@ -409,48 +519,59 @@ impl NamedPipe {
     }
 
     fn open_fd(
+        origin: &str,
+        msg: &str,
         path: &FilePath,
         access_mode: &AccessMode,
-    ) -> Result<FileDescriptor, NamedPipeOpenFdError> {
-        let msg = "Unable to open named pipe";
+    ) -> Result<FileDescriptor, NamedPipeOpenError> {
         let file_descriptor =
             unsafe { posix::open(path.as_c_str(), access_mode.as_oflag() | posix::O_SYNC) };
 
         if file_descriptor == -1 {
             match Errno::get() {
                 Errno::EACCES => {
-                    fail!(with NamedPipeOpenFdError::InsufficientPermissions,
+                    fail!(from origin,
+                        with NamedPipeOpenError::InsufficientPermissions,
                         "{msg} due to insufficient permissions.");
                 }
                 Errno::EINTR => {
-                    fail!( with NamedPipeOpenFdError::InterruptedBySignal,
+                    fail!(from origin,
+                        with NamedPipeOpenError::InterruptedBySignal,
                         "{msg} since an interrupt signal was raised.");
                 }
                 Errno::ELOOP => {
-                    fail!( with NamedPipeOpenFdError::TooManySymbolicLinksInPath,
+                    fail!(from origin,
+                        with NamedPipeOpenError::TooManySymbolicLinksInPath,
                         "{msg} since there are too many symbolic links in the path.");
                 }
                 Errno::EMFILE => {
-                    fail!( with NamedPipeOpenFdError::PerProcessFileHandleLimitReached,
+                    fail!(from origin,
+                        with NamedPipeOpenError::PerProcessFileHandleLimitReached,
                         "{msg} since the process wide file handle limit was reached.");
                 }
                 Errno::ENOENT => {
-                    fail!( with NamedPipeOpenFdError::FileDoesNotExist,
+                    fail!(from origin, 
+                        with NamedPipeOpenError::FileDoesNotExist,
                         "{msg} since the file does not exist.");
                 }
                 Errno::EROFS => {
-                    fail!(with NamedPipeOpenFdError::FilesytemIsReadOnly,
+                    fail!(from origin,
+                        with NamedPipeOpenError::FilesytemIsReadOnly,
                         "{msg} since the file resides on a read-only filesystem.");
                 }
                 e => {
-                    fail!(with NamedPipeOpenFdError::UnknownError(e as i32),
+                    fail!(from origin,
+                        with NamedPipeOpenError::UnknownError(e as i32),
                         "{msg} due to an unknown failure ({e:?}).");
                 }
             }
         }
 
         match FileDescriptor::new(file_descriptor) {
-            None => Err(NamedPipeOpenFdError::InvalidFileDescriptor),
+            None => {
+                fail!(with NamedPipeOpenError::UnknownError(0),
+                    "This should never happen! {msg} since the posix 'open' returned a broken file descriptor.");
+            }
             Some(fd) => Ok(fd),
         }
     }
@@ -460,7 +581,9 @@ impl NamedPipe {
     /// the current permissions of the pipe. But writing to a read-only pipe can result
     /// in some kind of error.
     fn open(config: NamedPipeBuilder) -> Result<NamedPipe, NamedPipeOpenError> {
-        let file_descriptor = NamedPipe::open_fd(&config.file_path, &config.access_mode)?;
+        let origin = "NamedPipe::open()";
+        let msg = "Failed to open named pipe";
+        let file_descriptor = NamedPipe::open_fd(origin, msg, &config.file_path, &config.access_mode)?;
 
         Ok(NamedPipe {
             path: config.file_path,
@@ -497,19 +620,30 @@ impl NamedPipe {
 
     // Checks if the pipe exists at the given file_path and wether the type
     // is a named pipe.
-    pub fn does_exist(file_path: &FilePath) -> Result<bool, NamedPipeOpenError> {
+    pub fn does_exist(file_path: &FilePath) -> Result<bool, NamedPipeDoesExistError> {
+        let origin = "NamedPipe::does_exist()";
         let msg = format!("Unable to determine if named pipe \"{file_path}\" exists");
 
         match Metadata::from_path(&Path::from(file_path)) {
             Ok(metadata) => {
                 if metadata.file_type() != FileType::FiFo {
-                    fail!(with NamedPipeOpenError::FileTypeNotNamedPipe,
+                    fail!(from origin,
+                        with NamedPipeDoesExistError::FileTypeNotNamedPipe,
                         "{msg} since it has not the type FiFo.");
                 }
                 Ok(true)
             }
             Err(MetadataFromPathError::DoesNotExist) => Ok(false),
-            Err(e) => Err(NamedPipeOpenError::MetadataFromPathError(e)),
+            Err(MetadataFromPathError::InsufficientPermissions) => {
+                fail!(from origin,
+                    with NamedPipeDoesExistError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
+            Err(e) => {
+                fail!(from origin,
+                    with e.into(),
+                    "{msg} due to an internal failure while acquiring the file's metadata. [{e:?}]");
+            },
         }
     }
 
@@ -520,27 +654,22 @@ impl NamedPipe {
     }
 
     /// Set file status flags on a given filedescriptor
-    fn fcntl(&self, command: i32, value: i32, msg: &str) -> Result<i32, NamedPipeSetPropertyError> {
+    fn fcntl<E>(&self, command: i32, value: i32, origin: &str, msg: &str, unknown_error: E) -> Result<i32, E> {
         let result =
             unsafe { posix::fcntl_int(self.file_descriptor.native_handle(), command, value) };
 
         if result >= 0 {
             Ok(result)
         } else {
-            match Errno::get() {
-                Errno::EBADF => {
-                    fail!(with NamedPipeSetPropertyError::InvalidFileDescriptor,
-                        "{msg} since an invalid file-descriptor was provided.");
-                }
-                e => {
-                    fail!(with NamedPipeSetPropertyError::UnknownError(e as i32),
-                        "{msg} due to an unknown failure ({e:?}).");
-                }
-            }
+            fail!(from origin,
+                with unknown_error,
+                "{msg} due to an unknown failure ({:?}).", Errno::get());
         }
     }
 
-    fn set_non_blocking(&self, value: bool) -> Result<(), NamedPipeSetPropertyError> {
+    fn set_non_blocking<E: Copy>(&self, value: bool, unknown_error: E) -> Result<(), E> {
+        let origin = "NamedPipe::set_non_blocking()";
+        let msg = "Unable to set the blocking mode for the file descriptor";
         if self.is_non_blocking.load(Ordering::Relaxed) == value {
             return Ok(());
         }
@@ -548,14 +677,16 @@ impl NamedPipe {
         let current_flags = self.fcntl(
             posix::F_GETFL,
             0,
-            "Unable to acquire current named pipe filedescriptor flags",
+            origin,
+            msg,
+            unknown_error
         )?;
         let new_flags = match value {
             true => current_flags | posix::O_NONBLOCK,
             false => current_flags & !posix::O_NONBLOCK,
         };
 
-        self.fcntl(posix::F_SETFL, new_flags, "Unable to set blocking mode")?;
+        self.fcntl(posix::F_SETFL, new_flags, origin, msg, unknown_error)?;
         self.is_non_blocking.store(value, Ordering::Relaxed);
         Ok(())
     }
@@ -595,14 +726,14 @@ impl NamedPipe {
     }
 
     pub fn try_read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
-        fail!(from self, when self.set_non_blocking(true),
+        fail!(from self, when self.set_non_blocking(true, NamedPipeReadError::UnknownError(0)),
                 "Unable to try receive message since the named pipe could not bet set into unblocking state.");
         self.read(buf)
     }
 
     pub fn blocking_read(&self, buf: &mut [u8]) -> Result<u64, NamedPipeReadError> {
         let msg = "Unable to blocking receive message";
-        fail!(from self, when self.set_non_blocking(false),
+        fail!(from self, when self.set_non_blocking(false, NamedPipeReadError::UnknownError(0)),
                 "{} since the named pipe could not bet set into blocking state.", msg);
         self.read(buf)
     }
@@ -616,11 +747,23 @@ impl NamedPipe {
     ) -> Result<u64, NamedPipeReadError> {
         let msg = "Failed to timed receive on named pipe";
 
-        fail!(from self, when self.set_non_blocking(false),
+        fail!(from self, when self.set_non_blocking(false, NamedPipeReadError::UnknownError(0)),
             "{} since the named pipe could not activate the blocking mode.", msg);
 
         let fd_set = FileDescriptorSet::new();
-        let _guard = fd_set.add(self)?;
+        let _guard = match fd_set.add(self) {
+            Ok(g) => g,
+            Err(FileDescriptorSetAddError::CapacityExceeded) => {
+                fail!(from self, with NamedPipeReadError::InsufficientResources,
+                    "{} due to insufficient resources to attach the file descriptor to the internal file descriptor set.",
+                    msg);
+            }
+            Err(e) => {
+                fail!(from self, with NamedPipeReadError::InsufficientResources,
+                    "{} since an unknown error occurred while attaching the file descriptor to the internal file descriptor set. [{e:?}]",
+                    msg);
+            }
+        };
 
         let mut received_bytes = Ok(0);
         let receive_call = |_: &FileDescriptor| {
@@ -632,7 +775,16 @@ impl NamedPipe {
                 fail!(from self, with NamedPipeReadError::InterruptedBySignal,
                     "{} since an interrupt signal was received.", msg);
             }
-            Err(e) => Err(NamedPipeReadError::FileDescriptorSetWaitError(e)),
+            Err(FileDescriptorSetWaitError::InsufficientPermissions) => {
+                fail!(from self, with NamedPipeReadError::InsufficientPermissions,
+                    "{} due to insufficient permissions to wait on the underyling file descriptor set.",
+                    msg);
+            },
+            Err(e) => {
+                fail!(from self, with NamedPipeReadError::UnknownError(0),
+                    "{} due to an internal error while waiting on the underlying file descriptor set. [{e:?}]",
+                    msg);
+            }
             Ok(_) => received_bytes,
         }
     }
@@ -642,7 +794,7 @@ impl NamedPipe {
     pub fn write(&self, buf: &[u8]) -> Result<u64, NamedPipeWriteError> {
         let msg = "Unable to write content";
 
-        fail!(from self, when self.set_non_blocking(true),
+        fail!(from self, when self.set_non_blocking(true, NamedPipeWriteError::UnknownError(0)),
                 "{} since the named pipe could not bet set into non-blocking state.", msg);
 
         if self.access_mode != AccessMode::Write && self.access_mode != AccessMode::ReadWrite {
