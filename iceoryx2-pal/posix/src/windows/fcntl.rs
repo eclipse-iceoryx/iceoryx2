@@ -509,6 +509,10 @@ mod tests {
 
     #[test]
     fn denied_open_reports_absence_only_after_file_disappears() {
+        use windows_sys::Win32::Storage::FileSystem::{
+            FILE_ATTRIBUTE_READONLY, GetFileAttributesA, INVALID_FILE_ATTRIBUTES,
+            SetFileAttributesA,
+        };
         let path = std::env::temp_dir().join(format!(
             "iox2_denied_{}_{}.tmp",
             std::process::id(),
@@ -517,8 +521,8 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        let name = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
-        let attributes = from_mode_to_security_attributes(posix::S_IWUSR);
+        let name = alloc::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let attributes = from_mode_to_security_attributes(posix::S_IRUSR | posix::S_IWUSR);
         unsafe {
             let owner = CreateFileA(
                 name.as_ptr().cast(),
@@ -530,9 +534,20 @@ mod tests {
                 0,
             );
             assert_ne!(owner, INVALID_HANDLE_VALUE);
+            let original_attributes = GetFileAttributesA(name.as_ptr().cast());
+            assert_ne!(original_attributes, INVALID_FILE_ATTRIBUTES);
+            // POSIX modes still grant Administrators and SYSTEM full access. Use the
+            // read-only file attribute to obtain a real denial regardless of that grant.
+            assert_ne!(
+                SetFileAttributesA(
+                    name.as_ptr().cast(),
+                    original_attributes | FILE_ATTRIBUTE_READONLY
+                ),
+                FALSE
+            );
             let denied = CreateFileA(
                 name.as_ptr().cast(),
-                GENERIC_READ,
+                GENERIC_WRITE,
                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 core::ptr::null(),
                 OPEN_EXISTING,
@@ -540,6 +555,13 @@ mod tests {
                 0,
             );
             let error = windows_sys::Win32::Foundation::GetLastError();
+            // Restore before assertions/deletion so a failed test does not leave a
+            // read-only fixture behind. Close an unexpected successful open as well.
+            let restored = SetFileAttributesA(name.as_ptr().cast(), original_attributes);
+            if denied != INVALID_HANDLE_VALUE {
+                CloseHandle(denied);
+            }
+            assert_ne!(restored, FALSE);
             assert_eq!(denied, INVALID_HANDLE_VALUE);
             assert_eq!(error, ERROR_ACCESS_DENIED);
             assert!(matches!(

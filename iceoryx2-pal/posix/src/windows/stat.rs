@@ -128,7 +128,7 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        let name = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let name = alloc::ffi::CString::new(path.to_str().unwrap()).unwrap();
         std::fs::write(&path, b"metadata regression").unwrap();
         unsafe {
             let mut metadata = stat_t::new_zeroed();

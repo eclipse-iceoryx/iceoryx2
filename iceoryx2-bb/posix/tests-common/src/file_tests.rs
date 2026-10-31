@@ -327,16 +327,34 @@ pub fn remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
 #[cfg(target_os = "windows")]
 #[test]
 pub fn existing_file_access_denial_is_not_reported_as_missing() -> Result<(), FileError> {
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+
+    // Keep this Windows-only fixture usable by the no_std test definitions too.
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetFileAttributesA(path: *const u8) -> u32;
+        fn SetFileAttributesA(path: *const u8, attributes: u32) -> i32;
+    }
+    const FILE_ATTRIBUTE_READONLY: u32 = 1;
     create_test_directory();
     let path = generate_file_path();
     let _owner = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::CreateExclusive)
-        .permission(Permission::OWNER_WRITE)
+        .permission(Permission::OWNER_READ_WRITE)
         .create()?;
-    assert_that!(FileBuilder::new(&path).open_existing(AccessMode::Read).err(),
+    let original_attributes = unsafe { GetFileAttributesA(path.as_c_str().cast()) };
+    assert_that!(original_attributes, ne u32::MAX);
+    // A mode without read/write permission does not deny privileged Windows accounts.
+    assert_that!(unsafe { SetFileAttributesA(path.as_c_str().cast(), original_attributes | FILE_ATTRIBUTE_READONLY) }, ne 0);
+    let result = FileBuilder::new(&path).open_existing(AccessMode::Write);
+    let exists = File::does_exist(&path);
+    // Restore before checking the result so cleanup can remove the fixture on failure.
+    assert_that!(unsafe { SetFileAttributesA(path.as_c_str().cast(), original_attributes) }, ne 0);
+    assert_that!(result.err(),
         eq Some(FileOpenError::InsufficientPermissions));
-    assert_that!(File::does_exist(&path)?, eq true);
+    assert_that!(exists?, eq true);
+    FileBuilder::new(&path).open_existing(AccessMode::Write)?;
     Ok(())
 }
 
