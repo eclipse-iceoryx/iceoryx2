@@ -418,12 +418,14 @@ pub mod zero_copy_connection_trait {
         assert_that!(sample.as_ref().unwrap().offset(), eq sample_offset);
 
         assert_that!(sut_receiver.release(sample.unwrap(), id), is_ok);
-        let retrieval = sut_sender.reclaim(id).unwrap();
-        assert_that!(retrieval, is_some);
-        assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
-
-        let retrieval = sut_sender.reclaim(id).unwrap();
-        assert_that!(retrieval, is_none);
+        let mut reclaims = vec![];
+        sut_sender
+            .reclaim(id, |offset| {
+                reclaims.push(offset);
+            })
+            .unwrap();
+        assert_that!(reclaims, len 1);
+        assert_that!(reclaims[0].offset(), eq sample_offset);
     }
 
     #[conformance_test]
@@ -463,12 +465,14 @@ pub mod zero_copy_connection_trait {
 
                 assert_that!(sut_receiver.release(sample.unwrap(), id), is_ok);
                 assert_that!(sut_receiver.borrow_count(id), eq 0);
-                let retrieval = sut_sender.reclaim(id).unwrap();
-                assert_that!(retrieval, is_some);
-                assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
-
-                let retrieval = sut_sender.reclaim(id).unwrap();
-                assert_that!(retrieval, is_none);
+                let mut retrievals = vec![];
+                sut_sender
+                    .reclaim(id, |offset| {
+                        retrievals.push(offset);
+                    })
+                    .unwrap();
+                assert_that!(retrievals, len 1);
+                assert_that!(retrievals[0].offset(), eq sample_offset);
             }
         }
     }
@@ -526,9 +530,14 @@ pub mod zero_copy_connection_trait {
             // reclaim them
             for channel_id in 0..NUMBER_OF_CHANNELS {
                 let id = ChannelId::new(channel_id);
-                let retrieval = sut_sender.reclaim(id).unwrap();
-                assert_that!(retrieval, is_some);
-                assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
+                let mut retrievals = vec![];
+                sut_sender
+                    .reclaim(id, |offset| {
+                        retrievals.push(offset);
+                    })
+                    .unwrap();
+                assert_that!(retrievals, len 1);
+                assert_that!(retrievals[0].offset(), eq sample_offset);
             }
         }
     }
@@ -615,10 +624,20 @@ pub mod zero_copy_connection_trait {
                 for sender_channel_reclaim_id in 0..NUMBER_OF_CHANNELS {
                     let id = ChannelId::new(sender_channel_reclaim_id);
                     if sender_channel_reclaim_id == sender_channel_id {
-                        let sample = sut_sender.reclaim(id).unwrap().unwrap();
-                        assert_that!(sample.offset(), eq sample_offset);
+                        let mut reclaims = vec![];
+                        sut_sender
+                            .reclaim(id, |offset| {
+                                reclaims.push(offset);
+                            })
+                            .unwrap();
+                        assert_that!(reclaims, len 1);
+                        assert_that!(reclaims[0].offset(), eq sample_offset);
                     } else {
-                        assert_that!(sut_sender.reclaim(id).unwrap(), is_none);
+                        sut_sender
+                            .reclaim(id, |_| {
+                                assert_that!(shall_never_be_reached);
+                            })
+                            .unwrap();
                     }
                 }
             }
@@ -789,7 +808,14 @@ pub mod zero_copy_connection_trait {
 
             for s in samples {
                 assert_that!(sut_receiver.release(s, id), is_ok);
-                assert_that!(sut_sender.reclaim(id).unwrap(), is_some);
+
+                let mut reclaims = vec![];
+                sut_sender
+                    .reclaim(id, |offset| {
+                        reclaims.push(offset);
+                    })
+                    .unwrap();
+                assert_that!(reclaims, len 1);
             }
         }
     }
@@ -1302,9 +1328,13 @@ pub mod zero_copy_connection_trait {
             sut_receiver.release(offset, id).unwrap();
         }
 
-        for _ in 0..BUFFER_SIZE {
-            assert_that!(sut_sender.reclaim(id).unwrap(), is_some);
-        }
+        let mut reclaims = vec![];
+        sut_sender
+            .reclaim(id, |offset| {
+                reclaims.push(offset);
+            })
+            .unwrap();
+        assert_that!(reclaims, len BUFFER_SIZE);
 
         let mut sample_acquired = false;
         unsafe { sut_sender.acquire_used_offsets(|_| sample_acquired = true) };
@@ -1702,15 +1732,26 @@ pub mod zero_copy_connection_trait {
             }
         }
 
-        for k in 0..2 {
-            for n in 0..BUFFER_SIZE {
-                let offset = sut_sender.reclaim(id).unwrap().unwrap();
+        let mut buffer_counter = 0;
+        let mut channel_counter = 0;
+        let mut reclaimed_offset = 0;
+        sut_sender
+            .reclaim(id, |offset| {
+                reclaimed_offset += 1;
                 assert_that!(offset, eq PointerOffset::from_offset_and_segment_id(
-                    k * SAMPLE_SIZE,
-                    SegmentId::new(n as u8),
+                    channel_counter * SAMPLE_SIZE,
+                    SegmentId::new(buffer_counter as u8),
                 ));
-            }
-        }
+
+                buffer_counter += 1;
+                if buffer_counter == BUFFER_SIZE {
+                    buffer_counter = 0;
+                    channel_counter += 1;
+                }
+            })
+            .unwrap();
+
+        assert_that!(reclaimed_offset, eq 2 * BUFFER_SIZE);
     }
 
     #[conformance_test]
@@ -1955,7 +1996,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         // panics here
-        let _ = sut_sender.reclaim(ChannelId::new(1));
+        let _ = sut_sender.reclaim(ChannelId::new(1), |_| {});
     }
 
     #[cfg(debug_assertions)]

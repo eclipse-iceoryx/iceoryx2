@@ -499,16 +499,12 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
             if let Some(connection) = self.get(i) {
                 for channel_id in 0..self.number_of_channels {
                     let id = ChannelId::new(channel_id);
-                    loop {
-                        match connection.sender.reclaim(id) {
-                            Ok(Some(ptr_dist)) => {
-                                self.data_segment.release(ptr_dist);
-                            }
-                            Ok(None) => break,
-                            Err(e) => {
-                                warn!(from self, "Unable to reclaim chunks from connection {:?} due to {:?}. This may lead to a situation where no more chunks will be delivered to this connection.", connection, e)
-                            }
-                        }
+                    if let Err(e) = connection.sender.reclaim(id, |ptr_dist| {
+                        self.data_segment.release(ptr_dist);
+                    }) {
+                        warn!(from self,
+                            "Unable to reclaim chunks from connection {:?} due to {:?}. This may lead to a situation where no more chunks will be delivered to this connection.", 
+                            connection, e);
                     }
                 }
             }
