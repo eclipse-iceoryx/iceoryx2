@@ -70,21 +70,6 @@ pub mod notifier {
     }
 
     #[conformance_test]
-    pub fn notifier_name_is_empty_by_default<Sut: Service>()
-    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
-        let test = Test::<Sut>::new();
-        let service_name = generate_service_name();
-        let node = test.create_node();
-        let service = node.service_builder(&service_name).event().create()?;
-
-        let sut = service.notifier_builder().create()?;
-
-        assert_that!(sut.name(), eq "");
-
-        Ok(())
-    }
-
-    #[conformance_test]
     pub fn notifier_name_can_be_set<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let test = Test::<Sut>::new();

@@ -140,7 +140,7 @@ impl Pointer<u8> for ShmPointer {
 }
 
 #[doc(hidden)]
-pub(crate) mod details {
+pub mod details {
     use super::*;
 
     pub trait SharedMemoryLowLevelAPI<Allocator: ShmAllocator> {

@@ -84,7 +84,7 @@ pub fn opening_non_existing_named_pipe_fails() {
     let result = NamedPipeBuilder::new(&test_non_existing_named_pipe).open_existing();
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::NamedPipeOpenFdError(NamedPipeOpenFdError::FileDoesNotExist));
+    assert_that!(result.err().unwrap(), eq NamedPipeOpenError::FileDoesNotExist);
 }
 
 #[test]
@@ -117,7 +117,7 @@ pub fn creating_named_pipe_with_empty_path_fails() {
         .create();
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::CreateFiFoError(CreateFiFoError::PartsOfThePathDoNotExist));
+    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::PartsOfThePathDoNotExist);
 }
 
 #[test]
@@ -144,7 +144,7 @@ pub fn creating_named_pipe_on_existing_pipe_creation_mode_create_exclusive_fails
         .create();
 
     assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::CreateFiFoError(CreateFiFoError::AlreadyExist));
+    assert_that!(result.err().unwrap(), eq NamedPipeCreationError::AlreadyExist);
 }
 
 #[test]
@@ -260,7 +260,7 @@ pub fn does_exist_check_works() {
 
     let file_result = NamedPipe::does_exist(&dummy_file_path);
     assert_that!(file_result, is_err);
-    assert_that!(file_result.err().unwrap(), eq NamedPipeOpenError::FileTypeNotNamedPipe);
+    assert_that!(file_result.err().unwrap(), eq NamedPipeDoesExistError::FileTypeNotNamedPipe);
 
     // now a real pipe
     let _sut = NamedPipeBuilder::new(&test_named_pipe_path)

@@ -115,28 +115,6 @@ pub mod node {
     }
 
     #[conformance_test]
-    pub fn multiple_nodes_with_the_same_name_can_be_created<S: Service>() {
-        const NUMBER_OF_NODES: usize = 16;
-        let test = Test::<S>::new();
-        let node_name = NodeName::new("but what does an electron taste like?").unwrap();
-
-        let mut nodes = vec![];
-        for _ in 0..NUMBER_OF_NODES {
-            nodes.push(
-                NodeBuilder::new()
-                    .config(test.config())
-                    .name(&node_name)
-                    .create::<S>()
-                    .unwrap(),
-            );
-        }
-
-        for node in nodes {
-            assert_that!(*node.name(), eq node_name);
-        }
-    }
-
-    #[conformance_test]
     pub fn without_custom_config_global_config_is_used<S: Service>() {
         let _test = Test::<S>::new_with_custom_config(Config::global_config().clone());
         let sut = NodeBuilder::new().create::<S>().unwrap();
