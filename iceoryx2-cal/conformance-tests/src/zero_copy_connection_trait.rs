@@ -1537,7 +1537,7 @@ pub mod zero_copy_connection_trait {
             )
             .unwrap();
 
-        assert_that!(sut_sender.reclaim(ChannelId::new(0)).err(), eq Some(ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset));
+        assert_that!(sut_sender.reclaim(ChannelId::new(0), |_| {}).err(), eq Some(ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset));
     }
 
     #[conformance_test]
