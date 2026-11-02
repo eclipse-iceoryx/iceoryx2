@@ -35,6 +35,7 @@ rust_library(
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/flatbuffers:iceoryx2-bb-flatbuffers",
+        "//iceoryx2-bb/flatbuffers-generated:iceoryx2-bb-flatbuffers-generated",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
