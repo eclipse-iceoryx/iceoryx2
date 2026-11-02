@@ -12,10 +12,13 @@
 
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::iceoryx_send::{__InternalNoTouchyFishy, IceoryxSend};
 use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
+use crate::service::static_config::message_type_details::TypeName as TypeNameString;
 
 #[repr(C)]
 #[derive(Debug, ZeroCopySend, Clone, Default)]
@@ -48,8 +51,33 @@ impl<T> Debug for Flatbuffer<T> {
 unsafe impl<T> __InternalNoTouchyFishy for Flatbuffer<T> {}
 impl<T> IceoryxSend for Flatbuffer<T> {}
 
+/// The type name of the `Flatbuffer` marker.
+///
+/// A service records it with the root type of the payload's schema appended
+/// in angle brackets, e.g. `iox2::Flatbuffer<Testing.UnboundedData>`.
+const FLATBUFFER_TYPE_NAME: &str = "iox2::Flatbuffer";
+
 unsafe impl<T> TypeName for Flatbuffer<T> {
     unsafe fn type_name() -> &'static str {
-        "iox2::Flatbuffer"
+        FLATBUFFER_TYPE_NAME
+    }
+}
+
+/// The type name a service records for a flatbuffer payload whose schema
+/// declares `root_type`, or `None` when it does not fit.
+pub(crate) fn flatbuffer_type_name(root_type: &str) -> Option<TypeNameString> {
+    let mut type_name = TypeNameString::new();
+    for piece in [FLATBUFFER_TYPE_NAME, "<", root_type, ">"] {
+        type_name.push_bytes(piece.as_bytes()).ok()?;
+    }
+    Some(type_name)
+}
+
+/// Whether `type_name` is the recorded type name of a flatbuffer payload.
+pub fn is_flatbuffer_type_name(type_name: &str) -> bool {
+    match type_name.strip_prefix(FLATBUFFER_TYPE_NAME) {
+        Some("") => true,
+        Some(composed) => composed.starts_with('<') && composed.ends_with('>'),
+        None => false,
     }
 }

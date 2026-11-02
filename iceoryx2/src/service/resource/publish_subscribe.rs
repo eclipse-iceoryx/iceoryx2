@@ -14,7 +14,8 @@ extern crate alloc;
 
 use crate::node::SharedNode;
 use crate::service;
-use crate::service::resource::type_definition::TypeDefinition;
+use crate::service::resource::schema_source::Schema;
+use crate::service::resource::type_definition::TypeDefinitionStorage;
 use crate::service::resource::{RemoveStaleResourcesError, ServiceResource};
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -28,7 +29,7 @@ pub(crate) const PAYLOAD_TYPE_DEFINITION: FileName =
     unsafe { FileName::new_unchecked_const(b"payload") };
 
 pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
-    pub(crate) type_definition: TypeDefinition,
+    pub(crate) schema: Option<Schema>,
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
@@ -81,13 +82,16 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         static_config: &crate::service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceCreateError> {
-        match resource_config
-            .type_definition
-            .create_storage::<ServiceType>(
-                &PAYLOAD_TYPE_DEFINITION,
-                resource_config.shared_node.config(),
-                static_config,
-            ) {
+        match TypeDefinitionStorage::<ServiceType>::create(
+            resource_config.schema.as_ref(),
+            &static_config
+                .publish_subscribe()
+                .message_type_details()
+                .payload,
+            &PAYLOAD_TYPE_DEFINITION,
+            resource_config.shared_node.config(),
+            static_config,
+        ) {
             Ok(Some(v)) => Ok(Self {
                 type_definition_storage: Some(v.storage),
                 path_hint: Some(v.path_hint),
@@ -110,13 +114,16 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         static_config: &crate::service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceOpenError> {
-        match resource_config
-            .type_definition
-            .open_and_verify_storage::<ServiceType>(
-                &PAYLOAD_TYPE_DEFINITION,
-                resource_config.shared_node.config(),
-                static_config,
-            ) {
+        match TypeDefinitionStorage::<ServiceType>::open(
+            resource_config.schema.as_ref(),
+            &static_config
+                .publish_subscribe()
+                .message_type_details()
+                .payload,
+            &PAYLOAD_TYPE_DEFINITION,
+            resource_config.shared_node.config(),
+            static_config,
+        ) {
             Ok(Some(v)) => Ok(Self {
                 type_definition_storage: Some(v.storage),
                 path_hint: Some(v.path_hint),
@@ -141,7 +148,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
     ) -> Result<(), RemoveStaleResourcesError> {
         let origin = "PublishSubscribeResources::remove_stale_resources()";
         let msg = "Failed to remove the stale publish subscribe resources";
-        if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
+        if let Err(e) = TypeDefinitionStorage::<ServiceType>::remove_stale(
             &PAYLOAD_TYPE_DEFINITION,
             config,
             static_config,
@@ -152,7 +159,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         }
 
         if let Err(e) =
-            TypeDefinition::remove_resource_directory::<ServiceType>(config, static_config)
+            TypeDefinitionStorage::<ServiceType>::remove_resource_directory(config, static_config)
         {
             fail!(from origin,
                 with e,

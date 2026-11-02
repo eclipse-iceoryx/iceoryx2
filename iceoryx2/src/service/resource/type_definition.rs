@@ -12,20 +12,20 @@
 
 extern crate alloc;
 
+use alloc::string::ToString;
+
 use crate::service::{
     ServiceDetailsError,
     builder::{ServiceCreateError, ServiceOpenError},
-    resource::RemoveStaleResourcesError,
+    marker::is_flatbuffer_type_name,
+    resource::{RemoveStaleResourcesError, schema_source::Schema},
+    static_config::message_type_details::TypeDetail,
 };
-use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::time::Duration;
-use iceoryx2_bb_flatbuffers::{
-    FindSchemaFileError, TypeName, find_best_fitting_binary_schema_file,
-};
-use iceoryx2_bb_posix::file::{AccessMode, FileBuilder, FileOpenError, FileReadError};
-use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+use iceoryx2_bb_container::string::String as _;
+use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_cal::{
     event::{NamedConceptBuilder, NamedConceptMgmt, SemanticString},
     named_concept::{
@@ -39,164 +39,73 @@ use iceoryx2_cal::{
 use iceoryx2_log::{fail, fatal_panic};
 
 #[derive(Debug)]
-enum SchemaPathError {
-    NoFlatbufferSchemaSearchPathConfigured,
-    NoFittingSchemaFileFound,
-    InsufficientPermissions,
-    Interrupt,
-    InternalError,
-}
-
-impl From<SchemaPathError> for ServiceCreateError {
-    fn from(value: SchemaPathError) -> Self {
-        match value {
-            SchemaPathError::InternalError => ServiceCreateError::InternalFailure,
-            SchemaPathError::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
-            SchemaPathError::NoFittingSchemaFileFound
-            | SchemaPathError::NoFlatbufferSchemaSearchPathConfigured => {
-                ServiceCreateError::UnableToAcquireTypeDefinition
-            }
-            SchemaPathError::Interrupt => ServiceCreateError::Interrupt,
-        }
-    }
-}
-
-impl From<SchemaPathError> for ServiceOpenError {
-    fn from(value: SchemaPathError) -> Self {
-        match value {
-            SchemaPathError::InternalError => ServiceOpenError::InternalFailure,
-            SchemaPathError::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
-            SchemaPathError::NoFittingSchemaFileFound
-            | SchemaPathError::NoFlatbufferSchemaSearchPathConfigured => {
-                ServiceOpenError::UnableToAcquireTypeDefinition
-            }
-            SchemaPathError::Interrupt => ServiceOpenError::Interrupt,
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct TypeDefinitionStorage<S: crate::service::Service> {
     pub storage: S::StaticStorage,
     pub path_hint: Path,
 }
 
-/// A schema provided instead of the one looked up under the type name.
-#[derive(Debug, Clone)]
-#[allow(clippy::large_enum_variant)]
-pub enum SchemaOverride {
-    /// The file holding the schema, absolute or relative to the lookup path.
-    File(FilePath),
-    /// The schema itself.
-    Content(Vec<u8>),
-}
-
-#[derive(Debug)]
-pub struct TypeDefinition {
-    pub use_type_definition: bool,
-    pub override_schema: Option<SchemaOverride>,
-    pub type_name: TypeName,
-    pub skip_type_definition_verification: bool,
-}
-
-impl TypeDefinition {
-    pub fn create_storage<S: crate::service::Service>(
-        &self,
+impl<S: crate::service::Service> TypeDefinitionStorage<S> {
+    /// Creates the type definition storage of a flatbuffer `payload` and
+    /// writes `schema` into it. Any other payload has no storage and yields
+    /// `None`.
+    pub fn create(
+        schema: Option<&Schema>,
+        payload: &TypeDetail,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
-    ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceCreateError> {
-        if !self.use_type_definition {
+    ) -> Result<Option<Self>, ServiceCreateError> {
+        let origin = "TypeDefinitionStorage::create()";
+        let msg = alloc::format!(
+            "Unable to create type definition storage for \"{}\"",
+            payload.type_name()
+        );
+
+        if !is_flatbuffer_type_name(payload.type_name().as_str()) {
             return Ok(None);
         }
+        let Some(schema) = schema else {
+            fail!(from origin, with ServiceCreateError::UnableToAcquireTypeDefinition,
+                "{msg} since no schema was provided.");
+        };
 
-        let msg = "Unable to create type definition storage";
-        let static_storage_config =
-            Self::type_definition_static_storage_config::<S>(config, static_config);
-
-        let schema_file_content = self.schema_content(config)?;
+        let static_storage_config = Self::static_storage_config(config, static_config);
 
         let static_storage = match
-            <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).create(&schema_file_content) {
+            <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).create(&schema.bytes) {
                     Ok(static_storage) => static_storage,
                     Err(StaticStorageCreateError::Interrupt) => {
-                        fail!(from self, with ServiceCreateError::Interrupt,
+                        fail!(from origin, with ServiceCreateError::Interrupt,
                             "{msg} since the static storage creation for the type definition was interrupted by a signal.");
                     }
                     Err(StaticStorageCreateError::InsufficientPermissions) => {
-                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
+                        fail!(from origin, with ServiceCreateError::InsufficientPermissions,
                             "{msg} since the static storage for the type definition could not be created due to insufficient permissions.");
                     }
                     Err(e) => {
-                        fail!(from self, with ServiceCreateError::InternalFailure,
+                        fail!(from origin, with ServiceCreateError::InternalFailure,
                             "{msg} since the static storage for the type definition could not be created due to an internal failure. [{e:?}]");
                     }
                 };
         static_storage.release_ownership();
 
-        Ok(Some(TypeDefinitionStorage {
+        Ok(Some(Self {
             storage: static_storage,
             path_hint: *static_storage_config.get_path_hint(),
         }))
     }
 
-    fn open_storage<S: crate::service::Service>(
-        &self,
-        name: &FileName,
-        config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
-    ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceOpenError> {
-        if !self.use_type_definition {
-            return Ok(None);
-        }
-
-        let msg = "Unable to open type definition storage";
-        let static_storage_config =
-            Self::type_definition_static_storage_config::<S>(config, static_config);
-
-        let static_storage = match
-                <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
-                    Ok(static_storage) => static_storage,
-                    Err(StaticStorageOpenError::InsufficientPermissions) => {
-                        fail!(from self, with ServiceOpenError::InsufficientPermissions,
-                            "{msg} since the type definition could not be opened.");
-                    }
-                    Err(StaticStorageOpenError::Interrupt) => {
-                        fail!(from self, with ServiceOpenError::Interrupt,
-                            "{msg} since the operation was interrupted by a signal.");
-                    }
-                    Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
-                        fail!(from self, with ServiceOpenError::HangsInCreation,
-                            "{msg} since the type definition file is not yet initialized.");
-                    }
-                    Err(StaticStorageOpenError::DoesNotExist) => {
-                        fail!(from self, with ServiceOpenError::ServiceInCorruptedState,
-                            "{msg} since the type definition file does not exist but it should be available.");
-                    }
-                    Err(e) => {
-                        fail!(from self, with ServiceOpenError::InternalFailure,
-                            "{msg} due to an internal failure while opening the type definition storage. [{e:?}]");
-                    }
-                };
-
-        static_storage.release_ownership();
-
-        Ok(Some(TypeDefinitionStorage {
-            storage: static_storage,
-            path_hint: *static_storage_config.get_path_hint(),
-        }))
-    }
-
-    pub(crate) fn read_storage<S: crate::service::Service>(
+    /// Copies the schema out of the type definition storage `name` of a
+    /// service. The storage is not kept open.
+    pub(crate) fn read_schema(
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Vec<u8>, ServiceDetailsError> {
-        let origin = "TypeDefinition::read_storage()";
+        let origin = "TypeDefinitionStorage::read_schema()";
         let msg = "Unable to read type definition storage";
 
-        let static_storage_config =
-            Self::type_definition_static_storage_config::<S>(config, static_config);
+        let static_storage_config = Self::static_storage_config(config, static_config);
 
         let static_storage = match
                 <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
@@ -239,47 +148,51 @@ impl TypeDefinition {
         }
     }
 
-    pub fn open_and_verify_storage<S: crate::service::Service>(
-        &self,
+    /// Opens the type definition storage of a flatbuffer `payload` and checks
+    /// that it holds `schema` when one is given. Any other payload has no
+    /// storage and yields `None`.
+    pub fn open(
+        schema: Option<&Schema>,
+        payload: &TypeDetail,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
-    ) -> Result<Option<TypeDefinitionStorage<S>>, ServiceOpenError> {
-        if !self.use_type_definition {
+    ) -> Result<Option<Self>, ServiceOpenError> {
+        if !is_flatbuffer_type_name(payload.type_name().as_str()) {
             return Ok(None);
         }
+        let Some(schema) = schema else {
+            return Self::open_unverified(name, config, static_config);
+        };
 
-        if self.skip_type_definition_verification {
-            return self.open_storage(name, config, static_config);
-        }
-
-        let msg = "Unable to open type definition storage";
-        let static_storage_config =
-            Self::type_definition_static_storage_config::<S>(config, static_config);
-
-        let required_schema_content = self.schema_content(config)?;
+        let origin = "TypeDefinitionStorage::open()";
+        let msg = alloc::format!(
+            "Unable to open type definition storage for \"{}\"",
+            payload.type_name()
+        );
+        let static_storage_config = Self::static_storage_config(config, static_config);
 
         let static_storage = match
                 <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
                     Ok(static_storage) => static_storage,
                     Err(StaticStorageOpenError::InsufficientPermissions) => {
-                        fail!(from self, with ServiceOpenError::InsufficientPermissions,
+                        fail!(from origin, with ServiceOpenError::InsufficientPermissions,
                             "{msg} since the type definition could not be opened.");
                     }
                     Err(StaticStorageOpenError::Interrupt) => {
-                        fail!(from self, with ServiceOpenError::Interrupt,
+                        fail!(from origin, with ServiceOpenError::Interrupt,
                             "{msg} since the operation was interrupted by a signal.");
                     }
                     Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
-                        fail!(from self, with ServiceOpenError::HangsInCreation,
+                        fail!(from origin, with ServiceOpenError::HangsInCreation,
                             "{msg} since the type definition file is not yet initialized.");
                     }
                     Err(StaticStorageOpenError::DoesNotExist) => {
-                        fail!(from self, with ServiceOpenError::ServiceInCorruptedState,
+                        fail!(from origin, with ServiceOpenError::ServiceInCorruptedState,
                             "{msg} since the type definition file does not exist but it should be available.");
                     }
                     Err(e) => {
-                        fail!(from self, with ServiceOpenError::InternalFailure,
+                        fail!(from origin, with ServiceOpenError::InternalFailure,
                             "{msg} due to an internal failure while opening the type definition storage. [{e:?}]");
                     }
                 };
@@ -288,41 +201,40 @@ impl TypeDefinition {
         match static_storage.read(&mut existing_schema_content) {
             Ok(()) => (),
             Err(StaticStorageReadError::Interrupt) => {
-                fail!(from self, with ServiceOpenError::Interrupt,
+                fail!(from origin, with ServiceOpenError::Interrupt,
                        "{msg} since the read operation was interrupted by a signal.");
             }
             Err(StaticStorageReadError::StaticStorageWasModified) => {
-                fail!(from self, with ServiceOpenError::ServiceInCorruptedState,
+                fail!(from origin, with ServiceOpenError::ServiceInCorruptedState,
                         "{msg} since the type definition was modified after the service was created.");
             }
             Err(e) => {
-                fail!(from self, with ServiceOpenError::InternalFailure,
+                fail!(from origin, with ServiceOpenError::InternalFailure,
                         "{msg} due to an internal failure while reading the type definition. [{e:?}]");
             }
         }
 
-        if existing_schema_content != required_schema_content {
-            fail!(from self, with ServiceOpenError::IncompatiblePayload,
+        if existing_schema_content[..] != schema.bytes[..] {
+            fail!(from origin, with ServiceOpenError::IncompatiblePayload,
                     "{msg} since the payload defined in the provided type definition is not equal to the type definition of the service.");
         }
 
         static_storage.release_ownership();
 
-        Ok(Some(TypeDefinitionStorage {
+        Ok(Some(Self {
             storage: static_storage,
             path_hint: *static_storage_config.get_path_hint(),
         }))
     }
 
-    pub fn remove_stale_storage<S: crate::service::Service>(
+    pub fn remove_stale(
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {
-        let origin = "TypeDefinition::remove_stale_storage()";
+        let origin = "TypeDefinitionStorage::remove_stale()";
         let msg = "Unable to remove stale type definition storage";
-        let storage_config =
-            Self::type_definition_static_storage_config::<S>(config, static_config);
+        let storage_config = Self::static_storage_config(config, static_config);
         match unsafe {
             <S::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::remove_cfg(
                 name,
@@ -345,11 +257,11 @@ impl TypeDefinition {
         }
     }
 
-    pub fn remove_resource_directory<S: crate::service::Service>(
+    pub fn remove_resource_directory(
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {
-        let origin = "TypeDefinition::remove_resource_directory()";
+        let origin = "TypeDefinitionStorage::remove_resource_directory()";
         let msg = "Unable to remove resource directory";
 
         let dir = Self::service_resource_directory(config, static_config);
@@ -366,7 +278,49 @@ impl TypeDefinition {
         }
     }
 
-    fn type_definition_static_storage_config<S: crate::service::Service>(
+    fn open_unverified(
+        name: &FileName,
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> Result<Option<Self>, ServiceOpenError> {
+        let origin = "TypeDefinitionStorage::open_unverified()";
+        let msg = "Unable to open type definition storage";
+        let static_storage_config = Self::static_storage_config(config, static_config);
+
+        let static_storage = match
+                <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
+                    Ok(static_storage) => static_storage,
+                    Err(StaticStorageOpenError::InsufficientPermissions) => {
+                        fail!(from origin, with ServiceOpenError::InsufficientPermissions,
+                            "{msg} since the type definition could not be opened.");
+                    }
+                    Err(StaticStorageOpenError::Interrupt) => {
+                        fail!(from origin, with ServiceOpenError::Interrupt,
+                            "{msg} since the operation was interrupted by a signal.");
+                    }
+                    Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
+                        fail!(from origin, with ServiceOpenError::HangsInCreation,
+                            "{msg} since the type definition file is not yet initialized.");
+                    }
+                    Err(StaticStorageOpenError::DoesNotExist) => {
+                        fail!(from origin, with ServiceOpenError::ServiceInCorruptedState,
+                            "{msg} since the type definition file does not exist but it should be available.");
+                    }
+                    Err(e) => {
+                        fail!(from origin, with ServiceOpenError::InternalFailure,
+                            "{msg} due to an internal failure while opening the type definition storage. [{e:?}]");
+                    }
+                };
+
+        static_storage.release_ownership();
+
+        Ok(Some(Self {
+            storage: static_storage,
+            path_hint: *static_storage_config.get_path_hint(),
+        }))
+    }
+
+    fn static_storage_config(
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> <S::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::Configuration {
@@ -381,7 +335,7 @@ impl TypeDefinition {
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Path {
-        let origin = "TypeDefinition::service_resource_directory()";
+        let origin = "TypeDefinitionStorage::service_resource_directory()";
         let mut root = config.global.service_dir();
         let id = fatal_panic!(from origin,
                when Path::new(static_config.unique_service_id().value().to_string().as_bytes()),
@@ -390,94 +344,5 @@ impl TypeDefinition {
                 when root.add_path_entry(&id),
                 "This should never happen! The full service directory is too long. A shorter iceoryx2 root path might solve the issue.");
         root
-    }
-
-    fn schema_content(&self, config: &crate::config::Config) -> Result<Vec<u8>, SchemaPathError> {
-        let msg = "Unable to read type definition schema file";
-        let file = match &self.override_schema {
-            Some(SchemaOverride::Content(bytes)) => return Ok(bytes.clone()),
-            Some(SchemaOverride::File(path)) => Some(path),
-            None => None,
-        };
-        let schema_path = self.schema_path(config, file)?;
-
-        let file = match FileBuilder::new(&schema_path).open_existing(AccessMode::Read) {
-            Ok(file) => file,
-            Err(FileOpenError::FileDoesNotExist) => {
-                fail!(from self, with SchemaPathError::NoFittingSchemaFileFound,
-                    "{msg} since there is no type definition file at \"{schema_path}\".");
-            }
-            Err(FileOpenError::Interrupt) => {
-                fail!(from self, with SchemaPathError::Interrupt,
-                    "{msg} since the type definition open operation was interrupted by a signal.");
-            }
-            Err(FileOpenError::InsufficientPermissions) => {
-                fail!(from self, with SchemaPathError::InsufficientPermissions,
-                    "{msg} since the type definition file \"{schema_path}\" could not be opened due to insufficient permissions.");
-            }
-            Err(e) => {
-                fail!(from self, with SchemaPathError::InternalError,
-                    "{msg} since the type definition file \"{schema_path}\" could not be opened due to an internal error. [{e:?}]");
-            }
-        };
-
-        let mut buffer: Vec<u8> = Vec::new();
-        match file.read_to_vector(&mut buffer) {
-            Ok(_) => Ok(buffer),
-            Err(FileReadError::Interrupt) => {
-                fail!(from self, with SchemaPathError::Interrupt,
-                    "{msg} since the type definition read operation was interrupted by a signal.");
-            }
-            Err(e) => {
-                fail!(from self, with SchemaPathError::InternalError,
-                    "{msg} due to an internal failure while reading the type definition. [{e:?}]");
-            }
-        }
-    }
-
-    fn schema_path(
-        &self,
-        config: &crate::config::Config,
-        file: Option<&FilePath>,
-    ) -> Result<FilePath, SchemaPathError> {
-        let msg = "Unable to acquire type definition schema path";
-        let flatbuffer_schema_path = || -> Result<Path, SchemaPathError> {
-            match config.global.service.flatbuffer_schema_path {
-                Some(p) => Ok(p),
-                None => {
-                    fail!(from self, with SchemaPathError::NoFlatbufferSchemaSearchPathConfigured,
-                        "{msg} since the Config::global.service.flatbuffer-schema-path is required but not set. Either set a lookup path or provide an absolute path to the flatbuffer schema file in the builder.");
-                }
-            }
-        };
-
-        match file {
-            Some(file_path) if file_path.path().is_absolute() => Ok(*file_path),
-            Some(file_path) => {
-                let mut path = flatbuffer_schema_path()?;
-                path.add_path_entry(&(*file_path).into()).unwrap();
-                unsafe { Ok(FilePath::new_unchecked(path.as_bytes())) }
-            }
-            None => {
-                match find_best_fitting_binary_schema_file(
-                    &self.type_name,
-                    &flatbuffer_schema_path()?,
-                ) {
-                    Ok(Some(file)) => Ok(file),
-                    Ok(None) => {
-                        fail!(from self, with SchemaPathError::NoFittingSchemaFileFound,
-                            "{msg} since no fitting flatbuffer schema file was found. Please provide the absolute path to a flatbuffer schema file in the builder.");
-                    }
-                    Err(FindSchemaFileError::InsufficientPermissions) => {
-                        fail!(from self, with SchemaPathError::InsufficientPermissions,
-                            "{msg} since the lookup for a fitting flatbuffer schema file failed due to insufficient permissions.");
-                    }
-                    Err(e) => {
-                        fail!(from self, with SchemaPathError::InternalError,
-                            "{msg} since the lookup for a fitting flatbuffer schema file failed due to an internal error. [{e:?}]");
-                    }
-                }
-            }
-        }
     }
 }

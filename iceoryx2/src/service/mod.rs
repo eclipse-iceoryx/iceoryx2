@@ -289,7 +289,7 @@ use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::ServiceResource;
-use crate::service::resource::type_definition::TypeDefinition;
+use crate::service::resource::type_definition::TypeDefinitionStorage;
 use crate::service::static_config::*;
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniqueServiceId},
@@ -1179,12 +1179,11 @@ fn type_definition_of<S: Service>(
     name: &iceoryx2_bb_system_types::file_name::FileName,
 ) -> Result<Option<Vec<u8>>, ServiceDetailsError> {
     use iceoryx2_bb_container::string::String;
-    use iceoryx2_bb_elementary_traits::type_name::TypeName;
 
-    if payload.type_name().as_str() != unsafe { marker::Flatbuffer::<()>::type_name() } {
+    if !marker::is_flatbuffer_type_name(payload.type_name().as_str()) {
         return Ok(None);
     }
-    let bytes = TypeDefinition::read_storage::<S>(name, config, static_config)?;
+    let bytes = TypeDefinitionStorage::<S>::read_schema(name, config, static_config)?;
     Ok(Some(bytes))
 }
 

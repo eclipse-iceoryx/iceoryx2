@@ -15,11 +15,11 @@ use core::marker::PhantomData;
 
 use alloc::format;
 
-use iceoryx2_bb_container::string::String;
+use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_flatbuffers::{TypeName, is_binary_flatbuffer_schema};
+use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
@@ -36,7 +36,7 @@ use crate::service::resource::ServiceResource;
 use crate::service::resource::request_response::{
     RequestResponseResourceConfig, RequestResponseResources,
 };
-use crate::service::resource::type_definition::{SchemaOverride, TypeDefinition};
+use crate::service::resource::schema_source::{ResolveTypeDefinitionError, Schema, SchemaSource};
 use crate::service::static_config::StaticConfig;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -44,7 +44,9 @@ use crate::service::{Service, builder, dynamic_config};
 use crate::service::{header, static_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
+use crate::service::marker::{
+    CustomHeaderMarker, CustomPayloadMarker, Flatbuffer, is_flatbuffer_type_name,
+};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -108,6 +110,19 @@ pub enum RequestResponseOpenError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    TypeDefinitionHasNoRootType,
+}
+
+impl From<ResolveTypeDefinitionError> for RequestResponseOpenError {
+    fn from(error: ResolveTypeDefinitionError) -> Self {
+        match error {
+            ResolveTypeDefinitionError::Schema(error) => ServiceOpenError::from(error).into(),
+            ResolveTypeDefinitionError::NotABinarySchema
+            | ResolveTypeDefinitionError::TypeNameTooLong => Self::InvalidTypeDefinition,
+            ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
+        }
+    }
 }
 
 impl core::fmt::Display for RequestResponseOpenError {
@@ -181,7 +196,10 @@ impl From<ServiceOpenError> for RequestResponseOpenError {
 impl From<RequestResponseOpenError> for ServiceOpenError {
     fn from(value: RequestResponseOpenError) -> Self {
         match value {
-            RequestResponseOpenError::InvalidTypeDefinition => ServiceOpenError::InvalidTypeDefinition,
+            RequestResponseOpenError::InvalidTypeDefinition
+            | RequestResponseOpenError::TypeDefinitionHasNoRootType => {
+                ServiceOpenError::InvalidTypeDefinition
+            }
             RequestResponseOpenError::DoesNotExist => ServiceOpenError::DoesNotExist,
             RequestResponseOpenError::ExceedsMaxNumberOfNodes => {
                 ServiceOpenError::ExceedsMaxNumberOfNodes
@@ -255,8 +273,21 @@ pub enum RequestResponseCreateError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    TypeDefinitionHasNoRootType,
     /// The [`UniqueServiceId`] could not be generated.
     UnableToGenerateUniqueServiceId,
+}
+
+impl From<ResolveTypeDefinitionError> for RequestResponseCreateError {
+    fn from(error: ResolveTypeDefinitionError) -> Self {
+        match error {
+            ResolveTypeDefinitionError::Schema(error) => ServiceCreateError::from(error).into(),
+            ResolveTypeDefinitionError::NotABinarySchema
+            | ResolveTypeDefinitionError::TypeNameTooLong => Self::InvalidTypeDefinition,
+            ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
+        }
+    }
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -376,6 +407,12 @@ impl From<RequestResponseCreateError> for RequestResponseOpenOrCreateError {
     }
 }
 
+impl From<ResolveTypeDefinitionError> for RequestResponseOpenOrCreateError {
+    fn from(error: ResolveTypeDefinitionError) -> Self {
+        Self::RequestResponseOpenError(error.into())
+    }
+}
+
 impl core::fmt::Display for RequestResponseOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "RequestResponseOpenOrCreateError::{self:?}")
@@ -418,11 +455,10 @@ pub struct Builder<
     override_response_payload_type: Option<TypeDetail>,
     override_request_header_type: Option<TypeDetail>,
     override_response_header_type: Option<TypeDetail>,
-    override_request_schema: Option<SchemaOverride>,
-    request_type_definition_name_hint: TypeName,
-    override_response_schema: Option<SchemaOverride>,
-    response_type_definition_name_hint: TypeName,
-    skip_type_definition_verification: bool,
+    request_schema_source: SchemaSource,
+    response_schema_source: SchemaSource,
+    request_schema: Option<Schema>,
+    response_schema: Option<Schema>,
     verify: Verify,
 
     _request_payload: PhantomData<RequestPayload>,
@@ -448,11 +484,10 @@ impl<
             override_response_payload_type: self.override_response_payload_type,
             override_request_header_type: self.override_request_header_type,
             override_response_header_type: self.override_response_header_type,
-            override_request_schema: self.override_request_schema.clone(),
-            override_response_schema: self.override_response_schema.clone(),
-            request_type_definition_name_hint: self.request_type_definition_name_hint,
-            response_type_definition_name_hint: self.response_type_definition_name_hint,
-            skip_type_definition_verification: self.skip_type_definition_verification,
+            request_schema_source: self.request_schema_source.clone(),
+            response_schema_source: self.response_schema_source.clone(),
+            request_schema: self.request_schema.clone(),
+            response_schema: self.response_schema.clone(),
             verify: self.verify,
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -479,44 +514,15 @@ impl<
             override_request_payload_type: None,
             override_response_header_type: None,
             override_response_payload_type: None,
-            override_request_schema: None,
-            override_response_schema: None,
-            request_type_definition_name_hint: TypeName::new::<RequestPayload>(),
-            response_type_definition_name_hint: TypeName::new::<ResponsePayload>(),
-            skip_type_definition_verification: false,
+            request_schema_source: SchemaSource::Lookup(TypeName::new::<RequestPayload>()),
+            response_schema_source: SchemaSource::Lookup(TypeName::new::<ResponsePayload>()),
+            request_schema: None,
+            response_schema: None,
             verify: Verify::default(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
-        }
-    }
-
-    fn request_has_flatbuffer_payload(&self) -> bool {
-        use iceoryx2_bb_elementary_traits::type_name::TypeName;
-
-        match &self.override_request_payload_type {
-            Some(payload_type) => unsafe {
-                payload_type.type_name().as_str() == Flatbuffer::<()>::type_name()
-            },
-            None => unsafe {
-                <RequestPayload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
-                    == Flatbuffer::<()>::type_name()
-            },
-        }
-    }
-
-    fn response_has_flatbuffer_payload(&self) -> bool {
-        use iceoryx2_bb_elementary_traits::type_name::TypeName;
-
-        match &self.override_response_payload_type {
-            Some(payload_type) => unsafe {
-                payload_type.type_name().as_str() == Flatbuffer::<()>::type_name()
-            },
-            None => unsafe {
-                <ResponsePayload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
-                    == Flatbuffer::<()>::type_name()
-            },
         }
     }
 
@@ -900,20 +906,6 @@ impl<
             }
         };
 
-        for (name, schema) in [
-            ("request", &self.override_request_schema),
-            ("response", &self.override_response_schema),
-        ] {
-            if let Some(SchemaOverride::File(schema_path)) = schema
-                && !is_binary_flatbuffer_schema(&schema_path.file_name())
-            {
-                fail!(from self,
-                    with RequestResponseCreateError::InvalidTypeDefinition,
-                    "{msg} since the {name} type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
-                    schema_path);
-            }
-        }
-
         let service_state = self.base.create(
             msg,
             attributes,
@@ -924,18 +916,8 @@ impl<
                 RequestResponseResources::create(
                     service_config,
                     &RequestResponseResourceConfig::<ServiceType> {
-                        request: TypeDefinition {
-                            use_type_definition: self.request_has_flatbuffer_payload(),
-                            override_schema: self.override_request_schema.clone(),
-                            type_name: self.request_type_definition_name_hint,
-                            skip_type_definition_verification: false,
-                        },
-                        response: TypeDefinition {
-                            use_type_definition: self.response_has_flatbuffer_payload(),
-                            override_schema: self.override_response_schema.clone(),
-                            type_name: self.response_type_definition_name_hint,
-                            skip_type_definition_verification: false,
-                        },
+                        request_schema: self.request_schema.clone(),
+                        response_schema: self.response_schema.clone(),
                         shared_node: self.base.shared_node.clone(),
                     },
                 )
@@ -967,20 +949,6 @@ impl<
     > {
         let msg = "Unable to open request response service";
 
-        for (name, schema) in [
-            ("request", &self.override_request_schema),
-            ("response", &self.override_response_schema),
-        ] {
-            if let Some(SchemaOverride::File(schema_path)) = schema
-                && !is_binary_flatbuffer_schema(&schema_path.file_name())
-            {
-                fail!(from self,
-                    with RequestResponseOpenError::InvalidTypeDefinition,
-                    "{msg} since the {name} type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
-                    schema_path);
-            }
-        }
-
         let service_state = self.base.open(
             msg,
             || self.is_service_available(msg),
@@ -991,20 +959,8 @@ impl<
                 RequestResponseResources::open(
                     service_config,
                     &RequestResponseResourceConfig::<ServiceType> {
-                        request: TypeDefinition {
-                            use_type_definition: self.request_has_flatbuffer_payload(),
-                            override_schema: self.override_request_schema.clone(),
-                            type_name: self.request_type_definition_name_hint,
-                            skip_type_definition_verification: self
-                                .skip_type_definition_verification,
-                        },
-                        response: TypeDefinition {
-                            use_type_definition: self.response_has_flatbuffer_payload(),
-                            override_schema: self.override_response_schema.clone(),
-                            type_name: self.response_type_definition_name_hint,
-                            skip_type_definition_verification: self
-                                .skip_type_definition_verification,
-                        },
+                        request_schema: self.request_schema.clone(),
+                        response_schema: self.response_schema.clone(),
                         shared_node: self.base.shared_node.clone(),
                     },
                 )
@@ -1041,7 +997,11 @@ impl<
         )
     }
 
-    fn prepare_message_type(&mut self) {
+    /// Records the message type details in the static config after applying
+    /// the type overrides, the flatbuffer schemas and the alignment overrides.
+    ///
+    /// Fails when a payload is a flatbuffer and its schema cannot be loaded.
+    fn prepare_message_type(&mut self) -> Result<(), ResolveTypeDefinitionError> {
         if let Some(details) = &self.override_request_payload_type {
             self.config_details_mut()
                 .request_message_type_details
@@ -1066,6 +1026,40 @@ impl<
                 .user_header = *details;
         }
 
+        let request_payload = &self.config_details().request_message_type_details.payload;
+        self.request_schema = if is_flatbuffer_type_name(request_payload.type_name().as_str()) {
+            let schema = fail!(from self,
+                when self.request_schema_source.load(self.base.shared_node.config()),
+                to ResolveTypeDefinitionError,
+                "Unable to record the message type details since the schema of the request could not be loaded.");
+            if let Some(schema) = &schema {
+                self.config_details_mut()
+                    .request_message_type_details
+                    .payload
+                    .type_name = schema.type_name;
+            }
+            schema
+        } else {
+            None
+        };
+
+        let response_payload = &self.config_details().response_message_type_details.payload;
+        self.response_schema = if is_flatbuffer_type_name(response_payload.type_name().as_str()) {
+            let schema = fail!(from self,
+                when self.response_schema_source.load(self.base.shared_node.config()),
+                to ResolveTypeDefinitionError,
+                "Unable to record the message type details since the schema of the response could not be loaded.");
+            if let Some(schema) = &schema {
+                self.config_details_mut()
+                    .response_message_type_details
+                    .payload
+                    .type_name = schema.type_name;
+            }
+            schema
+        } else {
+            None
+        };
+
         if let Some(alignment) = self.override_request_alignment {
             self.config_details_mut()
                 .request_message_type_details
@@ -1089,6 +1083,8 @@ impl<
                 .alignment
                 .max(alignment);
         }
+
+        Ok(())
     }
 }
 
@@ -1100,7 +1096,7 @@ impl<
     ServiceType: Service,
 > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
-    fn prepare_message_type_details(&mut self) {
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
@@ -1113,7 +1109,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::FixedSize);
 
-        self.prepare_message_type();
+        self.prepare_message_type()
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1152,7 +1148,8 @@ impl<
         >,
         RequestResponseOpenOrCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenOrCreateError,
+            "Unable to open or create request response service since the message type details could not be recorded.");
         self.open_or_create_impl(verifier)
     }
 
@@ -1187,7 +1184,8 @@ impl<
         >,
         RequestResponseOpenError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenError,
+            "Unable to open request response service since the message type details could not be recorded.");
         self.open_impl(verifier)
     }
 
@@ -1222,7 +1220,8 @@ impl<
         RequestResponseCreateError,
     > {
         self.adjust_configuration_to_meaningful_values();
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseCreateError,
+            "Unable to create request response service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
 }
@@ -1235,7 +1234,7 @@ impl<
     ServiceType: Service,
 > Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
-    fn prepare_message_type_details(&mut self) {
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
@@ -1248,7 +1247,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::FixedSize);
 
-        self.prepare_message_type();
+        self.prepare_message_type()
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1287,7 +1286,8 @@ impl<
         >,
         RequestResponseOpenOrCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenOrCreateError,
+            "Unable to open or create request response service since the message type details could not be recorded.");
         self.open_or_create_impl(verifier)
     }
 
@@ -1322,7 +1322,8 @@ impl<
         >,
         RequestResponseOpenError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenError,
+            "Unable to open request response service since the message type details could not be recorded.");
         self.open_impl(verifier)
     }
 
@@ -1356,7 +1357,8 @@ impl<
         >,
         RequestResponseCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseCreateError,
+            "Unable to create request response service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
 }
@@ -1369,7 +1371,7 @@ impl<
     ServiceType: Service,
 > Builder<[RequestPayload], RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
 {
-    fn prepare_message_type_details(&mut self) {
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
@@ -1382,7 +1384,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::Dynamic);
 
-        self.prepare_message_type();
+        self.prepare_message_type()
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1423,7 +1425,8 @@ impl<
         >,
         RequestResponseOpenOrCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenOrCreateError,
+            "Unable to open or create request response service since the message type details could not be recorded.");
         self.open_or_create_impl(verifier)
     }
 
@@ -1460,7 +1463,8 @@ impl<
         >,
         RequestResponseOpenError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenError,
+            "Unable to open request response service since the message type details could not be recorded.");
         self.open_impl(verifier)
     }
 
@@ -1496,7 +1500,8 @@ impl<
         >,
         RequestResponseCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseCreateError,
+            "Unable to create request response service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
 }
@@ -1509,7 +1514,7 @@ impl<
     ServiceType: Service,
 > Builder<RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
 {
-    fn prepare_message_type_details(&mut self) {
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
@@ -1522,7 +1527,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::Dynamic);
 
-        self.prepare_message_type();
+        self.prepare_message_type()
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1561,7 +1566,8 @@ impl<
         >,
         RequestResponseOpenOrCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenOrCreateError,
+            "Unable to open or create request response service since the message type details could not be recorded.");
         self.open_or_create_impl(verifier)
     }
 
@@ -1596,7 +1602,8 @@ impl<
         >,
         RequestResponseOpenError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseOpenError,
+            "Unable to open request response service since the message type details could not be recorded.");
         self.open_impl(verifier)
     }
 
@@ -1630,7 +1637,8 @@ impl<
         >,
         RequestResponseCreateError,
     > {
-        self.prepare_message_type_details();
+        fail!(from self, when self.prepare_message_type_details(), to RequestResponseCreateError,
+            "Unable to create request response service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
 }
@@ -1650,37 +1658,41 @@ impl<
 {
     #[doc(hidden)]
     pub fn __internal_request_type_definition_name_hint(mut self, value: &TypeName) -> Self {
-        self.request_type_definition_name_hint = *value;
+        if let SchemaSource::Lookup(type_name) = &mut self.request_schema_source {
+            *type_name = *value;
+        }
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.override_request_schema = Some(SchemaOverride::File(*path));
+        self.request_schema_source = SchemaSource::File(*path);
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_request_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
-        self.override_request_schema = Some(SchemaOverride::Content(schema.to_vec()));
+        self.request_schema_source = SchemaSource::Bytes(schema.into());
         self
     }
 
     #[doc(hidden)]
     pub fn __internal_response_type_definition_name_hint(mut self, value: &TypeName) -> Self {
-        self.response_type_definition_name_hint = *value;
+        if let SchemaSource::Lookup(type_name) = &mut self.response_schema_source {
+            *type_name = *value;
+        }
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.override_response_schema = Some(SchemaOverride::File(*path));
+        self.response_schema_source = SchemaSource::File(*path);
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_response_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
-        self.override_response_schema = Some(SchemaOverride::Content(schema.to_vec()));
+        self.response_schema_source = SchemaSource::Bytes(schema.into());
         self
     }
 
@@ -1702,9 +1714,12 @@ impl<
         self
     }
 
+    /// Opens without a schema. The stated payload type details are recorded
+    /// as they are, nothing is composed from a schema.
     #[doc(hidden)]
     pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
-        self.skip_type_definition_verification = true;
+        self.request_schema_source = SchemaSource::Stored;
+        self.response_schema_source = SchemaSource::Stored;
         self
     }
 }
@@ -1743,7 +1758,7 @@ impl<
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn request_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.override_request_schema = Some(SchemaOverride::File(*path));
+        self.request_schema_source = SchemaSource::File(*path);
         self
     }
 }
@@ -1760,7 +1775,7 @@ impl<
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn response_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.override_response_schema = Some(SchemaOverride::File(*path));
+        self.response_schema_source = SchemaSource::File(*path);
         self
     }
 }
