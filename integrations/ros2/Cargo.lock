@@ -888,6 +888,7 @@ version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-elementary",
+ "iceoryx2-bb-flatbuffers",
  "iceoryx2-log",
  "serde",
 ]

@@ -65,7 +65,7 @@ unsafe impl<T> TypeName for Flatbuffer<T> {
 
 /// The type name a service records for a flatbuffer payload whose schema
 /// declares `root_type`, or `None` when it does not fit.
-pub(crate) fn flatbuffer_type_name(root_type: &str) -> Option<TypeNameString> {
+pub fn flatbuffer_type_name(root_type: &str) -> Option<TypeNameString> {
     let mut type_name = TypeNameString::new();
     for piece in [FLATBUFFER_TYPE_NAME, "<", root_type, ">"] {
         type_name.push_bytes(piece.as_bytes()).ok()?;

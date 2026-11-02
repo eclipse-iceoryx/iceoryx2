@@ -255,6 +255,8 @@ impl<S: Service> FlatbufferMemory for iceoryx2::response_mut_uninit::FlatbufferM
 mod tests {
     use super::*;
 
+    use crate::service_description::{SampleTypes, Schema, TypeIdentifier};
+    use crate::wire::sample::{LoanableSample, UnloanedSample, WritableSample};
     use iceoryx2::node::{Node, NodeBuilder};
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::AllocationStrategy;
@@ -263,10 +265,8 @@ mod tests {
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
+    use iceoryx2_bb_flatbuffers_generated::schema::testing as schema;
     use iceoryx2_bb_testing::assert_that;
-
-    use crate::service_description::{SampleTypes, Schema, TypeIdentifier};
-    use crate::wire::sample::{LoanableSample, UnloanedSample, WritableSample};
 
     type Factory = PortFactory<local::Service, Payload, Header, Payload, Header>;
 
@@ -284,7 +284,8 @@ mod tests {
     fn flatbuffer_sample_types(schema: &[u8]) -> SampleTypes {
         let detail = TypeDetail::new::<Flatbuffer<u64>>(TypeVariant::FixedSize);
         let mut types = sample_types(&detail);
-        types.payload.identifier = TypeIdentifier::Flatbuffer(Schema::new(schema.to_vec()));
+        types.payload.identifier =
+            TypeIdentifier::Flatbuffer(Schema::new(schema.to_vec()).expect("a valid schema"));
         types
     }
 
@@ -409,8 +410,6 @@ mod tests {
 
     #[test]
     fn flatbuffer_requests_and_responses_round_trip_through_backward_loans() {
-        const REQUEST_SCHEMA: &[u8] = b"the request schema";
-        const RESPONSE_SCHEMA: &[u8] = b"the response schema";
         const REQUEST: &[u8] = b"a serialized request";
         const RESPONSE: &[u8] = b"a longer serialized response";
 
@@ -419,7 +418,7 @@ mod tests {
             .config(&config)
             .create::<local::Service>()
             .expect("node is created");
-        let service = flatbuffer_service(&node, REQUEST_SCHEMA, RESPONSE_SCHEMA);
+        let service = flatbuffer_service(&node, schema::UNBOUNDED_DATA, schema::DATA_PROPS);
         let client = service
             .client_builder()
             .allocation_strategy(AllocationStrategy::PowerOfTwo)
@@ -430,8 +429,8 @@ mod tests {
             .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .expect("server is created");
-        let request_types = flatbuffer_sample_types(REQUEST_SCHEMA);
-        let response_types = flatbuffer_sample_types(RESPONSE_SCHEMA);
+        let request_types = flatbuffer_sample_types(schema::UNBOUNDED_DATA);
+        let response_types = flatbuffer_sample_types(schema::DATA_PROPS);
 
         // The request is loaned from the client and grown from its end.
         let mut loan = |_: usize| -> Result<RequestMutUninit<local::Service>, LoanError> {
