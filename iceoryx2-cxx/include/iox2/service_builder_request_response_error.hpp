@@ -79,6 +79,8 @@ enum class RequestResponseOpenError : uint8_t {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    TypeDefinitionHasNoRootType,
 };
 
 /// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
@@ -110,6 +112,8 @@ enum class RequestResponseCreateError : uint8_t {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    TypeDefinitionHasNoRootType,
     /// The unique service id could not be generated.
     UnableToGenerateUniqueServiceId,
 };
@@ -177,6 +181,8 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     OpenInvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    OpenTypeDefinitionHasNoRootType,
 
     /// An interrupt signal was raised.
     CreateInterrupt,
@@ -205,6 +211,8 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     CreateInvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    CreateTypeDefinitionHasNoRootType,
     /// The unique service id could not be generated.
     CreateUnableToGenerateUniqueServiceId,
 

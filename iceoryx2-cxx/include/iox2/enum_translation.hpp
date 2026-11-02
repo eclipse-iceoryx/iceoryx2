@@ -786,6 +786,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::OpenUnableToAcquireTypeDefinition;
     case iox2_pub_sub_open_or_create_error_e_O_INVALID_TYPE_DEFINITION:
         return iox2::PublishSubscribeOpenOrCreateError::OpenInvalidTypeDefinition;
+    case iox2_pub_sub_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenTypeDefinitionHasNoRootType;
 
     case iox2_pub_sub_open_or_create_error_e_C_INTERRUPT:
         return iox2::PublishSubscribeOpenOrCreateError::CreateInterrupt;
@@ -811,6 +813,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::CreateUnableToAcquireTypeDefinition;
     case iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::PublishSubscribeOpenOrCreateError::CreateInvalidTypeDefinition;
+    case iox2_pub_sub_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateTypeDefinitionHasNoRootType;
     case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         return iox2::PublishSubscribeOpenOrCreateError::CreateUnableToGenerateUniqueServiceId;
 
@@ -869,6 +873,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
         return iox2::PublishSubscribeOpenError::UnableToAcquireTypeDefinition;
     case iox2_pub_sub_open_or_create_error_e_O_INVALID_TYPE_DEFINITION:
         return iox2::PublishSubscribeOpenError::InvalidTypeDefinition;
+    case iox2_pub_sub_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::PublishSubscribeOpenError::TypeDefinitionHasNoRootType;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
@@ -896,6 +902,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
     case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         IOX2_UNREACHABLE();
@@ -953,6 +961,8 @@ constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create
         return iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::PublishSubscribeOpenError::InvalidTypeDefinition:
         return iox2_pub_sub_open_or_create_error_e_O_INVALID_TYPE_DEFINITION;
+    case iox2::PublishSubscribeOpenError::TypeDefinitionHasNoRootType:
+        return iox2_pub_sub_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
     }
 
     IOX2_UNREACHABLE();
@@ -993,6 +1003,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
         return iox2::PublishSubscribeCreateError::UnableToAcquireTypeDefinition;
     case iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::PublishSubscribeCreateError::InvalidTypeDefinition;
+    case iox2_pub_sub_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::PublishSubscribeCreateError::TypeDefinitionHasNoRootType;
     case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         return iox2::PublishSubscribeCreateError::UnableToGenerateUniqueServiceId;
 
@@ -1043,6 +1055,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_O_INVALID_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
     IOX2_UNREACHABLE();
@@ -1076,6 +1090,8 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::PublishSubscribeCreateError::InvalidTypeDefinition:
         return iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::PublishSubscribeCreateError::TypeDefinitionHasNoRootType:
+        return iox2_pub_sub_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
     case iox2::PublishSubscribeCreateError::UnableToGenerateUniqueServiceId:
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
@@ -1137,6 +1153,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::PublishSubscribeOpenOrCreateError::OpenInvalidTypeDefinition:
         return iox2_pub_sub_open_or_create_error_e_O_INVALID_TYPE_DEFINITION;
+    case iox2::PublishSubscribeOpenOrCreateError::OpenTypeDefinitionHasNoRootType:
+        return iox2_pub_sub_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
 
     case iox2::PublishSubscribeOpenOrCreateError::SystemInFlux:
         return iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX;
@@ -1165,6 +1183,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::PublishSubscribeOpenOrCreateError::CreateInvalidTypeDefinition:
         return iox2_pub_sub_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::PublishSubscribeOpenOrCreateError::CreateTypeDefinitionHasNoRootType:
+        return iox2_pub_sub_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
     case iox2::PublishSubscribeOpenOrCreateError::CreateUnableToGenerateUniqueServiceId:
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
@@ -1206,6 +1226,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
         return iox2::RequestResponseCreateError::UnableToAcquireTypeDefinition;
     case iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::RequestResponseCreateError::InvalidTypeDefinition;
+    case iox2_request_response_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::RequestResponseCreateError::TypeDefinitionHasNoRootType;
     case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         return iox2::RequestResponseCreateError::UnableToGenerateUniqueServiceId;
 
@@ -1262,6 +1284,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_O_INVALID_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        IOX2_UNREACHABLE();
 
         // NOLINTEND(bugprone-branch-clone)
     }
@@ -1294,6 +1318,8 @@ constexpr auto from<iox2::RequestResponseCreateError, iox2_request_response_open
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::RequestResponseCreateError::InvalidTypeDefinition:
         return iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::RequestResponseCreateError::TypeDefinitionHasNoRootType:
+        return iox2_request_response_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
     case iox2::RequestResponseCreateError::UnableToGenerateUniqueServiceId:
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
     }
@@ -1362,6 +1388,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
         return iox2::RequestResponseOpenError::UnableToAcquireTypeDefinition;
     case iox2_request_response_open_or_create_error_e_O_INVALID_TYPE_DEFINITION:
         return iox2::RequestResponseOpenError::InvalidTypeDefinition;
+    case iox2_request_response_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::RequestResponseOpenError::TypeDefinitionHasNoRootType;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
@@ -1387,6 +1415,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
     case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         IOX2_UNREACHABLE();
@@ -1449,6 +1479,8 @@ constexpr auto from<iox2::RequestResponseOpenError, iox2_request_response_open_o
         return iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::RequestResponseOpenError::InvalidTypeDefinition:
         return iox2_request_response_open_or_create_error_e_O_INVALID_TYPE_DEFINITION;
+    case iox2::RequestResponseOpenError::TypeDefinitionHasNoRootType:
+        return iox2_request_response_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
     }
 
     IOX2_UNREACHABLE();
@@ -1517,6 +1549,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::OpenUnableToAcquireTypeDefinition;
     case iox2_request_response_open_or_create_error_e_O_INVALID_TYPE_DEFINITION:
         return iox2::RequestResponseOpenOrCreateError::OpenInvalidTypeDefinition;
+    case iox2_request_response_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::RequestResponseOpenOrCreateError::OpenTypeDefinitionHasNoRootType;
 
     case iox2_request_response_open_or_create_error_e_C_INTERRUPT:
         return iox2::RequestResponseOpenOrCreateError::CreateInterrupt;
@@ -1540,6 +1574,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::CreateUnableToAcquireTypeDefinition;
     case iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION:
         return iox2::RequestResponseOpenOrCreateError::CreateInvalidTypeDefinition;
+    case iox2_request_response_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE:
+        return iox2::RequestResponseOpenOrCreateError::CreateTypeDefinitionHasNoRootType;
     case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID:
         return iox2::RequestResponseOpenOrCreateError::CreateUnableToGenerateUniqueServiceId;
 
@@ -1604,6 +1640,8 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
         return iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::RequestResponseOpenOrCreateError::OpenInvalidTypeDefinition:
         return iox2_request_response_open_or_create_error_e_O_INVALID_TYPE_DEFINITION;
+    case iox2::RequestResponseOpenOrCreateError::OpenTypeDefinitionHasNoRootType:
+        return iox2_request_response_open_or_create_error_e_O_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
 
     case iox2::RequestResponseOpenOrCreateError::CreateInterrupt:
         return iox2_request_response_open_or_create_error_e_C_INTERRUPT;
@@ -1627,6 +1665,8 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     case iox2::RequestResponseOpenOrCreateError::CreateInvalidTypeDefinition:
         return iox2_request_response_open_or_create_error_e_C_INVALID_TYPE_DEFINITION;
+    case iox2::RequestResponseOpenOrCreateError::CreateTypeDefinitionHasNoRootType:
+        return iox2_request_response_open_or_create_error_e_C_TYPE_DEFINITION_HAS_NO_ROOT_TYPE;
     case iox2::RequestResponseOpenOrCreateError::CreateUnableToGenerateUniqueServiceId:
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_GENERATE_UNIQUE_SERVICE_ID;
 
