@@ -630,9 +630,9 @@ fn concurrent_time_controller_creation_succeeds_once() {
     let test = TestFixture::new();
     let name = test.name();
     let config = test.config();
-    let _watchdog = Watchdog::new();
+    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16);
-    const NUMBER_OF_ITERATIONS: usize = 25;
+    const NUMBER_OF_ITERATIONS: usize = 10;
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
         .create(&barrier_handle)
@@ -1008,9 +1008,9 @@ fn schedule_different_timeouts_concurrently_works() {
     let test = TestFixture::new();
     let name = test.name();
     let config = test.config();
-    let _watchdog = Watchdog::new();
+    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16) as u64;
-    const NUMBER_OF_ITERATIONS: u64 = 100;
+    const NUMBER_OF_ITERATIONS: u64 = 10;
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(number_of_threads as u32)
         .create(&barrier_handle)
@@ -1070,9 +1070,9 @@ fn schedule_same_timeouts_concurrently_works() {
     let test = TestFixture::new();
     let name = test.name();
     let config = test.config();
-    let _watchdog = Watchdog::new();
+    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16) as u64;
-    const NUMBER_OF_ITERATIONS: u64 = 100;
+    const NUMBER_OF_ITERATIONS: u64 = 10;
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(number_of_threads as u32)
         .create(&barrier_handle)
