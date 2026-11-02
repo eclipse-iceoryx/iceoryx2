@@ -363,8 +363,11 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send + Ab
         backpressure_action_for_strategy: BackpressureToReceiverAction,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
-    fn reclaim(&self, channel_id: ChannelId)
-    -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
+    fn reclaim<F: FnMut(PointerOffset)>(
+        &self,
+        channel_id: ChannelId,
+        callback: F,
+    ) -> Result<(), ZeroCopyReclaimError>;
 
     /// # Safety
     ///

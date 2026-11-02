@@ -823,47 +823,59 @@ pub mod details {
             self.try_send(ptr, sample_size, channel_id)
         }
 
-        fn reclaim(
+        fn reclaim<F: FnMut(PointerOffset)>(
             &self,
             channel_id: ChannelId,
-        ) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
+            mut callback: F,
+        ) -> Result<(), ZeroCopyReclaimError> {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
 
             let msg = "Unable to reclaim sample";
 
             let storage = self.storage.get();
-            match unsafe { storage.channels[channel_id.value()].completion_queue.pop() } {
-                None => Ok(None),
-                Some(v) => {
-                    let pointer_offset = PointerOffset::from_value(v);
-                    let segment_id = pointer_offset.segment_id().value() as usize;
+            loop {
+                let offset = match unsafe {
+                    storage.channels[channel_id.value()].completion_queue.pop()
+                } {
+                    None => None,
+                    Some(v) => {
+                        let pointer_offset = PointerOffset::from_value(v);
+                        let segment_id = pointer_offset.segment_id().value() as usize;
 
-                    debug_assert!(segment_id < storage.number_of_segments as usize);
+                        debug_assert!(segment_id < storage.number_of_segments as usize);
 
-                    if segment_id >= storage.segment_details.len() {
-                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset,
+                        if segment_id >= storage.segment_details.len() {
+                            fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset,
                             "{} since the receiver returned a non-existing segment id {:?}.",
                             msg, pointer_offset);
-                    }
+                        }
 
-                    let segment_details =
-                        storage.get_segment_details(segment_id, channel_id.value());
-                    debug_assert!(
-                        pointer_offset
-                            .offset()
-                            .is_multiple_of(segment_details.sample_size.load(Ordering::Relaxed))
-                    );
-                    let index = pointer_offset.offset()
-                        / segment_details.sample_size.load(Ordering::Relaxed);
+                        let segment_details =
+                            storage.get_segment_details(segment_id, channel_id.value());
+                        debug_assert!(
+                            pointer_offset.offset().is_multiple_of(
+                                segment_details.sample_size.load(Ordering::Relaxed)
+                            )
+                        );
+                        let index = pointer_offset.offset()
+                            / segment_details.sample_size.load(Ordering::Relaxed);
 
-                    if !segment_details.used_chunk_list.remove(index) {
-                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset,
+                        if !segment_details.used_chunk_list.remove(index) {
+                            fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset,
                             "{} since the receiver returned a corrupted offset {:?}.",
                             msg, pointer_offset);
+                        }
+                        Some(pointer_offset)
                     }
-                    Ok(Some(pointer_offset))
+                };
+
+                match offset {
+                    Some(offset) => callback(offset),
+                    None => break,
                 }
             }
+
+            Ok(())
         }
 
         unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
