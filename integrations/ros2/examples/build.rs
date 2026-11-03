@@ -28,8 +28,8 @@ const REQUIRED_PACKAGES: [&str; 4] = [
 
 /// The binary flatbuffer schemas the examples bake into the binary.
 const BINARY_SCHEMAS: [&str; 2] = [
-    "flatbuffer_translator/schemas/joint_readings.bfbs",
-    "flatbuffer_translator/schemas/pose.bfbs",
+    "specialized_flatbuffer_translator/schemas/joint_readings.bfbs",
+    "specialized_flatbuffer_translator/schemas/pose.bfbs",
 ];
 
 fn main() {
@@ -80,7 +80,7 @@ fn require_binary_schemas() {
     if !missing.is_empty() {
         panic!(
             "The binary flatbuffer schemas {missing:?} are missing. See \
-             integrations/ros2/examples/flatbuffer_translator/README.md for
+             integrations/ros2/examples/specialized_flatbuffer_translator/README.md for
              instructions on how to generate them."
         );
     }

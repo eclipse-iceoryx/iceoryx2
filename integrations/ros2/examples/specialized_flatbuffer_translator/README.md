@@ -1,4 +1,4 @@
-# Flatbuffer Translator
+# Specialized Flatbuffer Translator
 
 Illustrates how to implement a translator for a system communicating
 flatbuffers on `iceoryx2` services. It assumes a system designed before
@@ -58,18 +58,18 @@ Before running the example, we need to generate the binary schemas from the
 translator takes them from that location to bake into the binary.
 
 ```sh
-flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --schema --binary \
-    integrations/ros2/examples/flatbuffer_translator/schemas/joint_readings.fbs \
-    integrations/ros2/examples/flatbuffer_translator/schemas/pose.fbs
+flatc -o integrations/ros2/examples/specialized_flatbuffer_translator/schemas --schema --binary \
+    integrations/ros2/examples/specialized_flatbuffer_translator/schemas/joint_readings.fbs \
+    integrations/ros2/examples/specialized_flatbuffer_translator/schemas/pose.fbs
 ```
 
 The generated Rust code is already included. For completeness, the command
 used to generate it is:
 
 ```sh
-flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --rust \
-    integrations/ros2/examples/flatbuffer_translator/schemas/joint_readings.fbs \
-    integrations/ros2/examples/flatbuffer_translator/schemas/pose.fbs
+flatc -o integrations/ros2/examples/specialized_flatbuffer_translator/schemas --rust \
+    integrations/ros2/examples/specialized_flatbuffer_translator/schemas/joint_readings.fbs \
+    integrations/ros2/examples/specialized_flatbuffer_translator/schemas/pose.fbs
 ```
 
 ### Build
@@ -92,13 +92,13 @@ From `iceoryx2` to ROS 2.
 #### Terminal 1: gateway
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_gateway
+cargo run --manifest-path integrations/ros2/Cargo.toml --example specialized_flatbuffer_gateway
 ```
 
 #### Terminal 2: `iceoryx2` publisher
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_joint_readings_publisher
+cargo run --manifest-path integrations/ros2/Cargo.toml --example specialized_flatbuffer_joint_readings_publisher
 ```
 
 #### Terminal 3: ROS 2 subscriber
@@ -117,13 +117,13 @@ From ROS 2 to `iceoryx2`.
 #### Terminal 1: gateway
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_gateway
+cargo run --manifest-path integrations/ros2/Cargo.toml --example specialized_flatbuffer_gateway
 ```
 
 #### Terminal 2: `iceoryx2` subscriber
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_pose_subscriber
+cargo run --manifest-path integrations/ros2/Cargo.toml --example specialized_flatbuffer_pose_subscriber
 ```
 
 #### Terminal 3: ROS 2 publisher

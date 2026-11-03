@@ -20,7 +20,7 @@ use ros_env::sensor_msgs::msg::JointState;
 use ros_env::std_msgs::msg::Header;
 
 use super::{RegionAllocator, TranscodeFailure};
-use crate::flatbuffer_translator::schemas::{JointReadings, JointReadingsArgs, Timestamp};
+use crate::specialized_flatbuffer_translator::schemas::{JointReadings, JointReadingsArgs, Timestamp};
 
 /// Converts between a [`JointReadings`] flatbuffer and the CDR of a
 /// `sensor_msgs/msg/JointState`.

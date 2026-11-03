@@ -30,13 +30,13 @@ pub mod transcoders;
 
 use transcoders::{JointReadingsTranscoder, PoseTranscoder, TranscodeFailure};
 
-use crate::flatbuffer_translator::schemas::{JOINT_READINGS_SCHEMA, POSE_SCHEMA};
+use crate::specialized_flatbuffer_translator::schemas::{JOINT_READINGS_SCHEMA, POSE_SCHEMA};
 
-/// The ROS 2 type the [`JointReadings`](crate::flatbuffer_translator::schemas::JointReadings)
+/// The ROS 2 type the [`JointReadings`](crate::specialized_flatbuffer_translator::schemas::JointReadings)
 /// flatbuffer translates to.
 pub const JOINT_STATE: &str = "sensor_msgs/msg/JointState";
 
-/// The ROS 2 type the [`Pose`](crate::flatbuffer_translator::schemas::Pose) flatbuffer translates to.
+/// The ROS 2 type the [`Pose`](crate::specialized_flatbuffer_translator::schemas::Pose) flatbuffer translates to.
 pub const POSE_STAMPED: &str = "geometry_msgs/msg/PoseStamped";
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]

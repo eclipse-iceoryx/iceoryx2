@@ -15,16 +15,16 @@
 //! mapping in `mapping.toml`.
 //!
 //! ```bash
-//! cargo run --example flatbuffer_gateway
+//! cargo run --example specialized_flatbuffer_gateway
 //! # in other shells:
-//! #   cargo run --example flatbuffer_joint_readings_publisher
+//! #   cargo run --example specialized_flatbuffer_joint_readings_publisher
 //! #   ros2 topic echo /joint_states
 //! ```
 
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_integrations_ros2_examples::flatbuffer_translator::translator::FlatbufferTranslator;
+use iceoryx2_integrations_ros2_examples::specialized_flatbuffer_translator::translator::FlatbufferTranslator;
 use iceoryx2_integrations_ros2_link_adapter::mapping::static_mapping;
 use iceoryx2_integrations_ros2_link_adapter::{
     Config as AdapterConfig, MirroredHeader, NodeName, Ros2Adapter, StaticMapping,
@@ -33,7 +33,7 @@ use iceoryx2_link::Link;
 use iceoryx2_link_gateway::Gateway;
 use iceoryx2_log::warn;
 
-const ORIGIN: &str = "flatbuffer_gateway";
+const ORIGIN: &str = "specialized_flatbuffer_gateway";
 
 const MAPPING: &str = include_str!("mapping.toml");
 const CYCLE_TIME: Duration = Duration::from_millis(100);

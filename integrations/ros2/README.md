@@ -65,7 +65,7 @@ The integrations require:
 * The cargo-aware colcon build tools, for the
   [colcon examples](colcon/examples/README.md)
 * The FlatBuffers compiler `flatc`, for the
-  [flatbuffer translator example](examples/flatbuffer_translator/README.md)
+  [specialized flatbuffer translator example](examples/specialized_flatbuffer_translator/README.md)
 
 The associated READMEs describe how to set them up.
 

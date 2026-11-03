@@ -22,7 +22,7 @@ require_tool flatc
 
 #### Test Setup
 
-cd integrations/ros2/examples/flatbuffer_translator/schemas
+cd integrations/ros2/examples/specialized_flatbuffer_translator/schemas
 spawn flatc --schema --binary joint_readings.fbs pose.fbs
 wait
 cd ${REPO_ROOT}
@@ -36,7 +36,7 @@ set timeout 30
 
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --example flatbuffer_gateway
+    -p iceoryx2-integrations-ros2-examples --example specialized_flatbuffer_gateway
 set id_gateway $spawn_id
 drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
@@ -44,7 +44,7 @@ unset env(IOX2_LOG_LEVEL)
 expect_output_from $id_gateway "gateway running"
 
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --example flatbuffer_joint_readings_publisher
+    -p iceoryx2-integrations-ros2-examples --example specialized_flatbuffer_joint_readings_publisher
 set id_publisher $spawn_id
 
 expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"JointReadings\""
