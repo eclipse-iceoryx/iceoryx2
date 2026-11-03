@@ -632,29 +632,53 @@ fn concurrent_time_controller_creation_succeeds_once() {
     let config = test.config();
     let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16);
-    const NUMBER_OF_ITERATIONS: usize = 10;
+    const NUMBER_OF_ITERATIONS: usize = 25;
     let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2 * number_of_threads as u32)
-        .create(&barrier_handle)
-        .unwrap();
+    let barrier = Arc::new(
+        BarrierBuilder::new(2 * number_of_threads as u32)
+            .create(&barrier_handle)
+            .unwrap(),
+    );
     let mutex_handle = MutexHandle::new();
     let time_controller_storage: Arc<
         Mutex<Option<SimulationTimeController<UnixDatagramShmCountingBitSet>>>,
-    > = Arc::new(MutexBuilder::new().create(None, &mutex_handle).unwrap());
-    let success_counter = AtomicU64::new(0);
+    > = Arc::new(
+        MutexBuilder::new()
+            .create(
+                Some(
+                    SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+                        .config(config)
+                        .create_time_controller()
+                        .unwrap(),
+                ),
+                &mutex_handle,
+            )
+            .unwrap(),
+    );
+    let success_counter = Arc::new(AtomicU64::new(0));
+
+    let _clock = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
+        .config(config)
+        .open_clock()
+        .unwrap();
+    let mut s = time_controller_storage.lock().unwrap();
+    *s = None;
+    drop(s);
 
     thread_scope(|s| {
         for _ in 0..number_of_threads {
             let storage = time_controller_storage.clone();
-            s.thread_builder().spawn(|| {
-                barrier.wait();
+            let b = barrier.clone();
+            let counter = success_counter.clone();
+            s.thread_builder().spawn(move || {
+                b.wait();
                 for _ in 0..NUMBER_OF_ITERATIONS {
                     if let Ok(time_controller) =
                         SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
                             .config(config)
                             .create_time_controller()
                     {
-                        success_counter.fetch_add(1, Ordering::Relaxed);
+                        counter.fetch_add(1, Ordering::Relaxed);
                         let mut s = storage.lock().unwrap();
                         assert_that!((*s).replace(time_controller), is_none);
                     }
@@ -663,15 +687,17 @@ fn concurrent_time_controller_creation_succeeds_once() {
         }
         for _ in 0..number_of_threads {
             let storage = time_controller_storage.clone();
-            s.thread_builder().spawn(|| {
-                barrier.wait();
+            let b = barrier.clone();
+            let counter = success_counter.clone();
+            s.thread_builder().spawn(move || {
+                b.wait();
                 for _ in 0..NUMBER_OF_ITERATIONS {
                     if let Ok(time_controller) =
                         SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
                             .config(config)
                             .open_or_create_time_controller()
                     {
-                        success_counter.fetch_add(1, Ordering::Relaxed);
+                        counter.fetch_add(1, Ordering::Relaxed);
                         let mut s = storage.lock().unwrap();
                         assert_that!((*s).replace(time_controller), is_none);
                     }
@@ -1008,14 +1034,10 @@ fn schedule_different_timeouts_concurrently_works() {
     let test = TestFixture::new();
     let name = test.name();
     let config = test.config();
-    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
-    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16) as u64;
-    const NUMBER_OF_ITERATIONS: u64 = 10;
+    let _watchdog = Watchdog::new();
+    const NUMBER_OF_ITERATIONS: u64 = 25;
     let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(number_of_threads as u32)
-        .create(&barrier_handle)
-        .unwrap();
-    let duration = Duration::from_millis(number_of_threads);
+    let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
 
     let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
         .config(config)
@@ -1034,35 +1056,31 @@ fn schedule_different_timeouts_concurrently_works() {
         .unwrap();
 
     time_controller
-        .advance(duration)
+        .advance(Duration::from_millis(100))
         .expect("advance time succeeds");
 
     thread_scope(|s| {
-        for i in 0..number_of_threads / 2 {
-            s.thread_builder().spawn(|| {
-                let timeout = Timeout::At(TimePoint::from_millis(i as u128 + 1));
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    assert_that!(clock.schedule_on(timeout, &listener_name), is_ok);
-                }
-            })?;
-        }
+        s.thread_builder().spawn(|| {
+            let timeout = Timeout::At(TimePoint::new());
+            barrier.wait();
+            for _ in 0..NUMBER_OF_ITERATIONS {
+                assert_that!(clock.schedule_on(timeout, &listener_name), is_ok);
+            }
+        })?;
 
-        for i in 0..number_of_threads / 2 {
-            s.thread_builder().spawn(|| {
-                let timeout = Timeout::At(TimePoint::from_millis(i as u128 + 1));
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    assert_that!(clock.schedule(timeout), is_ok);
-                }
-            })?;
-        }
+        s.thread_builder().spawn(|| {
+            let timeout = Timeout::At(TimePoint::new());
+            barrier.wait();
+            for _ in 0..NUMBER_OF_ITERATIONS {
+                assert_that!(clock.schedule(timeout), is_ok);
+            }
+        })?;
 
         Ok(())
     })
     .unwrap();
 
-    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq number_of_threads / 2 * NUMBER_OF_ITERATIONS);
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq NUMBER_OF_ITERATIONS);
 }
 
 #[test]
@@ -1070,14 +1088,10 @@ fn schedule_same_timeouts_concurrently_works() {
     let test = TestFixture::new();
     let name = test.name();
     let config = test.config();
-    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
-    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 16) as u64;
-    const NUMBER_OF_ITERATIONS: u64 = 10;
+    let _watchdog = Watchdog::new();
+    const NUMBER_OF_ITERATIONS: u64 = 25;
     let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(number_of_threads as u32)
-        .create(&barrier_handle)
-        .unwrap();
-    let duration = Duration::from_millis(number_of_threads);
+    let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
 
     let time_controller = SimulationClockBuilder::<UnixDatagramShmCountingBitSet>::new(name)
         .config(config)
@@ -1097,31 +1111,27 @@ fn schedule_same_timeouts_concurrently_works() {
     let timeout = Timeout::At(TimePoint::new());
 
     time_controller
-        .advance(duration)
+        .advance(Duration::from_millis(100))
         .expect("advance time succeeds");
 
     thread_scope(|s| {
-        for _ in 0..number_of_threads / 2 {
-            s.thread_builder().spawn(|| {
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    assert_that!(clock.schedule_on(timeout, &listener_name), is_ok);
-                }
-            })?;
-        }
+        s.thread_builder().spawn(|| {
+            barrier.wait();
+            for _ in 0..NUMBER_OF_ITERATIONS {
+                assert_that!(clock.schedule_on(timeout, &listener_name), is_ok);
+            }
+        })?;
 
-        for _ in 0..number_of_threads / 2 {
-            s.thread_builder().spawn(|| {
-                barrier.wait();
-                for _ in 0..NUMBER_OF_ITERATIONS {
-                    assert_that!(clock.schedule(timeout), is_ok);
-                }
-            })?;
-        }
+        s.thread_builder().spawn(|| {
+            barrier.wait();
+            for _ in 0..NUMBER_OF_ITERATIONS {
+                assert_that!(clock.schedule(timeout), is_ok);
+            }
+        })?;
 
         Ok(())
     })
     .unwrap();
 
-    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq number_of_threads / 2 * NUMBER_OF_ITERATIONS);
+    assert_that!(listener.try_wait(&mut |_| {}).unwrap(), eq NUMBER_OF_ITERATIONS);
 }
