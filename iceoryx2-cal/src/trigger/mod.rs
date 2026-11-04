@@ -37,6 +37,7 @@
 //! # }
 //! ```
 
+pub mod recommended;
 pub mod socket_pair;
 
 use core::fmt::Debug;

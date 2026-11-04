@@ -323,6 +323,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
+use iceoryx2_cal::trigger::Trigger;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use iceoryx2_log::error;
 use iceoryx2_log::{debug, fail, trace, warn};
@@ -994,6 +995,9 @@ pub trait Service:
 
     /// Event multiplexing mechanisms to wait on multiple events.
     type Reactor: Reactor;
+
+    /// Process-local mechanism to wake up a thread that waits on the [`Service::Reactor`].
+    type LocalTrigger: Trigger;
 
     /// Defines the thread-safety policy of the service. If it is defined as
     /// [`MutexProtected`](iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected), the
