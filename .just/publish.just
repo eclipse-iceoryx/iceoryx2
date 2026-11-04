@@ -35,6 +35,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-bb-container               \
     iceoryx2-bb-system-types            \
     iceoryx2-bb-posix                   \
+    iceoryx2-bb-flatbuffers-generated   \
     iceoryx2-bb-flatbuffers             \
     iceoryx2-bb-linux                   \
     iceoryx2-bb-lock-free               \

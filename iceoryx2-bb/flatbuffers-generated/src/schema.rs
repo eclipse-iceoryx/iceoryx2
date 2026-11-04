@@ -10,9 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-table IncompatibleData {
-    data_1: int32;
-    data_2: int32;
+/// `namespace Testing;`
+pub mod testing {
+    /// Root type `Testing.BoundedData`.
+    pub const BOUNDED_DATA: &[u8] = include_bytes!("../schema/bounded_data.bfbs");
+    /// Root type `Testing.IncompatibleData`.
+    pub const INCOMPATIBLE_DATA: &[u8] = include_bytes!("../schema/incompatible_data.bfbs");
+    /// Root type `Testing.UnboundedData`.
+    pub const UNBOUNDED_DATA: &[u8] = include_bytes!("../schema/unbounded_data.bfbs");
 }
-
-root_type IncompatibleData;

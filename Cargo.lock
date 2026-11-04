@@ -799,6 +799,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-flatbuffers-generated"
+version = "0.10.999"
+
+[[package]]
 name = "iceoryx2-bb-flatbuffers-tests-common"
 version = "0.10.999"
 dependencies = [

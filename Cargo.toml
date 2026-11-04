@@ -28,6 +28,7 @@ members = [
     "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb/flatbuffers",
     "iceoryx2-bb/flatbuffers/tests-nostd",
+    "iceoryx2-bb/flatbuffers-generated",
     "iceoryx2-bb/linux",
     "iceoryx2-bb/linux/tests-common",
     "iceoryx2-bb/linux/tests-nostd",
@@ -140,6 +141,7 @@ iceoryx2-bb-derive-macros = { version = "0.10.999", path = "iceoryx2-bb/derive-m
 iceoryx2-bb-elementary = { version = "0.10.999", path = "iceoryx2-bb/elementary/" }
 iceoryx2-bb-elementary-traits = { version = "0.10.999", path = "iceoryx2-bb/elementary-traits/" }
 iceoryx2-bb-flatbuffers = { version = "0.10.999", path = "iceoryx2-bb/flatbuffers/" }
+iceoryx2-bb-flatbuffers-generated = { version = "0.10.999", path = "iceoryx2-bb/flatbuffers-generated/" }
 iceoryx2-bb-linux = { version = "0.10.999", path = "iceoryx2-bb/linux/" }
 iceoryx2-bb-memory = { version = "0.10.999", path = "iceoryx2-bb/memory/" }
 iceoryx2-bb-posix = { version = "0.10.999", path = "iceoryx2-bb/posix/" }

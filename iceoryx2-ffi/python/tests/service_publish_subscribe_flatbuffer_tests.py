@@ -18,7 +18,7 @@ import pytest
 from flatbuffer_types.Helper import (create_unbounded_data,
                                      flatbuffer_tests_schema_path,
                                      get_schema_file)
-from flatbuffer_types.UnboundedData import UnboundedData
+from Testing.UnboundedData import UnboundedData
 
 # fmt: on
 
@@ -218,7 +218,7 @@ def test_publish_subscribe_works(
     received = subscriber.receive()
     assert received is not None
     data = received.payload_root()
-    assert data.Data() == 123
+    assert data.Entries(0).Data1() == 123
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -254,7 +254,7 @@ def test_publisher_allocates_more_memory_when_initial_reserve_is_out_with_alloca
     received = subscriber.receive()
     assert received is not None
     data = received.payload_root()
-    assert data.Data() == 78
+    assert data.Entries(0).Data1() == 78
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -290,7 +290,7 @@ def test_publisher_allocates_more_memory_when_initial_reserve_is_out_with_alloca
     received = subscriber.receive()
     assert received is not None
     data = received.payload_root()
-    assert data.Data() == 991
+    assert data.Entries(0).Data1() == 991
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -352,7 +352,7 @@ def test_data_can_be_reconstructed_from_payload_bytes(
     received = subscriber.receive()
     assert received is not None
     data = UnboundedData.GetRootAs(received.payload_bytes().as_memory_view(), 0)
-    assert data.Data() == 44
+    assert data.Entries(0).Data1() == 44
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -379,7 +379,7 @@ def test_publisher_can_read_its_own_serialized_data(
     sample = sample.assume_init(unbounded_data)
 
     data = UnboundedData.GetRootAs(sample.payload_bytes().as_memory_view(), 0)
-    assert data.Data() == 123
+    assert data.Entries(0).Data1() == 123
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -414,7 +414,7 @@ def test_publish_subscribe_with_user_header_works(
     assert received.user_header().contents.value == 4456411
 
     data = received.payload_root()
-    assert data.Data() == 91912
+    assert data.Entries(0).Data1() == 91912
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -454,7 +454,7 @@ def test_publish_subscribe_with_user_header_and_payload_resize_works(
     assert received.user_header().contents.value == 1146544
 
     data = received.payload_root()
-    assert data.Data() == 21919
+    assert data.Entries(0).Data1() == 21919
 
 
 @pytest.mark.parametrize("service_type", service_types)

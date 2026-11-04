@@ -146,7 +146,16 @@ sequence = [
     { shell = "black tests" },
 ]
 
+# Exclude generated flatbuffer bindings from linting.
+[tool.black]
+extend-exclude = "tests/flatbuffer_types/Testing/"
+
+[tool.isort]
+skip_glob = ["tests/flatbuffer_types/Testing/*"]
+
 [tool.pytest.ini_options]
+# Include generated flatbuffer bindings on the path.
+pythonpath = ["tests/flatbuffer_types"]
 addopts = [
     "--verbosity=1",
     "-s"
