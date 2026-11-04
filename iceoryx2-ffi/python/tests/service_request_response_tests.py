@@ -507,13 +507,153 @@ def test_non_slice_type_forbids_use_of_slice_api(
         client.loan_slice_uninit(1)
 
     request_uninit = client.loan_uninit()
+
+    with pytest.raises(AssertionError):
+        request_uninit.truncate(0)
+
     request = request_uninit.assume_init()
-    request.send()
+    _pending_response = request.send()
 
     active_request = server.receive()
 
     with pytest.raises(AssertionError):
         active_request.loan_slice_uninit(1)
+
+    response_uninit = active_request.loan_uninit()
+
+    with pytest.raises(AssertionError):
+        response_uninit.truncate(0)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_truncated_uninitialized_slice_request_and_response_deliver_their_first_elements(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    max_elements = 8
+    truncated_elements = 3
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = service.client_builder().initial_max_slice_len(max_elements).create()
+    server = service.server_builder().initial_max_slice_len(max_elements).create()
+
+    request_uninit = client.loan_slice_uninit(max_elements)
+    request_uninit.truncate(truncated_elements)
+    assert request_uninit.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        request_uninit.payload()[i] = i * 25
+    pending_response = request_uninit.assume_init().send()
+
+    active_request = server.receive()
+    assert active_request is not None
+    assert active_request.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        assert active_request.payload()[i] == i * 25
+
+    response_uninit = active_request.loan_slice_uninit(max_elements)
+    response_uninit.truncate(truncated_elements)
+    assert response_uninit.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        response_uninit.payload()[i] = i * 25
+    response_uninit.assume_init().send()
+
+    response = pending_response.receive()
+    assert response is not None
+    assert response.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        assert response.payload()[i] == i * 25
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_truncated_initialized_slice_request_and_response_deliver_their_first_elements(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    max_elements = 8
+    truncated_elements = 3
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = service.client_builder().initial_max_slice_len(max_elements).create()
+    server = service.server_builder().initial_max_slice_len(max_elements).create()
+
+    request_uninit = client.loan_slice_uninit(max_elements)
+    for i in range(0, max_elements):
+        request_uninit.payload()[i] = i * 25
+    request = request_uninit.assume_init()
+    request.truncate(truncated_elements)
+    assert request.payload().len() == truncated_elements
+    pending_response = request.send()
+
+    active_request = server.receive()
+    assert active_request is not None
+    assert active_request.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        assert active_request.payload()[i] == i * 25
+
+    response_uninit = active_request.loan_slice_uninit(max_elements)
+    for i in range(0, max_elements):
+        response_uninit.payload()[i] = i * 25
+    response = response_uninit.assume_init()
+    response.truncate(truncated_elements)
+    assert response.payload().len() == truncated_elements
+    response.send()
+
+    received_response = pending_response.receive()
+    assert received_response is not None
+    assert received_response.payload().len() == truncated_elements
+    for i in range(0, truncated_elements):
+        assert received_response.payload()[i] == i * 25
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_truncating_a_slice_request_or_response_never_grows_it(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    max_elements = 8
+    truncated_elements = 3
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = service.client_builder().initial_max_slice_len(max_elements).create()
+    server = service.server_builder().initial_max_slice_len(max_elements).create()
+
+    request_uninit = client.loan_slice_uninit(max_elements)
+    request_uninit.truncate(max_elements + 1)
+    assert request_uninit.payload().len() == max_elements
+    request_uninit.truncate(truncated_elements)
+    request_uninit.truncate(max_elements)
+    assert request_uninit.payload().len() == truncated_elements
+    _pending_response = request_uninit.assume_init().send()
+
+    active_request = server.receive()
+    assert active_request is not None
+    response_uninit = active_request.loan_slice_uninit(max_elements)
+    response_uninit.truncate(max_elements + 1)
+    assert response_uninit.payload().len() == max_elements
+    response_uninit.truncate(truncated_elements)
+    response_uninit.truncate(max_elements)
+    assert response_uninit.payload().len() == truncated_elements
 
 
 @pytest.mark.parametrize("service_type", service_types)

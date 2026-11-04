@@ -380,6 +380,30 @@ def loan_slice_uninit_response(
     return self.__loan_slice_uninit(number_of_elements)
 
 
+def truncate_request(self: Any, number_of_elements: int) -> None:
+    """
+    Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+
+    It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    Fails when it is called for data types which are not a slice.
+    """
+    assert get_origin(self.__request_payload_type_details) is Slice
+
+    self.__truncate(number_of_elements)
+
+
+def truncate_response(self: Any, number_of_elements: int) -> None:
+    """
+    Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+
+    It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    Fails when it is called for data types which are not a slice.
+    """
+    assert get_origin(self.__response_payload_type_details) is Slice
+
+    self.__truncate(number_of_elements)
+
+
 def loan_flatbuffer_request(self: Client) -> RequestMutUninit:
     """Loans/allocates a `RequestMutUninit` from the underlying data segment of the `Client` with an integrated flatbuffer builder."""
     assert get_origin(self.__request_payload_type_details) is Flatbuffer
@@ -687,12 +711,14 @@ RequestMut.payload = request_payload
 RequestMut.user_header = request_header
 RequestMut.payload_bytes = request_payload_bytes
 RequestMut.payload_root = request_payload_root
+RequestMut.truncate = truncate_request
 
 RequestMutUninit.payload = request_payload
 RequestMutUninit.user_header = request_header
 RequestMutUninit.flatbuffer_builder = flatbuffer_builder_request
 RequestMutUninit.assume_init = assume_init_request
 RequestMutUninit.write_payload = write_request_payload
+RequestMutUninit.truncate = truncate_request
 RequestMutUninit.__del__ = _request_mut_uninit_del
 
 Response.payload = response_payload
@@ -704,12 +730,14 @@ ResponseMut.payload = response_payload
 ResponseMut.user_header = response_header
 ResponseMut.payload_bytes = response_payload_bytes
 ResponseMut.payload_root = response_payload_root
+ResponseMut.truncate = truncate_response
 
 ResponseMutUninit.payload = response_payload
 ResponseMutUninit.user_header = response_header
 ResponseMutUninit.flatbuffer_builder = flatbuffer_builder_response
 ResponseMutUninit.assume_init = assume_init_response
 ResponseMutUninit.write_payload = write_response_payload
+ResponseMutUninit.truncate = truncate_response
 ResponseMutUninit.__del__ = _response_mut_uninit_del
 
 Client.loan_uninit = loan_uninit_request

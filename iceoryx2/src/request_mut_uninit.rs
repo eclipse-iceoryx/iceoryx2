@@ -364,6 +364,47 @@ impl<
             )
         }
     }
+
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are
+    /// sent. It has no effect when `number_of_elements` is not smaller than the current number of
+    /// elements, since the payload can only shrink. The loaned memory keeps its size.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .request_response::<[u8], u64>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().initial_max_slice_len(16).create()?;
+    ///
+    /// let message = b"hello";
+    /// let mut request = client.loan_slice_uninit(16)?;
+    /// for (element, byte) in request.payload_mut().iter_mut().zip(message) {
+    ///     element.write(*byte);
+    /// }
+    /// request.truncate(message.len());
+    ///
+    /// let request = unsafe { request.assume_init() };
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn truncate(&mut self, number_of_elements: usize) {
+        let header = unsafe {
+            &mut *self
+                .chunk
+                .header_mut_ptr()
+                .cast::<crate::service::header::request_response::RequestHeader>()
+        };
+        header.truncate(number_of_elements as u64);
+    }
 }
 
 impl<

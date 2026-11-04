@@ -84,6 +84,11 @@ class RequestMutUninit {
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+    /// It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    void truncate(uint64_t number_of_elements);
+
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
     template <typename T = RequestPayload,
@@ -230,6 +235,17 @@ inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload_mut()
     -> bb::MutableSlice<ValueType> {
     return m_request.payload_mut();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline void RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::truncate(
+    uint64_t number_of_elements) {
+    m_request.truncate(number_of_elements);
 }
 
 template <ServiceType Service,
