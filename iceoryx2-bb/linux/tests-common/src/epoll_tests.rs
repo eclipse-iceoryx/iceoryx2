@@ -312,55 +312,41 @@ pub fn blocking_wait_wakes_up_by_trigger() {
     }).unwrap();
 }
 
-// TODO: #1458
+// The global `SignalHandler` claims every non-fatal signal's disposition; an epoll
+// subscribed to that same signal must still receive it as `EpollEvent::Signal`.
+// TODO: #1898
+// currently failing as the epoll's signalfd is starved by the competing `call_and_fetch(..)`
 #[ignore]
 #[test]
 pub fn signals_can_be_received() {
-    let _watchdog = Watchdog::new_with_timeout(core::time::Duration::from_secs(1000));
-    let (socket_1, _socket_2) = StreamingSocket::create_pair().unwrap();
+    let _watchdog = Watchdog::new();
     let sut = EpollBuilder::new()
         .handle_signal(FetchableSignal::UserDefined1)
         .create()
         .unwrap();
-    let _guard = sut
-        .add(socket_1.file_descriptor())
-        .event_type(EventType::ReadyToRead)
-        .attach()
-        .unwrap();
 
-    let callback_was_called = AtomicBool::new(false);
-    let handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
-    thread_scope(|s| {
-        s.thread_builder().spawn(|| {
-            barrier.wait();
-            assert_that!(sut.blocking_wait(|event| {
-                if let EpollEvent::Signal(signal) = event {
-                    assert_that!(signal.signal(), eq FetchableSignal::UserDefined1);
-                    assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
-                    assert_that!(signal.origin_pid(), eq Process::from_self().id());
-                } else {
-                    assert_that!(true, eq false);
-                }
-                callback_was_called.store(true, Ordering::Relaxed);
-            }).unwrap(), eq 1);
-        })?;
+    // Activate the global handler; its default disposition is what starves the fd.
+    let _ = SignalHandler::call_and_fetch(|| {});
 
-        barrier.wait();
-        nanosleep(TIMEOUT).unwrap();
-        assert_that!(callback_was_called.load(Ordering::Relaxed), eq false);
+    SignalHandler::call_and_fetch(|| {
+        Process::from_self()
+            .send_signal(FetchableSignal::UserDefined1.into())
+            .unwrap();
+    });
 
-        while !callback_was_called.load(Ordering::Relaxed) {
-            SignalHandler::call_and_fetch(|| {
-                Process::from_self()
-                    .send_signal(FetchableSignal::UserDefined1.into())
-                    .unwrap();
-            });
-        }
-
-        // thread should wake up now, if not the watchdog will let the unit test fail
-
-        Ok(())
-    })
+    let got_signal = AtomicBool::new(false);
+    sut.timed_wait(
+        |event| {
+            if let EpollEvent::Signal(signal) = event {
+                assert_that!(signal.signal(), eq FetchableSignal::UserDefined1);
+                assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
+                assert_that!(signal.origin_pid(), eq Process::from_self().id());
+                got_signal.store(true, Ordering::Relaxed);
+            }
+        },
+        core::time::Duration::from_millis(200),
+    )
     .unwrap();
+
+    assert_that!(got_signal.load(Ordering::Relaxed), eq true);
 }
