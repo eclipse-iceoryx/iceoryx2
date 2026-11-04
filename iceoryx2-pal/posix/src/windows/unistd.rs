@@ -245,6 +245,7 @@ pub unsafe fn close(fd: int) -> int {
                 }
             }
             Some(FdHandleEntry::UdsDatagramSocket(handle)) => {
+                HandleTranslator::get_instance().release_uds_datagram_socket(fd);
                 if win32call! { winsock closesocket(handle.fd)}.0 != 0 {
                     -1
                 } else {
