@@ -57,6 +57,7 @@
 * [#2223](https://github.com/eclipse-iceoryx/iceoryx2/issues/2223) Free the node, WaitSet and service builders that are dropped without being consumed
 * [#2224](https://github.com/eclipse-iceoryx/iceoryx2/issues/2224) Panic safe drop in `Vec`
 * [#2232](https://github.com/eclipse-iceoryx/iceoryx2/issues/2232) Apply the sanitizer flags when building with `-DSANITIZERS=ON`
+* [#2255](https://github.com/eclipse-iceoryx/iceoryx2/issues/2255) Make timed semaphore waits on Windows wait until the deadline
 * [#2256](https://github.com/eclipse-iceoryx/iceoryx2/issues/2256) Release the attribute set of every listed service in the C examples and document that the receiver owns it
 * [#2257](https://github.com/eclipse-iceoryx/iceoryx2/issues/2257) Pass the sanitizer flags on to programs that link the static C++ library
 
