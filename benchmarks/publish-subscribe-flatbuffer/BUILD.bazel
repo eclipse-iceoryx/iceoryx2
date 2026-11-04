@@ -22,13 +22,12 @@ filegroup(
 rust_binary(
     name = "benchmark-publish-subscribe-flatbuffer",
     srcs = glob(["src/**/*.rs"]),
-    compile_data = ["src/payload_data.bfbs"],
     deps = [
         "//iceoryx2",
+        "//iceoryx2-bb/flatbuffers-generated:iceoryx2-bb-flatbuffers-generated",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-log/log:iceoryx2-log",
         "@crate_index//:clap",
-        "@crate_index//:flatbuffers",
     ],
 )

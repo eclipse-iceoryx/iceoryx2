@@ -10,28 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::payload_data_generated::benchmark::{PayloadData, PayloadDataArgs};
 use clap::Parser;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_flatbuffers_generated::binding::benchmark::{PayloadData, PayloadDataArgs};
+use iceoryx2_bb_flatbuffers_generated::schema::benchmark::PAYLOAD_DATA;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::thread::ThreadBuilder;
 
-#[path = "payload_data_generated.rs"]
-#[allow(clippy::all)]
-#[rustfmt::skip]
-mod payload_data_generated;
-
 const ITERATIONS: u64 = 10000000;
-
-const SCHEMA: &[u8] = include_bytes!("payload_data.bfbs");
 
 /// Overhead reserved upfront so that the builder never reallocates during the measurement.
 const FLATBUFFER_OVERHEAD: usize = 64;
 
 fn write_schema() -> Result<FilePath, Box<dyn core::error::Error>> {
     let path = std::env::temp_dir().join("iox2_benchmark_payload_data.bfbs");
-    std::fs::write(&path, SCHEMA)?;
+    std::fs::write(&path, PAYLOAD_DATA)?;
     Ok(path.to_str().expect("temp dir is valid utf-8").try_into()?)
 }
 

@@ -140,8 +140,8 @@ name = "benchmark-publish-subscribe-flatbuffer"
 version = "0.10.999"
 dependencies = [
  "clap",
- "flatbuffers",
  "iceoryx2",
+ "iceoryx2-bb-flatbuffers-generated",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
 ]
@@ -801,6 +801,9 @@ dependencies = [
 [[package]]
 name = "iceoryx2-bb-flatbuffers-generated"
 version = "0.10.999"
+dependencies = [
+ "flatbuffers",
+]
 
 [[package]]
 name = "iceoryx2-bb-flatbuffers-tests-common"

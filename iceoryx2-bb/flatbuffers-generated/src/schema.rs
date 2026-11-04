@@ -10,6 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// `namespace Benchmark;`
+pub mod benchmark {
+    /// Root type `Benchmark.PayloadData`.
+    pub const PAYLOAD_DATA: &[u8] = include_bytes!("../schema/payload_data.bfbs");
+}
+
 /// `namespace Testing;`
 pub mod testing {
     /// Root type `Testing.BoundedData`.

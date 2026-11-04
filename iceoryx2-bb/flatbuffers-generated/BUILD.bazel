@@ -21,7 +21,10 @@ filegroup(
 
 rust_library(
     name = "iceoryx2-bb-flatbuffers-generated",
-    srcs = glob(["src/**/*.rs"]),
+    srcs = glob([
+        "src/**/*.rs",
+        "binding/*.rs",
+    ]),
     compile_data = glob(["schema/*.bfbs"]),
     crate_features = select({
         "//:cfg_feature_std": [
@@ -29,4 +32,7 @@ rust_library(
         ],
         "//conditions:default": [],
     }),
+    deps = [
+        "@crate_index//:flatbuffers",
+    ],
 )

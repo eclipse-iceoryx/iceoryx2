@@ -13,3 +13,6 @@ version = { workspace = true }
 [features]
 default = []
 std = []
+
+[dependencies]
+flatbuffers = { workspace = true }
