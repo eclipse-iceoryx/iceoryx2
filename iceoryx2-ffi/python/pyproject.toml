@@ -53,6 +53,7 @@ bindings = "pyo3"
 module-name = "iceoryx2._iceoryx2"
 manifest-path = "Cargo.toml"
 target-dir = "../../target/ff/python"
+include = [{ path = "python-src/iceoryx2/_iceoryx2/**/*.pyi", format = "wheel" }]
 
 [tool.poetry]
 packages = [{include = "iceoryx2", from = "python-src"}]
