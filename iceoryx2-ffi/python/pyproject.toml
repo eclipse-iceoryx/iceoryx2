@@ -85,7 +85,8 @@ shell = "maturin develop --manifest-path Cargo.toml --target-dir ../../target/ff
 shell = "python -m build --sdist --outdir ../../target/ff/python/dist"
 
 [tool.poe.tasks.build-wheel]
-shell = "maturin build --release ${interpreter:+-i $interpreter} --target-dir ../../target/ff/python --out ../../target/ff/python/dist"
+# Generate stubs before the release profile strips the introspection symbols.
+shell = "maturin generate-stubs --features log,pyo3/extension-module,pyo3/experimental-inspect ${interpreter:+-i $interpreter} --target-dir ../../target/ff/python --out python-src && maturin build --release ${interpreter:+-i $interpreter} --target-dir ../../target/ff/python --out ../../target/ff/python/dist"
 
   [[tool.poe.tasks.build-wheel.args]]
   name = "interpreter"
