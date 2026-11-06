@@ -25,6 +25,7 @@
 * [#2098](https://github.com/eclipse-iceoryx/iceoryx2/issues/2098) Close the file descriptor of a dynamic storage once its shared memory is mapped
 * [#2114](https://github.com/eclipse-iceoryx/iceoryx2/issues/2114) Truncate a loaned slice sample so that only its first elements are sent
 * [#2149](https://github.com/eclipse-iceoryx/iceoryx2/issues/2149) Optimize memory chunk reference counting
+* [#2179](https://github.com/eclipse-iceoryx/iceoryx2/issues/2179) Add `chmod` and `chown` to POSIX abstraction
 
 ### Bugfixes
 
