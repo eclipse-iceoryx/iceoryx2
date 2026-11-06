@@ -29,8 +29,24 @@
 //! println!("The uid/gid of root/root is: {}/{}", ownership.uid(), ownership.gid());
 //! ```
 
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_system_types::path::SemanticString;
+use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::*;
+
 use crate::group::Gid;
 use crate::user::Uid;
+
+enum_gen! { SetOwnershipError
+    entry:
+    InvalidPath,
+    DoesNotExist,
+    LoopInSymbolicLinks,
+    InsufficientPermissions,
+    ReadOnlyFilesystem,
+    UnknownError(i32)
+}
 
 /// Defines the owner in a unix environment consisting of user and group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -93,5 +109,24 @@ impl Ownership {
     /// returns the group id
     pub fn gid(&self) -> Gid {
         self.gid
+    }
+
+    pub fn apply_to(&self, path: &Path) -> Result<&Self, SetOwnershipError> {
+        let uid = self.uid;
+        let gid = self.gid;
+        if unsafe { posix::chown(path.as_c_str(), uid.to_native(), gid.to_native()) } == 0 {
+            return Ok(self);
+        }
+
+        let msg = "Unable to update ownership";
+        handle_errno!(SetOwnershipError, from self,
+                      Errno::EACCES => (InsufficientPermissions, "{} for {} to uid {}, gid {} due to insufficient permissions.", msg, path, uid, gid),
+                      Errno::EPERM => (InsufficientPermissions, "{} for {} to uid {}, gid {} due to insufficient permissions.", msg, path, uid, gid),
+                      Errno::ELOOP => (LoopInSymbolicLinks, "{} for {} to uid {}, gid {} due to a loop in the symbolic links of the path.", msg, path, uid, gid),
+                      Errno::ENAMETOOLONG => (InvalidPath, "{} for {} to uid {}, gid {} due to a too long path.", msg, path, uid, gid),
+                      Errno::ENOENT => (DoesNotExist, "{} for {} to uid {}, gid {} due to non-existing path.", msg, path, uid, gid),
+                      Errno::EROFS => (ReadOnlyFilesystem, "{} for {} to uid {}, gid {} since the file is located on an read-only filesystem.", msg, path, uid, gid),
+                      v => (UnknownError(v as i32), "{} for {} to uid {}, gid {} due to an unknown error ({}).", msg, path, uid, gid, v)
+        );
     }
 }
