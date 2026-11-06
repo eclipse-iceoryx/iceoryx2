@@ -21,9 +21,22 @@ use core::ops::{BitOr, BitOrAssign, Not};
 use alloc::string::String;
 use alloc::string::ToString;
 
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_system_types::path::{Path, SemanticString};
+use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
 type ModeType = posix::mode_t;
+
+enum_gen! { SetPermissionError
+    entry:
+    MaxPathLengthExceeded,
+    DoesNotExist,
+    LoopInSymbolicLinks,
+    InsufficientPermissions,
+    ReadOnlyFilesystem,
+    UnknownError(i32)
+}
 
 /// Defines the permission of a file or directory in a POSIX system.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -165,6 +178,24 @@ impl Permission {
     /// Converts the permissions into the C type mode_t
     pub fn as_mode(&self) -> posix::mode_t {
         self.0
+    }
+
+    pub fn apply_to(&self, path: &Path) -> Result<&Self, SetPermissionError> {
+        let permission = self;
+        if unsafe { posix::chmod(path.as_c_str(), permission.as_mode()) } == 0 {
+            return Ok(self);
+        }
+
+        let msg = "Unable to update permission";
+        handle_errno!(SetPermissionError, from self,
+                      Errno::EACCES => (InsufficientPermissions, "{} {} for {} due to insufficient path permissions.", msg, permission, path),
+                      Errno::EPERM => (InsufficientPermissions, "{} {} for {} due to insufficient permissions of the process.", msg, permission, path),
+                      Errno::ELOOP => (LoopInSymbolicLinks, "{} {} for {} due to a loop in the symbolic links of the path.", msg, permission, path),
+                      Errno::ENAMETOOLONG => (MaxPathLengthExceeded, "{} {} for {} due to a too long path.", msg, permission, path),
+                      Errno::ENOENT => (DoesNotExist, "{} {} for {} due to non-existing path.", msg, permission, path),
+                      Errno::EROFS => (ReadOnlyFilesystem, "{} {} for {} since the path resides on a read-only file system.", msg, permission, path),
+                      v => (UnknownError(v as i32), "{} {} for {} due to an unknown error ({}).", msg, permission, path, v)
+        );
     }
 }
 

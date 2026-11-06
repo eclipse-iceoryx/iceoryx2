@@ -113,6 +113,11 @@ pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
     unsafe { libc::ftruncate(fd, length) }
 }
 
+pub unsafe fn chown(path: *const c_char, owner: uid_t, group: gid_t) -> int {
+    // open question: do we need to introduce something similar to the ShmFdTranslator but for paths?
+    unsafe { libc::chown(path, owner, group) }
+}
+
 pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
     // iox2-156: ownership lives on the trampoline state file for shm fds.
     let target_fd = super::macos_fd_translator::ShmFdTranslator::get_instance()
