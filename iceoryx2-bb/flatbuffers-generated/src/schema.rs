@@ -24,4 +24,6 @@ pub mod testing {
     pub const INCOMPATIBLE_DATA: &[u8] = include_bytes!("../schema/incompatible_data.bfbs");
     /// Root type `Testing.UnboundedData`.
     pub const UNBOUNDED_DATA: &[u8] = include_bytes!("../schema/unbounded_data.bfbs");
+    /// Root type `Testing.DataProps`.
+    pub const DATA_PROPS: &[u8] = include_bytes!("../schema/data_props.bfbs");
 }

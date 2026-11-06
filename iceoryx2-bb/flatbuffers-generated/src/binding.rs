@@ -15,7 +15,23 @@
 #[rustfmt::skip]
 mod payload_data_generated;
 
+#[path = "../binding/data_props_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+mod data_props_generated;
+
+#[path = "../binding/unbounded_data_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+mod unbounded_data_generated;
+
 /// `namespace Benchmark;`
 pub mod benchmark {
     pub use super::payload_data_generated::benchmark::*;
+}
+
+/// `namespace Testing;`
+pub mod testing {
+    pub use super::data_props_generated::testing::*;
+    pub use super::unbounded_data_generated::testing::*;
 }
