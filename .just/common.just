@@ -108,6 +108,15 @@ _find-crate-manifest package:
 
     echo "$MANIFEST"
 
+# The absolute `path` relative to the repository root.
+[private]
+_path-in-tree path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    FULL_PATH="{{path}}"
+    echo "${FULL_PATH#{{justfile_directory()}}/}"
+
 [private]
 [no-exit-message]
 _find-crate-dir package:
