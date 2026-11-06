@@ -30,7 +30,7 @@ type ModeType = posix::mode_t;
 
 enum_gen! { SetPermissionError
     entry:
-    InvalidPath,
+    MaxPathLengthExceeded,
     DoesNotExist,
     LoopInSymbolicLinks,
     InsufficientPermissions,
@@ -188,12 +188,12 @@ impl Permission {
 
         let msg = "Unable to update permission";
         handle_errno!(SetPermissionError, from self,
-                      Errno::EACCES => (InsufficientPermissions, "{} {} for {} due to insufficient permissions.", msg, permission, path),
-                      Errno::EPERM => (InsufficientPermissions, "{} {} for {} due to insufficient permissions.", msg, permission, path),
+                      Errno::EACCES => (InsufficientPermissions, "{} {} for {} due to insufficient path permissions.", msg, permission, path),
+                      Errno::EPERM => (InsufficientPermissions, "{} {} for {} due to insufficient permissions of the process.", msg, permission, path),
                       Errno::ELOOP => (LoopInSymbolicLinks, "{} {} for {} due to a loop in the symbolic links of the path.", msg, permission, path),
-                      Errno::ENAMETOOLONG => (InvalidPath, "{} {} for {} due to a too long path.", msg, permission, path),
+                      Errno::ENAMETOOLONG => (MaxPathLengthExceeded, "{} {} for {} due to a too long path.", msg, permission, path),
                       Errno::ENOENT => (DoesNotExist, "{} {} for {} due to non-existing path.", msg, permission, path),
-                      Errno::EROFS => (ReadOnlyFilesystem, "{} {} for {} since the file resides on a read-only file system.", msg, permission, path),
+                      Errno::EROFS => (ReadOnlyFilesystem, "{} {} for {} since the path resides on a read-only file system.", msg, permission, path),
                       v => (UnknownError(v as i32), "{} {} for {} due to an unknown error ({}).", msg, permission, path, v)
         );
     }

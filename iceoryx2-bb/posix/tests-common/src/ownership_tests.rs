@@ -68,7 +68,7 @@ pub fn set_ownership_on_non_existing_path_fails() {
 }
 
 #[test]
-pub fn set_ownership_on_existings_path_works() {
+pub fn set_ownership_on_existing_path_works() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let file_path = generate_file_path();

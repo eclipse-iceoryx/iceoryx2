@@ -40,7 +40,7 @@ use crate::user::Uid;
 
 enum_gen! { SetOwnershipError
     entry:
-    InvalidPath,
+    MaxPathLengthExceeded,
     DoesNotExist,
     LoopInSymbolicLinks,
     InsufficientPermissions,
@@ -120,12 +120,12 @@ impl Ownership {
 
         let msg = "Unable to update ownership";
         handle_errno!(SetOwnershipError, from self,
-                      Errno::EACCES => (InsufficientPermissions, "{} for {} to uid {}, gid {} due to insufficient permissions.", msg, path, uid, gid),
-                      Errno::EPERM => (InsufficientPermissions, "{} for {} to uid {}, gid {} due to insufficient permissions.", msg, path, uid, gid),
+                      Errno::EACCES => (InsufficientPermissions, "{} for {} to uid {}, gid {} due to insufficient path permissions.", msg, path, uid, gid),
+                      Errno::EPERM => (InsufficientPermissions, "{} for {} to uid {}, gid {} due to insufficient permissions of the process.", msg, path, uid, gid),
                       Errno::ELOOP => (LoopInSymbolicLinks, "{} for {} to uid {}, gid {} due to a loop in the symbolic links of the path.", msg, path, uid, gid),
-                      Errno::ENAMETOOLONG => (InvalidPath, "{} for {} to uid {}, gid {} due to a too long path.", msg, path, uid, gid),
+                      Errno::ENAMETOOLONG => (MaxPathLengthExceeded, "{} for {} to uid {}, gid {} due to a too long path.", msg, path, uid, gid),
                       Errno::ENOENT => (DoesNotExist, "{} for {} to uid {}, gid {} due to non-existing path.", msg, path, uid, gid),
-                      Errno::EROFS => (ReadOnlyFilesystem, "{} for {} to uid {}, gid {} since the file is located on an read-only filesystem.", msg, path, uid, gid),
+                      Errno::EROFS => (ReadOnlyFilesystem, "{} for {} to uid {}, gid {} since the path is located on an read-only filesystem.", msg, path, uid, gid),
                       v => (UnknownError(v as i32), "{} for {} to uid {}, gid {} due to an unknown error ({}).", msg, path, uid, gid, v)
         );
     }
