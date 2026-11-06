@@ -202,8 +202,7 @@ impl MessageTypeDetails {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    self.all_headers_len()
-                        + align(self.payload.size, self.payload.alignment) * number_of_elements,
+                    self.all_headers_len() + self.payload.size * number_of_elements,
                     max_alignment,
                 ),
                 max_alignment,
@@ -435,6 +434,21 @@ mod tests {
         let details = MessageTypeDetails::from::<bool, bool, u128>(TypeVariant::FixedSize);
         let sut = details.chunk_layout(2);
         assert_that!(sut.size(), eq 48);
+    }
+
+    #[test]
+    fn chunk_layout_applies_overridden_payload_alignment_only_to_the_payload_start() {
+        const OVERRIDDEN_ALIGNMENT: usize = 256;
+        let mut sut = MessageTypeDetails::from::<i64, i64, u8>(TypeVariant::Dynamic);
+        sut.payload.alignment = OVERRIDDEN_ALIGNMENT;
+
+        assert_that!(sut.all_headers_len() % OVERRIDDEN_ALIGNMENT, eq 0);
+
+        for number_of_elements in [0, 1, 255, 256, 257, 4096, 1024 * 1024] {
+            let layout = sut.chunk_layout(number_of_elements);
+            assert_that!(layout.align(), eq OVERRIDDEN_ALIGNMENT);
+            assert_that!(layout.size(), eq align(sut.all_headers_len() + number_of_elements, OVERRIDDEN_ALIGNMENT));
+        }
     }
 
     #[test]
