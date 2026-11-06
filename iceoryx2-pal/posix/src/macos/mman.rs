@@ -223,17 +223,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
         return -1;
     }
 
-    if !ShmFdTranslator::get_instance().register(shm_fd, state_fd) {
-        unsafe {
-            libc::close(shm_fd);
-            close(state_fd);
-        }
-        if created {
-            unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
-        }
-        Errno::set(Errno::ENFILE);
-        return -1;
-    }
+    ShmFdTranslator::get_instance().register(shm_fd, state_fd);
 
     shm_fd
 }
