@@ -159,6 +159,22 @@ jobs:
     with:
       os: ${{ matrix.os }}
 
+  # Check flatbuffers are in sync with the pinned version
+  flatbuffers-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version v7.0.1
+
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0
+
+      - name: Check the generated flatbuffer output
+        run: just generate flatbuffers --check
+
   # Build documentation and run code examples
   rust-doc-check:
     needs: [preflight-check, cargo-nextest]
@@ -648,6 +664,7 @@ jobs:
       [
         preflight-check,
         rust-doc-check,
+        flatbuffers-check,
         static-code-analysis-rust,
         static-code-analysis-cpp,
         sdk-stable-debug,
