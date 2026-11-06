@@ -60,14 +60,15 @@ pub fn test_directory() -> Path {
 }
 
 #[pymodule]
-pub fn testing(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_wrapped(wrap_pyfunction!(generate_service_name))?;
-    m.add_wrapped(wrap_pyfunction!(generate_node_name))?;
-    m.add_wrapped(wrap_pyfunction!(generate_isolated_config))?;
-    m.add_wrapped(wrap_pyfunction!(generate_file_name))?;
-    m.add_wrapped(wrap_pyfunction!(generate_file_path))?;
-    m.add_wrapped(wrap_pyfunction!(create_test_directory))?;
-    m.add_wrapped(wrap_pyfunction!(test_directory))?;
-
-    Ok(())
+pub mod testing {
+    #[pymodule_export]
+    use super::{
+        generate_service_name,
+        generate_node_name,
+        generate_isolated_config,
+        generate_file_name,
+        generate_file_path,
+        create_test_directory,
+        test_directory,
+    };
 }
