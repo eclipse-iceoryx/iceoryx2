@@ -130,6 +130,10 @@ pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
     unsafe { libc::ftruncate(fd, length) }
 }
 
+pub unsafe fn chown(path: *const c_char, owner: uid_t, group: gid_t) -> int {
+    unsafe { libc::chown(path, owner, group) }
+}
+
 pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
     unsafe { libc::fchown(fd, owner, group) }
 }
