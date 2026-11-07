@@ -18,6 +18,9 @@
 #include "iox2/bb/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/listener_details.hpp"
+#include "iox2/listener_key.hpp"
+#include "iox2/monofier.hpp"
 #include "iox2/notifier_error.hpp"
 #include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
@@ -51,6 +54,22 @@ class Notifier {
     /// Returns on success the number of [`Listener`]s that were notified otherwise it returns
     /// [`NotifierNotifyError`].
     auto notify_with_custom_event_id(EventId event_id) const -> bb::Expected<size_t, NotifierNotifyError>;
+
+    /// Visits each connected listener. MonofierView and ListenerDetailsView are
+    /// valid only on the callback thread until that individual callback returns.
+    /// A ListenerKey copied from a view remains owned after return. The callback
+    /// must not destroy or move this notifier or call its other operations.
+    /// Other threads must not access this notifier until iteration returns.
+    /// Exceptions must not escape the callback across the C ABI.
+    void
+    for_each_listener(const bb::StaticFunction<CallbackProgression(MonofierView, ListenerDetailsView)>& callback) const;
+
+    /// Notifies only the listener identified by a retained key.
+    auto notify_single_listener(const ListenerKey& key) const -> bb::Expected<void, NotifierNotifyError>;
+
+    /// Notifies only the listener identified by a retained key with a custom event id.
+    auto notify_single_listener_with_custom_event_id(const ListenerKey& key, EventId event_id) const
+        -> bb::Expected<void, NotifierNotifyError>;
 
     /// Returns the deadline of the corresponding [`Service`].
     auto deadline() const -> bb::Optional<iox2::bb::Duration>;
