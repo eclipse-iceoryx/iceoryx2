@@ -41,6 +41,7 @@ class Service {
         -> bb::Expected<bb::Optional<ServiceDetails<S>>, ServiceDetailsError>;
 
     /// Returns a list of all services created under a given [`config::Config`].
+    /// Stops on the first failure to acquire service details and returns its error.
     static auto list(ConfigView config,
                      const iox2::bb::StaticFunction<CallbackProgression(ServiceDetails<S>)>& callback)
         -> bb::Expected<void, ServiceListError>;

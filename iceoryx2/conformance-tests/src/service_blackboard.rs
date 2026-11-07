@@ -963,6 +963,7 @@ pub mod service_blackboard {
 
             let mut service_list = vec![];
             Sut::list(test.config(), |s| {
+                let s = s.expect("service details are accessible");
                 service_list.push(s);
                 CallbackProgression::Continue
             })
@@ -978,6 +979,7 @@ pub mod service_blackboard {
 
             let mut service_list = vec![];
             Sut::list(test.config(), |s| {
+                let s = s.expect("service details are accessible");
                 service_list.push(s);
                 CallbackProgression::Continue
             })

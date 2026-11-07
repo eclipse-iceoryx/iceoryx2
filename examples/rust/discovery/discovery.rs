@@ -19,7 +19,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
     ipc::Service::list(Config::global_config(), |service| {
-        coutln!("\n{:#?}", &service);
+        match service {
+            Ok(service) => coutln!("\n{service:#?}"),
+            Err(error) => eprintln!("Unable to acquire service details: {error}"),
+        }
         CallbackProgression::Continue
     })?;
 

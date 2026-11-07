@@ -15,6 +15,12 @@ description of the service) or static node information (a detailed description
 of a node). Additionally, the prefix of all files, which is by default `iox2_`,
 can be modified.
 
+When sharing a root directory, choose prefixes such that neither starts with
+the other (for example, `fuu_` and `bar_`, rather than `fuu_` and `fuu_bar_`).
+Resource discovery matches file prefixes, so overlapping prefixes do not isolate
+domains. The default prefixes are `iox2_` for std and `iox2nostd_` for no_std;
+these domains use different static configuration formats and are kept separate.
+
 In this example, we use the prefix to separate the iceoryx2 groups. For all
 examples, the user can set the iceoryx2 domain using `-d $DOMAIN_NAME$`. The
 domain name must be a valid file name. The example will only operate within this

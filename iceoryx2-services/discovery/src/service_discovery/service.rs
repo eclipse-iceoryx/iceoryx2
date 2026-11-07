@@ -450,8 +450,9 @@ impl<S: ServiceType> Service<S> {
     ///
     /// # Errors
     ///
-    /// Returns a `SpinError` if there was an error publishing events or sending
-    /// notifications.
+    /// Returns a `SpinError` if synchronizing services, publishing events, or sending
+    /// notifications fails. Notification is attempted for changes observed before a
+    /// synchronization failure; the synchronization error takes precedence over other errors.
     pub fn spin<
         FAddedService: FnMut(&ServiceDetails<S>),
         FRemovedService: FnMut(&ServiceDetails<S>),
@@ -475,7 +476,7 @@ impl<S: ServiceType> Service<S> {
             Ok(())
         };
 
-        self.tracker.sync(|event| {
+        let sync_result = self.tracker.sync(|event| {
             if error.is_some() {
                 return;
             }
@@ -505,17 +506,24 @@ impl<S: ServiceType> Service<S> {
                     on_removed(d);
                 }
             }
-        })?;
+        });
 
+        // A failed scan may already have updated the tracker and published events.
+        // Notify listeners before returning errors since these changes will not be
+        // reported again by a subsequent scan.
+        let notification_result = if let Some(notifier) = &mut self.notifier
+            && changes_detected
+        {
+            notifier.notify().map(|_| ())
+        } else {
+            Ok(())
+        };
+
+        sync_result?;
         if let Some(e) = error {
             return Err(e);
         }
-
-        if let Some(notifier) = &mut self.notifier
-            && changes_detected
-        {
-            notifier.notify()?;
-        }
+        notification_result?;
 
         self.handle_discovery_requests()?;
 

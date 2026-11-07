@@ -16,7 +16,9 @@ use alloc::collections::btree_map::Entry;
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
-    service::{Service, ServiceDetails, ServiceListError, service_hash::ServiceHash},
+    service::{
+        Service, ServiceDetails, ServiceDetailsError, ServiceListError, service_hash::ServiceHash,
+    },
 };
 
 /// Errors that can occur during service synchronization.
@@ -42,6 +44,15 @@ impl From<ServiceListError> for SyncError {
         match error {
             ServiceListError::InsufficientPermissions => Self::InsufficientPermissions,
             ServiceListError::InternalError => Self::ServiceLookupFailure,
+        }
+    }
+}
+
+impl From<ServiceDetailsError> for SyncError {
+    fn from(error: ServiceDetailsError) -> Self {
+        match error {
+            ServiceDetailsError::InsufficientPermissions => Self::InsufficientPermissions,
+            _ => Self::ServiceLookupFailure,
         }
     }
 }
@@ -90,7 +101,9 @@ impl<S: Service> Tracker<S> {
     }
 
     /// Synchronises the tracker with the current state of services in the
-    /// system.
+    /// system. An incomplete listing returns an error without removing any
+    /// previously tracked service. Services listed before the error may still
+    /// be added or refreshed; the next successful sync completes the update.
     pub fn sync<F>(&mut self, mut on_event: F) -> Result<(), SyncError>
     where
         F: for<'a> FnMut(TrackerEvent<'a, S>),
@@ -100,7 +113,15 @@ impl<S: Service> Tracker<S> {
         self.epoch = self.epoch.wrapping_add(1);
         let epoch = self.epoch;
 
-        S::list(&self.config, |service| {
+        let mut details_error = None;
+        S::list(&self.config, |result| {
+            let service = match result {
+                Ok(service) => service,
+                Err(error) => {
+                    details_error = Some(error);
+                    return CallbackProgression::Stop;
+                }
+            };
             let id = *service.static_details.service_hash();
 
             match self.services.entry(id) {
@@ -120,6 +141,10 @@ impl<S: Service> Tracker<S> {
 
             CallbackProgression::Continue
         })?;
+
+        if let Some(error) = details_error {
+            return Err(error.into());
+        }
 
         self.services.retain(|_, entry| {
             if entry.seen == epoch {

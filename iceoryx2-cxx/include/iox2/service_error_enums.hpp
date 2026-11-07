@@ -46,6 +46,20 @@ enum class ServiceListError : uint8_t {
     /// Errors that indicate either an implementation issue or a wrongly
     /// configured system.
     InternalError,
+    /// The static service information could not be opened.
+    FailedToOpenStaticServiceInfo,
+    /// The static service information could not be read.
+    FailedToReadStaticServiceInfo,
+    /// The static service information could not be deserialized.
+    FailedToDeserializeStaticServiceInfo,
+    /// Required service resources are unavailable or corrupted.
+    ServiceInInconsistentState,
+    /// The service was created with a different iceoryx2 version.
+    VersionMismatch,
+    /// A node state could not be acquired.
+    FailedToAcquireNodeState,
+    /// Service detail acquisition was interrupted.
+    Interrupt,
 };
 
 } // namespace iox2

@@ -270,3 +270,162 @@ mod service_discovery_service {
         assert_that!(iceoryx2::testing::do_stale_node_resources_exist::<ipc::Service>(&iceoryx_config, node_id), eq false);
     }
 }
+
+#[cfg(unix)]
+mod failed_ipc_listing {
+    use iceoryx2::config::Config;
+    use iceoryx2::prelude::*;
+    use iceoryx2::service::service_hash::ServiceHash;
+    use iceoryx2::testing::{generate_isolated_config, generate_service_name};
+    use iceoryx2_services_discovery::service_discovery::{
+        self, DiscoveryEvent, Service, SpinError, service_name,
+    };
+    use std::{
+        fs,
+        os::unix::fs::PermissionsExt,
+        path::{Path, PathBuf},
+    };
+    fn static_config_path(config: &Config, hash: &ServiceHash) -> PathBuf {
+        PathBuf::from(config.global.root_path().as_str())
+            .join(config.global.service.directory.as_str())
+            .join(format!(
+                "{}{}{}",
+                config.global.prefix, hash, config.global.service.static_config_storage_suffix
+            ))
+    }
+
+    fn write_static_config(path: &Path, contents: &[u8]) {
+        let original_permissions = fs::metadata(path)
+            .expect("stat static config")
+            .permissions();
+        let mut writable_permissions = original_permissions.clone();
+        writable_permissions.set_mode(original_permissions.mode() | 0o200);
+        fs::set_permissions(path, writable_permissions).expect("make static config writable");
+        let write_result = fs::write(path, contents);
+        let restore_result = fs::set_permissions(path, original_permissions);
+        restore_result.expect("restore static config permissions");
+        write_result.expect("write static config");
+    }
+
+    struct CorruptedStaticConfig {
+        path: PathBuf,
+        original: Vec<u8>,
+    }
+
+    impl CorruptedStaticConfig {
+        fn new(config: &Config, hash: &ServiceHash) -> Self {
+            let path = static_config_path(config, hash);
+            let original = fs::read(&path).expect("read static config");
+            write_static_config(&path, b"invalid static service config");
+            Self { path, original }
+        }
+    }
+
+    impl Drop for CorruptedStaticConfig {
+        fn drop(&mut self) {
+            write_static_config(&self.path, &self.original);
+        }
+    }
+
+    fn partial_scan_notifies(publish_events: bool) {
+        let config = generate_isolated_config();
+        let discovery_config = service_discovery::Config {
+            sync_on_initialization: true,
+            include_internal: false,
+            publish_events,
+            send_notifications: true,
+            max_listeners: 1,
+            max_subscribers: 1,
+            max_buffer_size: 10,
+            ..Default::default()
+        };
+        let mut sut = Service::<ipc::Service>::create(&discovery_config, &config).unwrap();
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<ipc::Service>()
+            .unwrap();
+        let notifications = node.service_builder(service_name()).event().open().unwrap();
+        let listener = notifications.listener_builder().create().unwrap();
+        let events = if publish_events {
+            Some(
+                node.service_builder(service_name())
+                    .publish_subscribe::<DiscoveryEvent>()
+                    .open()
+                    .unwrap(),
+            )
+        } else {
+            None
+        };
+        let subscriber = events
+            .as_ref()
+            .map(|s| s.subscriber_builder().create().unwrap());
+        sut.spin(|_| {}, |_| {}).unwrap();
+        listener.try_wait(|_| {}).unwrap();
+        let first = node
+            .service_builder(&generate_service_name())
+            .event()
+            .create()
+            .unwrap();
+        let second = node
+            .service_builder(&generate_service_name())
+            .event()
+            .create()
+            .unwrap();
+        let mut corrupted = None;
+        let mut added = Vec::new();
+        // Corrupt the other service only after the first was discovered, independently
+        // of the directory enumeration order. Its details have not been read yet.
+        let result = sut.spin(
+            |details| {
+                let hash = *details.static_details.service_hash();
+                added.push(hash);
+                let other = if hash == *first.service_hash() {
+                    second.service_hash()
+                } else {
+                    first.service_hash()
+                };
+                corrupted = Some(CorruptedStaticConfig::new(&config, other));
+            },
+            |_| panic!("incomplete scan must not remove services"),
+        );
+        assert_eq!(result, Err(SpinError::SyncFailure));
+        assert_eq!(added.len(), 1);
+        assert_eq!(listener.try_wait(|_| {}).unwrap(), 1);
+        if let Some(subscriber) = &subscriber {
+            let sample = subscriber
+                .receive()
+                .unwrap()
+                .expect("published partial addition");
+            assert!(
+                matches!(sample.payload(), DiscoveryEvent::Added(details) if *details.service_hash() == added[0])
+            );
+            assert!(subscriber.receive().unwrap().is_none());
+        }
+        drop(corrupted);
+        let mut recovered = Vec::new();
+        sut.spin(
+            |details| recovered.push(*details.static_details.service_hash()),
+            |_| panic!("no removals expected"),
+        )
+        .unwrap();
+        assert_eq!(recovered.len(), 1);
+        assert_ne!(recovered[0], added[0]);
+        assert_eq!(listener.try_wait(|_| {}).unwrap(), 1);
+        sut.spin(
+            |_| panic!("no duplicate additions"),
+            |_| panic!("no removals expected"),
+        )
+        .unwrap();
+        assert_eq!(listener.try_wait(|_| {}).unwrap(), 0);
+    }
+
+    #[test]
+    fn partial_scan_notifies_without_publishing_events() {
+        partial_scan_notifies(false);
+    }
+
+    #[test]
+    fn partial_scan_notifies_with_published_events() {
+        partial_scan_notifies(true);
+    }
+}

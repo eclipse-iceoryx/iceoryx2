@@ -462,6 +462,7 @@ pub mod node_death {
 
         assert_that!(
             S::list(test.config(), |service_details| {
+                let service_details = service_details.expect("service details are accessible");
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
@@ -471,7 +472,9 @@ pub mod node_death {
         assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::list(test.config(), |_| {
+            S::list(test.config(), |result| {
+                result.expect("service details are accessible");
+
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -495,6 +498,7 @@ pub mod node_death {
 
         assert_that!(
             S::list(test.config(), |service_details| {
+                let service_details = service_details.expect("service details are accessible");
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
@@ -504,7 +508,9 @@ pub mod node_death {
         assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::list(test.config(), |_| {
+            S::list(test.config(), |result| {
+                result.expect("service details are accessible");
+
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -530,6 +536,7 @@ pub mod node_death {
 
         assert_that!(
             S::list(test.config(), |service_details| {
+                let service_details = service_details.expect("service details are accessible");
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
@@ -539,7 +546,9 @@ pub mod node_death {
         assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::list(test.config(), |_| {
+            S::list(test.config(), |result| {
+                result.expect("service details are accessible");
+
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -566,6 +575,7 @@ pub mod node_death {
 
         assert_that!(
             S::list(test.config(), |service_details| {
+                let service_details = service_details.expect("service details are accessible");
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
@@ -575,7 +585,9 @@ pub mod node_death {
         assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::list(test.config(), |_| {
+            S::list(test.config(), |result| {
+                result.expect("service details are accessible");
+
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -649,6 +661,7 @@ pub mod node_death {
 
         assert_that!(
             S::list(test.config(), |service_details| {
+                let service_details = service_details.expect("service details are accessible");
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
@@ -658,7 +671,9 @@ pub mod node_death {
         assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::list(test.config(), |_| {
+            S::list(test.config(), |result| {
+                result.expect("service details are accessible");
+
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -695,6 +710,7 @@ pub mod node_death {
 
         assert_that!(
             S::list(test.config(), |service_details| {
+                let service_details = service_details.expect("service details are accessible");
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
@@ -704,7 +720,9 @@ pub mod node_death {
         assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::list(test.config(), |_| {
+            S::list(test.config(), |result| {
+                result.expect("service details are accessible");
+
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok

@@ -131,6 +131,13 @@ impl IntoCInt for ServiceDetailsError {
 pub enum iox2_service_list_error_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
+    FAILED_TO_OPEN_STATIC_SERVICE_INFO,
+    FAILED_TO_READ_STATIC_SERVICE_INFO,
+    FAILED_TO_DESERIALIZE_STATIC_SERVICE_INFO,
+    SERVICE_IN_INCONSISTENT_STATE,
+    VERSION_MISMATCH,
+    FAILED_TO_ACQUIRE_NODE_STATE,
+    INTERRUPT,
 }
 
 impl IntoCInt for ServiceListError {
@@ -140,6 +147,34 @@ impl IntoCInt for ServiceListError {
             ServiceListError::InsufficientPermissions => {
                 iox2_service_list_error_e::INSUFFICIENT_PERMISSIONS as _
             }
+        }
+    }
+}
+
+impl From<ServiceDetailsError> for iox2_service_list_error_e {
+    fn from(error: ServiceDetailsError) -> Self {
+        match error {
+            ServiceDetailsError::FailedToOpenStaticServiceInfo => {
+                iox2_service_list_error_e::FAILED_TO_OPEN_STATIC_SERVICE_INFO
+            }
+            ServiceDetailsError::FailedToReadStaticServiceInfo => {
+                iox2_service_list_error_e::FAILED_TO_READ_STATIC_SERVICE_INFO
+            }
+            ServiceDetailsError::FailedToDeserializeStaticServiceInfo => {
+                iox2_service_list_error_e::FAILED_TO_DESERIALIZE_STATIC_SERVICE_INFO
+            }
+            ServiceDetailsError::ServiceInInconsistentState => {
+                iox2_service_list_error_e::SERVICE_IN_INCONSISTENT_STATE
+            }
+            ServiceDetailsError::VersionMismatch => iox2_service_list_error_e::VERSION_MISMATCH,
+            ServiceDetailsError::FailedToAcquireNodeState => {
+                iox2_service_list_error_e::FAILED_TO_ACQUIRE_NODE_STATE
+            }
+            ServiceDetailsError::Interrupt => iox2_service_list_error_e::INTERRUPT,
+            ServiceDetailsError::InsufficientPermissions => {
+                iox2_service_list_error_e::INSUFFICIENT_PERMISSIONS
+            }
+            ServiceDetailsError::InternalError => iox2_service_list_error_e::INTERNAL_ERROR,
         }
     }
 }
@@ -303,14 +338,22 @@ pub unsafe extern "C" fn iox2_service_details(
 fn list_callback<S: Service>(
     callback: iox2_service_list_callback,
     callback_ctx: iox2_callback_context,
-    service_details: &ServiceDetails<S>,
+    service_details: Result<ServiceDetails<S>, ServiceDetailsError>,
+    details_error: &mut Option<ServiceDetailsError>,
 ) -> CallbackProgression {
-    callback(&(&service_details.static_details).into(), callback_ctx).into()
+    match service_details {
+        Ok(details) => callback(&(&details.static_details).into(), callback_ctx).into(),
+        Err(error) => {
+            *details_error = Some(error);
+            CallbackProgression::Stop
+        }
+    }
 }
 
 /// Iterates over the all accessible services and calls the provided callback for
 /// every service with iox2_service_details as input argument.
-/// On error it returns `iox2_service_list_error_e`, otherwise IOX2_OK.
+/// Stops on the first failure to acquire service details without calling the callback
+/// for that service. On error it returns `iox2_service_list_error_e`, otherwise IOX2_OK.
 ///
 /// # Safety
 ///
@@ -325,21 +368,121 @@ pub unsafe extern "C" fn iox2_service_list(
 ) -> c_int {
     debug_assert!(!config_ptr.is_null());
 
+    let mut details_error = None;
     let result = match service_type {
         iox2_service_type_e::IPC => IpcService::list(unsafe { &*config_ptr }, |service_details| {
-            list_callback::<IpcService>(callback, callback_ctx, &service_details)
+            list_callback::<IpcService>(callback, callback_ctx, service_details, &mut details_error)
         }),
         iox2_service_type_e::LOCAL => {
             LocalService::list(unsafe { &*config_ptr }, |service_details| {
-                list_callback::<LocalService>(callback, callback_ctx, &service_details)
+                list_callback::<LocalService>(
+                    callback,
+                    callback_ctx,
+                    service_details,
+                    &mut details_error,
+                )
             })
         }
     };
 
     match result {
-        Ok(()) => IOX2_OK,
-        Err(e) => e.into_c_int(),
+        Err(error) => error.into_c_int(),
+        Ok(()) => match details_error {
+            Some(error) => iox2_service_list_error_e::from(error) as c_int,
+            None => IOX2_OK,
+        },
     }
 }
 
 // END C API
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn service_list_error_preserves_details_reason_and_existing_values() {
+        assert_eq!(
+            iox2_service_list_error_e::INSUFFICIENT_PERMISSIONS as c_int,
+            IOX2_OK + 1
+        );
+        assert_eq!(
+            iox2_service_list_error_e::INTERNAL_ERROR as c_int,
+            IOX2_OK + 2
+        );
+
+        let cases = [
+            (
+                ServiceDetailsError::FailedToOpenStaticServiceInfo,
+                iox2_service_list_error_e::FAILED_TO_OPEN_STATIC_SERVICE_INFO,
+            ),
+            (
+                ServiceDetailsError::FailedToReadStaticServiceInfo,
+                iox2_service_list_error_e::FAILED_TO_READ_STATIC_SERVICE_INFO,
+            ),
+            (
+                ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
+                iox2_service_list_error_e::FAILED_TO_DESERIALIZE_STATIC_SERVICE_INFO,
+            ),
+            (
+                ServiceDetailsError::ServiceInInconsistentState,
+                iox2_service_list_error_e::SERVICE_IN_INCONSISTENT_STATE,
+            ),
+            (
+                ServiceDetailsError::VersionMismatch,
+                iox2_service_list_error_e::VERSION_MISMATCH,
+            ),
+            (
+                ServiceDetailsError::FailedToAcquireNodeState,
+                iox2_service_list_error_e::FAILED_TO_ACQUIRE_NODE_STATE,
+            ),
+            (
+                ServiceDetailsError::Interrupt,
+                iox2_service_list_error_e::INTERRUPT,
+            ),
+            (
+                ServiceDetailsError::InsufficientPermissions,
+                iox2_service_list_error_e::INSUFFICIENT_PERMISSIONS,
+            ),
+            (
+                ServiceDetailsError::InternalError,
+                iox2_service_list_error_e::INTERNAL_ERROR,
+            ),
+        ];
+        for (reason, expected) in cases {
+            assert_eq!(
+                iox2_service_list_error_e::from(reason) as c_int,
+                expected as c_int
+            );
+        }
+    }
+
+    #[test]
+    fn failed_service_details_stop_without_calling_foreign_callback() {
+        extern "C" fn callback(
+            _: *const iox2_static_config_t,
+            context: iox2_callback_context,
+        ) -> iox2_callback_progression_e {
+            // SAFETY: The test provides a valid, exclusive mutable bool pointer.
+            unsafe { *context.cast::<bool>() = true };
+            iox2_callback_progression_e::CONTINUE
+        }
+
+        let mut called = false;
+        let context = (&mut called as *mut bool).cast();
+        let error = ServiceDetailsError::VersionMismatch;
+        let mut details_error = None;
+        assert_eq!(
+            list_callback::<IpcService>(callback, context, Err(error), &mut details_error),
+            CallbackProgression::Stop
+        );
+        assert_eq!(details_error, Some(error));
+        details_error = None;
+        assert_eq!(
+            list_callback::<LocalService>(callback, context, Err(error), &mut details_error),
+            CallbackProgression::Stop
+        );
+        assert_eq!(details_error, Some(error));
+        assert!(!called);
+    }
+}

@@ -18,20 +18,58 @@ cd ${REPO_ROOT}
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+proc expect_successful_exit { id {expected_signal ""} } {
+    expect -i $id {
+        eof { }
+        timeout { handle_timeout "process exit" }
+    }
+    set result [wait -i $id]
+    if {$expected_signal ne "" && [lindex $result 2] == 0
+        && [lindex $result 4] eq "CHILDKILLED" && [lindex $result 5] eq $expected_signal} {
+        return
+    }
+    if {[lindex $result 2] != 0 || [lindex $result 3] != 0 || [llength $result] > 4} {
+        puts stderr "Process failed: $result"
+        exit 1
+    }
+}
+
 #### Test Setup and Assertion
+
+# Keep a real no_std service alive while std discovery runs. The default
+# namespaces must be isolated because their static config formats differ.
+set timeout 60
+cd ${REPO_ROOT}/examples/nostd/posix/rust
+spawn cargo run --example posix_nostd_publish_subscribe_subscriber
+set id_nostd_subscriber $spawn_id
+expect_output "Subscriber ready to receive data!"
+cd ${REPO_ROOT}
 
 set timeout 10
 
 spawn python examples/python/publish_subscribe/subscriber.py
+set id_subscriber $spawn_id
 expect_output "Subscriber ready to receive data!"
 
 spawn python examples/python/discovery/discovery.py
 expect_output "messaging_pattern: PublishSubscribe"
+expect_successful_exit $spawn_id
 
 spawn python examples/python/event/listener.py
+set id_listener $spawn_id
 expect_output "Listener ready to receive events!"
 
 spawn python examples/python/discovery/discovery.py
 expect_output "messaging_pattern: Event"
+expect_successful_exit $spawn_id
+
+foreach id [list $id_nostd_subscriber $id_subscriber] {
+    exec kill -TERM [exp_pid -i $id]
+    expect_successful_exit $id
+}
+# Unlike the subscribers, the listener does not call Node.wait(), which installs
+# the termination handler. Its intentional SIGTERM termination is expected.
+exec kill -TERM [exp_pid -i $id_listener]
+expect_successful_exit $id_listener "SIGTERM"
 
 show_test_passed
