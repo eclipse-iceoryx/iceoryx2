@@ -13,16 +13,22 @@
 use std::fmt::Debug;
 
 use iceoryx2::prelude::ZeroCopySend;
+use iceoryx2::service::Service;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
 #[derive(Debug, Clone)]
-pub struct CustomServiceVariant {}
+pub struct CustomService {}
 
-impl iceoryx2::service::Service for CustomServiceVariant {
-    type StaticStorage = iceoryx2_cal::static_storage::recommended::Ipc;
+#[derive(Debug, Clone)]
+pub struct CustomServiceThreadSafe {}
+
+impl Service for CustomService {
+    // use a static storage based on a file
+    type StaticStorage = iceoryx2_cal::static_storage::file::Storage;
     type ConfigSerializer = iceoryx2_cal::serialize::recommended::Recommended;
+    // persistent dynamic storage is also file based
     type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
-        iceoryx2_cal::dynamic_storage::recommended::PersistentIpc<T>;
+        iceoryx2_cal::dynamic_storage::file::Storage<T>;
     type Bag = iceoryx2_cal::bag::recommended::Recommended;
     // use a dynamic storage based on a file
     type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
@@ -47,7 +53,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
     type Monitoring = iceoryx2_cal::monitoring::recommended::Ipc;
     type Reactor = iceoryx2_cal::reactor::recommended::Ipc;
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
-        iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<T>;
+        iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<T>;
     // the blackboard mgmt segment is replaced with a file based version
     type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
         iceoryx2_cal::dynamic_storage::file::Storage<KeyType>;
@@ -55,11 +61,40 @@ impl iceoryx2::service::Service for CustomServiceVariant {
     type BlackboardPayload = iceoryx2_cal::shared_memory::file::Memory<
         iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
     >;
-    type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<
-        CustomServiceVariant,
-    >;
+    type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<Self>;
     type NameGenerator = iceoryx2::name_generator::default_name_generator::DefaultNameGenerator;
     type Clock = iceoryx2_cal::clock::posix::PosixClock<Self::Event>;
 }
 
-impl iceoryx2::service::internal::ServiceInternal<CustomServiceVariant> for CustomServiceVariant {}
+// this will be set as IpcService for the ffi service types
+impl Service for CustomServiceThreadSafe {
+    type StaticStorage = <CustomService as Service>::StaticStorage;
+    type ConfigSerializer = <CustomService as Service>::ConfigSerializer;
+    type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
+        <CustomService as Service>::PersistentDynamicStorage<T>;
+    type Bag = <CustomService as Service>::Bag;
+    type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
+        <CustomService as Service>::DynamicStorage<T>;
+    type ServiceNameHasher = <CustomService as Service>::ServiceNameHasher;
+    type SharedMemory = <CustomService as Service>::SharedMemory;
+    type ResizableSharedMemory = <CustomService as Service>::ResizableSharedMemory;
+    type Connection = <CustomService as Service>::Connection;
+    type Event = <CustomService as Service>::Event;
+    type Monitoring = <CustomService as Service>::Monitoring;
+    type Reactor = <CustomService as Service>::Reactor;
+    // use a mutex for thread-safety
+    type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
+        iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<T>;
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
+        <CustomService as Service>::BlackboardMgmt<KeyType>;
+    type BlackboardPayload = <CustomService as Service>::BlackboardPayload;
+    type UniqueId = iceoryx2::unique_id_generator::unique_system_id::UniqueSystemIdGenerator<Self>;
+    type NameGenerator = <CustomService as Service>::NameGenerator;
+    type Clock = <CustomService as Service>::Clock;
+}
+
+impl iceoryx2::service::internal::ServiceInternal<CustomService> for CustomService {}
+impl iceoryx2::service::internal::ServiceInternal<CustomServiceThreadSafe>
+    for CustomServiceThreadSafe
+{
+}

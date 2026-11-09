@@ -281,6 +281,7 @@ filegroup(
         "//benchmarks/queue:all_srcs",
         "//benchmarks/request-response:all_srcs",
         "//component-tests/rust:all_srcs",
+        "//examples/rust/service_types_customization/custom_service:all_srcs",
         "//iceoryx2-log/log:all_srcs",
         "//iceoryx2-log/types:all_srcs",
         "//iceoryx2:all_srcs",

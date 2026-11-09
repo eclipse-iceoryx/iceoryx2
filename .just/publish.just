@@ -64,6 +64,7 @@ SDK_CRATES_TO_IGNORE := `echo \
     benchmark-queue                                 \
     component-tests_rust                            \
     example                                         \
+    example-custom-service                          \
     iceoryx2-ffi-c                                  \
     iceoryx2-ffi-macros                             \
     iceoryx2-ffi-python                             \

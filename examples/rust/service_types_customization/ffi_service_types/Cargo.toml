@@ -1,0 +1,10 @@
+[package]
+name = "iceoryx2-customization-ffi-service-types"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.89"
+version = "0.0.1"
+
+[dependencies]
+iceoryx2 = { workspace = true , features = ["std"] }
+example-custom-service = { path = "../custom_service" }

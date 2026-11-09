@@ -10,14 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod custom_service_variant;
-
 use core::time::Duration;
-use custom_service_variant::CustomServiceVariant;
 
 extern crate alloc;
 use alloc::boxed::Box;
 
+use example_custom_service::CustomService;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
@@ -25,30 +23,21 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
-    let node = NodeBuilder::new().create::<CustomServiceVariant>()?;
+    let node = NodeBuilder::new().create::<CustomService>()?;
 
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
 
-    let publisher = service.publisher_builder().create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
-    let mut counter: u64 = 0;
+    coutln!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-        let sample = publisher.loan_uninit()?;
-
-        let sample = sample.write_payload(TransmissionData {
-            x: counter as i32,
-            y: counter as i32 * 3,
-            funky: counter as f64 * 812.12,
-        });
-
-        sample.send()?;
-
-        coutln!("Send sample {counter} ...");
+        while let Some(sample) = subscriber.receive()? {
+            coutln!("received: {:?}", *sample);
+        }
     }
 
     coutln!("exit");

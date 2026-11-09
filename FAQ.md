@@ -253,7 +253,7 @@ creating files in an in-memory filesystem, we can achieve the same performance
 on Linux and customize the shared memory file location.
 
 See the
-[service variant customization example](examples/rust/service_variant_customization)
+[service types customization example](examples/rust/service_types_customization)
 for a detailed tutorial.
 
 ### Custom Payload Alignment

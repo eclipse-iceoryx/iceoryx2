@@ -26,6 +26,8 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true, features = ["std"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 
+example-custom-service = { path = "rust/service_types_customization/custom_service" }
+
 flatbuffers = { workspace = true }
 
 [dev-dependencies]
@@ -286,15 +288,15 @@ path = "rust/service_types/ipc_publisher.rs"
 name = "service_types_local_pubsub"
 path = "rust/service_types/local_pubsub.rs"
 
-# service variant customization
+# service types customization
 
 [[example]]
-name = "service_variant_customization_subscriber"
-path = "rust/service_variant_customization/subscriber.rs"
+name = "service_types_customization_subscriber"
+path = "rust/service_types_customization/subscriber.rs"
 
 [[example]]
-name = "service_variant_customization_publisher"
-path = "rust/service_variant_customization/publisher.rs"
+name = "service_types_customization_publisher"
+path = "rust/service_types_customization/publisher.rs"
 
 # simulation clock
 
