@@ -52,6 +52,7 @@ members = [
     "iceoryx2-ffi/c",
     "iceoryx2-ffi/python",
     "iceoryx2-ffi/ffi-macros",
+    "iceoryx2-ffi/service-types",
 
     "iceoryx2-cal",
     "iceoryx2-cal/tests-common",
@@ -104,6 +105,9 @@ members = [
 
     "component-tests/rust",
 ]
+exclude = [
+    "integrations/customization"
+]
 
 [workspace.package]
 categories = ["network-programming"]
@@ -155,6 +159,7 @@ iceoryx2 = { version = "0.10.999", path = "iceoryx2/", default-features = false 
 iceoryx2-testing = { version = "0.10.999", path = "iceoryx2/testing", default-features = false }
 iceoryx2-conformance-tests = { version = "0.10.999", path = "iceoryx2/conformance-tests"}
 iceoryx2-ffi-macros = { version = "0.10.999", path = "iceoryx2-ffi/ffi-macros" }
+iceoryx2-ffi-service-types = { version = "0.10.999", path = "iceoryx2-ffi/service-types" }
 iceoryx2-services-discovery = { version = "0.10.999", path = "iceoryx2-services/discovery", default-features = false }
 iceoryx2-link = { version = "0.10.999", path = "iceoryx2-link/link", default-features = false }
 iceoryx2-link-adapter = { version = "0.10.999", path = "iceoryx2-link/adapter", default-features = false }
@@ -212,7 +217,7 @@ quote = { version = "1.0.36" }
 ron = { version = "0.11.0" }
 serde = { version = "1.0.203", default-features = false, features = ["alloc","derive"] }
 yaml_serde = { version = "0.10.4" }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0.151", default-features = false, features = ["alloc"] }
 serde_test = { version = "1.0.176" }
 sha1_smol = { version = "1.0.0" }
 syn = { version = "2.0.66", features = ["full"] }

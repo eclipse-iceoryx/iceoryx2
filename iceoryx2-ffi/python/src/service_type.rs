@@ -23,8 +23,8 @@ pub enum ServiceType {
     Ipc,
 }
 
-pub(crate) type IpcService = iceoryx2::prelude::ipc_threadsafe::Service;
-pub(crate) type LocalService = iceoryx2::prelude::local_threadsafe::Service;
+pub(crate) type IpcService = iceoryx2_ffi_service_types::IpcService;
+pub(crate) type LocalService = iceoryx2_ffi_service_types::LocalService;
 
 #[pymethods]
 impl ServiceType {
