@@ -1191,25 +1191,12 @@ pub fn default_config_file_name() -> FileName {
 }
 
 #[pymodule]
-pub fn config(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<crate::config::Global>()?;
-    m.add_class::<crate::config::Config>()?;
-    m.add_class::<crate::config::Defaults>()?;
-    m.add_class::<crate::config::Blackboard>()?;
-    m.add_class::<crate::config::Event>()?;
-    m.add_class::<crate::config::PublishSubscribe>()?;
-    m.add_class::<crate::config::RequestResponse>()?;
-    m.add_class::<crate::config::Node>()?;
-    m.add_class::<crate::config::Service>()?;
-    m.add_wrapped(wrap_pyfunction!(default_config_file_name))?;
-    m.add_wrapped(wrap_pyfunction!(default_config_file_path))?;
-    m.add_wrapped(wrap_pyfunction!(relative_config_path))?;
-    m.add_wrapped(wrap_pyfunction!(default_user_config_file_path))?;
-    m.add_wrapped(wrap_pyfunction!(from_file))?;
-    m.add_wrapped(wrap_pyfunction!(into_toml))?;
-    m.add_wrapped(wrap_pyfunction!(from_toml))?;
-    m.add_wrapped(wrap_pyfunction!(setup_global_config_from_file))?;
-    m.add_wrapped(wrap_pyfunction!(global_config))?;
-    m.add_wrapped(wrap_pyfunction!(default))?;
-    Ok(())
+pub mod config {
+    #[pymodule_export]
+    use super::{
+        Blackboard, Config, Defaults, Event, Global, Node, PublishSubscribe, RequestResponse,
+        Service, default, default_config_file_name, default_config_file_path,
+        default_user_config_file_path, from_file, from_toml, global_config, into_toml,
+        relative_config_path, setup_global_config_from_file,
+    };
 }
