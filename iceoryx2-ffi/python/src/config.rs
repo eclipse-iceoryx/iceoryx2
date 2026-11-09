@@ -1194,24 +1194,9 @@ pub fn default_config_file_name() -> FileName {
 pub mod config {
     #[pymodule_export]
     use super::{
-        Global,
-        Config,
-        Defaults,
-        Blackboard,
-        Event,
-        PublishSubscribe,
-        Node,
-        RequestResponse,
-        Service,
-        default_config_file_name,
-        default_config_file_path,
-        relative_config_path,
-        default_user_config_file_path,
-        from_file,
-        from_toml,
-        into_toml,
-        setup_global_config_from_file,
-        global_config,
-        default,
+        Blackboard, Config, Defaults, Event, Global, Node, PublishSubscribe, RequestResponse,
+        Service, default, default_config_file_name, default_config_file_path,
+        default_user_config_file_path, from_file, from_toml, global_config, into_toml,
+        relative_config_path, setup_global_config_from_file,
     };
 }

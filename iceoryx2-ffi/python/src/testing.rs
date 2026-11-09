@@ -63,12 +63,7 @@ pub fn test_directory() -> Path {
 pub mod testing {
     #[pymodule_export]
     use super::{
-        generate_service_name,
-        generate_node_name,
-        generate_isolated_config,
-        generate_file_name,
-        generate_file_path,
-        create_test_directory,
-        test_directory,
+        create_test_directory, generate_file_name, generate_file_path, generate_isolated_config,
+        generate_node_name, generate_service_name, test_directory,
     };
 }
