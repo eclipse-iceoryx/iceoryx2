@@ -62,6 +62,12 @@ add_param(
     DEFAULT_VALUE ""
 )
 
+add_param(
+    NAME RUST_CUSTOM_FFI_SERVICE_TYPES
+    DESCRIPTION "The full path to the crate with the custom ffi service types when 'RUST_BUILD_ARTIFACT_PATH' is not set"
+    DEFAULT_VALUE ""
+)
+
 message(STATUS "[i] iceoryx2 dev setup Rust feature flags (only used when 'RUST_BUILD_ARTIFACT_PATH' is not set):")
 
 add_rust_feature(
@@ -186,10 +192,24 @@ else()
 
     include(iceoryx2-c/cmake/rust-ffi-c-byproduct-definitions.cmake)
 
+    set(CUSTOM_FFI_SERVICE_TYPES_OVERRIDE "")
+    set(CONFIG_OPTION "")
+    if(NOT "${RUST_CUSTOM_FFI_SERVICE_TYPES}" STREQUAL "")
+        set(CUSTOM_FFI_SERVICE_TYPES_OVERRIDE "patch.crates-io.iceoryx2-customization-ffi-service-types.path=\"${RUST_CUSTOM_FFI_SERVICE_TYPES}\"")
+        set(CONFIG_OPTION "--config")
+    endif()
+
     # run cargo
     add_custom_target(
         iceoryx2-ffi-c-build-step ALL
-        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --no-default-features ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        COMMAND cargo build
+                      ${RUST_BUILD_TYPE_FLAG}
+                      --no-default-features
+                      ${RUST_FEATURE_FLAGS}
+                      --package iceoryx2-ffi-c
+                      --target-dir=${RUST_TARGET_DIR}
+                      ${RUST_TARGET_TRIPLET_FLAG}
+                      ${CONFIG_OPTION} ${CUSTOM_FFI_SERVICE_TYPES_OVERRIDE}
         BYPRODUCTS
             ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
             ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
