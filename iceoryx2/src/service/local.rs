@@ -59,6 +59,7 @@ impl crate::service::Service for Service {
     type Event = event::recommended::Local;
     type Monitoring = monitoring::recommended::Local;
     type Reactor = reactor::recommended::Local;
+    type LocalTrigger = trigger::recommended::Recommended;
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         arc_sync_policy::single_threaded::SingleThreaded<T>;
     type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
