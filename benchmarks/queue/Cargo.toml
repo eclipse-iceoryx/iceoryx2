@@ -11,6 +11,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [lints]
+workspace = true
 
 [dependencies]
 iceoryx2-bb-lock-free = { workspace = true, features = ["std"] }

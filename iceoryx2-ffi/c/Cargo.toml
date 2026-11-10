@@ -69,3 +69,4 @@ iceoryx2-bb-testing = { workspace = true }
 generic-tests = { workspace = true }
 
 [lints]
+workspace = true
