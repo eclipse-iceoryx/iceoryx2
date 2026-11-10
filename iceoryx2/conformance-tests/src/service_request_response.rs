@@ -265,9 +265,9 @@ pub mod service_request_response {
 
         let mut server_ids = BTreeSet::new();
         let mut active_requests = vec![];
-        for n in 0..test_args.number_of_servers {
-            active_requests.push(test.servers[n].receive().unwrap().unwrap());
-            server_ids.insert(test.servers[n].id());
+        for test_server in test.servers.iter().take(test_args.number_of_servers) {
+            active_requests.push(test_server.receive().unwrap().unwrap());
+            server_ids.insert(test_server.id());
         }
 
         for active_request in active_requests {

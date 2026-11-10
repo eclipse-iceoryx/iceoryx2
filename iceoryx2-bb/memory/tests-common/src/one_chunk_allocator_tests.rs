@@ -26,8 +26,8 @@ impl TestFixture {
             raw_memory: [0; TestFixture::memory_size()],
         };
 
-        for i in 0..TestFixture::memory_size() {
-            test.raw_memory[i] = 255;
+        for test_raw_mem in test.raw_memory.iter_mut().take(TestFixture::memory_size()) {
+            *test_raw_mem = 255;
         }
 
         test

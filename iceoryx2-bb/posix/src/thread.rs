@@ -500,8 +500,11 @@ impl ThreadBuilder {
         );
 
         let mut cpuset = posix::cpu_set_t::new_zeroed();
-        for i in 0..core::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
-            if self.affinity[i] {
+        for (i, affinity) in self.affinity.iter().enumerate().take(core::cmp::min(
+            posix::CPU_SETSIZE,
+            SystemInfo::NumberOfCpuCores.value(),
+        )) {
+            if *affinity {
                 cpuset.set(i);
             }
         }
