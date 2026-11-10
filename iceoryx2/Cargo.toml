@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2"
-description = "iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
+description = { workspace = true }
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -10,6 +10,8 @@ readme = "../README.md"
 repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
+
+[lints]
 
 [features]
 default = ["std", "console"]
