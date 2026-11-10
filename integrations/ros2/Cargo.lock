@@ -790,6 +790,7 @@ dependencies = [
  "clap",
  "dialoguer",
  "enum-iterator",
+ "human-panic",
  "iceoryx2",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",

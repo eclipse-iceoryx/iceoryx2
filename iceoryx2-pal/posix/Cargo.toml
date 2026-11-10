@@ -10,8 +10,10 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[lints]
-workspace = true
+# We allow here unused dependencies since bindgen is not used
+# on all platforms
+[lints.cargo]
+unused_dependencies = "allow"
 
 [features]
 std = [
@@ -20,8 +22,9 @@ std = [
 ]
 
 [build-dependencies]
-cc = { workspace = true }
-bindgen = { workspace = true }
+cbindgen = { workspace = true }
+cc = { version = "1.0.98" }
+bindgen = { version = "0.72.1" }
 
 [dependencies]
 iceoryx2-pal-concurrency-sync = { workspace = true }
