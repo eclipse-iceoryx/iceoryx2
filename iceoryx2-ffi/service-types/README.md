@@ -8,7 +8,7 @@ be overwritten.
 
 This is done by patching the `iceoryx2-customization-ffi-service-types` crate
 with a custom implementation. For more details, see the
-[iceoryx2-customization-ffi-service-types README.md](../../customization/iceoryx2-customization-ffi-service-types/README.md).
+[iceoryx2-customization-ffi-service-types README.md](../../customization/ffi-service-types/README.md).
 
 There is also an [example](../../examples/rust/service_types_customization/README.md)
 that shows how service types can be customized.

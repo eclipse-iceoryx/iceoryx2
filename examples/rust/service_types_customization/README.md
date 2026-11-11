@@ -66,7 +66,7 @@ After starting, you will observe that:
 * there are no more iceoryx2 shared memory objects under `/dev/shm`.
 * all files, including the shared memory, are stored under `/tmp/iceoryx2`.
 
-When you start the [publish-subscribe example](../publish_subscribe),
+When you start the [publish-subscribe example](../publish_subscribe/README.md),
 you will again see the POSIX shared memory objects listed under `/dev/shm`.
 
 ## Build The Language Bindings With The Custom Service Type
@@ -82,7 +82,7 @@ In order to use the custom service types from this example with, e.g.,
 the C++ bindings, the following steps need to be performed:
 
 ```sh
-cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DRUST_CUSTOM_FFI_SERVICE_TYPES="$(pwd)/examples/customization/service-types/ffi-service-types"
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DRUST_CUSTOM_FFI_SERVICE_TYPES="$(pwd)/examples/rust/service_types_customization/ffi_service_types"
 cmake --build target/ff/cc/build
 ```
 
