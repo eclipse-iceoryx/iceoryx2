@@ -22,7 +22,7 @@ std = [
 
 [dependencies]
 iceoryx2 = { workspace = true }
-iceoryx2-customization-ffi-service-types = { version = "*" } # this needs to come from crates.io in order to make the patch mechanism work
+iceoryx2-customization-ffi-service-types = { version = "0.0.1" } # this needs to come from crates.io in order to make the patch mechanism work
 
 [build-dependencies]
-iceoryx2-customization-ffi-service-types = { version = "*" } # this needs to come from crates.io in order to make the patch mechanism work
+iceoryx2-customization-ffi-service-types = { version = "0.0.1" } # this needs to come from crates.io in order to make the patch mechanism work
