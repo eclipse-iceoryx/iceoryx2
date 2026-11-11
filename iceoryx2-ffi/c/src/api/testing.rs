@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use std::os::raw::c_char;
+use core::ffi::c_char;
 
 use iceoryx2_bb_posix::{
     config::TEST_DIRECTORY,

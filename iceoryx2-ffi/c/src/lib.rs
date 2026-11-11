@@ -34,10 +34,10 @@ mod no_std {
 
     unsafe impl GlobalAlloc for LibcAllocator {
         unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-            malloc(layout.size()) as *mut u8
+            unsafe { malloc(layout.size()) as *mut u8 }
         }
         unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-            free(ptr as *mut core::ffi::c_void)
+            unsafe { free(ptr as *mut core::ffi::c_void) }
         }
     }
 

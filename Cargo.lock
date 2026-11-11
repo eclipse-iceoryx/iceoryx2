@@ -1396,9 +1396,9 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-customization-ffi-service-types"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "088c3af09669b905fb3070ce99c727d825e56c1d16d6a5d45e0423c53a636cdc"
+checksum = "13d10f67698b3e3d21c18ec5dfbdd7bfea83a3ce08cd8e3e7a2db8ab73fb8cdf"
 
 [[package]]
 name = "iceoryx2-ffi-c"

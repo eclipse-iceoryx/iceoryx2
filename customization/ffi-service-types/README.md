@@ -31,7 +31,7 @@ The `Cargo.toml` need to look like this:
 
 ```toml[package]
 name = "iceoryx2-customization-ffi-service-types"
-version = "0.0.1"
+version = "0.0.2"
 
 [dependencies]
 my-ffi-service-types = 0.8.15
