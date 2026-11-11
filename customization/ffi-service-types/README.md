@@ -37,18 +37,14 @@ version = "0.0.1"
 my-ffi-service-types = 0.8.15
 ```
 
-The `lib.rs` needs to have this code:
+The `lib.rs` needs to export the service types and set the `USE_CUSTOM` flag:
 
 ```rust
 pub const USE_CUSTOM: bool = true;
 
-pub use my_ffi_service_types::*;
+pub type IpcService = my_ffi_service_types::ipc::Service;
+pub type LocalService = my_ffi_service_types::local::Service;
 ```
 
-The `my_ffi_service_types` is the second crate with the actual logic and can
+The `my-ffi-service-types` is the second crate with the actual logic and can
 have a custom version number. These two types need to be re-exported:
-
-```rust
-pub type IpcService = my::custom::ipc::Service;
-pub type LocalService = my::custom::local::Service;
-```

@@ -475,6 +475,7 @@ name = "example"
 version = "0.10.999"
 dependencies = [
  "clap",
+ "example-custom-service",
  "flatbuffers",
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -488,6 +489,15 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-services-discovery",
+]
+
+[[package]]
+name = "example-custom-service"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-cal",
 ]
 
 [[package]]
@@ -1385,6 +1395,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-customization-ffi-service-types"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "088c3af09669b905fb3070ce99c727d825e56c1d16d6a5d45e0423c53a636cdc"
+
+[[package]]
 name = "iceoryx2-ffi-c"
 version = "0.10.999"
 dependencies = [
@@ -1405,6 +1421,7 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-ffi-macros",
+ "iceoryx2-ffi-service-types",
  "iceoryx2-log",
  "iceoryx2-pal-posix",
 ]
@@ -1428,10 +1445,19 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-flatbuffers",
  "iceoryx2-bb-posix",
+ "iceoryx2-ffi-service-types",
  "iceoryx2-log",
  "pyo3",
  "pyo3-log",
  "toml 0.9.8",
+]
+
+[[package]]
+name = "iceoryx2-ffi-service-types"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-customization-ffi-service-types",
 ]
 
 [[package]]
@@ -2175,9 +2201,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.149"
+version = "1.0.154"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
+checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
 dependencies = [
  "itoa",
  "memchr",

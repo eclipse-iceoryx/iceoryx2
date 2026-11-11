@@ -15,11 +15,11 @@ load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 rust_binary(
     name = "publisher",
     srcs = [
-        "custom_service_variant.rs",
         "publisher.rs",
     ],
     deps = [
         "//examples/rust:examples-common",
+        "//examples/rust/service_types_customization/custom_service:example-custom-service",
         "//iceoryx2",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
@@ -31,11 +31,11 @@ rust_binary(
 rust_binary(
     name = "subscriber",
     srcs = [
-        "custom_service_variant.rs",
         "subscriber.rs",
     ],
     deps = [
         "//examples/rust:examples-common",
+        "//examples/rust/service_types_customization/custom_service:example-custom-service",
         "//iceoryx2",
         "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",

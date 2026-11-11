@@ -22,10 +22,10 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-spawn cargo run --example service_variant_customization_publisher
+spawn cargo run --example service_types_customization_publisher
 set publisher $spawn_id
 
-spawn cargo run --example service_variant_customization_subscriber
+spawn cargo run --example service_types_customization_subscriber
 set subscriber $spawn_id
 
 #### Test Assertion

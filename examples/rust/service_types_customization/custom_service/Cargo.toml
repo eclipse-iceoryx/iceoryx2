@@ -1,0 +1,14 @@
+[package]
+name = "example-custom-service"
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-cal = { workspace = true, features = ["std"] }
+iceoryx2-bb-elementary-traits = { workspace = true }

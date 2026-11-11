@@ -26,6 +26,7 @@
 * [#2114](https://github.com/eclipse-iceoryx/iceoryx2/issues/2114) Truncate a loaned slice sample so that only its first elements are sent
 * [#2149](https://github.com/eclipse-iceoryx/iceoryx2/issues/2149) Optimize memory chunk reference counting
 * [#2179](https://github.com/eclipse-iceoryx/iceoryx2/issues/2179) Add `chmod` and `chown` to POSIX abstraction
+* [#2184](https://github.com/eclipse-iceoryx/iceoryx2/issues/2184) Add option to override the service types for the language bindings with a custom implementation
 
 ### Bugfixes
 
