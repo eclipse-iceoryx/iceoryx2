@@ -26,6 +26,8 @@ use syn::parse::Parser;
 /// #[requires_std("threading")]
 /// fn my_other_test() { ... }
 /// ```
+use iceoryx2_pal_print as _;
+
 pub fn proc_macro(attr: TokenStream, item: TokenStream) -> TokenStream {
     let item: syn::ItemFn = syn::parse2(item.into()).unwrap();
     let ident = &item.sig.ident;
