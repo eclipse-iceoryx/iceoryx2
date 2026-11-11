@@ -26,12 +26,11 @@ iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true, features = ["std"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 
-example-custom-service = { path = "rust/service_types_customization/custom_service" }
-
 flatbuffers = { workspace = true }
 
 [dev-dependencies]
 clap = { workspace = true }
+example-custom-service = { path = "rust/service_types_customization/custom_service" }
 iceoryx2-services-discovery = { workspace = true, features = ["std"] }
 
 [lib]
