@@ -1617,7 +1617,6 @@ name = "iceoryx2-pal-posix"
 version = "0.10.999"
 dependencies = [
  "bindgen",
- "cbindgen",
  "cc",
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",

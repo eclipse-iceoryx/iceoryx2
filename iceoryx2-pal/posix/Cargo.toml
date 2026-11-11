@@ -22,7 +22,6 @@ std = [
 ]
 
 [build-dependencies]
-cbindgen = { workspace = true }
 cc = { version = "1.0.98" }
 bindgen = { version = "0.72.1" }
 
