@@ -27,6 +27,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields, LitStr, parse_macro_input};
 
+#[allow(rustdoc::broken_intra_doc_links)] // false positive since iceoryx2-bb-elementary-traits is a dev-dependency
 /// Implements the [`iceoryx2_bb_elementary_traits::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
 ///
@@ -110,6 +111,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+#[allow(rustdoc::broken_intra_doc_links)] // false positive since iceoryx2-bb-elementary-traits is a dev-dependency
 /// Implements the [`iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend`] trait when all fields of
 /// the struct implement it and the struct is annotated with `repr(C)`. A type name can be optionally
 /// set with the helper attribute `type_name`.
@@ -348,6 +350,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+#[allow(rustdoc::broken_intra_doc_links)] // false positive since iceoryx2-bb-elementary-traits is a dev-dependency
 /// Implements the [`iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy`] trait for structs
 /// when all fields of the struct implement it and the struct implements `Copy`.
 ///
@@ -450,6 +453,7 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+#[allow(rustdoc::broken_intra_doc_links)] // false positive since iceoryx2-bb-elementary-traits is a dev-dependency
 /// Implements the [`iceoryx2_bb_elementary_traits::zeroable::Zeroable`] trait
 /// when all fields of the struct also implement it. Rejects enums, unions, and
 /// structs whose fields violate the `Zeroable` invariant at compile time.
@@ -512,6 +516,7 @@ pub fn zeroable_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+#[allow(rustdoc::broken_intra_doc_links)] // false positive since iceoryx2-bb-elementary-traits is a dev-dependency
 /// Implements the [`iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding`]
 /// trait when the struct is annotated with `#[repr(C)]`, has no padding
 /// between or after its fields, and every field also implements the trait.
