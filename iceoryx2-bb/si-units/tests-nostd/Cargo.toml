@@ -18,7 +18,6 @@ workspace = true
 default = ["std"]
 
 std = [
-  "iceoryx2-bb-si-units/std",
   "iceoryx2-bb-si-units-tests-common/std",
   "iceoryx2-bb-testing-macros/std",
   "iceoryx2-bb-testing/std",

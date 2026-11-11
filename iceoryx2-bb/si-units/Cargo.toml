@@ -22,9 +22,6 @@ workspace = true
 [features]
 default = []
 
-std = [
-  "iceoryx2-bb-derive-macros/std",
-]
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

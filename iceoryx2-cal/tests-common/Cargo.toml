@@ -24,7 +24,6 @@ std = [
   "iceoryx2-bb-memory/std",
   "iceoryx2-bb-system-types/std",
   "iceoryx2-bb-posix/std",
-  "iceoryx2-bb-si-units/std",
   "iceoryx2-bb-testing/std",
   "iceoryx2-bb-testing-macros/std",
 ]
