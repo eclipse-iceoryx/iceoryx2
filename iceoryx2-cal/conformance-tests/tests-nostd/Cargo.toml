@@ -10,6 +10,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [features]
 # Default to noop to support std workspace builds
 default = [ "std" ]

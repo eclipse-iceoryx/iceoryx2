@@ -11,6 +11,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [lib]
 name = "iceoryx2_services_discovery"
 path = "src/lib.rs"

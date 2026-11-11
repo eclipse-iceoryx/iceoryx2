@@ -310,8 +310,13 @@ impl Debug for SignalHandler {
 impl Display for SignalHandler {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut registered_signals: Vec<FetchableSignal> = vec![];
-        for i in 0..posix::MAX_SIGNAL_VALUE {
-            if self.registered_signals[i].is_some() {
+        for (i, signal) in self
+            .registered_signals
+            .iter()
+            .enumerate()
+            .take(posix::MAX_SIGNAL_VALUE)
+        {
+            if signal.is_some() {
                 registered_signals.push((i as i32).into());
             }
         }

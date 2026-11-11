@@ -10,6 +10,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [features]
 default = []
 
@@ -17,9 +20,6 @@ std = [
   "iceoryx2-pal-posix/std"
 ]
 
-[build-dependencies]
-cc = { workspace = true }
-bindgen = { workspace = true }
 
 [dependencies]
 iceoryx2-pal-posix = { workspace = true }

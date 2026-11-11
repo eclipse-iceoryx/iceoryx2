@@ -10,8 +10,10 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [dependencies]
-iceoryx2-services-discovery = { workspace = true, features = ["std"] }
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-bb-container = { workspace = true, features = ["std"] }
 iceoryx2-bb-derive-macros = { workspace = true, features = ["std"] }

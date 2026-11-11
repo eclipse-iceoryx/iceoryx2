@@ -401,9 +401,9 @@ dependencies = [
 
 [[package]]
 name = "clang-sys"
-version = "1.8.1"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b023947811758c97c59bf9d1c188fd619ad4718dcaa767947df1cadb14f39f4"
+checksum = "157a8ba7b480713b56f4c09fd13fc3e0a22a5dfab8097ba61cbc5feef950788a"
 dependencies = [
  "glob",
  "libc",
@@ -1133,9 +1133,9 @@ dependencies = [
 
 [[package]]
 name = "glob"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
+checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
 
 [[package]]
 name = "hashbrown"
@@ -1426,7 +1426,6 @@ dependencies = [
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "serde",
- "tiny-fn",
 ]
 
 [[package]]
@@ -1442,7 +1441,6 @@ version = "0.10.999"
 dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary-traits",
- "iceoryx2-log",
  "serde",
 ]
 
@@ -1680,8 +1678,6 @@ version = "0.10.999"
 name = "iceoryx2-pal-os-api"
 version = "0.10.999"
 dependencies = [
- "bindgen",
- "cc",
  "iceoryx2-pal-posix",
  "libc",
 ]

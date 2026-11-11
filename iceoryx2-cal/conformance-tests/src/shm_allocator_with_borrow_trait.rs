@@ -66,8 +66,13 @@ pub mod shm_allocator_with_borrow_trait {
 
             assert_that!(unsafe { self.sut().init(&bump_allocator) }, is_ok);
 
-            for i in required_mgmt_size..MGMT_SIZE {
-                assert_that!(self.mgmt_memory[i], eq 252u8);
+            for mgmt_mem in self
+                .mgmt_memory
+                .iter()
+                .take(MGMT_SIZE)
+                .skip(required_mgmt_size)
+            {
+                assert_that!(*mgmt_mem, eq 252u8);
             }
         }
 

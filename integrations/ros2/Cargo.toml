@@ -15,7 +15,6 @@ exclude = [
 
 [workspace.package]
 categories = ["network-programming"]
-description = "iceoryx2 integration with ROS 2"
 edition = "2024"
 homepage = "https://iceoryx.io"
 keywords = [
@@ -51,7 +50,6 @@ cdr = { version = "0.2.4" }
 clap = { version = "4.6.1", features = ["derive"] }
 # NOTE: keep in sync with the root Cargo.toml
 flatbuffers = { version = "25.12.19" }
-getrandom = { version = "0.4" }
 human-panic = { version = "2.0.5" }
 libloading = { version = "0.8" }
 r2r_rcl = { version = "0.9.5" }

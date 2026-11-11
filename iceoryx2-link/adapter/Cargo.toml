@@ -10,6 +10,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [features]
 default = ["std"]
 std = ["iceoryx2/std", "iceoryx2-bb-elementary/std", "iceoryx2-link-backend/std"]

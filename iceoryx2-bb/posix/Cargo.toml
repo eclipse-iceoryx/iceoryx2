@@ -42,7 +42,6 @@ iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 
 enum-iterator = { workspace = true }
-tiny-fn = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
