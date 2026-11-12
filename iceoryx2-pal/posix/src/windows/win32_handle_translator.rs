@@ -172,9 +172,14 @@ impl HandleTranslator {
             HANDLE_TRANSLATOR.lock();
             // double check to avoid unnecessary locks
             if !IS_INITIALIZED.load(Ordering::Relaxed) {
-                for i in 0..MAX_SUPPORTED_FD_HANDLES {
+                for (i, fd2handle_iter) in HANDLE_TRANSLATOR
+                    .fd2handle
+                    .iter()
+                    .enumerate()
+                    .take(MAX_SUPPORTED_FD_HANDLES)
+                {
                     unsafe {
-                        *HANDLE_TRANSLATOR.fd2handle[i].get() = FdHandleEntry::NextFreeFd(i + 1);
+                        *fd2handle_iter.get() = FdHandleEntry::NextFreeFd(i + 1);
                     }
                 }
                 IS_INITIALIZED.store(true, Ordering::Relaxed);
@@ -257,9 +262,9 @@ impl HandleTranslator {
 
     pub(crate) fn update(&self, entry: FdHandleEntry) {
         self.lock();
-        for i in 0..MAX_SUPPORTED_FD_HANDLES {
-            if unsafe { *self.fd2handle[i].get() == entry } {
-                unsafe { *self.fd2handle[i].get() = entry };
+        for fd2handle_iter in self.fd2handle.iter().take(MAX_SUPPORTED_FD_HANDLES) {
+            if unsafe { *fd2handle_iter.get() == entry } {
+                unsafe { *fd2handle_iter.get() = entry };
                 break;
             }
         }
