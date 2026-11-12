@@ -20,6 +20,7 @@ extern crate proc_macro;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use iceoryx2_bb_elementary_traits as _;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::{format_ident, quote};
@@ -232,7 +233,6 @@ fn parse_attribute_args(args: TokenStream) -> Args {
     Args { rust_type }
 }
 
-#[allow(rustdoc::broken_intra_doc_links)] // false positive since iceoryx2-bb-elementary-traits is a dev-dependency
 /// Implements the [`iceoryx2_bb_elementary_traits::AsCStr`] trait for enums to provide a string representation of each enum variant.
 ///
 /// The string representation can be customized using the `CStr` attribute, otherwise it will
