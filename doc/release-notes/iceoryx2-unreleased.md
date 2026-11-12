@@ -73,6 +73,7 @@
 * [#2063](https://github.com/eclipse-iceoryx/iceoryx2/issues/2063) Add testing function to remove all resources under a specific config
 * [#2068](https://github.com/eclipse-iceoryx/iceoryx2/issues/2068) Add `just` script to orechestrate execution of end-to-end tests
 * [#2131](https://github.com/eclipse-iceoryx/iceoryx2/issues/2131) Forward interrupt errors to end-user API
+* [#2181](https://github.com/eclipse-iceoryx/iceoryx2/issues/2181) Consolidate flatc generated bindings and schemas in one crate and verify them in CI against the pinned flatbuffers version
 * [#2201](https://github.com/eclipse-iceoryx/iceoryx2/issues/2201) Publish Linux aarch64 and free-threaded stable ABI (`abi3t`, CPython 3.15+) Python wheels
 
 ### New API features
