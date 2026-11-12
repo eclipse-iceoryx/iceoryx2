@@ -11,8 +11,11 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[lints]
-workspace = true
+# We allow here unused dependencies since we need
+# to use the definitions coming from the customization crate
+# that is added as overriden dependency
+[lints.cargo]
+unused_dependencies = "allow"
 
 [features]
 default = ["std"]
