@@ -112,9 +112,9 @@ impl ThreadStates {
     fn add(&self, value: ThreadState) -> usize {
         let mut index = usize::MAX;
         self.lock();
-        for i in 0..MAX_NUMBER_OF_THREADS {
-            if unsafe { (*self.states[i].get()).is_none() } {
-                unsafe { *self.states[i].get() = Some(value) };
+        for (i, state_iter) in self.states.iter().enumerate().take(MAX_NUMBER_OF_THREADS) {
+            if unsafe { (*state_iter.get()).is_none() } {
+                unsafe { *state_iter.get() = Some(value) };
                 index = i;
                 break;
             }
@@ -131,8 +131,8 @@ impl ThreadStates {
     }
 
     fn get_index_of(&self, id: u32) -> usize {
-        for i in 0..MAX_NUMBER_OF_THREADS {
-            if let Some(ref state) = unsafe { *self.states[i].get() }
+        for (i, state_iter) in self.states.iter().enumerate().take(MAX_NUMBER_OF_THREADS) {
+            if let Some(ref state) = unsafe { *state_iter.get() }
                 && state.id == id
             {
                 return i;

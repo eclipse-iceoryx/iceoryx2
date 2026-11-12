@@ -79,9 +79,9 @@ impl ThreadStates {
     fn add(&self, pthread: pthread_t) -> usize {
         let mut index = usize::MAX;
         self.lock();
-        for i in 0..MAX_NUMBER_OF_THREADS {
-            if unsafe { (*self.states[i].get()).is_none() } {
-                unsafe { *self.states[i].get() = Some(ThreadState::new(pthread)) };
+        for (i, state_name) in self.states.iter().enumerate().take(MAX_NUMBER_OF_THREADS) {
+            if unsafe { (*state_name.get()).is_none() } {
+                unsafe { *state_name.get() = Some(ThreadState::new(pthread)) };
                 index = i;
                 break;
             }
@@ -360,8 +360,8 @@ pub unsafe fn pthread_self() -> pthread_t {
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
     unsafe {
         let state = ThreadStates::get_instance().get_mut(thread);
-        for i in 0..THREAD_NAME_LENGTH {
-            state.name[i] = *name.add(i) as _;
+        for (i, state_name) in state.name.iter_mut().enumerate().take(THREAD_NAME_LENGTH) {
+            *state_name = *name.add(i) as _;
 
             if *name.add(i) == 0 {
                 break;
@@ -379,10 +379,10 @@ pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size
 
     let state = ThreadStates::get_instance().get(thread);
     unsafe {
-        for i in 0..15 {
-            *name.add(i) = state.name[i] as _;
+        for (i, state_name) in state.name.iter().enumerate().take(15) {
+            *name.add(i) = *state_name as _;
 
-            if state.name[i] == 0 {
+            if *state_name == 0 {
                 break;
             }
         }

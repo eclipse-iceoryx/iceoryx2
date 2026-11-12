@@ -41,8 +41,8 @@ struct Entries<const N: usize> {
 
 impl<const N: usize> Entries<N> {
     fn initialize(&mut self) {
-        for i in 0..N {
-            self.aba_counters[i] = AtomicU64::new(UNINITIALIZED_ENTRY);
+        for aba_counter in self.aba_counters.iter_mut().take(N) {
+            *aba_counter = AtomicU64::new(UNINITIALIZED_ENTRY);
         }
     }
 
