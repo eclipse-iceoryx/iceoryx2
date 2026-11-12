@@ -880,10 +880,17 @@ pub mod details {
 
         unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
             for (n, segment_details) in self.storage.get().segment_details.iter().enumerate() {
+                let sample_size = segment_details.sample_size.load(Ordering::Relaxed);
+                // the sample size is set with the first send, a segment without it was never used
+                if sample_size == 0 {
+                    continue;
+                }
+
+                let segment_id = self.segment_id_from_index(n);
                 segment_details.used_chunk_list.remove_all(|index| {
                     callback(PointerOffset::from_offset_and_segment_id(
-                        index * segment_details.sample_size.load(Ordering::Relaxed),
-                        self.segment_id_from_index(n),
+                        index * sample_size,
+                        segment_id,
                     ))
                 });
             }
