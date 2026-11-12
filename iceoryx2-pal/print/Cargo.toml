@@ -10,6 +10,11 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+# We allow here unused dependencies since we need
+# iceoryx2-pal-posix for nostd builds
+[lints.cargo]
+unused_dependencies = "allow"
+
 [features]
 default = []
 std = []
@@ -21,6 +26,3 @@ iceoryx2-pal-posix = { workspace = true }
 
 [target.'cfg(target_os = "nto")'.dependencies]
 iceoryx2-pal-posix = { workspace = true }
-
-[lints]
-workspace = true

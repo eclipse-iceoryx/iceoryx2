@@ -729,7 +729,6 @@ dependencies = [
 name = "iceoryx2-bb-testing-macros"
 version = "0.10.999"
 dependencies = [
- "iceoryx2-pal-print",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
