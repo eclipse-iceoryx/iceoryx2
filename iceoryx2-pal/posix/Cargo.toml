@@ -10,10 +10,8 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-# We allow here unused dependencies since bindgen is not used
-# on all platforms
-[lints.cargo]
-unused_dependencies = "allow"
+[lints]
+workspace = true
 
 [features]
 std = [

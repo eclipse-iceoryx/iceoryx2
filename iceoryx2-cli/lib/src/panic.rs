@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use better_panic as _;
+use human_panic as _;
+
 #[macro_export]
 macro_rules! install_panic_handlers {
     () => {

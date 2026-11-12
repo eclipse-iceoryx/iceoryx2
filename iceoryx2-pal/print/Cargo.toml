@@ -10,6 +10,9 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+workspace = true
+
 [features]
 default = []
 std = []
@@ -21,6 +24,3 @@ iceoryx2-pal-posix = { workspace = true }
 
 [target.'cfg(target_os = "nto")'.dependencies]
 iceoryx2-pal-posix = { workspace = true }
-
-[lints]
-workspace = true

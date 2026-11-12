@@ -17,16 +17,8 @@ workspace = true
 [lib]
 proc-macro = true
 
-[features]
-default = []
-
-std = [
-  "iceoryx2-bb-elementary/std",
-]
-
 [dependencies]
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
-iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }

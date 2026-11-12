@@ -707,7 +707,6 @@ name = "iceoryx2-bb-derive-macros"
 version = "0.10.999"
 dependencies = [
  "iceoryx2-bb-derive-macros-tests-common",
- "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
  "proc-macro2",
@@ -1117,7 +1116,6 @@ name = "iceoryx2-bb-testing-macros"
 version = "0.10.999"
 dependencies = [
  "iceoryx2-bb-testing",
- "iceoryx2-pal-print",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -1430,7 +1428,6 @@ dependencies = [
 name = "iceoryx2-ffi-macros"
 version = "0.10.999"
 dependencies = [
- "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "proc-macro2",
  "quote",

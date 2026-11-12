@@ -10,10 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![no_std]
 #![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+extern crate alloc;
+extern crate proc_macro;
+
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use iceoryx2_bb_elementary_traits as _;
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::{format_ident, quote};
