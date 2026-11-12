@@ -79,9 +79,9 @@ impl ThreadStates {
     fn add(&self, pthread: pthread_t) -> usize {
         let mut index = usize::MAX;
         self.lock();
-        for (i, state_name) in self.states.iter().enumerate().take(MAX_NUMBER_OF_THREADS) {
-            if unsafe { (*state_name.get()).is_none() } {
-                unsafe { *state_name.get() = Some(ThreadState::new(pthread)) };
+        for (i, state_iter) in self.states.iter().enumerate().take(MAX_NUMBER_OF_THREADS) {
+            if unsafe { (*state_iter.get()).is_none() } {
+                unsafe { *state_iter.get() = Some(ThreadState::new(pthread)) };
                 index = i;
                 break;
             }
@@ -360,8 +360,8 @@ pub unsafe fn pthread_self() -> pthread_t {
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
     unsafe {
         let state = ThreadStates::get_instance().get_mut(thread);
-        for (i, state_name) in state.name.iter_mut().enumerate().take(THREAD_NAME_LENGTH) {
-            *state_name = *name.add(i) as _;
+        for (i, name_char) in state.name.iter_mut().enumerate().take(THREAD_NAME_LENGTH) {
+            *name_char = *name.add(i) as _;
 
             if *name.add(i) == 0 {
                 break;
@@ -373,16 +373,16 @@ pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int 
 }
 
 pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
-    if len < 15 {
+    if len < THREAD_NAME_LENGTH_GET {
         return Errno::ERANGE as _;
     }
 
     let state = ThreadStates::get_instance().get(thread);
     unsafe {
-        for (i, state_name) in state.name.iter().enumerate().take(15) {
-            *name.add(i) = *state_name as _;
+        for (i, name_char) in state.name.iter().enumerate().take(THREAD_NAME_LENGTH_GET) {
+            *name.add(i) = *name_char as _;
 
-            if *state_name == 0 {
+            if *name_char == 0 {
                 break;
             }
         }
