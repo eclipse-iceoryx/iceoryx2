@@ -19,10 +19,6 @@ serde = { workspace = true }
 [lints]
 workspace = true
 
-[features]
-default = []
-
-
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-si-units-tests-common = { workspace = true, features = ["std"] }
