@@ -333,6 +333,17 @@ impl HandleTranslator {
         self.unlock();
     }
 
+    /// Frees the fd of a closed unix datagram socket. Unlike [`HandleTranslator::remove()`],
+    /// the socket's name stays registered, like a socket file stays on POSIX until it is
+    /// removed with [`HandleTranslator::remove_uds()`].
+    pub(crate) fn release_uds_datagram_socket(&self, fd: int) {
+        self.lock();
+        if let FdHandleEntry::UdsDatagramSocket(_) = unsafe { *self.fd2handle[fd as usize].get() } {
+            self.release_fd(fd);
+        }
+        self.unlock();
+    }
+
     pub(crate) fn remove_entry(&self, entry: FdHandleEntry) {
         self.lock();
         for i in 0..MAX_SUPPORTED_FD_HANDLES {
@@ -439,7 +450,13 @@ impl HandleTranslator {
                         .reset(s.port())
                 }
             }
+        }
 
+        self.release_fd(fd);
+    }
+
+    fn release_fd(&self, fd: int) {
+        unsafe {
             *self.fd2handle[fd as usize].get() =
                 FdHandleEntry::NextFreeFd(*self.free_fd_list_start.get());
             *self.free_fd_list_start.get() = fd as usize;

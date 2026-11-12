@@ -222,6 +222,24 @@ fn timed_receive_blocks_at_least_for_timeout() {
     assert_that!(start.elapsed().expect("failed to get elapsed time"), time_at_least TIMEOUT);
 }
 
+#[test]
+fn creating_and_dropping_receivers_repeatedly_works() {
+    // more than the maximum number of handles the Windows platform layer can hold open;
+    // a receiver that leaks its handle when dropped runs out of them
+    const NUMBER_OF_RECEIVERS: usize = 2048;
+
+    create_test_directory();
+    for _ in 0..NUMBER_OF_RECEIVERS {
+        let socket_name = generate_file_path();
+        let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+            .permission(Permission::OWNER_READ_WRITE)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .create();
+
+        assert_that!(sut_receiver, is_ok);
+    }
+}
+
 #[ignore]
 #[test]
 pub fn sending_receiving_with_single_fd_works() {
