@@ -82,6 +82,11 @@ class RequestMut {
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
+    /// Shortens the payload to its first `number_of_elements` elements, so that only those are sent.
+    /// It has no effect when `number_of_elements` is not smaller than the current number of elements.
+    template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
+    void truncate(uint64_t number_of_elements);
+
 #if IOX2_FEATURE_FLATBUFFERS
     /// Returns the serialized flatbuffer data as bytes.
     template <typename T = RequestPayload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
@@ -301,6 +306,17 @@ inline auto RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePaylo
     }
 
     return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), length);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+template <typename T, typename>
+inline void RequestMut<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::truncate(
+    uint64_t number_of_elements) {
+    iox2_request_mut_truncate(&m_handle, number_of_elements);
 }
 
 template <ServiceType Service,

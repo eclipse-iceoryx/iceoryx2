@@ -355,6 +355,31 @@ pub unsafe extern "C" fn iox2_response_mut_payload_number_of_bytes(
     }
 }
 
+/// Shortens the payload of the response to its first `number_of_elements` elements, so that only
+/// those are sent. It has no effect when `number_of_elements` is not smaller than the current
+/// number of elements.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_response_mut_truncate(
+    handle: iox2_response_mut_h_ref,
+    number_of_elements: c_size_t,
+) {
+    handle.assert_non_null();
+    unsafe {
+        let response = &mut *handle.as_type();
+        match response.service_type {
+            iox2_service_type_e::IPC => response.value.as_mut().ipc.truncate(number_of_elements),
+            iox2_service_type_e::LOCAL => {
+                response.value.as_mut().local.truncate(number_of_elements)
+            }
+        }
+    }
+}
+
 /// Sends the response.
 /// Returns `IOX2_OK` on success otherwise [`iox2_send_error_e`](crate::api::iox2_send_error_e).
 ///
