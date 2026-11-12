@@ -583,6 +583,7 @@ dependencies = [
 name = "iceoryx2-bb-derive-macros"
 version = "0.10.999"
 dependencies = [
+ "iceoryx2-bb-elementary-traits",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
