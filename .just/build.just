@@ -126,7 +126,9 @@ _build-sdk toolchain target_triplet profile has_nostd has_tests extra_args:
     set -euo pipefail
 
     if [ "{{has_nostd}}" = "true" ]; then
-        NOSTD_CRATES=$(just _discover-nostd-crates)
+        # iceoryx2-ffi-c needs to be added manually to the list of no-std crates to build;
+        # See »Why the folder structure with 'api' and 'test'« in »iceoryx2-ffi/c/README.md« for more details
+        NOSTD_CRATES=$(just _discover-nostd-crates && echo iceoryx2-ffi-c)
 
         CRATE_COUNT=$(echo "$NOSTD_CRATES" | wc -l)
 
