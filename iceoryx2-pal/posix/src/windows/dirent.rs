@@ -16,7 +16,7 @@
 
 use crate::{
     posix::{
-        self, MemZeroedStruct,
+        self, Errno, MemZeroedStruct,
         types::*,
         win32_handle_translator::{DirectoryHandle, FdHandleEntry, HandleTranslator},
     },
@@ -130,7 +130,12 @@ pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
     static COUNT: AtomicU64 = AtomicU64::new(1);
     let id = COUNT.fetch_add(1, Ordering::Relaxed);
 
-    HandleTranslator::get_instance().add(FdHandleEntry::DirectoryStream(DirectoryHandle { id }));
+    if HandleTranslator::get_instance().add(FdHandleEntry::DirectoryStream(DirectoryHandle { id }))
+        == -1
+    {
+        Errno::set(Errno::EMFILE);
+        return core::ptr::null_mut();
+    }
     id as *mut DIR
 }
 

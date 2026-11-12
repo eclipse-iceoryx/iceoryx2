@@ -281,6 +281,10 @@ impl HandleTranslator {
     #[allow(clippy::mut_from_ref)]
     pub(crate) unsafe fn get_shm_handle_mut(&self, fd: int) -> &mut ShmHandle {
         self.lock();
+        if (fd as usize) >= self.fd2handle.len() {
+            self.unlock();
+            panic!("Accessed invalid file descriptor.");
+        }
         match unsafe { &mut *self.fd2handle[fd as usize].get() } {
             FdHandleEntry::SharedMemory(handle) => {
                 self.unlock();
@@ -296,6 +300,10 @@ impl HandleTranslator {
     #[allow(clippy::mut_from_ref)]
     pub(crate) unsafe fn get_file_handle_mut(&self, fd: int) -> &mut FileHandle {
         self.lock();
+        if (fd as usize) >= self.fd2handle.len() {
+            self.unlock();
+            panic!("Accessed invalid file descriptor.");
+        }
         match unsafe { &mut *self.fd2handle[fd as usize].get() } {
             FdHandleEntry::File(handle) => {
                 self.unlock();
@@ -310,6 +318,10 @@ impl HandleTranslator {
 
     pub(crate) unsafe fn get_socket(&self, fd: int) -> Option<SocketHandle> {
         self.lock();
+        if (fd as usize) >= self.fd2handle.len() {
+            self.unlock();
+            return None;
+        }
         match unsafe { *self.fd2handle[fd as usize].get() } {
             FdHandleEntry::Socket(handle) => {
                 self.unlock();
@@ -389,15 +401,18 @@ impl HandleTranslator {
 
         unsafe {
             self.lock();
-            if let FdHandleEntry::UdsDatagramSocket(ref mut s) = *self.fd2handle[fd as usize].get()
-            {
-                s.address = Some(address);
-            }
+            if (fd as usize) < self.fd2handle.len() {
+                if let FdHandleEntry::UdsDatagramSocket(ref mut s) =
+                    *self.fd2handle[fd as usize].get()
+                {
+                    s.address = Some(address);
+                }
 
-            (*self.port_to_uds_translator.get())
-                .as_ref()
-                .unwrap()
-                .set(port, name);
+                (*self.port_to_uds_translator.get())
+                    .as_ref()
+                    .unwrap()
+                    .set(port, name);
+            }
             self.unlock();
         };
     }
@@ -424,6 +439,9 @@ impl HandleTranslator {
 
     fn remove_impl(&self, fd: int) {
         unsafe {
+            if (fd as usize) >= self.fd2handle.len() {
+                return;
+            }
             if let FdHandleEntry::UdsDatagramSocket(s) = *self.fd2handle[fd as usize].get() {
                 if self.uds_datagram_counter.fetch_sub(1, Ordering::Relaxed) == 1 {
                     *self.port_to_uds_translator.get() = None;
@@ -438,6 +456,62 @@ impl HandleTranslator {
             *self.fd2handle[fd as usize].get() =
                 FdHandleEntry::NextFreeFd(*self.free_fd_list_start.get());
             *self.free_fd_list_start.get() = fd as usize;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::posix::MemZeroedStruct;
+    use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
+
+    fn new_initialized_translator() -> HandleTranslator {
+        let translator = HandleTranslator::new();
+        for i in 0..MAX_SUPPORTED_FD_HANDLES {
+            unsafe {
+                *translator.fd2handle[i].get() = FdHandleEntry::NextFreeFd(i + 1);
+            }
+        }
+        translator
+    }
+
+    fn file_entry() -> FdHandleEntry {
+        FdHandleEntry::File(FileHandle {
+            handle: INVALID_HANDLE_VALUE,
+            lock_state: 0,
+        })
+    }
+
+    #[test]
+    fn add_fails_gracefully_when_fd_table_is_full() {
+        let translator = new_initialized_translator();
+
+        for _ in 0..MAX_SUPPORTED_FD_HANDLES {
+            assert_ne!(translator.add(file_entry()), -1);
+        }
+        assert_eq!(translator.add(file_entry()), -1);
+
+        translator.remove(0);
+        assert_ne!(translator.add(file_entry()), -1);
+    }
+
+    #[test]
+    fn out_of_bounds_fd_access_does_not_panic() {
+        let translator = new_initialized_translator();
+
+        for invalid_fd in [-1 as int, MAX_SUPPORTED_FD_HANDLES as int + 42] {
+            assert!(translator.get(invalid_fd).is_none());
+            assert!(unsafe { translator.get_socket(invalid_fd) }.is_none());
+            translator.remove(invalid_fd);
+
+            let address = sockaddr_in::new_zeroed();
+            let uds_address = sockaddr_un::new_zeroed();
+            translator.set_uds_name(
+                invalid_fd,
+                address,
+                &uds_address as *const sockaddr_un as *const sockaddr,
+            );
         }
     }
 }
