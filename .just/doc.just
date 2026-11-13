@@ -66,7 +66,7 @@ _doc-rust workspace:
     for WS in $WORKSPACES; do
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
-        cargo doc --no-deps --workspace --profile dev-fast-build $MANIFEST_ARG
+        RUSTDOCFLAGS="-A rustdoc::redundant_explicit_links" cargo doc --no-deps --workspace --profile dev-fast-build $MANIFEST_ARG
 
         echo ""
         case "$WS" in
