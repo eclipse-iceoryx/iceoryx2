@@ -470,6 +470,7 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "dev-fast-build"
+      unstable: false
 
   c-cxx-bindings-release:
     needs: [preflight-check]
@@ -479,6 +480,7 @@ jobs:
       os: ubuntu-latest
       toolchain: stable
       profile: "release-fast-build"
+      unstable: false
 
   unstable:
     needs: [preflight-check, cargo-nextest]

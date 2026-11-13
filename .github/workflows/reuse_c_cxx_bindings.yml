@@ -1,4 +1,4 @@
-name: Reusable workflow for stable
+name: Reusable workflow for C/C++-Bindings
 
 on:
   workflow_call:
@@ -12,10 +12,15 @@ on:
       profile:
         required: true
         type: string
+      unstable:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  stable:
+  cxx-bindings:
     timeout-minutes: 90
+    continue-on-error: ${{ inputs.unstable }}
     runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout sources
