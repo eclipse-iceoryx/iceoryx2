@@ -163,8 +163,6 @@ pub unsafe fn root_as_payload_data_unchecked(buf: &[u8]) -> PayloadData<'_> {
 pub unsafe fn size_prefixed_root_as_payload_data_unchecked(buf: &[u8]) -> PayloadData<'_> {
   unsafe { ::flatbuffers::size_prefixed_root_unchecked::<PayloadData>(buf) }
 }
-pub const PAYLOAD_DATA_EXTENSION: &str = "bfbs";
-
 #[inline]
 pub fn finish_payload_data_buffer<'a, 'b, A: ::flatbuffers::Allocator + 'a>(
     fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>,

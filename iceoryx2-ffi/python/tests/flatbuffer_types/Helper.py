@@ -15,12 +15,13 @@ from pathlib import Path
 
 # fmt: off
 import iceoryx2 as iox2
-
-from .BoundedData import (BoundedData, BoundedDataAddData, BoundedDataEnd,
-                          BoundedDataStart)
-from .UnboundedData import (UnboundedData, UnboundedDataAddData,
-                            UnboundedDataAddText, UnboundedDataEnd,
-                            UnboundedDataStart)
+from Testing.BoundedData import (BoundedData, BoundedDataAddData,
+                                 BoundedDataEnd, BoundedDataStart)
+from Testing.Entry import EntryAddData1, EntryEnd, EntryStart
+from Testing.UnboundedData import (UnboundedData, UnboundedDataAddEntries,
+                                   UnboundedDataAddTitle, UnboundedDataEnd,
+                                   UnboundedDataStart,
+                                   UnboundedDataStartEntriesVector)
 
 # fmt: on
 
@@ -32,21 +33,32 @@ def create_bounded_data(builder, data):
 
 
 def create_unbounded_data(builder, data):
-    text = builder.CreateString("hypnotoad")
+    title = builder.CreateString("hypnotoad")
+    EntryStart(builder)
+    EntryAddData1(builder, data)
+    entry = EntryEnd(builder)
+    UnboundedDataStartEntriesVector(builder, 1)
+    builder.PrependUOffsetTRelative(entry)
+    entries = builder.EndVector()
     UnboundedDataStart(builder)
-    UnboundedDataAddText(builder, text)
-    UnboundedDataAddData(builder, data)
+    UnboundedDataAddTitle(builder, title)
+    UnboundedDataAddEntries(builder, entries)
     return UnboundedDataEnd(builder)
 
 
-def flatbuffer_tests_schema_path() -> iox2.Path:
-    dir_path = Path(__file__).resolve().parent
+SCHEMA_DIRECTORY = (
+    Path(__file__).resolve().parents[4]
+    / "iceoryx2-bb"
+    / "flatbuffers-generated"
+    / "schema"
+)
 
-    return iox2.Path.new(str(dir_path))
+
+def flatbuffer_tests_schema_path() -> iox2.Path:
+    return iox2.Path.new(str(SCHEMA_DIRECTORY))
 
 
 def get_schema_file(file_name: str) -> iox2.FilePath:
-    dir_path = Path(__file__).resolve().parent
-    full_path = os.path.join(dir_path, file_name)
+    full_path = os.path.join(SCHEMA_DIRECTORY, file_name)
 
     return iox2.FilePath.new(full_path)

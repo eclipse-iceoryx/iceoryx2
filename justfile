@@ -21,6 +21,7 @@ import '.just/bundle.just'
 import '.just/verify.just'
 import '.just/lint.just'
 import '.just/setup.just'
+import '.just/generate.just'
 import '.just/coverage.just'
 import '.just/publish.just'
 import '.just/prepare-release.just'
@@ -31,6 +32,7 @@ default:
     @echo ""
     @echo "Commands:"
     @echo "  setup           - Setup dependencies"
+    @echo "  generate        - Regenerate the checked-in generated code"
     @echo "  build           - Build workspace or a specific package"
     @echo "  test            - Run tests for workspace or a specific package"
     @echo "  test-e2e        - Run end-to-end tests for a workspace"
@@ -78,6 +80,10 @@ lint workspace="" target="" *flags:
 [no-exit-message]
 setup what="":
     @just _setup-dispatch "{{what}}"
+
+[no-exit-message]
+generate what="" *flags:
+    @just _generate-dispatch "{{what}}" {{flags}}
 
 [no-exit-message]
 coverage action="" *flags:

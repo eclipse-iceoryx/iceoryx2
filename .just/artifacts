@@ -1,0 +1,4 @@
+# The artifacts downloaded by the just recipes.
+#
+# name          version   sha256                                                            url
+flatc           25.12.19  50c1915deeeb714f2a05c8ec795bd1af898d251a62e2774067703b29188efc90  https://github.com/google/flatbuffers/releases/download/v25.12.19/Linux.flatc.binary.clang++-18.zip

@@ -22,9 +22,16 @@ _setup-dispatch what:
         "")
             echo "Usage: just setup <what>"
             echo ""
-            echo "  all                         setup all dependencies"
-            echo "  testing-dependencies        setup testing tools (nextest, ...)"
-            echo "  script-dependencies         setup just script dependencies"
+            echo "Groups (interactive):"
+            echo "  all                         every group below"
+            echo "  dev-dependencies            development tools (flatc)"
+            echo "  script-dependencies         just script dependencies (rust-script, jq)"
+            echo "  testing-dependencies        testing tools (cargo-nextest)"
+            echo ""
+            echo "Tools:"
+            echo "  flatc                       the flatbuffers compiler"
+            echo ""
+            echo "ROS 2 workspace:"
             echo "  integrations-ros2           install the colcon build tools for cargo packages"
             echo "  integrations-ros2-messages  build the ros2 message crates from source (for installations not shipping them)"
             echo "  integrations-ros2-examples  build the ros2 examples (requires a sourced ROS 2 env)"
@@ -33,6 +40,8 @@ _setup-dispatch what:
         all) just _setup-all ;;
         script-dependencies) just _setup-script-dependencies ;;
         testing-dependencies) just _setup-testing-dependencies ;;
+        dev-dependencies) just _setup-dev-dependencies ;;
+        flatc) just _setup-flatc ;;
         integrations-ros2) just _setup-integrations-ros2 ;;
         integrations-ros2-messages) just _setup-integrations-ros2-messages ;;
         integrations-ros2-examples) just _setup-integrations-ros2-examples ;;
@@ -44,6 +53,7 @@ _setup-dispatch what:
 _setup-all:
     just _setup-script-dependencies
     just _setup-testing-dependencies
+    just _setup-dev-dependencies
 
 [private]
 [no-exit-message]
@@ -156,6 +166,71 @@ _setup-testing-dependencies:
     if _prompt_install "cargo-nextest"; then
         _install_cargo_nextest
     fi
+
+[private]
+_setup-dev-dependencies:
+    #!/usr/bin/env bash
+
+    _prompt_install() {
+        local name=$1
+        local version=$2
+
+        if which "$name" &> /dev/null && [ "$($name --version)" = "$name version $version" ]; then
+            echo "✓ $name $version already installed, skipping"
+            return 1
+        fi
+
+        read -p "Install $name $version? [y/N] " confirm
+        if [[ "$confirm" == [yY] ]]; then
+            return 0
+        else
+            echo "  Skipping $name"
+            return 1
+        fi
+    }
+
+    if _prompt_install "flatc" "$(just _flatbuffers-version)"; then
+        just _setup-flatc
+    fi
+
+# Installs the flatc release binary of the flatbuffers crate version into
+# `~/.local/bin`.
+[private]
+[no-exit-message]
+_setup-flatc:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    VERSION=$(just _flatbuffers-version)
+    if command -v flatc &> /dev/null && [ "$(flatc --version)" = "flatc version ${VERSION}" ]; then
+        echo "✓ flatc ${VERSION} already installed, skipping"
+        exit 0
+    fi
+
+    just _download-flatc "$VERSION" "${HOME}/.local/bin"
+    echo "✓ flatc ${VERSION} installed to ${HOME}/.local/bin"
+
+# Downloads the flatc release binary of flatbuffers `version` into
+# `destination`.
+[private]
+[no-exit-message]
+_download-flatc version destination:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    RELEASE="https://github.com/google/flatbuffers/releases/tag/v{{version}}"
+    if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
+        echo "Error: no flatc release binary for $(uname -s) $(uname -m) is downloaded by this recipe" >&2
+        echo "  Install flatc {{version}} from ${RELEASE}" >&2
+        exit 1
+    fi
+
+    DOWNLOADS=$(mktemp -d)
+    trap 'rm -rf "$DOWNLOADS"' EXIT
+    ARCHIVE="${DOWNLOADS}/flatc.zip"
+    just _download flatc "{{version}}" "$ARCHIVE"
+    mkdir -p "{{destination}}"
+    unzip -q -o -d "{{destination}}" "$ARCHIVE"
 
 [private]
 [no-exit-message]

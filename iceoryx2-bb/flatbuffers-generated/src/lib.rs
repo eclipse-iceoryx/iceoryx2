@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-table BoundedData {
-    data: int32;
-}
+#![no_std]
 
-root_type BoundedData;
+pub mod binding;
+pub mod schema;

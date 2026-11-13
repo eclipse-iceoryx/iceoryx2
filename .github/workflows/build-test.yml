@@ -49,6 +49,9 @@ jobs:
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
+      - name: Check the generated flatbuffer output
+        run: just generate flatbuffers --check
+
       - name: Install clang-tidy and clang-format
         uses: ./.github/actions/install-iceoryx-deps-and-clang
 

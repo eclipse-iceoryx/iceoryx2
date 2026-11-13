@@ -15,8 +15,8 @@ workspace = true
 
 [dependencies]
 iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-bb-flatbuffers-generated = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 
 clap = { workspace = true }
-flatbuffers = { workspace = true }

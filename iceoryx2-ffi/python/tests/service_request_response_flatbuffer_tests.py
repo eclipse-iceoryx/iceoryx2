@@ -15,12 +15,12 @@ import ctypes
 # fmt: off
 import iceoryx2 as iox2
 import pytest
-from flatbuffer_types.BoundedData import BoundedData
 from flatbuffer_types.Helper import (create_bounded_data,
                                      create_unbounded_data,
                                      flatbuffer_tests_schema_path,
                                      get_schema_file)
-from flatbuffer_types.UnboundedData import UnboundedData
+from Testing.BoundedData import BoundedData
+from Testing.UnboundedData import UnboundedData
 
 # fmt: on
 
@@ -431,7 +431,7 @@ def test_request_response_works(
     response_received = pending_response.receive()
     assert response_received is not None
     data = response_received.payload_root()
-    assert data.Data() == 321
+    assert data.Entries(0).Data1() == 321
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -488,7 +488,7 @@ def test_client_and_server_allocate_more_memory_when_initial_reserve_is_out_with
     response_received = pending_response.receive()
     assert response_received is not None
     data = response_received.payload_root()
-    assert data.Data() == 45
+    assert data.Entries(0).Data1() == 45
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -545,7 +545,7 @@ def test_client_and_server_allocate_more_memory_when_initial_reserve_is_out_with
     response_received = pending_response.receive()
     assert response_received is not None
     data = response_received.payload_root()
-    assert data.Data() == 119
+    assert data.Entries(0).Data1() == 119
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -678,7 +678,7 @@ def test_data_can_be_reconstructed_from_payload_bytes(
     data = UnboundedData.GetRootAs(
         response_received.payload_bytes().as_memory_view(), 0
     )
-    assert data.Data() == 159
+    assert data.Entries(0).Data1() == 159
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -726,7 +726,7 @@ def test_client_and_server_can_read_their_own_serialized_data(
     response = response.assume_init(response_data)
 
     data = UnboundedData.GetRootAs(response.payload_bytes().as_memory_view(), 0)
-    assert data.Data() == 159
+    assert data.Entries(0).Data1() == 159
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -779,7 +779,7 @@ def test_request_response_with_user_header_works(
     assert response_received is not None
     assert response_received.user_header().contents.value == 555
     data = response_received.payload_root()
-    assert data.Data() == 12321
+    assert data.Entries(0).Data1() == 12321
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -842,7 +842,7 @@ def test_request_response_with_user_header_and_payload_resize_works(
     assert response_received is not None
     assert response_received.user_header().contents.value == 565
     data = response_received.payload_root()
-    assert data.Data() == 21312
+    assert data.Entries(0).Data1() == 21312
 
 
 @pytest.mark.parametrize("service_type", service_types)

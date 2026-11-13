@@ -14,6 +14,31 @@
 # Utility Recipes
 # =============================================================================
 
+# Downloads the artifact `name` of `version` to `file`.
+[private]
+[no-exit-message]
+_download name version file:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    ROW=$(awk -v name="{{name}}" -v version="{{version}}" \
+        '$1 == name && $2 == version { print $3, $4 }' "{{ARTIFACTS_FILE}}")
+    if [ -z "$ROW" ]; then
+        echo "Error: no download pinned for {{name}} {{version}} in {{ARTIFACTS_FILE}}" >&2
+        echo "  Add a row with the URL and the sha256 the release lists" >&2
+        exit 1
+    fi
+    read -r PINNED_SHA256 URL <<< "$ROW"
+
+    mkdir -p "$(dirname "{{file}}")"
+    curl -sSfL -o "{{file}}" "$URL"
+    DOWNLOADED_SHA256=$(sha256sum "{{file}}" | cut -d ' ' -f 1)
+    if [ "$DOWNLOADED_SHA256" != "$PINNED_SHA256" ]; then
+        rm -f "{{file}}"
+        echo "Error: the download of {{name}} {{version}} has the sha256 ${DOWNLOADED_SHA256}, not the ${PINNED_SHA256} pinned in {{ARTIFACTS_FILE}}" >&2
+        exit 1
+    fi
+
 [private]
 [no-exit-message]
 _discover-nostd-test-crates:
@@ -107,6 +132,15 @@ _find-crate-manifest package:
     fi
 
     echo "$MANIFEST"
+
+# The absolute `path` relative to the repository root.
+[private]
+_path-in-tree path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    FULL_PATH="{{path}}"
+    echo "${FULL_PATH#{{justfile_directory()}}/}"
 
 [private]
 [no-exit-message]
