@@ -539,6 +539,9 @@ impl<
     /// an existing [`Service`] is opened it requires the service to have at least the defined
     /// [`Alignment`]. If the Payload [`Alignment`] is greater than the provided [`Alignment`]
     /// then the Payload [`Alignment`] is used.
+    ///
+    /// The [`Alignment`] applies to the start of the payload. The elements of a slice payload
+    /// stay contiguous with a stride of [`core::mem::size_of`] of the element type.
     pub fn payload_alignment(mut self, alignment: Alignment) -> Self {
         self.override_alignment = Some(alignment.value());
         self
