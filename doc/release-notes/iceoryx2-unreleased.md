@@ -46,6 +46,7 @@
 * [#2124](https://github.com/eclipse-iceoryx/iceoryx2/issues/2124) Remove clone impl from RelocatablePointer
 * [#2137](https://github.com/eclipse-iceoryx/iceoryx2/issues/2137) Fix typo in `BackpressureAction` enum
 * [#2142](https://github.com/eclipse-iceoryx/iceoryx2/issues/2142) Initialize the node counter of the global management segment when the segment is created
+* [#2198](https://github.com/eclipse-iceoryx/iceoryx2/issues/2198) Fix 'iceoryx2.h' header generation for Rust 1.100.0
 
 ### Refactoring
 
