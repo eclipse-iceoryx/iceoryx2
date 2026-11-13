@@ -151,7 +151,10 @@ pub mod details {
             self.verify_init("pop");
 
             for i in 0..self.capacity {
-                if unsafe { (*self.data_ptr.as_ptr().add(i)).swap(false, Ordering::Relaxed) } {
+                let chunk = unsafe { &*self.data_ptr.as_ptr().add(i) };
+                // loading first and short circuiting the if-statement avoids taking the cache line
+                // exclusively for unused chunks
+                if chunk.load(Ordering::Relaxed) && chunk.swap(false, Ordering::Relaxed) {
                     callback(i);
                 }
             }

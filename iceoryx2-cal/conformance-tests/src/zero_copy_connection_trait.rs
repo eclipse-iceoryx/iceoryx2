@@ -1754,18 +1754,19 @@ pub mod zero_copy_connection_trait {
         assert_that!(reclaimed_offset, eq 2 * BUFFER_SIZE);
     }
 
-    #[conformance_test]
-    pub fn acquire_used_offsets_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
+    fn acquire_used_offsets_returns_all_sent_offsets<Sut: ZeroCopyConnection>(
+        number_of_segments: u8,
+        used_segments: &[u8],
+    ) {
         let id = ChannelId::new(0);
         const BUFFER_SIZE: usize = 10;
-        const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut::Configuration>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
-            .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
+            .max_supported_shared_memory_segments(number_of_segments)
             .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
@@ -1775,30 +1776,43 @@ pub mod zero_copy_connection_trait {
         let _sut_receiver = Sut::Builder::new(&name)
             .number_of_chunks_per_segment(NUMBER_OF_SAMPLES)
             .buffer_size(2 * BUFFER_SIZE)
-            .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
+            .max_supported_shared_memory_segments(number_of_segments)
             .receiver_max_borrowed_chunks_per_channel(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
             .create_receiver()
             .unwrap();
 
-        let mut offsets = vec![];
+        let mut sent_offsets = BTreeSet::new();
         for k in 0..2 {
-            for n in 0..BUFFER_SIZE {
+            for segment_id in used_segments {
                 let offset = PointerOffset::from_offset_and_segment_id(
                     k * SAMPLE_SIZE,
-                    SegmentId::new(n as u8),
+                    SegmentId::new(*segment_id),
                 );
                 sut_sender.try_send(offset, SAMPLE_SIZE, id).unwrap();
-                offsets.push(offset);
+                sent_offsets.insert(offset.as_value());
             }
         }
 
+        let mut acquired_offsets = BTreeSet::new();
         unsafe {
             sut_sender.acquire_used_offsets(|offset| {
-                assert_that!(offsets, contains offset);
+                assert_that!(acquired_offsets.insert(offset.as_value()), eq true);
             })
         };
+
+        assert_that!(acquired_offsets, eq sent_offsets);
+    }
+
+    #[conformance_test]
+    pub fn acquire_used_offsets_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
+        acquire_used_offsets_returns_all_sent_offsets::<Sut>(10, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    }
+
+    #[conformance_test]
+    pub fn acquire_used_offsets_works_when_only_some_segments_are_used<Sut: ZeroCopyConnection>() {
+        acquire_used_offsets_returns_all_sent_offsets::<Sut>(10, &[3, 9]);
     }
 
     #[cfg(debug_assertions)]
