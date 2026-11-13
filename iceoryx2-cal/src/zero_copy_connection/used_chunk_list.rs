@@ -152,7 +152,8 @@ pub mod details {
 
             for i in 0..self.capacity {
                 let chunk = unsafe { &*self.data_ptr.as_ptr().add(i) };
-                // loading first avoids taking the cache line exclusively for unused chunks
+                // loading first and short circuiting the if-statement avoids taking the cache line
+                // exclusively for unused chunks
                 if chunk.load(Ordering::Relaxed) && chunk.swap(false, Ordering::Relaxed) {
                     callback(i);
                 }
