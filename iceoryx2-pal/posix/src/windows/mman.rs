@@ -326,7 +326,7 @@ unsafe fn create_state_handle(name: *const c_char) -> HANDLE {
         let create_file = || {
             let (handle, last_error) = win32call! {CreateFileA(
                 shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
-                GENERIC_WRITE | GENERIC_READ,
+                GENERIC_WRITE | GENERIC_READ | windows_sys::Win32::Storage::FileSystem::WRITE_DAC,
                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 core::ptr::null::<SECURITY_ATTRIBUTES>(),
                 CREATE_NEW,

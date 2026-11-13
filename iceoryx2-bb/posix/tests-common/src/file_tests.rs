@@ -324,6 +324,62 @@ pub fn remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+#[test]
+pub fn existing_file_access_denial_is_not_reported_as_missing() -> Result<(), FileError> {
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+
+    // Keep this Windows-only fixture usable by the no_std test definitions too.
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetFileAttributesA(path: *const u8) -> u32;
+        fn SetFileAttributesA(path: *const u8, attributes: u32) -> i32;
+    }
+    const FILE_ATTRIBUTE_READONLY: u32 = 1;
+    create_test_directory();
+    let path = generate_file_path();
+    let _owner = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::CreateExclusive)
+        .permission(Permission::OWNER_READ_WRITE)
+        .create()?;
+    let original_attributes = unsafe { GetFileAttributesA(path.as_c_str().cast()) };
+    assert_that!(original_attributes, ne u32::MAX);
+    // A mode without read/write permission does not deny privileged Windows accounts.
+    assert_that!(unsafe { SetFileAttributesA(path.as_c_str().cast(), original_attributes | FILE_ATTRIBUTE_READONLY) }, ne 0);
+    let result = FileBuilder::new(&path).open_existing(AccessMode::Write);
+    let exists = File::does_exist(&path);
+    // Restore before checking the result so cleanup can remove the fixture on failure.
+    assert_that!(unsafe { SetFileAttributesA(path.as_c_str().cast(), original_attributes) }, ne 0);
+    assert_that!(result.err(),
+        eq Some(FileOpenError::InsufficientPermissions));
+    assert_that!(exists?, eq true);
+    FileBuilder::new(&path).open_existing(AccessMode::Write)?;
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+pub fn permissions_use_open_file_handle_after_path_was_removed() -> Result<(), FileError> {
+    let file_path = generate_file_path();
+
+    let mut file = FileBuilder::new(&file_path)
+        .has_ownership(false)
+        .creation_mode(CreationMode::CreateExclusive)
+        .permission(Permission::OWNER_WRITE)
+        .create()?;
+
+    assert_that!(file.permission()?, eq Permission::OWNER_WRITE);
+    assert_that!(File::remove(&file_path)?, eq true);
+    // The Windows PAL grants all permissions before deleting a file. The open handle must keep
+    // reporting metadata for that file object even though its path no longer exists.
+    assert_that!(file.permission()?, eq Permission::ALL);
+    file.set_permission(Permission::OWNER_READ)?;
+    assert_that!(file.permission()?, eq Permission::OWNER_READ);
+
+    Ok(())
+}
+
 #[test]
 pub fn newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
     create_test_directory();
@@ -339,6 +395,24 @@ pub fn newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileE
     drop(file);
     assert_that!(File::does_exist(&file_name)?, eq false);
 
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+pub fn reopened_file_permissions_can_be_changed_after_path_removal() -> Result<(), FileError> {
+    create_test_directory();
+    let path = generate_file_path();
+    let owner = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::CreateExclusive)
+        .permission(Permission::OWNER_ALL)
+        .create()?;
+    let mut reopened = FileBuilder::new(&path).open_existing(AccessMode::ReadWrite)?;
+    assert_that!(File::remove(&path)?, eq true);
+    reopened.set_permission(Permission::OWNER_READ)?;
+    assert_that!(reopened.permission()?, eq Permission::OWNER_READ);
+    assert_that!(owner.permission()?, eq Permission::OWNER_READ);
     Ok(())
 }
 

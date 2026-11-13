@@ -194,8 +194,9 @@ pub fn from_mode_to_security_attributes(mode: mode_t) -> SECURITY_ATTRIBUTES {
 
     let mut buffer = [0u8; 1024];
 
-    // deny everything
-    add_to_ace_string!(&mut buffer, b"D:");
+    // Do not inherit permissions from the parent directory. POSIX modes describe the complete
+    // permission set of the created object.
+    add_to_ace_string!(&mut buffer, b"D:P");
 
     // local system allow everything
     add_to_ace_string!(
