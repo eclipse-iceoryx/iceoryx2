@@ -130,7 +130,32 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       profile: ${{ matrix.profile }}
 
-  freebsd:
+  c-cxx-bindings-debug-nightly:
+    needs: [unstable-nightly]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [beta, nightly]
+    uses: ./.github/workflows/reuse_c_cxx_bindings.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: "dev-fast-build"
+      unstable: true
+
+  c-cxx-bindings-release-nightly:
+    needs: [sdk-stable-nightly]
+    strategy:
+      matrix:
+        toolchain: [beta, nightly]
+    uses: ./.github/workflows/reuse_c_cxx_bindings.yml
+    with:
+      os: ubuntu-latest
+      toolchain: ${{ matrix.toolchain }}
+      profile: "release-fast-build"
+      unstable: true
+
+  freebsd-nightly:
     needs: [static-code-analysis-rust-nightly]
     runs-on: ubuntu-latest
     timeout-minutes: 180
