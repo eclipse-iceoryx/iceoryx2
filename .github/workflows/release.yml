@@ -10,11 +10,13 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-24.04-arm      # aarch64
           - macos-latest          # aarch64
           - windows-latest
         python:
           - "3.13"   # builds the cp38-abi3 wheel covering CPython 3.8+
-          - "3.14t"  # free-threaded; version-specific wheel (abi3 not yet supported)
+          - "3.14t"  # free-threaded; version-specific wheel (abi3t requires 3.15+)
+          - "3.15t"  # builds the cp315-abi3.abi3t wheel covering free-threaded CPython 3.15+
     defaults:
       run:
         shell: bash               # required for windows
@@ -78,10 +80,15 @@ jobs:
 
           shopt -s nullglob
           abi3=(dist/*-abi3-*.whl)
+          abi3t=(dist/*-abi3.abi3t-*.whl)
           ft=(dist/*-cp31*t-*.whl)
 
           if (( ${#abi3[@]} == 0 )); then
             echo "ERROR: no abi3 wheels in dist/" >&2
+            exit 1
+          fi
+          if (( ${#abi3t[@]} == 0 )); then
+            echo "ERROR: no abi3t wheels in dist/" >&2
             exit 1
           fi
           if (( ${#ft[@]} == 0 )); then
