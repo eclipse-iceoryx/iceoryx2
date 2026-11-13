@@ -36,4 +36,6 @@ ICEORYX2_BB_FLATBUFFERS_GENERATED_DIR := ICEORYX2_BB_DIR / "flatbuffers-generate
 ICEORYX2_FFI_DIR := justfile_directory() / "iceoryx2-ffi"
 ICEORYX2_FFI_PYTHON_DIR := ICEORYX2_FFI_DIR / "python"
 ICEORYX2_FFI_PYTHON_FLATBUFFER_TYPES_DIR := ICEORYX2_FFI_PYTHON_DIR / "tests" / "flatbuffer_types"
+
 FLATC_CACHE_DIR := justfile_directory() / "target" / "flatc"
+ARTIFACTS_FILE := justfile_directory() / ".just" / "artifacts"

@@ -225,12 +225,12 @@ _download-flatc version destination:
         exit 1
     fi
 
-    ARCHIVE=$(mktemp -d)
-    trap 'rm -rf "$ARCHIVE"' EXIT
-    curl -sSfL -o "${ARCHIVE}/flatc.zip" \
-        "https://github.com/google/flatbuffers/releases/download/v{{version}}/Linux.flatc.binary.clang++-18.zip"
+    DOWNLOADS=$(mktemp -d)
+    trap 'rm -rf "$DOWNLOADS"' EXIT
+    ARCHIVE="${DOWNLOADS}/flatc.zip"
+    just _download flatc "{{version}}" "$ARCHIVE"
     mkdir -p "{{destination}}"
-    unzip -q -o -d "{{destination}}" "${ARCHIVE}/flatc.zip"
+    unzip -q -o -d "{{destination}}" "$ARCHIVE"
 
 [private]
 [no-exit-message]
