@@ -22,7 +22,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#2198](https://github.com/eclipse-iceoryx/iceoryx2/issues/2198) Fix 'iceoryx2.h' header generation for Rust 1.100.0
 
 ### Refactoring
 
