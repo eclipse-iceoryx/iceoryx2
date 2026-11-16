@@ -12,13 +12,12 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2-log = { workspace = true, features = ["std"] }
-iceoryx2-services-discovery = { workspace = true, features = ["std"] }
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"]}
 iceoryx2-bb-concurrency = { workspace = true, features = ["std"] }
 iceoryx2-bb-container = { workspace = true, features = ["std"] }
-iceoryx2-bb-derive-macros = { workspace = true, features = ["std"] }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true, features = ["std"] }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true, features = ["std"] }
@@ -26,8 +25,12 @@ iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 
 flatbuffers = { workspace = true }
 
+[lints]
+workspace = true
+
 [dev-dependencies]
 clap = { workspace = true }
+iceoryx2-services-discovery = { workspace = true, features = ["std"] }
 
 [lib]
 name = "examples_common"

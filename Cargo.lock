@@ -368,7 +368,6 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-system-types",
  "iceoryx2-log",
- "iceoryx2-services-discovery",
 ]
 
 [[package]]
@@ -725,7 +724,6 @@ name = "iceoryx2-bb-derive-macros"
 version = "0.10.0"
 dependencies = [
  "iceoryx2-bb-derive-macros-tests-common",
- "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
  "proc-macro2",
@@ -1404,7 +1402,6 @@ dependencies = [
 name = "iceoryx2-ffi-macros"
 version = "0.10.0"
 dependencies = [
- "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "proc-macro2",
  "quote",
@@ -1684,8 +1681,6 @@ version = "0.10.0"
 name = "iceoryx2-pal-os-api"
 version = "0.10.0"
 dependencies = [
- "bindgen",
- "cc",
  "iceoryx2-pal-posix",
  "libc",
 ]

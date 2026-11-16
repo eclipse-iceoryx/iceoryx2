@@ -1326,7 +1326,6 @@ dependencies = [
 name = "iceoryx2-bb-derive-macros"
 version = "0.10.0"
 dependencies = [
- "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "proc-macro2",
  "quote",
@@ -1667,8 +1666,6 @@ version = "0.10.0"
 name = "iceoryx2-pal-os-api"
 version = "0.10.0"
 dependencies = [
- "bindgen",
- "cc",
  "iceoryx2-pal-posix",
  "libc",
 ]

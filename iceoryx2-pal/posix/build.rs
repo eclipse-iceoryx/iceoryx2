@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use bindgen as _;
+use cc as _;
+
 const ENV_PLATFORM_PATH: &str = "IOX2_CUSTOM_POSIX_PLATFORM_PATH";
 const BINDGEN_PLATFORMS: &[&str] = &["nto"];
 const LIBC_PLATFORMS: &[&str] = &["android", "freebsd", "linux", "macos", "vxworks", "windows"];

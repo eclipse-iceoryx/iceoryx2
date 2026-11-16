@@ -17,7 +17,6 @@ exclude = [
 
 [workspace.package]
 categories = ["network-programming"]
-description = "iceoryx2 integration with ROS 2"
 edition = "2024"
 homepage = "https://iceoryx.io"
 keywords = [
