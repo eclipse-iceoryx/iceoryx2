@@ -183,7 +183,7 @@ _generate-flatbuffers-bindings out:
         (cd "$SCHEMA_DIRECTORY" && "$FLATC" -o "{{out}}/$DIRECTORY" --rust "$NAME.fbs")
     done
 
-# Generates the python classes of the `Testing` schemas.
+# Generates a python module per `Testing` schema.
 [private]
 [no-exit-message]
 _generate-flatbuffers-python out:
@@ -196,10 +196,10 @@ _generate-flatbuffers-python out:
 
     cd "{{ICEORYX2_BB_FLATBUFFERS_GENERATED_DIR}}/schema"
     SCHEMAS=$(grep -l '^namespace Testing;' ./*.fbs)
-    "$FLATC" -o "$PACKAGE_DIR" --python $SCHEMAS
+    "$FLATC" -o "$PACKAGE_DIR" --python --gen-onefile $SCHEMAS
 
     # Add linter overrides.
-    for FILE in "$PACKAGE_DIR"/Testing/*.py; do
+    for FILE in "$PACKAGE_DIR"/*_generated.py; do
         {
             printf '%s\n\n# pylint: skip-file\n# mypy: ignore-errors\n\n' "$HEADER"
             cat "$FILE"

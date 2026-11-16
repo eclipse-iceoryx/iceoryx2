@@ -21,45 +21,39 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
-class BoundedData(object):
+class DataProps(object):
     __slots__ = ['_tab']
 
     @classmethod
     def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
-        x = BoundedData()
+        x = DataProps()
         x.Init(buf, n + offset)
         return x
 
     @classmethod
-    def GetRootAsBoundedData(cls, buf, offset=0):
+    def GetRootAsDataProps(cls, buf, offset=0):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
-    # BoundedData
+    # DataProps
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-    # BoundedData
-    def Data(self):
+    # DataProps
+    def ReceivedEntriesLen(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+            return self._tab.Get(flatbuffers.number_types.Uint64Flags, o + self._tab.Pos)
         return 0
 
-def BoundedDataStart(builder):
+def DataPropsStart(builder):
     builder.StartObject(1)
 
-def Start(builder):
-    BoundedDataStart(builder)
+def DataPropsAddReceivedEntriesLen(builder, receivedEntriesLen):
+    builder.PrependUint64Slot(0, receivedEntriesLen, 0)
 
-def BoundedDataAddData(builder, data):
-    builder.PrependInt32Slot(0, data, 0)
-
-def AddData(builder, data):
-    BoundedDataAddData(builder, data)
-
-def BoundedDataEnd(builder):
+def DataPropsEnd(builder):
     return builder.EndObject()
 
-def End(builder):
-    return BoundedDataEnd(builder)
+
+
