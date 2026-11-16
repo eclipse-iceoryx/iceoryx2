@@ -1229,61 +1229,6 @@ pub mod service_request_response_flatbuffer {
     }
 
     #[conformance_test]
-    pub fn open_service_without_specifying_type_definition_works<Sut: Service + 'static>() {
-        let test = Test::<Sut>::new();
-        let node = test.create_node();
-        let service_name = generate_service_name();
-        let request_schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
-        let response_schema_file = create_typed_file_with_bytes(schema::DATA_PROPS, "bfbs");
-
-        let _sut_create = node
-            .service_builder(&service_name)
-            .request_response::<Flatbuffer<UnboundedData>, Flatbuffer<DataProps>>()
-            .request_flatbuffer_schema_path(request_schema_file.path().unwrap())
-            .response_flatbuffer_schema_path(response_schema_file.path().unwrap())
-            .create()
-            .unwrap();
-
-        let sut = unsafe {
-            node.service_builder(&service_name)
-                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
-                .__internal_set_request_payload_type_details(
-                    &TypeDetail::__internal_new_from_parts(
-                        TypeVariant::FixedSize,
-                        "iox2::Flatbuffer<Testing.UnboundedData>",
-                        1,
-                        1,
-                    )
-                    .unwrap(),
-                )
-                .__internal_set_response_payload_type_details(
-                    &TypeDetail::__internal_new_from_parts(
-                        TypeVariant::FixedSize,
-                        "iox2::Flatbuffer<Testing.DataProps>",
-                        1,
-                        1,
-                    )
-                    .unwrap(),
-                )
-                .__internal_skip_type_definition_verification()
-                .open()
-                .unwrap()
-        };
-
-        let request_type_definition = sut.request_type_definition().unwrap();
-        assert_that!(request_type_definition.len(), eq schema::UNBOUNDED_DATA.len() as u64);
-        let mut buffer = vec![0u8; request_type_definition.len() as usize];
-        request_type_definition.read(&mut buffer).unwrap();
-        assert_that!(schema::UNBOUNDED_DATA, eq buffer.as_slice());
-
-        let response_type_definition = sut.response_type_definition().unwrap();
-        assert_that!(response_type_definition.len(), eq schema::DATA_PROPS.len() as u64);
-        let mut buffer = vec![0u8; response_type_definition.len() as usize];
-        response_type_definition.read(&mut buffer).unwrap();
-        assert_that!(schema::DATA_PROPS, eq buffer.as_slice());
-    }
-
-    #[conformance_test]
     pub fn create_records_the_root_types_of_the_schemas<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();

@@ -1032,13 +1032,11 @@ impl<
                 when self.request_schema_source.load(self.base.shared_node.config()),
                 to ResolveTypeDefinitionError,
                 "Unable to record the message type details since the schema of the request could not be loaded.");
-            if let Some(schema) = &schema {
-                self.config_details_mut()
-                    .request_message_type_details
-                    .payload
-                    .type_name = schema.type_name;
-            }
-            schema
+            self.config_details_mut()
+                .request_message_type_details
+                .payload
+                .type_name = schema.type_name;
+            Some(schema)
         } else {
             None
         };
@@ -1049,13 +1047,11 @@ impl<
                 when self.response_schema_source.load(self.base.shared_node.config()),
                 to ResolveTypeDefinitionError,
                 "Unable to record the message type details since the schema of the response could not be loaded.");
-            if let Some(schema) = &schema {
-                self.config_details_mut()
-                    .response_message_type_details
-                    .payload
-                    .type_name = schema.type_name;
-            }
-            schema
+            self.config_details_mut()
+                .response_message_type_details
+                .payload
+                .type_name = schema.type_name;
+            Some(schema)
         } else {
             None
         };
@@ -1711,15 +1707,6 @@ impl<
         value: &TypeDetail,
     ) -> Self {
         self.override_response_payload_type = Some(*value);
-        self
-    }
-
-    /// Opens without a schema. The stated payload type details are recorded
-    /// as they are, nothing is composed from a schema.
-    #[doc(hidden)]
-    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
-        self.request_schema_source = SchemaSource::Stored;
-        self.response_schema_source = SchemaSource::Stored;
         self
     }
 }

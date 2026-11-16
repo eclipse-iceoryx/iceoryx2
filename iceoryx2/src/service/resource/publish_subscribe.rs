@@ -84,10 +84,6 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
     ) -> Result<Self, crate::service::builder::ServiceCreateError> {
         match TypeDefinitionStorage::<ServiceType>::create(
             resource_config.schema.as_ref(),
-            &static_config
-                .publish_subscribe()
-                .message_type_details()
-                .payload,
             &PAYLOAD_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -116,10 +112,6 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
     ) -> Result<Self, crate::service::builder::ServiceOpenError> {
         match TypeDefinitionStorage::<ServiceType>::open(
             resource_config.schema.as_ref(),
-            &static_config
-                .publish_subscribe()
-                .message_type_details()
-                .payload,
             &PAYLOAD_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,

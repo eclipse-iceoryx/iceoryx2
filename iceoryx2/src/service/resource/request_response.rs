@@ -25,7 +25,6 @@ use crate::{
         resource::{
             ServiceResource, schema_source::Schema, type_definition::TypeDefinitionStorage,
         },
-        static_config::message_type_details::TypeDetail,
     },
 };
 
@@ -104,20 +103,12 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
     ) -> Result<Self, service::builder::ServiceCreateError> {
         let request_storage = Self::create_type_storage(
             resource_config.request_schema.as_ref(),
-            &static_config
-                .request_response()
-                .request_message_type_details()
-                .payload,
             &REQUEST_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
         let response_storage = Self::create_type_storage(
             resource_config.response_schema.as_ref(),
-            &static_config
-                .request_response()
-                .response_message_type_details()
-                .payload,
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -142,20 +133,12 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
     ) -> Result<Self, service::builder::ServiceOpenError> {
         let request_storage = Self::open_type_storage(
             resource_config.request_schema.as_ref(),
-            &static_config
-                .request_response()
-                .request_message_type_details()
-                .payload,
             &REQUEST_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
         let response_storage = Self::open_type_storage(
             resource_config.response_schema.as_ref(),
-            &static_config
-                .request_response()
-                .response_message_type_details()
-                .payload,
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -215,18 +198,11 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
 impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
     fn create_type_storage(
         schema: Option<&Schema>,
-        payload: &TypeDetail,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceCreateError> {
-        match TypeDefinitionStorage::<ServiceType>::create(
-            schema,
-            payload,
-            name,
-            config,
-            static_config,
-        ) {
+        match TypeDefinitionStorage::<ServiceType>::create(schema, name, config, static_config) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::create_type_storage()",
@@ -238,18 +214,11 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
 
     fn open_type_storage(
         schema: Option<&Schema>,
-        payload: &TypeDetail,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceOpenError> {
-        match TypeDefinitionStorage::<ServiceType>::open(
-            schema,
-            payload,
-            name,
-            config,
-            static_config,
-        ) {
+        match TypeDefinitionStorage::<ServiceType>::open(schema, name, config, static_config) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::open_type_storage()",

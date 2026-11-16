@@ -897,14 +897,6 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
         self.override_payload_type = Some(*value);
         self
     }
-
-    /// Opens without a schema. The stated payload type details are recorded
-    /// as they are, nothing is composed from a schema.
-    #[doc(hidden)]
-    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
-        self.schema_source = SchemaSource::Stored;
-        self
-    }
 }
 
 impl<Payload: Debug + ?Sized + IceoryxSend + ZeroCopySend, ServiceType: service::Service>
@@ -939,10 +931,8 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
                 when self.schema_source.load(self.base.shared_node.config()),
                 to ResolveTypeDefinitionError,
                 "Unable to record the message type details since the schema of the payload could not be loaded.");
-            if let Some(schema) = &schema {
-                message_type_details.payload.type_name = schema.type_name;
-            }
-            schema
+            message_type_details.payload.type_name = schema.type_name;
+            Some(schema)
         } else {
             None
         };
@@ -1069,10 +1059,8 @@ impl<
                 when self.schema_source.load(self.base.shared_node.config()),
                 to ResolveTypeDefinitionError,
                 "Unable to record the message type details since the schema of the payload could not be loaded.");
-            if let Some(schema) = &schema {
-                message_type_details.payload.type_name = schema.type_name;
-            }
-            schema
+            message_type_details.payload.type_name = schema.type_name;
+            Some(schema)
         } else {
             None
         };

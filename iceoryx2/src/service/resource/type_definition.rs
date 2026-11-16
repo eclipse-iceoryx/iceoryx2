@@ -17,14 +17,11 @@ use alloc::string::ToString;
 use crate::service::{
     ServiceDetailsError,
     builder::{ServiceCreateError, ServiceOpenError},
-    marker::is_flatbuffer_type_name,
     resource::{RemoveStaleResourcesError, schema_source::Schema},
-    static_config::message_type_details::TypeDetail,
 };
 use alloc::vec;
 use alloc::vec::Vec;
 use core::time::Duration;
-use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_cal::{
     event::{NamedConceptBuilder, NamedConceptMgmt, SemanticString},
@@ -45,29 +42,22 @@ pub struct TypeDefinitionStorage<S: crate::service::Service> {
 }
 
 impl<S: crate::service::Service> TypeDefinitionStorage<S> {
-    /// Creates the type definition storage of a flatbuffer `payload` and
-    /// writes `schema` into it. Any other payload has no storage and yields
-    /// `None`.
+    /// Creates the type definition storage holding `schema`. A payload
+    /// without a schema has no storage and yields `None`.
     pub fn create(
         schema: Option<&Schema>,
-        payload: &TypeDetail,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<Self>, ServiceCreateError> {
+        let Some(schema) = schema else {
+            return Ok(None);
+        };
         let origin = "TypeDefinitionStorage::create()";
         let msg = alloc::format!(
             "Unable to create type definition storage for \"{}\"",
-            payload.type_name()
+            schema.type_name
         );
-
-        if !is_flatbuffer_type_name(payload.type_name().as_str()) {
-            return Ok(None);
-        }
-        let Some(schema) = schema else {
-            fail!(from origin, with ServiceCreateError::UnableToAcquireTypeDefinition,
-                "{msg} since no schema was provided.");
-        };
 
         let static_storage_config = Self::static_storage_config(config, static_config);
 
@@ -148,27 +138,21 @@ impl<S: crate::service::Service> TypeDefinitionStorage<S> {
         }
     }
 
-    /// Opens the type definition storage of a flatbuffer `payload` and checks
-    /// that it holds `schema` when one is given. Any other payload has no
-    /// storage and yields `None`.
+    /// Opens the type definition storage and checks that it holds `schema`.
+    /// A payload without a schema has no storage and yields `None`.
     pub fn open(
         schema: Option<&Schema>,
-        payload: &TypeDetail,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<Self>, ServiceOpenError> {
-        if !is_flatbuffer_type_name(payload.type_name().as_str()) {
-            return Ok(None);
-        }
         let Some(schema) = schema else {
-            return Self::open_unverified(name, config, static_config);
+            return Ok(None);
         };
-
         let origin = "TypeDefinitionStorage::open()";
         let msg = alloc::format!(
             "Unable to open type definition storage for \"{}\"",
-            payload.type_name()
+            schema.type_name
         );
         let static_storage_config = Self::static_storage_config(config, static_config);
 
@@ -276,48 +260,6 @@ impl<S: crate::service::Service> TypeDefinitionStorage<S> {
                     "{msg} due to an internal failure.");
             }
         }
-    }
-
-    fn open_unverified(
-        name: &FileName,
-        config: &crate::config::Config,
-        static_config: &crate::service::static_config::StaticConfig,
-    ) -> Result<Option<Self>, ServiceOpenError> {
-        let origin = "TypeDefinitionStorage::open_unverified()";
-        let msg = "Unable to open type definition storage";
-        let static_storage_config = Self::static_storage_config(config, static_config);
-
-        let static_storage = match
-                <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).open(Duration::ZERO) {
-                    Ok(static_storage) => static_storage,
-                    Err(StaticStorageOpenError::InsufficientPermissions) => {
-                        fail!(from origin, with ServiceOpenError::InsufficientPermissions,
-                            "{msg} since the type definition could not be opened.");
-                    }
-                    Err(StaticStorageOpenError::Interrupt) => {
-                        fail!(from origin, with ServiceOpenError::Interrupt,
-                            "{msg} since the operation was interrupted by a signal.");
-                    }
-                    Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
-                        fail!(from origin, with ServiceOpenError::HangsInCreation,
-                            "{msg} since the type definition file is not yet initialized.");
-                    }
-                    Err(StaticStorageOpenError::DoesNotExist) => {
-                        fail!(from origin, with ServiceOpenError::ServiceInCorruptedState,
-                            "{msg} since the type definition file does not exist but it should be available.");
-                    }
-                    Err(e) => {
-                        fail!(from origin, with ServiceOpenError::InternalFailure,
-                            "{msg} due to an internal failure while opening the type definition storage. [{e:?}]");
-                    }
-                };
-
-        static_storage.release_ownership();
-
-        Ok(Some(Self {
-            storage: static_storage,
-            path_hint: *static_storage_config.get_path_hint(),
-        }))
     }
 
     fn static_storage_config(

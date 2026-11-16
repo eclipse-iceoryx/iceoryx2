@@ -102,8 +102,6 @@ pub enum SchemaSource {
     File(FilePath),
     /// The schema bytes provided directly.
     Bytes(Arc<[u8]>),
-    /// The schema the service already stores.
-    Stored,
 }
 
 impl SchemaSource {
@@ -115,12 +113,11 @@ impl SchemaSource {
     pub(crate) fn load(
         &self,
         config: &crate::config::Config,
-    ) -> Result<Option<Schema>, ResolveTypeDefinitionError> {
+    ) -> Result<Schema, ResolveTypeDefinitionError> {
         let msg = "Unable to load type definition";
         let lookup_path = config.global.service.flatbuffer_schema_path.as_ref();
 
         let bytes: Arc<[u8]> = match self {
-            Self::Stored => return Ok(None),
             Self::Bytes(bytes) => bytes.clone(),
             Self::File(path) => {
                 if !is_binary_flatbuffer_schema(&path.file_name()) {
@@ -163,7 +160,7 @@ impl SchemaSource {
                 "{msg} since the root type \"{root_type}\" of the schema does not fit into the type name.");
         };
 
-        Ok(Some(Schema { bytes, type_name }))
+        Ok(Schema { bytes, type_name })
     }
 
     fn lookup_path(&self, lookup_path: Option<&Path>) -> Result<Path, SchemaPathError> {
