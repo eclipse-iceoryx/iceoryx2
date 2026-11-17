@@ -17,8 +17,10 @@ use alloc::string::ToString;
 use crate::service::{
     ServiceDetailsError,
     builder::{ServiceCreateError, ServiceOpenError},
-    resource::{RemoveStaleResourcesError, schema_source::Schema},
+    resource::RemoveStaleResourcesError,
+    static_config::message_type_details::TypeName,
 };
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::time::Duration;
@@ -35,6 +37,14 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::{fail, fatal_panic};
 
+/// The description of a payload type. The bytes encode the layout of the
+/// type. A flatbuffer payload stores its binary schema.
+#[derive(Debug, Clone)]
+pub struct TypeDefinition {
+    pub bytes: Arc<[u8]>,
+    pub type_name: TypeName,
+}
+
 #[derive(Debug)]
 pub struct TypeDefinitionStorage<S: crate::service::Service> {
     pub storage: S::StaticStorage,
@@ -42,27 +52,27 @@ pub struct TypeDefinitionStorage<S: crate::service::Service> {
 }
 
 impl<S: crate::service::Service> TypeDefinitionStorage<S> {
-    /// Creates the type definition storage holding `schema`. A payload
-    /// without a schema has no storage and yields `None`.
+    /// Creates the storage holding `type_definition`. A payload without a
+    /// type definition has no storage and yields `None`.
     pub fn create(
-        schema: Option<&Schema>,
+        type_definition: Option<&TypeDefinition>,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<Self>, ServiceCreateError> {
-        let Some(schema) = schema else {
+        let Some(type_definition) = type_definition else {
             return Ok(None);
         };
         let origin = "TypeDefinitionStorage::create()";
         let msg = alloc::format!(
             "Unable to create type definition storage for \"{}\"",
-            schema.type_name
+            type_definition.type_name
         );
 
         let static_storage_config = Self::static_storage_config(config, static_config);
 
         let static_storage = match
-            <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).create(&schema.bytes) {
+            <<S::StaticStorage as iceoryx2_cal::static_storage::StaticStorage>::Builder as NamedConceptBuilder::<S::StaticStorage>>::new(name).config(&static_storage_config).create(&type_definition.bytes) {
                     Ok(static_storage) => static_storage,
                     Err(StaticStorageCreateError::Interrupt) => {
                         fail!(from origin, with ServiceCreateError::Interrupt,
@@ -138,21 +148,21 @@ impl<S: crate::service::Service> TypeDefinitionStorage<S> {
         }
     }
 
-    /// Opens the type definition storage and checks that it holds `schema`.
-    /// A payload without a schema has no storage and yields `None`.
-    pub fn open(
-        schema: Option<&Schema>,
+    /// Opens the storage and checks that it holds `type_definition`. A
+    /// payload without a type definition has no storage and yields `None`.
+    pub fn open_and_verify(
+        type_definition: Option<&TypeDefinition>,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<Self>, ServiceOpenError> {
-        let Some(schema) = schema else {
+        let Some(type_definition) = type_definition else {
             return Ok(None);
         };
-        let origin = "TypeDefinitionStorage::open()";
+        let origin = "TypeDefinitionStorage::open_and_verify()";
         let msg = alloc::format!(
             "Unable to open type definition storage for \"{}\"",
-            schema.type_name
+            type_definition.type_name
         );
         let static_storage_config = Self::static_storage_config(config, static_config);
 
@@ -198,7 +208,7 @@ impl<S: crate::service::Service> TypeDefinitionStorage<S> {
             }
         }
 
-        if existing_schema_content[..] != schema.bytes[..] {
+        if existing_schema_content[..] != type_definition.bytes[..] {
             fail!(from origin, with ServiceOpenError::IncompatiblePayload,
                     "{msg} since the payload defined in the provided type definition is not equal to the type definition of the service.");
         }

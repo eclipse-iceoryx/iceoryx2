@@ -14,8 +14,7 @@ extern crate alloc;
 
 use crate::node::SharedNode;
 use crate::service;
-use crate::service::resource::schema_source::Schema;
-use crate::service::resource::type_definition::TypeDefinitionStorage;
+use crate::service::resource::type_definition::{TypeDefinition, TypeDefinitionStorage};
 use crate::service::resource::{RemoveStaleResourcesError, ServiceResource};
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -29,7 +28,7 @@ pub(crate) const PAYLOAD_TYPE_DEFINITION: FileName =
     unsafe { FileName::new_unchecked_const(b"payload") };
 
 pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
-    pub(crate) schema: Option<Schema>,
+    pub(crate) type_definition: Option<TypeDefinition>,
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
@@ -83,7 +82,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceCreateError> {
         match TypeDefinitionStorage::<ServiceType>::create(
-            resource_config.schema.as_ref(),
+            resource_config.type_definition.as_ref(),
             &PAYLOAD_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -110,8 +109,8 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         static_config: &crate::service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceOpenError> {
-        match TypeDefinitionStorage::<ServiceType>::open(
-            resource_config.schema.as_ref(),
+        match TypeDefinitionStorage::<ServiceType>::open_and_verify(
+            resource_config.type_definition.as_ref(),
             &PAYLOAD_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,

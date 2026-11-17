@@ -15,7 +15,7 @@ extern crate alloc;
 use crate::service::{
     builder::{ServiceCreateError, ServiceOpenError},
     marker::flatbuffer_type_name,
-    static_config::message_type_details::TypeName as TypeNameString,
+    resource::type_definition::TypeDefinition,
 };
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -86,17 +86,10 @@ impl From<SchemaPathError> for ResolveTypeDefinitionError {
     }
 }
 
-/// A loaded schema and the type name of its root type.
-#[derive(Debug, Clone)]
-pub struct Schema {
-    pub bytes: Arc<[u8]>,
-    pub type_name: TypeNameString,
-}
-
 /// Where the schema of a flatbuffer payload comes from.
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
-pub enum SchemaSource {
+pub enum FlatbufferSchemaSource {
     /// The best fitting file in the configured lookup path for the type name.
     Lookup(TypeName),
     /// A file given by an absolute path or by a path relative to the lookup
@@ -106,8 +99,8 @@ pub enum SchemaSource {
     Bytes(Arc<[u8]>),
 }
 
-impl SchemaSource {
-    /// Loads the schema and the type name of its root type.
+impl FlatbufferSchemaSource {
+    /// Loads the schema into the type definition a service records.
     ///
     /// Fails when the schema cannot be read, is not a binary flatbuffer
     /// schema, declares no `root_type` or names one the type name cannot
@@ -115,7 +108,7 @@ impl SchemaSource {
     pub(crate) fn load(
         &self,
         config: &crate::config::Config,
-    ) -> Result<Schema, ResolveTypeDefinitionError> {
+    ) -> Result<TypeDefinition, ResolveTypeDefinitionError> {
         let msg = "Unable to load type definition";
         let lookup_path = config.global.service.flatbuffer_schema_path.as_ref();
 
@@ -162,7 +155,7 @@ impl SchemaSource {
                 "{msg} since the root type \"{root_type}\" of the schema does not fit into the type name.");
         };
 
-        Ok(Schema { bytes, type_name })
+        Ok(TypeDefinition { bytes, type_name })
     }
 
     fn lookup_path(&self, lookup_path: Option<&Path>) -> Result<Path, SchemaPathError> {

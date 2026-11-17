@@ -23,7 +23,8 @@ use crate::{
         self,
         builder::{ServiceCreateError, ServiceOpenError},
         resource::{
-            ServiceResource, schema_source::Schema, type_definition::TypeDefinitionStorage,
+            ServiceResource,
+            type_definition::{TypeDefinition, TypeDefinitionStorage},
         },
     },
 };
@@ -34,8 +35,8 @@ pub(crate) const RESPONSE_TYPE_DEFINITION: FileName =
     unsafe { FileName::new_unchecked_const(b"response") };
 
 pub struct RequestResponseResourceConfig<ServiceType: service::Service> {
-    pub(crate) request_schema: Option<Schema>,
-    pub(crate) response_schema: Option<Schema>,
+    pub(crate) request_type_definition: Option<TypeDefinition>,
+    pub(crate) response_type_definition: Option<TypeDefinition>,
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
@@ -102,13 +103,13 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         resource_config: &Self::Config,
     ) -> Result<Self, service::builder::ServiceCreateError> {
         let request_storage = Self::create_type_storage(
-            resource_config.request_schema.as_ref(),
+            resource_config.request_type_definition.as_ref(),
             &REQUEST_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
         let response_storage = Self::create_type_storage(
-            resource_config.response_schema.as_ref(),
+            resource_config.response_type_definition.as_ref(),
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -132,13 +133,13 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         resource_config: &Self::Config,
     ) -> Result<Self, service::builder::ServiceOpenError> {
         let request_storage = Self::open_type_storage(
-            resource_config.request_schema.as_ref(),
+            resource_config.request_type_definition.as_ref(),
             &REQUEST_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
         let response_storage = Self::open_type_storage(
-            resource_config.response_schema.as_ref(),
+            resource_config.response_type_definition.as_ref(),
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -197,12 +198,17 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
 
 impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
     fn create_type_storage(
-        schema: Option<&Schema>,
+        type_definition: Option<&TypeDefinition>,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceCreateError> {
-        match TypeDefinitionStorage::<ServiceType>::create(schema, name, config, static_config) {
+        match TypeDefinitionStorage::<ServiceType>::create(
+            type_definition,
+            name,
+            config,
+            static_config,
+        ) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::create_type_storage()",
@@ -213,12 +219,17 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
     }
 
     fn open_type_storage(
-        schema: Option<&Schema>,
+        type_definition: Option<&TypeDefinition>,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceOpenError> {
-        match TypeDefinitionStorage::<ServiceType>::open(schema, name, config, static_config) {
+        match TypeDefinitionStorage::<ServiceType>::open_and_verify(
+            type_definition,
+            name,
+            config,
+            static_config,
+        ) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::open_type_storage()",

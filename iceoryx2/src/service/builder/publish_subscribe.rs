@@ -18,7 +18,10 @@ use alloc::format;
 use core::marker::PhantomData;
 
 use crate::config::Config;
-use crate::service::resource::schema_source::{ResolveTypeDefinitionError, Schema, SchemaSource};
+use crate::service::resource::flatbuffer_schema_source::{
+    FlatbufferSchemaSource, ResolveTypeDefinitionError,
+};
+use crate::service::resource::type_definition::TypeDefinition;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::TypeName;
@@ -27,7 +30,7 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 use super::ServiceState;
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
-    apply_alignment_override, apply_type_overrides, load_payload_schema,
+    apply_alignment_override, apply_type_overrides, load_flatbuffer_type_definition,
 };
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
@@ -449,8 +452,8 @@ pub struct Builder<
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
     override_user_header_type: Option<TypeDetail>,
-    schema_source: SchemaSource,
-    schema: Option<Schema>,
+    flatbuffer_schema_source: FlatbufferSchemaSource,
+    type_definition: Option<TypeDefinition>,
     verify: Verify,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -468,8 +471,8 @@ impl<
             override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
-            schema_source: self.schema_source.clone(),
-            schema: self.schema.clone(),
+            flatbuffer_schema_source: self.flatbuffer_schema_source.clone(),
+            type_definition: self.type_definition.clone(),
             verify: self.verify,
             _data: PhantomData,
             _user_header: PhantomData,
@@ -490,8 +493,8 @@ impl<
             override_alignment: None,
             override_payload_type: None,
             override_user_header_type: None,
-            schema_source: SchemaSource::Lookup(TypeName::new::<Payload>()),
-            schema: None,
+            flatbuffer_schema_source: FlatbufferSchemaSource::Lookup(TypeName::new::<Payload>()),
+            type_definition: None,
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -789,7 +792,7 @@ impl<
                 PublishSubscribeResources::create(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        schema: self.schema.clone(),
+                        type_definition: self.type_definition.clone(),
                         shared_node: self.base.shared_node.clone(),
                     },
                 )
@@ -825,7 +828,7 @@ impl<
                 PublishSubscribeResources::open(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        schema: self.schema.clone(),
+                        type_definition: self.type_definition.clone(),
                         shared_node: self.base.shared_node.clone(),
                     },
                 )
@@ -861,7 +864,7 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
 {
     #[doc(hidden)]
     pub fn __internal_type_definition_name_hint(mut self, value: &TypeName) -> Self {
-        if let SchemaSource::Lookup(type_name) = &mut self.schema_source {
+        if let FlatbufferSchemaSource::Lookup(type_name) = &mut self.flatbuffer_schema_source {
             *type_name = *value;
         }
         self
@@ -869,13 +872,13 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
 
     #[doc(hidden)]
     pub unsafe fn __internal_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.schema_source = SchemaSource::File(*path);
+        self.flatbuffer_schema_source = FlatbufferSchemaSource::File(*path);
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
-        self.schema_source = SchemaSource::Bytes(schema.into());
+        self.flatbuffer_schema_source = FlatbufferSchemaSource::Bytes(schema.into());
         self
     }
 
@@ -913,15 +916,15 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
             self.override_user_header_type,
         );
 
-        self.schema = fail!(from origin,
-            when load_payload_schema(&self.schema_source, &message_type_details.payload, node_config),
+        self.type_definition = fail!(from origin,
+            when load_flatbuffer_type_definition(&self.flatbuffer_schema_source, &message_type_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the payload could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
         // payload type carries no name. The root type is read from the schema and
         // added here.
-        if let Some(schema) = &self.schema {
-            message_type_details.payload.type_name = schema.type_name;
+        if let Some(type_definition) = &self.type_definition {
+            message_type_details.payload.type_name = type_definition.type_name;
         }
 
         apply_alignment_override(&mut message_type_details.payload, self.override_alignment);
@@ -1015,7 +1018,7 @@ impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Ser
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.schema_source = SchemaSource::File(*path);
+        self.flatbuffer_schema_source = FlatbufferSchemaSource::File(*path);
         self
     }
 }
@@ -1039,15 +1042,15 @@ impl<
             self.override_payload_type,
             self.override_user_header_type,
         );
-        self.schema = fail!(from origin,
-            when load_payload_schema(&self.schema_source, &message_type_details.payload, node_config),
+        self.type_definition = fail!(from origin,
+            when load_flatbuffer_type_definition(&self.flatbuffer_schema_source, &message_type_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the payload could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
         // payload type carries no name. The root type is read from the schema and
         // added here.
-        if let Some(schema) = &self.schema {
-            message_type_details.payload.type_name = schema.type_name;
+        if let Some(type_definition) = &self.type_definition {
+            message_type_details.payload.type_name = type_definition.type_name;
         }
         apply_alignment_override(&mut message_type_details.payload, self.override_alignment);
         Ok(())
