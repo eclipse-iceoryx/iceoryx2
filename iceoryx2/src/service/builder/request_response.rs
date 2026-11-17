@@ -15,7 +15,6 @@ use core::marker::PhantomData;
 
 use alloc::format;
 
-use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -27,7 +26,7 @@ use crate::identifiers::UniqueServiceId;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
-    StaticServiceResources,
+    StaticServiceResources, apply_alignment_override, apply_type_overrides, load_payload_schema,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -44,9 +43,7 @@ use crate::service::{Service, builder, dynamic_config};
 use crate::service::{header, static_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::marker::{
-    CustomHeaderMarker, CustomPayloadMarker, Flatbuffer, is_flatbuffer_type_name,
-};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -996,92 +993,6 @@ impl<
             |attributes| self.create_impl(attributes),
         )
     }
-
-    /// Records the message type details in the static config after applying
-    /// the type overrides, the flatbuffer schemas and the alignment overrides.
-    ///
-    /// Fails when a payload is a flatbuffer and its schema cannot be loaded.
-    fn prepare_message_type(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        if let Some(details) = &self.override_request_payload_type {
-            self.config_details_mut()
-                .request_message_type_details
-                .payload = *details;
-        }
-
-        if let Some(details) = &self.override_request_header_type {
-            self.config_details_mut()
-                .request_message_type_details
-                .user_header = *details;
-        }
-
-        if let Some(details) = &self.override_response_payload_type {
-            self.config_details_mut()
-                .response_message_type_details
-                .payload = *details;
-        }
-
-        if let Some(details) = &self.override_response_header_type {
-            self.config_details_mut()
-                .response_message_type_details
-                .user_header = *details;
-        }
-
-        let request_payload = &self.config_details().request_message_type_details.payload;
-        self.request_schema = if is_flatbuffer_type_name(request_payload.type_name().as_str()) {
-            let schema = fail!(from self,
-                when self.request_schema_source.load(self.base.shared_node.config()),
-                to ResolveTypeDefinitionError,
-                "Unable to record the message type details since the schema of the request could not be loaded.");
-            self.config_details_mut()
-                .request_message_type_details
-                .payload
-                .type_name = schema.type_name;
-            Some(schema)
-        } else {
-            None
-        };
-
-        let response_payload = &self.config_details().response_message_type_details.payload;
-        self.response_schema = if is_flatbuffer_type_name(response_payload.type_name().as_str()) {
-            let schema = fail!(from self,
-                when self.response_schema_source.load(self.base.shared_node.config()),
-                to ResolveTypeDefinitionError,
-                "Unable to record the message type details since the schema of the response could not be loaded.");
-            self.config_details_mut()
-                .response_message_type_details
-                .payload
-                .type_name = schema.type_name;
-            Some(schema)
-        } else {
-            None
-        };
-
-        if let Some(alignment) = self.override_request_alignment {
-            self.config_details_mut()
-                .request_message_type_details
-                .payload
-                .alignment = self
-                .config_details()
-                .request_message_type_details
-                .payload
-                .alignment
-                .max(alignment);
-        }
-
-        if let Some(alignment) = self.override_response_alignment {
-            self.config_details_mut()
-                .response_message_type_details
-                .payload
-                .alignment = self
-                .config_details()
-                .response_message_type_details
-                .payload
-                .alignment
-                .max(alignment);
-        }
-
-        Ok(())
-    }
 }
 
 impl<
@@ -1093,19 +1004,65 @@ impl<
 > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.request_response_mut();
+        let request_details = &mut static_config.request_message_type_details;
+        let response_details = &mut static_config.response_message_type_details;
+
+        *request_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
             RequestPayload,
         >(TypeVariant::FixedSize);
-
-        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+        *response_details = MessageTypeDetails::from::<
             header::request_response::ResponseHeader,
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::FixedSize);
+        apply_type_overrides(
+            request_details,
+            self.override_request_payload_type,
+            self.override_request_header_type,
+        );
+        apply_type_overrides(
+            response_details,
+            self.override_response_payload_type,
+            self.override_response_header_type,
+        );
 
-        self.prepare_message_type()
+        self.request_schema = fail!(from origin,
+            when load_payload_schema(&self.request_schema_source, &request_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the request could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.request_schema {
+            request_details.payload.type_name = schema.type_name;
+        }
+
+        self.response_schema = fail!(from origin,
+            when load_payload_schema(&self.response_schema_source, &response_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the response could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.response_schema {
+            response_details.payload.type_name = schema.type_name;
+        }
+
+        apply_alignment_override(
+            &mut request_details.payload,
+            self.override_request_alignment,
+        );
+        apply_alignment_override(
+            &mut response_details.payload,
+            self.override_response_alignment,
+        );
+
+        Ok(())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1231,19 +1188,65 @@ impl<
 > Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.request_response_mut();
+        let request_details = &mut static_config.request_message_type_details;
+        let response_details = &mut static_config.response_message_type_details;
+
+        *request_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
             RequestPayload,
         >(TypeVariant::Dynamic);
-
-        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+        *response_details = MessageTypeDetails::from::<
             header::request_response::ResponseHeader,
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::FixedSize);
+        apply_type_overrides(
+            request_details,
+            self.override_request_payload_type,
+            self.override_request_header_type,
+        );
+        apply_type_overrides(
+            response_details,
+            self.override_response_payload_type,
+            self.override_response_header_type,
+        );
 
-        self.prepare_message_type()
+        self.request_schema = fail!(from origin,
+            when load_payload_schema(&self.request_schema_source, &request_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the request could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.request_schema {
+            request_details.payload.type_name = schema.type_name;
+        }
+
+        self.response_schema = fail!(from origin,
+            when load_payload_schema(&self.response_schema_source, &response_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the response could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.response_schema {
+            response_details.payload.type_name = schema.type_name;
+        }
+
+        apply_alignment_override(
+            &mut request_details.payload,
+            self.override_request_alignment,
+        );
+        apply_alignment_override(
+            &mut response_details.payload,
+            self.override_response_alignment,
+        );
+
+        Ok(())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1368,19 +1371,65 @@ impl<
 > Builder<[RequestPayload], RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.request_response_mut();
+        let request_details = &mut static_config.request_message_type_details;
+        let response_details = &mut static_config.response_message_type_details;
+
+        *request_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
             RequestPayload,
         >(TypeVariant::Dynamic);
-
-        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+        *response_details = MessageTypeDetails::from::<
             header::request_response::ResponseHeader,
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::Dynamic);
+        apply_type_overrides(
+            request_details,
+            self.override_request_payload_type,
+            self.override_request_header_type,
+        );
+        apply_type_overrides(
+            response_details,
+            self.override_response_payload_type,
+            self.override_response_header_type,
+        );
 
-        self.prepare_message_type()
+        self.request_schema = fail!(from origin,
+            when load_payload_schema(&self.request_schema_source, &request_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the request could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.request_schema {
+            request_details.payload.type_name = schema.type_name;
+        }
+
+        self.response_schema = fail!(from origin,
+            when load_payload_schema(&self.response_schema_source, &response_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the response could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.response_schema {
+            response_details.payload.type_name = schema.type_name;
+        }
+
+        apply_alignment_override(
+            &mut request_details.payload,
+            self.override_request_alignment,
+        );
+        apply_alignment_override(
+            &mut response_details.payload,
+            self.override_response_alignment,
+        );
+
+        Ok(())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1511,19 +1560,65 @@ impl<
 > Builder<RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.request_response_mut();
+        let request_details = &mut static_config.request_message_type_details;
+        let response_details = &mut static_config.response_message_type_details;
+
+        *request_details = MessageTypeDetails::from::<
             header::request_response::RequestHeader,
             RequestHeader,
             RequestPayload,
         >(TypeVariant::FixedSize);
-
-        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+        *response_details = MessageTypeDetails::from::<
             header::request_response::ResponseHeader,
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::Dynamic);
+        apply_type_overrides(
+            request_details,
+            self.override_request_payload_type,
+            self.override_request_header_type,
+        );
+        apply_type_overrides(
+            response_details,
+            self.override_response_payload_type,
+            self.override_response_header_type,
+        );
 
-        self.prepare_message_type()
+        self.request_schema = fail!(from origin,
+            when load_payload_schema(&self.request_schema_source, &request_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the request could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.request_schema {
+            request_details.payload.type_name = schema.type_name;
+        }
+
+        self.response_schema = fail!(from origin,
+            when load_payload_schema(&self.response_schema_source, &response_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the response could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.response_schema {
+            response_details.payload.type_name = schema.type_name;
+        }
+
+        apply_alignment_override(
+            &mut request_details.payload,
+            self.override_request_alignment,
+        );
+        apply_alignment_override(
+            &mut response_details.payload,
+            self.override_response_alignment,
+        );
+
+        Ok(())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be

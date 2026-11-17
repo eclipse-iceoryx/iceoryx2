@@ -34,6 +34,7 @@ use core::mem::MaybeUninit;
 use alloc::string::String;
 use alloc::vec;
 
+use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_container::vector::StaticVec;
 use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_elementary::enum_gen;
@@ -59,6 +60,7 @@ use iceoryx2_log::debug;
 use iceoryx2_log::fail;
 use iceoryx2_log::warn;
 
+use crate::config::Config;
 use crate::config::IO_TICK_TIME;
 use crate::identifiers::UniqueNodeId;
 use crate::identifiers::UniqueServiceId;
@@ -71,8 +73,14 @@ use crate::service::__internal_details;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
+use crate::service::marker::is_flatbuffer_type_name;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
+use crate::service::resource::schema_source::ResolveTypeDefinitionError;
+use crate::service::resource::schema_source::Schema;
+use crate::service::resource::schema_source::SchemaSource;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
+use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::*;
 use crate::unique_id_generator::UniqueIdGeneratorGenerateError;
 
@@ -1033,5 +1041,44 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     .create_locked(),
                     "Failed to create static service information since the underlying static storage could not be created."),
         )
+    }
+}
+
+/// Loads the schema of a flatbuffer `payload` from `source`. Any other
+/// payload loads none.
+pub(crate) fn load_payload_schema(
+    source: &SchemaSource,
+    payload: &TypeDetail,
+    config: &Config,
+) -> Result<Option<Schema>, ResolveTypeDefinitionError> {
+    if !is_flatbuffer_type_name(payload.type_name().as_str()) {
+        return Ok(None);
+    }
+
+    let schema = fail!(from source, when source.load(config),
+        to ResolveTypeDefinitionError,
+        "Unable to load the schema of \"{}\".", payload.type_name());
+
+    Ok(Some(schema))
+}
+
+/// Replaces the payload and user header details with their overrides.
+pub(crate) fn apply_type_overrides(
+    details: &mut MessageTypeDetails,
+    payload: Option<TypeDetail>,
+    user_header: Option<TypeDetail>,
+) {
+    if let Some(payload) = payload {
+        details.payload = payload;
+    }
+    if let Some(user_header) = user_header {
+        details.user_header = user_header;
+    }
+}
+
+/// Raises the payload alignment to `alignment`.
+pub(crate) fn apply_alignment_override(payload: &mut TypeDetail, alignment: Option<usize>) {
+    if let Some(alignment) = alignment {
+        payload.alignment = payload.alignment.max(alignment);
     }
 }

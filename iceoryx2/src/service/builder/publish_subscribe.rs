@@ -14,11 +14,11 @@
 //!
 //! See [`crate::service`]
 //!
+use alloc::format;
 use core::marker::PhantomData;
 
 use crate::config::Config;
 use crate::service::resource::schema_source::{ResolveTypeDefinitionError, Schema, SchemaSource};
-use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::TypeName;
@@ -27,12 +27,11 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 use super::ServiceState;
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
+    apply_alignment_override, apply_type_overrides, load_payload_schema,
 };
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
-use crate::service::marker::{
-    CustomHeaderMarker, CustomPayloadMarker, Flatbuffer, is_flatbuffer_type_name,
-};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::port_factory::publish_subscribe;
 use crate::service::resource::publish_subscribe::{
     PublishSubscribeResourceConfig, PublishSubscribeResources,
@@ -853,20 +852,6 @@ impl<
             |attributes| self.create_impl(attributes),
         )
     }
-
-    fn adjust_payload_alignment(&mut self) {
-        if let Some(alignment) = self.override_alignment {
-            self.config_details_mut()
-                .message_type_details
-                .payload
-                .alignment = self
-                .config_details()
-                .message_type_details
-                .payload
-                .alignment
-                .max(alignment);
-        }
-    }
 }
 
 impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
@@ -912,33 +897,32 @@ impl<Payload: Debug + ?Sized + IceoryxSend + ZeroCopySend, ServiceType: service:
 impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<Payload, UserHeader, ServiceType>
 {
-    /// Records the message type details in the static config after applying
-    /// the type overrides, the flatbuffer schema and the alignment override.
-    ///
-    /// Fails when the payload is a flatbuffer and its schema cannot be loaded.
-    fn prepare_config_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        let mut message_type_details =
-            MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::FixedSize);
-        if let Some(payload) = &self.override_payload_type {
-            message_type_details.payload = *payload;
-        }
-        if let Some(user_header) = &self.override_user_header_type {
-            message_type_details.user_header = *user_header;
-        }
-        self.schema = if is_flatbuffer_type_name(message_type_details.payload.type_name().as_str())
-        {
-            let schema = fail!(from self,
-                when self.schema_source.load(self.base.shared_node.config()),
-                to ResolveTypeDefinitionError,
-                "Unable to record the message type details since the schema of the payload could not be loaded.");
-            message_type_details.payload.type_name = schema.type_name;
-            Some(schema)
-        } else {
-            None
-        };
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.publish_subscribe_mut();
+        let message_type_details = &mut static_config.message_type_details;
 
-        self.config_details_mut().message_type_details = message_type_details;
-        self.adjust_payload_alignment();
+        *message_type_details =
+            MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::FixedSize);
+        apply_type_overrides(
+            message_type_details,
+            self.override_payload_type,
+            self.override_user_header_type,
+        );
+
+        self.schema = fail!(from origin,
+            when load_payload_schema(&self.schema_source, &message_type_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the payload could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.schema {
+            message_type_details.payload.type_name = schema.type_name;
+        }
+
+        apply_alignment_override(&mut message_type_details.payload, self.override_alignment);
 
         Ok(())
     }
@@ -968,7 +952,7 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
         PublishSubscribeOpenOrCreateError,
     > {
         self.adjust_configuration_to_meaningful_values();
-        fail!(from self, when self.prepare_config_details(), to PublishSubscribeOpenOrCreateError,
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenOrCreateError,
             "Unable to open or create publish subscribe service since the message type details could not be recorded.");
         self.open_or_create_impl(verifier)
     }
@@ -992,7 +976,7 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
-        fail!(from self, when self.prepare_config_details(), to PublishSubscribeOpenError,
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenError,
             "Unable to open publish subscribe service since the message type details could not be recorded.");
         self.open_impl(verifier)
     }
@@ -1016,7 +1000,7 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
         PublishSubscribeCreateError,
     > {
         self.adjust_configuration_to_meaningful_values();
-        fail!(from self, when self.prepare_config_details(), to PublishSubscribeCreateError,
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeCreateError,
             "Unable to create publish subscribe service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
@@ -1040,33 +1024,30 @@ impl<
     ServiceType: service::Service,
 > Builder<[Payload], UserHeader, ServiceType>
 {
-    /// Records the message type details in the static config after applying
-    /// the type overrides, the flatbuffer schema and the alignment override.
-    ///
-    /// Fails when the payload is a flatbuffer and its schema cannot be loaded.
-    fn prepare_config_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
-        let mut message_type_details =
-            MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::Dynamic);
-        if let Some(payload) = &self.override_payload_type {
-            message_type_details.payload = *payload;
-        }
-        if let Some(user_header) = &self.override_user_header_type {
-            message_type_details.user_header = *user_header;
-        }
-        self.schema = if is_flatbuffer_type_name(message_type_details.payload.type_name().as_str())
-        {
-            let schema = fail!(from self,
-                when self.schema_source.load(self.base.shared_node.config()),
-                to ResolveTypeDefinitionError,
-                "Unable to record the message type details since the schema of the payload could not be loaded.");
-            message_type_details.payload.type_name = schema.type_name;
-            Some(schema)
-        } else {
-            None
-        };
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.publish_subscribe_mut();
+        let message_type_details = &mut static_config.message_type_details;
 
-        self.config_details_mut().message_type_details = message_type_details;
-        self.adjust_payload_alignment();
+        *message_type_details =
+            MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::Dynamic);
+        apply_type_overrides(
+            message_type_details,
+            self.override_payload_type,
+            self.override_user_header_type,
+        );
+        self.schema = fail!(from origin,
+            when load_payload_schema(&self.schema_source, &message_type_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the payload could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(schema) = &self.schema {
+            message_type_details.payload.type_name = schema.type_name;
+        }
+        apply_alignment_override(&mut message_type_details.payload, self.override_alignment);
         Ok(())
     }
 
@@ -1092,7 +1073,7 @@ impl<
         publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
-        fail!(from self, when self.prepare_config_details(), to PublishSubscribeOpenOrCreateError,
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenOrCreateError,
             "Unable to open or create publish subscribe service since the message type details could not be recorded.");
         self.open_or_create_impl(attributes)
     }
@@ -1116,7 +1097,7 @@ impl<
         publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenError,
     > {
-        fail!(from self, when self.prepare_config_details(), to PublishSubscribeOpenError,
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenError,
             "Unable to open publish subscribe service since the message type details could not be recorded.");
         self.open_impl(attributes)
     }
@@ -1139,7 +1120,7 @@ impl<
         publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeCreateError,
     > {
-        fail!(from self, when self.prepare_config_details(), to PublishSubscribeCreateError,
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeCreateError,
             "Unable to create publish subscribe service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
