@@ -34,6 +34,14 @@ else()
     set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Skip building flatbuffers tests")
     FetchContent_MakeAvailable(flatbuffers)
 
+    # A fetched flatbuffers is a regular target, so its headers are compiled
+    # with our warning flags. Marking them as system headers silences the warnings
+    # in the same way as if it was installed on the system.
+    get_target_property(FLATBUFFERS_INCLUDE_DIRECTORIES flatbuffers INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(flatbuffers PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${FLATBUFFERS_INCLUDE_DIRECTORIES}"
+    )
+
     find_package(flatbuffers)
 
 endif()
