@@ -27,12 +27,15 @@
 
 #include "test.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <flatbuffers/flatbuffers.h>
+#include <flatbuffers/idl.h>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <iterator>
 
 // NOLINTBEGIN
 namespace Example {
@@ -220,8 +223,15 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
   public:
     static constexpr ServiceType TYPE = T::TYPE;
 
+    // Writes the `.fbs` text `schema` as the binary schema `file_name.bfbs`
+    // into the test directory.
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) fine for tests
-    auto create_schema_file(const char* content, const char* file_name = "") -> bb::FilePath {
+    auto create_schema_file(const char* schema, const char* file_name = "") -> bb::FilePath {
+        // Compile the schema text to its binary form.
+        flatbuffers::Parser parser;
+        EXPECT_THAT(parser.Parse(schema), Eq(true));
+        parser.Serialize();
+
         auto schema_file_path = iox2::testing::test_directory_path();
         auto file_with_suffix =
             (strlen(file_name) == 0
@@ -235,10 +245,12 @@ class ServicePublishSubscribeFlatbufferTest : public ::testing::Test {
 
         auto schema_file = bb::FilePath::create(schema_file_path.as_string()).value();
 
-        std::ofstream file(schema_file.as_string().unchecked_access().c_str());
+        // The parser's builder holds the serialized schema.
+        std::ofstream file(schema_file.as_string().unchecked_access().c_str(), std::ios::binary);
         EXPECT_THAT(file.is_open(), Eq(true));
         if (file.is_open()) {
-            file << content;
+            const auto* bytes = parser.builder_.GetBufferPointer();
+            std::copy_n(bytes, parser.builder_.GetSize(), std::ostreambuf_iterator<char>(file));
         }
 
         m_schema_files.push_back(schema_file);
