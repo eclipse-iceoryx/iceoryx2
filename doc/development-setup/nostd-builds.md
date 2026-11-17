@@ -70,7 +70,7 @@ iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"]}
 iceoryx2-bb-container = { workspace = true, features = ["std"] }
-iceoryx2-bb-derive-macros = { workspace = true, features = ["std"] }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true, features = ["std"] }
 iceoryx2-bb-system-types = { workspace = true, features = ["std"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
@@ -90,7 +90,6 @@ std = [
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-elementary/std",
-  "iceoryx2-bb-derive-macros/std",
   "iceoryx2-bb-print/std",
   "iceoryx2-bb-system-types/std",
   "iceoryx2-pal-posix/std",

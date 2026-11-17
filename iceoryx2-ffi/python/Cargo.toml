@@ -11,6 +11,8 @@ rust-version = { workspace = true }
 version = { workspace = true }
 readme = { workspace = true }
 
+[lints]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "_iceoryx2"

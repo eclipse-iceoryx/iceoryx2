@@ -19,12 +19,19 @@ fn main() {
     // this is the out dir of the iceoryx2-ffi-c crate not the workspace out dir,
     // therefore we need to traverse to a known location and create the path for the header
     let out_dir = env::var("OUT_DIR").expect("Target output directory");
-
-    let mut header_path = Path::new(&out_dir)
-        .join("../../../")
+    let out_dir = Path::new(&out_dir)
         .canonicalize()
-        .expect("Path to iceoryx2 base dir for header generation");
-    header_path.push("iceoryx2-ffi-c-cbindgen/include/iox2/iceoryx2.h");
+        .expect("Valid path to out_dir");
+    let mut path_to_build_dir = out_dir.to_path_buf();
+    let build_dir_name = Some(std::ffi::OsStr::new("build"));
+    while path_to_build_dir.file_name() != build_dir_name && path_to_build_dir.pop() {}
+
+    if path_to_build_dir.file_name() != build_dir_name {
+        panic!("Could not find 'build' dir");
+    }
+    path_to_build_dir.pop();
+
+    let header_path = path_to_build_dir.join("iceoryx2-ffi-c-cbindgen/include/iox2/iceoryx2.h");
 
     let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("Cargo manifest dir");
 

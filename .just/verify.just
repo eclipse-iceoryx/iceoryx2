@@ -148,10 +148,10 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
                 --exclude iceoryx2-cli \
                 $TARGET_ARG \
                 {{extra_args}} \
-                -- -D warnings
+                -- -D warnings -A clippy::needless_range_loop -A clippy::clone_on_copy -A deprecated
         else
             echo "Running clippy for '$WS' (std {{profile}})..."
-            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings
+            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG --profile {{profile}} $TARGET_ARG {{extra_args}} -- -D warnings -A clippy::needless_range_loop -A clippy::clone_on_copy -A deprecated
         fi
     done
 

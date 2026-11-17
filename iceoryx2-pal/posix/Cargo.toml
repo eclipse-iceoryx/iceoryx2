@@ -20,8 +20,8 @@ std = [
 ]
 
 [build-dependencies]
-cc = { workspace = true }
-bindgen = { workspace = true }
+cc = { version = "1.0.98" }
+bindgen = { version = "0.72.1" }
 
 [dependencies]
 iceoryx2-pal-concurrency-sync = { workspace = true }

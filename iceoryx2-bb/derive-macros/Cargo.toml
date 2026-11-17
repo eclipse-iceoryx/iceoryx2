@@ -11,20 +11,13 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+
 [lib]
 proc-macro = true
 
-[features]
-default = []
-
-std = [
-  "iceoryx2-bb-elementary/std"
-]
-
 [dependencies]
-iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
-
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }

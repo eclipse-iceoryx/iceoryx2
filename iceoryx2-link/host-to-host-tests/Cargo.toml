@@ -10,6 +10,8 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[lints]
+
 [[bin]]
 name = "link-host-to-host-pinger"
 path = "ping-pong/src/pinger.rs"

@@ -23,6 +23,7 @@ extern crate proc_macro;
 use alloc::format;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_elementary_traits as _;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields, LitStr, parse_macro_input};
