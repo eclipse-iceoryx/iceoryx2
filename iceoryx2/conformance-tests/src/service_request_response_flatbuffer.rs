@@ -1298,6 +1298,30 @@ pub mod service_request_response_flatbuffer {
     }
 
     #[conformance_test]
+    pub fn create_fails_when_the_request_root_type_is_not_the_schemas<Sut: Service>() {
+        const REQUEST_TYPE_NAME: &str = "iox2::Flatbuffer<Testing.DataProps>";
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let type_detail =
+            TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, REQUEST_TYPE_NAME, 1, 1)
+                .unwrap();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .__internal_set_request_payload_type_details(&type_detail)
+                .__internal_set_response_payload_type_details(&flatbuffer_type_detail())
+                .__internal_request_flatbuffer_schema(schema::UNBOUNDED_DATA)
+                .__internal_response_flatbuffer_schema(schema::DATA_PROPS)
+                .create()
+        };
+
+        assert_that!(sut.err(), eq Some(RequestResponseCreateError::InvalidTypeDefinition));
+    }
+
+    #[conformance_test]
     pub fn create_with_schema_bytes_stores_them<Sut: Service + 'static>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();

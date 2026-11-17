@@ -116,7 +116,8 @@ impl From<ResolveTypeDefinitionError> for RequestResponseOpenError {
         match error {
             ResolveTypeDefinitionError::Schema(error) => ServiceOpenError::from(error).into(),
             ResolveTypeDefinitionError::NotABinarySchema
-            | ResolveTypeDefinitionError::TypeNameTooLong => Self::InvalidTypeDefinition,
+            | ResolveTypeDefinitionError::TypeNameTooLong
+            | ResolveTypeDefinitionError::RootTypeMismatch => Self::InvalidTypeDefinition,
             ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
         }
     }
@@ -281,7 +282,8 @@ impl From<ResolveTypeDefinitionError> for RequestResponseCreateError {
         match error {
             ResolveTypeDefinitionError::Schema(error) => ServiceCreateError::from(error).into(),
             ResolveTypeDefinitionError::NotABinarySchema
-            | ResolveTypeDefinitionError::TypeNameTooLong => Self::InvalidTypeDefinition,
+            | ResolveTypeDefinitionError::TypeNameTooLong
+            | ResolveTypeDefinitionError::RootTypeMismatch => Self::InvalidTypeDefinition,
             ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
         }
     }

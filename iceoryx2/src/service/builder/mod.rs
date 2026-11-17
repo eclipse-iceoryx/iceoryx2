@@ -73,7 +73,7 @@ use crate::service::__internal_details;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
-use crate::service::marker::is_flatbuffer_type_name;
+use crate::service::marker::{FLATBUFFER_TYPE_NAME, is_flatbuffer_type_name};
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::schema_source::ResolveTypeDefinitionError;
@@ -1046,6 +1046,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
 /// Loads the schema of a flatbuffer `payload` from `source`. Any other
 /// payload loads none.
+///
+/// Fails when the payload type name carries a root type the schema does not
+/// declare.
 pub(crate) fn load_payload_schema(
     source: &SchemaSource,
     payload: &TypeDetail,
@@ -1058,6 +1061,12 @@ pub(crate) fn load_payload_schema(
     let schema = fail!(from source, when source.load(config),
         to ResolveTypeDefinitionError,
         "Unable to load the schema of \"{}\".", payload.type_name());
+
+    let type_name = payload.type_name().as_str();
+    if type_name != FLATBUFFER_TYPE_NAME && type_name != schema.type_name.as_str() {
+        fail!(from source, with ResolveTypeDefinitionError::RootTypeMismatch,
+            "Unable to load the schema of \"{type_name}\" since it declares the root type of \"{}\".", schema.type_name);
+    }
 
     Ok(Some(schema))
 }

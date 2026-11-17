@@ -55,7 +55,7 @@ impl<T> IceoryxSend for Flatbuffer<T> {}
 ///
 /// A service records it with the root type of the payload's schema appended
 /// in angle brackets, e.g. `iox2::Flatbuffer<Testing.UnboundedData>`.
-const FLATBUFFER_TYPE_NAME: &str = "iox2::Flatbuffer";
+pub(crate) const FLATBUFFER_TYPE_NAME: &str = "iox2::Flatbuffer";
 
 unsafe impl<T> TypeName for Flatbuffer<T> {
     unsafe fn type_name() -> &'static str {

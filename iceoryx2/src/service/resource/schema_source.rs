@@ -76,6 +76,8 @@ pub(crate) enum ResolveTypeDefinitionError {
     NoRootType,
     /// The type name composed from the root type does not fit.
     TypeNameTooLong,
+    /// The payload type name carries another root type than the schema.
+    RootTypeMismatch,
 }
 
 impl From<SchemaPathError> for ResolveTypeDefinitionError {

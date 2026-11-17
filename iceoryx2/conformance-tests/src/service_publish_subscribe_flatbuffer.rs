@@ -808,6 +808,28 @@ pub mod service_publish_subscribe_flatbuffer {
     }
 
     #[conformance_test]
+    pub fn create_fails_when_the_payload_root_type_is_not_the_schemas<Sut: Service>() {
+        const PAYLOAD_TYPE_NAME: &str = "iox2::Flatbuffer<Testing.DataProps>";
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let type_detail =
+            TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, 1, 1)
+                .unwrap();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_detail)
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
+                .create()
+        };
+
+        assert_that!(sut.err(), eq Some(PublishSubscribeCreateError::InvalidTypeDefinition));
+    }
+
+    #[conformance_test]
     pub fn create_with_schema_bytes_stores_them<Sut: Service + 'static>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();

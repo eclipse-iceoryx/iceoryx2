@@ -109,7 +109,8 @@ impl From<ResolveTypeDefinitionError> for PublishSubscribeOpenError {
         match error {
             ResolveTypeDefinitionError::Schema(error) => ServiceOpenError::from(error).into(),
             ResolveTypeDefinitionError::NotABinarySchema
-            | ResolveTypeDefinitionError::TypeNameTooLong => Self::InvalidTypeDefinition,
+            | ResolveTypeDefinitionError::TypeNameTooLong
+            | ResolveTypeDefinitionError::RootTypeMismatch => Self::InvalidTypeDefinition,
             ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
         }
     }
@@ -272,7 +273,8 @@ impl From<ResolveTypeDefinitionError> for PublishSubscribeCreateError {
         match error {
             ResolveTypeDefinitionError::Schema(error) => ServiceCreateError::from(error).into(),
             ResolveTypeDefinitionError::NotABinarySchema
-            | ResolveTypeDefinitionError::TypeNameTooLong => Self::InvalidTypeDefinition,
+            | ResolveTypeDefinitionError::TypeNameTooLong
+            | ResolveTypeDefinitionError::RootTypeMismatch => Self::InvalidTypeDefinition,
             ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
         }
     }
