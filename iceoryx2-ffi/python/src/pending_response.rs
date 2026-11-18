@@ -77,6 +77,16 @@ impl PendingResponse {
         self.response_header_type_details.clone().value
     }
 
+    #[getter]
+    pub fn __slice_len(&self) -> usize {
+        match &*self.value.lock() {
+            PendingResponseType::Ipc(Some(v)) => v.payload().len(),
+            PendingResponseType::Local(Some(v)) => v.payload().len(),
+            _ => fatal_panic!(from "PendingResponse::__slice_len()",
+                "Accessing a released request."),
+        }
+    }
+
     /// Returns `True` until the `ActiveRequest` goes out of scope on the `Server`'s side
     /// indicating that the `Server` will no longer send a `Response`.
     /// It also returns `False` when there are no `Server`.

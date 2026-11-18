@@ -81,7 +81,7 @@ impl ActiveRequest {
         match &*self.value.lock() {
             ActiveRequestType::Ipc(Some(v)) => v.payload().len(),
             ActiveRequestType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "RequestMutUninit::__slice_len()",
+            _ => fatal_panic!(from "ActiveRequest::__slice_len()",
                 "Accessing a released request."),
         }
     }
