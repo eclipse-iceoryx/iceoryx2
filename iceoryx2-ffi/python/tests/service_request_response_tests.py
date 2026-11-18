@@ -367,6 +367,51 @@ def test_client_reallocation_fails_when_allocation_strategy_is_static(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_slice_payload_can_be_accessed(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = (
+        service.client_builder()
+        .initial_max_slice_len(1)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
+
+    server = (
+        service.server_builder()
+        .initial_max_slice_len(1)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
+
+    request = client.loan_slice_uninit(1)
+    request.payload()[0] = 123
+
+    pending_response = request.assume_init().send()
+    assert pending_response.payload()[0] == 123
+
+    active_request = server.receive()
+    assert active_request.payload()[0] == 123
+
+    response = active_request.loan_slice_uninit(1)
+    response.payload()[0] = 45
+    response.assume_init().send()
+
+    response = pending_response.receive()
+    assert response.payload()[0] == 45
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_client_reallocation_works_when_allocation_strategy_is_not_static(
     service_type: iox2.ServiceType,
 ) -> None:
