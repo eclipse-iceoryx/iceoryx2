@@ -26,8 +26,7 @@ use crate::identifiers::UniqueServiceId;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
-    StaticServiceResources, apply_alignment_override, apply_type_overrides,
-    load_flatbuffer_type_definition,
+    StaticServiceResources, apply_alignment_override, load_flatbuffer_type_definition,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -1030,16 +1029,10 @@ impl<
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::FixedSize);
-        apply_type_overrides(
-            request_details,
-            self.override_request_payload_type,
-            self.override_request_header_type,
-        );
-        apply_type_overrides(
-            response_details,
-            self.override_response_payload_type,
-            self.override_response_header_type,
-        );
+        request_details.override_payload_type(self.override_request_payload_type);
+        request_details.override_user_header_type(self.override_request_header_type);
+        response_details.override_payload_type(self.override_response_payload_type);
+        response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
             when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
@@ -1214,16 +1207,10 @@ impl<
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::FixedSize);
-        apply_type_overrides(
-            request_details,
-            self.override_request_payload_type,
-            self.override_request_header_type,
-        );
-        apply_type_overrides(
-            response_details,
-            self.override_response_payload_type,
-            self.override_response_header_type,
-        );
+        request_details.override_payload_type(self.override_request_payload_type);
+        request_details.override_user_header_type(self.override_request_header_type);
+        response_details.override_payload_type(self.override_response_payload_type);
+        response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
             when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
@@ -1397,16 +1384,10 @@ impl<
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::Dynamic);
-        apply_type_overrides(
-            request_details,
-            self.override_request_payload_type,
-            self.override_request_header_type,
-        );
-        apply_type_overrides(
-            response_details,
-            self.override_response_payload_type,
-            self.override_response_header_type,
-        );
+        request_details.override_payload_type(self.override_request_payload_type);
+        request_details.override_user_header_type(self.override_request_header_type);
+        response_details.override_payload_type(self.override_response_payload_type);
+        response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
             when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
@@ -1586,16 +1567,10 @@ impl<
             ResponseHeader,
             ResponsePayload,
         >(TypeVariant::Dynamic);
-        apply_type_overrides(
-            request_details,
-            self.override_request_payload_type,
-            self.override_request_header_type,
-        );
-        apply_type_overrides(
-            response_details,
-            self.override_response_payload_type,
-            self.override_response_header_type,
-        );
+        request_details.override_payload_type(self.override_request_payload_type);
+        request_details.override_user_header_type(self.override_request_header_type);
+        response_details.override_payload_type(self.override_response_payload_type);
+        response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
             when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),

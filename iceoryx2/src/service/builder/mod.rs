@@ -79,7 +79,6 @@ use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::flatbuffer_schema_source::FlatbufferSchemaSource;
 use crate::service::resource::flatbuffer_schema_source::ResolveTypeDefinitionError;
 use crate::service::resource::type_definition::TypeDefinition;
-use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::*;
 use crate::unique_id_generator::UniqueIdGeneratorGenerateError;
@@ -1069,20 +1068,6 @@ pub(crate) fn load_flatbuffer_type_definition(
     }
 
     Ok(Some(type_definition))
-}
-
-/// Replaces the payload and user header details with their overrides.
-pub(crate) fn apply_type_overrides(
-    details: &mut MessageTypeDetails,
-    payload: Option<TypeDetail>,
-    user_header: Option<TypeDetail>,
-) {
-    if let Some(payload) = payload {
-        details.payload = payload;
-    }
-    if let Some(user_header) = user_header {
-        details.user_header = user_header;
-    }
 }
 
 /// Raises the payload alignment to `alignment`.

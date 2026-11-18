@@ -211,6 +211,18 @@ impl MessageTypeDetails {
         }
     }
 
+    pub(crate) fn override_payload_type(&mut self, payload: Option<TypeDetail>) {
+        if let Some(payload) = payload {
+            self.payload = payload;
+        }
+    }
+
+    pub(crate) fn override_user_header_type(&mut self, user_header: Option<TypeDetail>) {
+        if let Some(user_header) = user_header {
+            self.user_header = user_header;
+        }
+    }
+
     pub(crate) fn is_compatible_to(&self, rhs: &Self) -> bool {
         self.header == rhs.header
             && self.user_header.type_name == rhs.user_header.type_name

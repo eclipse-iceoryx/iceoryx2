@@ -30,7 +30,7 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 use super::ServiceState;
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
-    apply_alignment_override, apply_type_overrides, load_flatbuffer_type_definition,
+    apply_alignment_override, load_flatbuffer_type_definition,
 };
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
@@ -910,11 +910,8 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
 
         *message_type_details =
             MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::FixedSize);
-        apply_type_overrides(
-            message_type_details,
-            self.override_payload_type,
-            self.override_user_header_type,
-        );
+        message_type_details.override_payload_type(self.override_payload_type);
+        message_type_details.override_user_header_type(self.override_user_header_type);
 
         self.type_definition = fail!(from origin,
             when load_flatbuffer_type_definition(&self.flatbuffer_schema_source, &message_type_details.payload, node_config),
@@ -1037,11 +1034,8 @@ impl<
 
         *message_type_details =
             MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::Dynamic);
-        apply_type_overrides(
-            message_type_details,
-            self.override_payload_type,
-            self.override_user_header_type,
-        );
+        message_type_details.override_payload_type(self.override_payload_type);
+        message_type_details.override_user_header_type(self.override_user_header_type);
         self.type_definition = fail!(from origin,
             when load_flatbuffer_type_definition(&self.flatbuffer_schema_source, &message_type_details.payload, node_config),
             to ResolveTypeDefinitionError,
