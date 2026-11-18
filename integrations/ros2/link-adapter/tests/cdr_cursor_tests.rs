@@ -14,9 +14,8 @@ use core::ops::{Deref, DerefMut};
 
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_integrations_ros2_link_adapter::cdr::{
-    Endianness, ReadError, Reader, WriteError, Writer,
-};
+use iceoryx2_integrations_ros2_link_adapter::cdr::reader::{self, Endianness, Reader};
+use iceoryx2_integrations_ros2_link_adapter::cdr::writer::{self, Writer};
 use iceoryx2_link_backend::wire::region::{ForwardRegion, Region, ResizeError};
 use ros_env::builtin_interfaces::msg::rmw::{Duration, Time};
 use ros_env::geometry_msgs::msg::rmw::{Point, Pose, PoseStamped, PoseWithCovariance, Quaternion};
@@ -656,7 +655,7 @@ fn writer_refuses_a_region_that_cannot_grow() {
     let mut writer = Writer::new(buffer).expect("starts");
 
     assert_that!(writer.write_u32(1), is_ok);
-    assert_that!(writer.write_u8(1), eq Err(WriteError::Region(ResizeError::Exhausted)));
+    assert_that!(writer.write_u8(1), eq Err(writer::ScalarError::Region(ResizeError::Exhausted)));
 }
 
 #[test]
@@ -855,7 +854,7 @@ fn reader_refuses_other_encapsulations() {
 
     for header in [PL_CDR_LE, CDR2_LE] {
         let reader = Reader::new(&header);
-        assert_that!(reader.err(), eq Some(ReadError::UnsupportedEncapsulation));
+        assert_that!(reader.err(), eq Some(reader::CreateError::UnsupportedEncapsulation));
     }
 }
 
@@ -863,7 +862,7 @@ fn reader_refuses_other_encapsulations() {
 fn reader_refuses_a_truncated_header() {
     let reader = Reader::new(&ENCAPSULATION_LE[..3]);
 
-    assert_that!(reader.err(), eq Some(ReadError::Truncated));
+    assert_that!(reader.err(), eq Some(reader::CreateError::Truncated));
 }
 
 #[test]
@@ -872,7 +871,7 @@ fn reader_refuses_a_truncated_value() {
     message_bytes.extend_from_slice(&[1, 2]);
     let mut reader = Reader::new(&message_bytes).expect("starts");
 
-    assert_that!(reader.read_u32(), eq Err(ReadError::Truncated));
+    assert_that!(reader.read_u32(), eq Err(reader::ScalarError::Truncated));
 }
 
 #[test]
@@ -883,7 +882,7 @@ fn reader_refuses_a_truncated_sequence() {
     message_bytes.extend_from_slice(&FLOAT64.to_le_bytes());
     let mut reader = Reader::new(&message_bytes).expect("starts");
 
-    assert_that!(reader.read_sequence(size_of::<f64>()), eq Err(ReadError::Truncated));
+    assert_that!(reader.read_sequence(size_of::<f64>()), eq Err(reader::ScalarError::Truncated));
 }
 
 #[test]
@@ -894,7 +893,7 @@ fn reader_refuses_a_string_without_nul() {
     message_bytes.extend_from_slice(STRING.as_bytes());
     let mut reader = Reader::new(&message_bytes).expect("starts");
 
-    assert_that!(reader.read_string(), eq Err(ReadError::InvalidString));
+    assert_that!(reader.read_string(), eq Err(reader::StringError::InvalidString));
 }
 
 #[test]
@@ -903,5 +902,5 @@ fn reader_refuses_an_invalid_bool() {
     message_bytes.push(2);
     let mut reader = Reader::new(&message_bytes).expect("starts");
 
-    assert_that!(reader.read_bool(), eq Err(ReadError::InvalidBool));
+    assert_that!(reader.read_bool(), eq Err(reader::BoolError::InvalidBool));
 }

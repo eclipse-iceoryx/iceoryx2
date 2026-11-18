@@ -90,11 +90,11 @@
 //!
 //! [`ForwardRegion`]: iceoryx2_link_backend::wire::region::ForwardRegion
 
-mod reader;
-mod writer;
+pub mod reader;
+pub mod writer;
 
-pub use reader::{Endianness, ReadError, Reader};
-pub use writer::{WriteError, Writer};
+pub use reader::Reader;
+pub use writer::Writer;
 
 use core::ops::Range;
 

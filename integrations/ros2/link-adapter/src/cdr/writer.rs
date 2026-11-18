@@ -16,24 +16,132 @@ use iceoryx2_log::{fail, origin};
 use super::{CDR_NE, ENCAPSULATION_LEN, IDENTIFIER_BYTES, OPTIONS_BYTES};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WriteError {
-    /// The region cannot hold the bytes.
+pub enum CreateError {
+    /// The region cannot hold the header.
     Region(ResizeError),
-    /// A length exceeds what a length prefix holds.
-    LengthTooLong,
 }
 
-impl core::fmt::Display for WriteError {
+impl core::fmt::Display for CreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "WriteError::{self:?}")
+        write!(f, "CreateError::{self:?}")
     }
 }
 
-impl core::error::Error for WriteError {}
+impl core::error::Error for CreateError {}
 
-impl From<ResizeError> for WriteError {
+impl From<ResizeError> for CreateError {
     fn from(error: ResizeError) -> Self {
         Self::Region(error)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScalarError {
+    /// The region cannot hold the bytes.
+    Region(ResizeError),
+}
+
+impl core::fmt::Display for ScalarError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ScalarError::{self:?}")
+    }
+}
+
+impl core::error::Error for ScalarError {}
+
+impl From<ResizeError> for ScalarError {
+    fn from(error: ResizeError) -> Self {
+        Self::Region(error)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LengthError {
+    /// The region cannot hold the bytes.
+    Region(ResizeError),
+    /// The length exceeds what a length prefix holds.
+    TooLong,
+}
+
+impl core::fmt::Display for LengthError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "LengthError::{self:?}")
+    }
+}
+
+impl core::error::Error for LengthError {}
+
+impl From<ScalarError> for LengthError {
+    fn from(error: ScalarError) -> Self {
+        match error {
+            ScalarError::Region(error) => Self::Region(error),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SequenceError {
+    /// The region cannot hold the bytes.
+    Region(ResizeError),
+    /// The sequence has more elements than a length prefix holds.
+    TooLong,
+}
+
+impl core::fmt::Display for SequenceError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SequenceError::{self:?}")
+    }
+}
+
+impl core::error::Error for SequenceError {}
+
+impl From<ScalarError> for SequenceError {
+    fn from(error: ScalarError) -> Self {
+        match error {
+            ScalarError::Region(error) => Self::Region(error),
+        }
+    }
+}
+
+impl From<LengthError> for SequenceError {
+    fn from(error: LengthError) -> Self {
+        match error {
+            LengthError::Region(error) => Self::Region(error),
+            LengthError::TooLong => Self::TooLong,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StringError {
+    /// The region cannot hold the bytes.
+    Region(ResizeError),
+    /// The string has more bytes than a length prefix holds.
+    TooLong,
+}
+
+impl core::fmt::Display for StringError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StringError::{self:?}")
+    }
+}
+
+impl core::error::Error for StringError {}
+
+impl From<ScalarError> for StringError {
+    fn from(error: ScalarError) -> Self {
+        match error {
+            ScalarError::Region(error) => Self::Region(error),
+        }
+    }
+}
+
+impl From<LengthError> for StringError {
+    fn from(error: LengthError) -> Self {
+        match error {
+            LengthError::Region(error) => Self::Region(error),
+            LengthError::TooLong => Self::TooLong,
+        }
     }
 }
 
@@ -51,13 +159,13 @@ impl<R: ForwardRegion> Writer<R> {
     /// byte order written.
     ///
     /// Fails when the region cannot hold the header.
-    pub fn new(mut region: R) -> Result<Self, WriteError> {
+    pub fn new(mut region: R) -> Result<Self, CreateError> {
         let origin = origin!("cdr::Writer::new");
 
         fail!(
             from origin,
             when region.resize(ENCAPSULATION_LEN),
-            to WriteError,
+            to CreateError,
             "The region rejected the {} bytes of the encapsulation header", ENCAPSULATION_LEN
         );
         write_encapsulation_header(&mut region[..ENCAPSULATION_LEN]);
@@ -73,86 +181,95 @@ impl<R: ForwardRegion> Writer<R> {
         self.cursor
     }
 
-    pub fn write_bool(&mut self, value: bool) -> Result<(), WriteError> {
+    pub fn write_bool(&mut self, value: bool) -> Result<(), ScalarError> {
         self.write_scalar([value as u8])
     }
 
-    pub fn write_u8(&mut self, value: u8) -> Result<(), WriteError> {
+    pub fn write_u8(&mut self, value: u8) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_i8(&mut self, value: i8) -> Result<(), WriteError> {
+    pub fn write_i8(&mut self, value: i8) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_u16(&mut self, value: u16) -> Result<(), WriteError> {
+    pub fn write_u16(&mut self, value: u16) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_i16(&mut self, value: i16) -> Result<(), WriteError> {
+    pub fn write_i16(&mut self, value: i16) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_u32(&mut self, value: u32) -> Result<(), WriteError> {
+    pub fn write_u32(&mut self, value: u32) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_i32(&mut self, value: i32) -> Result<(), WriteError> {
+    pub fn write_i32(&mut self, value: i32) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_u64(&mut self, value: u64) -> Result<(), WriteError> {
+    pub fn write_u64(&mut self, value: u64) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_i64(&mut self, value: i64) -> Result<(), WriteError> {
+    pub fn write_i64(&mut self, value: i64) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_f32(&mut self, value: f32) -> Result<(), WriteError> {
+    pub fn write_f32(&mut self, value: f32) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
-    pub fn write_f64(&mut self, value: f64) -> Result<(), WriteError> {
+    pub fn write_f64(&mut self, value: f64) -> Result<(), ScalarError> {
         self.write_scalar(value.to_ne_bytes())
     }
 
     /// Writes the length prefix of a sequence.
     ///
     /// Fails when `number_of_elements` exceeds what the prefix holds.
-    pub fn write_length(&mut self, number_of_elements: usize) -> Result<(), WriteError> {
+    pub fn write_length(&mut self, number_of_elements: usize) -> Result<(), LengthError> {
         let origin = origin!("cdr::Writer::write_length");
 
         let number_of_elements = fail!(
             from origin,
             when u32::try_from(number_of_elements),
-            with WriteError::LengthTooLong,
+            with LengthError::TooLong,
             "A length of {} exceeds the length prefix", number_of_elements
         );
-        self.write_u32(number_of_elements)
+        fail!(
+            from origin,
+            when self.write_u32(number_of_elements),
+            to LengthError,
+            "Unable to write the length prefix"
+        );
+
+        Ok(())
     }
 
     /// Writes a string as its length prefix, `bytes` and a NUL.
     ///
     /// Fails when the string exceeds what the prefix holds.
-    pub fn write_string(&mut self, bytes: &[u8]) -> Result<(), WriteError> {
+    pub fn write_string(&mut self, bytes: &[u8]) -> Result<(), StringError> {
         let origin = origin!("cdr::Writer::write_string");
 
         let Some(number_of_bytes) = bytes.len().checked_add(1) else {
             fail!(
                 from origin,
-                with WriteError::LengthTooLong,
+                with StringError::TooLong,
                 "A string of {} bytes exceeds the length prefix", bytes.len()
             );
         };
         fail!(
             from origin,
             when self.write_length(number_of_bytes),
+            to StringError,
             "Unable to write the length of a string"
         );
         let start = fail!(
             from origin,
             when self.extend(number_of_bytes),
+            to StringError,
             "Unable to extend the region by the {} bytes of a string", number_of_bytes
         );
         self.region[start..start + bytes.len()].copy_from_slice(bytes);
@@ -165,7 +282,7 @@ impl<R: ForwardRegion> Writer<R> {
     /// prefix and `elements` in the host's byte order, aligned to `size`.
     ///
     /// Fails when the sequence exceeds what the prefix holds.
-    pub fn write_sequence(&mut self, elements: &[u8], size: usize) -> Result<(), WriteError> {
+    pub fn write_sequence(&mut self, elements: &[u8], size: usize) -> Result<(), SequenceError> {
         let origin = origin!("cdr::Writer::write_sequence");
 
         debug_assert!(
@@ -175,9 +292,17 @@ impl<R: ForwardRegion> Writer<R> {
         fail!(
             from origin,
             when self.write_length(elements.len() / size),
+            to SequenceError,
             "Unable to write the length of a sequence"
         );
-        self.write_array(elements, size)
+        fail!(
+            from origin,
+            when self.write_array(elements, size),
+            to SequenceError,
+            "Unable to write the elements of a sequence"
+        );
+
+        Ok(())
     }
 
     /// Writes the `elements` of an array of primitives of `size` bytes each
@@ -185,7 +310,7 @@ impl<R: ForwardRegion> Writer<R> {
     /// prefix.
     ///
     /// Fails when the region cannot hold the elements.
-    pub fn write_array(&mut self, elements: &[u8], size: usize) -> Result<(), WriteError> {
+    pub fn write_array(&mut self, elements: &[u8], size: usize) -> Result<(), ScalarError> {
         let origin = origin!("cdr::Writer::write_array");
 
         debug_assert!(
@@ -211,7 +336,7 @@ impl<R: ForwardRegion> Writer<R> {
     }
 
     /// Writes a primitive aligned to its size.
-    fn write_scalar<const N: usize>(&mut self, bytes: [u8; N]) -> Result<(), WriteError> {
+    fn write_scalar<const N: usize>(&mut self, bytes: [u8; N]) -> Result<(), ScalarError> {
         let origin = origin!("cdr::Writer::write_scalar");
 
         fail!(
@@ -230,7 +355,7 @@ impl<R: ForwardRegion> Writer<R> {
     }
 
     /// Pads with zeros up to a multiple of `alignment` after the header.
-    fn align(&mut self, alignment: usize) -> Result<(), WriteError> {
+    fn align(&mut self, alignment: usize) -> Result<(), ScalarError> {
         let origin = origin!("cdr::Writer::align");
 
         let written = self.cursor - ENCAPSULATION_LEN;
@@ -249,7 +374,7 @@ impl<R: ForwardRegion> Writer<R> {
     }
 
     /// Extends the region by `n` bytes, returning the offset they start at.
-    fn extend(&mut self, n: usize) -> Result<usize, WriteError> {
+    fn extend(&mut self, n: usize) -> Result<usize, ScalarError> {
         let origin = origin!("cdr::Writer::extend");
 
         let start = self.cursor;
@@ -257,7 +382,7 @@ impl<R: ForwardRegion> Writer<R> {
         fail!(
             from origin,
             when self.region.resize(number_of_bytes),
-            to WriteError,
+            to ScalarError,
             "The region rejected growing to {} bytes", number_of_bytes
         );
         self.cursor = number_of_bytes;

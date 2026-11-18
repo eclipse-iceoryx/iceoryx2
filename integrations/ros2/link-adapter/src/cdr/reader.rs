@@ -22,24 +22,82 @@ pub enum Endianness {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ReadError {
-    /// The bytes end before the value does.
+pub enum CreateError {
+    /// The bytes end before the header does.
     Truncated,
     /// The header names an encapsulation other than plain CDR.
     UnsupportedEncapsulation,
-    /// A string has no length or no terminating NUL.
-    InvalidString,
+}
+
+impl core::fmt::Display for CreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for CreateError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScalarError {
+    /// The bytes end before the value does.
+    Truncated,
+}
+
+impl core::fmt::Display for ScalarError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ScalarError::{self:?}")
+    }
+}
+
+impl core::error::Error for ScalarError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoolError {
+    /// The bytes end before the bool does.
+    Truncated,
     /// A bool is neither 0 nor 1.
     InvalidBool,
 }
 
-impl core::fmt::Display for ReadError {
+impl core::fmt::Display for BoolError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ReadError::{self:?}")
+        write!(f, "BoolError::{self:?}")
     }
 }
 
-impl core::error::Error for ReadError {}
+impl core::error::Error for BoolError {}
+
+impl From<ScalarError> for BoolError {
+    fn from(error: ScalarError) -> Self {
+        match error {
+            ScalarError::Truncated => Self::Truncated,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StringError {
+    /// The bytes end before the string does.
+    Truncated,
+    /// A string has no terminating NUL.
+    InvalidString,
+}
+
+impl core::fmt::Display for StringError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StringError::{self:?}")
+    }
+}
+
+impl core::error::Error for StringError {}
+
+impl From<ScalarError> for StringError {
+    fn from(error: ScalarError) -> Self {
+        match error {
+            ScalarError::Truncated => Self::Truncated,
+        }
+    }
+}
 
 /// An XCDR1 reader over the bytes of a message.
 #[derive(Debug)]
@@ -57,13 +115,13 @@ impl<'a> Reader<'a> {
     ///
     /// Fails when the bytes hold no header or the header names an
     /// encapsulation other than plain CDR.
-    pub fn new(bytes: &'a [u8]) -> Result<Self, ReadError> {
+    pub fn new(bytes: &'a [u8]) -> Result<Self, CreateError> {
         let origin = origin!("cdr::Reader::new");
 
         let Some(header) = bytes.get(..ENCAPSULATION_LEN) else {
             fail!(
                 from origin,
-                with ReadError::Truncated,
+                with CreateError::Truncated,
                 "The {} bytes do not hold the encapsulation header", bytes.len()
             );
         };
@@ -73,7 +131,7 @@ impl<'a> Reader<'a> {
             other => {
                 fail!(
                     from origin,
-                    with ReadError::UnsupportedEncapsulation,
+                    with CreateError::UnsupportedEncapsulation,
                     "The representation identifier {:#04x}{:02x} is not plain CDR", other[0], other[1]
                 );
             }
@@ -95,12 +153,13 @@ impl<'a> Reader<'a> {
         self.cursor == self.bytes.len()
     }
 
-    pub fn read_bool(&mut self) -> Result<bool, ReadError> {
+    pub fn read_bool(&mut self) -> Result<bool, BoolError> {
         let origin = origin!("cdr::Reader::read_bool");
 
         let byte = fail!(
             from origin,
             when self.read_u8(),
+            to BoolError,
             "Unable to read the byte of a bool"
         );
         match byte {
@@ -109,14 +168,14 @@ impl<'a> Reader<'a> {
             other => {
                 fail!(
                     from origin,
-                    with ReadError::InvalidBool,
+                    with BoolError::InvalidBool,
                     "The byte {} is not a bool", other
                 );
             }
         }
     }
 
-    pub fn read_u8(&mut self) -> Result<u8, ReadError> {
+    pub fn read_u8(&mut self) -> Result<u8, ScalarError> {
         let origin = origin!("cdr::Reader::read_u8");
 
         let bytes = fail!(
@@ -130,7 +189,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_i8(&mut self) -> Result<i8, ReadError> {
+    pub fn read_i8(&mut self) -> Result<i8, ScalarError> {
         let origin = origin!("cdr::Reader::read_i8");
 
         let bytes = fail!(
@@ -144,7 +203,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_u16(&mut self) -> Result<u16, ReadError> {
+    pub fn read_u16(&mut self) -> Result<u16, ScalarError> {
         let origin = origin!("cdr::Reader::read_u16");
 
         let bytes = fail!(
@@ -158,7 +217,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_i16(&mut self) -> Result<i16, ReadError> {
+    pub fn read_i16(&mut self) -> Result<i16, ScalarError> {
         let origin = origin!("cdr::Reader::read_i16");
 
         let bytes = fail!(
@@ -172,7 +231,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_u32(&mut self) -> Result<u32, ReadError> {
+    pub fn read_u32(&mut self) -> Result<u32, ScalarError> {
         let origin = origin!("cdr::Reader::read_u32");
 
         let bytes = fail!(
@@ -186,7 +245,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_i32(&mut self) -> Result<i32, ReadError> {
+    pub fn read_i32(&mut self) -> Result<i32, ScalarError> {
         let origin = origin!("cdr::Reader::read_i32");
 
         let bytes = fail!(
@@ -200,7 +259,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_u64(&mut self) -> Result<u64, ReadError> {
+    pub fn read_u64(&mut self) -> Result<u64, ScalarError> {
         let origin = origin!("cdr::Reader::read_u64");
 
         let bytes = fail!(
@@ -214,7 +273,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_i64(&mut self) -> Result<i64, ReadError> {
+    pub fn read_i64(&mut self) -> Result<i64, ScalarError> {
         let origin = origin!("cdr::Reader::read_i64");
 
         let bytes = fail!(
@@ -228,7 +287,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_f32(&mut self) -> Result<f32, ReadError> {
+    pub fn read_f32(&mut self) -> Result<f32, ScalarError> {
         let origin = origin!("cdr::Reader::read_f32");
 
         let bytes = fail!(
@@ -242,7 +301,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_f64(&mut self) -> Result<f64, ReadError> {
+    pub fn read_f64(&mut self) -> Result<f64, ScalarError> {
         let origin = origin!("cdr::Reader::read_f64");
 
         let bytes = fail!(
@@ -257,7 +316,7 @@ impl<'a> Reader<'a> {
     }
 
     /// Reads the length prefix of a sequence.
-    pub fn read_length(&mut self) -> Result<usize, ReadError> {
+    pub fn read_length(&mut self) -> Result<usize, ScalarError> {
         let origin = origin!("cdr::Reader::read_length");
 
         let number_of_elements = fail!(
@@ -272,23 +331,25 @@ impl<'a> Reader<'a> {
     /// Reads a string, returning its bytes without the terminating NUL.
     ///
     /// Fails when the string has no length or no NUL.
-    pub fn read_string(&mut self) -> Result<&'a [u8], ReadError> {
+    pub fn read_string(&mut self) -> Result<&'a [u8], StringError> {
         let origin = origin!("cdr::Reader::read_string");
 
         let number_of_bytes = fail!(
             from origin,
             when self.read_length(),
+            to StringError,
             "Unable to read the length of a string"
         );
         let bytes = fail!(
             from origin,
             when self.read_bytes(number_of_bytes),
+            to StringError,
             "Unable to read the {} bytes of a string", number_of_bytes
         );
         let Some((0, string)) = bytes.split_last() else {
             fail!(
                 from origin,
-                with ReadError::InvalidString,
+                with StringError::InvalidString,
                 "A string of {} bytes is not NUL terminated", number_of_bytes
             );
         };
@@ -299,7 +360,7 @@ impl<'a> Reader<'a> {
     /// elements as they lie in the message, in the message's byte order.
     ///
     /// Fails when the message ends before the sequence does.
-    pub fn read_sequence(&mut self, size: usize) -> Result<&'a [u8], ReadError> {
+    pub fn read_sequence(&mut self, size: usize) -> Result<&'a [u8], ScalarError> {
         let origin = origin!("cdr::Reader::read_sequence");
 
         let number_of_elements = fail!(
@@ -319,7 +380,7 @@ impl<'a> Reader<'a> {
         &mut self,
         number_of_elements: usize,
         size: usize,
-    ) -> Result<&'a [u8], ReadError> {
+    ) -> Result<&'a [u8], ScalarError> {
         let origin = origin!("cdr::Reader::read_array");
 
         if number_of_elements == 0 {
@@ -333,7 +394,7 @@ impl<'a> Reader<'a> {
         let Some(number_of_bytes) = number_of_elements.checked_mul(size) else {
             fail!(
                 from origin,
-                with ReadError::Truncated,
+                with ScalarError::Truncated,
                 "The message cannot hold {} elements of {} bytes", number_of_elements, size
             );
         };
@@ -341,7 +402,7 @@ impl<'a> Reader<'a> {
     }
 
     /// Reads a primitive aligned to its size.
-    fn read_scalar<const N: usize>(&mut self) -> Result<[u8; N], ReadError> {
+    fn read_scalar<const N: usize>(&mut self) -> Result<[u8; N], ScalarError> {
         let origin = origin!("cdr::Reader::read_scalar");
 
         fail!(
@@ -359,7 +420,7 @@ impl<'a> Reader<'a> {
     }
 
     /// Skips the padding up to a multiple of `alignment` after the header.
-    fn align(&mut self, alignment: usize) -> Result<(), ReadError> {
+    fn align(&mut self, alignment: usize) -> Result<(), ScalarError> {
         let read = self.cursor - ENCAPSULATION_LEN;
         let padding = read.next_multiple_of(alignment) - read;
         self.advance(padding)
@@ -368,7 +429,7 @@ impl<'a> Reader<'a> {
     /// The next `number_of_bytes` of the message.
     ///
     /// Fails when fewer remain.
-    fn read_bytes(&mut self, number_of_bytes: usize) -> Result<&'a [u8], ReadError> {
+    fn read_bytes(&mut self, number_of_bytes: usize) -> Result<&'a [u8], ScalarError> {
         let origin = origin!("cdr::Reader::read_bytes");
 
         let start = self.cursor;
@@ -384,7 +445,7 @@ impl<'a> Reader<'a> {
     /// Moves the cursor over the next `number_of_bytes` of the message.
     ///
     /// Fails when fewer remain.
-    fn advance(&mut self, number_of_bytes: usize) -> Result<(), ReadError> {
+    fn advance(&mut self, number_of_bytes: usize) -> Result<(), ScalarError> {
         let origin = origin!("cdr::Reader::advance");
 
         let Some(end) = self
@@ -394,7 +455,7 @@ impl<'a> Reader<'a> {
         else {
             fail!(
                 from origin,
-                with ReadError::Truncated,
+                with ScalarError::Truncated,
                 "The message ends {} bytes before the value does",
                 number_of_bytes.saturating_sub(self.bytes.len() - self.cursor)
             );
