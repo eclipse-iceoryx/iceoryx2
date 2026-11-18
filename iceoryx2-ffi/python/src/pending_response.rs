@@ -83,7 +83,7 @@ impl PendingResponse {
             PendingResponseType::Ipc(Some(v)) => v.payload().len(),
             PendingResponseType::Local(Some(v)) => v.payload().len(),
             _ => fatal_panic!(from "PendingResponse::__slice_len()",
-                "Accessing a released request."),
+                "Accessing a released pending response."),
         }
     }
 
