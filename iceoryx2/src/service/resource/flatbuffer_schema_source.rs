@@ -12,14 +12,17 @@
 
 extern crate alloc;
 
+use crate::config::Config;
 use crate::service::{
     builder::{ServiceCreateError, ServiceOpenError},
-    marker::flatbuffer_type_name,
+    marker::{FLATBUFFER_TYPE_NAME, flatbuffer_type_name, is_flatbuffer_type_name},
     resource::type_definition::TypeDefinition,
+    static_config::message_type_details::TypeDetail,
 };
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_flatbuffers::{
     FindSchemaFileError, SchemaError, TypeName, find_best_fitting_binary_schema_file,
     is_binary_flatbuffer_schema, root_type_name,
@@ -100,14 +103,37 @@ pub enum FlatbufferSchemaSource {
 }
 
 impl FlatbufferSchemaSource {
-    /// Loads the schema into the type definition a service records.
+    /// Creates the type definition of a flatbuffer `payload` from the
+    /// schema. Returns None if `payload` is not a flatbuffer payload.
     ///
-    /// Fails when the schema cannot be read, is not a binary flatbuffer
-    /// schema, declares no `root_type` or names one the type name cannot
-    /// hold.
-    pub(crate) fn load(
+    /// Fails when the schema cannot be loaded or the payload type name
+    /// carries a root type the schema does not declare.
+    pub(crate) fn try_create_type_definition(
         &self,
-        config: &crate::config::Config,
+        payload: &TypeDetail,
+        config: &Config,
+    ) -> Result<Option<TypeDefinition>, ResolveTypeDefinitionError> {
+        if !is_flatbuffer_type_name(payload.type_name().as_str()) {
+            return Ok(None);
+        }
+
+        let type_definition = fail!(from self, when self.create_type_definition(config),
+            to ResolveTypeDefinitionError,
+            "Unable to load the schema of \"{}\".", payload.type_name());
+
+        let type_name = payload.type_name().as_str();
+        if type_name != FLATBUFFER_TYPE_NAME && type_name != type_definition.type_name.as_str() {
+            fail!(from self, with ResolveTypeDefinitionError::RootTypeMismatch,
+                "Unable to load the schema of \"{type_name}\" since it declares the root type of \"{}\".", type_definition.type_name);
+        }
+
+        Ok(Some(type_definition))
+    }
+
+    /// Create a type definition from the schema found at the provided source.
+    fn create_type_definition(
+        &self,
+        config: &Config,
     ) -> Result<TypeDefinition, ResolveTypeDefinitionError> {
         let msg = "Unable to load type definition";
         let lookup_path = config.global.service.flatbuffer_schema_path.as_ref();

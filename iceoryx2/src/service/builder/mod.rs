@@ -34,7 +34,6 @@ use core::mem::MaybeUninit;
 use alloc::string::String;
 use alloc::vec;
 
-use iceoryx2_bb_container::string::String as _;
 use iceoryx2_bb_container::vector::StaticVec;
 use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_elementary::enum_gen;
@@ -60,7 +59,6 @@ use iceoryx2_log::debug;
 use iceoryx2_log::fail;
 use iceoryx2_log::warn;
 
-use crate::config::Config;
 use crate::config::IO_TICK_TIME;
 use crate::identifiers::UniqueNodeId;
 use crate::identifiers::UniqueServiceId;
@@ -73,13 +71,8 @@ use crate::service::__internal_details;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
-use crate::service::marker::{FLATBUFFER_TYPE_NAME, is_flatbuffer_type_name};
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
-use crate::service::resource::flatbuffer_schema_source::FlatbufferSchemaSource;
-use crate::service::resource::flatbuffer_schema_source::ResolveTypeDefinitionError;
-use crate::service::resource::type_definition::TypeDefinition;
-use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::*;
 use crate::unique_id_generator::UniqueIdGeneratorGenerateError;
 
@@ -1041,31 +1034,4 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     "Failed to create static service information since the underlying static storage could not be created."),
         )
     }
-}
-
-/// Loads the type definition of a flatbuffer `payload` from `source`. Any
-/// other payload has none.
-///
-/// Fails when the payload type name carries a root type the schema does not
-/// declare.
-pub(crate) fn load_flatbuffer_type_definition(
-    source: &FlatbufferSchemaSource,
-    payload: &TypeDetail,
-    config: &Config,
-) -> Result<Option<TypeDefinition>, ResolveTypeDefinitionError> {
-    if !is_flatbuffer_type_name(payload.type_name().as_str()) {
-        return Ok(None);
-    }
-
-    let type_definition = fail!(from source, when source.load(config),
-        to ResolveTypeDefinitionError,
-        "Unable to load the schema of \"{}\".", payload.type_name());
-
-    let type_name = payload.type_name().as_str();
-    if type_name != FLATBUFFER_TYPE_NAME && type_name != type_definition.type_name.as_str() {
-        fail!(from source, with ResolveTypeDefinitionError::RootTypeMismatch,
-            "Unable to load the schema of \"{type_name}\" since it declares the root type of \"{}\".", type_definition.type_name);
-    }
-
-    Ok(Some(type_definition))
 }

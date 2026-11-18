@@ -26,7 +26,7 @@ use crate::identifiers::UniqueServiceId;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
-    StaticServiceResources, load_flatbuffer_type_definition,
+    StaticServiceResources,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -1035,7 +1035,7 @@ impl<
         response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
+            when self.request_flatbuffer_schema_source.try_create_type_definition(&request_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the request could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1046,7 +1046,7 @@ impl<
         }
 
         self.response_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.response_flatbuffer_schema_source, &response_details.payload, node_config),
+            when self.response_flatbuffer_schema_source.try_create_type_definition(&response_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the response could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1211,7 +1211,7 @@ impl<
         response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
+            when self.request_flatbuffer_schema_source.try_create_type_definition(&request_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the request could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1222,7 +1222,7 @@ impl<
         }
 
         self.response_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.response_flatbuffer_schema_source, &response_details.payload, node_config),
+            when self.response_flatbuffer_schema_source.try_create_type_definition(&response_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the response could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1386,7 +1386,7 @@ impl<
         response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
+            when self.request_flatbuffer_schema_source.try_create_type_definition(&request_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the request could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1397,7 +1397,7 @@ impl<
         }
 
         self.response_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.response_flatbuffer_schema_source, &response_details.payload, node_config),
+            when self.response_flatbuffer_schema_source.try_create_type_definition(&response_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the response could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1567,7 +1567,7 @@ impl<
         response_details.override_user_header_type(self.override_response_header_type);
 
         self.request_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.request_flatbuffer_schema_source, &request_details.payload, node_config),
+            when self.request_flatbuffer_schema_source.try_create_type_definition(&request_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the request could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
@@ -1578,7 +1578,7 @@ impl<
         }
 
         self.response_type_definition = fail!(from origin,
-            when load_flatbuffer_type_definition(&self.response_flatbuffer_schema_source, &response_details.payload, node_config),
+            when self.response_flatbuffer_schema_source.try_create_type_definition(&response_details.payload, node_config),
             to ResolveTypeDefinitionError,
             "Unable to record the message type details since the schema of the response could not be loaded.");
         // The bindings state `iox2::Flatbuffer` through the override since their
