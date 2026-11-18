@@ -27,6 +27,7 @@
 * [#2149](https://github.com/eclipse-iceoryx/iceoryx2/issues/2149) Optimize memory chunk reference counting
 * [#2179](https://github.com/eclipse-iceoryx/iceoryx2/issues/2179) Add `chmod` and `chown` to POSIX abstraction
 * [#2184](https://github.com/eclipse-iceoryx/iceoryx2/issues/2184) Add option to override the service types for the language bindings with a custom implementation
+* [#2191](https://github.com/eclipse-iceoryx/iceoryx2/issues/2191) Optimize reclaiming the samples of a disconnected receiver by skipping unused data segments
 
 ### Bugfixes
 
