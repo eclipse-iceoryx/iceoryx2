@@ -26,7 +26,7 @@ use crate::identifiers::UniqueServiceId;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
-    StaticServiceResources, apply_alignment_override, load_flatbuffer_type_definition,
+    StaticServiceResources, load_flatbuffer_type_definition,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
@@ -1056,14 +1056,12 @@ impl<
             response_details.payload.type_name = type_definition.type_name;
         }
 
-        apply_alignment_override(
-            &mut request_details.payload,
-            self.override_request_alignment,
-        );
-        apply_alignment_override(
-            &mut response_details.payload,
-            self.override_response_alignment,
-        );
+        request_details
+            .payload
+            .override_alignment(self.override_request_alignment);
+        response_details
+            .payload
+            .override_alignment(self.override_response_alignment);
 
         Ok(())
     }
@@ -1234,14 +1232,12 @@ impl<
             response_details.payload.type_name = type_definition.type_name;
         }
 
-        apply_alignment_override(
-            &mut request_details.payload,
-            self.override_request_alignment,
-        );
-        apply_alignment_override(
-            &mut response_details.payload,
-            self.override_response_alignment,
-        );
+        request_details
+            .payload
+            .override_alignment(self.override_request_alignment);
+        response_details
+            .payload
+            .override_alignment(self.override_response_alignment);
 
         Ok(())
     }
@@ -1411,14 +1407,12 @@ impl<
             response_details.payload.type_name = type_definition.type_name;
         }
 
-        apply_alignment_override(
-            &mut request_details.payload,
-            self.override_request_alignment,
-        );
-        apply_alignment_override(
-            &mut response_details.payload,
-            self.override_response_alignment,
-        );
+        request_details
+            .payload
+            .override_alignment(self.override_request_alignment);
+        response_details
+            .payload
+            .override_alignment(self.override_response_alignment);
 
         Ok(())
     }
@@ -1594,14 +1588,12 @@ impl<
             response_details.payload.type_name = type_definition.type_name;
         }
 
-        apply_alignment_override(
-            &mut request_details.payload,
-            self.override_request_alignment,
-        );
-        apply_alignment_override(
-            &mut response_details.payload,
-            self.override_response_alignment,
-        );
+        request_details
+            .payload
+            .override_alignment(self.override_request_alignment);
+        response_details
+            .payload
+            .override_alignment(self.override_response_alignment);
 
         Ok(())
     }

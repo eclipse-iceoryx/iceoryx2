@@ -30,7 +30,7 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 use super::ServiceState;
 use crate::service::builder::{
     DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, StaticServiceResources,
-    apply_alignment_override, load_flatbuffer_type_definition,
+    load_flatbuffer_type_definition,
 };
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
@@ -924,7 +924,9 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
             message_type_details.payload.type_name = type_definition.type_name;
         }
 
-        apply_alignment_override(&mut message_type_details.payload, self.override_alignment);
+        message_type_details
+            .payload
+            .override_alignment(self.override_alignment);
 
         Ok(())
     }
@@ -1046,7 +1048,9 @@ impl<
         if let Some(type_definition) = &self.type_definition {
             message_type_details.payload.type_name = type_definition.type_name;
         }
-        apply_alignment_override(&mut message_type_details.payload, self.override_alignment);
+        message_type_details
+            .payload
+            .override_alignment(self.override_alignment);
         Ok(())
     }
 

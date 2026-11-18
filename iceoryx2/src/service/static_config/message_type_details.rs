@@ -138,6 +138,12 @@ impl TypeDetail {
     pub fn alignment(&self) -> usize {
         self.alignment
     }
+
+    pub(crate) fn override_alignment(&mut self, alignment: Option<usize>) {
+        if let Some(alignment) = alignment {
+            self.alignment = self.alignment.max(alignment);
+        }
+    }
 }
 
 /// Contains all type information to the header and payload type.

@@ -1069,10 +1069,3 @@ pub(crate) fn load_flatbuffer_type_definition(
 
     Ok(Some(type_definition))
 }
-
-/// Raises the payload alignment to `alignment`.
-pub(crate) fn apply_alignment_override(payload: &mut TypeDetail, alignment: Option<usize>) {
-    if let Some(alignment) = alignment {
-        payload.alignment = payload.alignment.max(alignment);
-    }
-}
