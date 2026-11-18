@@ -1427,6 +1427,109 @@ TYPED_TEST(ServiceRequestResponseTest, server_does_not_reallocate_when_allocatio
     ASSERT_THAT(response_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, failed_client_loan_uninit_with_user_header_returns_error) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using UserHeader = CustomTestHeader<123, 456>;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template request_user_header<UserHeader>()
+                       .max_loaned_requests(1)
+                       .create()
+                       .value();
+
+    auto client = service.client_builder().create().value();
+
+    auto request_1 = client.loan_uninit();
+    ASSERT_TRUE(request_1.has_value());
+
+    auto request_2 = client.loan_uninit();
+    ASSERT_FALSE(request_2.has_value());
+    ASSERT_THAT(request_2.error(), Eq(LoanError::ExceedsMaxLoanedSamples));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, failed_client_loan_slice_uninit_with_user_header_returns_error) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<bb::Slice<uint64_t>, uint64_t>()
+                       .template request_user_header<UserHeader>()
+                       .create()
+                       .value();
+
+    auto client = service.client_builder()
+                      .initial_max_slice_len(INITIAL_SIZE)
+                      .allocation_strategy(AllocationStrategy::Static)
+                      .create()
+                      .value();
+
+    auto request = client.loan_slice_uninit(INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_FALSE(request.has_value());
+    ASSERT_THAT(request.error(), Eq(LoanError::ExceedsMaxLoanSize));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, failed_active_request_loan_uninit_with_user_header_returns_error) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using UserHeader = CustomTestHeader<123, 456>;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template response_user_header<UserHeader>()
+                       .create()
+                       .value();
+
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder().max_loaned_responses_per_request(1).create().value();
+
+    auto pending_response = client.send_copy(0).value();
+    auto active_request = server.receive().value();
+    ASSERT_TRUE(active_request.has_value());
+
+    auto response_1 = active_request->loan_uninit();
+    ASSERT_TRUE(response_1.has_value());
+
+    auto response_2 = active_request->loan_uninit();
+    ASSERT_FALSE(response_2.has_value());
+    ASSERT_THAT(response_2.error(), Eq(LoanError::ExceedsMaxLoanedSamples));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, failed_active_request_loan_slice_uninit_with_user_header_returns_error) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, bb::Slice<uint64_t>>()
+                       .template response_user_header<UserHeader>()
+                       .create()
+                       .value();
+
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder()
+                      .initial_max_slice_len(INITIAL_SIZE)
+                      .allocation_strategy(AllocationStrategy::Static)
+                      .create()
+                      .value();
+
+    auto pending_response = client.send_copy(0).value();
+    auto active_request = server.receive().value();
+    ASSERT_TRUE(active_request.has_value());
+
+    auto response = active_request->loan_slice_uninit(INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_FALSE(response.has_value());
+    ASSERT_THAT(response.error(), Eq(LoanError::ExceedsMaxLoanSize));
+}
+
 // BEGIN tests for customizable payload and user header type name
 constexpr uint8_t CAPACITY = 100;
 constexpr uint8_t ALIGNMENT = 16;

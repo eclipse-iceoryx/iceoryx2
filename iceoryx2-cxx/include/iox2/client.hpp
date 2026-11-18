@@ -226,8 +226,8 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> request;
     auto result = iox2_client_loan_slice_uninit(
         &m_handle, &request.m_request.m_request, &request.m_request.m_handle, NUMBER_OF_ELEMENTS);
-    internal::PlacementDefault<RequestUserHeader>::placement_default(request);
     if (result == IOX2_OK) {
+        internal::PlacementDefault<RequestUserHeader>::placement_default(request);
         return request;
     }
     return bb::err(bb::into<LoanError>(result));
@@ -245,8 +245,8 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> request;
     auto result = iox2_client_loan_slice_uninit(
         &m_handle, &request.m_request.m_request, &request.m_request.m_handle, number_of_elements);
-    internal::PlacementDefault<RequestUserHeader>::placement_default(request);
     if (result == IOX2_OK) {
+        internal::PlacementDefault<RequestUserHeader>::placement_default(request);
         return request;
     }
     return bb::err(bb::into<LoanError>(result));
