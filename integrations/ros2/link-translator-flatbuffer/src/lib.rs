@@ -13,3 +13,8 @@
 pub mod decode;
 pub mod encode;
 pub mod pairing;
+mod transcoder;
+mod translator;
+
+pub use transcoder::{FlatbufferTranscoder, TranscodeFailure};
+pub use translator::{FlatbufferTranslator, TranslationError};

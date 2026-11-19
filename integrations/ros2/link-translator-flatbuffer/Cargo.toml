@@ -16,8 +16,11 @@ name = "main"
 harness = false
 
 [dependencies]
+iceoryx2 = { workspace = true }
 iceoryx2-bb-flatbuffers = { workspace = true }
 iceoryx2-integrations-ros2-link-adapter = { workspace = true }
+iceoryx2-link-adapter = { workspace = true }
+iceoryx2-link-backend = { workspace = true }
 iceoryx2-log = { workspace = true }
 
 flatbuffers = { workspace = true }

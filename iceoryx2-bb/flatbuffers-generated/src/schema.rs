@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// Root type `Data` without a flatbufffer namespace.
+pub const NO_NAMESPACE: &[u8] = include_bytes!("../schema/no_namespace.bfbs");
+
 /// `namespace Benchmark;`
 pub mod benchmark {
     /// Root type `Benchmark.PayloadData`.

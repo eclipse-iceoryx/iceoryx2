@@ -867,11 +867,14 @@ name = "iceoryx2-integrations-ros2-link-translator-flatbuffer"
 version = "0.10.999"
 dependencies = [
  "flatbuffers",
+ "iceoryx2",
  "iceoryx2-bb-flatbuffers",
  "iceoryx2-bb-flatbuffers-generated",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
  "iceoryx2-integrations-ros2-link-adapter",
+ "iceoryx2-link-adapter",
+ "iceoryx2-link-backend",
  "iceoryx2-log",
  "r2r_rcl",
  "ros-env",
