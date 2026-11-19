@@ -1429,7 +1429,9 @@ TYPED_TEST(ServiceRequestResponseTest, server_does_not_reallocate_when_allocatio
 
 TYPED_TEST(ServiceRequestResponseTest, failed_client_loan_uninit_with_user_header_returns_error) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
 
     const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -1452,7 +1454,9 @@ TYPED_TEST(ServiceRequestResponseTest, failed_client_loan_uninit_with_user_heade
 
 TYPED_TEST(ServiceRequestResponseTest, failed_client_loan_slice_uninit_with_user_header_returns_error) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr uint64_t INITIAL_SIZE = 128;
 
     const auto service_name = iox2::testing::generate_service_name();
@@ -1476,7 +1480,9 @@ TYPED_TEST(ServiceRequestResponseTest, failed_client_loan_slice_uninit_with_user
 
 TYPED_TEST(ServiceRequestResponseTest, failed_active_request_loan_uninit_with_user_header_returns_error) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
 
     const auto service_name = iox2::testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
@@ -1503,7 +1509,9 @@ TYPED_TEST(ServiceRequestResponseTest, failed_active_request_loan_uninit_with_us
 
 TYPED_TEST(ServiceRequestResponseTest, failed_active_request_loan_slice_uninit_with_user_header_returns_error) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr uint64_t INITIAL_SIZE = 128;
 
     const auto service_name = iox2::testing::generate_service_name();
