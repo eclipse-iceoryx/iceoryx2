@@ -45,6 +45,8 @@ pub mod ros2 {
     /// `namespace geometry_msgs.msg;`
     pub mod geometry_msgs {
         pub mod msg {
+            /// Root type `geometry_msgs.msg.Polygon`.
+            pub const POLYGON: &[u8] = include_bytes!("../schema/polygon.bfbs");
             /// Root type `geometry_msgs.msg.PoseStamped`.
             pub const POSE_STAMPED: &[u8] = include_bytes!("../schema/pose_stamped.bfbs");
             /// Root type `geometry_msgs.msg.PoseWithCovariance`.

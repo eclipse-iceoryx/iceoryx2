@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod decode_tests;
 mod encode_tests;
 mod pairing_tests;
 mod testing;
