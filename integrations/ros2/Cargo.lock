@@ -874,6 +874,8 @@ dependencies = [
  "iceoryx2-integrations-ros2-link-adapter",
  "iceoryx2-log",
  "r2r_rcl",
+ "ros-env",
+ "rosidl_runtime_rs",
 ]
 
 [[package]]

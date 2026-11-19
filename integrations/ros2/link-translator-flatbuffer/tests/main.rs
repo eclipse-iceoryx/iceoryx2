@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod encode_tests;
 mod pairing_tests;
+mod testing;
 
 iceoryx2_bb_testing::test_harness!();

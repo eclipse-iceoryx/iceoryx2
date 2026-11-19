@@ -47,6 +47,9 @@ pub mod ros2 {
         pub mod msg {
             /// Root type `geometry_msgs.msg.PoseStamped`.
             pub const POSE_STAMPED: &[u8] = include_bytes!("../schema/pose_stamped.bfbs");
+            /// Root type `geometry_msgs.msg.PoseWithCovariance`.
+            pub const POSE_WITH_COVARIANCE: &[u8] =
+                include_bytes!("../schema/pose_with_covariance.bfbs");
         }
     }
 
