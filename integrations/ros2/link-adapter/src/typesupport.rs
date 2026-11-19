@@ -92,7 +92,7 @@ pub type ServiceTypeSupport = TypeSupport<ServiceKind>;
 
 impl IntrospectionTypeSupport {
     /// The members of the type's C struct.
-    pub(crate) fn members(&self) -> *const MessageMembers {
+    pub fn members(&self) -> *const MessageMembers {
         // SAFETY: the handle points into the loaded library, and the data of
         // an introspection typesupport is the members struct rosidl
         // generates.
@@ -158,7 +158,7 @@ impl TypeSupportKind for ServiceKind {
 /// The typesupport of kind `K` of `type_name`, opened on first use.
 ///
 /// A failed open is kept and not retried.
-pub(crate) fn get<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<K>>, LoadError> {
+pub fn get<K: TypeSupportKind>(type_name: &str) -> Result<Rc<TypeSupport<K>>, LoadError> {
     if let Some(result) = K::opened().with(|opened| opened.borrow().get(type_name).cloned()) {
         return result;
     }
