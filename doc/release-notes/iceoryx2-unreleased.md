@@ -23,6 +23,7 @@
 -->
 
 * [#2198](https://github.com/eclipse-iceoryx/iceoryx2/issues/2198) Fix 'iceoryx2.h' header generation for Rust 1.100.0
+* [#2214](https://github.com/eclipse-iceoryx/iceoryx2/issues/2214) Fix notification remove/trigger race
 
 ### Refactoring
 
