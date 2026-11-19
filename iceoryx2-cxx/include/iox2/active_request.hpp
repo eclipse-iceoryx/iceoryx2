@@ -214,8 +214,8 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
         &m_handle, &response.m_response.m_response, &response.m_response.m_handle, NUMBER_OF_ELEMENTS);
-    internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
     if (result == IOX2_OK) {
+        internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
         return response;
     }
     return bb::err(bb::into<LoanError>(result));
@@ -234,8 +234,8 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
         &m_handle, &response.m_response.m_response, &response.m_response.m_handle, number_of_elements);
-    internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
     if (result == IOX2_OK) {
+        internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
         return response;
     }
     return bb::err(bb::into<LoanError>(result));

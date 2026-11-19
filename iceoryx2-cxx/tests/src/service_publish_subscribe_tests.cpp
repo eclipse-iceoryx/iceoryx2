@@ -1161,6 +1161,56 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_alloc
     ASSERT_THAT(sample_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, failed_loan_uninit_with_user_header_returns_error) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .template user_header<UserHeader>()
+                       .create()
+                       .value();
+
+    auto publisher = service.publisher_builder().max_loaned_samples(1).create().value();
+
+    auto sample_1 = publisher.loan_uninit();
+    ASSERT_THAT(sample_1.has_value(), Eq(true));
+
+    auto sample_2 = publisher.loan_uninit();
+    ASSERT_THAT(sample_2.has_value(), Eq(false));
+    ASSERT_THAT(sample_2.error(), Eq(LoanError::ExceedsMaxLoanedSamples));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, failed_loan_slice_uninit_with_user_header_returns_error) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<bb::Slice<uint8_t>>()
+                       .template user_header<UserHeader>()
+                       .create()
+                       .value();
+
+    auto publisher = service.publisher_builder()
+                         .initial_max_slice_len(INITIAL_SIZE)
+                         .allocation_strategy(AllocationStrategy::Static)
+                         .create()
+                         .value();
+
+    auto sample = publisher.loan_slice_uninit(INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_THAT(sample.has_value(), Eq(false));
+    ASSERT_THAT(sample.error(), Eq(LoanError::ExceedsMaxLoanSize));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
