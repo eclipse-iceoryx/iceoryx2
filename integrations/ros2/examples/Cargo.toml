@@ -33,6 +33,22 @@ iceoryx2-link-gateway = { workspace = true }
 path = "lib.rs"
 
 [[example]]
+name = "flatbuffer_joint_state_publisher"
+path = "flatbuffer_translator/joint_state_publisher.rs"
+
+[[example]]
+name = "flatbuffer_joint_state_subscriber"
+path = "flatbuffer_translator/joint_state_subscriber.rs"
+
+[[example]]
+name = "flatbuffer_pose_stamped_publisher"
+path = "flatbuffer_translator/pose_stamped_publisher.rs"
+
+[[example]]
+name = "flatbuffer_pose_stamped_subscriber"
+path = "flatbuffer_translator/pose_stamped_subscriber.rs"
+
+[[example]]
 name = "specialized_flatbuffer_gateway"
 path = "specialized_flatbuffer_translator/gateway.rs"
 

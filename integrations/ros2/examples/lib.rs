@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod specialized_flatbuffer_translator;
+pub mod flatbuffer_translator;
 pub mod passthrough_translator;
 pub mod plain_struct_translator;
+pub mod specialized_flatbuffer_translator;

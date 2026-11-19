@@ -282,7 +282,7 @@ _setup-integrations-ros2-schemas:
         exit 1
     fi
 
-    for EXAMPLE in specialized_flatbuffer_translator; do
+    for EXAMPLE in flatbuffer_translator specialized_flatbuffer_translator; do
         SCHEMAS="{{INTEGRATIONS_ROS2_DIR}}/examples/${EXAMPLE}/schemas"
         flatc -o "${SCHEMAS}" --rust --schema --binary "${SCHEMAS}"/*.fbs
     done

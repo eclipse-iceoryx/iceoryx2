@@ -10,17 +10,16 @@ and are mapped to ROS 2 topic types:
 | `JointReadings` | `robot.JointReadings` | `/joint_states` | `sensor_msgs/msg/JointState`    |
 | `Pose`          | `robot.Pose`          | `/pose`         | `geometry_msgs/msg/PoseStamped` |
 
-* `schemas/` holds the two `.fbs` schemas. The Rust code `flatc` generates
-  from them and their binary `.bfbs` form, which an `iceoryx2` flatbuffer
-  service stores as its type definition, are generated there before building.
+* `schemas/` holds the `.fbs` schemas used by the example. Rust bindings and
+  the binary `.bfbs` are generated from them with `flatc` before building.
+  The binary schema is stored along with services and used for translation.
 * `translator/transcoders/` holds one transcoder per pair to convert between
   the flatbuffer and the CDR bytes propagated in ROS 2.
 * `translator/mod.rs` holds the translator. It embeds the two `.bfbs`, which
   are compared with the schema stored in the service on discovery and provides
   the matching transcoder to use for the bytes passing between service and
   topic.
-* `mapping.toml` provides the mapping used by the gateway to map service names
-  to topics.
+* `mapping.toml` pairs the services with the topics.
 * `gateway.rs` initializes a gateway with the implemented translator.
 
 ## Prerequisites
@@ -64,7 +63,12 @@ flatc -o integrations/ros2/examples/specialized_flatbuffer_translator/schemas --
     integrations/ros2/examples/specialized_flatbuffer_translator/schemas/pose.fbs
 ```
 
-`just setup integrations-ros2` runs this for every example.
+In addition, the `just` recipes provide a convenience command to generate them
+for every example:
+
+```bash
+just setup integrations-ros2
+```
 
 ### Build
 

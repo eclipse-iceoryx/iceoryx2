@@ -28,7 +28,11 @@ const REQUIRED_PACKAGES: [&str; 4] = [
 
 /// The files `flatc` generates from the examples' schemas, the Rust
 /// bindings and the binary schemas the examples bake into the binary.
-const GENERATED_FILES: [&str; 4] = [
+const GENERATED_FILES: [&str; 8] = [
+    "flatbuffer_translator/schemas/joint_state_generated.rs",
+    "flatbuffer_translator/schemas/joint_state.bfbs",
+    "flatbuffer_translator/schemas/pose_stamped_generated.rs",
+    "flatbuffer_translator/schemas/pose_stamped.bfbs",
     "specialized_flatbuffer_translator/schemas/joint_readings_generated.rs",
     "specialized_flatbuffer_translator/schemas/joint_readings.bfbs",
     "specialized_flatbuffer_translator/schemas/pose_generated.rs",
