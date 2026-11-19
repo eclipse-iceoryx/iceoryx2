@@ -6,6 +6,7 @@ members = [
     "examples",
     "interop",
     "link-adapter",
+    "link-translator-flatbuffer",
     "link-gateway-cli",
 ]
 # Exclude the colcon workspaces because their `ament_cargo` packages are built by colcon.
@@ -32,10 +33,12 @@ version = "0.10.999"
 [workspace.dependencies]
 iceoryx2 = { version = "0.10.999", path = "../../iceoryx2/", features = ["std"] }
 iceoryx2-bb-concurrency = { version = "0.10.999", path = "../../iceoryx2-bb/concurrency/", features = ["std"] }
+iceoryx2-bb-flatbuffers = { version = "0.10.999", path = "../../iceoryx2-bb/flatbuffers/", features = ["std"] }
 iceoryx2-bb-testing = { version = "0.10.999", path = "../../iceoryx2-bb/testing/", features = ["std"] }
 iceoryx2-cli = { version = "0.10.999", path = "../../iceoryx2-cli/" }
 iceoryx2-integrations-ros2-interop = { version = "0.10.999", path = "interop" }
 iceoryx2-integrations-ros2-link-adapter = { version = "0.10.999", path = "link-adapter" }
+iceoryx2-integrations-ros2-link-translator-flatbuffer = { version = "0.10.999", path = "link-translator-flatbuffer" }
 iceoryx2-log = { version = "0.10.999", path = "../../iceoryx2-log/log/", features = ["std"] }
 iceoryx2-link-gateway = { version = "0.10.999", path = "../../iceoryx2-link/gateway", features = ["std"] }
 iceoryx2-link = { version = "0.10.999", path = "../../iceoryx2-link/link", features = ["std"] }

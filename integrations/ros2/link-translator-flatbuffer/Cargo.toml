@@ -1,0 +1,26 @@
+[package]
+name = "iceoryx2-integrations-ros2-link-translator-flatbuffer"
+description = "iceoryx2-integrations: flatbuffer translator for the ROS 2 gateway"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+autotests = false
+
+[[test]]
+name = "main"
+harness = false
+
+[dependencies]
+iceoryx2-bb-flatbuffers = { workspace = true }
+iceoryx2-log = { workspace = true }
+
+flatbuffers = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }

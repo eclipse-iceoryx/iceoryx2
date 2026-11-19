@@ -863,6 +863,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-integrations-ros2-link-translator-flatbuffer"
+version = "0.10.999"
+dependencies = [
+ "flatbuffers",
+ "iceoryx2-bb-flatbuffers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-log",
+]
+
+[[package]]
 name = "iceoryx2-link"
 version = "0.10.999"
 dependencies = [
