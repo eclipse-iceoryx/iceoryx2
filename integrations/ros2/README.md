@@ -70,8 +70,8 @@ The integrations require:
 The associated READMEs describe how to set them up.
 
 Inside a container, such as the development distrobox, the colcon build tools
-can be installed and the required flatbuffer schemas generated with a `just`
-recipe for convenience:
+can be installed and the flatbuffer bindings and binary schemas of the examples
+generated with a `just` recipe for convenience:
 
 ```bash
 just setup integrations-ros2

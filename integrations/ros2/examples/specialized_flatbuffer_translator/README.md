@@ -10,9 +10,9 @@ and are mapped to ROS 2 topic types:
 | `JointReadings` | `robot.JointReadings` | `/joint_states` | `sensor_msgs/msg/JointState`    |
 | `Pose`          | `robot.Pose`          | `/pose`         | `geometry_msgs/msg/PoseStamped` |
 
-* `schemas/` holds the two `.fbs` schemas and the Rust code `flatc` generates
-  from them. Their binary `.bfbs` form, which an `iceoryx2` flatbuffer service
-  stores as its type definition, is generated there before building.
+* `schemas/` holds the two `.fbs` schemas. The Rust code `flatc` generates
+  from them and their binary `.bfbs` form, which an `iceoryx2` flatbuffer
+  service stores as its type definition, are generated there before building.
 * `translator/transcoders/` holds one transcoder per pair to convert between
   the flatbuffer and the CDR bytes propagated in ROS 2.
 * `translator/mod.rs` holds the translator. It embeds the two `.bfbs`, which
@@ -51,26 +51,20 @@ from source as described in the [message workspace
 README](../../colcon/messages/README.md) and additionally source its install
 space.
 
-### Generate Binary Schemas
+### Generate Bindings and Binary Schemas
 
-Before running the example, we need to generate the binary schemas from the
-`.fbs` files. They must be placed at the location specified since the
-translator takes them from that location to bake into the binary.
+Before building the example, we need to generate the Rust bindings and the
+binary schemas from the `.fbs` files. They must be placed at the location
+specified since the translator takes the binary schemas from there to bake
+into the binary.
 
 ```sh
-flatc -o integrations/ros2/examples/specialized_flatbuffer_translator/schemas --schema --binary \
+flatc -o integrations/ros2/examples/specialized_flatbuffer_translator/schemas --rust --schema --binary \
     integrations/ros2/examples/specialized_flatbuffer_translator/schemas/joint_readings.fbs \
     integrations/ros2/examples/specialized_flatbuffer_translator/schemas/pose.fbs
 ```
 
-The generated Rust code is already included. For completeness, the command
-used to generate it is:
-
-```sh
-flatc -o integrations/ros2/examples/specialized_flatbuffer_translator/schemas --rust \
-    integrations/ros2/examples/specialized_flatbuffer_translator/schemas/joint_readings.fbs \
-    integrations/ros2/examples/specialized_flatbuffer_translator/schemas/pose.fbs
-```
+`just setup integrations-ros2` runs this for every example.
 
 ### Build
 

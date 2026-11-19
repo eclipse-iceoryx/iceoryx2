@@ -13,8 +13,8 @@
 //! Fails the build with a clear message when a ROS 2 message package the
 //! examples translate to has no generated Rust crate in the sourced
 //! environment, which `ros-env` would otherwise report as an unresolved
-//! import, or when a binary flatbuffer schema the examples embed has not
-//! been generated yet.
+//! import, or when the flatbuffer bindings and binary schemas the
+//! examples embed have not been generated yet.
 
 use std::path::Path;
 
@@ -26,15 +26,18 @@ const REQUIRED_PACKAGES: [&str; 4] = [
     "sensor_msgs",
 ];
 
-/// The binary flatbuffer schemas the examples bake into the binary.
-const BINARY_SCHEMAS: [&str; 2] = [
+/// The files `flatc` generates from the examples' schemas, the Rust
+/// bindings and the binary schemas the examples bake into the binary.
+const GENERATED_FILES: [&str; 4] = [
+    "specialized_flatbuffer_translator/schemas/joint_readings_generated.rs",
     "specialized_flatbuffer_translator/schemas/joint_readings.bfbs",
+    "specialized_flatbuffer_translator/schemas/pose_generated.rs",
     "specialized_flatbuffer_translator/schemas/pose.bfbs",
 ];
 
 fn main() {
     require_message_packages();
-    require_binary_schemas();
+    require_generated_files();
 }
 
 /// Fails the build unless every package in [`REQUIRED_PACKAGES`] provides its
@@ -66,22 +69,21 @@ fn require_message_packages() {
     }
 }
 
-/// Fails the build unless every schema in [`BINARY_SCHEMAS`] is present.
-fn require_binary_schemas() {
+/// Fails the build unless every file in [`GENERATED_FILES`] is present.
+fn require_generated_files() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("set by cargo");
     let manifest_dir = Path::new(&manifest_dir);
 
-    let missing: Vec<&str> = BINARY_SCHEMAS
+    let missing: Vec<&str> = GENERATED_FILES
         .iter()
         .copied()
-        .inspect(|bfbs| println!("cargo:rerun-if-changed={bfbs}"))
-        .filter(|bfbs| !manifest_dir.join(bfbs).is_file())
+        .inspect(|file| println!("cargo:rerun-if-changed={file}"))
+        .filter(|file| !manifest_dir.join(file).is_file())
         .collect();
     if !missing.is_empty() {
         panic!(
-            "The binary flatbuffer schemas {missing:?} are missing. See \
-             integrations/ros2/examples/specialized_flatbuffer_translator/README.md for
-             instructions on how to generate them."
+            "The generated flatbuffer files {missing:?} are missing. Generate them with \
+             `just setup integrations-ros2` or see the README of the example beside them."
         );
     }
 }
