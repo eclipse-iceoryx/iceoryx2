@@ -15,6 +15,8 @@ pub mod encode;
 pub mod pairing;
 mod transcoder;
 mod translator;
+mod validation;
 
 pub use transcoder::{FlatbufferTranscoder, TranscodeFailure};
 pub use translator::{FlatbufferTranslator, TranslationError};
+pub use validation::{TypeMismatch, type_mismatches};

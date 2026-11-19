@@ -15,5 +15,6 @@ mod encode_tests;
 mod pairing_tests;
 mod testing;
 mod translator_tests;
+mod validation_tests;
 
 iceoryx2_bb_testing::test_harness!();
