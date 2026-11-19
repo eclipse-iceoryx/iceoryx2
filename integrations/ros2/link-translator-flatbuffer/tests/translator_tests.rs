@@ -56,7 +56,10 @@ impl SchemaDirectory {
         ));
         std::fs::create_dir_all(&directory).expect("creates the directory");
         for (name, bytes) in files {
-            std::fs::write(directory.join(name), bytes).expect("writes the schema");
+            let file = directory.join(name);
+            let parent = file.parent().expect("a file has a parent");
+            std::fs::create_dir_all(parent).expect("creates the package directory");
+            std::fs::write(file, bytes).expect("writes the schema");
         }
         Self(directory)
     }
@@ -165,6 +168,39 @@ fn the_schema_is_found_by_its_snake_case_name() {
     let schemas = SchemaDirectory::with(
         "the_schema_is_found_by_its_snake_case_name",
         &[("joint_state.bfbs", JOINT_STATE)],
+    );
+    let translator = translator(Some(schemas.path()));
+
+    let local = translator
+        .local(&message_type(JOINT_STATE_TYPE))
+        .expect("translates");
+
+    assert_that!(local, eq flatbuffer_types(JOINT_STATE));
+}
+
+#[test]
+fn the_schema_is_found_in_the_package_directory_of_its_type() {
+    let schemas = SchemaDirectory::with(
+        "the_schema_is_found_in_the_package_directory_of_its_type",
+        &[("sensor_msgs/msg/JointState.bfbs", JOINT_STATE)],
+    );
+    let translator = translator(Some(schemas.path()));
+
+    let local = translator
+        .local(&message_type(JOINT_STATE_TYPE))
+        .expect("translates");
+
+    assert_that!(local, eq flatbuffer_types(JOINT_STATE));
+}
+
+#[test]
+fn the_package_directory_tells_schemas_of_the_same_name_apart() {
+    let schemas = SchemaDirectory::with(
+        "the_package_directory_tells_schemas_of_the_same_name_apart",
+        &[
+            ("geometry_msgs/msg/JointState.bfbs", POSE_STAMPED),
+            ("sensor_msgs/msg/JointState.bfbs", JOINT_STATE),
+        ],
     );
     let translator = translator(Some(schemas.path()));
 
