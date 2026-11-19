@@ -21,8 +21,12 @@ pub mod waitset {
     use iceoryx2::port::notifier::Notifier;
     use iceoryx2::prelude::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
+    use iceoryx2_bb_posix::mutex::Handle;
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::testing::generate_file_path;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_posix::unix_datagram_socket::{
         UnixDatagramReceiver, UnixDatagramSender, UnixDatagramSenderBuilder,
     };
@@ -674,5 +678,69 @@ pub mod waitset {
         let sut = node.waitset_builder().create().unwrap();
 
         assert_that!(sut.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
+    }
+
+    #[conformance_test]
+    pub fn listener_does_not_deadlock_with_concurrent_notify_usage<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let _watchdog = Watchdog::new();
+        let number_of_threads = SystemInfo::NumberOfCpuCores.value().min(2);
+        const NUMBER_OF_NOTIFICATIONS: usize = 10000;
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let sut = node.waitset_builder().create().unwrap();
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_threads as u32 + 1)
+            .create(&handle)
+            .unwrap();
+
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .event()
+            .max_notifiers(number_of_threads)
+            .open_or_create()
+            .unwrap();
+
+        let mut event_counts = 0;
+
+        thread_scope(|t| {
+            for _ in 0..number_of_threads {
+                t.thread_builder()
+                    .spawn(|| {
+                        let notifier = service.notifier_builder().create().unwrap();
+                        barrier.wait();
+
+                        for _ in 0..NUMBER_OF_NOTIFICATIONS {
+                            notifier.notify().unwrap();
+                        }
+                    })
+                    .unwrap();
+            }
+
+            let listener = service.listener_builder().create().unwrap();
+            let attachment = sut.attach_notification(&listener).unwrap();
+
+            barrier.wait();
+
+            while event_counts != NUMBER_OF_NOTIFICATIONS * number_of_threads {
+                sut.wait_and_process_once(|trigger| {
+                    if trigger.has_event_from(&attachment) {
+                        listener
+                            .try_wait(|event| {
+                                event_counts += event.count as usize;
+                            })
+                            .unwrap();
+                    }
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+            }
+
+            Ok(())
+        })
+        .unwrap();
     }
 }
