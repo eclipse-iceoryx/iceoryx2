@@ -21,45 +21,49 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
-class DataProps(object):
+class Entry(object):
     __slots__ = ['_tab']
 
     @classmethod
     def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
-        x = DataProps()
+        x = Entry()
         x.Init(buf, n + offset)
         return x
 
     @classmethod
-    def GetRootAsDataProps(cls, buf, offset=0):
+    def GetRootAsEntry(cls, buf, offset=0):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
-    # DataProps
+    # Entry
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-    # DataProps
-    def ReceivedEntriesLen(self):
+    # Entry
+    def Data1(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 0
+
+    # Entry
+    def Data2(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Uint64Flags, o + self._tab.Pos)
         return 0
 
-def DataPropsStart(builder):
-    builder.StartObject(1)
+def EntryStart(builder):
+    builder.StartObject(2)
 
-def Start(builder):
-    DataPropsStart(builder)
+def EntryAddData1(builder, data1):
+    builder.PrependInt32Slot(0, data1, 0)
 
-def DataPropsAddReceivedEntriesLen(builder, receivedEntriesLen):
-    builder.PrependUint64Slot(0, receivedEntriesLen, 0)
+def EntryAddData2(builder, data2):
+    builder.PrependUint64Slot(1, data2, 0)
 
-def AddReceivedEntriesLen(builder, receivedEntriesLen):
-    DataPropsAddReceivedEntriesLen(builder, receivedEntriesLen)
-
-def DataPropsEnd(builder):
+def EntryEnd(builder):
     return builder.EndObject()
 
-def End(builder):
-    return DataPropsEnd(builder)
+
+

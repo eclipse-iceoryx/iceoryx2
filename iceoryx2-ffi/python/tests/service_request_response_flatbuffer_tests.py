@@ -15,12 +15,12 @@ import ctypes
 # fmt: off
 import iceoryx2 as iox2
 import pytest
+from bounded_data_generated import BoundedData
 from flatbuffer_types.Helper import (create_bounded_data,
                                      create_unbounded_data,
                                      flatbuffer_tests_schema_path,
                                      get_schema_file)
-from Testing.BoundedData import BoundedData
-from Testing.UnboundedData import UnboundedData
+from unbounded_data_generated import UnboundedData
 
 # fmt: on
 

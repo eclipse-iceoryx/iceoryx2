@@ -148,10 +148,10 @@ sequence = [
 
 # Exclude generated flatbuffer bindings from linting.
 [tool.black]
-extend-exclude = "tests/flatbuffer_types/Testing/"
+extend-exclude = "tests/flatbuffer_types/.*_generated\\.py"
 
 [tool.isort]
-skip_glob = ["tests/flatbuffer_types/Testing/*"]
+skip_glob = ["tests/flatbuffer_types/*_generated.py"]
 
 [tool.pytest.ini_options]
 # Include generated flatbuffer bindings on the path.

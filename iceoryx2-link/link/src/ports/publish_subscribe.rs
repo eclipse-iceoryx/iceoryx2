@@ -277,7 +277,8 @@ mod tests {
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
-    use iceoryx2_bb_posix::testing::create_typed_file_with_content;
+    use iceoryx2_bb_flatbuffers_generated::schema::testing as schema;
+    use iceoryx2_bb_posix::testing::create_typed_file_with_bytes;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_link_backend::service_description::Schema;
     use iceoryx2_link_backend::service_description::{
@@ -287,7 +288,6 @@ mod tests {
 
     #[test]
     fn flatbuffer_samples_round_trip_through_the_ports() {
-        const SCHEMA: &str = "the binary schema";
         const ROOT: u64 = 42;
         const RESERVED_MEMORY: usize = 64;
 
@@ -301,7 +301,7 @@ mod tests {
             .create::<local::Service>()
             .expect("node is created");
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let app_service = app_node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
@@ -385,8 +385,6 @@ mod tests {
 
     #[test]
     fn a_flatbuffer_service_opens_without_a_schema_file() {
-        const SCHEMA: &str = "the binary schema";
-
         let config = generate_isolated_config();
         let app_node = NodeBuilder::new()
             .config(&config)
@@ -397,7 +395,7 @@ mod tests {
             .create::<local::Service>()
             .expect("node is created");
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let _app_service = app_node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
@@ -426,9 +424,6 @@ mod tests {
 
     #[test]
     fn a_flatbuffer_service_is_created_from_the_described_schema() {
-        const SCHEMA: &str = "the binary schema";
-        const OTHER_SCHEMA: &str = "another binary schema";
-
         let config = generate_isolated_config();
         let link_node = NodeBuilder::new()
             .config(&config)
@@ -443,7 +438,9 @@ mod tests {
         let types = SampleTypes {
             payload: TypeDescription {
                 variant: flatbuffer.variant(),
-                identifier: TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.as_bytes().to_vec())),
+                identifier: TypeIdentifier::Flatbuffer(
+                    Schema::new(schema::UNBOUNDED_DATA.to_vec()).expect("a valid schema"),
+                ),
                 size: flatbuffer.size(),
                 alignment: flatbuffer.alignment(),
             },
@@ -454,7 +451,7 @@ mod tests {
         let _sut = PublishSubscribePorts::open(&link_node, &service_name, &settings, &types)
             .expect("the service is created");
 
-        let same_schema = create_typed_file_with_content(SCHEMA, "bfbs");
+        let same_schema = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let same = app_node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
@@ -462,7 +459,7 @@ mod tests {
             .open();
         assert_that!(same.is_ok(), eq true);
 
-        let other_schema = create_typed_file_with_content(OTHER_SCHEMA, "bfbs");
+        let other_schema = create_typed_file_with_bytes(schema::DATA_PROPS, "bfbs");
         let other = app_node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()

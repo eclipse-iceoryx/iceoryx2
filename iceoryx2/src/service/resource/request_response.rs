@@ -35,8 +35,8 @@ pub(crate) const RESPONSE_TYPE_DEFINITION: FileName =
     unsafe { FileName::new_unchecked_const(b"response") };
 
 pub struct RequestResponseResourceConfig<ServiceType: service::Service> {
-    pub(crate) request: TypeDefinition,
-    pub(crate) response: TypeDefinition,
+    pub(crate) request_type_definition: Option<TypeDefinition>,
+    pub(crate) response_type_definition: Option<TypeDefinition>,
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
@@ -103,13 +103,13 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         resource_config: &Self::Config,
     ) -> Result<Self, service::builder::ServiceCreateError> {
         let request_storage = Self::create_type_storage(
-            &resource_config.request,
+            resource_config.request_type_definition.as_ref(),
             &REQUEST_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
         let response_storage = Self::create_type_storage(
-            &resource_config.response,
+            resource_config.response_type_definition.as_ref(),
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -133,13 +133,13 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         resource_config: &Self::Config,
     ) -> Result<Self, service::builder::ServiceOpenError> {
         let request_storage = Self::open_type_storage(
-            &resource_config.request,
+            resource_config.request_type_definition.as_ref(),
             &REQUEST_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
         )?;
         let response_storage = Self::open_type_storage(
-            &resource_config.response,
+            resource_config.response_type_definition.as_ref(),
             &RESPONSE_TYPE_DEFINITION,
             resource_config.shared_node.config(),
             static_config,
@@ -164,7 +164,7 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
     ) -> Result<(), super::RemoveStaleResourcesError> {
         let origin = "RequestResponseResources::remove_stale_resources()";
         let msg = "Failed to remove the stale request response resource";
-        if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
+        if let Err(e) = TypeDefinitionStorage::<ServiceType>::remove_stale(
             &REQUEST_TYPE_DEFINITION,
             config,
             static_config,
@@ -174,7 +174,7 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
                 "{msg} since the request type definition storage could not be removed. [{e:?}]");
         }
 
-        if let Err(e) = TypeDefinition::remove_stale_storage::<ServiceType>(
+        if let Err(e) = TypeDefinitionStorage::<ServiceType>::remove_stale(
             &RESPONSE_TYPE_DEFINITION,
             config,
             static_config,
@@ -185,7 +185,7 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
         }
 
         if let Err(e) =
-            TypeDefinition::remove_resource_directory::<ServiceType>(config, static_config)
+            TypeDefinitionStorage::<ServiceType>::remove_resource_directory(config, static_config)
         {
             fail!(from origin,
                 with e,
@@ -198,12 +198,17 @@ impl<ServiceType: service::Service> ServiceResource for RequestResponseResources
 
 impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
     fn create_type_storage(
-        type_definition: &TypeDefinition,
+        type_definition: Option<&TypeDefinition>,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceCreateError> {
-        match type_definition.create_storage::<ServiceType>(name, config, static_config) {
+        match TypeDefinitionStorage::<ServiceType>::create(
+            type_definition,
+            name,
+            config,
+            static_config,
+        ) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::create_type_storage()",
@@ -214,12 +219,17 @@ impl<ServiceType: service::Service> RequestResponseResources<ServiceType> {
     }
 
     fn open_type_storage(
-        type_definition: &TypeDefinition,
+        type_definition: Option<&TypeDefinition>,
         name: &FileName,
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> Result<Option<TypeDefinitionStorage<ServiceType>>, ServiceOpenError> {
-        match type_definition.open_and_verify_storage::<ServiceType>(name, config, static_config) {
+        match TypeDefinitionStorage::<ServiceType>::open_and_verify(
+            type_definition,
+            name,
+            config,
+            static_config,
+        ) {
             Ok(v) => Ok(v),
             Err(e) => {
                 fail!(from "RequestResponseResources::open_type_storage()",

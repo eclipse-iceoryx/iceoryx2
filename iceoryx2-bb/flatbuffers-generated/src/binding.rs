@@ -25,6 +25,11 @@ mod data_props_generated;
 #[rustfmt::skip]
 mod unbounded_data_generated;
 
+#[path = "../binding/reflection_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+mod reflection_generated;
+
 /// `namespace Benchmark;`
 pub mod benchmark {
     pub use super::payload_data_generated::benchmark::*;
@@ -34,4 +39,9 @@ pub mod benchmark {
 pub mod testing {
     pub use super::data_props_generated::testing::*;
     pub use super::unbounded_data_generated::testing::*;
+}
+
+/// `namespace reflection;` (`reflection.fbs` of google/flatbuffers at the crate's tag)
+pub mod reflection {
+    pub use super::reflection_generated::reflection::*;
 }

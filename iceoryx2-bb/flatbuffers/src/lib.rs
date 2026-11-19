@@ -16,6 +16,8 @@
 /// Workaround to implement [`core::error::Error`] for flatbuffer error enums that do not implement them
 /// in a `no_std` environment
 pub mod flatbuffer_error;
+/// Reflection utilities for binary flatbuffer schemas.
+pub mod reflection;
 /// Resizable memory that can be combined with an allocator to provide a allocator backend for flatbuffers.
 pub mod resizable_memory;
 /// Schema file finder.
@@ -24,6 +26,7 @@ pub mod schema_finder;
 pub mod type_name;
 
 pub use flatbuffer_error::*;
+pub use reflection::{SchemaError, root_type_name};
 pub use resizable_memory::*;
 pub use schema_finder::*;
 pub use type_name::*;

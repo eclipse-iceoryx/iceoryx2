@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::alloc::Layout;
 
 use iceoryx2::service::header::publish_subscribe::Header;
-use iceoryx2::service::marker::Flatbuffer;
+use iceoryx2::service::marker::flatbuffer_type_name;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_flatbuffers::{SchemaError, root_type_name};
 use iceoryx2_log::{fail, fatal_panic, origin};
 use serde::{Deserialize, Serialize};
 
@@ -162,10 +163,11 @@ impl TypeIdentifier {
     pub fn type_name(&self) -> String {
         match self {
             TypeIdentifier::Name(name) => name.clone(),
-            TypeIdentifier::Flatbuffer(_) => String::from_utf8_lossy(
-                TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize).type_name(),
-            )
-            .into_owned(),
+            TypeIdentifier::Flatbuffer(schema) => {
+                let type_name =
+                    flatbuffer_type_name(schema.root_type()).expect("checked by Schema::new");
+                String::from_utf8_lossy(&type_name).into_owned()
+            }
         }
     }
 }
@@ -176,17 +178,89 @@ impl core::fmt::Display for TypeIdentifier {
     }
 }
 
-/// The binary schema of a flatbuffer type.
+/// Why bytes are not the schema of a flatbuffer payload.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum InvalidSchema {
+    NotABinarySchema,
+    /// The schema declares no `root_type`.
+    NoRootType,
+    /// The root type does not fit into the type name composed from it.
+    RootTypeTooLong,
+}
+
+impl core::fmt::Display for InvalidSchema {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "InvalidSchema::{self:?}")
+    }
+}
+
+impl core::error::Error for InvalidSchema {}
+
+/// The binary schema of a flatbuffer payload.
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Schema(Vec<u8>);
+#[serde(try_from = "Vec<u8>", into = "Vec<u8>")]
+pub struct Schema {
+    root_type: String,
+    bytes: Vec<u8>,
+}
 
 impl Schema {
-    pub fn new(bytes: Vec<u8>) -> Self {
-        Self(bytes)
+    /// The schema `bytes` hold.
+    ///
+    /// Fails when `bytes` are not a binary flatbuffer schema, declare no
+    /// `root_type` or name one that does not fit into a type name.
+    pub fn new(bytes: Vec<u8>) -> Result<Self, InvalidSchema> {
+        let origin = origin!("Schema::new");
+
+        let root_type = match root_type_name(&bytes) {
+            Ok(root_type) => root_type.to_string(),
+            Err(SchemaError::NotABinarySchema) => {
+                fail!(
+                    from origin,
+                    with InvalidSchema::NotABinarySchema,
+                    "The {} bytes are not a binary flatbuffer schema", bytes.len()
+                );
+            }
+            Err(SchemaError::NoRootType) => {
+                fail!(
+                    from origin,
+                    with InvalidSchema::NoRootType,
+                    "The schema declares no root_type"
+                );
+            }
+        };
+        if flatbuffer_type_name(&root_type).is_none() {
+            fail!(
+                from origin,
+                with InvalidSchema::RootTypeTooLong,
+                "The root type '{}' does not fit into a type name", root_type
+            );
+        }
+
+        Ok(Self { root_type, bytes })
     }
 
     pub fn bytes(&self) -> &[u8] {
-        &self.0
+        &self.bytes
+    }
+
+    /// The fully qualified name of the root type, `Testing.UnboundedData`.
+    pub fn root_type(&self) -> &str {
+        &self.root_type
+    }
+}
+
+impl TryFrom<Vec<u8>> for Schema {
+    type Error = InvalidSchema;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, InvalidSchema> {
+        Self::new(bytes)
+    }
+}
+
+impl From<Schema> for Vec<u8> {
+    fn from(schema: Schema) -> Self {
+        schema.bytes
     }
 }
 
@@ -239,8 +313,10 @@ impl TryFrom<&TypeDescription> for TypeDetail {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use iceoryx2::service::marker::Flatbuffer;
 
     use iceoryx2::constants::MAX_TYPE_NAME_LENGTH;
+    use iceoryx2_bb_flatbuffers_generated::schema::testing as schema;
     use iceoryx2_bb_testing::assert_that;
 
     #[test]
@@ -258,19 +334,42 @@ mod tests {
     }
 
     #[test]
+    fn a_schema_is_identified_by_its_root_type() {
+        let schema = Schema::new(schema::UNBOUNDED_DATA.to_vec()).expect("a valid schema");
+
+        assert_that!(schema.root_type(), eq "Testing.UnboundedData");
+        assert_that!(schema.bytes(), eq schema::UNBOUNDED_DATA);
+    }
+
+    #[test]
+    fn bytes_that_are_no_schema_are_refused() {
+        const NOT_A_SCHEMA: &[u8] = b"the binary schema";
+
+        let schema = Schema::new(NOT_A_SCHEMA.to_vec());
+
+        assert_that!(schema.err(), eq Some(InvalidSchema::NotABinarySchema));
+    }
+
+    #[test]
     fn a_flatbuffer_identity_records_the_flatbuffer_type_name() {
-        const SCHEMA: [u8; 4] = [1, 2, 3, 4];
         let flatbuffer = TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize);
 
         let description = TypeDescription {
             variant: TypeVariant::FixedSize,
-            identifier: TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.to_vec())),
+            identifier: TypeIdentifier::Flatbuffer(
+                Schema::new(schema::UNBOUNDED_DATA.to_vec()).expect("a valid schema"),
+            ),
             size: flatbuffer.size(),
             alignment: flatbuffer.alignment(),
         };
 
         let detail = TypeDetail::try_from(&description).expect("valid description");
-        assert_that!(detail, eq flatbuffer);
+        assert_that!(
+            String::from_utf8_lossy(detail.type_name()),
+            eq "iox2::Flatbuffer<Testing.UnboundedData>"
+        );
+        assert_that!(detail.size(), eq flatbuffer.size());
+        assert_that!(detail.alignment(), eq flatbuffer.alignment());
     }
 
     #[test]

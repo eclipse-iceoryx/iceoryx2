@@ -27,6 +27,7 @@
 * [#2149](https://github.com/eclipse-iceoryx/iceoryx2/issues/2149) Optimize memory chunk reference counting
 * [#2179](https://github.com/eclipse-iceoryx/iceoryx2/issues/2179) Add `chmod` and `chown` to POSIX abstraction
 * [#2184](https://github.com/eclipse-iceoryx/iceoryx2/issues/2184) Add option to override the service types for the language bindings with a custom implementation
+* [#2209](https://github.com/eclipse-iceoryx/iceoryx2/issues/2209) Record flatbuffer root type in the type name of flatbuffer payloads
 
 ### Bugfixes
 
@@ -179,6 +180,22 @@
 
     // new
     let bp_action = BackpressureAction::FollowBackpressureStrategy;
+    ```
+
+4. A flatbuffer service records the root type of its schema in its payload
+   type name.
+
+   The schema is read when the service is created or opened.
+   The builder fails with `InvalidTypeDefinition` when the schema is not a
+   binary flatbuffer schema, and with the new `TypeDefinitionHasNoRootType`
+   when it is one but declares no `root_type`.
+
+    ```text
+    // old
+    iox2::Flatbuffer
+
+    // new
+    iox2::Flatbuffer<Testing.UnboundedData>
     ```
 
 <!-- markdownlint-enable MD013 -->

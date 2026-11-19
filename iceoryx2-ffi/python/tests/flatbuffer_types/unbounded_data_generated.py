@@ -21,6 +21,52 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
+class Entry(object):
+    __slots__ = ['_tab']
+
+    @classmethod
+    def GetRootAs(cls, buf, offset=0):
+        n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
+        x = Entry()
+        x.Init(buf, n + offset)
+        return x
+
+    @classmethod
+    def GetRootAsEntry(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
+    # Entry
+    def Init(self, buf, pos):
+        self._tab = flatbuffers.table.Table(buf, pos)
+
+    # Entry
+    def Data1(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 0
+
+    # Entry
+    def Data2(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Uint64Flags, o + self._tab.Pos)
+        return 0
+
+def EntryStart(builder):
+    builder.StartObject(2)
+
+def EntryAddData1(builder, data1):
+    builder.PrependInt32Slot(0, data1, 0)
+
+def EntryAddData2(builder, data2):
+    builder.PrependUint64Slot(1, data2, 0)
+
+def EntryEnd(builder):
+    return builder.EndObject()
+
+
+
 class UnboundedData(object):
     __slots__ = ['_tab']
 
@@ -53,7 +99,6 @@ class UnboundedData(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from Testing.Entry import Entry
             obj = Entry()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -74,29 +119,17 @@ class UnboundedData(object):
 def UnboundedDataStart(builder):
     builder.StartObject(2)
 
-def Start(builder):
-    UnboundedDataStart(builder)
-
 def UnboundedDataAddTitle(builder, title):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(title), 0)
-
-def AddTitle(builder, title):
-    UnboundedDataAddTitle(builder, title)
 
 def UnboundedDataAddEntries(builder, entries):
     builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(entries), 0)
 
-def AddEntries(builder, entries):
-    UnboundedDataAddEntries(builder, entries)
-
 def UnboundedDataStartEntriesVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
-
-def StartEntriesVector(builder, numElems):
-    return UnboundedDataStartEntriesVector(builder, numElems)
 
 def UnboundedDataEnd(builder):
     return builder.EndObject()
 
-def End(builder):
-    return UnboundedDataEnd(builder)
+
+

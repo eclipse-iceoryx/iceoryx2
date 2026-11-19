@@ -87,6 +87,7 @@ _generate-flatbuffers mode:
     OUT=$(mktemp -d)
     trap 'rm -rf "$OUT"' EXIT
 
+    just _generate-flatbuffers-reflection "$VERSION" "$OUT"
     just _generate-flatbuffers-schemas "$OUT"
     just _generate-flatbuffers-bindings "$OUT"
     just _generate-flatbuffers-python "$OUT"
@@ -119,6 +120,22 @@ _flatc version:
         just _download-flatc "{{version}}" "$(dirname "$FLATC")" >&2
     fi
     echo "$FLATC"
+
+# Generates the Rust bindings of the reflection schema of flatbuffers `version`.
+[private]
+[no-exit-message]
+_generate-flatbuffers-reflection version out:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    SCHEMA=$(mktemp -d)
+    trap 'rm -rf "$SCHEMA"' EXIT
+
+    just _download reflection.fbs "{{version}}" "$SCHEMA/reflection.fbs"
+    GENERATED_DIR=$(just _path-in-tree "{{ICEORYX2_BB_FLATBUFFERS_GENERATED_DIR}}")
+
+    cd "$SCHEMA"
+    "$FLATC" -o "{{out}}/$GENERATED_DIR/binding" --rust reflection.fbs
 
 # Generates every tracked `.bfbs` from its `.fbs` from within the
 # schema's directory.
@@ -154,6 +171,9 @@ _generate-flatbuffers-bindings out:
         NAME=$(basename "$BINDINGS" _generated.rs)
         SCHEMA_DIRECTORY="$DIRECTORY"
         if [ "$DIRECTORY" = "$GENERATED_DIR/binding" ]; then
+            if [ "$NAME" = "reflection" ]; then
+                continue
+            fi
             SCHEMA_DIRECTORY="$GENERATED_DIR/schema"
         fi
         if [ ! -f "$SCHEMA_DIRECTORY/$NAME.fbs" ]; then
@@ -163,7 +183,7 @@ _generate-flatbuffers-bindings out:
         (cd "$SCHEMA_DIRECTORY" && "$FLATC" -o "{{out}}/$DIRECTORY" --rust "$NAME.fbs")
     done
 
-# Generates the python classes of the `Testing` schemas.
+# Generates a python module per `Testing` schema.
 [private]
 [no-exit-message]
 _generate-flatbuffers-python out:
@@ -176,10 +196,10 @@ _generate-flatbuffers-python out:
 
     cd "{{ICEORYX2_BB_FLATBUFFERS_GENERATED_DIR}}/schema"
     SCHEMAS=$(grep -l '^namespace Testing;' ./*.fbs)
-    "$FLATC" -o "$PACKAGE_DIR" --python $SCHEMAS
+    "$FLATC" -o "$PACKAGE_DIR" --python --gen-onefile $SCHEMAS
 
     # Add linter overrides.
-    for FILE in "$PACKAGE_DIR"/Testing/*.py; do
+    for FILE in "$PACKAGE_DIR"/*_generated.py; do
         {
             printf '%s\n\n# pylint: skip-file\n# mypy: ignore-errors\n\n' "$HEADER"
             cat "$FILE"

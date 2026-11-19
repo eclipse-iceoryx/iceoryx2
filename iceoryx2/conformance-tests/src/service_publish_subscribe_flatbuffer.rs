@@ -25,22 +25,21 @@ pub mod service_publish_subscribe_flatbuffer {
     };
     use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::messaging_pattern::MessagingPattern;
+    use iceoryx2::service::port_factory::PortFactory;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{__internal_payload_type_definition, Service, marker::Flatbuffer};
+    use iceoryx2_bb_container::string::String as _;
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_flatbuffers_generated::binding::testing::{
         Entry, EntryArgs, UnboundedData, UnboundedDataArgs, root_as_unbounded_data,
     };
+    use iceoryx2_bb_flatbuffers_generated::schema::testing as schema;
     use iceoryx2_bb_posix::config::TEST_DIRECTORY;
     use iceoryx2_bb_posix::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::static_storage::StaticStorageView;
     use iceoryx2_testing::*;
-
-    const SCHEMA: &str = "some binary content";
-
-    const ALT_SCHEMA: &str = "other binary content";
 
     #[conformance_test]
     pub fn create_fails_when_no_schema_file_is_available<Sut: Service>() {
@@ -59,7 +58,7 @@ pub mod service_publish_subscribe_flatbuffer {
     pub fn create_succeeds_with_schema_file<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let service_name = generate_service_name();
         let sut = node
@@ -91,7 +90,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -112,7 +111,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -134,8 +133,8 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
-        let alt_schema_file = create_typed_file_with_content(ALT_SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
+        let alt_schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA_ALT, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -157,8 +156,8 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
-        let alt_schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
+        let alt_schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -181,7 +180,7 @@ pub mod service_publish_subscribe_flatbuffer {
         test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
         let node = test.create_node();
         let service_name = generate_service_name();
-        let _schema_file = create_file_with_content_at(SCHEMA, "unbounded_data.bfbs");
+        let _schema_file = create_file_with_bytes_at(schema::UNBOUNDED_DATA, "unbounded_data.bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -197,7 +196,7 @@ pub mod service_publish_subscribe_flatbuffer {
         test.config_mut().global.service.flatbuffer_schema_path = Some(TEST_DIRECTORY);
         let node = test.create_node();
         let service_name = generate_service_name();
-        let _schema_file = create_file_with_content_at(SCHEMA, "unbounded_data.bfbs");
+        let _schema_file = create_file_with_bytes_at(schema::UNBOUNDED_DATA, "unbounded_data.bfbs");
 
         let _sut = node
             .service_builder(&service_name)
@@ -218,7 +217,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let _service = node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
@@ -235,7 +234,7 @@ pub mod service_publish_subscribe_flatbuffer {
 
         let sut = __internal_payload_type_definition::<Sut>(test.config(), &details.static_details);
 
-        assert_that!(sut, eq Ok(Some(SCHEMA.as_bytes().to_vec())));
+        assert_that!(sut, eq Ok(Some(schema::UNBOUNDED_DATA.to_vec())));
     }
 
     #[conformance_test]
@@ -266,7 +265,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -277,11 +276,11 @@ pub mod service_publish_subscribe_flatbuffer {
 
         let type_definition = sut.type_definition().unwrap();
 
-        assert_that!(type_definition.len(), eq SCHEMA.len() as u64);
+        assert_that!(type_definition.len(), eq schema::UNBOUNDED_DATA.len() as u64);
         let mut buffer = vec![0u8; type_definition.len() as usize];
         type_definition.read(&mut buffer).unwrap();
 
-        assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
+        assert_that!(schema::UNBOUNDED_DATA, eq buffer.as_slice());
     }
 
     fn produce_example_data<'a, Sut: Service + 'static>(
@@ -312,7 +311,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -349,7 +348,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -409,7 +408,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -438,7 +437,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -476,7 +475,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -511,7 +510,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -551,7 +550,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -610,7 +609,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let sut = node
             .service_builder(&service_name)
@@ -639,52 +638,13 @@ pub mod service_publish_subscribe_flatbuffer {
     }
 
     #[conformance_test]
-    pub fn open_service_without_specifying_type_definition_works<Sut: Service + 'static>() {
-        let test = Test::<Sut>::new();
-        let node = test.create_node();
-        let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
-
-        let _sut_create = node
-            .service_builder(&service_name)
-            .publish_subscribe::<Flatbuffer<UnboundedData>>()
-            .flatbuffer_schema_path(schema_file.path().unwrap())
-            .create()
-            .unwrap();
-
-        let sut = unsafe {
-            node.service_builder(&service_name)
-                .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(
-                    &TypeDetail::__internal_new_from_parts(
-                        TypeVariant::FixedSize,
-                        "iox2::Flatbuffer",
-                        1,
-                        1,
-                    )
-                    .unwrap(),
-                )
-                .__internal_skip_type_definition_verification()
-                .open()
-                .unwrap()
-        };
-
-        let type_definition = sut.type_definition().unwrap();
-        assert_that!(type_definition.len(), eq SCHEMA.len() as u64);
-        let mut buffer = vec![0u8; type_definition.len() as usize];
-        type_definition.read(&mut buffer).unwrap();
-
-        assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
-    }
-
-    #[conformance_test]
     pub fn custom_payload_grows_to_the_bytes_of_a_flatbuffer<Sut: Service + 'static>() {
         const BYTES: &[u8] = b"a serialized flatbuffer";
 
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
 
         let typed = node
             .service_builder(&service_name)
@@ -702,7 +662,7 @@ pub mod service_publish_subscribe_flatbuffer {
                     TypeVariant::FixedSize,
                 ))
                 .__internal_set_payload_type_details(&flatbuffer_type_detail())
-                .__internal_skip_type_definition_verification()
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
                 .open()
                 .unwrap()
         };
@@ -735,9 +695,138 @@ pub mod service_publish_subscribe_flatbuffer {
         assert_that!(sample.payload_bytes(), eq BYTES);
     }
 
+    #[conformance_test]
+    pub fn create_records_the_root_type_of_the_schema<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let payload = &sut.static_config().message_type_details().payload;
+        assert_that!(payload.type_name().as_str(), eq "iox2::Flatbuffer<Testing.UnboundedData>");
+    }
+
+    #[conformance_test]
+    pub fn create_with_schema_bytes_records_the_root_type_of_the_schema<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&flatbuffer_type_detail())
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
+                .create()
+                .unwrap()
+        };
+
+        let payload = &sut.static_config().message_type_details().payload;
+        assert_that!(payload.type_name().as_str(), eq "iox2::Flatbuffer<Testing.UnboundedData>");
+    }
+
+    #[conformance_test]
+    pub fn create_fails_when_schema_declares_no_root_type<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_bytes(schema::NO_ROOT_TYPE, "bfbs");
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create();
+
+        assert_that!(
+            sut.err(),
+            eq Some(PublishSubscribeCreateError::TypeDefinitionHasNoRootType)
+        );
+    }
+
+    #[conformance_test]
+    pub fn open_fails_when_schema_declares_no_root_type<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
+        let no_root_type_schema_file = create_typed_file_with_bytes(schema::NO_ROOT_TYPE, "bfbs");
+
+        let _sut_create = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(no_root_type_schema_file.path().unwrap())
+            .open();
+
+        assert_that!(
+            sut.err(),
+            eq Some(PublishSubscribeOpenError::TypeDefinitionHasNoRootType)
+        );
+    }
+
+    #[conformance_test]
+    pub fn open_fails_when_schema_declares_another_root_type<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
+        let other_type_schema_file = create_typed_file_with_bytes(schema::DATA_PROPS, "bfbs");
+
+        let _sut_create = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<u64>>()
+            .flatbuffer_schema_path(other_type_schema_file.path().unwrap())
+            .open();
+
+        assert_that!(sut.err(), eq Some(PublishSubscribeOpenError::IncompatibleTypes));
+    }
+
     fn flatbuffer_type_detail() -> TypeDetail {
         TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, "iox2::Flatbuffer", 1, 1)
             .unwrap()
+    }
+
+    #[conformance_test]
+    pub fn create_fails_when_the_payload_root_type_is_not_the_schemas<Sut: Service>() {
+        const PAYLOAD_TYPE_NAME: &str = "iox2::Flatbuffer<Testing.DataProps>";
+
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let type_detail =
+            TypeDetail::__internal_new_from_parts(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, 1, 1)
+                .unwrap();
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_detail)
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
+                .create()
+        };
+
+        assert_that!(sut.err(), eq Some(PublishSubscribeCreateError::InvalidTypeDefinition));
     }
 
     #[conformance_test]
@@ -750,7 +839,7 @@ pub mod service_publish_subscribe_flatbuffer {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&flatbuffer_type_detail())
-                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
                 .create()
                 .unwrap()
         };
@@ -758,7 +847,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let type_definition = sut.type_definition().unwrap();
         let mut buffer = vec![0u8; type_definition.len() as usize];
         type_definition.read(&mut buffer).unwrap();
-        assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
+        assert_that!(schema::UNBOUNDED_DATA, eq buffer.as_slice());
     }
 
     #[conformance_test]
@@ -766,7 +855,7 @@ pub mod service_publish_subscribe_flatbuffer {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let _sut_create = node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<UnboundedData>>()
@@ -778,14 +867,14 @@ pub mod service_publish_subscribe_flatbuffer {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&flatbuffer_type_detail())
-                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
                 .open()
         };
         let other = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&flatbuffer_type_detail())
-                .__internal_flatbuffer_schema(ALT_SCHEMA.as_bytes())
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA_ALT)
                 .open()
         };
 
@@ -802,18 +891,18 @@ pub mod service_publish_subscribe_flatbuffer {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&flatbuffer_type_detail())
-                .__internal_flatbuffer_schema(SCHEMA.as_bytes())
+                .__internal_flatbuffer_schema(schema::UNBOUNDED_DATA)
                 .create()
                 .expect("the service is created")
         };
 
-        let same_schema = create_typed_file_with_content(SCHEMA, "bfbs");
+        let same_schema = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let same = node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<UnboundedData>>()
             .flatbuffer_schema_path(same_schema.path().expect("the file has a path"))
             .open();
-        let other_schema = create_typed_file_with_content(ALT_SCHEMA, "bfbs");
+        let other_schema = create_typed_file_with_bytes(schema::UNBOUNDED_DATA_ALT, "bfbs");
         let other = node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<UnboundedData>>()

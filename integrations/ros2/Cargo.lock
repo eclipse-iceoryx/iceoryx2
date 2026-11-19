@@ -612,9 +612,17 @@ dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-flatbuffers-generated",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-bb-flatbuffers-generated"
+version = "0.10.999"
+dependencies = [
+ "flatbuffers",
 ]
 
 [[package]]
@@ -880,6 +888,7 @@ version = "0.10.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-elementary",
+ "iceoryx2-bb-flatbuffers",
  "iceoryx2-log",
  "serde",
 ]

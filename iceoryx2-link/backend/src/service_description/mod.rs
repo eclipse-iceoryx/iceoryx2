@@ -24,8 +24,8 @@ pub use settings::{
     ServiceSettings,
 };
 pub use types::{
-    InvalidSampleLayout, InvalidTypeDescription, RequestResponseTypes, SampleTypes, Schema,
-    ServiceTypes, TypeDescription, TypeIdentifier,
+    InvalidSampleLayout, InvalidSchema, InvalidTypeDescription, RequestResponseTypes, SampleTypes,
+    Schema, ServiceTypes, TypeDescription, TypeIdentifier,
 };
 
 use alloc::vec::Vec;
@@ -149,6 +149,14 @@ pub enum DescriptionError {
     UnsupportedPattern,
     /// The service's details could not be read from its static resources.
     ServiceDetails(ServiceDetailsError),
+    /// The service's type definition is not a flatbuffer payload's schema.
+    InvalidSchema(InvalidSchema),
+}
+
+impl From<InvalidSchema> for DescriptionError {
+    fn from(error: InvalidSchema) -> Self {
+        Self::InvalidSchema(error)
+    }
 }
 
 impl core::fmt::Display for DescriptionError {
@@ -182,20 +190,25 @@ impl ServiceDescription {
                     to DescriptionError,
                     "Failed to read the type definition of {}", static_config.name()
                 );
+                let types = fail!(
+                    from origin,
+                    when sample_types(config.message_type_details(), schema),
+                    to DescriptionError,
+                    "The schema of {} is not a flatbuffer payload's", static_config.name()
+                );
+                let settings = PublishSubscribeSettings {
+                    max_subscribers: config.max_subscribers(),
+                    max_publishers: config.max_publishers(),
+                    max_nodes: config.max_nodes(),
+                    history_size: config.history_size(),
+                    subscriber_max_buffer_size: config.subscriber_max_buffer_size(),
+                    subscriber_max_borrowed_samples: config.subscriber_max_borrowed_samples(),
+                    safe_overflow: config.has_safe_overflow(),
+                };
+
                 (
-                    PatternSettings::PublishSubscribe(PublishSubscribeSettings {
-                        max_subscribers: config.max_subscribers(),
-                        max_publishers: config.max_publishers(),
-                        max_nodes: config.max_nodes(),
-                        history_size: config.history_size(),
-                        subscriber_max_buffer_size: config.subscriber_max_buffer_size(),
-                        subscriber_max_borrowed_samples: config.subscriber_max_borrowed_samples(),
-                        safe_overflow: config.has_safe_overflow(),
-                    }),
-                    ServiceTypes::PublishSubscribe(sample_types(
-                        config.message_type_details(),
-                        schema,
-                    )),
+                    PatternSettings::PublishSubscribe(settings),
+                    ServiceTypes::PublishSubscribe(types),
                 )
             }
             StaticPattern::RequestResponse(config) => {
@@ -211,29 +224,38 @@ impl ServiceDescription {
                     to DescriptionError,
                     "Failed to read the response type definition of {}", static_config.name()
                 );
+                let request_types = fail!(
+                    from origin,
+                    when sample_types(config.request_message_type_details(), request_schema),
+                    to DescriptionError,
+                    "The request schema of {} is not a flatbuffer payload's", static_config.name()
+                );
+                let response_types = fail!(
+                    from origin,
+                    when sample_types(config.response_message_type_details(), response_schema),
+                    to DescriptionError,
+                    "The response schema of {} is not a flatbuffer payload's", static_config.name()
+                );
+
+                let settings = RequestResponseSettings {
+                    max_servers: config.max_servers(),
+                    max_clients: config.max_clients(),
+                    max_nodes: config.max_nodes(),
+                    max_active_requests_per_client: config.max_active_requests_per_client(),
+                    max_response_buffer_size: config.max_response_buffer_size(),
+                    max_borrowed_responses_per_pending_response: config
+                        .max_borrowed_responses_per_pending_response(),
+                    max_loaned_requests: config.max_loaned_requests(),
+                    safe_overflow_for_requests: config.has_safe_overflow_for_requests(),
+                    safe_overflow_for_responses: config.has_safe_overflow_for_responses(),
+                    fire_and_forget_requests: config.does_support_fire_and_forget_requests(),
+                };
+
                 (
-                    PatternSettings::RequestResponse(RequestResponseSettings {
-                        max_servers: config.max_servers(),
-                        max_clients: config.max_clients(),
-                        max_nodes: config.max_nodes(),
-                        max_active_requests_per_client: config.max_active_requests_per_client(),
-                        max_response_buffer_size: config.max_response_buffer_size(),
-                        max_borrowed_responses_per_pending_response: config
-                            .max_borrowed_responses_per_pending_response(),
-                        max_loaned_requests: config.max_loaned_requests(),
-                        safe_overflow_for_requests: config.has_safe_overflow_for_requests(),
-                        safe_overflow_for_responses: config.has_safe_overflow_for_responses(),
-                        fire_and_forget_requests: config.does_support_fire_and_forget_requests(),
-                    }),
+                    PatternSettings::RequestResponse(settings),
                     ServiceTypes::RequestResponse(RequestResponseTypes {
-                        request: sample_types(
-                            config.request_message_type_details(),
-                            request_schema,
-                        ),
-                        response: sample_types(
-                            config.response_message_type_details(),
-                            response_schema,
-                        ),
+                        request: request_types,
+                        response: response_types,
                     }),
                 )
             }
@@ -261,15 +283,18 @@ impl ServiceDescription {
     }
 }
 
-fn sample_types(types: &MessageTypeDetails, schema: Option<Vec<u8>>) -> SampleTypes {
+fn sample_types(
+    types: &MessageTypeDetails,
+    schema: Option<Vec<u8>>,
+) -> Result<SampleTypes, InvalidSchema> {
     let mut payload = TypeDescription::from(&types.payload);
     if let Some(schema) = schema {
-        payload.identifier = TypeIdentifier::Flatbuffer(Schema::new(schema));
+        payload.identifier = TypeIdentifier::Flatbuffer(Schema::new(schema)?);
     }
-    SampleTypes {
+    Ok(SampleTypes {
         payload,
         user_header: (&types.user_header).into(),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -284,7 +309,8 @@ mod tests {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::{generate_isolated_config, generate_service_name};
     use iceoryx2_bb_elementary::alignment::Alignment;
-    use iceoryx2_bb_posix::testing::create_typed_file_with_content;
+    use iceoryx2_bb_flatbuffers_generated::schema::testing as schema;
+    use iceoryx2_bb_posix::testing::create_typed_file_with_bytes;
     use iceoryx2_bb_testing::assert_that;
 
     /// The static config of the service `name` of `pattern` in the
@@ -388,15 +414,13 @@ mod tests {
 
     #[test]
     fn a_flatbuffer_payload_is_identified_by_its_schema() {
-        const SCHEMA: &str = "the binary schema";
-
         let config = generate_isolated_config();
         let node = NodeBuilder::new()
             .config(&config)
             .create::<local::Service>()
             .expect("node is created");
         let service_name = generate_service_name();
-        let schema_file = create_typed_file_with_content(SCHEMA, "bfbs");
+        let schema_file = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
         let _service = node
             .service_builder(&service_name)
             .publish_subscribe::<Flatbuffer<u64>>()
@@ -414,23 +438,20 @@ mod tests {
         };
         assert_that!(
             types.payload.identifier,
-            eq TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.as_bytes().to_vec()))
+            eq TypeIdentifier::Flatbuffer(Schema::new(schema::UNBOUNDED_DATA.to_vec()).expect("a valid schema"))
         );
     }
 
     #[test]
     fn flatbuffer_requests_and_responses_are_identified_by_their_schemas() {
-        const REQUEST_SCHEMA: &str = "the request schema";
-        const RESPONSE_SCHEMA: &str = "the response schema";
-
         let config = generate_isolated_config();
         let node = NodeBuilder::new()
             .config(&config)
             .create::<local::Service>()
             .expect("node is created");
         let service_name = generate_service_name();
-        let request_schema = create_typed_file_with_content(REQUEST_SCHEMA, "bfbs");
-        let response_schema = create_typed_file_with_content(RESPONSE_SCHEMA, "bfbs");
+        let request_schema = create_typed_file_with_bytes(schema::UNBOUNDED_DATA, "bfbs");
+        let response_schema = create_typed_file_with_bytes(schema::DATA_PROPS, "bfbs");
         let _service = node
             .service_builder(&service_name)
             .request_response::<Flatbuffer<u64>, Flatbuffer<u32>>()
@@ -449,11 +470,11 @@ mod tests {
         };
         assert_that!(
             types.request.payload.identifier,
-            eq TypeIdentifier::Flatbuffer(Schema::new(REQUEST_SCHEMA.as_bytes().to_vec()))
+            eq TypeIdentifier::Flatbuffer(Schema::new(schema::UNBOUNDED_DATA.to_vec()).expect("a valid schema"))
         );
         assert_that!(
             types.response.payload.identifier,
-            eq TypeIdentifier::Flatbuffer(Schema::new(RESPONSE_SCHEMA.as_bytes().to_vec()))
+            eq TypeIdentifier::Flatbuffer(Schema::new(schema::DATA_PROPS.to_vec()).expect("a valid schema"))
         );
     }
 

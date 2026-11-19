@@ -223,7 +223,9 @@ fn payload_type(schema: &[u8]) -> TypeDescription {
     let flatbuffer = TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize);
     TypeDescription {
         variant: flatbuffer.variant(),
-        identifier: TypeIdentifier::Flatbuffer(Schema::new(schema.to_vec())),
+        identifier: TypeIdentifier::Flatbuffer(
+            Schema::new(schema.to_vec()).expect("the embedded schemas are valid"),
+        ),
         size: flatbuffer.size(),
         alignment: flatbuffer.alignment(),
     }

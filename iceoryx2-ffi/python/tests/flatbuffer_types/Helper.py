@@ -15,13 +15,13 @@ from pathlib import Path
 
 # fmt: off
 import iceoryx2 as iox2
-from Testing.BoundedData import (BoundedData, BoundedDataAddData,
-                                 BoundedDataEnd, BoundedDataStart)
-from Testing.Entry import EntryAddData1, EntryEnd, EntryStart
-from Testing.UnboundedData import (UnboundedData, UnboundedDataAddEntries,
-                                   UnboundedDataAddTitle, UnboundedDataEnd,
-                                   UnboundedDataStart,
-                                   UnboundedDataStartEntriesVector)
+from bounded_data_generated import (BoundedData, BoundedDataAddData,
+                                    BoundedDataEnd, BoundedDataStart)
+from unbounded_data_generated import (EntryAddData1, EntryEnd, EntryStart,
+                                      UnboundedData, UnboundedDataAddEntries,
+                                      UnboundedDataAddTitle, UnboundedDataEnd,
+                                      UnboundedDataStart,
+                                      UnboundedDataStartEntriesVector)
 
 # fmt: on
 

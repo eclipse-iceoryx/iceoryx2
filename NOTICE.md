@@ -36,6 +36,18 @@ The project maintains the following source code repositories:
 * <https://github.com/eclipse-iceoryx/iceoryx-gateway-dds>
 * <https://github.com/eclipse-iceoryx/iceoryx-web>
 
+## Third-party Content
+
+FlatBuffers reflection schema
+
+* License: Apache-2.0
+* Project: <https://github.com/google/flatbuffers>
+* Source: `reflection/reflection.fbs` at the tag of the `flatbuffers` crate
+  version in use, Copyright 2014 Google Inc.
+
+The Rust bindings in `iceoryx2-bb/flatbuffers-generated/binding/reflection_generated.rs`
+are generated from it with `flatc`.
+
 ## Cryptography
 
 Content may contain encryption software. The country in which you are currently

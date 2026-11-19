@@ -18,15 +18,18 @@ default = ["std"]
 std = [
   "iceoryx2/std",
   "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-flatbuffers/std",
   "iceoryx2-log/std",
 ]
 
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-flatbuffers = { workspace = true }
 iceoryx2-log = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-flatbuffers-generated = { workspace = true, features = ["std"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
 iceoryx2-bb-testing = { workspace = true }

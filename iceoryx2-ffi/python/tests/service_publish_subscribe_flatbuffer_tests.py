@@ -18,7 +18,7 @@ import pytest
 from flatbuffer_types.Helper import (create_unbounded_data,
                                      flatbuffer_tests_schema_path,
                                      get_schema_file)
-from Testing.UnboundedData import UnboundedData
+from unbounded_data_generated import UnboundedData
 
 # fmt: on
 

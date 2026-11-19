@@ -654,10 +654,10 @@ pub fn payload_bytes_mut<U: UninitializedSample>(sample: &mut U) -> &mut [u8] {
 mod tests {
     use super::*;
 
-    use iceoryx2::service::static_config::message_type_details::TypeDetail;
-    use iceoryx2_bb_testing::assert_that;
-
     use crate::service_description::{Schema, TypeDescription};
+    use iceoryx2::service::static_config::message_type_details::TypeDetail;
+    use iceoryx2_bb_flatbuffers_generated::schema::testing as schema;
+    use iceoryx2_bb_testing::assert_that;
 
     fn no_user_header() -> TypeDescription {
         TypeDescription::from(&TypeDetail::new::<()>(TypeVariant::FixedSize))
@@ -699,13 +699,14 @@ mod tests {
 
     #[test]
     fn a_flatbuffer_payload_fits_any_number_of_bytes() {
-        const SCHEMA: &[u8] = b"the binary schema";
         const LENGTHS: [usize; 3] = [0, 1, 1234];
 
         let types = SampleTypes {
             payload: TypeDescription {
                 variant: TypeVariant::FixedSize,
-                identifier: TypeIdentifier::Flatbuffer(Schema::new(SCHEMA.to_vec())),
+                identifier: TypeIdentifier::Flatbuffer(
+                    Schema::new(schema::UNBOUNDED_DATA.to_vec()).expect("a valid schema"),
+                ),
                 size: 1,
                 alignment: 1,
             },

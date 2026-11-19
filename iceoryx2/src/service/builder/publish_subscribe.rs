@@ -14,14 +14,17 @@
 //!
 //! See [`crate::service`]
 //!
+use alloc::format;
 use core::marker::PhantomData;
 
 use crate::config::Config;
-use crate::service::resource::type_definition::{SchemaOverride, TypeDefinition};
-use iceoryx2_bb_container::string::String;
+use crate::service::resource::flatbuffer_schema_source::{
+    FlatbufferSchemaSource, ResolveTypeDefinitionError,
+};
+use crate::service::resource::type_definition::TypeDefinition;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_flatbuffers::{TypeName, is_binary_flatbuffer_schema};
+use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::ServiceState;
@@ -99,6 +102,20 @@ pub enum PublishSubscribeOpenError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    TypeDefinitionHasNoRootType,
+}
+
+impl From<ResolveTypeDefinitionError> for PublishSubscribeOpenError {
+    fn from(error: ResolveTypeDefinitionError) -> Self {
+        match error {
+            ResolveTypeDefinitionError::Schema(error) => ServiceOpenError::from(error).into(),
+            ResolveTypeDefinitionError::NotABinarySchema
+            | ResolveTypeDefinitionError::TypeNameTooLong
+            | ResolveTypeDefinitionError::RootTypeMismatch => Self::InvalidTypeDefinition,
+            ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
+        }
+    }
 }
 
 impl core::fmt::Display for PublishSubscribeOpenError {
@@ -205,7 +222,8 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
             PublishSubscribeOpenError::UnableToAcquireTypeDefinition => {
                 ServiceOpenError::UnableToAcquireTypeDefinition
             }
-            PublishSubscribeOpenError::InvalidTypeDefinition => {
+            PublishSubscribeOpenError::InvalidTypeDefinition
+            | PublishSubscribeOpenError::TypeDefinitionHasNoRootType => {
                 ServiceOpenError::InvalidTypeDefinition
             }
         }
@@ -246,8 +264,22 @@ pub enum PublishSubscribeCreateError {
     /// When using a serialized format such as Flatbuffers, the iceoryx2 service requires a specific
     /// type definition format. If the wrong type definition format was provided, this error is returned.
     InvalidTypeDefinition,
+    /// The flatbuffer schema declares no `root_type`.
+    TypeDefinitionHasNoRootType,
     /// The [`UniqueServiceId`] could not be generated.
     UnableToGenerateUniqueServiceId,
+}
+
+impl From<ResolveTypeDefinitionError> for PublishSubscribeCreateError {
+    fn from(error: ResolveTypeDefinitionError) -> Self {
+        match error {
+            ResolveTypeDefinitionError::Schema(error) => ServiceCreateError::from(error).into(),
+            ResolveTypeDefinitionError::NotABinarySchema
+            | ResolveTypeDefinitionError::TypeNameTooLong
+            | ResolveTypeDefinitionError::RootTypeMismatch => Self::InvalidTypeDefinition,
+            ResolveTypeDefinitionError::NoRootType => Self::TypeDefinitionHasNoRootType,
+        }
+    }
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -320,7 +352,8 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             PublishSubscribeCreateError::UnableToAcquireTypeDefinition => {
                 ServiceCreateError::UnableToAcquireTypeDefinition
             }
-            PublishSubscribeCreateError::InvalidTypeDefinition => {
+            PublishSubscribeCreateError::InvalidTypeDefinition
+            | PublishSubscribeCreateError::TypeDefinitionHasNoRootType => {
                 ServiceCreateError::InvalidTypeDefinition
             }
             PublishSubscribeCreateError::UnableToGenerateUniqueServiceId => {
@@ -378,6 +411,12 @@ impl From<PublishSubscribeCreateError> for PublishSubscribeOpenOrCreateError {
     }
 }
 
+impl From<ResolveTypeDefinitionError> for PublishSubscribeOpenOrCreateError {
+    fn from(error: ResolveTypeDefinitionError) -> Self {
+        Self::PublishSubscribeOpenError(error.into())
+    }
+}
+
 impl core::fmt::Display for PublishSubscribeOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "PublishSubscribeOpenOrCreateError::{self:?}")
@@ -412,9 +451,8 @@ pub struct Builder<
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
     override_user_header_type: Option<TypeDetail>,
-    override_schema: Option<SchemaOverride>,
-    type_definition_name_hint: TypeName,
-    skip_type_definition_verification: bool,
+    flatbuffer_schema_source: FlatbufferSchemaSource,
+    type_definition: Option<TypeDefinition>,
     verify: Verify,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -432,10 +470,9 @@ impl<
             override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
-            override_schema: self.override_schema.clone(),
-            type_definition_name_hint: self.type_definition_name_hint,
+            flatbuffer_schema_source: self.flatbuffer_schema_source.clone(),
+            type_definition: self.type_definition.clone(),
             verify: self.verify,
-            skip_type_definition_verification: self.skip_type_definition_verification,
             _data: PhantomData,
             _user_header: PhantomData,
         }
@@ -448,20 +485,6 @@ impl<
     ServiceType: service::Service,
 > Builder<Payload, UserHeader, ServiceType>
 {
-    fn has_flatbuffer_payload(&self) -> bool {
-        use iceoryx2_bb_elementary_traits::type_name::TypeName;
-
-        match &self.override_payload_type {
-            Some(payload_type) => unsafe {
-                payload_type.type_name().as_str() == Flatbuffer::<()>::type_name()
-            },
-            None => unsafe {
-                <Payload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
-                    == Flatbuffer::<()>::type_name()
-            },
-        }
-    }
-
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
@@ -469,9 +492,8 @@ impl<
             override_alignment: None,
             override_payload_type: None,
             override_user_header_type: None,
-            override_schema: None,
-            type_definition_name_hint: TypeName::new::<Payload>(),
-            skip_type_definition_verification: false,
+            flatbuffer_schema_source: FlatbufferSchemaSource::Lookup(TypeName::new::<Payload>()),
+            type_definition: None,
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -741,15 +763,6 @@ impl<
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
-        if let Some(SchemaOverride::File(schema_path)) = &self.override_schema
-            && !is_binary_flatbuffer_schema(&schema_path.file_name())
-        {
-            fail!(from self,
-                    with PublishSubscribeCreateError::InvalidTypeDefinition,
-                    "{msg} since the type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
-                    schema_path);
-        }
-
         let generate_dynamic_config = |service_config: &StaticConfig| {
             let pubsub_config = service_config.publish_subscribe();
             let dynamic_config_setting = DynamicConfigSettings {
@@ -778,12 +791,7 @@ impl<
                 PublishSubscribeResources::create(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        type_definition: TypeDefinition {
-                            use_type_definition: self.has_flatbuffer_payload(),
-                            override_schema: self.override_schema.clone(),
-                            type_name: self.type_definition_name_hint,
-                            skip_type_definition_verification: false,
-                        },
+                        type_definition: self.type_definition.clone(),
                         shared_node: self.base.shared_node.clone(),
                     },
                 )
@@ -809,15 +817,6 @@ impl<
     > {
         let msg = "Unable to open publish subscribe service";
 
-        if let Some(SchemaOverride::File(schema_path)) = &self.override_schema
-            && !is_binary_flatbuffer_schema(&schema_path.file_name())
-        {
-            fail!(from self,
-                    with PublishSubscribeOpenError::InvalidTypeDefinition,
-                    "{msg} since the type definition must be a binary flatbuffer schema and this file \"{}\" is something else.",
-                    schema_path);
-        }
-
         let service_state = self.base.open(
             msg,
             || self.is_service_available(msg),
@@ -828,13 +827,7 @@ impl<
                 PublishSubscribeResources::open(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        type_definition: TypeDefinition {
-                            use_type_definition: self.has_flatbuffer_payload(),
-                            override_schema: self.override_schema.clone(),
-                            type_name: self.type_definition_name_hint,
-                            skip_type_definition_verification: self
-                                .skip_type_definition_verification,
-                        },
+                        type_definition: self.type_definition.clone(),
                         shared_node: self.base.shared_node.clone(),
                     },
                 )
@@ -863,20 +856,6 @@ impl<
             |attributes| self.create_impl(attributes),
         )
     }
-
-    fn adjust_payload_alignment(&mut self) {
-        if let Some(alignment) = self.override_alignment {
-            self.config_details_mut()
-                .message_type_details
-                .payload
-                .alignment = self
-                .config_details()
-                .message_type_details
-                .payload
-                .alignment
-                .max(alignment);
-        }
-    }
 }
 
 impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
@@ -884,31 +863,27 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
 {
     #[doc(hidden)]
     pub fn __internal_type_definition_name_hint(mut self, value: &TypeName) -> Self {
-        self.type_definition_name_hint = *value;
+        if let FlatbufferSchemaSource::Lookup(type_name) = &mut self.flatbuffer_schema_source {
+            *type_name = *value;
+        }
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.override_schema = Some(SchemaOverride::File(*path));
+        self.flatbuffer_schema_source = FlatbufferSchemaSource::File(*path);
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_flatbuffer_schema(mut self, schema: &[u8]) -> Self {
-        self.override_schema = Some(SchemaOverride::Content(schema.to_vec()));
+        self.flatbuffer_schema_source = FlatbufferSchemaSource::Bytes(schema.into());
         self
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_set_payload_type_details(mut self, value: &TypeDetail) -> Self {
         self.override_payload_type = Some(*value);
-        self
-    }
-
-    #[doc(hidden)]
-    pub unsafe fn __internal_skip_type_definition_verification(mut self) -> Self {
-        self.skip_type_definition_verification = true;
         self
     }
 }
@@ -926,19 +901,33 @@ impl<Payload: Debug + ?Sized + IceoryxSend + ZeroCopySend, ServiceType: service:
 impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<Payload, UserHeader, ServiceType>
 {
-    fn prepare_config_details(&mut self) {
-        self.config_details_mut().message_type_details =
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.publish_subscribe_mut();
+        let message_type_details = &mut static_config.message_type_details;
+
+        *message_type_details =
             MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::FixedSize);
+        message_type_details.override_payload_type(self.override_payload_type);
+        message_type_details.override_user_header_type(self.override_user_header_type);
 
-        if let Some(details) = &self.override_payload_type {
-            self.config_details_mut().message_type_details.payload = *details;
+        self.type_definition = fail!(from origin,
+            when self.flatbuffer_schema_source.try_create_type_definition(&message_type_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the payload could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(type_definition) = &self.type_definition {
+            message_type_details.payload.type_name = type_definition.type_name;
         }
 
-        if let Some(details) = &self.override_user_header_type {
-            self.config_details_mut().message_type_details.user_header = *details;
-        }
+        message_type_details
+            .payload
+            .override_alignment(self.override_alignment);
 
-        self.adjust_payload_alignment();
+        Ok(())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -966,7 +955,8 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
         PublishSubscribeOpenOrCreateError,
     > {
         self.adjust_configuration_to_meaningful_values();
-        self.prepare_config_details();
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenOrCreateError,
+            "Unable to open or create publish subscribe service since the message type details could not be recorded.");
         self.open_or_create_impl(verifier)
     }
 
@@ -989,7 +979,8 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
-        self.prepare_config_details();
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenError,
+            "Unable to open publish subscribe service since the message type details could not be recorded.");
         self.open_impl(verifier)
     }
 
@@ -1012,7 +1003,8 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
         PublishSubscribeCreateError,
     > {
         self.adjust_configuration_to_meaningful_values();
-        self.prepare_config_details();
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeCreateError,
+            "Unable to create publish subscribe service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
 }
@@ -1024,7 +1016,7 @@ impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Ser
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
     pub fn flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
-        self.override_schema = Some(SchemaOverride::File(*path));
+        self.flatbuffer_schema_source = FlatbufferSchemaSource::File(*path);
         self
     }
 }
@@ -1035,19 +1027,30 @@ impl<
     ServiceType: service::Service,
 > Builder<[Payload], UserHeader, ServiceType>
 {
-    fn prepare_config_details(&mut self) {
-        self.config_details_mut().message_type_details =
+    fn prepare_message_type_details(&mut self) -> Result<(), ResolveTypeDefinitionError> {
+        let origin = format!("{self:?}");
+        let node_config = self.base.shared_node.config();
+        let static_config = self.base.service_config.publish_subscribe_mut();
+        let message_type_details = &mut static_config.message_type_details;
+
+        *message_type_details =
             MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::Dynamic);
-
-        if let Some(details) = &self.override_payload_type {
-            self.config_details_mut().message_type_details.payload = *details;
+        message_type_details.override_payload_type(self.override_payload_type);
+        message_type_details.override_user_header_type(self.override_user_header_type);
+        self.type_definition = fail!(from origin,
+            when self.flatbuffer_schema_source.try_create_type_definition(&message_type_details.payload, node_config),
+            to ResolveTypeDefinitionError,
+            "Unable to record the message type details since the schema of the payload could not be loaded.");
+        // The bindings state `iox2::Flatbuffer` through the override since their
+        // payload type carries no name. The root type is read from the schema and
+        // added here.
+        if let Some(type_definition) = &self.type_definition {
+            message_type_details.payload.type_name = type_definition.type_name;
         }
-
-        if let Some(details) = &self.override_user_header_type {
-            self.config_details_mut().message_type_details.user_header = *details;
-        }
-
-        self.adjust_payload_alignment();
+        message_type_details
+            .payload
+            .override_alignment(self.override_alignment);
+        Ok(())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1072,7 +1075,8 @@ impl<
         publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.prepare_config_details();
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenOrCreateError,
+            "Unable to open or create publish subscribe service since the message type details could not be recorded.");
         self.open_or_create_impl(attributes)
     }
 
@@ -1095,7 +1099,8 @@ impl<
         publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenError,
     > {
-        self.prepare_config_details();
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeOpenError,
+            "Unable to open publish subscribe service since the message type details could not be recorded.");
         self.open_impl(attributes)
     }
 
@@ -1117,7 +1122,8 @@ impl<
         publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeCreateError,
     > {
-        self.prepare_config_details();
+        fail!(from self, when self.prepare_message_type_details(), to PublishSubscribeCreateError,
+            "Unable to create publish subscribe service since the message type details could not be recorded.");
         self.create_impl(attributes)
     }
 }

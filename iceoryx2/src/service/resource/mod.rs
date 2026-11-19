@@ -13,6 +13,7 @@
 extern crate alloc;
 
 pub mod blackboard;
+pub(crate) mod flatbuffer_schema_source;
 pub mod publish_subscribe;
 pub mod request_response;
 pub(crate) mod type_definition;

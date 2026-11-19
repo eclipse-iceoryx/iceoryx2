@@ -24,6 +24,10 @@ pub mod testing {
     pub const INCOMPATIBLE_DATA: &[u8] = include_bytes!("../schema/incompatible_data.bfbs");
     /// Root type `Testing.UnboundedData`.
     pub const UNBOUNDED_DATA: &[u8] = include_bytes!("../schema/unbounded_data.bfbs");
+    /// Root type `Testing.UnboundedData` with another layout.
+    pub const UNBOUNDED_DATA_ALT: &[u8] = include_bytes!("../schema/unbounded_data_alt.bfbs");
     /// Root type `Testing.DataProps`.
     pub const DATA_PROPS: &[u8] = include_bytes!("../schema/data_props.bfbs");
+    /// Declares no `root_type`.
+    pub const NO_ROOT_TYPE: &[u8] = include_bytes!("../schema/no_root_type.bfbs");
 }

@@ -58,14 +58,22 @@ pub fn create_file_with_content(content: &str) -> File {
 }
 
 pub fn create_typed_file_with_content(content: &str, suffix: &str) -> File {
+    create_typed_file_with_bytes(content.as_bytes(), suffix)
+}
+
+pub fn create_typed_file_with_bytes(bytes: &[u8], suffix: &str) -> File {
     let mut file_name = generate_file_name();
     file_name
         .push_bytes((".".to_string() + suffix).as_bytes())
         .unwrap();
-    create_file_with_content_at(content, file_name.as_str())
+    create_file_with_bytes_at(bytes, file_name.as_str())
 }
 
 pub fn create_file_with_content_at(content: &str, file_name: &str) -> File {
+    create_file_with_bytes_at(content.as_bytes(), file_name)
+}
+
+pub fn create_file_with_bytes_at(bytes: &[u8], file_name: &str) -> File {
     let file_path = FilePath::from_path_and_file(
         &TEST_DIRECTORY,
         &FileName::new(file_name.as_bytes()).unwrap(),
@@ -76,6 +84,6 @@ pub fn create_file_with_content_at(content: &str, file_name: &str) -> File {
         .create()
         .unwrap();
     file.acquire_ownership();
-    file.write(content.as_bytes()).unwrap();
+    file.write(bytes).unwrap();
     file
 }

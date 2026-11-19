@@ -138,6 +138,12 @@ impl TypeDetail {
     pub fn alignment(&self) -> usize {
         self.alignment
     }
+
+    pub(crate) fn override_alignment(&mut self, alignment: Option<usize>) {
+        if let Some(alignment) = alignment {
+            self.alignment = self.alignment.max(alignment);
+        }
+    }
 }
 
 /// Contains all type information to the header and payload type.
@@ -208,6 +214,18 @@ impl MessageTypeDetails {
                 ),
                 max_alignment,
             )
+        }
+    }
+
+    pub(crate) fn override_payload_type(&mut self, payload: Option<TypeDetail>) {
+        if let Some(payload) = payload {
+            self.payload = payload;
+        }
+    }
+
+    pub(crate) fn override_user_header_type(&mut self, user_header: Option<TypeDetail>) {
+        if let Some(user_header) = user_header {
+            self.user_header = user_header;
         }
     }
 
