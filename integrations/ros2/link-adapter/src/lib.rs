@@ -53,6 +53,7 @@
 #![deny(unsafe_code)]
 
 pub mod adapter;
+pub mod cdr;
 pub mod config;
 pub mod endpoint_description;
 #[allow(unsafe_code)]
