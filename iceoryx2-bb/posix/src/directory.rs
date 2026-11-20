@@ -295,7 +295,7 @@ impl Directory {
         path: &Path,
         permission: Permission,
     ) -> Result<(), DirectoryCreateError> {
-        let origin = "Directory::create()";
+        let origin = "Directory::create_single_directory()";
         let msg = format!("Unable to create directory \"{path}\"");
 
         if unsafe { posix::mkdir(path.as_c_str(), permission.as_mode()) } == -1 {
