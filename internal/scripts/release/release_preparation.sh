@@ -298,6 +298,7 @@ if [[ ${SELECTION} == ${YES} ]]; then
         echo -e "${C_BLUE}### Updating Python lock ###${C_OFF}"
         echo -e "${C_BLUE}############################${C_OFF}"
         echo -e ""
+        poetry --project iceoryx2-ffi/python install
         poetry --project iceoryx2-ffi/python build-into-venv
     fi
 

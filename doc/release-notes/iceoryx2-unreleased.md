@@ -48,8 +48,6 @@
 * [#2124](https://github.com/eclipse-iceoryx/iceoryx2/issues/2124) Remove clone impl from RelocatablePointer
 * [#2137](https://github.com/eclipse-iceoryx/iceoryx2/issues/2137) Fix typo in `BackpressureAction` enum
 * [#2142](https://github.com/eclipse-iceoryx/iceoryx2/issues/2142) Initialize the node counter of the global management segment when the segment is created
-* [#2198](https://github.com/eclipse-iceoryx/iceoryx2/issues/2198) Fix 'iceoryx2.h' header generation for Rust 1.100.0
-* [#2214](https://github.com/eclipse-iceoryx/iceoryx2/issues/2214) Fix notification remove/trigger race
 * [#2215](https://github.com/eclipse-iceoryx/iceoryx2/issues/2215) Add missing `slice_len` function in `PendingResponse`
 * [#2219](https://github.com/eclipse-iceoryx/iceoryx2/issues/2219) Return `LoanError` instead of crashing when a C++ loan with a user header fails
 * [#2222](https://github.com/eclipse-iceoryx/iceoryx2/issues/2222) Free the builder struct in `iox2_waitset_builder_create`, which leaked 48 bytes for every `WaitSet` created from C or C++
@@ -65,7 +63,6 @@
 
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Factor the sample transcoding out of the gateway's publish-subscribe relay
 * [#935](https://github.com/eclipse-iceoryx/iceoryx2/issues/935) Include type stubs in Python bindings package
-* [#1867](https://github.com/eclipse-iceoryx/iceoryx2/issues/1867) Fix documentation and add tests to C FFI Bindings
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Find a flatbuffer schema file nested in directories matching its namespace
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Restructure the ROS 2 gateway into a link gateway with a ROS 2 adapter
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Remove the former gateway core in `iceoryx2-gateway/`, superseded by the link crates
