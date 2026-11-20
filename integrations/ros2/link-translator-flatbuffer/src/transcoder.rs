@@ -24,9 +24,9 @@ use crate::{decode, encode};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranscodeFailure {
     /// The payload does not encode as the message.
-    Encode(encode::Error),
+    Encode(encode::EncodeError),
     /// The wire bytes do not decode as the schema.
-    Decode(decode::Error),
+    Decode(decode::DecodeError),
 }
 
 impl core::fmt::Display for TranscodeFailure {
@@ -58,7 +58,7 @@ impl<'a> Transcoder<SampleBytesRef<'a>> for FlatbufferTranscoder {
         // The CDR is written into the payload from its front.
         match encode::cdr(&self.table, local.payload, into.forward()) {
             Ok(()) => Ok(()),
-            Err(encode::Error::Region(_)) => {
+            Err(encode::EncodeError::Region(_)) => {
                 fail!(
                     from origin,
                     with TranscodeError::Refused,

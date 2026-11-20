@@ -13,16 +13,19 @@
 use iceoryx2_bb_flatbuffers::reflection::{self, BaseType, Object, Schema};
 use iceoryx2_log::{fail, origin};
 
-use super::{Error, Refusal};
+use super::{PairingError, Refusal};
 
 /// The field of `object` named `name`.
-pub(super) fn field<'a>(object: Object<'a>, name: &str) -> Result<reflection::Field<'a>, Error> {
+pub(super) fn field<'a>(
+    object: Object<'a>,
+    name: &str,
+) -> Result<reflection::Field<'a>, PairingError> {
     let origin = origin!("pairing::flatbuffer::field");
 
     let Some(field) = object.fields().iter().find(|field| field.name() == name) else {
         fail!(
             from origin,
-            with Error { path: String::new(), refusal: Refusal::MissingField },
+            with PairingError { path: String::new(), refusal: Refusal::MissingField },
             "Table '{}' has no field '{}'", object.name(), name
         );
     };

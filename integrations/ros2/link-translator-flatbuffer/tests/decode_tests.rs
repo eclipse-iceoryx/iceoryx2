@@ -318,5 +318,5 @@ fn refuses_truncated_cdr() {
     let error =
         decode::flatbuffer(&table, &rmw_bytes[..TRUNCATED_LEN], &mut builder).expect_err("refuses");
 
-    assert_that!(error, eq decode::Error::Truncated);
+    assert_that!(error, eq decode::DecodeError::Truncated);
 }

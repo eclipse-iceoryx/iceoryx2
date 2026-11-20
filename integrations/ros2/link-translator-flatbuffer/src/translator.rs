@@ -49,7 +49,7 @@ pub enum TranslationError {
     /// The schema's root type and the topic type are not the same type.
     Mismatch,
     /// The schema and the message do not pair member by member.
-    Pairing(pairing::Error),
+    Pairing(pairing::PairingError),
     /// The local user header is neither the RosHeader nor absent.
     Header(HeaderError),
 }

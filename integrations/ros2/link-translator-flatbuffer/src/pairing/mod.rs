@@ -233,22 +233,22 @@ pub enum Refusal {
 
 /// A member of a message, by path, that does not pair with its schema.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Error {
+pub struct PairingError {
     /// The member's path from the root, `header.stamp.sec`, empty for the
     /// root itself.
     pub path: String,
     pub refusal: Refusal,
 }
 
-impl core::fmt::Display for Error {
+impl core::fmt::Display for PairingError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}: {:?}", self.path, self.refusal)
     }
 }
 
-impl core::error::Error for Error {}
+impl core::error::Error for PairingError {}
 
-impl Error {
+impl PairingError {
     /// The error as seen from the message holding the member `name`.
     fn at(mut self, name: &str) -> Self {
         self.path = if self.path.is_empty() {
@@ -264,19 +264,19 @@ impl Error {
 ///
 /// Fails when the schema or the message cannot be read, or when a
 /// member has no field of its name and kind.
-pub fn compile(schema: &[u8], message: &str) -> Result<Table, Error> {
+pub fn compile(schema: &[u8], message: &str) -> Result<Table, PairingError> {
     let origin = origin!("pairing::compile");
 
     let schema = fail!(
         from origin,
         when root_as_schema(schema),
-        with Error { path: String::new(), refusal: Refusal::Schema(iceoryx2_bb_flatbuffers::SchemaError::NotABinarySchema) },
+        with PairingError { path: String::new(), refusal: Refusal::Schema(iceoryx2_bb_flatbuffers::SchemaError::NotABinarySchema) },
         "The {} bytes are not a binary flatbuffer schema", schema.len()
     );
     let Some(root) = schema.root_table() else {
         fail!(
             from origin,
-            with Error { path: String::new(), refusal: Refusal::Schema(iceoryx2_bb_flatbuffers::SchemaError::NoRootType) },
+            with PairingError { path: String::new(), refusal: Refusal::Schema(iceoryx2_bb_flatbuffers::SchemaError::NoRootType) },
             "The schema declares no root_type"
         );
     };
@@ -285,7 +285,7 @@ pub fn compile(schema: &[u8], message: &str) -> Result<Table, Error> {
         Err(error) => {
             fail!(
                 from origin,
-                with Error { path: String::new(), refusal: Refusal::Introspection(error) },
+                with PairingError { path: String::new(), refusal: Refusal::Introspection(error) },
                 "The introspection of '{}' could not be loaded", message
             );
         }

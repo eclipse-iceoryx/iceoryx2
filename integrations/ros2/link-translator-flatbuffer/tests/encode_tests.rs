@@ -318,7 +318,7 @@ fn refuses_a_vector_of_the_wrong_length_for_a_fixed_array() {
 
     assert_that!(
         error,
-        eq encode::Error::ArrayLength { expected: COVARIANCE_LEN, actual: covariance.len() }
+        eq encode::EncodeError::ArrayLength { expected: COVARIANCE_LEN, actual: covariance.len() }
     );
 }
 
@@ -329,5 +329,5 @@ fn refuses_a_flatbuffer_without_a_root_offset() {
     let mut cdr: Vec<u8> = Vec::new();
     let error = encode::cdr(&table, &[0; 2], cdr.forward()).expect_err("refuses");
 
-    assert_that!(error, eq encode::Error::Truncated);
+    assert_that!(error, eq encode::EncodeError::Truncated);
 }

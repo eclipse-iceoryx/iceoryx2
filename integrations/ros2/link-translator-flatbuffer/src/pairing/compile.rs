@@ -18,8 +18,8 @@ use r2r_rcl::{
 };
 
 use super::{
-    Default, ElementKind, Error, FieldKind, Refusal, Scalar, StructField, StructKind, StructLayout,
-    Table, TableField, flatbuffer, ros2,
+    Default, ElementKind, FieldKind, PairingError, Refusal, Scalar, StructField, StructKind,
+    StructLayout, Table, TableField, flatbuffer, ros2,
 };
 
 /// Pairs the members of `message` with the fields of the table `object`.
@@ -31,7 +31,7 @@ pub(super) unsafe fn table(
     object: Object<'_>,
     message: *const MessageMembers,
     schema: &Schema<'_>,
-) -> Result<Table, Error> {
+) -> Result<Table, PairingError> {
     let mut fields = Vec::new();
 
     for member in unsafe { ros2::members(message) } {
@@ -54,7 +54,7 @@ unsafe fn table_field(
     member: &MessageMember,
     name: &str,
     schema: &Schema<'_>,
-) -> Result<TableField, Error> {
+) -> Result<TableField, PairingError> {
     let field = flatbuffer::field(object, name)?;
     let kind = unsafe { field_kind(member, field.type_(), field, schema)? };
 
@@ -73,7 +73,7 @@ unsafe fn struct_layout(
     object: Object<'_>,
     message: *const MessageMembers,
     schema: &Schema<'_>,
-) -> Result<StructLayout, Error> {
+) -> Result<StructLayout, PairingError> {
     let mut fields = Vec::new();
 
     for member in unsafe { ros2::members(message) } {
@@ -100,7 +100,7 @@ unsafe fn struct_field(
     member: &MessageMember,
     name: &str,
     schema: &Schema<'_>,
-) -> Result<StructField, Error> {
+) -> Result<StructField, PairingError> {
     let field = flatbuffer::field(object, name)?;
 
     if member.is_array_ {
@@ -133,7 +133,7 @@ unsafe fn field_kind(
     ty: reflection::Type<'_>,
     field: reflection::Field<'_>,
     schema: &Schema<'_>,
-) -> Result<FieldKind, Error> {
+) -> Result<FieldKind, PairingError> {
     if member.is_array_ {
         if ty.base_type() != BaseType::Vector {
             return Err(mismatch(member, field));
@@ -179,7 +179,7 @@ unsafe fn element_kind(
     index: i32,
     field: reflection::Field<'_>,
     schema: &Schema<'_>,
-) -> Result<ElementKind, Error> {
+) -> Result<ElementKind, PairingError> {
     match (member.type_id_, base_type) {
         (ros2::STRING, BaseType::String) => Ok(ElementKind::String),
         (ros2::MESSAGE, BaseType::Obj) => {
@@ -201,7 +201,7 @@ fn scalar(
     member: &MessageMember,
     base_type: BaseType,
     field: reflection::Field<'_>,
-) -> Result<Scalar, Error> {
+) -> Result<Scalar, PairingError> {
     let origin = origin!("pairing::compile::scalar");
 
     if matches!(
@@ -210,7 +210,7 @@ fn scalar(
     ) {
         fail!(
             from origin,
-            with Error { path: String::new(), refusal: Refusal::Unsupported { member: ros2::member_type(member) } },
+            with PairingError { path: String::new(), refusal: Refusal::Unsupported { member: ros2::member_type(member) } },
             "A {} member has no flatbuffer field that carries it", ros2::member_type(member)
         );
     }
@@ -232,14 +232,14 @@ fn scalar(
     Ok(scalar)
 }
 
-fn mismatch(member: &MessageMember, field: reflection::Field<'_>) -> Error {
+fn mismatch(member: &MessageMember, field: reflection::Field<'_>) -> PairingError {
     let origin = origin!("pairing::compile::mismatch");
     let (member, field) = (ros2::member_type(member), flatbuffer::field_type(field));
     iceoryx2_log::debug!(
         from origin,
         "A {} member does not pair with a {} field", member, field
     );
-    Error {
+    PairingError {
         path: String::new(),
         refusal: Refusal::Mismatch { member, field },
     }

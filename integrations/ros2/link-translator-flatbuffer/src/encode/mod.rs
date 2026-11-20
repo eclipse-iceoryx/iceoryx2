@@ -30,7 +30,7 @@ use flatbuffer::RawVector;
 
 /// Why a flatbuffer does not encode.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Error {
+pub enum EncodeError {
     /// The flatbuffer is shorter than its root offset.
     Truncated,
     /// The region cannot hold the CDR.
@@ -41,53 +41,53 @@ pub enum Error {
     ArrayLength { expected: usize, actual: usize },
 }
 
-impl core::fmt::Display for Error {
+impl core::fmt::Display for EncodeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "encode::Error::{self:?}")
+        write!(f, "EncodeError::{self:?}")
     }
 }
 
-impl core::error::Error for Error {}
+impl core::error::Error for EncodeError {}
 
-impl From<writer::CreateError> for Error {
+impl From<writer::CreateError> for EncodeError {
     fn from(error: writer::CreateError) -> Self {
         match error {
-            writer::CreateError::Region(error) => Error::Region(error),
+            writer::CreateError::Region(error) => EncodeError::Region(error),
         }
     }
 }
 
-impl From<writer::ScalarError> for Error {
+impl From<writer::ScalarError> for EncodeError {
     fn from(error: writer::ScalarError) -> Self {
         match error {
-            writer::ScalarError::Region(error) => Error::Region(error),
+            writer::ScalarError::Region(error) => EncodeError::Region(error),
         }
     }
 }
 
-impl From<writer::LengthError> for Error {
+impl From<writer::LengthError> for EncodeError {
     fn from(error: writer::LengthError) -> Self {
         match error {
-            writer::LengthError::Region(error) => Error::Region(error),
-            writer::LengthError::TooLong => Error::TooLong,
+            writer::LengthError::Region(error) => EncodeError::Region(error),
+            writer::LengthError::TooLong => EncodeError::TooLong,
         }
     }
 }
 
-impl From<writer::SequenceError> for Error {
+impl From<writer::SequenceError> for EncodeError {
     fn from(error: writer::SequenceError) -> Self {
         match error {
-            writer::SequenceError::Region(error) => Error::Region(error),
-            writer::SequenceError::TooLong => Error::TooLong,
+            writer::SequenceError::Region(error) => EncodeError::Region(error),
+            writer::SequenceError::TooLong => EncodeError::TooLong,
         }
     }
 }
 
-impl From<writer::StringError> for Error {
+impl From<writer::StringError> for EncodeError {
     fn from(error: writer::StringError) -> Self {
         match error {
-            writer::StringError::Region(error) => Error::Region(error),
-            writer::StringError::TooLong => Error::TooLong,
+            writer::StringError::Region(error) => EncodeError::Region(error),
+            writer::StringError::TooLong => EncodeError::TooLong,
         }
     }
 }
@@ -97,13 +97,13 @@ impl From<writer::StringError> for Error {
 ///
 /// Fails when the flatbuffer has no root, the region rejects the CDR or a
 /// fixed array receives the wrong number of elements.
-pub fn cdr<R: ForwardRegion>(table: &Table, flatbuffer: &[u8], cdr: R) -> Result<(), Error> {
+pub fn cdr<R: ForwardRegion>(table: &Table, flatbuffer: &[u8], cdr: R) -> Result<(), EncodeError> {
     let origin = origin!("encode::cdr");
 
     let Some(root) = flatbuffer::root(flatbuffer) else {
         fail!(
             from origin,
-            with Error::Truncated,
+            with EncodeError::Truncated,
             "The flatbuffer of {} bytes holds no root offset", flatbuffer.len()
         );
     };
@@ -117,7 +117,7 @@ fn write_table<R: ForwardRegion>(
     fields: &[TableField],
     table: flatbuffers::Table<'_>,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     for field in fields {
         match flatbuffer::position(table, field.vtable_offset) {
             Some(position) => write_field(&field.kind, table.buf(), position, writer)?,
@@ -127,13 +127,12 @@ fn write_table<R: ForwardRegion>(
     Ok(())
 }
 
-/// Writes the field of `kind` at `position` of `buf`.
 fn write_field<R: ForwardRegion>(
     kind: &FieldKind,
     buf: &[u8],
     position: usize,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     match kind {
         FieldKind::Scalar { scalar, .. } => {
             write_value(flatbuffer::scalar(buf, position, *scalar), writer)
@@ -154,12 +153,11 @@ fn write_field<R: ForwardRegion>(
     }
 }
 
-/// Writes `vector` as a sequence.
 fn write_sequence<R: ForwardRegion>(
     element: &ElementKind,
     vector: RawVector<'_>,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     match element {
         ElementKind::Scalar(scalar) => write_scalar_vector(*scalar, vector, true, writer),
         _ => {
@@ -177,13 +175,13 @@ fn write_array<R: ForwardRegion>(
     element: &ElementKind,
     vector: RawVector<'_>,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     let origin = origin!("encode::write_array");
 
     if vector.len != len {
         fail!(
             from origin,
-            with Error::ArrayLength { expected: len, actual: vector.len },
+            with EncodeError::ArrayLength { expected: len, actual: vector.len },
             "An array of {} elements received a vector of {}", len, vector.len
         );
     }
@@ -193,12 +191,11 @@ fn write_array<R: ForwardRegion>(
     }
 }
 
-/// Writes the elements of `vector` that are not scalars, one by one.
 fn write_elements<R: ForwardRegion>(
     element: &ElementKind,
     vector: RawVector<'_>,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     match element {
         ElementKind::Scalar(_) => unreachable!("scalar vectors are written whole"),
         ElementKind::String => {
@@ -227,7 +224,7 @@ fn write_scalar_vector<R: ForwardRegion>(
     vector: RawVector<'_>,
     prefixed: bool,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     let elements = vector.elements(scalar.size());
     if cfg!(target_endian = "little") {
         if prefixed {
@@ -246,12 +243,11 @@ fn write_scalar_vector<R: ForwardRegion>(
     Ok(())
 }
 
-/// Writes the members of the struct laid out at the start of `bytes`.
 fn write_struct<R: ForwardRegion>(
     layout: &StructLayout,
     bytes: &[u8],
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     for field in &layout.fields {
         let bytes = &bytes[field.offset as usize..];
         match &field.kind {
@@ -267,7 +263,10 @@ fn write_struct<R: ForwardRegion>(
 /// Writes the default of an absent field of `kind`.
 ///
 /// Fails when the field is a fixed array of more than zero elements.
-fn write_absent<R: ForwardRegion>(kind: &FieldKind, writer: &mut Writer<R>) -> Result<(), Error> {
+fn write_absent<R: ForwardRegion>(
+    kind: &FieldKind,
+    writer: &mut Writer<R>,
+) -> Result<(), EncodeError> {
     let origin = origin!("encode::write_absent");
 
     match kind {
@@ -287,18 +286,17 @@ fn write_absent<R: ForwardRegion>(kind: &FieldKind, writer: &mut Writer<R>) -> R
         FieldKind::Array { len, .. } => {
             fail!(
                 from origin,
-                with Error::ArrayLength { expected: *len, actual: 0 },
+                with EncodeError::ArrayLength { expected: *len, actual: 0 },
                 "An array of {} elements received no vector", len
             );
         }
     }
 }
 
-/// Writes the zeros of a struct that is absent.
 fn write_absent_struct<R: ForwardRegion>(
     layout: &StructLayout,
     writer: &mut Writer<R>,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     const ZEROS: [u8; 8] = [0; 8];
     for field in &layout.fields {
         match &field.kind {
@@ -311,8 +309,7 @@ fn write_absent_struct<R: ForwardRegion>(
     Ok(())
 }
 
-/// Writes a scalar value.
-fn write_value<R: ForwardRegion>(value: Value, writer: &mut Writer<R>) -> Result<(), Error> {
+fn write_value<R: ForwardRegion>(value: Value, writer: &mut Writer<R>) -> Result<(), EncodeError> {
     match value {
         Value::Bool(value) => writer.write_bool(value)?,
         Value::U8(value) => writer.write_u8(value)?,

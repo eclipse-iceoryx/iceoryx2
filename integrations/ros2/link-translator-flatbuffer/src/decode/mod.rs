@@ -31,7 +31,7 @@ use builder::{push_scalar_vector, push_struct, push_struct_vector, push_value};
 
 /// Why a CDR message does not decode.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Error {
+pub enum DecodeError {
     /// The CDR ends before the message does.
     Truncated,
     /// The CDR names an encapsulation other than plain CDR.
@@ -42,45 +42,45 @@ pub enum Error {
     InvalidString,
 }
 
-impl core::fmt::Display for Error {
+impl core::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "decode::Error::{self:?}")
+        write!(f, "DecodeError::{self:?}")
     }
 }
 
-impl core::error::Error for Error {}
+impl core::error::Error for DecodeError {}
 
-impl From<reader::CreateError> for Error {
+impl From<reader::CreateError> for DecodeError {
     fn from(error: reader::CreateError) -> Self {
         match error {
-            reader::CreateError::Truncated => Error::Truncated,
-            reader::CreateError::UnsupportedEncapsulation => Error::UnsupportedEncapsulation,
+            reader::CreateError::Truncated => DecodeError::Truncated,
+            reader::CreateError::UnsupportedEncapsulation => DecodeError::UnsupportedEncapsulation,
         }
     }
 }
 
-impl From<reader::ScalarError> for Error {
+impl From<reader::ScalarError> for DecodeError {
     fn from(error: reader::ScalarError) -> Self {
         match error {
-            reader::ScalarError::Truncated => Error::Truncated,
+            reader::ScalarError::Truncated => DecodeError::Truncated,
         }
     }
 }
 
-impl From<reader::BoolError> for Error {
+impl From<reader::BoolError> for DecodeError {
     fn from(error: reader::BoolError) -> Self {
         match error {
-            reader::BoolError::Truncated => Error::Truncated,
-            reader::BoolError::InvalidBool => Error::InvalidBool,
+            reader::BoolError::Truncated => DecodeError::Truncated,
+            reader::BoolError::InvalidBool => DecodeError::InvalidBool,
         }
     }
 }
 
-impl From<reader::StringError> for Error {
+impl From<reader::StringError> for DecodeError {
     fn from(error: reader::StringError) -> Self {
         match error {
-            reader::StringError::Truncated => Error::Truncated,
-            reader::StringError::InvalidString => Error::InvalidString,
+            reader::StringError::Truncated => DecodeError::Truncated,
+            reader::StringError::InvalidString => DecodeError::InvalidString,
         }
     }
 }
@@ -93,7 +93,7 @@ pub fn flatbuffer<A: Allocator>(
     table: &Table,
     cdr: &[u8],
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), Error> {
+) -> Result<(), DecodeError> {
     let mut reader = Reader::new(cdr)?;
     let root = read_table(&table.fields, &mut reader, builder)?;
     builder.finish(root, None);
@@ -119,7 +119,7 @@ fn read_table<A: Allocator>(
     fields: &[TableField],
     reader: &mut Reader<'_>,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<TableFinishedWIPOffset>, Error> {
+) -> Result<WIPOffset<TableFinishedWIPOffset>, DecodeError> {
     let mut pending = Vec::with_capacity(fields.len());
     for field in fields {
         let member = match &field.kind {
@@ -162,8 +162,7 @@ fn read_table<A: Allocator>(
     Ok(builder.end_table(table))
 }
 
-/// Reads a scalar value.
-fn read_value(scalar: Scalar, reader: &mut Reader<'_>) -> Result<Value, Error> {
+fn read_value(scalar: Scalar, reader: &mut Reader<'_>) -> Result<Value, DecodeError> {
     Ok(match scalar {
         Scalar::Bool => Value::Bool(reader.read_bool()?),
         Scalar::U8 => Value::U8(reader.read_u8()?),
@@ -182,7 +181,7 @@ fn read_value(scalar: Scalar, reader: &mut Reader<'_>) -> Result<Value, Error> {
 fn read_string<A: Allocator>(
     reader: &mut Reader<'_>,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<UnionWIPOffset>, Error> {
+) -> Result<WIPOffset<UnionWIPOffset>, DecodeError> {
     let bytes = reader.read_string()?;
     Ok(builder.create_byte_string(bytes).as_union_value())
 }
@@ -196,18 +195,17 @@ fn read_string<A: Allocator>(
 /// The image is one allocation per struct and per sample. Keeping the
 /// CDR offset instead and re-reading the struct into a stack buffer when
 /// its table ends would remove it.
-fn read_struct(layout: &StructLayout, reader: &mut Reader<'_>) -> Result<Vec<u8>, Error> {
+fn read_struct(layout: &StructLayout, reader: &mut Reader<'_>) -> Result<Vec<u8>, DecodeError> {
     let mut image = vec![0; layout.size];
     read_struct_into(layout, reader, &mut image)?;
     Ok(image)
 }
 
-/// Reads the members of a struct into `image`, at their offsets.
 fn read_struct_into(
     layout: &StructLayout,
     reader: &mut Reader<'_>,
     image: &mut [u8],
-) -> Result<(), Error> {
+) -> Result<(), DecodeError> {
     for field in &layout.fields {
         let image = &mut image[field.offset as usize..];
         match &field.kind {
@@ -222,7 +220,7 @@ fn read_sequence<A: Allocator>(
     element: &ElementKind,
     reader: &mut Reader<'_>,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<UnionWIPOffset>, Error> {
+) -> Result<WIPOffset<UnionWIPOffset>, DecodeError> {
     match element {
         ElementKind::Scalar(scalar) => {
             let bytes = reader.read_sequence(scalar.size())?;
@@ -245,7 +243,7 @@ fn read_array<A: Allocator>(
     element: &ElementKind,
     reader: &mut Reader<'_>,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<UnionWIPOffset>, Error> {
+) -> Result<WIPOffset<UnionWIPOffset>, DecodeError> {
     match element {
         ElementKind::Scalar(scalar) => {
             let bytes = reader.read_array(len, scalar.size())?;
@@ -260,13 +258,12 @@ fn read_array<A: Allocator>(
     }
 }
 
-/// Reads `len` elements that are not scalars into a vector.
 fn read_elements<A: Allocator>(
     len: usize,
     element: &ElementKind,
     reader: &mut Reader<'_>,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<UnionWIPOffset>, Error> {
+) -> Result<WIPOffset<UnionWIPOffset>, DecodeError> {
     match element {
         ElementKind::Scalar(_) => unreachable!("scalar vectors are pushed whole"),
         ElementKind::String => {
