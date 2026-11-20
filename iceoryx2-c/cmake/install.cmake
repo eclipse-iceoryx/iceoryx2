@@ -72,9 +72,21 @@ install(
     COMPONENT dev
 )
 
+# CMake 4.5 introduced a 'BUILD_DEPENDS' parameter for installed files which come
+# from a custom target with multiple artifacts;
+# this is the case for the convenience dev build where cmake invokes cargo to build
+# the libraries;
+# since the 'includes-only' depends to the custom target when it is used and the
+# 'includes-only' target is always available, we use it for the dependency of the artifacts
+set(BUILD_DEPENDS_OPTION)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.5")
+    list(APPEND BUILD_DEPENDS_OPTION BUILD_DEPENDS includes-only)
+endif()
+
 # lib
 install(
     FILES ${ICEORYX2_C_LIB_ARTIFACTS}
+    ${BUILD_DEPENDS_OPTION}
     DESTINATION ${DESTINATION_LIBDIR}
     COMPONENT lib
 )
