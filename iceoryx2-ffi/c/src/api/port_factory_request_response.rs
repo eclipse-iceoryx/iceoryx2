@@ -567,6 +567,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_name(
 ///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
 /// * `buffer` must be non-zero and point to a valid memory location
 /// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
+/// * `buffer` and `buffer_len` must have enough space to include a null termination at the end
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_request_response_service_hash(
     handle: iox2_port_factory_request_response_h_ref,
@@ -577,6 +578,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_hash(
 
     debug_assert!(!buffer.is_null());
     handle.assert_non_null();
+
     unsafe {
         let port_factory = &mut *handle.as_type();
         let service_hash = match port_factory.service_type {
@@ -585,8 +587,10 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_hash(
         };
 
         let len = buffer_len.min(service_hash.as_str().len());
-        core::ptr::copy_nonoverlapping(service_hash.as_str().as_ptr(), buffer.cast(), len);
-        buffer.add(len).write(0);
+        if len > 0 {
+            core::ptr::copy_nonoverlapping(service_hash.as_str().as_ptr(), buffer.cast(), len - 1);
+            buffer.add(len - 1).write(0);
+        }
     }
 }
 
