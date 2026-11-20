@@ -1899,4 +1899,76 @@ TYPED_TEST(ServiceBlackboardTest, key_can_be_found_in_opener) {
     ASSERT_THAT(*entry_handle_1.get(), Eq(VALUE_1));
     ASSERT_THAT(*entry_handle_2.get(), Eq(VALUE_2));
 }
+
+TYPED_TEST(ServiceBlackboardTest, reader_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .value();
+
+    auto sut = service.reader_builder().name(PortName::create("scheherazade").value());
+}
+
+TYPED_TEST(ServiceBlackboardTest, reader_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .value();
+
+    const auto reader_name = PortName::create("scheherazade").value();
+    auto builder = service.reader_builder().name(reader_name);
+    auto sut = service.reader_builder();
+    sut = std::move(builder);
+    auto reader = std::move(sut).create().value();
+
+    ASSERT_THAT(reader.name().to_string(), reader_name.to_string());
+}
+
+TYPED_TEST(ServiceBlackboardTest, writer_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .value();
+
+    auto sut = service.writer_builder().name(PortName::create("homer").value());
+}
+
+TYPED_TEST(ServiceBlackboardTest, writer_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .value();
+
+    const auto writer_name = PortName::create("homer").value();
+    auto builder = service.writer_builder().name(writer_name);
+    auto sut = service.writer_builder();
+    sut = std::move(builder);
+    auto writer = std::move(sut).create().value();
+
+    ASSERT_THAT(writer.name().to_string(), writer_name.to_string());
+}
 } // namespace

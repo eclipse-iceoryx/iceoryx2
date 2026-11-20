@@ -36,9 +36,9 @@ class PortFactoryReader {
 #endif
 
   public:
-    PortFactoryReader(PortFactoryReader&&) noexcept = default;
-    auto operator=(PortFactoryReader&&) noexcept -> PortFactoryReader& = default;
-    ~PortFactoryReader() = default;
+    PortFactoryReader(PortFactoryReader&& rhs) noexcept;
+    auto operator=(PortFactoryReader&& rhs) noexcept -> PortFactoryReader&;
+    ~PortFactoryReader();
 
     PortFactoryReader(const PortFactoryReader&) = delete;
     auto operator=(const PortFactoryReader&) -> PortFactoryReader& = delete;
@@ -51,6 +51,7 @@ class PortFactoryReader {
     friend class PortFactoryBlackboard;
 
     explicit PortFactoryReader(iox2_port_factory_reader_builder_h handle);
+    void drop();
 
     iox2_port_factory_reader_builder_h m_handle = nullptr;
 };
@@ -58,6 +59,36 @@ class PortFactoryReader {
 template <ServiceType S, typename KeyType>
 inline PortFactoryReader<S, KeyType>::PortFactoryReader(iox2_port_factory_reader_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType S, typename KeyType>
+inline void PortFactoryReader<S, KeyType>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_reader_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename KeyType>
+inline PortFactoryReader<S, KeyType>::PortFactoryReader(PortFactoryReader&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename KeyType>
+inline auto PortFactoryReader<S, KeyType>::operator=(PortFactoryReader&& rhs) noexcept -> PortFactoryReader& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_name = std::move(rhs.m_name);
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename KeyType>
+inline PortFactoryReader<S, KeyType>::~PortFactoryReader() {
+    drop();
 }
 
 template <ServiceType S, typename KeyType>
@@ -69,6 +100,7 @@ inline auto PortFactoryReader<S, KeyType>::create() && -> bb::Expected<Reader<S,
 
     iox2_reader_h reader_handle {};
     auto result = iox2_port_factory_reader_builder_create(m_handle, nullptr, &reader_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Reader<S, KeyType>(reader_handle);

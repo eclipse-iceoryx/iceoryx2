@@ -36,9 +36,9 @@ class PortFactoryWriter {
 #endif
 
   public:
-    PortFactoryWriter(PortFactoryWriter&&) noexcept = default;
-    auto operator=(PortFactoryWriter&&) noexcept -> PortFactoryWriter& = default;
-    ~PortFactoryWriter() = default;
+    PortFactoryWriter(PortFactoryWriter&& rhs) noexcept;
+    auto operator=(PortFactoryWriter&& rhs) noexcept -> PortFactoryWriter&;
+    ~PortFactoryWriter();
 
     PortFactoryWriter(const PortFactoryWriter&) = delete;
     auto operator=(const PortFactoryWriter&) -> PortFactoryWriter& = delete;
@@ -51,6 +51,7 @@ class PortFactoryWriter {
     friend class PortFactoryBlackboard;
 
     explicit PortFactoryWriter(iox2_port_factory_writer_builder_h handle);
+    void drop();
 
     iox2_port_factory_writer_builder_h m_handle = nullptr;
 };
@@ -58,6 +59,36 @@ class PortFactoryWriter {
 template <ServiceType S, typename KeyType>
 inline PortFactoryWriter<S, KeyType>::PortFactoryWriter(iox2_port_factory_writer_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType S, typename KeyType>
+inline void PortFactoryWriter<S, KeyType>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_writer_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename KeyType>
+inline PortFactoryWriter<S, KeyType>::PortFactoryWriter(PortFactoryWriter&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename KeyType>
+inline auto PortFactoryWriter<S, KeyType>::operator=(PortFactoryWriter&& rhs) noexcept -> PortFactoryWriter& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_name = std::move(rhs.m_name);
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename KeyType>
+inline PortFactoryWriter<S, KeyType>::~PortFactoryWriter() {
+    drop();
 }
 
 template <ServiceType S, typename KeyType>
@@ -69,6 +100,7 @@ inline auto PortFactoryWriter<S, KeyType>::create() && -> bb::Expected<Writer<S,
 
     iox2_writer_h writer_handle {};
     auto result = iox2_port_factory_writer_builder_create(m_handle, nullptr, &writer_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Writer<S, KeyType>(writer_handle);

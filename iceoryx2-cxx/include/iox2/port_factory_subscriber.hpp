@@ -55,11 +55,12 @@ class PortFactorySubscriber {
 #endif
 
   public:
+    PortFactorySubscriber(PortFactorySubscriber&& rhs) noexcept;
+    auto operator=(PortFactorySubscriber&& rhs) noexcept -> PortFactorySubscriber&;
+    ~PortFactorySubscriber();
+
     PortFactorySubscriber(const PortFactorySubscriber&) = delete;
-    PortFactorySubscriber(PortFactorySubscriber&&) = default;
     auto operator=(const PortFactorySubscriber&) -> PortFactorySubscriber& = delete;
-    auto operator=(PortFactorySubscriber&&) -> PortFactorySubscriber& = default;
-    ~PortFactorySubscriber() = default;
 
     /// Sets the [`DegradationHandler`] of the [`Subscriber`]. Whenever a connection to a
     /// [`Publisher`] is corrupted, this handler is called and depending on the returned
@@ -77,15 +78,50 @@ class PortFactorySubscriber {
     friend class PortFactoryPublishSubscribe;
 
     explicit PortFactorySubscriber(iox2_port_factory_subscriber_builder_h handle);
+    void drop();
 
     iox2_port_factory_subscriber_builder_h m_handle = nullptr;
-    bb::Optional<DegradationHandler* const> m_degradation_handler;
+    bb::Optional<DegradationHandler*> m_degradation_handler;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline PortFactorySubscriber<S, Payload, UserHeader>::PortFactorySubscriber(
     iox2_port_factory_subscriber_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline void PortFactorySubscriber<S, Payload, UserHeader>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_subscriber_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactorySubscriber<S, Payload, UserHeader>::PortFactorySubscriber(PortFactorySubscriber&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactorySubscriber<S, Payload, UserHeader>::operator=(PortFactorySubscriber&& rhs) noexcept
+    -> PortFactorySubscriber& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_buffer_size = std::move(rhs.m_buffer_size);
+        m_history_request = std::move(rhs.m_history_request);
+        m_name = std::move(rhs.m_name);
+        m_degradation_handler = std::move(rhs.m_degradation_handler);
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactorySubscriber<S, Payload, UserHeader>::~PortFactorySubscriber() {
+    drop();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -119,6 +155,7 @@ PortFactorySubscriber<S, Payload, UserHeader>::create() && -> bb::Expected<Subsc
 
     iox2_subscriber_h sub_handle {};
     auto result = iox2_port_factory_subscriber_builder_create(m_handle, nullptr, &sub_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Subscriber<S, Payload, UserHeader>(sub_handle);
