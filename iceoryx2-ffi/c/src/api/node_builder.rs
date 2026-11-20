@@ -251,8 +251,15 @@ pub unsafe extern "C" fn iox2_node_builder_set_config(
     }
 }
 
-// intentionally not public API
-unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
+/// Drops a [`iox2_node_builder_h`] and calls all corresponding cleanup functions.
+///
+/// # Safety
+///
+/// * `node_builder_handle` must be acquired with [`iox2_node_builder_new`]
+/// * `node_builder_handle` must not have been passed to [`iox2_node_builder_create`]
+/// * `node_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
     debug_assert!(!node_builder_handle.is_null());
     unsafe {
         let node_builder = &mut *node_builder_handle.as_type();
