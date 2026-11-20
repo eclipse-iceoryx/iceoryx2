@@ -64,8 +64,8 @@ The integrations require:
   message crates generated in the [message workspace](colcon/messages/README.md)
 * The cargo-aware colcon build tools, for the
   [colcon examples](colcon/examples/README.md)
-* The FlatBuffers compiler `flatc`, for the
-  [specialized flatbuffer translator example](examples/specialized_flatbuffer_translator/README.md)
+* The FlatBuffers compiler `flatc` of the pinned crate version, for the
+  [flatbuffer translator examples](examples/flatbuffer_translator/README.md)
 
 The associated READMEs describe how to set them up.
 

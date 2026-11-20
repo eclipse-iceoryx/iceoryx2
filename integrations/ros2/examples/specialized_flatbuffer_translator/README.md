@@ -24,14 +24,11 @@ and are mapped to ROS 2 topic types:
 
 ## Prerequisites
 
-To use the examples, first install the FlatBuffers package.
+The examples need `flatc` of the `flatbuffers` crate version pinned in the
+workspace `Cargo.toml`. The `just` recipes install it into `~/.local/bin`:
 
 ```sh
-# Arch Linux
-pacman -S flatbuffers
-
-# Debian/Ubuntu
-apt install libflatbuffers-dev
+just setup flatc
 ```
 
 ## Building
