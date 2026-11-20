@@ -156,8 +156,36 @@ NodeBuilder::NodeBuilder()
     : m_handle { iox2_node_builder_new(nullptr) } {
 }
 
+void NodeBuilder::drop() {
+    if (m_handle != nullptr) {
+        iox2_node_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+NodeBuilder::NodeBuilder(NodeBuilder&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+auto NodeBuilder::operator=(NodeBuilder&& rhs) noexcept -> NodeBuilder& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_name = std::move(rhs.m_name);
+        m_config = std::move(rhs.m_config);
+        m_signal_handling_mode = std::move(rhs.m_signal_handling_mode);
+    }
+
+    return *this;
+}
+
+NodeBuilder::~NodeBuilder() {
+    drop();
+}
+
 template <ServiceType T>
-auto NodeBuilder::create() const&& -> bb::Expected<Node<T>, NodeCreationFailure> {
+auto NodeBuilder::create() && -> bb::Expected<Node<T>, NodeCreationFailure> {
     if (m_name.has_value()) {
         const auto* name_ptr = iox2_cast_node_name_ptr(m_name->m_handle);
         iox2_node_builder_set_name(&m_handle, name_ptr);
@@ -175,6 +203,7 @@ auto NodeBuilder::create() const&& -> bb::Expected<Node<T>, NodeCreationFailure>
     iox2_node_h node_handle {};
     const auto ret_val =
         iox2_node_builder_create(m_handle, nullptr, iox2::bb::into<iox2_service_type_e>(T), &node_handle);
+    m_handle = nullptr;
 
     if (ret_val == IOX2_OK) {
         return Node<T> { node_handle };
@@ -186,7 +215,7 @@ auto NodeBuilder::create() const&& -> bb::Expected<Node<T>, NodeCreationFailure>
 template class Node<ServiceType::Ipc>;
 template class Node<ServiceType::Local>;
 
-template auto NodeBuilder::create() const&& -> iox2::bb::Expected<Node<ServiceType::Ipc>, NodeCreationFailure>;
-template auto NodeBuilder::create() const&& -> iox2::bb::Expected<Node<ServiceType::Local>, NodeCreationFailure>;
+template auto NodeBuilder::create() && -> iox2::bb::Expected<Node<ServiceType::Ipc>, NodeCreationFailure>;
+template auto NodeBuilder::create() && -> iox2::bb::Expected<Node<ServiceType::Local>, NodeCreationFailure>;
 
 } // namespace iox2

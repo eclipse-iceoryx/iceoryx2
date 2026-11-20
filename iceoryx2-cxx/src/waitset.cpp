@@ -160,7 +160,37 @@ WaitSetBuilder<S>::WaitSetBuilder(iox2_waitset_builder_h handle)
 }
 
 template <ServiceType S>
-auto WaitSetBuilder<S>::create() const&& -> bb::Expected<WaitSet<S>, WaitSetCreateError> {
+void WaitSetBuilder<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_waitset_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S>
+WaitSetBuilder<S>::WaitSetBuilder(WaitSetBuilder&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+auto WaitSetBuilder<S>::operator=(WaitSetBuilder&& rhs) noexcept -> WaitSetBuilder& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_signal_handling_mode = std::move(rhs.m_signal_handling_mode);
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+WaitSetBuilder<S>::~WaitSetBuilder() {
+    drop();
+}
+
+template <ServiceType S>
+auto WaitSetBuilder<S>::create() && -> bb::Expected<WaitSet<S>, WaitSetCreateError> {
     if (m_signal_handling_mode.has_value()) {
         iox2_waitset_builder_set_signal_handling_mode(
             &m_handle, iox2::bb::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
@@ -168,6 +198,7 @@ auto WaitSetBuilder<S>::create() const&& -> bb::Expected<WaitSet<S>, WaitSetCrea
 
     iox2_waitset_h waitset_handle {};
     auto result = iox2_waitset_builder_create(m_handle, nullptr, &waitset_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return WaitSet<S>(waitset_handle);

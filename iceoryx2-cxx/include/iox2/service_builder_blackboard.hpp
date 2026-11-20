@@ -53,6 +53,13 @@ class ServiceBuilderBlackboardCreator {
 #endif
 
   public:
+    ServiceBuilderBlackboardCreator(ServiceBuilderBlackboardCreator&& rhs) noexcept;
+    auto operator=(ServiceBuilderBlackboardCreator&& rhs) noexcept -> ServiceBuilderBlackboardCreator&;
+    ~ServiceBuilderBlackboardCreator();
+
+    ServiceBuilderBlackboardCreator(const ServiceBuilderBlackboardCreator&) = delete;
+    auto operator=(const ServiceBuilderBlackboardCreator&) -> ServiceBuilderBlackboardCreator& = delete;
+
     /// Adds key-value pairs to the blackboard.
     template <typename ValueType>
     auto add(KeyType key, ValueType value) -> ServiceBuilderBlackboardCreator&&;
@@ -74,6 +81,7 @@ class ServiceBuilderBlackboardCreator {
     friend class ServiceBuilder;
 
     explicit ServiceBuilderBlackboardCreator(iox2_service_builder_h handle);
+    void drop();
 
     void set_parameters();
 
@@ -98,6 +106,13 @@ class ServiceBuilderBlackboardOpener {
 #endif
 
   public:
+    ServiceBuilderBlackboardOpener(ServiceBuilderBlackboardOpener&& rhs) noexcept;
+    auto operator=(ServiceBuilderBlackboardOpener&& rhs) noexcept -> ServiceBuilderBlackboardOpener&;
+    ~ServiceBuilderBlackboardOpener();
+
+    ServiceBuilderBlackboardOpener(const ServiceBuilderBlackboardOpener&) = delete;
+    auto operator=(const ServiceBuilderBlackboardOpener&) -> ServiceBuilderBlackboardOpener& = delete;
+
     /// Opens an existing [`Service`].
     auto open() && -> bb::Expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError>;
 
@@ -112,6 +127,7 @@ class ServiceBuilderBlackboardOpener {
     friend class ServiceBuilder;
 
     explicit ServiceBuilderBlackboardOpener(iox2_service_builder_h handle);
+    void drop();
 
     void set_parameters();
 
@@ -136,6 +152,39 @@ inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCrea
     if (key_type_result != IOX2_OK) {
         IOX2_PANIC("This should never happen! Implementation failure while setting the key type.");
     }
+}
+
+template <typename KeyType, ServiceType S>
+inline void ServiceBuilderBlackboardCreator<KeyType, S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_service_builder_blackboard_creator_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <typename KeyType, ServiceType S>
+inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCreator(
+    ServiceBuilderBlackboardCreator&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <typename KeyType, ServiceType S>
+inline auto ServiceBuilderBlackboardCreator<KeyType, S>::operator=(ServiceBuilderBlackboardCreator&& rhs) noexcept
+    -> ServiceBuilderBlackboardCreator& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_max_readers = std::move(rhs.m_max_readers);
+        m_max_nodes = std::move(rhs.m_max_nodes);
+    }
+
+    return *this;
+}
+
+template <typename KeyType, ServiceType S>
+inline ServiceBuilderBlackboardCreator<KeyType, S>::~ServiceBuilderBlackboardCreator() {
+    drop();
 }
 
 template <typename KeyType, ServiceType S>
@@ -197,6 +246,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> bb::Expe
 
     iox2_port_factory_blackboard_h port_factory_handle {};
     auto result = iox2_service_builder_blackboard_create(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
@@ -213,6 +263,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
     iox2_port_factory_blackboard_h port_factory_handle {};
     auto result = iox2_service_builder_blackboard_create_with_attributes(
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
@@ -224,6 +275,39 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
 template <typename KeyType, ServiceType S>
 inline ServiceBuilderBlackboardOpener<KeyType, S>::ServiceBuilderBlackboardOpener(iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_blackboard_opener(handle) } {
+}
+
+template <typename KeyType, ServiceType S>
+inline void ServiceBuilderBlackboardOpener<KeyType, S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_service_builder_blackboard_opener_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <typename KeyType, ServiceType S>
+inline ServiceBuilderBlackboardOpener<KeyType, S>::ServiceBuilderBlackboardOpener(
+    ServiceBuilderBlackboardOpener&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <typename KeyType, ServiceType S>
+inline auto ServiceBuilderBlackboardOpener<KeyType, S>::operator=(ServiceBuilderBlackboardOpener&& rhs) noexcept
+    -> ServiceBuilderBlackboardOpener& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_max_readers = std::move(rhs.m_max_readers);
+        m_max_nodes = std::move(rhs.m_max_nodes);
+    }
+
+    return *this;
+}
+
+template <typename KeyType, ServiceType S>
+inline ServiceBuilderBlackboardOpener<KeyType, S>::~ServiceBuilderBlackboardOpener() {
+    drop();
 }
 
 template <typename KeyType, ServiceType S>
@@ -255,6 +339,7 @@ inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> bb::Expecte
 
     iox2_port_factory_blackboard_h port_factory_handle {};
     auto result = iox2_service_builder_blackboard_open(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);
@@ -272,6 +357,7 @@ inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
     iox2_port_factory_blackboard_h port_factory_handle {};
     auto result = iox2_service_builder_blackboard_open_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryBlackboard<S, KeyType>(port_factory_handle);

@@ -53,6 +53,7 @@
 * [#2215](https://github.com/eclipse-iceoryx/iceoryx2/issues/2215) Add missing `slice_len` function in `PendingResponse`
 * [#2219](https://github.com/eclipse-iceoryx/iceoryx2/issues/2219) Return `LoanError` instead of crashing when a C++ loan with a user header fails
 * [#2222](https://github.com/eclipse-iceoryx/iceoryx2/issues/2222) Free the builder struct in `iox2_waitset_builder_create`, which leaked 48 bytes for every `WaitSet` created from C or C++
+* [#2223](https://github.com/eclipse-iceoryx/iceoryx2/issues/2223) Free the node, WaitSet and service builders that are dropped without being consumed
 * [#2224](https://github.com/eclipse-iceoryx/iceoryx2/issues/2224) Panic safe drop in `Vec`
 
 ### Refactoring

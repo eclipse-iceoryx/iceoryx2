@@ -143,18 +143,20 @@ class NodeBuilder {
 
   public:
     NodeBuilder();
-    NodeBuilder(NodeBuilder&&) = default;
-    auto operator=(NodeBuilder&&) -> NodeBuilder& = default;
-    ~NodeBuilder() = default;
+    NodeBuilder(NodeBuilder&& rhs) noexcept;
+    auto operator=(NodeBuilder&& rhs) noexcept -> NodeBuilder&;
+    ~NodeBuilder();
 
     NodeBuilder(const NodeBuilder&) = delete;
     auto operator=(const NodeBuilder&) -> NodeBuilder& = delete;
 
     /// Creates a new [`Node`] for a specified [`ServiceType`].
     template <ServiceType T>
-    auto create() const&& -> bb::Expected<Node<T>, NodeCreationFailure>;
+    auto create() && -> bb::Expected<Node<T>, NodeCreationFailure>;
 
   private:
+    void drop();
+
     iox2_node_builder_h m_handle = nullptr;
 };
 } // namespace iox2

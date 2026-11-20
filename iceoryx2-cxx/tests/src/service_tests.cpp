@@ -330,4 +330,29 @@ TYPED_TEST(ServiceTest, force_remove_works) {
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
             .value());
 }
+
+TYPED_TEST(ServiceTest, service_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name);
+}
+
+TYPED_TEST(ServiceTest, service_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+    const auto other_service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto builder = node.service_builder(service_name);
+    auto sut = node.service_builder(other_service_name);
+    sut = std::move(builder);
+
+    auto service = std::move(sut).event().create().value();
+    ASSERT_THAT(service.name().to_string().unchecked_access().c_str(),
+                StrEq(service_name.to_string().unchecked_access().c_str()));
+}
 } // namespace

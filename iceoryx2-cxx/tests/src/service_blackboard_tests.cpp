@@ -1899,4 +1899,74 @@ TYPED_TEST(ServiceBlackboardTest, key_can_be_found_in_opener) {
     ASSERT_THAT(*entry_handle_1.get(), Eq(VALUE_1));
     ASSERT_THAT(*entry_handle_2.get(), Eq(VALUE_2));
 }
+
+TYPED_TEST(ServiceBlackboardTest, creator_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_READERS = 5;
+    constexpr uint64_t KEY = 0;
+    constexpr uint64_t VALUE = 1;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name)
+                   .template blackboard_creator<uint64_t>()
+                   .template add<uint64_t>(KEY, VALUE)
+                   .max_readers(NUMBER_OF_READERS);
+}
+
+TYPED_TEST(ServiceBlackboardTest, creator_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_READERS = 5;
+    constexpr uint64_t KEY = 0;
+    constexpr uint64_t VALUE = 1;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto builder = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add<uint64_t>(KEY, VALUE)
+                       .max_readers(NUMBER_OF_READERS);
+    auto sut = node.service_builder(service_name).template blackboard_creator<uint64_t>();
+    sut = std::move(builder);
+
+    auto service = std::move(sut).create().value();
+    ASSERT_THAT(service.static_config().max_readers(), Eq(NUMBER_OF_READERS));
+}
+
+TYPED_TEST(ServiceBlackboardTest, opener_can_be_dropped_without_open) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_READERS = 5;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).template blackboard_opener<uint64_t>().max_readers(NUMBER_OF_READERS);
+}
+
+TYPED_TEST(ServiceBlackboardTest, opener_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_READERS = 5;
+    constexpr uint64_t KEY = 0;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(KEY)
+                       .max_readers(NUMBER_OF_READERS)
+                       .create()
+                       .value();
+
+    auto builder =
+        node.service_builder(service_name).template blackboard_opener<uint64_t>().max_readers(NUMBER_OF_READERS + 1);
+    auto sut = node.service_builder(service_name).template blackboard_opener<uint64_t>();
+    sut = std::move(builder);
+
+    auto result = std::move(sut).open();
+    ASSERT_FALSE(result.has_value());
+    ASSERT_THAT(result.error(), Eq(BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders));
+}
 } // namespace

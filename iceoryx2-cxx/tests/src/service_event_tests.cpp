@@ -883,4 +883,29 @@ TYPED_TEST(ServiceEventTest, port_names_can_be_set) {
     ASSERT_THAT(notifer.name().to_string(), notifier_name.to_string());
     ASSERT_THAT(listener.name().to_string(), listener_name.to_string());
 }
+
+TYPED_TEST(ServiceEventTest, service_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_LISTENERS = 7;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS);
+}
+
+TYPED_TEST(ServiceEventTest, service_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_LISTENERS = 7;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto builder = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS);
+    auto sut = node.service_builder(service_name).event();
+    sut = std::move(builder);
+
+    auto service = std::move(sut).create().value();
+    ASSERT_THAT(service.static_config().max_listeners(), Eq(NUMBER_OF_LISTENERS));
+}
 } // namespace

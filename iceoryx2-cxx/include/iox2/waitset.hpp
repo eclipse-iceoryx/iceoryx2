@@ -302,20 +302,22 @@ class WaitSetBuilder {
 #endif
 
   public:
-    ~WaitSetBuilder() = default;
+    WaitSetBuilder(WaitSetBuilder&& rhs) noexcept;
+    auto operator=(WaitSetBuilder&& rhs) noexcept -> WaitSetBuilder&;
+    ~WaitSetBuilder();
 
     WaitSetBuilder(const WaitSetBuilder&) = delete;
-    WaitSetBuilder(WaitSetBuilder&&) = default;
     auto operator=(const WaitSetBuilder&) -> WaitSetBuilder& = delete;
-    auto operator=(WaitSetBuilder&&) -> WaitSetBuilder& = default;
 
     /// Creates the [`WaitSet`].
-    auto create() const&& -> bb::Expected<WaitSet<S>, WaitSetCreateError>;
+    auto create() && -> bb::Expected<WaitSet<S>, WaitSetCreateError>;
 
   private:
     template <ServiceType>
     friend class Node;
     explicit WaitSetBuilder(iox2_waitset_builder_h handle);
+    void drop();
+
     iox2_waitset_builder_h m_handle = nullptr;
 };
 } // namespace iox2
