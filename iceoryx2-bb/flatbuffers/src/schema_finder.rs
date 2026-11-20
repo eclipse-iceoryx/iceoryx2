@@ -16,6 +16,7 @@ extern crate alloc;
 
 use crate::TypeName;
 use alloc::format;
+use alloc::vec::Vec;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::code_style::{camel_to_snake_case, snake_to_upper_camel_case};
 use iceoryx2_bb_elementary::enum_gen;
@@ -47,29 +48,30 @@ pub fn is_binary_flatbuffer_schema(name: &FileName) -> bool {
     }
 }
 
-fn is_schema_for_type_name(file_name: &FileName, type_name: &TypeName) -> bool {
+/// The separator between the segments of a flatbuffer namespace.
+const NAMESPACE_SEPARATOR: char = '.';
+
+fn is_schema_for_type_name(file_name: &FileName, name: &str) -> bool {
     if !is_binary_flatbuffer_schema(file_name) {
         return false;
     }
 
     if let Some(pos) = file_name.as_str().rfind(".") {
         let name_without_extension = &file_name.as_str()[0..pos];
-        name_without_extension.eq_ignore_ascii_case(type_name.name.as_str())
-            || name_without_extension
-                .eq_ignore_ascii_case(&camel_to_snake_case(type_name.name.as_str()))
-            || name_without_extension
-                .eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.name.as_str()))
+        name_without_extension.eq_ignore_ascii_case(name)
+            || name_without_extension.eq_ignore_ascii_case(&camel_to_snake_case(name))
+            || name_without_extension.eq_ignore_ascii_case(&snake_to_upper_camel_case(name))
     } else {
         false
     }
 }
 
-fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
+fn is_namespace(file_name: &FileName, namespace: &str) -> bool {
     let name = file_name.as_str();
 
-    name.eq_ignore_ascii_case(type_name.namespace.as_str())
-        || name.eq_ignore_ascii_case(&camel_to_snake_case(type_name.namespace.as_str()))
-        || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.namespace.as_str()))
+    name.eq_ignore_ascii_case(namespace)
+        || name.eq_ignore_ascii_case(&camel_to_snake_case(namespace))
+        || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(namespace))
 }
 
 /// Returns the best fitting schema file for a given [`TypeName`]. If no schema file could be found
@@ -77,13 +79,30 @@ fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
 ///
 /// The best fitting schema file in descending order:
 ///
-/// 1. `namespace/name.bfbs`
+/// 1. `namespace/name.bfbs`, one directory per namespace segment,
+///    `my/namespace/name.bfbs` for `my.namespace.Name`
 /// 2. `name.bfbs`
 /// 3. `something/namespace/name.bfbs`
 /// 4. `something/name.bfbs`
 ///
 pub fn find_best_fitting_binary_schema_file(
     type_name: &TypeName,
+    root_path: &Path,
+) -> Result<Option<FilePath>, FindSchemaFileError> {
+    let namespace: Vec<&str> = type_name
+        .namespace
+        .as_str()
+        .split(NAMESPACE_SEPARATOR)
+        .filter(|segment| !segment.is_empty())
+        .collect();
+    find(type_name.name.as_str(), &namespace, root_path)
+}
+
+/// Finds the schema of `name` in `root_path`, with the segments of its
+/// `namespace` that no directory above spelled yet.
+fn find(
+    name: &str,
+    namespace: &[&str],
     root_path: &Path,
 ) -> Result<Option<FilePath>, FindSchemaFileError> {
     let origin = format!("find_best_fitting_binary_schema_file({root_path:?})");
@@ -129,7 +148,7 @@ pub fn find_best_fitting_binary_schema_file(
     };
 
     let mut schema_file = None;
-    let mut namespace_subdirectory = None;
+    let mut namespace_directory = None;
 
     let create_sub_path = |path: &Path, name: &FileName| -> Result<Path, FindSchemaFileError> {
         let mut path = *path;
@@ -145,7 +164,7 @@ pub fn find_best_fitting_binary_schema_file(
     for entry in &contents {
         match entry.metadata().file_type() {
             FileType::File => {
-                if is_schema_for_type_name(entry.name(), type_name) {
+                if is_schema_for_type_name(entry.name(), name) {
                     match FilePath::from_path_and_file(root_path, entry.name()) {
                         Ok(file) => schema_file = Some(file),
                         Err(e) => {
@@ -157,16 +176,18 @@ pub fn find_best_fitting_binary_schema_file(
                 }
             }
             FileType::Directory => {
-                if is_namespace(entry.name(), type_name) {
-                    namespace_subdirectory = Some(create_sub_path(root_path, entry.name())?);
+                if let Some((segment, within)) = namespace.split_first()
+                    && is_namespace(entry.name(), segment)
+                {
+                    namespace_directory = Some((create_sub_path(root_path, entry.name())?, within));
                 }
             }
             _ => continue,
         }
     }
 
-    if let Some(dir) = &namespace_subdirectory
-        && let Ok(Some(file)) = find_best_fitting_binary_schema_file(type_name, dir)
+    if let Some((directory, within)) = &namespace_directory
+        && let Ok(Some(file)) = find(name, within, directory)
     {
         return Ok(Some(file));
     }
@@ -177,10 +198,8 @@ pub fn find_best_fitting_binary_schema_file(
 
     for entry in &contents {
         if entry.metadata().file_type() == FileType::Directory
-            && let Ok(Some(file)) = find_best_fitting_binary_schema_file(
-                type_name,
-                &create_sub_path(root_path, entry.name())?,
-            )
+            && let Ok(Some(file)) =
+                find(name, namespace, &create_sub_path(root_path, entry.name())?)
         {
             return Ok(Some(file));
         }

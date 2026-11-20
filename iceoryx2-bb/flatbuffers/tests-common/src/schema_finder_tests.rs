@@ -210,6 +210,27 @@ pub fn name_can_be_camel_case() {
 }
 
 #[test]
+pub fn schema_in_nested_namespace_directories_is_preferred() {
+    let mut test = Test::new();
+    let path = vec!["test", "name_space", "flatbuffer_test_type.bfbs"];
+    test.create_directory(&["test"]);
+    test.create_directory(&["test", "name_space"]);
+    test.create_file(&["flatbuffer_test_type.bfbs"]);
+    test.create_file(&path);
+    let type_name = TypeName {
+        name: "FlatbufferTestType".try_into().unwrap(),
+        namespace: "test.name_space".try_into().unwrap(),
+    };
+
+    let sut = find_best_fitting_binary_schema_file(&type_name, test.root_path());
+
+    assert_that!(sut, is_ok);
+    let sut = sut.unwrap();
+    assert_that!(sut, is_some);
+    assert_that!(test.is_same_path(&path, &sut.unwrap()), eq true);
+}
+
+#[test]
 pub fn schema_in_camel_case_namespace_is_preferred() {
     let mut test = Test::new();
     let path = vec!["TestNameSpace", "flatbuffer_test_type.bfbs"];

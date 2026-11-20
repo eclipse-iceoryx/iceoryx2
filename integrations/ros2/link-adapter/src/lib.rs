@@ -72,7 +72,7 @@ pub(crate) mod rcutils;
 #[allow(unsafe_code)]
 pub(crate) mod ros_message;
 #[allow(unsafe_code)]
-pub(crate) mod typesupport;
+pub mod typesupport;
 
 pub use adapter::Ros2Adapter;
 pub use config::{Config, NodeName, ServiceName, TopicName, TypeName};

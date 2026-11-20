@@ -16,6 +16,7 @@
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Propagate request-response services through the link gateway
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Update the ROS 2 link adapter to support request-response
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Add flatbuffer translation example for the ROS 2 gateway
+* [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Add a reflection-based flatbuffer translator to the ROS 2 gateway
 * [#2011](https://github.com/eclipse-iceoryx/iceoryx2/issues/2011) Add a publish-subscribe latency benchmark with a FlatBuffers payload
 * [#2031](https://github.com/eclipse-iceoryx/iceoryx2/issues/2031) Notify the event service named after a service when the link delivered samples to it
 * [#2078](https://github.com/eclipse-iceoryx/iceoryx2/issues/2078) Allocate the sample reference counters of a grown data segment only when the data segment grows
@@ -63,6 +64,7 @@
 
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Factor the sample transcoding out of the gateway's publish-subscribe relay
 * [#935](https://github.com/eclipse-iceoryx/iceoryx2/issues/935) Include type stubs in Python bindings package
+* [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Find a flatbuffer schema file nested in directories matching its namespace
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Restructure the ROS 2 gateway into a link gateway with a ROS 2 adapter
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Remove the former gateway core in `iceoryx2-gateway/`, superseded by the link crates
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Tidy up implementation of the link's discovery state
