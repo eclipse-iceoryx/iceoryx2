@@ -101,6 +101,7 @@
 * [#1931](https://github.com/eclipse-iceoryx/iceoryx2/issues/1931) Use ANSI escape sequences in iceoryx2-cli
 * [#1955](https://github.com/eclipse-iceoryx/iceoryx2/issues/1955) Remove `as_mut_bytes` and `deref_mut` from the `String` API in iceoryx2-bb-container
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Restructure the tunnel into the link, with tunnels and gateways as its backends
+* [#2240](https://github.com/eclipse-iceoryx/iceoryx2/issues/2240) Fix CMake 4.5 warning
 
 ### Workflow
 
