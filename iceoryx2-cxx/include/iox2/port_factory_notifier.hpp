@@ -45,9 +45,9 @@ class PortFactoryNotifier {
 #endif
 
   public:
-    PortFactoryNotifier(PortFactoryNotifier&&) noexcept = default;
-    auto operator=(PortFactoryNotifier&&) noexcept -> PortFactoryNotifier& = default;
-    ~PortFactoryNotifier() = default;
+    PortFactoryNotifier(PortFactoryNotifier&& rhs) noexcept;
+    auto operator=(PortFactoryNotifier&& rhs) noexcept -> PortFactoryNotifier&;
+    ~PortFactoryNotifier();
 
     PortFactoryNotifier(const PortFactoryNotifier&) = delete;
     auto operator=(const PortFactoryNotifier&) -> PortFactoryNotifier& = delete;
@@ -60,6 +60,7 @@ class PortFactoryNotifier {
     friend class PortFactoryEvent;
 
     explicit PortFactoryNotifier(iox2_port_factory_notifier_builder_h handle);
+    void drop();
 
     iox2_port_factory_notifier_builder_h m_handle = nullptr;
 };

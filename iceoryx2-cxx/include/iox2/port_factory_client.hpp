@@ -63,11 +63,12 @@ class PortFactoryClient {
 #endif
 
   public:
+    PortFactoryClient(PortFactoryClient&& rhs) noexcept;
+    auto operator=(PortFactoryClient&& rhs) noexcept -> PortFactoryClient&;
+    ~PortFactoryClient();
+
     PortFactoryClient(const PortFactoryClient&) = delete;
-    PortFactoryClient(PortFactoryClient&&) = default;
     auto operator=(const PortFactoryClient&) -> PortFactoryClient& = delete;
-    auto operator=(PortFactoryClient&&) -> PortFactoryClient& = default;
-    ~PortFactoryClient() = default;
 
     /// Sets the maximum number of elements that can be loaned in a slice.
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
@@ -134,14 +135,15 @@ class PortFactoryClient {
     friend class PortFactoryRequestResponse;
 
     explicit PortFactoryClient(iox2_port_factory_client_builder_h handle);
+    void drop();
 
     iox2_port_factory_client_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
-    bb::Optional<DegradationHandler* const> m_request_degradation_handler;
-    bb::Optional<DegradationHandler* const> m_response_degradation_handler;
-    bb::Optional<BackpressureHandler* const> m_backpressure_handler;
+    bb::Optional<DegradationHandler*> m_request_degradation_handler;
+    bb::Optional<DegradationHandler*> m_response_degradation_handler;
+    bb::Optional<BackpressureHandler*> m_backpressure_handler;
 };
 
 template <ServiceType Service,
@@ -283,6 +285,7 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
 
     iox2_client_h client_handle {};
     auto result = iox2_port_factory_client_builder_create(m_handle, nullptr, &client_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(client_handle);
@@ -299,6 +302,64 @@ template <ServiceType Service,
 inline PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     PortFactoryClient(iox2_port_factory_client_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline void PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_client_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    PortFactoryClient(PortFactoryClient&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto
+PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator=(
+    PortFactoryClient&& rhs) noexcept -> PortFactoryClient& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_backpressure_strategy = std::move(rhs.m_backpressure_strategy);
+        m_max_active_requests = std::move(rhs.m_max_active_requests);
+        m_name = std::move(rhs.m_name);
+        m_max_slice_len = std::move(rhs.m_max_slice_len);
+        m_allocation_strategy = std::move(rhs.m_allocation_strategy);
+        m_override_preallocation_callback = std::move(rhs.m_override_preallocation_callback);
+        m_request_degradation_handler = std::move(rhs.m_request_degradation_handler);
+        m_response_degradation_handler = std::move(rhs.m_response_degradation_handler);
+        m_backpressure_handler = std::move(rhs.m_backpressure_handler);
+    }
+
+    return *this;
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    ~PortFactoryClient() {
+    drop();
 }
 } // namespace iox2
 #endif
