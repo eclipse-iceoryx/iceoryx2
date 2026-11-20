@@ -215,6 +215,8 @@ pub unsafe extern "C" fn iox2_response_user_header(
 ///
 /// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
 /// * `payload_ptr` valid pointer to a `*const c_void`.
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`] with
+///   the number of elements of the underlying type
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_payload(
     handle: iox2_response_h_ref,

@@ -259,6 +259,8 @@ pub unsafe extern "C" fn iox2_response_mut_user_header_mut(
 /// * `handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `payload_ptr` valid pointer to a `*const c_void`.
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`] with
+///   the number of elements of the underlying type
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_payload(
     handle: iox2_response_mut_h_ref,
@@ -294,6 +296,8 @@ pub unsafe extern "C" fn iox2_response_mut_payload(
 /// * `handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `payload_ptr` valid pointer to a `*mut c_void`.
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`] with
+///   the number of elements of the underlying type
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_payload_mut(
     handle: iox2_response_mut_h_ref,

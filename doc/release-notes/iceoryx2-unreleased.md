@@ -65,6 +65,7 @@
 
 * [#818](https://github.com/eclipse-iceoryx/iceoryx2/issues/818) Factor the sample transcoding out of the gateway's publish-subscribe relay
 * [#935](https://github.com/eclipse-iceoryx/iceoryx2/issues/935) Include type stubs in Python bindings package
+* [#1867](https://github.com/eclipse-iceoryx/iceoryx2/issues/1867) Fix documentation and add tests to C FFI Bindings
 * [#1896](https://github.com/eclipse-iceoryx/iceoryx2/issues/1896) Find a flatbuffer schema file nested in directories matching its namespace
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Restructure the ROS 2 gateway into a link gateway with a ROS 2 adapter
 * [#1977](https://github.com/eclipse-iceoryx/iceoryx2/issues/1977) Remove the former gateway core in `iceoryx2-gateway/`, superseded by the link crates

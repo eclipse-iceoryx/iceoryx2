@@ -17,6 +17,7 @@ pub const IOX2_NODE_NAME_LENGTH: usize = 128;
 pub const IOX2_PORT_NAME_LENGTH: usize = 64;
 pub const IOX2_SERVICE_NAME_LENGTH: usize = 255;
 pub const IOX2_SERVICE_HASH_LENGTH: usize = 64;
+pub const IOX2_SERVICE_HASH_LENGTH_NULL_TERMINATED: usize = 65;
 pub const IOX2_TYPE_NAME_LENGTH: usize = 256;
 pub const IOX2_MAX_BLACKBOARD_KEY_SIZE: usize = 64;
 pub const IOX2_MAX_BLACKBOARD_KEY_ALIGNMENT: usize = 8;
