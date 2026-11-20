@@ -51,6 +51,7 @@
 * [#2214](https://github.com/eclipse-iceoryx/iceoryx2/issues/2214) Fix notification remove/trigger race
 * [#2215](https://github.com/eclipse-iceoryx/iceoryx2/issues/2215) Add missing `slice_len` function in `PendingResponse`
 * [#2219](https://github.com/eclipse-iceoryx/iceoryx2/issues/2219) Return `LoanError` instead of crashing when a C++ loan with a user header fails
+* [#2224](https://github.com/eclipse-iceoryx/iceoryx2/issues/2224) Panic safe drop in `Vec`
 
 ### Refactoring
 

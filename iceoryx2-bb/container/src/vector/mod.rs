@@ -87,12 +87,11 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     /// Removes all elements from the vector
     fn clear(&mut self) {
         let len = self.len();
-        let data = unsafe { self.data_mut() };
         for idx in (0..len).rev() {
+            unsafe { self.set_len(idx as u64) };
+            let data = unsafe { self.data_mut() };
             unsafe { data[idx].assume_init_drop() };
         }
-
-        unsafe { self.set_len(0) };
     }
 
     /// Append all elements from other via [`Clone`].
