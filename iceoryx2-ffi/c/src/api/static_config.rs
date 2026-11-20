@@ -19,8 +19,8 @@ use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::fatal_panic;
 
 use crate::{
-    IOX2_SERVICE_HASH_LENGTH, IOX2_SERVICE_HASH_LENGTH_NULL_TERMINATED, IOX2_SERVICE_NAME_LENGTH,
-    iox2_messaging_pattern_e, iox2_static_config_blackboard_t, iox2_static_config_event_t,
+    IOX2_SERVICE_HASH_LENGTH, IOX2_SERVICE_NAME_LENGTH, iox2_messaging_pattern_e,
+    iox2_static_config_blackboard_t, iox2_static_config_event_t,
     iox2_static_config_publish_subscribe_t, iox2_static_config_request_response_t,
 };
 
@@ -38,7 +38,7 @@ pub union iox2_static_config_details_t {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct iox2_static_config_t {
-    pub id: [c_char; IOX2_SERVICE_HASH_LENGTH_NULL_TERMINATED],
+    pub id: [c_char; IOX2_SERVICE_HASH_LENGTH],
     pub name: [c_char; IOX2_SERVICE_NAME_LENGTH],
     pub messaging_pattern: iox2_messaging_pattern_e,
     pub details: iox2_static_config_details_t,
