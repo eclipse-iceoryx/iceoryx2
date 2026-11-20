@@ -142,8 +142,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 /// # Safety
 ///
 ///  * `handle` must be acquired with [`iox2_node_waitset_builder()`](crate::iox2_node_waitset_builder)
-///  * `handle` is invalidated after a successful operation and cannot used again
-///    with this function.
+///  * `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 ///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
 ///  * `handle_ptr` must point to a valid uninitialized memory location
 #[unsafe(no_mangle)]
@@ -155,7 +154,9 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
     debug_assert!(!handle.is_null());
 
     let waitset_builder_struct = unsafe { &mut *handle.as_type() };
+    let service_type = waitset_builder_struct.service_type;
     let waitset_builder = waitset_builder_struct.take().unwrap();
+    (waitset_builder_struct.deleter)(waitset_builder_struct);
     unsafe {
         fn no_op(_: *mut iox2_waitset_t) {}
         let mut deleter: fn(*mut iox2_waitset_t) = no_op;
@@ -172,7 +173,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
             (*struct_ptr).deleter = deleter;
         };
 
-        match waitset_builder_struct.service_type {
+        match service_type {
             iox2_service_type_e::IPC => {
                 let builder = ManuallyDrop::into_inner(waitset_builder.ipc);
                 let waitset = match builder.create() {
