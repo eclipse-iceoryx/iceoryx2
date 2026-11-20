@@ -41,6 +41,7 @@ impl iceoryx2::service::Service for NamedPipeEventService {
     type Event = iceoryx2_cal::event::NamedPipeCountingBitSet;
     type Monitoring = iceoryx2_cal::monitoring::recommended::Ipc;
     type Reactor = iceoryx2_cal::reactor::recommended::Ipc;
+    type LocalTrigger = iceoryx2_cal::trigger::recommended::Recommended;
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<T>;
     type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =

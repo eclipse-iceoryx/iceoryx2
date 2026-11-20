@@ -52,6 +52,7 @@ impl Service for CustomService {
     type Event = iceoryx2_cal::event::recommended::Ipc;
     type Monitoring = iceoryx2_cal::monitoring::recommended::Ipc;
     type Reactor = iceoryx2_cal::reactor::recommended::Ipc;
+    type LocalTrigger = iceoryx2_cal::trigger::recommended::Recommended;
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<T>;
     // the blackboard mgmt segment is replaced with a file based version
@@ -82,6 +83,7 @@ impl Service for CustomServiceThreadSafe {
     type Event = <CustomService as Service>::Event;
     type Monitoring = <CustomService as Service>::Monitoring;
     type Reactor = <CustomService as Service>::Reactor;
+    type LocalTrigger = <CustomService as Service>::LocalTrigger;
     // use a mutex for thread-safety
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<T>;
