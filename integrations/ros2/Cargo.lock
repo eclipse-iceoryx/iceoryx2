@@ -519,7 +519,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "flatbuffers",
  "iceoryx2-bb-concurrency",
@@ -544,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-concurrency"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
@@ -552,7 +552,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-container"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-derive-macros",
@@ -564,7 +564,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-derive-macros"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "proc-macro2",
@@ -574,7 +574,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-elementary"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
@@ -585,11 +585,11 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-elementary-traits"
-version = "0.10.0"
+version = "0.10.1"
 
 [[package]]
 name = "iceoryx2-bb-flatbuffers"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "flatbuffers",
  "iceoryx2-bb-container",
@@ -602,7 +602,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-linux"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-lock-free"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-derive-macros",
@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-loggers"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-print",
  "iceoryx2-log-types",
@@ -636,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-memory"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-derive-macros",
@@ -649,7 +649,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-posix"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "enum-iterator",
  "iceoryx2-bb-concurrency",
@@ -668,14 +668,14 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-print"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-pal-print",
 ]
 
 [[package]]
 name = "iceoryx2-bb-system-types"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-testing"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
@@ -702,7 +702,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -724,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cli"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -754,7 +754,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-gateway"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
@@ -765,7 +765,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-gateway-backend"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
@@ -775,7 +775,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-integrations-ros2-gateway-backend"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "getrandom",
  "iceoryx2",
@@ -793,7 +793,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-integrations-ros2-gateway-cli"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -810,14 +810,14 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-integrations-ros2-interop"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2",
 ]
 
 [[package]]
 name = "iceoryx2-log"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-log-types",
  "iceoryx2-pal-concurrency-sync",
@@ -825,19 +825,19 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-log-types"
-version = "0.10.0"
+version = "0.10.1"
 
 [[package]]
 name = "iceoryx2-pal-concurrency-sync"
-version = "0.10.0"
+version = "0.10.1"
 
 [[package]]
 name = "iceoryx2-pal-configuration"
-version = "0.10.0"
+version = "0.10.1"
 
 [[package]]
 name = "iceoryx2-pal-os-api"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-pal-posix",
  "libc",
@@ -845,7 +845,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-posix"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "bindgen 0.72.1",
  "cc",
@@ -857,14 +857,14 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-print"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-pal-posix",
 ]
 
 [[package]]
 name = "iceoryx2-pal-testing"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
@@ -874,7 +874,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-discovery"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -885,7 +885,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-userland-record-and-replay"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "anyhow",
  "iceoryx2",
