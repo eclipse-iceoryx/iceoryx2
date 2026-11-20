@@ -22,8 +22,7 @@
     conflicts when merging.
 -->
 
-* [#2198](https://github.com/eclipse-iceoryx/iceoryx2/issues/2198) Fix 'iceoryx2.h' header generation for Rust 1.100.0
-* [#2214](https://github.com/eclipse-iceoryx/iceoryx2/issues/2214) Fix notification remove/trigger race
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Refactoring
 
@@ -32,7 +31,7 @@
     conflicts when merging.
 -->
 
-* [#1867](https://github.com/eclipse-iceoryx/iceoryx2/issues/1867) Fix documentation and add tests to C FFI Bindings
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Workflow
 
