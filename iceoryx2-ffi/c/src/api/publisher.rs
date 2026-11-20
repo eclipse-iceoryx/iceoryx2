@@ -585,7 +585,7 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 /// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
-/// * `number_of_bytes` - The number of bytes to loan from the publisher's payload segment
+/// * `number_of_elements` - The number of elements to loan from the publisher's payload segment
 ///
 /// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`].
 ///

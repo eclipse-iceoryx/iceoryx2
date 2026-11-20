@@ -32,7 +32,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#1867](https://github.com/eclipse-iceoryx/iceoryx2/issues/1867) Fix documentation and add tests to C FFI Bindings
 
 ### Workflow
 
