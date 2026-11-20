@@ -591,6 +591,7 @@ pub mod details {
             Ok(Sender {
                 storage,
                 name: self.name,
+                _single_writer: PhantomData,
             })
         }
 
@@ -620,6 +621,8 @@ pub mod details {
     pub struct Sender<Storage: DynamicStorage<SharedManagementData>> {
         storage: Storage,
         name: FileName,
+        // !Sync since the used chunk lists support only a single writer
+        _single_writer: PhantomData<UnsafeCell<()>>,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Sender<Storage> {
@@ -880,12 +883,11 @@ pub mod details {
 
         unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
             for (n, segment_details) in self.storage.get().segment_details.iter().enumerate() {
-                let sample_size = segment_details.sample_size.load(Ordering::Relaxed);
-                // the sample size is set with the first send, a segment without it was never used
-                if sample_size == 0 {
+                if segment_details.used_chunk_list.is_empty() {
                     continue;
                 }
 
+                let sample_size = segment_details.sample_size.load(Ordering::Relaxed);
                 let segment_id = self.segment_id_from_index(n);
                 segment_details.used_chunk_list.remove_all(|index| {
                     callback(PointerOffset::from_offset_and_segment_id(

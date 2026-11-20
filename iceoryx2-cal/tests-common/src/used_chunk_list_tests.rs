@@ -55,4 +55,27 @@ pub mod generic {
             assert_that!(sut.remove(i), eq false);
         }
     }
+
+    #[test]
+    fn is_empty_tracks_used_chunks<const CAPACITY: usize>() {
+        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+        assert_that!(sut.is_empty(), eq true);
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.insert(i), eq true);
+            assert_that!(sut.insert(i), eq false);
+            assert_that!(sut.is_empty(), eq false);
+        }
+
+        for i in 0..sut.capacity() - 1 {
+            assert_that!(sut.remove(i), eq true);
+            assert_that!(sut.remove(i), eq false);
+            assert_that!(sut.is_empty(), eq false);
+        }
+
+        let mut removed_indices = vec![];
+        sut.remove_all(|index| removed_indices.push(index));
+        assert_that!(removed_indices, eq vec![sut.capacity() - 1]);
+        assert_that!(sut.is_empty(), eq true);
+    }
 }

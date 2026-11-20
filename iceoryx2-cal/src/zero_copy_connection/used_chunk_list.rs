@@ -13,6 +13,7 @@
 use core::alloc::Layout;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::{
@@ -33,12 +34,14 @@ pub mod details {
 
     use super::*;
 
+    /// Supports only a single writer, the modifying methods must not be called concurrently.
     #[derive(Debug)]
     #[repr(C)]
     pub struct UsedChunkList<PointerType: Pointer<AtomicBool>> {
         data_ptr: PointerType,
         capacity: usize,
         is_memory_initialized: AtomicBool,
+        len: AtomicUsize,
     }
 
     unsafe impl<PointerType: Pointer<AtomicBool> + ZeroCopySend> ZeroCopySend
@@ -60,6 +63,7 @@ pub mod details {
                 data_ptr,
                 capacity,
                 is_memory_initialized: AtomicBool::new(true),
+                len: AtomicUsize::new(0),
             }
         }
     }
@@ -70,6 +74,7 @@ pub mod details {
                 data_ptr: unsafe { RelocatablePointer::new_uninit() },
                 capacity,
                 is_memory_initialized: AtomicBool::new(false),
+                len: AtomicUsize::new(0),
             }
         }
 
@@ -136,25 +141,48 @@ pub mod details {
                 "This should never happen. Out of bounds access with index {idx}."
             );
 
-            unsafe { (*self.data_ptr.as_ptr().add(idx)).swap(value, Ordering::Relaxed) }
+            // a single writer requires no read-modify-write, and skipping the store when nothing
+            // changes avoids taking the cache line exclusively
+            let chunk = unsafe { &*self.data_ptr.as_ptr().add(idx) };
+            let previous_value = chunk.load(Ordering::Relaxed);
+            if previous_value != value {
+                chunk.store(value, Ordering::Relaxed);
+            }
+            previous_value
         }
 
         pub fn insert(&self, value: usize) -> bool {
-            !self.set(value, true)
+            let was_unused = !self.set(value, true);
+            if was_unused {
+                self.len
+                    .store(self.len.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+            }
+            was_unused
         }
 
         pub fn remove(&self, value: usize) -> bool {
-            self.set(value, false)
+            let was_used = self.set(value, false);
+            if was_used {
+                self.len
+                    .store(self.len.load(Ordering::Relaxed) - 1, Ordering::Relaxed);
+            }
+            was_used
+        }
+
+        pub fn is_empty(&self) -> bool {
+            self.verify_init("is_empty");
+            self.len.load(Ordering::Relaxed) == 0
         }
 
         pub fn remove_all<F: FnMut(usize)>(&self, mut callback: F) {
-            self.verify_init("pop");
+            self.verify_init("remove_all");
 
             for i in 0..self.capacity {
-                let chunk = unsafe { &*self.data_ptr.as_ptr().add(i) };
-                // loading first and short circuiting the if-statement avoids taking the cache line
-                // exclusively for unused chunks
-                if chunk.load(Ordering::Relaxed) && chunk.swap(false, Ordering::Relaxed) {
+                if self.is_empty() {
+                    return;
+                }
+
+                if self.remove(i) {
                     callback(i);
                 }
             }
@@ -211,5 +239,9 @@ impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
 
     pub fn remove(&self, value: usize) -> bool {
         self.list.remove(value)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.list.is_empty()
     }
 }
