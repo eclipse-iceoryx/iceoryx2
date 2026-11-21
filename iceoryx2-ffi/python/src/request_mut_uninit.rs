@@ -88,6 +88,15 @@ impl RequestMutUninit {
         }
     }
 
+    pub fn __truncate(&self, number_of_elements: usize) {
+        match &mut *self.value.lock() {
+            RequestMutUninitType::Ipc(Some(v)) => v.truncate(number_of_elements),
+            RequestMutUninitType::Local(Some(v)) => v.truncate(number_of_elements),
+            _ => fatal_panic!(from "RequestMutUninit::__truncate()",
+                "Accessing a released request."),
+        }
+    }
+
     #[getter]
     pub fn __available_payload_memory(&self) -> usize {
         match &*self.value.lock() {

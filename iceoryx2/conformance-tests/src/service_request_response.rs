@@ -1455,6 +1455,220 @@ pub mod service_request_response {
     }
 
     #[conformance_test]
+    pub fn truncated_uninitialized_slice_request_delivers_its_first_elements<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        for n in [0, MAX_ELEMENTS / 2, MAX_ELEMENTS] {
+            let mut request = client.loan_slice_uninit(MAX_ELEMENTS).unwrap();
+            request.truncate(n);
+            assert_that!(request.payload(), len n);
+            let _pending_response = request.write_from_fn(|i| i as u64 * 25).send().unwrap();
+
+            let active_request = server.receive().unwrap().unwrap();
+
+            assert_that!(active_request.payload(), len n);
+            for (i, element) in active_request.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn truncated_initialized_slice_request_delivers_its_first_elements<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        for n in [0, MAX_ELEMENTS / 2, MAX_ELEMENTS] {
+            let mut request = client.loan_slice(MAX_ELEMENTS).unwrap();
+            for (i, element) in request.payload_mut().iter_mut().enumerate() {
+                *element = i as u64 * 25;
+            }
+            request.truncate(n);
+            assert_that!(request.payload(), len n);
+            let _pending_response = request.send().unwrap();
+
+            let active_request = server.receive().unwrap().unwrap();
+
+            assert_that!(active_request.payload(), len n);
+            for (i, element) in active_request.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn truncating_a_slice_request_never_grows_it<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 10;
+        const TRUNCATED_ELEMENTS: usize = 4;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        let mut request = client.loan_slice_uninit(MAX_ELEMENTS).unwrap();
+        request.truncate(MAX_ELEMENTS + 1);
+        assert_that!(request.payload(), len MAX_ELEMENTS);
+        request.truncate(TRUNCATED_ELEMENTS);
+        request.truncate(MAX_ELEMENTS);
+        assert_that!(request.payload(), len TRUNCATED_ELEMENTS);
+        let _pending_response = request.write_from_fn(|i| i as u64).send().unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+
+        assert_that!(active_request.payload(), len TRUNCATED_ELEMENTS);
+    }
+
+    #[conformance_test]
+    pub fn truncated_uninitialized_slice_response_delivers_its_first_elements<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let server = service
+            .server_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let pending_response = client.send_copy(0).unwrap();
+        let active_request = server.receive().unwrap().unwrap();
+
+        for n in [0, MAX_ELEMENTS / 2, MAX_ELEMENTS] {
+            let mut response = active_request.loan_slice_uninit(MAX_ELEMENTS).unwrap();
+            response.truncate(n);
+            assert_that!(response.payload(), len n);
+            response.write_from_fn(|i| i as u64 * 25).send().unwrap();
+
+            let response = pending_response.receive().unwrap().unwrap();
+
+            assert_that!(response.payload(), len n);
+            for (i, element) in response.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn truncated_initialized_slice_response_delivers_its_first_elements<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let server = service
+            .server_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let pending_response = client.send_copy(0).unwrap();
+        let active_request = server.receive().unwrap().unwrap();
+
+        for n in [0, MAX_ELEMENTS / 2, MAX_ELEMENTS] {
+            let mut response = active_request.loan_slice(MAX_ELEMENTS).unwrap();
+            for (i, element) in response.payload_mut().iter_mut().enumerate() {
+                *element = i as u64 * 25;
+            }
+            response.truncate(n);
+            assert_that!(response.payload(), len n);
+            response.send().unwrap();
+
+            let response = pending_response.receive().unwrap().unwrap();
+
+            assert_that!(response.payload(), len n);
+            for (i, element) in response.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn truncating_a_slice_response_never_grows_it<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 10;
+        const TRUNCATED_ELEMENTS: usize = 4;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let server = service
+            .server_builder()
+            .initial_max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let pending_response = client.send_copy(0).unwrap();
+        let active_request = server.receive().unwrap().unwrap();
+
+        let mut response = active_request.loan_slice_uninit(MAX_ELEMENTS).unwrap();
+        response.truncate(MAX_ELEMENTS + 1);
+        assert_that!(response.payload(), len MAX_ELEMENTS);
+        response.truncate(TRUNCATED_ELEMENTS);
+        response.truncate(MAX_ELEMENTS);
+        assert_that!(response.payload(), len TRUNCATED_ELEMENTS);
+        response.write_from_fn(|i| i as u64).send().unwrap();
+
+        let response = pending_response.receive().unwrap().unwrap();
+
+        assert_that!(response.payload(), len TRUNCATED_ELEMENTS);
+    }
+
+    #[conformance_test]
     pub fn send_increasing_requests_with_best_fit_finally_leads_to_out_of_memory_error<
         Sut: Service,
     >() {

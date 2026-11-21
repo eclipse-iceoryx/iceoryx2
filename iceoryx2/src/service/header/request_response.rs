@@ -34,6 +34,12 @@ pub struct RequestHeader {
 }
 
 impl RequestHeader {
+    /// Lowers the number of elements of a slice payload. It is meant for dynamic data types, a
+    /// payload that is not a slice always has one element.
+    pub(crate) fn truncate(&mut self, number_of_elements: u64) {
+        self.number_of_elements = self.number_of_elements.min(number_of_elements);
+    }
+
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     /// which sent the [`RequestMut`](crate::request_mut::RequestMut)
     pub fn client_id(&self) -> UniqueClientId {
@@ -75,6 +81,12 @@ pub struct ResponseHeader {
 }
 
 impl ResponseHeader {
+    /// Lowers the number of elements of a slice payload. It is meant for dynamic data types, a
+    /// payload that is not a slice always has one element.
+    pub(crate) fn truncate(&mut self, number_of_elements: u64) {
+        self.number_of_elements = self.number_of_elements.min(number_of_elements);
+    }
+
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server)
     /// which sent the [`Response`](crate::response::Response)
     pub fn server_id(&self) -> UniqueServerId {
