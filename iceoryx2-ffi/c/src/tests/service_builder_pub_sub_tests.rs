@@ -94,7 +94,7 @@ mod service_builder {
                 &mut pub_sub_factory as *mut _,
             );
 
-            let result_hash = &mut ['=' as c_char; BUFFER_LENGTH]; // equal sign does not occur in service hash
+            let result_hash = &mut [b'=' as c_char; BUFFER_LENGTH]; // equal sign does not occur in service hash
             let expected_hash = ServiceHash::new::<<S>::ServiceNameHasher>(
                 &ServiceName::new(service_name).expect("valid service name"),
                 MessagingPattern::PublishSubscribe,
@@ -115,7 +115,7 @@ mod service_builder {
             );
 
             assert_that!(&result_hash[..SERVICE_HASH_LENGTH], eq(expected_hash_slice));
-            assert_that!(&result_hash[SERVICE_HASH_LENGTH..], eq(['=' as c_char; 7]));
+            assert_that!(&result_hash[SERVICE_HASH_LENGTH..], eq([b'=' as c_char; 7]));
 
             iox2_port_factory_pub_sub_drop(pub_sub_factory);
             iox2_node_drop(node_handle);
