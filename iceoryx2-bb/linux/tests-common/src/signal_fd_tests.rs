@@ -19,14 +19,17 @@ use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::{
     process::Process,
-    signal::{FetchableSignal, SignalHandler},
+    signal::{FetchableSignal, NonFatalFetchableSignal, SignalHandler},
     signal_set::FetchableSignalSet,
     user::User,
 };
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 use iceoryx2_bb_testing_macros::test;
 
-// TODO: #1458
+// A signal subscribed on a signalfd must be delivered to the fd. Today the
+// global SignalHandler claims every non-fatal signal first and the fd is
+// starved.
+// TODO: #1898
 #[ignore]
 #[test]
 fn registered_signal_can_be_try_read() {
@@ -35,21 +38,75 @@ fn registered_signal_can_be_try_read() {
     signals.add(FetchableSignal::UserDefined1);
     let sut = SignalFdBuilder::new(signals).create_non_blocking().unwrap();
 
-    loop {
-        SignalHandler::call_and_fetch(|| {
-            Process::from_self()
-                .send_signal(FetchableSignal::UserDefined1.into())
-                .unwrap();
-        });
+    // activate the global handler, currently starving the fd
+    let _ = SignalHandler::call_and_fetch(|| {});
 
-        let signal = sut.try_read().unwrap();
-        if let Some(signal) = signal {
-            assert_that!(signal.signal(), eq FetchableSignal::UserDefined1);
-            assert_that!(signal.origin_pid(), eq Process::from_self().id());
-            assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
+    SignalHandler::call_and_fetch(|| {
+        Process::from_self()
+            .send_signal(FetchableSignal::UserDefined1.into())
+            .unwrap();
+    });
+
+    let mut received = None;
+    for _ in 0..100 {
+        if let Some(signal) = sut.try_read().unwrap() {
+            received = Some(signal);
             break;
         }
+        nanosleep(core::time::Duration::from_millis(2)).ok();
     }
+
+    let received = received.unwrap();
+    assert_that!(received.signal(), eq FetchableSignal::UserDefined1);
+    assert_that!(received.origin_pid(), eq Process::from_self().id());
+    assert_that!(received.origin_uid(), eq User::from_self().unwrap().uid());
+}
+
+// Regression guard for #1898: dropping a SignalFd that subscribed to
+// UserDefined1 must not leave that signal monopolized away from the global
+// handler. After the fd is released the handler must observe UserDefined1
+// again.
+#[test]
+fn dropped_signal_fd_restores_handler_visibility() {
+    let _watchdog = Watchdog::new();
+    let _ = SignalHandler::call_and_fetch(|| {});
+
+    {
+        let mut signals = FetchableSignalSet::new_empty();
+        signals.add(FetchableSignal::UserDefined1);
+        let _sut = SignalFdBuilder::new(signals).create_non_blocking().unwrap();
+    } // fd dropped here
+
+    let observed = SignalHandler::call_and_fetch(|| {
+        Process::from_self()
+            .send_signal(FetchableSignal::UserDefined1.into())
+            .unwrap();
+        nanosleep(core::time::Duration::from_millis(2)).ok();
+    });
+
+    assert_that!(observed, eq Some(NonFatalFetchableSignal::UserDefined1));
+}
+
+// Regression guard for #1898: while a SignalFd owns UserDefined1 the
+// global handler must still observe an unrelated signal (Continue). Owning one
+// signal must not suppress delivery of a different, unowned signal.
+#[test]
+fn signal_fd_does_not_mask_unsubscribed_signal() {
+    let _watchdog = Watchdog::new();
+    let _ = SignalHandler::call_and_fetch(|| {});
+
+    let mut signals = FetchableSignalSet::new_empty();
+    signals.add(FetchableSignal::UserDefined1);
+    let _sut = SignalFdBuilder::new(signals).create_non_blocking().unwrap();
+
+    let observed = SignalHandler::call_and_fetch(|| {
+        Process::from_self()
+            .send_signal(FetchableSignal::Continue.into())
+            .unwrap();
+        nanosleep(core::time::Duration::from_millis(2)).ok();
+    });
+
+    assert_that!(observed, eq Some(NonFatalFetchableSignal::Continue));
 }
 
 #[test]
