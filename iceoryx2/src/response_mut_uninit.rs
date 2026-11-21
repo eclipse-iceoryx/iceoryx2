@@ -549,14 +549,14 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(mut self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
-        self.assume_init_was_called = true;
+    pub unsafe fn assume_init(self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
+        let this = core::mem::ManuallyDrop::new(self);
         ResponseMut {
-            shared_state: self.shared_state.clone(),
-            shared_loan_counter: self.shared_loan_counter.clone(),
-            channel_id: self.channel_id,
-            chunk: self.chunk.clone(),
-            connection_id: self.connection_id,
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            shared_loan_counter: unsafe { core::ptr::read(&this.shared_loan_counter) },
+            channel_id: this.channel_id,
+            chunk: this.chunk.clone(),
+            connection_id: this.connection_id,
             _response_header: PhantomData,
             _response_payload: PhantomData,
         }
@@ -603,14 +603,14 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(mut self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
-        self.assume_init_was_called = true;
+    pub unsafe fn assume_init(self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
+        let this = core::mem::ManuallyDrop::new(self);
         ResponseMut {
-            shared_state: self.shared_state.clone(),
-            shared_loan_counter: self.shared_loan_counter.clone(),
-            channel_id: self.channel_id,
-            chunk: self.chunk.clone(),
-            connection_id: self.connection_id,
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
+            shared_loan_counter: unsafe { core::ptr::read(&this.shared_loan_counter) },
+            channel_id: this.channel_id,
+            chunk: this.chunk.clone(),
+            connection_id: this.connection_id,
             _response_header: PhantomData,
             _response_payload: PhantomData,
         }

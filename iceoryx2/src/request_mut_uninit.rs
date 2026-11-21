@@ -419,14 +419,14 @@ impl<
     /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
     /// Sending the content when it is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(
-        mut self,
+        self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        self.assume_init_was_called = true;
+        let this = core::mem::ManuallyDrop::new(self);
         RequestMut {
-            chunk: self.chunk.clone(),
-            shared_state: self.shared_state.clone(),
+            chunk: this.chunk.clone(),
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
             was_sample_sent: false,
-            channel_id: self.channel_id,
+            channel_id: this.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_header: PhantomData,
