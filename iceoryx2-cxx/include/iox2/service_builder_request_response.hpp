@@ -228,6 +228,13 @@ class ServiceBuilderRequestResponse {
 #endif
 
   public:
+    ServiceBuilderRequestResponse(ServiceBuilderRequestResponse&& rhs) noexcept;
+    auto operator=(ServiceBuilderRequestResponse&& rhs) noexcept -> ServiceBuilderRequestResponse&;
+    ~ServiceBuilderRequestResponse();
+
+    ServiceBuilderRequestResponse(const ServiceBuilderRequestResponse&) = delete;
+    auto operator=(const ServiceBuilderRequestResponse&) -> ServiceBuilderRequestResponse& = delete;
+
     /// Sets the request user header type of the [`Service`].
     template <typename NewRequestUserHeader>
     auto request_user_header() && -> ServiceBuilderRequestResponse<RequestPayload,
@@ -338,6 +345,7 @@ class ServiceBuilderRequestResponse {
     auto set_response_type_definition_name_hint() -> std::enable_if_t<!has_flatbuffer_marker<U>(), void>;
 
     explicit ServiceBuilderRequestResponse(iox2_service_builder_h handle);
+    void drop();
 
     void set_parameters();
     void derive_request_header_type_details();
@@ -427,6 +435,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_open_or_create(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
@@ -450,6 +459,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_open_or_create_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
@@ -472,6 +482,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_open(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
@@ -495,6 +506,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_open_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
@@ -517,6 +529,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_create(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
@@ -540,6 +553,7 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_create_with_attributes(
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
@@ -557,6 +571,72 @@ template <typename RequestPayload,
 inline ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     ServiceBuilderRequestResponse(iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_request_response(handle) } {
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void
+ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_service_builder_request_response_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    ServiceBuilderRequestResponse(ServiceBuilderRequestResponse&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline auto
+ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::operator=(
+    ServiceBuilderRequestResponse&& rhs) noexcept -> ServiceBuilderRequestResponse& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_request_payload_alignment = std::move(rhs.m_request_payload_alignment);
+        m_response_payload_alignment = std::move(rhs.m_response_payload_alignment);
+        m_enable_safe_overflow_for_requests = std::move(rhs.m_enable_safe_overflow_for_requests);
+        m_enable_safe_overflow_for_responses = std::move(rhs.m_enable_safe_overflow_for_responses);
+        m_max_active_requests_per_client = std::move(rhs.m_max_active_requests_per_client);
+        m_max_response_buffer_size = std::move(rhs.m_max_response_buffer_size);
+        m_max_servers = std::move(rhs.m_max_servers);
+        m_max_clients = std::move(rhs.m_max_clients);
+        m_max_nodes = std::move(rhs.m_max_nodes);
+        m_max_borrowed_responses_per_pending_response = std::move(rhs.m_max_borrowed_responses_per_pending_response);
+        m_max_loaned_requests = std::move(rhs.m_max_loaned_requests);
+        m_enable_fire_and_forget_requests = std::move(rhs.m_enable_fire_and_forget_requests);
+        m_request_header_type_details_override = std::move(rhs.m_request_header_type_details_override);
+        m_response_header_type_details_override = std::move(rhs.m_response_header_type_details_override);
+        m_request_payload_type_details_override = std::move(rhs.m_request_payload_type_details_override);
+        m_response_payload_type_details_override = std::move(rhs.m_response_payload_type_details_override);
+    }
+
+    return *this;
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    ~ServiceBuilderRequestResponse() {
+    drop();
 }
 
 template <typename RequestPayload,

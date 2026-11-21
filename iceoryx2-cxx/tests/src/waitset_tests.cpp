@@ -336,4 +336,17 @@ TYPED_TEST(WaitSetTest, signal_handling_mode_can_be_set) {
     ASSERT_THAT(sut_1.signal_handling_mode(), Eq(SignalHandlingMode::Disabled));
     ASSERT_THAT(sut_2.signal_handling_mode(), Eq(SignalHandlingMode::HandleTerminationRequests));
 }
+
+TYPED_TEST(WaitSetTest, waitset_builder_can_be_dropped_without_create) {
+    auto sut = this->node.waitset_builder().signal_handling_mode(SignalHandlingMode::Disabled);
+}
+
+TYPED_TEST(WaitSetTest, waitset_builder_can_be_moved) {
+    auto builder = this->node.waitset_builder().signal_handling_mode(SignalHandlingMode::Disabled);
+    auto sut = this->node.waitset_builder();
+    sut = std::move(builder);
+
+    auto waitset = std::move(sut).create().value();
+    ASSERT_THAT(waitset.signal_handling_mode(), Eq(SignalHandlingMode::Disabled));
+}
 } // namespace

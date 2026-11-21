@@ -1034,6 +1034,43 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_response_payload_
     }
 }
 
+/// Drops a [`iox2_service_builder_request_response_h`] and calls all corresponding cleanup functions.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be acquired with [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response)
+/// * `service_builder_handle` must not have been passed to an open or create function
+/// * `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_request_response_drop(
+    service_builder_handle: iox2_service_builder_request_response_h,
+) {
+    service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        let service_type = service_builder_struct.service_type;
+        let service_builder = service_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_service_builder_request_response_h'!");
+            });
+        (service_builder_struct.deleter)(service_builder_struct);
+
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+                drop(ManuallyDrop::into_inner(service_builder.request_response));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.local);
+                drop(ManuallyDrop::into_inner(service_builder.request_response));
+            }
+        }
+    }
+}
+
 /// Opens a request-response service or creates the service if it does not exist and returns a port factory to create servers and clients.
 ///
 /// # Arguments

@@ -424,6 +424,41 @@ impl HandleToType for iox2_service_builder_blackboard_opener_h_ref {
 
 // BEGIN C API
 
+/// Drops a [`iox2_service_builder_h`] and calls all corresponding cleanup functions.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be acquired with [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+/// * `service_builder_handle` must not have been transformed into a messaging pattern builder, e.g. with [`iox2_service_builder_event`]
+/// * `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_drop(service_builder_handle: iox2_service_builder_h) {
+    debug_assert!(!service_builder_handle.is_null());
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        let service_type = service_builder_struct.service_type;
+        let service_builder = service_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_service_builder_h'!");
+            });
+        (service_builder_struct.deleter)(service_builder_struct);
+
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+                drop(ManuallyDrop::into_inner(service_builder.base));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.local);
+                drop(ManuallyDrop::into_inner(service_builder.base));
+            }
+        }
+    }
+}
+
 /// This function transform the [`iox2_service_builder_h`] to an event service builder.
 ///
 /// # Arguments
