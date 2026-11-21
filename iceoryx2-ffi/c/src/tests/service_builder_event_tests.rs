@@ -14,9 +14,10 @@
 mod service_builder {
     use crate::api::*;
     use crate::tests::{ServiceTypeMapping, create_node};
-    use core::ffi::c_char;
+    use core::ffi::{c_char, c_int};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
+    use iceoryx2::service::builder::event::EventOpenOrCreateError;
     use iceoryx2::service::service_hash::ServiceHash;
     use iceoryx2_bb_testing::assert_that;
 
@@ -120,6 +121,14 @@ mod service_builder {
             iox2_port_factory_event_drop(event_factory);
             iox2_node_drop(node_handle);
         }
+    }
+
+    #[test]
+    fn open_or_create_error_system_in_flux_converts_to_c_int<S: Service + ServiceTypeMapping>() {
+        assert_that!(
+            EventOpenOrCreateError::SystemInFlux.into_c_int(),
+            eq(iox2_event_open_or_create_error_e::SYSTEM_IN_FLUX as c_int)
+        );
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

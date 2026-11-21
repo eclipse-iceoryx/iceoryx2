@@ -297,7 +297,7 @@ impl IntoCInt for SemanticStringError {
 ///     }
 /// }
 /// ```
-trait IntoCInt {
+pub(crate) trait IntoCInt {
     fn into_c_int(self) -> c_int;
 }
 

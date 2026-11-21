@@ -44,6 +44,7 @@
 * [#2045](https://github.com/eclipse-iceoryx/iceoryx2/issues/2045) List a CLI command only once when it is found in multiple search paths
 * [#2050](https://github.com/eclipse-iceoryx/iceoryx2/issues/2050) Find CLI commands in the folder of the running binary and prefer them over the ones in `PATH`
 * [#2062](https://github.com/eclipse-iceoryx/iceoryx2/issues/2062) Grant DELETE rights to the file owner in the Windows DACL
+* [#2090](https://github.com/eclipse-iceoryx/iceoryx2/issues/2090) Return the system-in-flux error from the C open-or-create functions instead of recursing
 * [#2094](https://github.com/eclipse-iceoryx/iceoryx2/issues/2094) Fail a send to a socket pair on Windows when its peer is gone, like on POSIX
 * [#2124](https://github.com/eclipse-iceoryx/iceoryx2/issues/2124) Remove clone impl from RelocatablePointer
 * [#2137](https://github.com/eclipse-iceoryx/iceoryx2/issues/2137) Fix typo in `BackpressureAction` enum

@@ -237,7 +237,9 @@ impl IntoCInt for PublishSubscribeOpenOrCreateError {
             PublishSubscribeOpenOrCreateError::PublishSubscribeCreateError(error) => {
                 error.into_c_int()
             }
-            e => e.into_c_int(),
+            PublishSubscribeOpenOrCreateError::SystemInFlux => {
+                iox2_pub_sub_open_or_create_error_e::SYSTEM_IN_FLUX as c_int
+            }
         }
     }
 }
