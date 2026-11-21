@@ -177,11 +177,13 @@ jobs:
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # version: v4.0.0
 
       - name: Run code examples in documentation
+        shell: bash
         run: |
           just test sdk --doc --profile dev-fast-build
           just test integrations-zenoh --doc --profile dev-fast-build
 
       - name: Build documentation
+        shell: bash
         run: |
           just doc sdk rust
           just doc integrations-zenoh rust
