@@ -359,6 +359,10 @@ pub unsafe fn pthread_self() -> pthread_t {
 
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
     unsafe {
+        if c_string_length(name) >= THREAD_NAME_LENGTH {
+            return Errno::ERANGE as _;
+        }
+
         let state = ThreadStates::get_instance().get_mut(thread);
         for (i, name_char) in state.name.iter_mut().enumerate().take(THREAD_NAME_LENGTH) {
             *name_char = *name.add(i) as _;
@@ -373,13 +377,13 @@ pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int 
 }
 
 pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
-    if len < THREAD_NAME_LENGTH_GET {
+    if len < THREAD_NAME_LENGTH {
         return Errno::ERANGE as _;
     }
 
     let state = ThreadStates::get_instance().get(thread);
     unsafe {
-        for (i, name_char) in state.name.iter().enumerate().take(THREAD_NAME_LENGTH_GET) {
+        for (i, name_char) in state.name.iter().enumerate().take(THREAD_NAME_LENGTH) {
             *name.add(i) = *name_char as _;
 
             if *name_char == 0 {
