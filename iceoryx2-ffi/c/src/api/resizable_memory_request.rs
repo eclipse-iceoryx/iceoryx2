@@ -45,7 +45,7 @@ impl ResizableMemoryRequestUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ResizableMemoryRequestUnion>
 pub struct iox2_resizable_memory_request_storage_t {
-    internal: [u8; 64], // magic number obtained with size_of::<Option<ResizableMemoryRequestUnion>>()
+    internal: [u8; 104], // magic number obtained with size_of::<Option<ResizableMemoryRequestUnion>>()
 }
 
 #[repr(C)]

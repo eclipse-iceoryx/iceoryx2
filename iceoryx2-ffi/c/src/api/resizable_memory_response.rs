@@ -45,7 +45,7 @@ impl ResizableMemoryResponseUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ResizableMemoryResponseUnion>
 pub struct iox2_resizable_memory_response_storage_t {
-    internal: [u8; 64], // magic number obtained with size_of::<Option<ResizableMemoryResponseUnion>>()
+    internal: [u8; 104], // magic number obtained with size_of::<Option<ResizableMemoryResponseUnion>>()
 }
 
 #[repr(C)]
