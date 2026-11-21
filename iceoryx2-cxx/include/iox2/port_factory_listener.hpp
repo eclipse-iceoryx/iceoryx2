@@ -36,9 +36,9 @@ class PortFactoryListener {
 #endif
 
   public:
-    PortFactoryListener(PortFactoryListener&&) noexcept = default;
-    auto operator=(PortFactoryListener&&) noexcept -> PortFactoryListener& = default;
-    ~PortFactoryListener() = default;
+    PortFactoryListener(PortFactoryListener&& rhs) noexcept;
+    auto operator=(PortFactoryListener&& rhs) noexcept -> PortFactoryListener&;
+    ~PortFactoryListener();
 
     PortFactoryListener(const PortFactoryListener&) = delete;
     auto operator=(const PortFactoryListener&) -> PortFactoryListener& = delete;
@@ -51,6 +51,7 @@ class PortFactoryListener {
     friend class PortFactoryEvent;
 
     explicit PortFactoryListener(iox2_port_factory_listener_builder_h handle);
+    void drop();
 
     iox2_port_factory_listener_builder_h m_handle = nullptr;
 };
@@ -58,6 +59,36 @@ class PortFactoryListener {
 template <ServiceType S>
 inline PortFactoryListener<S>::PortFactoryListener(iox2_port_factory_listener_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType S>
+inline void PortFactoryListener<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_listener_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S>
+inline PortFactoryListener<S>::PortFactoryListener(PortFactoryListener&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+inline auto PortFactoryListener<S>::operator=(PortFactoryListener&& rhs) noexcept -> PortFactoryListener& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_name = std::move(rhs.m_name);
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+inline PortFactoryListener<S>::~PortFactoryListener() {
+    drop();
 }
 
 template <ServiceType S>
@@ -69,6 +100,7 @@ inline auto PortFactoryListener<S>::create() && -> bb::Expected<Listener<S>, Lis
 
     iox2_listener_h listener_handle { nullptr };
     auto result = iox2_port_factory_listener_builder_create(m_handle, nullptr, &listener_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Listener<S> { listener_handle };

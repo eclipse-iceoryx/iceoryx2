@@ -291,4 +291,31 @@ pub unsafe extern "C" fn iox2_port_factory_reader_builder_create(
     }
     IOX2_OK
 }
+
+/// Drops a [`iox2_port_factory_reader_builder_h`] and calls all corresponding cleanup functions.
+///
+/// # Safety
+///
+///  * `handle` must be acquired with [`iox2_port_factory_blackboard_reader_builder()`](crate::iox2_port_factory_blackboard_reader_builder)
+///  * `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+///  * `handle` must not be passed here after [`iox2_port_factory_reader_builder_create()`] consumed it
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_reader_builder_drop(
+    handle: iox2_port_factory_reader_builder_h,
+) {
+    handle.assert_non_null();
+    unsafe {
+        let builder = &mut *handle.as_type();
+
+        match builder.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut builder.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut builder.value.as_mut().local);
+            }
+        }
+        (builder.deleter)(builder);
+    }
+}
 // END C API
