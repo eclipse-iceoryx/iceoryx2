@@ -854,6 +854,7 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-cli",
  "iceoryx2-integrations-ros2-link-adapter",
+ "iceoryx2-integrations-ros2-link-translator-flatbuffer",
  "iceoryx2-link",
  "iceoryx2-link-adapter",
  "iceoryx2-link-backend",

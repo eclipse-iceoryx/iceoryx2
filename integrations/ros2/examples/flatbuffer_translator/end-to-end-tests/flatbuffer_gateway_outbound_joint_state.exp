@@ -22,13 +22,17 @@ require_tool flatc
 
 #### Test Setup
 
-cd integrations/ros2/examples/flatbuffer_translator/schemas
-spawn flatc --schema --binary joint_readings.fbs pose.fbs
+set EXAMPLE integrations/ros2/examples/flatbuffer_translator
+
+cd ${EXAMPLE}/schemas
+spawn flatc --schema --binary joint_state.fbs pose_stamped.fbs
 wait
 cd ${REPO_ROOT}
 
 exec cargo build --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --examples 2>@1
+    --bin iox2-link-gateway-ros2 2>@1
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    --example flatbuffer_joint_state_publisher 2>@1
 
 #### Test
 
@@ -36,25 +40,29 @@ set timeout 30
 
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --example flatbuffer_gateway
+    --bin iox2-link-gateway-ros2 -- \
+    --static-mapping ${EXAMPLE}/mapping.toml \
+    --translator Flatbuffer --schema-path ${EXAMPLE}/schemas --monitor
 set id_gateway $spawn_id
 drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
 
-expect_output_from $id_gateway "gateway running"
+expect_output_from $id_gateway "Gateway started"
 
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --example flatbuffer_joint_readings_publisher
+    --example flatbuffer_joint_state_publisher
 set id_publisher $spawn_id
 
-expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"JointReadings\""
+expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"JointState\""
 
 spawn ros2 topic echo /joint_states sensor_msgs/msg/JointState
 set id_echo $spawn_id
 
+expect_output_from $id_gateway "Relayed PublishSubscribe bridge of \"JointState\""
+
 #### Test Assertion
 
-# The flatbuffer's readings arrive as a JointState.
+# The flatbuffer arrives as a JointState.
 expect_output_from $id_echo "frame_id: base"
 expect_pattern_from $id_echo "name:\r?\n- shoulder\r?\n- elbow" "the joint names"
 
@@ -67,6 +75,7 @@ send -i $id_publisher $SIGINT
 expect -i $id_publisher eof
 
 send -i $id_gateway $SIGINT
+expect_output_from $id_gateway "Gateway stopped"
 expect -i $id_gateway eof
 
 show_test_passed

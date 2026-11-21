@@ -64,14 +64,14 @@ The integrations require:
   message crates generated in the [message workspace](colcon/messages/README.md)
 * The cargo-aware colcon build tools, for the
   [colcon examples](colcon/examples/README.md)
-* The FlatBuffers compiler `flatc`, for the
-  [flatbuffer translator example](examples/flatbuffer_translator/README.md)
+* The FlatBuffers compiler `flatc` of the pinned crate version, for the
+  [flatbuffer translator examples](examples/flatbuffer_translator/README.md)
 
 The associated READMEs describe how to set them up.
 
 Inside a container, such as the development distrobox, the colcon build tools
-can be installed and the required flatbuffer schemas generated with a `just`
-recipe for convenience:
+can be installed and the flatbuffer bindings and binary schemas of the examples
+generated with a `just` recipe for convenience:
 
 ```bash
 just setup integrations-ros2

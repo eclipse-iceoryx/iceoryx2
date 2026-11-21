@@ -21,6 +21,9 @@ use iceoryx2_integrations_ros2_link_adapter::{
     PassthroughTranslator, PlainStructTranslator, PrefixMapping, Ros2Adapter, StaticMapping,
     TypeName,
 };
+use iceoryx2_integrations_ros2_link_translator_flatbuffer::{
+    FlatbufferTranslator, type_mismatches,
+};
 use iceoryx2_link::{Link, WakeCreationError};
 use iceoryx2_link_adapter::{Mapping, SampleShape, TranscodesSamples, Translator};
 use iceoryx2_link_backend::WakeService;
@@ -70,93 +73,44 @@ pub fn create_gateway(
     cli: &Cli,
     iceoryx_config: &iceoryx2::config::Config,
 ) -> anyhow::Result<Box<dyn GatewayInstance>> {
-    let header = mirrored_header(cli);
     let gateway: Box<dyn GatewayInstance> = match (cli.mapping(), cli.translator) {
         (cli::Mapping::Prefix, cli::Translator::Passthrough) => {
-            let config = fail!(
-                from ORIGIN,
-                when prefix_adapter_config(cli),
-                "Failed to configure the adapter"
-            );
-            Box::new(fail!(
-                from ORIGIN,
-                when create(
-                    iceoryx_config,
-                    &config,
-                    PrefixMapping::new(allowlist(cli), iceoryx_config.clone()),
-                    PassthroughTranslator { header },
-                    cli,
-                ),
-                "Failed to create the gateway"
-            ))
+            let (config, mapping) = prefix_mapping(cli, iceoryx_config)?;
+            let translator = passthrough_translator(cli);
+            Box::new(create(iceoryx_config, &config, mapping, translator, cli)?)
         }
         (cli::Mapping::Prefix, cli::Translator::PlainStruct) => {
-            let config = fail!(
-                from ORIGIN,
-                when prefix_adapter_config(cli),
-                "Failed to configure the adapter"
-            );
-            Box::new(fail!(
-                from ORIGIN,
-                when create(
-                    iceoryx_config,
-                    &config,
-                    PrefixMapping::new(allowlist(cli), iceoryx_config.clone()),
-                    PlainStructTranslator { header },
-                    cli,
-                ),
-                "Failed to create the gateway"
-            ))
+            let (config, mapping) = prefix_mapping(cli, iceoryx_config)?;
+            let translator = plain_struct_translator(cli);
+            Box::new(create(iceoryx_config, &config, mapping, translator, cli)?)
+        }
+        (cli::Mapping::Prefix, cli::Translator::Flatbuffer) => {
+            let (config, mapping) = prefix_mapping(cli, iceoryx_config)?;
+            let translator = flatbuffer_translator(cli, iceoryx_config)?;
+            Box::new(create(iceoryx_config, &config, mapping, translator, cli)?)
         }
         (cli::Mapping::Static(path), cli::Translator::Passthrough) => {
-            let mapping = fail!(
-                from ORIGIN,
-                when load_static_mapping(&path),
-                "Failed to load the static mapping"
-            );
-            let config = static_adapter_config(&mapping);
-            Box::new(fail!(
-                from ORIGIN,
-                when create(
-                    iceoryx_config,
-                    &config,
-                    mapping,
-                    PassthroughTranslator { header },
-                    cli
-                ),
-                "Failed to create the gateway"
-            ))
+            let (config, mapping) = static_mapping(load_static_mapping_config(&path)?, &path)?;
+            let translator = passthrough_translator(cli);
+            Box::new(create(iceoryx_config, &config, mapping, translator, cli)?)
         }
         (cli::Mapping::Static(path), cli::Translator::PlainStruct) => {
-            let mapping = fail!(
-                from ORIGIN,
-                when load_static_mapping(&path),
-                "Failed to load the static mapping"
-            );
-            let config = static_adapter_config(&mapping);
-            Box::new(fail!(
-                from ORIGIN,
-                when create(
-                    iceoryx_config,
-                    &config,
-                    mapping,
-                    PlainStructTranslator { header },
-                    cli
-                ),
-                "Failed to create the gateway"
-            ))
+            let (config, mapping) = static_mapping(load_static_mapping_config(&path)?, &path)?;
+            let translator = plain_struct_translator(cli);
+            Box::new(create(iceoryx_config, &config, mapping, translator, cli)?)
+        }
+        (cli::Mapping::Static(path), cli::Translator::Flatbuffer) => {
+            let mapping_config = load_static_mapping_config(&path)?;
+            for mismatch in type_mismatches(&mapping_config) {
+                warn!(from ORIGIN, "{}", mismatch);
+            }
+            let (config, mapping) = static_mapping(mapping_config, &path)?;
+            let translator = flatbuffer_translator(cli, iceoryx_config)?;
+            Box::new(create(iceoryx_config, &config, mapping, translator, cli)?)
         }
     };
-    Ok(gateway)
-}
 
-/// The user header of mirrored services selected on the command line.
-fn mirrored_header(cli: &Cli) -> MirroredHeader {
-    if cli.ros_header {
-        MirroredHeader::RosHeader
-    } else {
-        MirroredHeader::None
-    }
+    Ok(gateway)
 }
 
 fn create<M, T>(
@@ -192,8 +146,19 @@ where
     Ok(gateway)
 }
 
-/// The adapter configuration for the prefix mapping. It preloads the types
-/// named on the command line.
+fn prefix_mapping(
+    cli: &Cli,
+    iceoryx_config: &iceoryx2::config::Config,
+) -> anyhow::Result<(AdapterConfig, PrefixMapping)> {
+    let config = fail!(
+        from ORIGIN,
+        when prefix_adapter_config(cli),
+        "Failed to configure the adapter"
+    );
+    let mapping = PrefixMapping::new(allowlist(cli), iceoryx_config.clone());
+    Ok((config, mapping))
+}
+
 fn prefix_adapter_config(cli: &Cli) -> anyhow::Result<AdapterConfig> {
     let mut preload_types = Vec::with_capacity(cli.preload_types.len());
     for name in &cli.preload_types {
@@ -209,23 +174,6 @@ fn prefix_adapter_config(cli: &Cli) -> anyhow::Result<AdapterConfig> {
     })
 }
 
-/// The adapter configuration for a static mapping. It preloads the types
-/// of the mapping's entries.
-fn static_adapter_config(mapping: &StaticMapping) -> AdapterConfig {
-    AdapterConfig {
-        preload_types: mapping.type_names(),
-        ..adapter_config()
-    }
-}
-
-/// The common adapter configuration.
-fn adapter_config() -> AdapterConfig {
-    AdapterConfig {
-        rosout: false,
-        ..AdapterConfig::default()
-    }
-}
-
 fn allowlist(cli: &Cli) -> AllowList {
     match cli.allow.is_empty() {
         true => AllowList::all(),
@@ -233,22 +181,89 @@ fn allowlist(cli: &Cli) -> AllowList {
     }
 }
 
-fn load_static_mapping(path: &Path) -> anyhow::Result<StaticMapping> {
+fn static_mapping(
+    mapping_config: static_mapping::Config,
+    path: &Path,
+) -> anyhow::Result<(AdapterConfig, StaticMapping)> {
+    let mapping = fail!(
+        from ORIGIN,
+        when StaticMapping::new(mapping_config),
+        "Invalid static mapping in {:?}", path
+    );
+    let config = static_adapter_config(&mapping);
+    Ok((config, mapping))
+}
+
+fn load_static_mapping_config(path: &Path) -> anyhow::Result<static_mapping::Config> {
     info!(from ORIGIN, "Loading the static mapping from {:?}", path);
     let content = fail!(
         from ORIGIN,
         when std::fs::read_to_string(path),
         "Failed to read the static mapping file {:?}", path
     );
-    let config: static_mapping::Config = fail!(
+    let config = fail!(
         from ORIGIN,
         when toml::from_str(&content),
         "Failed to parse the static mapping file {:?}", path
     );
-    let mapping = fail!(
-        from ORIGIN,
-        when StaticMapping::new(config),
-        "Invalid static mapping in {:?}", path
-    );
-    Ok(mapping)
+    Ok(config)
+}
+
+fn static_adapter_config(mapping: &StaticMapping) -> AdapterConfig {
+    AdapterConfig {
+        preload_types: mapping.type_names(),
+        ..adapter_config()
+    }
+}
+
+fn adapter_config() -> AdapterConfig {
+    AdapterConfig {
+        rosout: false,
+        ..AdapterConfig::default()
+    }
+}
+
+fn passthrough_translator(cli: &Cli) -> PassthroughTranslator {
+    PassthroughTranslator {
+        header: mirrored_header(cli),
+    }
+}
+
+fn plain_struct_translator(cli: &Cli) -> PlainStructTranslator {
+    PlainStructTranslator {
+        header: mirrored_header(cli),
+    }
+}
+
+fn flatbuffer_translator(
+    cli: &Cli,
+    iceoryx_config: &iceoryx2::config::Config,
+) -> anyhow::Result<FlatbufferTranslator> {
+    let schema_path = match &cli.schema_path {
+        Some(path) => {
+            let path = fail!(
+                from ORIGIN,
+                when iceoryx2::prelude::Path::new(path.as_os_str().as_encoded_bytes()),
+                "Invalid --schema-path {:?}", path
+            );
+            Some(path)
+        }
+        None => iceoryx_config.global.service.flatbuffer_schema_path,
+    };
+    match &schema_path {
+        Some(path) => info!(from ORIGIN, "Looking up flatbuffer schemas in {:?}", path.as_str()),
+        None => warn!(from ORIGIN, "No flatbuffer schema path, ROS 2 topics cannot be mirrored"),
+    }
+    Ok(FlatbufferTranslator {
+        header: mirrored_header(cli),
+        schema_path,
+    })
+}
+
+fn mirrored_header(cli: &Cli) -> MirroredHeader {
+    if cli.ros_header {
+        MirroredHeader::RosHeader
+    } else {
+        MirroredHeader::None
+    }
 }

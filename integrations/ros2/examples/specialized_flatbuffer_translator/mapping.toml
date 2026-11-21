@@ -1,0 +1,11 @@
+[[mapping]]
+iceoryx2.service_name = "JointReadings"
+iceoryx2.payload_type = "iox2::Flatbuffer"
+ros2.topic = "/joint_states"
+ros2.type = "sensor_msgs/msg/JointState"
+
+[[mapping]]
+iceoryx2.service_name = "Pose"
+iceoryx2.payload_type = "iox2::Flatbuffer"
+ros2.topic = "/pose"
+ros2.type = "geometry_msgs/msg/PoseStamped"

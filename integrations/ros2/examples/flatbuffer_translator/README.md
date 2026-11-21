@@ -1,38 +1,63 @@
 # Flatbuffer Translator
 
-Illustrates how to implement a translator for a system communicating
-flatbuffers on `iceoryx2` services. It assumes a system designed before
-deciding to integrate with ROS 2. The schemas used are specific to the system,
-and are mapped to ROS 2 topic types:
+Utilizes a reflection-based translator from flatbuffers to the CDR format
+used by ROS 2. The translator expects flatbuffer layouts matching the layouts
+of the ROS 2 messages. Flatbuffer reflection and ROS 2 introspection
+typesupports are leveraged to construct a model for translation when services
+are discovered, which is then consulted during the hot path.
 
-| Service         | Flatbuffer            | Topic           | ROS 2 type                      |
-| --------------- | --------------------- | --------------- | ------------------------------- |
-| `JointReadings` | `robot.JointReadings` | `/joint_states` | `sensor_msgs/msg/JointState`    |
-| `Pose`          | `robot.Pose`          | `/pose`         | `geometry_msgs/msg/PoseStamped` |
+| Service       | Root type                        | Topic           | ROS 2 type                      |
+| ------------- | -------------------------------- | --------------- | ------------------------------- |
+| `JointState`  | `sensor_msgs.msg.JointState`     | `/joint_states` | `sensor_msgs/msg/JointState`    |
+| `PoseStamped` | `geometry_msgs.msg.PoseStamped`  | `/pose`         | `geometry_msgs/msg/PoseStamped` |
 
-* `schemas/` holds the two `.fbs` schemas and the Rust code `flatc` generates
-  from them. Their binary `.bfbs` form, which an `iceoryx2` flatbuffer service
-  stores as its type definition, is generated there before building.
-* `translator/transcoders/` holds one transcoder per pair to convert between
-  the flatbuffer and the CDR bytes propagated in ROS 2.
-* `translator/mod.rs` holds the translator. It embeds the two `.bfbs`, which
-  are compared with the schema stored in the service on discovery and provides
-  the matching transcoder to use for the bytes passing between service and
-  topic.
-* `mapping.toml` provides the mapping used by the gateway to map service names
-  to topics.
-* `gateway.rs` initializes a gateway with the implemented translator.
+* `schemas/` holds the `.fbs` schemas used by the example. Rust bindings and
+  the binary `.bfbs` are generated from them with `flatc` before building.
+  The binary schema is stored along with services and used for translation.
+* `mapping.toml` pairs the services with the topics.
+* `joint_state_publisher` and `joint_state_subscriber` publish and subscribe
+  on the service `JointState`.
+* `pose_stamped_publisher` and `pose_stamped_subscriber` publish and subscribe
+  on the service `PoseStamped`.
+
+The translator pairs a schema with the ROS 2 message named by its root type,
+e.g. `joint_state.fbs` with `sensor_msgs/msg/JointState`:
+
+```text
+namespace builtin_interfaces.msg;
+
+struct Time {
+    sec: int32;
+    nanosec: uint32;
+}
+
+namespace std_msgs.msg;
+
+table Header {
+    stamp: builtin_interfaces.msg.Time;
+    frame_id: string;
+}
+
+namespace sensor_msgs.msg;
+
+table JointState {
+    header: std_msgs.msg.Header;
+    name: [string];
+    position: [double];
+    velocity: [double];
+    effort: [double];
+}
+
+root_type JointState;
+```
 
 ## Prerequisites
 
-To use the examples, first install the FlatBuffers package.
+The examples need `flatc` of the `flatbuffers` crate version pinned in the
+workspace `Cargo.toml`. The `just` recipes install it into `~/.local/bin`:
 
 ```sh
-# Arch Linux
-pacman -S flatbuffers
-
-# Debian/Ubuntu
-apt install libflatbuffers-dev
+just setup flatc
 ```
 
 ## Building
@@ -51,33 +76,33 @@ from source as described in the [message workspace
 README](../../colcon/messages/README.md) and additionally source its install
 space.
 
-### Generate Binary Schemas
+### Generate Bindings and Binary Schemas
 
-Before running the example, we need to generate the binary schemas from the
-`.fbs` files. They must be placed at the location specified since the
-translator takes them from that location to bake into the binary.
+Before building the example, we need to generate the Rust bindings and the
+binary schemas from the `.fbs` files. The applications bake the binary schemas
+into their binaries and the gateway looks them up in the directory given as its
+schema path.
 
 ```sh
-flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --schema --binary \
-    integrations/ros2/examples/flatbuffer_translator/schemas/joint_readings.fbs \
-    integrations/ros2/examples/flatbuffer_translator/schemas/pose.fbs
+flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --rust --schema --binary \
+    integrations/ros2/examples/flatbuffer_translator/schemas/joint_state.fbs \
+    integrations/ros2/examples/flatbuffer_translator/schemas/pose_stamped.fbs
 ```
 
-The generated Rust code is already included. For completeness, the command
-used to generate it is:
+In addition, the `just` recipes provide a convenience command to generate them
+for every example:
 
-```sh
-flatc -o integrations/ros2/examples/flatbuffer_translator/schemas --rust \
-    integrations/ros2/examples/flatbuffer_translator/schemas/joint_readings.fbs \
-    integrations/ros2/examples/flatbuffer_translator/schemas/pose.fbs
+```bash
+just setup integrations-ros2
 ```
 
 ### Build
 
-Build the examples, including the gateway:
+Build the examples and the gateway CLI:
 
 ```sh
 cargo build --manifest-path integrations/ros2/Cargo.toml --examples
+cargo build --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2
 ```
 
 ## Running
@@ -92,13 +117,16 @@ From `iceoryx2` to ROS 2.
 #### Terminal 1: gateway
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_gateway
+cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- \
+    --static-mapping integrations/ros2/examples/flatbuffer_translator/mapping.toml \
+    --translator Flatbuffer \
+    --schema-path integrations/ros2/examples/flatbuffer_translator/schemas
 ```
 
 #### Terminal 2: `iceoryx2` publisher
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_joint_readings_publisher
+cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_joint_state_publisher
 ```
 
 #### Terminal 3: ROS 2 subscriber
@@ -117,13 +145,16 @@ From ROS 2 to `iceoryx2`.
 #### Terminal 1: gateway
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_gateway
+cargo run --manifest-path integrations/ros2/Cargo.toml --bin iox2-link-gateway-ros2 -- \
+    --static-mapping integrations/ros2/examples/flatbuffer_translator/mapping.toml \
+    --translator Flatbuffer \
+    --schema-path integrations/ros2/examples/flatbuffer_translator/schemas
 ```
 
 #### Terminal 2: `iceoryx2` subscriber
 
 ```sh
-cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_pose_subscriber
+cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_pose_stamped_subscriber
 ```
 
 #### Terminal 3: ROS 2 publisher
@@ -132,11 +163,16 @@ cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_pose
 ros2 topic pub -r 1 /pose geometry_msgs/msg/PoseStamped "{header: {frame_id: world}, pose: {position: {x: 1.0}, orientation: {w: 1.0}}}"
 ```
 
-## Writing Your Own
+## Adding a Type
 
-For another type, add a schema, a transcoder for its pair, and a branch in
-the translator.
+1. Write a schema whose root type names the ROS 2 message.
+2. Generate its `.bfbs` into the schema path.
+3. Add the service to `mapping.toml` with the payload type
+   `iox2::Flatbuffer<root type>`.
 
-> [!NOTE]
-> A payload type is identified by the bytes of its schema, so types defined in
-> one shared schema file cannot be told apart. Each type needs its own schema.
+The gateway warns at startup when the payload type of a mapped service does
+not correspond to its ROS 2 type.
+
+With the prefix mapping, `mapping.toml` is not needed. A service named
+`ros2://topics/<topic>` is paired with the topic `/<topic>` and the ROS 2
+type is taken from the schema's root type.
