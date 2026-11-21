@@ -48,7 +48,6 @@ use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::{shared_memory::ShmPointer, zero_copy_connection::ChannelId};
-use iceoryx2_log::fail;
 
 use crate::{
     payload::number_of_elements,
@@ -146,10 +145,7 @@ impl<Service: crate::service::Service, ResponsePayload, ResponseHeader: Debug + 
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<Self, LoanError> {
-        let shared_state = fail!(from "ResponseMutUninit::new_flatbuffer()",
-            when ChunkMutSharedState::new(shared_state, &chunk),
-            with LoanError::InternalFailure,
-            "Unable to create the response since the underlying shared state could not be initialized.");
+        let shared_state = ChunkMutSharedState::new(shared_state, &chunk);
 
         let mut new_self = Self {
             flatbuffer_builder: None,
@@ -252,10 +248,7 @@ impl<
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<Self, LoanError> {
-        let shared_state = fail!(from "ResponseMutUninit::new()",
-            when ChunkMutSharedState::new(shared_state, &chunk),
-            with LoanError::InternalFailure,
-            "Unable to create the response since the underlying shared state could not be initialized.");
+        let shared_state = ChunkMutSharedState::new(shared_state, &chunk);
 
         Ok(Self {
             shared_state,
