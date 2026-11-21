@@ -25,6 +25,7 @@ pub use crate::service::{
     local_threadsafe, port_factory::PortFactory, service_name::ServiceName,
 };
 pub use crate::signal_handling_mode::SignalHandlingMode;
+pub use crate::user_trigger::UserTrigger;
 pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;

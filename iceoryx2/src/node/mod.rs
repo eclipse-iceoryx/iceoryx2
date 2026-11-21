@@ -220,6 +220,7 @@ use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::unique_id_generator::*;
+use crate::user_trigger::{UserTrigger, UserTriggerCreateError};
 use crate::waitset::WaitSetBuilder;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
@@ -1270,6 +1271,12 @@ impl<Service: service::Service> Node<Service> {
     /// iceoryx2 event multiplexer.
     pub fn waitset_builder(&self) -> WaitSetBuilder<Service> {
         WaitSetBuilder::new(self.shared.clock())
+    }
+
+    /// Creates a [`UserTrigger`] that wakes up a [`WaitSet`](crate::waitset::WaitSet) from any
+    /// thread of the process.
+    pub fn create_user_trigger(&self) -> Result<UserTrigger<Service>, UserTriggerCreateError> {
+        UserTrigger::new()
     }
 
     /// Returns the [`NodeState`] of a specific [`Node`] that has the provided [`UniqueNodeId`].
