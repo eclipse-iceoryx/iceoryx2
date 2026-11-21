@@ -166,6 +166,35 @@ use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::{fail, fatal_panic, trace, warn};
 
+// Process liveness depends only on exclusive locks. Shared probes do not
+// conflict with each other on Windows, where F_GETLK briefly acquires a lock.
+fn has_write_lock(file: &File) -> Result<bool, FileGetLockStateError> {
+    use crate::file_descriptor::FileDescriptorBased;
+    use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
+
+    let mut state = posix::flock::new_zeroed();
+    state.l_type = posix::F_RDLCK as _;
+    state.l_whence = posix::SEEK_SET as _;
+    if unsafe {
+        posix::fcntl(
+            file.file_descriptor().native_handle(),
+            posix::F_GETLK,
+            &mut state,
+        )
+    } == -1
+    {
+        return Err(match Errno::get() {
+            Errno::EINTR => FileGetLockStateError::InterruptedBySignal,
+            error => FileGetLockStateError::UnknownError(error as i32),
+        });
+    }
+    match state.l_type as i32 {
+        posix::F_UNLCK | posix::F_RDLCK => Ok(false),
+        posix::F_WRLCK => Ok(true),
+        _ => Err(FileGetLockStateError::UnknownError(0)),
+    }
+}
+
 const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
 const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
 const CONTEXT_SUFFIX: &[u8] = b"_context";
@@ -1037,11 +1066,9 @@ impl ProcessMonitor {
             Self::open_file(self, &self.owner_lock_path, AccessMode::Write)?
         {
             let lock_state = fail!(from self,
-                                    when owner_lock_file.get_lock_state(),
+                                    when has_write_lock(&owner_lock_file),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
-            if let Some(l) = lock_state
-                && l.lock_type() == LockType::Write
-            {
+            if lock_state {
                 return Ok(ProcessState::CleaningUp);
             }
         } else {
@@ -1068,10 +1095,10 @@ impl ProcessMonitor {
         // are still open.
         match Self::open_file(self, &self.state_path, AccessMode::Write)? {
             Some(state_file) => {
-                let lock_state = fail!(from self, when state_file.get_lock_state(),
+                let lock_state = fail!(from self, when has_write_lock(&state_file),
                                     "{} since the lock state of the state file could not be acquired.", msg);
                 match lock_state {
-                    Some(l) if l.lock_type() == LockType::Write => Ok(ProcessState::Alive),
+                    true => Ok(ProcessState::Alive),
                     _ => Ok(ProcessState::Dead),
                 }
             }
@@ -1238,13 +1265,11 @@ impl ProcessCleaner {
             }
         };
 
-        let lock_state = fail!(from origin, when state_file.get_lock_state(),
+        let lock_state = fail!(from origin, when has_write_lock(&state_file),
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if let Some(l) = lock_state
-            && l.lock_type() == LockType::Write
-        {
+        if lock_state {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }

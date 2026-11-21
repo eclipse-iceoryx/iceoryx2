@@ -14,25 +14,26 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use core::time::Duration;
-
 use windows_sys::Win32::{
     Foundation::{
-        ERROR_ACCESS_DENIED, ERROR_FILE_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_FILE_TOO_LARGE,
-        ERROR_PATH_NOT_FOUND, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
+        CloseHandle, ERROR_ACCESS_DENIED, ERROR_FILE_EXISTS, ERROR_FILE_NOT_FOUND,
+        ERROR_FILE_TOO_LARGE, ERROR_INVALID_HANDLE, ERROR_PATH_NOT_FOUND, ERROR_SUCCESS, FALSE,
+        GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
     },
+    Security::Authorization::{GetSecurityInfo, SE_FILE_OBJECT, SetSecurityInfo},
     Security::{
-        DACL_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION, GetFileSecurityA,
-        OWNER_SECURITY_INFORMATION, SECURITY_ATTRIBUTES, SetFileSecurityA,
+        ACL, DACL_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION, GetFileSecurityA,
+        GetSecurityDescriptorDacl, OWNER_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION,
+        PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES,
     },
     Storage::FileSystem::{
         BY_HANDLE_FILE_INFORMATION, CREATE_NEW, CreateFileA, FILE_ATTRIBUTE_DIRECTORY,
-        FILE_ATTRIBUTE_NORMAL, FILE_NAME_NORMALIZED, FILE_SHARE_DELETE, FILE_SHARE_READ,
-        FILE_SHARE_WRITE, GetFileInformationByHandle, GetFileSize, GetFinalPathNameByHandleA,
-        INVALID_FILE_SIZE, LOCKFILE_EXCLUSIVE_LOCK, LOCKFILE_FAIL_IMMEDIATELY, LockFileEx,
-        OPEN_ALWAYS, OPEN_EXISTING, UnlockFileEx,
+        FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+        GetFileInformationByHandle, GetFileSize, INVALID_FILE_SIZE, LOCKFILE_EXCLUSIVE_LOCK,
+        LOCKFILE_FAIL_IMMEDIATELY, LockFileEx, OPEN_ALWAYS, OPEN_EXISTING, ReOpenFile,
+        UnlockFileEx, WRITE_DAC,
     },
-    System::{IO::OVERLAPPED, SystemServices::MAXWORD},
+    System::{IO::OVERLAPPED, Memory::LocalFree, SystemServices::MAXWORD},
 };
 
 use crate::{
@@ -47,7 +48,6 @@ use crate::{
 };
 
 use super::{
-    settings::MAX_PATH_LENGTH,
     win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator},
     win32_security_attributes::from_mode_to_security_attributes,
 };
@@ -55,7 +55,7 @@ use crate::posix;
 use crate::win32call;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
-    let access_mode = if flags & posix::O_RDONLY != 0 {
+    let mut access_mode = if flags & posix::O_RDONLY != 0 {
         GENERIC_READ
     } else if flags & posix::O_WRONLY != 0 {
         GENERIC_WRITE
@@ -64,6 +64,9 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
     } else {
         0
     };
+    if flags & posix::O_CREAT != 0 && flags & posix::O_EXCL != 0 {
+        access_mode |= WRITE_DAC;
+    }
 
     let shared_mode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
     let open_mode = if flags & posix::O_CREAT != 0 && flags & posix::O_EXCL != 0 {
@@ -76,7 +79,7 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
 
     let security_attributes = from_mode_to_security_attributes(mode);
     unsafe {
-        let (handle, _) = win32call! {CreateFileA(
+        let (handle, open_error) = win32call! {CreateFileA(
             pathname as *const u8,
             access_mode,
             shared_mode,
@@ -89,6 +92,12 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
             ERROR_ACCESS_DENIED, ERROR_FILE_TOO_LARGE};
 
         if handle == INVALID_HANDLE_VALUE {
+            Errno::set(open_failure_errno(
+                pathname,
+                open_mode,
+                open_error,
+                Errno::get(),
+            ));
             return -1;
         }
 
@@ -97,6 +106,27 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
             lock_state: F_UNLCK,
         }))
     }
+}
+
+unsafe fn open_failure_errno(
+    pathname: *const c_char,
+    open_mode: u32,
+    open_error: u32,
+    original: Errno,
+) -> Errno {
+    // A concurrent removal can make an existing-file open fail with access denied.
+    // Only report absence when a subsequent query confirms the path no longer exists.
+    if open_error == ERROR_ACCESS_DENIED && open_mode == OPEN_EXISTING {
+        let attributes =
+            unsafe { windows_sys::Win32::Storage::FileSystem::GetFileAttributesA(pathname.cast()) };
+        if attributes == windows_sys::Win32::Storage::FileSystem::INVALID_FILE_ATTRIBUTES {
+            let error = unsafe { windows_sys::Win32::Foundation::GetLastError() };
+            if error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND {
+                return Errno::ENOENT;
+            }
+        }
+    }
+    original
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
@@ -144,20 +174,61 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
             }
             _ => {
                 Errno::set(Errno::EBADF);
-                -1
+                return -1;
             }
         };
 
-        if let Some(file_path) = handle_to_file_path(permission_handle)
-            && let Some(mode) = acquire_mode_from_path(&file_path)
-        {
-            file_stat.st_mode |= mode;
-        }
+        let mode = match acquire_mode_from_handle(permission_handle) {
+            Ok(mode) => mode,
+            Err(error) => {
+                Errno::set(error);
+                return -1;
+            }
+        };
+        file_stat.st_mode |= mode;
 
         buf.write(file_stat);
 
         0
     }
+}
+
+unsafe fn acquire_mode_from_handle(handle: HANDLE) -> Result<mode_t, Errno> {
+    // INVALID_HANDLE_VALUE also has the value of a Windows pseudo-handle. Reject it before
+    // asking the security API to interpret it as an object handle.
+    if handle == 0 || handle == INVALID_HANDLE_VALUE {
+        return Err(Errno::EBADF);
+    }
+    let mut security_descriptor: PSECURITY_DESCRIPTOR = core::ptr::null_mut::<void>();
+    let result = unsafe {
+        GetSecurityInfo(
+            handle,
+            SE_FILE_OBJECT,
+            DACL_SECURITY_INFORMATION,
+            core::ptr::null_mut::<*mut void>(),
+            core::ptr::null_mut::<*mut void>(),
+            core::ptr::null_mut(),
+            core::ptr::null_mut(),
+            &mut security_descriptor,
+        )
+    };
+    if result != ERROR_SUCCESS {
+        return Err(match result {
+            ERROR_ACCESS_DENIED => Errno::EACCES,
+            ERROR_INVALID_HANDLE => Errno::EBADF,
+            _ => Errno::EIO,
+        });
+    }
+
+    let security_attributes = SECURITY_ATTRIBUTES {
+        nLength: core::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
+        lpSecurityDescriptor: security_descriptor,
+        bInheritHandle: FALSE,
+    };
+    let mode = from_security_attributes_to_mode(&security_attributes);
+    unsafe { LocalFree(security_descriptor as isize) };
+
+    Ok(mode)
 }
 
 pub(crate) unsafe fn acquire_mode_from_path(file_path: &[u8]) -> Option<mode_t> {
@@ -226,6 +297,34 @@ pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
 
 impl MemZeroedStruct for OVERLAPPED {}
 
+unsafe fn probe_file_lock(handle: HANDLE, requested: i16) -> Result<i16, Errno> {
+    use windows_sys::Win32::Foundation::{ERROR_LOCK_VIOLATION, GetLastError};
+    let flags = LOCKFILE_FAIL_IMMEDIATELY
+        | if requested as i32 == F_RDLCK {
+            0
+        } else {
+            LOCKFILE_EXCLUSIVE_LOCK
+        };
+    let mut overlapped = OVERLAPPED::new_zeroed();
+    if unsafe { LockFileEx(handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped) } == FALSE {
+        return match unsafe { GetLastError() } {
+            ERROR_LOCK_VIOLATION => Ok(F_WRLCK as _),
+            ERROR_ACCESS_DENIED => Err(Errno::EACCES),
+            ERROR_INVALID_HANDLE => Err(Errno::EBADF),
+            _ => Err(Errno::EIO),
+        };
+    }
+    let mut overlapped = OVERLAPPED::new_zeroed();
+    if unsafe { UnlockFileEx(handle, 0, MAXWORD, MAXWORD, &mut overlapped) } == FALSE {
+        return Err(match unsafe { GetLastError() } {
+            ERROR_ACCESS_DENIED => Errno::EACCES,
+            ERROR_INVALID_HANDLE => Errno::EBADF,
+            _ => Errno::EIO,
+        });
+    }
+    Ok(F_UNLCK as _)
+}
+
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
     unsafe {
         let handle = match HandleTranslator::get_instance().get(fd) {
@@ -254,17 +353,12 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
                 return 0;
             }
 
-            let mut overlapped = OVERLAPPED::new_zeroed();
-            let flags = LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY;
-            let lock_result =
-                LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped);
-
-            if lock_result != FALSE {
-                let mut overlapped = OVERLAPPED::new_zeroed();
-                UnlockFileEx(handle.handle, 0, MAXWORD, MAXWORD, &mut overlapped);
-                (*arg).l_type = posix::F_UNLCK as _;
-            } else {
-                (*arg).l_type = posix::F_WRLCK as _;
+            match probe_file_lock(handle.handle, (*arg).l_type) {
+                Ok(lock_type) => (*arg).l_type = lock_type,
+                Err(error) => {
+                    Errno::set(error);
+                    return -1;
+                }
             }
 
             return 0;
@@ -330,24 +424,6 @@ pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
     }
 }
 
-unsafe fn handle_to_file_path(handle: HANDLE) -> Option<[u8; MAX_PATH_LENGTH]> {
-    let mut file_path = [0u8; MAX_PATH_LENGTH];
-    let (file_path_len, _) = unsafe {
-        win32call!(GetFinalPathNameByHandleA(
-            handle,
-            file_path.as_mut_ptr(),
-            MAX_PATH_LENGTH as u32,
-            FILE_NAME_NORMALIZED
-        ))
-    };
-
-    if file_path_len as usize > MAX_PATH_LENGTH {
-        None
-    } else {
-        Some(file_path)
-    }
-}
-
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
     let handle = match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::SharedMemory(handle)) => handle.state_handle,
@@ -359,35 +435,279 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
         }
     };
 
-    let file_path = match unsafe { handle_to_file_path(handle) } {
-        Some(v) => v,
-        None => {
-            Errno::set(Errno::EINVAL);
-            return -1;
-        }
+    let security_attributes = from_mode_to_security_attributes(mode);
+    let mut dacl_present = FALSE;
+    let mut dacl_defaulted = FALSE;
+    let mut dacl = core::ptr::null_mut::<ACL>();
+    let (has_dacl, _) = unsafe {
+        win32call!(GetSecurityDescriptorDacl(
+            security_attributes.lpSecurityDescriptor,
+            &mut dacl_present,
+            &mut dacl,
+            &mut dacl_defaulted,
+        ))
+    };
+    if has_dacl == FALSE || dacl_present == FALSE {
+        Errno::set(Errno::EIO);
+        return -1;
+    }
+
+    let mut result = unsafe {
+        SetSecurityInfo(
+            handle,
+            SE_FILE_OBJECT,
+            DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+            core::ptr::null_mut(),
+            core::ptr::null_mut(),
+            dacl,
+            core::ptr::null_mut(),
+        )
     };
 
-    let max_retries = 8;
-    let mut attempt = 0;
-    let security_attributes = from_mode_to_security_attributes(mode);
-    loop {
-        attempt += 1;
-        unsafe {
-            let (has_file_security_set, last_error) = win32call!(SetFileSecurityA(
-                file_path.as_ptr(),
-                DACL_SECURITY_INFORMATION,
-                security_attributes.lpSecurityDescriptor
-            ));
-            if last_error == ERROR_ACCESS_DENIED && attempt < max_retries {
-                std::thread::sleep(Duration::from_millis(1 << attempt));
-                continue;
-            }
-
-            if has_file_security_set == FALSE {
-                return -1;
-            }
-
-            return 0;
+    if result == ERROR_ACCESS_DENIED {
+        let (permission_handle, reopen_error) = unsafe {
+            win32call!(ReOpenFile(
+                handle,
+                WRITE_DAC | windows_sys::Win32::Storage::FileSystem::READ_CONTROL,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                0,
+            ))
+        };
+        if permission_handle != INVALID_HANDLE_VALUE {
+            result = unsafe {
+                SetSecurityInfo(
+                    permission_handle,
+                    SE_FILE_OBJECT,
+                    DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                    core::ptr::null_mut(),
+                    core::ptr::null_mut(),
+                    dacl,
+                    core::ptr::null_mut(),
+                )
+            };
+            unsafe { CloseHandle(permission_handle) };
+        } else {
+            result = reopen_error;
         }
+    }
+
+    if result == ERROR_SUCCESS {
+        return 0;
+    }
+
+    Errno::set(match result {
+        ERROR_ACCESS_DENIED => Errno::EACCES,
+        ERROR_INVALID_HANDLE => Errno::EBADF,
+        _ => Errno::EIO,
+    });
+    -1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn denied_open_reports_absence_only_after_file_disappears() {
+        use windows_sys::Win32::Storage::FileSystem::{
+            FILE_ATTRIBUTE_READONLY, GetFileAttributesA, INVALID_FILE_ATTRIBUTES,
+            SetFileAttributesA,
+        };
+        let path = std::env::temp_dir().join(format!(
+            "iox2_denied_{}_{}.tmp",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let name = alloc::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let attributes = from_mode_to_security_attributes(posix::S_IRUSR | posix::S_IWUSR);
+        unsafe {
+            let owner = CreateFileA(
+                name.as_ptr().cast(),
+                GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                &attributes,
+                CREATE_NEW,
+                FILE_ATTRIBUTE_NORMAL,
+                0,
+            );
+            assert_ne!(owner, INVALID_HANDLE_VALUE);
+            let original_attributes = GetFileAttributesA(name.as_ptr().cast());
+            assert_ne!(original_attributes, INVALID_FILE_ATTRIBUTES);
+            // POSIX modes still grant Administrators and SYSTEM full access. Use the
+            // read-only file attribute to obtain a real denial regardless of that grant.
+            assert_ne!(
+                SetFileAttributesA(
+                    name.as_ptr().cast(),
+                    original_attributes | FILE_ATTRIBUTE_READONLY
+                ),
+                FALSE
+            );
+            let denied = CreateFileA(
+                name.as_ptr().cast(),
+                GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                core::ptr::null(),
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                0,
+            );
+            let error = windows_sys::Win32::Foundation::GetLastError();
+            // Restore before assertions/deletion so a failed test does not leave a
+            // read-only fixture behind. Close an unexpected successful open as well.
+            let restored = SetFileAttributesA(name.as_ptr().cast(), original_attributes);
+            if denied != INVALID_HANDLE_VALUE {
+                CloseHandle(denied);
+            }
+            assert_ne!(restored, FALSE);
+            assert_eq!(denied, INVALID_HANDLE_VALUE);
+            assert_eq!(error, ERROR_ACCESS_DENIED);
+            assert!(matches!(
+                open_failure_errno(name.as_ptr().cast(), OPEN_EXISTING, error, Errno::EACCES),
+                Errno::EACCES
+            ));
+            assert_ne!(CloseHandle(owner), FALSE);
+            assert_ne!(
+                windows_sys::Win32::Storage::FileSystem::DeleteFileA(name.as_ptr().cast()),
+                FALSE
+            );
+            assert!(matches!(
+                open_failure_errno(name.as_ptr().cast(), OPEN_EXISTING, error, Errno::EACCES),
+                Errno::ENOENT
+            ));
+            assert!(matches!(
+                open_failure_errno(name.as_ptr().cast(), CREATE_NEW, error, Errno::EACCES),
+                Errno::EACCES
+            ));
+            assert!(matches!(
+                open_failure_errno(
+                    name.as_ptr().cast(),
+                    OPEN_EXISTING,
+                    ERROR_INVALID_HANDLE,
+                    Errno::EBADF
+                ),
+                Errno::EBADF
+            ));
+        }
+    }
+
+    #[test]
+    fn invalid_lock_probe_is_an_error_not_a_lock() {
+        assert!(matches!(
+            unsafe { probe_file_lock(INVALID_HANDLE_VALUE, F_RDLCK as _) },
+            Err(Errno::EBADF)
+        ));
+    }
+
+    #[test]
+    fn shared_probes_coexist_and_release_their_locks() {
+        use std::os::windows::io::AsRawHandle;
+        let path = std::env::temp_dir().join(format!(
+            "iox2_probe_{}_{}.tmp",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let owner = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .unwrap();
+        let observer = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&path)
+            .unwrap();
+        let mut overlapped = OVERLAPPED::new_zeroed();
+        assert_ne!(
+            unsafe {
+                LockFileEx(
+                    owner.as_raw_handle() as _,
+                    LOCKFILE_FAIL_IMMEDIATELY,
+                    0,
+                    MAXWORD,
+                    MAXWORD,
+                    &mut overlapped,
+                )
+            },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { probe_file_lock(observer.as_raw_handle() as _, F_RDLCK as _) }.unwrap(),
+            F_UNLCK as i16
+        );
+        assert_eq!(
+            unsafe { probe_file_lock(observer.as_raw_handle() as _, F_WRLCK as _) }.unwrap(),
+            F_WRLCK as i16
+        );
+        assert_ne!(
+            unsafe {
+                UnlockFileEx(
+                    owner.as_raw_handle() as _,
+                    0,
+                    MAXWORD,
+                    MAXWORD,
+                    &mut overlapped,
+                )
+            },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { probe_file_lock(observer.as_raw_handle() as _, F_WRLCK as _) }.unwrap(),
+            F_UNLCK as i16
+        );
+        assert_ne!(
+            unsafe {
+                LockFileEx(
+                    owner.as_raw_handle() as _,
+                    LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY,
+                    0,
+                    MAXWORD,
+                    MAXWORD,
+                    &mut overlapped,
+                )
+            },
+            FALSE
+        );
+        assert_eq!(
+            unsafe { probe_file_lock(observer.as_raw_handle() as _, F_RDLCK as _) }.unwrap(),
+            F_WRLCK as i16
+        );
+        assert_ne!(
+            unsafe {
+                UnlockFileEx(
+                    owner.as_raw_handle() as _,
+                    0,
+                    MAXWORD,
+                    MAXWORD,
+                    &mut overlapped,
+                )
+            },
+            FALSE
+        );
+        drop(observer);
+        drop(owner);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn failed_security_lookup_does_not_return_empty_permissions() {
+        assert!(matches!(
+            unsafe { acquire_mode_from_handle(INVALID_HANDLE_VALUE) },
+            Err(Errno::EBADF)
+        ));
+    }
+
+    #[test]
+    fn invalid_descriptor_does_not_publish_metadata() {
+        let mut metadata = stat_t::new_zeroed();
+        metadata.st_mode = posix::S_IRUSR;
+        assert_eq!(unsafe { fstat(-1, &mut metadata) }, -1);
+        assert_eq!(metadata.st_mode, posix::S_IRUSR);
     }
 }
