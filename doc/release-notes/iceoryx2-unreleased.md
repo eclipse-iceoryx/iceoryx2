@@ -47,6 +47,7 @@
 * [#2094](https://github.com/eclipse-iceoryx/iceoryx2/issues/2094) Fail a send to a socket pair on Windows when its peer is gone, like on POSIX
 * [#2124](https://github.com/eclipse-iceoryx/iceoryx2/issues/2124) Remove clone impl from RelocatablePointer
 * [#2137](https://github.com/eclipse-iceoryx/iceoryx2/issues/2137) Fix typo in `BackpressureAction` enum
+* [#2139](https://github.com/eclipse-iceoryx/iceoryx2/issues/2139) Apply `payload_alignment` only to the start of a slice payload instead of padding every element
 * [#2142](https://github.com/eclipse-iceoryx/iceoryx2/issues/2142) Initialize the node counter of the global management segment when the segment is created
 * [#2215](https://github.com/eclipse-iceoryx/iceoryx2/issues/2215) Add missing `slice_len` function in `PendingResponse`
 * [#2219](https://github.com/eclipse-iceoryx/iceoryx2/issues/2219) Return `LoanError` instead of crashing when a C++ loan with a user header fails
