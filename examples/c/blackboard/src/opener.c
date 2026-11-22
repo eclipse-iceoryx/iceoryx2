@@ -76,8 +76,7 @@ int main(void) {
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-    iox2_node_h node_handle = NULL;
-    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &example.node);
     if (ret_val != IOX2_OK) {
         printf("Could not create node! Error: %d\n", ret_val);
         goto end;
@@ -85,16 +84,15 @@ int main(void) {
 
     // create service name
     const char* service_name_value = "My/Funk/ServiceName";
-    iox2_service_name_h service_name = NULL;
-    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &example.service_name);
     if (ret_val != IOX2_OK) {
         printf("Unable to create service name! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service builder
-    iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(&node_handle, NULL, service_name_ptr);
+    iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(example.service_name);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(&example.node, NULL, service_name_ptr);
     iox2_service_builder_blackboard_opener_h service_builder_blackboard =
         iox2_service_builder_blackboard_opener(service_builder);
 
@@ -113,17 +111,16 @@ int main(void) {
     iox2_service_builder_blackboard_opener_set_key_eq_comparison_function(&service_builder_blackboard, key_cmp);
 
     // open service
-    iox2_port_factory_blackboard_h service = NULL;
-    ret_val = iox2_service_builder_blackboard_open(service_builder_blackboard, NULL, &service);
+    ret_val = iox2_service_builder_blackboard_open(service_builder_blackboard, NULL, &example.service);
     if (ret_val != IOX2_OK) {
         printf("Unable to open service! Error: %d\n", ret_val);
         goto end;
     }
 
     // create reader and entry handles
-    iox2_port_factory_reader_builder_h reader_builder = iox2_port_factory_blackboard_reader_builder(&service, NULL);
-    iox2_reader_h reader = NULL;
-    ret_val = iox2_port_factory_reader_builder_create(reader_builder, NULL, &reader);
+    iox2_port_factory_reader_builder_h reader_builder =
+        iox2_port_factory_blackboard_reader_builder(&example.service, NULL);
+    ret_val = iox2_port_factory_reader_builder_create(reader_builder, NULL, &example.reader);
     if (ret_val != IOX2_OK) {
         printf("Unable to create reader! Error: %d\n", ret_val);
         goto end;
@@ -135,10 +132,9 @@ int main(void) {
     key_0.z = 4;
     // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
     const char* value_type_name_int = "i32";
-    iox2_entry_handle_h entry_handle_key_0 = NULL;
-    ret_val = iox2_reader_entry(&reader,
+    ret_val = iox2_reader_entry(&example.reader,
                                 NULL,
-                                &entry_handle_key_0,
+                                &example.entry_handle_key_0,
                                 &key_0,
                                 value_type_name_int,
                                 strlen(value_type_name_int),
@@ -155,10 +151,9 @@ int main(void) {
     key_1.z = 4;
     // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
     const char* value_type_name_double = "f64";
-    iox2_entry_handle_h entry_handle_key_1 = NULL;
-    ret_val = iox2_reader_entry(&reader,
+    ret_val = iox2_reader_entry(&example.reader,
                                 NULL,
-                                &entry_handle_key_1,
+                                &example.entry_handle_key_1,
                                 &key_1,
                                 value_type_name_double,
                                 strlen(value_type_name_double),
@@ -171,11 +166,11 @@ int main(void) {
 
     int32_t value_0 = 0;
     double value_1 = 0.0;
-    while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
-        iox2_entry_handle_get(&entry_handle_key_0, &value_0, sizeof(int32_t), alignof(int32_t), NULL);
+    while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {
+        iox2_entry_handle_get(&example.entry_handle_key_0, &value_0, sizeof(int32_t), alignof(int32_t), NULL);
         printf("Read value %d for key 0...\n", value_0);
 
-        iox2_entry_handle_get(&entry_handle_key_1, &value_1, sizeof(double), alignof(double), NULL);
+        iox2_entry_handle_get(&example.entry_handle_key_1, &value_1, sizeof(double), alignof(double), NULL);
         printf("Read value %f for key 1 ...\n\n", value_1);
     }
 
