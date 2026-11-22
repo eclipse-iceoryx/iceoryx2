@@ -14,7 +14,7 @@
 //! like [`Permission`] setting.
 //!
 //! # Examples
-//! ```
+//! ```no_run
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_posix::named_pipe::*;
