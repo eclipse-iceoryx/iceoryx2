@@ -44,7 +44,7 @@ execute the following commands:
 Run the C subscriber application:
 
 ```sh
-./target/ff/cc/build/examples/c/publish_subscribe_cross_language/example_c_cross_language_subscriber
+./target/ff/cc/build/examples/c/cross_language_communication_basics/example_c_cross_language_communication_basics_subscriber
 ```
 
 ### Terminal 2
@@ -52,7 +52,7 @@ Run the C subscriber application:
 Run the C publisher application:
 
 ```sh
-./target/ff/cc/build/examples/c/publish_subscribe_cross_language/example_c_cross_language_publisher
+./target/ff/cc/build/examples/c/cross_language_communication_basics/example_c_cross_language_communication_basics_publisher
 ```
 
 Feel free to also run the subscriber and publisher applications from other
