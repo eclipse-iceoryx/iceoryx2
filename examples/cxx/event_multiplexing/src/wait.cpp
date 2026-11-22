@@ -68,13 +68,12 @@ auto main(int argc, char** argv) -> int {
     // create the waitset and attach the listeners to it
     auto waitset = node.waitset_builder().create().value();
     // NOLINTNEXTLINE(misc-const-correctness) false positive
+    std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
+    // NOLINTNEXTLINE(misc-const-correctness) false positive
     iox2::bb::StaticVector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 
     guards.try_emplace_back(waitset.attach_notification(listener_1).value());
     guards.try_emplace_back(waitset.attach_notification(listener_2).value());
-
-    // NOLINTNEXTLINE(misc-const-correctness) false positive
-    std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine in the example
     listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards.unchecked_access()[0]),
