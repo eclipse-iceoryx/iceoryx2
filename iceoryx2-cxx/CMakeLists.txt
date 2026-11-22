@@ -152,6 +152,7 @@ target_link_libraries(static-lib-cxx
     iceoryx2-bb-cxx::iceoryx2-bb-cxx
     iceoryx2-c::static-lib
     iceoryx2-cxx::includes-only-cxx
+    ${ICEORYX2_SANITIZER_FLAGS}
 )
 
 if(${IOX2_FEATURE_FLATBUFFERS})
