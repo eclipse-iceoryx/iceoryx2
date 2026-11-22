@@ -205,7 +205,9 @@ impl IntoCInt for EventOpenOrCreateError {
         match self {
             EventOpenOrCreateError::EventOpenError(error) => error.into_c_int(),
             EventOpenOrCreateError::EventCreateError(error) => error.into_c_int(),
-            e => e.into_c_int(),
+            EventOpenOrCreateError::SystemInFlux => {
+                iox2_event_open_or_create_error_e::SYSTEM_IN_FLUX as c_int
+            }
         }
     }
 }
