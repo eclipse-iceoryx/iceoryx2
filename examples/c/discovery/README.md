@@ -26,19 +26,19 @@ the following commands:
 ### Terminal 1
 
 ```sh
-./target/ff/cc/build/examples/cxx/event/example_c_event_listener
+./target/ff/cc/build/examples/c/event/example_c_event_listener
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ff/cc/build/examples/cxx/publish_subscribe/example_c_publish_subscribe_subscriber
+./target/ff/cc/build/examples/c/publish_subscribe/example_c_publish_subscribe_subscriber
 ```
 
 Once these services are running, you can call the following command:
 
 ```sh
-./target/ff/cc/build/examples/cxx/discovery/example_c_discovery
+./target/ff/cc/build/examples/c/discovery/example_c_discovery
 ```
 
 This will display the static service details of both the event and the
