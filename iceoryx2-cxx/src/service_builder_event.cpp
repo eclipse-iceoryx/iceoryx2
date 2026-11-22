@@ -19,6 +19,47 @@ ServiceBuilderEvent<S>::ServiceBuilderEvent(iox2_service_builder_h handle)
 }
 
 template <ServiceType S>
+void ServiceBuilderEvent<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_service_builder_event_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S>
+ServiceBuilderEvent<S>::ServiceBuilderEvent(ServiceBuilderEvent&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::operator=(ServiceBuilderEvent&& rhs) noexcept -> ServiceBuilderEvent& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_max_nodes = std::move(rhs.m_max_nodes);
+        m_event_id_max_value = std::move(rhs.m_event_id_max_value);
+        m_max_notifiers = std::move(rhs.m_max_notifiers);
+        m_max_listeners = std::move(rhs.m_max_listeners);
+        m_notifier_dead_event = std::move(rhs.m_notifier_dead_event);
+        m_notifier_created_event = std::move(rhs.m_notifier_created_event);
+        m_notifier_dropped_event = std::move(rhs.m_notifier_dropped_event);
+        m_deadline = std::move(rhs.m_deadline);
+        m_verify_notifier_dead_event = rhs.m_verify_notifier_dead_event;
+        m_verify_notifier_created_event = rhs.m_verify_notifier_created_event;
+        m_verify_notifier_dropped_event = rhs.m_verify_notifier_dropped_event;
+        m_verify_deadline = rhs.m_verify_deadline;
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+ServiceBuilderEvent<S>::~ServiceBuilderEvent() {
+    drop();
+}
+
+template <ServiceType S>
 // NOLINTNEXTLINE(readability-function-size) the size cannot easily be reduced due to the amount of builder parameter
 void ServiceBuilderEvent<S>::set_parameters() {
     if (m_max_notifiers.has_value()) {
@@ -133,6 +174,7 @@ auto ServiceBuilderEvent<S>::open_or_create() && -> bb::Expected<PortFactoryEven
     set_parameters();
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open_or_create(m_handle, nullptr, &event_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryEvent<S>(event_handle);
@@ -147,6 +189,7 @@ auto ServiceBuilderEvent<S>::open() && -> bb::Expected<PortFactoryEvent<S>, Even
 
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open(m_handle, nullptr, &event_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryEvent<S>(event_handle);
@@ -161,6 +204,7 @@ auto ServiceBuilderEvent<S>::create() && -> bb::Expected<PortFactoryEvent<S>, Ev
 
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_create(m_handle, nullptr, &event_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryEvent<S>(event_handle);
@@ -177,6 +221,7 @@ auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open_or_create_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &event_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryEvent<S>(event_handle);
@@ -193,6 +238,7 @@ auto ServiceBuilderEvent<S>::open_with_attributes(
     iox2_port_factory_event_h event_handle {};
     auto result = iox2_service_builder_event_open_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &event_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryEvent<S>(event_handle);
@@ -209,6 +255,7 @@ auto ServiceBuilderEvent<S>::create_with_attributes(
     iox2_port_factory_event_h event_handle {};
     auto result =
         iox2_service_builder_event_create_with_attributes(m_handle, &attributes.m_handle, nullptr, &event_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryEvent<S>(event_handle);

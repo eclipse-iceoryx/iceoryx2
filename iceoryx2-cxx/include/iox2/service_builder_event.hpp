@@ -68,6 +68,13 @@ class ServiceBuilderEvent {
 #endif
 
   public:
+    ServiceBuilderEvent(ServiceBuilderEvent&& rhs) noexcept;
+    auto operator=(ServiceBuilderEvent&& rhs) noexcept -> ServiceBuilderEvent&;
+    ~ServiceBuilderEvent();
+
+    ServiceBuilderEvent(const ServiceBuilderEvent&) = delete;
+    auto operator=(const ServiceBuilderEvent&) -> ServiceBuilderEvent& = delete;
+
     /// If the [`Service`] is created it defines the event that shall be emitted by every
     /// [`Notifier`] before it is dropped. If [`None`] is
     /// provided a [`Notifier`] will not emit an event.
@@ -131,6 +138,7 @@ class ServiceBuilderEvent {
     friend class ServiceBuilder;
 
     explicit ServiceBuilderEvent(iox2_service_builder_h handle);
+    void drop();
 
     void set_parameters();
 

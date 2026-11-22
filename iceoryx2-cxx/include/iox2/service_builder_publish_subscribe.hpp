@@ -140,6 +140,13 @@ class ServiceBuilderPublishSubscribe {
 #endif
 
   public:
+    ServiceBuilderPublishSubscribe(ServiceBuilderPublishSubscribe&& rhs) noexcept;
+    auto operator=(ServiceBuilderPublishSubscribe&& rhs) noexcept -> ServiceBuilderPublishSubscribe&;
+    ~ServiceBuilderPublishSubscribe();
+
+    ServiceBuilderPublishSubscribe(const ServiceBuilderPublishSubscribe&) = delete;
+    auto operator=(const ServiceBuilderPublishSubscribe&) -> ServiceBuilderPublishSubscribe& = delete;
+
     /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
     /// will try to find the best fitting schema file in the configured flatbuffer schema paths
     /// defined in the config.
@@ -195,6 +202,7 @@ class ServiceBuilderPublishSubscribe {
         -> std::enable_if_t<std::is_same<U, CustomHeaderMarker>::value>;
 
     explicit ServiceBuilderPublishSubscribe(iox2_service_builder_h handle);
+    void drop();
 
     template <typename U = Payload>
     auto set_type_definition_name_hint() -> std::enable_if_t<has_flatbuffer_marker<U>(), void>;
@@ -216,6 +224,48 @@ template <typename Payload, typename UserHeader, ServiceType S>
 inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPublishSubscribe(
     iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_pub_sub(handle) } {
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_service_builder_pub_sub_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPublishSubscribe(
+    ServiceBuilderPublishSubscribe&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto
+ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::operator=(ServiceBuilderPublishSubscribe&& rhs) noexcept
+    -> ServiceBuilderPublishSubscribe& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_payload_alignment = std::move(rhs.m_payload_alignment);
+        m_enable_safe_overflow = std::move(rhs.m_enable_safe_overflow);
+        m_subscriber_max_borrowed_samples = std::move(rhs.m_subscriber_max_borrowed_samples);
+        m_history_size = std::move(rhs.m_history_size);
+        m_subscriber_max_buffer_size = std::move(rhs.m_subscriber_max_buffer_size);
+        m_max_subscribers = std::move(rhs.m_max_subscribers);
+        m_max_publishers = std::move(rhs.m_max_publishers);
+        m_max_nodes = std::move(rhs.m_max_nodes);
+        m_user_header_type_details_override = std::move(rhs.m_user_header_type_details_override);
+        m_payload_type_details_override = std::move(rhs.m_payload_type_details_override);
+    }
+
+    return *this;
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::~ServiceBuilderPublishSubscribe() {
+    drop();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -393,6 +443,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
     auto result = iox2_service_builder_pub_sub_open_or_create(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle);
@@ -408,6 +459,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open() && ->
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
     auto result = iox2_service_builder_pub_sub_open(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle);
@@ -423,6 +475,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create() && 
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
     auto result = iox2_service_builder_pub_sub_create(m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle);
@@ -441,6 +494,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
     iox2_port_factory_pub_sub_h port_factory_handle {};
     auto result = iox2_service_builder_pub_sub_open_or_create_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle);
@@ -459,6 +513,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_at
     iox2_port_factory_pub_sub_h port_factory_handle {};
     auto result = iox2_service_builder_pub_sub_open_with_attributes(
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle);
@@ -476,6 +531,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_
     iox2_port_factory_pub_sub_h port_factory_handle {};
     auto result = iox2_service_builder_pub_sub_create_with_attributes(
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle);

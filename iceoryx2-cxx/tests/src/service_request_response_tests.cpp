@@ -2776,4 +2776,33 @@ TYPED_TEST(ServiceRequestResponseTest, port_names_can_be_set) {
     ASSERT_THAT(server.name().to_string(), server_name.to_string());
 }
 
+TYPED_TEST(ServiceRequestResponseTest, service_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_CLIENTS = 5;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, uint64_t>()
+                   .max_clients(NUMBER_OF_CLIENTS);
+}
+
+TYPED_TEST(ServiceRequestResponseTest, service_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_CLIENTS = 5;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto builder = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .max_clients(NUMBER_OF_CLIENTS);
+    auto sut = node.service_builder(service_name).template request_response<uint64_t, uint64_t>();
+    sut = std::move(builder);
+
+    auto service = std::move(sut).create().value();
+    ASSERT_THAT(service.static_config().max_clients(), Eq(NUMBER_OF_CLIENTS));
+}
+
 } // namespace

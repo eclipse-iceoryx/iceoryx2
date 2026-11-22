@@ -106,4 +106,23 @@ TYPED_TEST(NodeTest, node_id_is_unique) {
     ASSERT_THAT(id_2, Ne(id_1));
     ASSERT_THAT(id_1.template pid<SERVICE_TYPE>().value(), Eq(id_2.template pid<SERVICE_TYPE>().value()));
 }
+
+TYPED_TEST(NodeTest, node_builder_can_be_dropped_without_create) {
+    auto node_name = NodeName::create("Nala never finishes what she starts.").value();
+
+    auto sut = NodeBuilder().name(node_name);
+}
+
+TYPED_TEST(NodeTest, node_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto node_name = NodeName::create("Nala moves on.").value();
+
+    auto builder = NodeBuilder().name(node_name);
+    auto sut = NodeBuilder();
+    sut = std::move(builder);
+
+    auto node = std::move(sut).create<SERVICE_TYPE>().value();
+    ASSERT_THAT(node.name().to_string(), Eq(node_name.to_string()));
+}
 } // namespace

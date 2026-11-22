@@ -2101,4 +2101,35 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {
     ASSERT_THAT(publisher_static.allocation_strategy(), Eq(AllocationStrategy::Static));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, service_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_PUBLISHERS = 5;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().max_publishers(NUMBER_OF_PUBLISHERS);
+    auto sut_with_user_header = node.service_builder(service_name)
+                                    .template publish_subscribe<uint64_t>()
+                                    .template user_header<uint64_t>()
+                                    .max_publishers(NUMBER_OF_PUBLISHERS);
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, service_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_PUBLISHERS = 5;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto builder =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().max_publishers(NUMBER_OF_PUBLISHERS);
+    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>();
+    sut = std::move(builder);
+
+    auto service = std::move(sut).create().value();
+    ASSERT_THAT(service.static_config().max_publishers(), Eq(NUMBER_OF_PUBLISHERS));
+}
+
 } // namespace

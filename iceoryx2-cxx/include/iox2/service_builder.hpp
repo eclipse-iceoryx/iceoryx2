@@ -25,11 +25,12 @@ namespace iox2 {
 template <ServiceType S>
 class ServiceBuilder {
   public:
-    ServiceBuilder(ServiceBuilder&&) = default;
+    ServiceBuilder(ServiceBuilder&& rhs) noexcept;
+    auto operator=(ServiceBuilder&& rhs) noexcept -> ServiceBuilder&;
+    ~ServiceBuilder();
+
     ServiceBuilder(const ServiceBuilder&) = delete;
-    auto operator=(ServiceBuilder&&) -> ServiceBuilder& = default;
     auto operator=(const ServiceBuilder&) -> ServiceBuilder& = delete;
-    ~ServiceBuilder() = default;
 
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`] [`Service`].
@@ -59,6 +60,7 @@ class ServiceBuilder {
     template <ServiceType>
     friend class Node;
     ServiceBuilder(iox2_node_h_ref node_handle, iox2_service_name_ptr service_name_ptr);
+    void drop();
 
     iox2_service_builder_h m_handle = nullptr;
 };
@@ -69,33 +71,72 @@ inline ServiceBuilder<S>::ServiceBuilder(iox2_node_h_ref node_handle, iox2_servi
 }
 
 template <ServiceType S>
+inline void ServiceBuilder<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_service_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S>
+inline ServiceBuilder<S>::ServiceBuilder(ServiceBuilder&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+inline auto ServiceBuilder<S>::operator=(ServiceBuilder&& rhs) noexcept -> ServiceBuilder& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+inline ServiceBuilder<S>::~ServiceBuilder() {
+    drop();
+}
+
+template <ServiceType S>
 inline auto ServiceBuilder<S>::event() && -> ServiceBuilderEvent<S> {
-    return ServiceBuilderEvent<S> { m_handle };
+    auto* handle = m_handle;
+    m_handle = nullptr;
+    return ServiceBuilderEvent<S> { handle };
 }
 
 template <ServiceType S>
 template <typename Payload>
 inline auto ServiceBuilder<S>::publish_subscribe() && -> ServiceBuilderPublishSubscribe<Payload, void, S> {
-    return ServiceBuilderPublishSubscribe<Payload, void, S> { m_handle };
+    auto* handle = m_handle;
+    m_handle = nullptr;
+    return ServiceBuilderPublishSubscribe<Payload, void, S> { handle };
 }
 
 template <ServiceType S>
 template <typename RequestPayload, typename ResponsePayload>
 inline auto ServiceBuilder<
     S>::request_response() && -> ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S> {
-    return ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S> { m_handle };
+    auto* handle = m_handle;
+    m_handle = nullptr;
+    return ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S> { handle };
 }
 
 template <ServiceType S>
 template <typename KeyType>
 inline auto ServiceBuilder<S>::blackboard_creator() && -> ServiceBuilderBlackboardCreator<KeyType, S> {
-    return ServiceBuilderBlackboardCreator<KeyType, S> { m_handle };
+    auto* handle = m_handle;
+    m_handle = nullptr;
+    return ServiceBuilderBlackboardCreator<KeyType, S> { handle };
 }
 
 template <ServiceType S>
 template <typename KeyType>
 inline auto ServiceBuilder<S>::blackboard_opener() && -> ServiceBuilderBlackboardOpener<KeyType, S> {
-    return ServiceBuilderBlackboardOpener<KeyType, S> { m_handle };
+    auto* handle = m_handle;
+    m_handle = nullptr;
+    return ServiceBuilderBlackboardOpener<KeyType, S> { handle };
 }
 } // namespace iox2
 #endif
