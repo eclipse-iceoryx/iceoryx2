@@ -57,7 +57,7 @@ pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
             WaitOnAddress(
                 (atomic as *const AtomicU64).cast(),
                 (value as *const u64).cast(),
-                4,
+                core::mem::size_of_val(atomic),
                 INFINITE,
             );
 
@@ -96,7 +96,7 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
             WaitOnAddress(
                 (atomic as *const AtomicU64).cast(),
                 (value as *const u64).cast(),
-                4,
+                core::mem::size_of_val(atomic),
                 (deadline - now).as_micros().div_ceil(1000) as _,
             );
 
