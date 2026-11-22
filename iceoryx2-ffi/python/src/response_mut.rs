@@ -63,6 +63,15 @@ impl ResponseMut {
         }
     }
 
+    pub fn __truncate(&self, number_of_elements: usize) {
+        match &mut *self.value.lock() {
+            ResponseMutType::Ipc(Some(v)) => v.truncate(number_of_elements),
+            ResponseMutType::Local(Some(v)) => v.truncate(number_of_elements),
+            _ => fatal_panic!(from "ResponseMut::__truncate()",
+                "Accessing a released response."),
+        }
+    }
+
     #[getter]
     /// Returns a reference to the `ResponseHeader`.
     pub fn header(&self) -> ResponseHeader {

@@ -791,6 +791,126 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
 }
 // NOLINTEND(readability-function-cognitive-complexity)
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
+TYPED_TEST(ServiceRequestResponseTest, truncated_loan_slice_uninit_delivers_its_first_elements) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t SLICE_MAX_LENGTH = 10;
+    constexpr uint64_t TRUNCATED_LENGTH = 4;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
+                       .create()
+                       .value();
+
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+
+    auto request_uninit = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH).value();
+    request_uninit.truncate(TRUNCATED_LENGTH);
+    ASSERT_THAT(request_uninit.payload_mut().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    auto request = request_uninit.write_from_fn(
+        [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
+    auto pending_response = send(std::move(request)).value();
+
+    auto active_request = sut_server.receive().value();
+    ASSERT_TRUE(active_request.has_value());
+    ASSERT_THAT(active_request->payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    uint64_t iterations = 0;
+    for (const auto& item : active_request->payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ++iterations;
+    }
+
+    auto response_uninit = active_request->loan_slice_uninit(SLICE_MAX_LENGTH).value();
+    response_uninit.truncate(TRUNCATED_LENGTH);
+    ASSERT_THAT(response_uninit.payload_mut().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    auto response = response_uninit.write_from_fn(
+        [](auto index) -> auto { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
+    send(std::move(response)).value();
+
+    auto received_response = pending_response.receive().value();
+    ASSERT_TRUE(received_response.has_value());
+    ASSERT_THAT(received_response->payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    iterations = 0;
+    for (const auto& item : received_response->payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ++iterations;
+    }
+}
+// NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(ServiceRequestResponseTest, truncated_loan_slice_delivers_its_first_elements) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t SLICE_MAX_LENGTH = 10;
+    constexpr uint64_t TRUNCATED_LENGTH = 4;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
+                       .create()
+                       .value();
+
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+
+    auto request = sut_client.loan_slice(SLICE_MAX_LENGTH).value();
+    request.truncate(TRUNCATED_LENGTH);
+    ASSERT_THAT(request.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    auto pending_response = send(std::move(request)).value();
+
+    auto active_request = sut_server.receive().value();
+    ASSERT_TRUE(active_request.has_value());
+    ASSERT_THAT(active_request->payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+
+    auto response = active_request->loan_slice(SLICE_MAX_LENGTH).value();
+    response.truncate(TRUNCATED_LENGTH);
+    ASSERT_THAT(response.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    send(std::move(response)).value();
+
+    auto received_response = pending_response.receive().value();
+    ASSERT_TRUE(received_response.has_value());
+    ASSERT_THAT(received_response->payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, truncating_a_slice_request_or_response_never_grows_it) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t SLICE_MAX_LENGTH = 10;
+    constexpr uint64_t TRUNCATED_LENGTH = 4;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<bb::Slice<DummyData>, bb::Slice<DummyData>>()
+                       .create()
+                       .value();
+
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().value();
+
+    auto request = sut_client.loan_slice(SLICE_MAX_LENGTH).value();
+    request.truncate(SLICE_MAX_LENGTH + 1);
+    ASSERT_THAT(request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    request.truncate(TRUNCATED_LENGTH);
+    request.truncate(SLICE_MAX_LENGTH);
+    ASSERT_THAT(request.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+    auto pending_response = send(std::move(request)).value();
+
+    auto active_request = sut_server.receive().value();
+    ASSERT_TRUE(active_request.has_value());
+    auto response = active_request->loan_slice(SLICE_MAX_LENGTH).value();
+    response.truncate(SLICE_MAX_LENGTH + 1);
+    ASSERT_THAT(response.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    response.truncate(TRUNCATED_LENGTH);
+    response.truncate(SLICE_MAX_LENGTH);
+    ASSERT_THAT(response.payload().number_of_elements(), Eq(TRUNCATED_LENGTH));
+}
+
 TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 

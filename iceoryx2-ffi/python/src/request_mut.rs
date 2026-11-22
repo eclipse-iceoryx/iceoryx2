@@ -85,6 +85,15 @@ impl RequestMut {
         }
     }
 
+    pub fn __truncate(&self, number_of_elements: usize) {
+        match &mut *self.value.lock() {
+            RequestMutType::Ipc(Some(v)) => v.truncate(number_of_elements),
+            RequestMutType::Local(Some(v)) => v.truncate(number_of_elements),
+            _ => fatal_panic!(from "RequestMut::__truncate()",
+                "Accessing a released request."),
+        }
+    }
+
     #[getter]
     /// Returns the iceoryx2 internal `RequestHeader`
     pub fn header(&self) -> RequestHeader {
