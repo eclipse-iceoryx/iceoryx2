@@ -37,7 +37,7 @@ poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx
 
 In the example below, we are waiting for events on the services `fuu` and
 `bar`. Service `fuu` is notified with event ID `123`, and service `bar` is
-notified with event ID `456`.
+notified with event ID `234`.
 
 ### Terminal 1
 
@@ -54,7 +54,7 @@ poetry --project iceoryx2-ffi/python run python examples/python/event_multiplexi
 ### Terminal 3
 
 ```sh
-poetry --project iceoryx2-ffi/python run python examples/python/event_multiplexing/notifier.py bar 456
+poetry --project iceoryx2-ffi/python run python examples/python/event_multiplexing/notifier.py bar 234
 ```
 
 Feel free to instantiate multiple notifiers for the same service with the same

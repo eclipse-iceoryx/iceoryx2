@@ -32,7 +32,7 @@ cmake --build target/ff/cc/build
 
 In the example below, we are waiting for events on the services `fuu` and
 `bar`. Service `fuu` is notified with event ID `123`, and service `bar` is
-notified with event ID `456`.
+notified with event ID `234`.
 
 ### Terminal 1
 
@@ -49,7 +49,7 @@ notified with event ID `456`.
 ### Terminal 3
 
 ```sh
-./target/ff/cc/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_notifier -s "bar" -e 456
+./target/ff/cc/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_notifier -s "bar" -e 234
 ```
 
 Feel free to instantiate multiple notifiers for the same service with the same
