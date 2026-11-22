@@ -144,6 +144,8 @@ impl IntoCInt for ServiceListError {
     }
 }
 
+/// The callback owns the `attributes` of the provided [`iox2_static_config_t`] and must release them with
+/// [`iox2_attribute_set_drop()`](crate::iox2_attribute_set_drop()).
 pub type iox2_service_list_callback = extern "C" fn(
     *const iox2_static_config_t,
     iox2_callback_context,
@@ -242,6 +244,8 @@ pub unsafe extern "C" fn iox2_service_does_exist(
 /// Acquires the service details of a specified service. If the service exists `service_details` will contain
 /// the requested information, otherwise it is NULL. On error it returns `iox2_service_details_error_e`, on
 /// success `IOX2_OK`.
+/// If the service exists, the caller owns the `attributes` of `service_details` and must release them with
+/// [`iox2_attribute_set_drop()`](crate::iox2_attribute_set_drop()).
 ///
 /// # Safety
 ///
@@ -311,6 +315,8 @@ fn list_callback<S: Service>(
 /// Iterates over the all accessible services and calls the provided callback for
 /// every service with iox2_service_details as input argument.
 /// On error it returns `iox2_service_list_error_e`, otherwise IOX2_OK.
+/// The callback owns the `attributes` of every provided [`iox2_static_config_t`] and must release them with
+/// [`iox2_attribute_set_drop()`](crate::iox2_attribute_set_drop()).
 ///
 /// # Safety
 ///

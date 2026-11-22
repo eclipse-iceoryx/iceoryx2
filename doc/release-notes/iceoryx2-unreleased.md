@@ -56,6 +56,7 @@
 * [#2222](https://github.com/eclipse-iceoryx/iceoryx2/issues/2222) Free the builder struct in `iox2_waitset_builder_create`, which leaked 48 bytes for every `WaitSet` created from C or C++
 * [#2224](https://github.com/eclipse-iceoryx/iceoryx2/issues/2224) Panic safe drop in `Vec`
 * [#2232](https://github.com/eclipse-iceoryx/iceoryx2/issues/2232) Apply the sanitizer flags when building with `-DSANITIZERS=ON`
+* [#2256](https://github.com/eclipse-iceoryx/iceoryx2/issues/2256) Release the attribute set of every listed service in the C examples and document that the receiver owns it
 * [#2257](https://github.com/eclipse-iceoryx/iceoryx2/issues/2257) Pass the sanitizer flags on to programs that link the static C++ library
 
 ### Refactoring
