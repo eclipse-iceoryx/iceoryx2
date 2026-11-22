@@ -14,6 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use core::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -56,7 +57,7 @@ pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
             WaitOnAddress(
                 (atomic as *const AtomicU64).cast(),
                 (value as *const u64).cast(),
-                4,
+                core::mem::size_of_val(atomic),
                 INFINITE,
             );
 
@@ -82,21 +83,24 @@ pub unsafe fn sem_trywait(sem: *mut sem_t) -> int {
 }
 
 pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> int {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     unsafe {
-        let milli_seconds = (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
-            - now.as_millis() as i64;
+        let deadline = Duration::new((*abs_timeout).tv_sec as _, (*abs_timeout).tv_nsec as _);
 
         #[allow(clippy::blocks_in_conditions)]
         match (*sem).semaphore.wait(|atomic, value| -> WaitAction {
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+            if now >= deadline {
+                return WaitAction::Abort;
+            }
+
             WaitOnAddress(
                 (atomic as *const AtomicU64).cast(),
                 (value as *const u64).cast(),
-                4,
-                milli_seconds as _,
+                core::mem::size_of_val(atomic),
+                (deadline - now).as_micros().div_ceil(1000) as _,
             );
 
-            WaitAction::Abort
+            WaitAction::Continue
         }) {
             WaitResult::Success => {
                 Errno::set(Errno::ESUCCES);

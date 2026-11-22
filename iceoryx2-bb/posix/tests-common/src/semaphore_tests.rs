@@ -372,6 +372,71 @@ pub fn unnamed_semaphore_timed_wait_blocks() {
     timed_wait_blocks(&test.realtime_unnamed_sut, &test.realtime_unnamed_sut);
 }
 
+pub fn timed_wait_keeps_waiting_when_another_thread_takes_the_post<
+    T: SemaphoreInterface + Send + Sync,
+>(
+    sut: &T,
+) {
+    const ROUNDS: usize = 10;
+    let successful_waits = AtomicUsize::new(0);
+
+    for _ in 0..ROUNDS {
+        let finished_threads = AtomicUsize::new(0);
+
+        thread_scope(|s| {
+            s.thread_builder()
+                .spawn(|| {
+                    while !sut.try_wait().unwrap() {}
+                    finished_threads.fetch_add(1, Ordering::Relaxed);
+                })
+                .expect("failed to spawn thread");
+
+            s.thread_builder()
+                .spawn(|| {
+                    if sut.timed_wait(TIMEOUT * 1000).unwrap() {
+                        successful_waits.fetch_add(1, Ordering::Relaxed);
+                    }
+                    finished_threads.fetch_add(1, Ordering::Relaxed);
+                })
+                .expect("failed to spawn thread");
+
+            nanosleep(TIMEOUT).expect("failed to sleep");
+            sut.post().unwrap();
+            while finished_threads.load(Ordering::Relaxed) == 0 {}
+            nanosleep(TIMEOUT).expect("failed to sleep");
+            sut.post().unwrap();
+
+            Ok(())
+        })
+        .expect("failed to execute thread scope");
+    }
+
+    assert_that!(successful_waits.load(Ordering::Relaxed), eq ROUNDS);
+}
+
+#[test]
+pub fn named_semaphore_timed_wait_keeps_waiting_when_another_thread_takes_the_post() {
+    test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
+    let _watchdog = Watchdog::new();
+
+    let test = NamedSemaphoreTest::new();
+
+    timed_wait_keeps_waiting_when_another_thread_takes_the_post(&test.monotonic_named_sut1);
+    timed_wait_keeps_waiting_when_another_thread_takes_the_post(&test.realtime_named_sut1);
+}
+
+#[test]
+pub fn unnamed_semaphore_timed_wait_keeps_waiting_when_another_thread_takes_the_post() {
+    let _watchdog = Watchdog::new();
+    let handle1 = UnnamedSemaphoreHandle::new();
+    let handle2 = UnnamedSemaphoreHandle::new();
+
+    let test = UnnamedSemaphoreTest::new(&handle1, &handle2);
+
+    timed_wait_keeps_waiting_when_another_thread_takes_the_post(&test.monotonic_unnamed_sut);
+    timed_wait_keeps_waiting_when_another_thread_takes_the_post(&test.realtime_unnamed_sut);
+}
+
 pub fn timed_wait_waits_at_least_timeout<T: SemaphoreInterface>(sut: &T) {
     let now = Time::now_with_clock(sut.get_clock_type()).unwrap();
     sut.timed_wait(TIMEOUT).unwrap();
