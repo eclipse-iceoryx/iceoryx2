@@ -242,8 +242,9 @@ local client ──▶ gateway client ─ ─ ✕ ─ ─▶ ROS 2 server   (not
 * ROS 2 clients wait for a server before calling. The link has no such
   wait, so a request sent right after the gateway opened its ROS 2 client
   may be lost, and the local client sees no response.
-* A request to a ROS 2 server that never answers keeps its entry in the
-  gateway, since nothing tells the gateway the request is over.
+* A request to a ROS 2 server that never answers stays open while a node
+  other than the gateway's serves the service. Once none does, the gateway
+  ends it.
 
 #### The GUID's element type
 
