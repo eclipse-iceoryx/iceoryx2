@@ -56,6 +56,9 @@ iceoryx2-pal-print = { workspace = true }
 
 serde = { workspace = true }
 
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+
 [dev-dependencies]
 iceoryx2-cal-conformance-tests-common = { workspace = true, features = ["std"] }
 

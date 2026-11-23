@@ -40,3 +40,6 @@ iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-cal = { workspace = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
