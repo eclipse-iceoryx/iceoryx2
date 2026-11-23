@@ -153,6 +153,7 @@ target_link_libraries(static-lib-cxx
     iceoryx2-c::static-lib
     iceoryx2-cxx::includes-only-cxx
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 
 if(${IOX2_FEATURE_FLATBUFFERS})
@@ -177,6 +178,7 @@ target_link_libraries(shared-lib-cxx
     iceoryx2-c::shared-lib
     iceoryx2-cxx::includes-only-cxx
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 
 if(${IOX2_FEATURE_FLATBUFFERS})

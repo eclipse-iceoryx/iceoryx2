@@ -61,6 +61,7 @@
 * [#2255](https://github.com/eclipse-iceoryx/iceoryx2/issues/2255) Make timed semaphore waits on Windows wait until the deadline
 * [#2256](https://github.com/eclipse-iceoryx/iceoryx2/issues/2256) Release the attribute set of every listed service in the C examples and document that the receiver owns it
 * [#2257](https://github.com/eclipse-iceoryx/iceoryx2/issues/2257) Pass the sanitizer flags on to programs that link the static C++ library
+* [#2264](https://github.com/eclipse-iceoryx/iceoryx2/issues/2264) Pass the coverage flags on to programs that link the C++ libraries
 * [#2265](https://github.com/eclipse-iceoryx/iceoryx2/issues/2265) Fix the example README commands that fail, the drop order of the C++ event multiplexing waiter and the leaks of the C blackboard examples
 
 ### Refactoring

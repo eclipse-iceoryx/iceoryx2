@@ -39,3 +39,8 @@ set(ICEORYX2_SANITIZER_FLAGS CACHE INTERNAL "")
 if(SANITIZERS)
     include(Iceoryx2Sanitizer)
 endif()
+
+set(ICEORYX2_COVERAGE_FLAGS CACHE INTERNAL "")
+if(COVERAGE)
+    include(Iceoryx2Coverage)
+endif()
