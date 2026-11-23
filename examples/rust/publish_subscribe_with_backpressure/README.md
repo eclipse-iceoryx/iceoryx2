@@ -41,13 +41,13 @@ and execute the following commands:
 ### Terminal 1
 
 ```sh
-cargo run --example publish_subscribe_with_backpressure_handler_subscriber
+cargo run --example publish_subscribe_backpressure_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-cargo run --example publish_subscribe_with_backpressure_handler_publisher
+cargo run --example publish_subscribe_backpressure_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

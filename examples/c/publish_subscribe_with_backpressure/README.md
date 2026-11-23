@@ -44,13 +44,13 @@ and execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ff/cc/build/examples/c/publish_subscribe_backpressure/example_c_publish_subscribe_backpressure_subscriber
+./target/ff/cc/build/examples/c/publish_subscribe_with_backpressure/example_c_publish_subscribe_backpressure_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ff/cc/build/examples/c/publish_subscribe_backpressure/example_c_publish_subscribe_backpressure_publisher
+./target/ff/cc/build/examples/c/publish_subscribe_with_backpressure/example_c_publish_subscribe_backpressure_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

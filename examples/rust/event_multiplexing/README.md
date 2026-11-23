@@ -19,7 +19,7 @@ the `-e` option.
 
 In the example below, we are waiting for events on the services `fuu` and
 `bar`. Service `fuu` is notified with event ID `123`, and service `bar` is
-notified with event ID `456`.
+notified with event ID `234`.
 
 ## How to Run
 
@@ -41,7 +41,7 @@ cargo run --example event_multiplexing_notifier -- -s "fuu" -e 123
 ### Terminal 3
 
 ```sh
-cargo run --example event_multiplexing_notifier -- -s "bar" -e 456
+cargo run --example event_multiplexing_notifier -- -s "bar" -e 234
 ```
 
 Feel free to instantiate multiple notifiers for the same service with the same

@@ -51,18 +51,18 @@ execute the following commands:
 
 ### Terminal 1
 
-Run the C++ subscriber application:
+Run the Python subscriber application:
 
 ```sh
-poetry --project iceoryx2-ffi/python run python examples/python/publish_subscribe_cross_language/subscriber.py
+poetry --project iceoryx2-ffi/python run python examples/python/cross_language_communication_basics/subscriber.py
 ```
 
 ### Terminal 2
 
-Run the C++ publisher application:
+Run the Python publisher application:
 
 ```sh
-poetry --project iceoryx2-ffi/python run python examples/python/publish_subscribe_cross_language/publisher.py
+poetry --project iceoryx2-ffi/python run python examples/python/cross_language_communication_basics/publisher.py
 ```
 
 Feel free to also run the subscriber and publisher applications from other

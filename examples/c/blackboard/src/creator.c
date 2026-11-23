@@ -76,8 +76,7 @@ int main(void) {
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-    iox2_node_h node_handle = NULL;
-    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &example.node);
     if (ret_val != IOX2_OK) {
         printf("Could not create node! Error: %d\n", ret_val);
         goto end;
@@ -85,16 +84,15 @@ int main(void) {
 
     // create service name
     const char* service_name_value = "My/Funk/ServiceName";
-    iox2_service_name_h service_name = NULL;
-    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &example.service_name);
     if (ret_val != IOX2_OK) {
         printf("Unable to create service name! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service builder
-    iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(&node_handle, NULL, service_name_ptr);
+    iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(example.service_name);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(&example.node, NULL, service_name_ptr);
     iox2_service_builder_blackboard_creator_h service_builder_blackboard =
         iox2_service_builder_blackboard_creator(service_builder);
 
@@ -149,8 +147,7 @@ int main(void) {
                                                 alignof(double));
 
     // create service
-    iox2_port_factory_blackboard_h service = NULL;
-    ret_val = iox2_service_builder_blackboard_create(service_builder_blackboard, NULL, &service);
+    ret_val = iox2_service_builder_blackboard_create(service_builder_blackboard, NULL, &example.service);
     if (ret_val != IOX2_OK) {
         printf("Unable to create service! Error: %d\n", ret_val);
         goto end;
@@ -158,18 +155,17 @@ int main(void) {
     printf("Blackboard created.\n");
 
     // create writer and entry handles
-    iox2_port_factory_writer_builder_h writer_builder = iox2_port_factory_blackboard_writer_builder(&service, NULL);
-    iox2_writer_h writer = NULL;
-    ret_val = iox2_port_factory_writer_builder_create(writer_builder, NULL, &writer);
+    iox2_port_factory_writer_builder_h writer_builder =
+        iox2_port_factory_blackboard_writer_builder(&example.service, NULL);
+    ret_val = iox2_port_factory_writer_builder_create(writer_builder, NULL, &example.writer);
     if (ret_val != IOX2_OK) {
         printf("Unable to create writer! Error: %d\n", ret_val);
         goto end;
     }
 
-    iox2_entry_handle_mut_h entry_handle_mut_key_0 = NULL;
-    ret_val = iox2_writer_entry(&writer,
+    ret_val = iox2_writer_entry(&example.writer,
                                 NULL,
-                                &entry_handle_mut_key_0,
+                                &example.entry_handle_mut_key_0,
                                 &key_0,
                                 value_type_name_int,
                                 strlen(value_type_name_int),
@@ -180,10 +176,9 @@ int main(void) {
         goto end;
     }
 
-    iox2_entry_handle_mut_h entry_handle_mut_key_1 = NULL;
-    ret_val = iox2_writer_entry(&writer,
+    ret_val = iox2_writer_entry(&example.writer,
                                 NULL,
-                                &entry_handle_mut_key_1,
+                                &example.entry_handle_mut_key_1,
                                 &key_1,
                                 value_type_name_double,
                                 strlen(value_type_name_double),
@@ -196,19 +191,20 @@ int main(void) {
 
     // update values
     int32_t counter = 0;
-    while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
+    while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {
         counter += 1;
 
-        iox2_entry_handle_mut_update_with_copy(&entry_handle_mut_key_0, &counter, sizeof(int32_t), alignof(int32_t));
+        iox2_entry_handle_mut_update_with_copy(
+            &example.entry_handle_mut_key_0, &counter, sizeof(int32_t), alignof(int32_t));
         printf("Write new value %d for key 0...\n", counter);
 
         iox2_entry_value_uninit_h entry_value_uninit = NULL;
         iox2_entry_handle_mut_loan_uninit(
-            entry_handle_mut_key_1, NULL, &entry_value_uninit, sizeof(double), alignof(double));
+            example.entry_handle_mut_key_1, NULL, &entry_value_uninit, sizeof(double), alignof(double));
         double* payload = NULL;
         iox2_entry_value_uninit_value_mut(&entry_value_uninit, (void**) &payload);
         *payload = INITIAL_VALUE * (double) counter;
-        iox2_entry_value_uninit_update(entry_value_uninit, NULL, &entry_handle_mut_key_1);
+        iox2_entry_value_uninit_update(entry_value_uninit, NULL, &example.entry_handle_mut_key_1);
         printf("Write new value %f for key 1...\n\n", *payload);
     }
 
