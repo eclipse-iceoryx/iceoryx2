@@ -19,7 +19,7 @@
 mod adapter;
 pub mod codec;
 mod endpoint_description;
-pub mod graph;
+mod graph;
 
-pub use adapter::{OpenError, RmwZenohAdapter};
+pub use adapter::{Config, CreationError, ListError, OpenError, RmwZenohAdapter};
 pub use endpoint_description::{EndpointDescription, EndpointName, EndpointSettings, MessageType};

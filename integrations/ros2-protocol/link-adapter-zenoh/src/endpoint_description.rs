@@ -13,6 +13,8 @@
 use iceoryx2_link_adapter::EndpointTypes;
 use iceoryx2_link_backend::service_description::Identified;
 
+use crate::codec::QosProfile;
+
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum EndpointName {
     Topic(String),
@@ -31,6 +33,7 @@ impl core::fmt::Display for EndpointName {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EndpointSettings {
     pub name: EndpointName,
+    pub qos: QosProfile,
 }
 
 impl Identified for EndpointSettings {
