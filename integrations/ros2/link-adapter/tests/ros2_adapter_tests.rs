@@ -43,10 +43,131 @@ instantiate_conformance_tests!(
 mod request_response {
     use super::*;
 
+    use core::time::Duration;
+
+    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::test;
+    use iceoryx2_integrations_ros2_link_adapter::testing::PeerNode;
+    use iceoryx2_integrations_ros2_link_adapter::{EndpointName, QosProfile, TypeName};
+    use iceoryx2_link_adapter::{
+        Adapter, RequestResponseEndpoints, ResponseKind, SampleBytes, SampleBytesRef, TakeOutcome,
+    };
+    use iceoryx2_link_conformance_tests::fixture::{
+        AdapterFixture, Describable, PropagatesRequestResponseMessages,
+    };
+    use iceoryx2_link_conformance_tests::testing::{ClientRequestIds, retry};
+
+    use crate::fixture::SERVICE_TYPE;
+
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    const REQUEST: u64 = 7;
+    const NO_HEADER: &[u8] = &[];
+
+    type Fixture = Ros2Fixture<PrefixMapped, PlainStruct>;
+
     instantiate_conformance_tests!(
         iceoryx2_link_conformance_tests::adapter_request_response,
         Ros2Fixture<PrefixMapped, PlainStruct>
     );
+
+    #[test]
+    fn requests_end_when_another_node_only_calls_the_service() {
+        let mut fixture = Fixture::new();
+
+        let mut adapter = fixture.adapter();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
+        let mut own = adapter
+            .request_response(remote.description())
+            .expect("the adapter's endpoints open");
+        let EndpointName::Service(service) = remote.description().settings.name.clone() else {
+            panic!("the endpoints are on a ROS 2 service");
+        };
+        let request = remote.encode_request(&remote.request(REQUEST));
+        let ids = ClientRequestIds::new();
+        assert_that!(remote.sync(TIMEOUT), eq true);
+        drop(remote);
+
+        let peer = PeerNode::new();
+        let _client = peer.client(
+            &service,
+            &TypeName::new(SERVICE_TYPE).expect("a valid type name"),
+            QosProfile::default(),
+        );
+        let graph = adapter.graph();
+        retry(
+            || match (
+                graph.discovered_client(&service),
+                graph.discovered_server(&service),
+            ) {
+                (true, false) => Ok(()),
+                _ => Err("the graph does not show only a client"),
+            },
+            TIMEOUT,
+        )
+        .expect("only a client is on the graph");
+
+        let id = ids.next();
+        own.send_request(
+            id,
+            SampleBytesRef {
+                header: NO_HEADER,
+                payload: &request,
+            },
+        )
+        .expect("sending the request succeeds");
+
+        assert_that!(own.take_response(|_| None::<&mut SampleBytes>), eq Ok(TakeOutcome::Taken((id, ResponseKind::End))));
+        assert_that!(own.take_response(|_| None::<&mut SampleBytes>), eq Ok(TakeOutcome::Empty));
+    }
+
+    #[test]
+    fn requests_end_when_the_last_server_leaves() {
+        let mut fixture = Fixture::new();
+
+        let mut adapter = fixture.adapter();
+        let remote = fixture.remote_endpoints(MessagingPattern::RequestResponse);
+        let mut own = adapter
+            .request_response(remote.description())
+            .expect("the adapter's endpoints open");
+        let EndpointName::Service(service) = remote.description().settings.name.clone() else {
+            panic!("the endpoints are on a ROS 2 service");
+        };
+        let ids = ClientRequestIds::new();
+        assert_that!(remote.sync(TIMEOUT), eq true);
+        let sent = [ids.next(), ids.next()];
+        for id in sent {
+            own.send_request(
+                id,
+                SampleBytesRef {
+                    header: NO_HEADER,
+                    payload: &remote.encode_request(&remote.request(REQUEST)),
+                },
+            )
+            .expect("sending the request succeeds");
+            retry(
+                || remote.receive_request().ok_or("no request arrived"),
+                TIMEOUT,
+            )
+            .expect("the request reaches the remote endpoints");
+        }
+        assert_that!(own.take_response(|_| None::<&mut SampleBytes>), eq Ok(TakeOutcome::Empty));
+
+        drop(remote);
+        let graph = adapter.graph();
+        retry(
+            || match graph.discovered_server(&service) {
+                false => Ok(()),
+                true => Err("the graph still shows the server"),
+            },
+            TIMEOUT,
+        )
+        .expect("the server left the graph");
+
+        for id in sent {
+            assert_that!(own.take_response(|_| None::<&mut SampleBytes>), eq Ok(TakeOutcome::Taken((id, ResponseKind::End))));
+        }
+        assert_that!(own.take_response(|_| None::<&mut SampleBytes>), eq Ok(TakeOutcome::Empty));
+    }
 }
 instantiate_conformance_tests!(
     iceoryx2_link_conformance_tests::adapter_wake,

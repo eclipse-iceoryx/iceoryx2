@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::rc::Rc;
 
 use iceoryx2_link_adapter::{
     ClientRequestId, RequestDestination, ResponseDestination, ResponseKind, SampleBytesRef,
@@ -18,7 +19,7 @@ use iceoryx2_link_adapter::{
 };
 use iceoryx2_log::{debug, fail, origin, warn};
 
-use crate::rcl::{RclClient, RclService, RequestId, SequenceNumber};
+use crate::rcl::{RclClient, RclNode, RclService, RequestId, SequenceNumber, ServiceName};
 use crate::ros_header::{RosHeader, bytes_of};
 use crate::ros_message::{RosMessage, SerializeError};
 
@@ -35,6 +36,8 @@ pub enum RequestResponseEndpointsError {
     /// The rmw serialized the message without writing it into the memory
     /// it was given.
     NotWritten,
+    /// rcl failed to query the graph.
+    Graph,
 }
 
 impl core::fmt::Display for RequestResponseEndpointsError {
@@ -52,6 +55,8 @@ impl core::error::Error for RequestResponseEndpointsError {}
 /// response to a taken request is sent.
 #[derive(Debug)]
 pub struct RequestResponseEndpoints {
+    node: Rc<RclNode>,
+    service: ServiceName,
     client: RclClient,
     server: RclService,
     /// The request struct of the service's type, reset after each use.
@@ -68,12 +73,16 @@ pub struct RequestResponseEndpoints {
 
 impl RequestResponseEndpoints {
     pub(crate) fn new(
+        node: Rc<RclNode>,
+        service: ServiceName,
         client: RclClient,
         server: RclService,
         request: RosMessage,
         response: RosMessage,
     ) -> Self {
         Self {
+            node,
+            service,
             client,
             server,
             request,
@@ -130,7 +139,8 @@ impl iceoryx2_link_adapter::RequestResponseEndpoints for RequestResponseEndpoint
     /// The payload location is populated with the received bytes in wire form.
     /// The header location is populated with the corresponding service info
     /// as a [`RosHeader`]. The end of the stream follows the response on the
-    /// next take.
+    /// next take. Once no node other than the gateway's serves the service,
+    /// the stream of every request sent ends.
     fn take_response<'a>(
         &mut self,
         destination: impl ResponseDestination<'a>,
@@ -144,7 +154,34 @@ impl iceoryx2_link_adapter::RequestResponseEndpoints for RequestResponseEndpoint
         self.response.reset();
         let info = match self.client.take_response(&mut self.response) {
             Ok(Some(info)) => info,
-            Ok(None) => return Ok(TakeOutcome::Empty),
+            Ok(None) if self.sent.is_empty() => return Ok(TakeOutcome::Empty),
+            Ok(None) => {
+                let own = self.node.fully_qualified_name();
+                let nodes = fail!(
+                    from origin,
+                    when self.node.nodes(),
+                    with RequestResponseEndpointsError::Graph,
+                    "Failed to query the nodes of the graph"
+                );
+                for node in nodes.iter().filter(|node| **node != own) {
+                    let servers = fail!(
+                        from origin,
+                        when self.node.servers_of(node),
+                        with RequestResponseEndpointsError::Graph,
+                        "Failed to query the servers of node {}", node
+                    );
+                    if servers.contains(&self.service) {
+                        return Ok(TakeOutcome::Empty);
+                    }
+                }
+                warn!(
+                    "The requests sent on service '{}' end, no ROS 2 server serves it",
+                    self.service.as_str()
+                );
+                self.pending_ends
+                    .extend(core::mem::take(&mut self.sent).into_values());
+                return self.take_response(destination);
+            }
             Err(_) => {
                 fail!(
                     from origin,

@@ -516,7 +516,12 @@ impl Adapter for Ros2Adapter {
         );
 
         Ok(endpoints::RequestResponseEndpoints::new(
-            client, server, request, response,
+            Rc::clone(&self.node),
+            service_name,
+            client,
+            server,
+            request,
+            response,
         ))
     }
 
