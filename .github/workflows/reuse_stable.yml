@@ -103,3 +103,17 @@ jobs:
         run: |
           rustc --version
           just test integrations-zenoh +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast
+
+      - name: Build ros2-protocol workspace
+        if: ${{ inputs.workspace == 'ros2-protocol' }}
+        shell: bash
+        run: |
+          rustc --version
+          just build integrations-ros2-protocol +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets
+
+      - name: Test ros2-protocol workspace
+        if: ${{ inputs.workspace == 'ros2-protocol' }}
+        shell: bash
+        run: |
+          rustc --version
+          just test integrations-ros2-protocol +${{ inputs.toolchain }} --profile ${{ inputs.profile }} -- --all-targets --no-fail-fast

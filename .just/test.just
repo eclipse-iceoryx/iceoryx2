@@ -73,6 +73,7 @@ _test-dispatch what *flags:
         echo "Scope:"
         echo "  sdk                    run all tests for the main workspace"
         echo "  integrations-zenoh     run all tests for the zenoh workspace"
+        echo "  integrations-ros2-protocol  run all tests for the ros2-protocol workspace"
         echo "  integrations-ros2      run all tests for the ros2 workspace (requires a sourced ROS 2 env)"
         echo "  <package>              run tests for a specific package"
         echo ""
@@ -110,6 +111,9 @@ _test-dispatch what *flags:
             ;;
         integrations-zenoh)
             just _test-integrations-zenoh "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            ;;
+        integrations-ros2-protocol)
+            just _test-integrations-ros2-protocol "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         integrations-ros2)
             just _test-integrations-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
@@ -205,6 +209,25 @@ _test-integrations-zenoh toolchain target_triplet profile has_nostd has_doc extr
     fi
 
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations-zenoh)
+
+    if [ "{{has_doc}}" = "true" ]; then
+        cargo {{toolchain}} test --workspace --profile {{profile}} --doc $MANIFEST_ARG {{extra_args}}
+    else
+        cargo {{toolchain}} nextest run --workspace --cargo-profile {{profile}} $MANIFEST_ARG {{extra_args}}
+    fi
+
+[private]
+[no-exit-message]
+_test-integrations-ros2-protocol toolchain target_triplet profile has_nostd has_doc extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the ros2-protocol workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations-ros2-protocol)
 
     if [ "{{has_doc}}" = "true" ]; then
         cargo {{toolchain}} test --workspace --profile {{profile}} --doc $MANIFEST_ARG {{extra_args}}

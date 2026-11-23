@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    "link-adapter-zenoh",
+]
+
+[workspace.package]
+categories = ["network-programming"]
+edition = "2024"
+homepage = "https://iceoryx.io"
+keywords = [
+    "zero-copy",
+    "communication",
+    "ipc",
+    "publish-subscribe",
+    "zenoh",
+]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.89"
+version = "0.10.999"
+
+[workspace.dependencies]
+iceoryx2-link-adapter = { version = "0.10.999", path = "../../iceoryx2-link/adapter" }
+iceoryx2-link-backend = { version = "0.10.999", path = "../../iceoryx2-link/backend" }
+
+[profile.dev]
+panic = "abort"
+
+[profile.dev-fast-build]
+inherits = "dev"
+debug = "line-tables-only"
+incremental = false
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+# opt-level = "z"
+panic = "abort"
+
+[profile.release-fast-build]
+inherits = "release"
+codegen-units = 16
+lto = false
+incremental = false

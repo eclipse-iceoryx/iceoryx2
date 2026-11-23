@@ -12,7 +12,8 @@ workspace. This keeps their dependencies isolated from the core.
 | Integration | Description                                                                          | `just` scope         | Details                            |
 |-------------|-------------------------------------------------------------------------------------|----------------------|------------------------------------|
 | Zenoh       | Connect `iceoryx2` systems across hosts and networks via [Zenoh](https://zenoh.io). | `integrations-zenoh` | [`zenoh/`](zenoh)                  |
-| ROS 2       | Interoperate between `iceoryx2` and the [ROS 2](https://www.ros.org) ecosystem.     | `integrations-ros2`  | [`ros2/README.md`](ros2/README.md) |
+| ROS 2 protocols | Interoperate between `iceoryx2` and the [ROS 2](https://www.ros.org) ecosystem via the wire protocol. No ROS 2 installation required. | `integrations-ros2-protocol` | [`ros2-protocol/`](ros2-protocol) |
+| ROS 2       | Interoperate between `iceoryx2` and the [ROS 2](https://www.ros.org) ecosystem via the ROS 2 client library. Requires sourced ROS 2 installation.     | `integrations-ros2`  | [`ros2/README.md`](ros2/README.md) |
 
 ## Building & Testing
 

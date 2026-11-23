@@ -73,6 +73,7 @@ _build-dispatch what *flags:
         echo "Scope:"
         echo "  sdk                    build the main workspace"
         echo "  integrations-zenoh     build the zenoh workspace"
+        echo "  integrations-ros2-protocol  build the ros2-protocol workspace"
         echo "  integrations-ros2      build the ros2 workspace (requires a sourced ROS 2 env)"
         echo "  <package>              build a specific package"
         echo ""
@@ -111,6 +112,9 @@ _build-dispatch what *flags:
             ;;
         integrations-zenoh)
             just _build-integrations-zenoh "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
+            ;;
+        integrations-ros2-protocol)
+            just _build-integrations-ros2-protocol "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
             ;;
         integrations-ros2)
             just _build-integrations-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
@@ -192,6 +196,31 @@ _build-integrations-zenoh toolchain target_triplet profile has_nostd has_tests e
     fi
 
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations-zenoh)
+
+    cargo {{toolchain}} build --workspace $MANIFEST_ARG --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
+
+[private]
+[no-exit-message]
+_build-integrations-ros2-protocol toolchain target_triplet profile has_nostd has_tests extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the ros2-protocol workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    TESTS_FLAG=""
+    if [ "{{has_tests}}" = "true" ]; then
+        TESTS_FLAG="--tests"
+    fi
+
+    TARGET_ARG=""
+    if [ -n "{{target_triplet}}" ]; then
+        TARGET_ARG="--target {{target_triplet}}"
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations-ros2-protocol)
 
     cargo {{toolchain}} build --workspace $MANIFEST_ARG --profile {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 
