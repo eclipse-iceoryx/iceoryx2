@@ -60,11 +60,12 @@ class PortFactoryPublisher {
 #endif
 
   public:
+    PortFactoryPublisher(PortFactoryPublisher&& rhs) noexcept;
+    auto operator=(PortFactoryPublisher&& rhs) noexcept -> PortFactoryPublisher&;
+    ~PortFactoryPublisher();
+
     PortFactoryPublisher(const PortFactoryPublisher&) = delete;
-    PortFactoryPublisher(PortFactoryPublisher&&) = default;
     auto operator=(const PortFactoryPublisher&) -> PortFactoryPublisher& = delete;
-    auto operator=(PortFactoryPublisher&&) -> PortFactoryPublisher& = default;
-    ~PortFactoryPublisher() = default;
 
     /// Defines a callback to reduce the number of preallocated [`SampleMut`]s.
     /// The input argument is the worst case number of preallocated [`SampleMut`]s required
@@ -123,18 +124,57 @@ class PortFactoryPublisher {
     friend class PortFactoryPublishSubscribe;
 
     explicit PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle);
+    void drop();
 
     iox2_port_factory_publisher_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
-    bb::Optional<DegradationHandler* const> m_degradation_handler;
-    bb::Optional<BackpressureHandler* const> m_backpressure_handler;
+    bb::Optional<DegradationHandler*> m_degradation_handler;
+    bb::Optional<BackpressureHandler*> m_backpressure_handler;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline PortFactoryPublisher<S, Payload, UserHeader>::PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline void PortFactoryPublisher<S, Payload, UserHeader>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_publisher_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactoryPublisher<S, Payload, UserHeader>::PortFactoryPublisher(PortFactoryPublisher&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::operator=(PortFactoryPublisher&& rhs) noexcept
+    -> PortFactoryPublisher& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_backpressure_strategy = std::move(rhs.m_backpressure_strategy);
+        m_max_loaned_samples = std::move(rhs.m_max_loaned_samples);
+        m_name = std::move(rhs.m_name);
+        m_max_slice_len = std::move(rhs.m_max_slice_len);
+        m_allocation_strategy = std::move(rhs.m_allocation_strategy);
+        m_override_preallocation_callback = std::move(rhs.m_override_preallocation_callback);
+        m_degradation_handler = std::move(rhs.m_degradation_handler);
+        m_backpressure_handler = std::move(rhs.m_backpressure_handler);
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactoryPublisher<S, Payload, UserHeader>::~PortFactoryPublisher() {
+    drop();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -229,6 +269,7 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
     iox2_publisher_h pub_handle {};
 
     auto result = iox2_port_factory_publisher_builder_create(m_handle, nullptr, &pub_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Publisher<S, Payload, UserHeader>(pub_handle);

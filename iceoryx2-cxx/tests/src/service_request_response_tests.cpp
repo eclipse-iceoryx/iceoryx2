@@ -2805,4 +2805,60 @@ TYPED_TEST(ServiceRequestResponseTest, service_builder_can_be_moved) {
     ASSERT_THAT(service.static_config().max_clients(), Eq(NUMBER_OF_CLIENTS));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, client_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    auto sut = service.client_builder().name(PortName::create("bruce").value());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    const auto client_name = PortName::create("bruce").value();
+    auto builder = service.client_builder().name(client_name);
+    auto sut = service.client_builder();
+    sut = std::move(builder);
+    auto client = std::move(sut).create().value();
+
+    ASSERT_THAT(client.name().to_string(), client_name.to_string());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    auto sut = service.server_builder().name(PortName::create("alfred").value());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    const auto server_name = PortName::create("alfred").value();
+    auto builder = service.server_builder().name(server_name);
+    auto sut = service.server_builder();
+    sut = std::move(builder);
+    auto server = std::move(sut).create().value();
+
+    ASSERT_THAT(server.name().to_string(), server_name.to_string());
+}
+
 } // namespace

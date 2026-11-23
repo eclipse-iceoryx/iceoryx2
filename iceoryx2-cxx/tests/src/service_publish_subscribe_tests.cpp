@@ -2132,4 +2132,60 @@ TYPED_TEST(ServicePublishSubscribeTest, service_builder_can_be_moved) {
     ASSERT_THAT(service.static_config().max_publishers(), Eq(NUMBER_OF_PUBLISHERS));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, publisher_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    auto sut = service.publisher_builder().name(PortName::create("hypnotoad").value());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    const auto publisher_name = PortName::create("hypnotoad").value();
+    auto builder = service.publisher_builder().name(publisher_name);
+    auto sut = service.publisher_builder();
+    sut = std::move(builder);
+    auto publisher = std::move(sut).create().value();
+
+    ASSERT_THAT(publisher.name().to_string(), publisher_name.to_string());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, subscriber_builder_can_be_dropped_without_create) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    auto sut = service.subscriber_builder().name(PortName::create("brainslug").value());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, subscriber_builder_can_be_moved) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2::testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    const auto subscriber_name = PortName::create("brainslug").value();
+    auto builder = service.subscriber_builder().name(subscriber_name);
+    auto sut = service.subscriber_builder();
+    sut = std::move(builder);
+    auto subscriber = std::move(sut).create().value();
+
+    ASSERT_THAT(subscriber.name().to_string(), subscriber_name.to_string());
+}
+
 } // namespace

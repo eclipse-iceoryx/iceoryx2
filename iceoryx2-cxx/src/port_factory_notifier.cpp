@@ -19,6 +19,37 @@ PortFactoryNotifier<S>::PortFactoryNotifier(iox2_port_factory_notifier_builder_h
 }
 
 template <ServiceType S>
+void PortFactoryNotifier<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_notifier_builder_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S>
+PortFactoryNotifier<S>::PortFactoryNotifier(PortFactoryNotifier&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+auto PortFactoryNotifier<S>::operator=(PortFactoryNotifier&& rhs) noexcept -> PortFactoryNotifier& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+        m_default_event_id = std::move(rhs.m_default_event_id);
+        m_name = std::move(rhs.m_name);
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+PortFactoryNotifier<S>::~PortFactoryNotifier() {
+    drop();
+}
+
+template <ServiceType S>
 auto PortFactoryNotifier<S>::create() && -> bb::Expected<Notifier<S>, NotifierCreateError> {
     if (m_default_event_id.has_value()) {
         iox2_port_factory_notifier_builder_set_default_event_id(&m_handle, &m_default_event_id.value().m_value);
@@ -31,6 +62,7 @@ auto PortFactoryNotifier<S>::create() && -> bb::Expected<Notifier<S>, NotifierCr
 
     iox2_notifier_h notifier_handle {};
     auto result = iox2_port_factory_notifier_builder_create(m_handle, nullptr, &notifier_handle);
+    m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return Notifier<S> { notifier_handle };
