@@ -354,11 +354,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-integrations-ros2-interop"
+version = "0.10.999"
+dependencies = [
+ "iceoryx2",
+]
+
+[[package]]
 name = "iceoryx2-integrations-ros2-protocol-link-adapter-zenoh"
 version = "0.10.999"
 dependencies = [
+ "iceoryx2-integrations-ros2-interop",
  "iceoryx2-link-adapter",
  "iceoryx2-link-backend",
+ "xxhash-rust",
 ]
 
 [[package]]
@@ -792,3 +801,9 @@ name = "winnow"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0592e1c9d151f854e6fd382574c3a0855250e1d9b2f99d9281c6e6391af352f1"
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40de123dbb523ebcc00d61ec01840ad192578afc378d859f3429caa38308fad5"

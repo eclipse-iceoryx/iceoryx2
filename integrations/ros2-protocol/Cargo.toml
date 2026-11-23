@@ -21,8 +21,12 @@ rust-version = "1.89"
 version = "0.10.999"
 
 [workspace.dependencies]
+iceoryx2-integrations-ros2-interop = { version = "0.10.999", path = "../ros2/interop" }
+
 iceoryx2-link-adapter = { version = "0.10.999", path = "../../iceoryx2-link/adapter" }
 iceoryx2-link-backend = { version = "0.10.999", path = "../../iceoryx2-link/backend" }
+
+xxhash-rust = { version = "0.8.21", default-features = false, features = ["xxh3"] }
 
 [profile.dev]
 panic = "abort"

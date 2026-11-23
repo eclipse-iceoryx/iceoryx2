@@ -17,6 +17,7 @@
 //! ROS 2 graph without `rcl` and without a ROS 2 installation.
 
 mod adapter;
+pub mod codec;
 mod endpoint_description;
 
 pub use adapter::{OpenError, RmwZenohAdapter};
