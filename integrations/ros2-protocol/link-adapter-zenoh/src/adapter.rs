@@ -16,11 +16,12 @@ use std::sync::{Arc, Mutex};
 use iceoryx2_bb_elementary::generation::{Generation, GenerationCounter};
 use iceoryx2_link_adapter::{Adapter, EndpointTypes, UnsupportedEndpoints};
 use iceoryx2_log::{fail, origin, warn};
+use zenoh::liveliness::LivelinessToken;
 use zenoh::pubsub::Subscriber;
 use zenoh::sample::{Sample, SampleKind};
 use zenoh::{Session, Wait};
 
-use crate::codec::{TopicInfo, TypeName, liveliness_subscription_key};
+use crate::codec::{EntityKind, NodeInfo, Token, TopicInfo, TypeName, liveliness_subscription_key};
 use crate::endpoint_description::{
     EndpointDescription, EndpointName, EndpointSettings, MessageType,
 };
@@ -28,8 +29,14 @@ use crate::graph::Graph;
 
 const DOMAIN_ID_VARIABLE: &str = "ROS_DOMAIN_ID";
 const DEFAULT_DOMAIN_ID: usize = 0;
-const DEFAULT_NODE_NAMESPACE: &str = "/";
+const ROOT_NAMESPACE: &str = "/";
+const NAMESPACE_SEPARATOR: char = '/';
+const NAME_UNDERSCORE: char = '_';
+const DEFAULT_NODE_NAMESPACE: &str = ROOT_NAMESPACE;
 const DEFAULT_NODE_NAME: &str = "iceoryx2_link_gateway";
+const NODE_ID: &str = "0";
+const NODE_ENTITY_ID: &str = "0";
+const NODE_ENCLAVE: &str = "/";
 const INTERNAL_TOPICS: [&str; 2] = ["/rosout", "/parameter_events"];
 const INTERNAL_SERVICE_TYPES: [&str; 2] =
     ["rcl_interfaces/srv/", "type_description_interfaces/srv/"];
@@ -38,6 +45,8 @@ const INTERNAL_SERVICE_TYPES: [&str; 2] =
 pub enum CreationError {
     Session,
     Subscriber,
+    NodeToken,
+    InvalidNode,
 }
 
 impl core::fmt::Display for CreationError {
@@ -105,6 +114,7 @@ impl Default for Config {
 pub struct RmwZenohAdapter {
     graph: Arc<Mutex<Graph>>,
     generation: Arc<GenerationCounter>,
+    _node_token: LivelinessToken,
     _subscriber: Subscriber<()>,
     session: Session,
 }
@@ -112,6 +122,21 @@ pub struct RmwZenohAdapter {
 impl RmwZenohAdapter {
     pub fn create(zenoh_config: zenoh::Config, config: &Config) -> Result<Self, CreationError> {
         let origin = origin!("RmwZenohAdapter::create");
+
+        let valid_namespace = config.node_namespace == ROOT_NAMESPACE
+            || config
+                .node_namespace
+                .strip_prefix(NAMESPACE_SEPARATOR)
+                .is_some_and(|tokens| tokens.split(NAMESPACE_SEPARATOR).all(is_name_token));
+        if !valid_namespace || !is_name_token(&config.node_name) {
+            fail!(
+                from origin,
+                with CreationError::InvalidNode,
+                "The node '{}' in the namespace '{}' breaks the rmw naming rules",
+                config.node_name,
+                config.node_namespace
+            );
+        }
 
         let session = fail!(
             from origin,
@@ -154,13 +179,44 @@ impl RmwZenohAdapter {
             "Failed to subscribe to the liveliness tokens of domain {}", config.domain_id
         );
 
+        let node = Token {
+            zid: session.zid().to_string(),
+            node_id: NODE_ID.to_string(),
+            entity_id: NODE_ENTITY_ID.to_string(),
+            kind: EntityKind::Node,
+            node: NodeInfo {
+                domain_id: config.domain_id,
+                enclave: NODE_ENCLAVE.to_string(),
+                namespace: config.node_namespace.clone(),
+                name: config.node_name.clone(),
+            },
+            topic: None,
+        };
+        let node_token = fail!(
+            from origin,
+            when session.liveliness().declare_token(node.key()).wait(),
+            with CreationError::NodeToken,
+            "Failed to declare the liveliness token of the node {}", config.node_name
+        );
+
         Ok(Self {
             graph,
             generation,
+            _node_token: node_token,
             _subscriber: subscriber,
             session,
         })
     }
+}
+
+fn is_name_token(token: &str) -> bool {
+    token
+        .chars()
+        .next()
+        .is_some_and(|first| !first.is_ascii_digit())
+        && token
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == NAME_UNDERSCORE)
 }
 
 fn single_type<'a>(name: &str, entities: &[&'a TopicInfo]) -> Option<(TypeName, &'a TopicInfo)> {

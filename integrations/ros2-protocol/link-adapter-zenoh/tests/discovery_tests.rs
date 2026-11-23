@@ -17,11 +17,11 @@ use iceoryx2_bb_elementary::generation::Generation;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_integrations_ros2_protocol_link_adapter_zenoh::codec::{
-    EntityKind, NodeInfo, QosProfile, Token, TopicInfo,
+    EntityKind, NodeInfo, QosProfile, Token, TopicInfo, liveliness_subscription_key,
 };
 use iceoryx2_integrations_ros2_protocol_link_adapter_zenoh::{
-    Config, EndpointDescription, EndpointName, EndpointSettings, MessageType, OpenError,
-    RmwZenohAdapter,
+    Config, CreationError, EndpointDescription, EndpointName, EndpointSettings, MessageType,
+    OpenError, RmwZenohAdapter,
 };
 use iceoryx2_link_adapter::{Adapter, EndpointTypes};
 use iceoryx2_link_conformance_tests::testing::retry;
@@ -39,8 +39,14 @@ const NODE_NAME: &str = "talker";
 const NODE_ID: &str = "0";
 const FIRST_ENTITY_ID: usize = 10;
 const DEPTH: usize = 7;
+const OWN_NODE_TOKEN: u64 = 1;
+const NO_TOKENS: u64 = 0;
+const ONE_TOKEN: u64 = 1;
 const TWO_TOKENS: u64 = 2;
 const THREE_TOKENS: u64 = 3;
+const GATEWAY_NAMESPACE: &str = "/ns";
+const GATEWAY_NAME: &str = "gateway";
+const GATEWAY_NODE_KEY_SUFFIX: &str = "0/0/NN/%/%ns/gateway";
 const CHATTER: &str = "/chatter";
 const STATUS: &str = "/status";
 const ROSOUT: &str = "/rosout";
@@ -64,6 +70,19 @@ const GET_TYPE_DESCRIPTION: &str = "/talker/get_type_description";
 const GET_TYPE_DESCRIPTION_TYPE: &str =
     "type_description_interfaces::srv::dds_::GetTypeDescription_";
 const UNKNOWN_KIND: &str = "XX";
+const ROOT_NAMESPACE: &str = "/";
+const NESTED_NAMESPACE: &str = "/ns/sub_1";
+const NAME_WITH_DIGIT_AND_UNDERSCORE: &str = "gateway_1";
+const EMPTY_NAME: &str = "";
+const NAME_WITH_SLASH: &str = "ns/gateway";
+const NAME_STARTING_WITH_DIGIT: &str = "1gateway";
+const NAME_WITH_HYPHEN: &str = "gate-way";
+const EMPTY_NAMESPACE: &str = "";
+const RELATIVE_NAMESPACE: &str = "ns";
+const NAMESPACE_WITH_TRAILING_SLASH: &str = "/ns/";
+const NAMESPACE_WITH_REPEATED_SLASH: &str = "/ns//sub";
+const NAMESPACE_TOKEN_STARTING_WITH_DIGIT: &str = "/1ns";
+const NAMESPACE_WITH_HYPHEN: &str = "/n-s";
 
 static NEXT_DOMAIN_OFFSET: AtomicUsize = AtomicUsize::new(0);
 
@@ -81,15 +100,45 @@ fn zenoh_config() -> zenoh::Config {
     config
 }
 
+fn own_zid_config(domain_id: usize) -> (String, zenoh::Config) {
+    let own = format!("{ZID_PREFIX}{domain_id:x}");
+    let mut config = zenoh_config();
+    config
+        .insert_json5(ZID_KEY, &format!("\"{own}\""))
+        .expect("the zid is set");
+    (own, config)
+}
+
+fn created(zenoh_config: zenoh::Config, config: &Config) -> RmwZenohAdapter {
+    let adapter = RmwZenohAdapter::create(zenoh_config, config).expect("the adapter is created");
+    wait_for_changes(&adapter, NO_TOKENS);
+    adapter
+}
+
 fn adapter(domain_id: usize, zenoh_config: zenoh::Config) -> RmwZenohAdapter {
-    RmwZenohAdapter::create(
+    created(
         zenoh_config,
         &Config {
             domain_id,
             ..Config::default()
         },
     )
-    .expect("the adapter is created")
+}
+
+fn gateway(domain_id: usize) -> (String, RmwZenohAdapter) {
+    let (own, zenoh_config) = own_zid_config(domain_id);
+    let adapter = created(
+        zenoh_config,
+        &Config {
+            domain_id,
+            node_namespace: GATEWAY_NAMESPACE.to_string(),
+            node_name: GATEWAY_NAME.to_string(),
+        },
+    );
+    (
+        format!("@ros2_lv/{domain_id}/{own}/{GATEWAY_NODE_KEY_SUFFIX}"),
+        adapter,
+    )
 }
 
 fn qos() -> QosProfile {
@@ -131,15 +180,26 @@ fn wait_for_listing(adapter: &RmwZenohAdapter, expected: &[EndpointDescription])
     .expect("the expected endpoints are listed");
 }
 
-fn wait_for_changes(adapter: &RmwZenohAdapter, changes: u64) {
+fn wait_for_changes(adapter: &RmwZenohAdapter, tokens: u64) {
     retry(
-        || match adapter.generation() == Generation::At(changes) {
+        || match adapter.generation() == Generation::At(OWN_NODE_TOKEN + tokens) {
             true => Ok(()),
             false => Err("a change has not arrived"),
         },
         TIMEOUT,
     )
     .expect("every change arrives");
+}
+
+fn wait_for_tokens(emulator: &Emulator, expected: &[String]) {
+    retry(
+        || match emulator.tokens() == expected {
+            true => Ok(()),
+            false => Err("the tokens differ"),
+        },
+        TIMEOUT,
+    )
+    .expect("the expected tokens are seen");
 }
 
 struct Emulator {
@@ -161,6 +221,22 @@ impl Emulator {
 
     fn zid(&self) -> String {
         self.session.zid().to_string()
+    }
+
+    fn tokens(&self) -> Vec<String> {
+        let replies = self
+            .session
+            .liveliness()
+            .get(liveliness_subscription_key(self.domain_id))
+            .wait()
+            .expect("the tokens are queried");
+        let mut keys = Vec::new();
+        while let Ok(reply) = replies.recv() {
+            if let Ok(sample) = reply.result() {
+                keys.push(sample.key_expr().to_string());
+            }
+        }
+        keys
     }
 
     fn declare(
@@ -317,11 +393,7 @@ fn topic_that_left_is_not_listed() {
 #[test]
 fn token_of_the_adapters_own_zid_is_not_listed() {
     let domain_id = domain_id();
-    let own = format!("{ZID_PREFIX}{domain_id:x}");
-    let mut config = zenoh_config();
-    config
-        .insert_json5(ZID_KEY, &format!("\"{own}\""))
-        .expect("the zid is set");
+    let (own, config) = own_zid_config(domain_id);
     let adapter = adapter(domain_id, config);
     let mut emulator = Emulator::new(domain_id);
     let zid = emulator.zid();
@@ -567,4 +639,129 @@ fn endpoints_of_every_pattern_are_unsupported() {
     assert_that!(adapter.publish_subscribe(&description).err(), eq Some(OpenError::UnsupportedPattern));
     assert_that!(adapter.request_response(&description).err(), eq Some(OpenError::UnsupportedPattern));
     assert_that!(adapter.event(&description).err(), eq Some(OpenError::UnsupportedPattern));
+}
+
+#[test]
+fn gateway_node_token_carries_the_configured_namespace_and_name() {
+    let domain_id = domain_id();
+    let (expected, _adapter) = gateway(domain_id);
+    let emulator = Emulator::new(domain_id);
+
+    wait_for_tokens(&emulator, &[expected]);
+}
+
+#[test]
+fn gateway_node_token_leaves_with_the_adapter() {
+    let domain_id = domain_id();
+    let (expected, adapter) = gateway(domain_id);
+    let emulator = Emulator::new(domain_id);
+    wait_for_tokens(&emulator, &[expected]);
+
+    drop(adapter);
+
+    wait_for_tokens(&emulator, &[]);
+}
+
+#[test]
+fn node_tokens_are_not_listed() {
+    let domain_id = domain_id();
+    let listing = adapter(domain_id, zenoh_config());
+    let _other = RmwZenohAdapter::create(
+        zenoh_config(),
+        &Config {
+            domain_id,
+            ..Config::default()
+        },
+    )
+    .expect("the other adapter is created");
+    wait_for_changes(&listing, ONE_TOKEN);
+
+    assert_that!(listed(&listing), len 0);
+}
+
+fn created_with_name(node_name: &str) -> Result<(), CreationError> {
+    RmwZenohAdapter::create(
+        zenoh_config(),
+        &Config {
+            domain_id: domain_id(),
+            node_namespace: ROOT_NAMESPACE.to_string(),
+            node_name: node_name.to_string(),
+        },
+    )
+    .map(drop)
+}
+
+fn created_in_namespace(node_namespace: &str) -> Result<(), CreationError> {
+    RmwZenohAdapter::create(
+        zenoh_config(),
+        &Config {
+            domain_id: domain_id(),
+            node_namespace: node_namespace.to_string(),
+            node_name: GATEWAY_NAME.to_string(),
+        },
+    )
+    .map(drop)
+}
+
+#[test]
+fn empty_node_name_is_rejected() {
+    assert_that!(created_with_name(EMPTY_NAME), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn node_name_with_a_slash_is_rejected() {
+    assert_that!(created_with_name(NAME_WITH_SLASH), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn node_name_starting_with_a_digit_is_rejected() {
+    assert_that!(created_with_name(NAME_STARTING_WITH_DIGIT), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn node_name_with_an_unallowed_character_is_rejected() {
+    assert_that!(created_with_name(NAME_WITH_HYPHEN), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn empty_namespace_is_rejected() {
+    assert_that!(created_in_namespace(EMPTY_NAMESPACE), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn relative_namespace_is_rejected() {
+    assert_that!(created_in_namespace(RELATIVE_NAMESPACE), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn namespace_ending_with_a_slash_is_rejected() {
+    assert_that!(created_in_namespace(NAMESPACE_WITH_TRAILING_SLASH), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn namespace_with_a_repeated_slash_is_rejected() {
+    assert_that!(created_in_namespace(NAMESPACE_WITH_REPEATED_SLASH), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn namespace_token_starting_with_a_digit_is_rejected() {
+    assert_that!(created_in_namespace(NAMESPACE_TOKEN_STARTING_WITH_DIGIT), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn namespace_with_an_unallowed_character_is_rejected() {
+    assert_that!(created_in_namespace(NAMESPACE_WITH_HYPHEN), eq Err(CreationError::InvalidNode));
+}
+
+#[test]
+fn nested_namespace_and_name_with_digits_and_underscores_are_accepted() {
+    let domain_id = domain_id();
+    let _adapter = created(
+        zenoh_config(),
+        &Config {
+            domain_id,
+            node_namespace: NESTED_NAMESPACE.to_string(),
+            node_name: NAME_WITH_DIGIT_AND_UNDERSCORE.to_string(),
+        },
+    );
 }
