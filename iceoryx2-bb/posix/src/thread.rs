@@ -974,7 +974,7 @@ impl ScopedThreadBuilder<'_> {
     }
 }
 
-/// Creates a scoped thread. In contrast to the [`std::thread::scope()`] variant this
+/// Creates a scoped thread. In contrast to the `std::thread::scope()` variant this
 /// implementation allows the user to configure the thread properties in detail and set
 /// cpu affinity, priority and scheduler but the number of threads that can be spawned in
 /// the scope is limited to [`MAX_SCOPED_THREADS`].
