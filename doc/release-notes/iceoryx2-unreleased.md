@@ -64,6 +64,7 @@
 * [#2258](https://github.com/eclipse-iceoryx/iceoryx2/issues/2258) End the requests the ROS 2 gateway sent once no ROS 2 server serves the service
 * [#2264](https://github.com/eclipse-iceoryx/iceoryx2/issues/2264) Pass the coverage flags on to programs that link the C++ libraries
 * [#2265](https://github.com/eclipse-iceoryx/iceoryx2/issues/2265) Fix the example README commands that fail, the drop order of the C++ event multiplexing waiter and the leaks of the C blackboard examples
+* [#2268](https://github.com/eclipse-iceoryx/iceoryx2/issues/2268) Make clippy and rustdoc pass for every crate checked on its own
 
 ### Refactoring
 

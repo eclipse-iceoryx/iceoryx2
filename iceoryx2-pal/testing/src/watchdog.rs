@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[cfg(any(not(any(target_os = "windows", target_os = "macos")), feature = "std"))]
 const EXPIRY_MESSAGE: &str = "Watchdog expired. Aborting.";
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
