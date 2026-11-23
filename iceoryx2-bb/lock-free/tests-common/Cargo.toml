@@ -38,3 +38,6 @@ iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-print = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-bb-testing-macros = { workspace = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }

@@ -44,3 +44,6 @@ iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-print = { workspace = true }
 
 enum-iterator = { workspace = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
