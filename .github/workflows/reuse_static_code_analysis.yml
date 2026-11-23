@@ -78,6 +78,16 @@ jobs:
         run: |
           just verify sdk clippy --target x86_64-unknown-linux-musl --profile dev-fast-build
 
+      - name: Run cargo clippy and cargo doc for every crate on its own
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          CRATES=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[].name')
+          for CRATE in $CRATES; do
+            cargo clippy --no-deps --all-targets --profile dev-fast-build -p $CRATE -- -D warnings
+            cargo doc --no-deps --profile dev-fast-build -p $CRATE
+          done
+
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
