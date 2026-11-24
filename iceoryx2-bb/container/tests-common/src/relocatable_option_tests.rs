@@ -15,8 +15,10 @@ use core::mem::MaybeUninit;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
 use iceoryx2_bb_container::relocatable_option::RelocatableOption;
-use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_derive_macros::AtomicCopy;
+use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, placement_default::PlacementDefault};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing_macros::requires_std;
@@ -393,4 +395,61 @@ pub fn relocatable_to_native_conversion_works() {
     let native: Option<i32> = sut.into();
 
     assert_that!(sut.to_option(), eq native);
+}
+
+#[test]
+pub fn for_each_field_works() {
+    #[repr(C)]
+    #[derive(AtomicCopy, Copy, Clone, Debug, PartialEq, Eq)]
+    struct A {
+        a1: i32,
+        a2: B,
+    }
+
+    #[repr(C)]
+    #[derive(AtomicCopy, Copy, Clone, Debug, PartialEq, Eq)]
+    struct B(u8, u64);
+
+    let mut v = Vec::new();
+
+    let sut1 = RelocatableOption::<A>::Some(A { a1: 0, a2: B(0, 9) });
+    sut1.for_each_field(0, &mut |offset, size| {
+        v.push((offset, size));
+    });
+
+    assert_that!(v, len 4);
+    assert_that!(v[0], eq(0, 1));
+    assert_that!(v[1], eq(8, 4));
+    assert_that!(v[2], eq(16, 1));
+    assert_that!(v[3], eq(24, 8));
+
+    // The byte atomic uses RelocatableOption::for_each_field() to store the value (new()/write()).
+    // Reading the value just copies it byte-wise into a MaybeTorn. If for_each_field() is not
+    // correctly implemented, the MaybeTorn would contain an invalid RelocatableOption.
+    const SIZE: usize = size_of::<RelocatableOption<A>>();
+    let byte_atomic = FixedSizeByteAtomic::<RelocatableOption<A>, SIZE>::new(sut1);
+    let mut read_value = unsafe { byte_atomic.read().assume_consistent() };
+    assert_that!(read_value, is_some);
+    assert_that!(read_value, eq sut1);
+
+    let sut2 = RelocatableOption::<A>::Some(A {
+        a1: -876,
+        a2: B(54, 321),
+    });
+    byte_atomic.write(sut2);
+    read_value = unsafe { byte_atomic.read().assume_consistent() };
+    assert_that!(read_value, is_some);
+    assert_that!(read_value, eq sut2);
+
+    byte_atomic.write(RelocatableOption::None);
+    read_value = unsafe { byte_atomic.read().assume_consistent() };
+    assert_that!(read_value, is_none);
+
+    v.clear();
+    read_value.for_each_field(0, &mut |offset, size| {
+        v.push((offset, size));
+    });
+
+    assert_that!(v, len 1);
+    assert_that!(v[0], eq(0, 1));
 }
