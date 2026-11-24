@@ -17,8 +17,9 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
+use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary_traits::{
-    placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
+    atomic_copy::AtomicCopy, placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_log::fatal_panic;
 use serde::{Deserialize, Serialize, de::Visitor};
@@ -79,6 +80,21 @@ pub enum RelocatableOption<T> {
     None,
     /// Defines an [`RelocatableOption`] that contains the provided type `T`.
     Some(T),
+}
+
+unsafe impl<T: AtomicCopy> AtomicCopy for RelocatableOption<T> {
+    fn for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        let aligned_base_offset = align_to::<Self>(base_offset);
+        callback(aligned_base_offset, 1); // the discriminant starts at offset 0 and occupies 1 byte due to repr(u8)
+        if self.is_some() {
+            let abs_offset = aligned_base_offset + align_of::<Self>();
+            T::for_each_field(
+                &self.expect("RelocatableOption contains value"),
+                abs_offset,
+                callback,
+            );
+        }
+    }
 }
 
 impl<T> From<Option<T>> for RelocatableOption<T> {
