@@ -96,9 +96,7 @@ use core::alloc::Layout;
 use core::fmt::Debug;
 use core::ptr::NonNull;
 
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::atomic::fence;
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering, fence};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -220,7 +218,7 @@ impl Drop for UniqueIndex<'_> {
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
 pub struct UniqueIndexSet {
-    data_ptr: RelocatablePointer<UnsafeCell<u32>>,
+    data_ptr: RelocatablePointer<AtomicU32>,
     capacity: u32,
     pub(crate) head: AtomicU64,
     is_memory_initialized: AtomicBool,
@@ -401,7 +399,7 @@ impl UniqueIndexSet {
             }
 
             let new_value = HeadDetails {
-                head: *self.get_next_free_index(old.head),
+                head: self.get_next_free_index(old.head).load(Ordering::Relaxed),
                 aba: old.aba.wrapping_add(1),
                 borrowed_indices: old.borrowed_indices + 1,
             }
@@ -422,7 +420,8 @@ impl UniqueIndexSet {
         }
 
         let index = old.head;
-        *self.get_next_free_index(index) = self.capacity + 1;
+        self.get_next_free_index(index)
+            .store(self.capacity + 1, Ordering::Relaxed);
 
         fence(Ordering::Acquire);
         Ok(index)
@@ -449,7 +448,8 @@ impl UniqueIndexSet {
         let mut old = HeadDetails::from(old_value);
 
         loop {
-            *self.get_next_free_index(index) = old.head;
+            self.get_next_free_index(index)
+                .store(old.head, Ordering::Relaxed);
 
             let borrowed_indices =
                 if mode == ReleaseMode::LockIfLastIndex && old.borrowed_indices == 1 {
@@ -484,13 +484,9 @@ impl UniqueIndexSet {
         }
     }
 
-    #[allow(clippy::mut_from_ref)]
     // convenience function to access internally mutable object
-    fn get_next_free_index(&self, index: u32) -> &mut u32 {
-        #[deny(clippy::mut_from_ref)]
-        unsafe {
-            &mut *(*self.data_ptr.as_ptr().offset(index as isize)).get()
-        }
+    fn get_next_free_index(&self, index: u32) -> &AtomicU32 {
+        unsafe { &(*self.data_ptr.as_ptr().offset(index as isize)) }
     }
 }
 
