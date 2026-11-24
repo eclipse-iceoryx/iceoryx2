@@ -50,7 +50,6 @@ use core::{alloc::Layout, fmt::Debug};
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::{
@@ -64,11 +63,11 @@ use iceoryx2_log::{fail, fatal_panic};
 /// The [`Producer`] of the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`]
 /// which can add values to it via [`Producer::push()`].
 #[derive(Debug)]
-pub struct Producer<'a, PointerType: Pointer<UnsafeCell<u64>>> {
+pub struct Producer<'a, PointerType: Pointer<AtomicU64>> {
     queue: &'a details::SafelyOverflowingIndexQueue<PointerType>,
 }
 
-impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
+impl<PointerType: Pointer<AtomicU64> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
     /// If the queue is full it returns the oldest index.
     pub fn push(&mut self, t: u64) -> Option<u64> {
@@ -76,7 +75,7 @@ impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
     }
 }
 
-impl<PointerType: Pointer<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
+impl<PointerType: Pointer<AtomicU64>> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_producer.store(
             true,
@@ -90,11 +89,11 @@ impl<PointerType: Pointer<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
 /// The [`Consumer`] of the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`]
 /// which can acquire values from it via [`Consumer::pop()`].
 #[derive(Debug)]
-pub struct Consumer<'a, PointerType: Pointer<UnsafeCell<u64>>> {
+pub struct Consumer<'a, PointerType: Pointer<AtomicU64>> {
     queue: &'a details::SafelyOverflowingIndexQueue<PointerType>,
 }
 
-impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
+impl<PointerType: Pointer<AtomicU64> + Debug> Consumer<'_, PointerType> {
     /// Acquires a value from the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
     /// If the queue is empty it returns [`None`] otherwise the value.
     pub fn pop(&mut self) -> Option<u64> {
@@ -102,7 +101,7 @@ impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
     }
 }
 
-impl<PointerType: Pointer<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
+impl<PointerType: Pointer<AtomicU64>> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_consumer.store(
             true,
@@ -115,11 +114,11 @@ impl<PointerType: Pointer<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
 
 /// Non-relocatable version of the safely overflowing index queue
 pub type SafelyOverflowingIndexQueue =
-    details::SafelyOverflowingIndexQueue<OwningPointer<UnsafeCell<u64>>>;
+    details::SafelyOverflowingIndexQueue<OwningPointer<AtomicU64>>;
 
 /// Relocatable version of the safely overflowing index queue
 pub type RelocatableSafelyOverflowingIndexQueue =
-    details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
+    details::SafelyOverflowingIndexQueue<RelocatablePointer<AtomicU64>>;
 
 pub mod details {
     use core::ptr::NonNull;
@@ -132,7 +131,7 @@ pub mod details {
     /// and overridden with the newest element.
     #[derive(Debug)]
     #[repr(C)]
-    pub struct SafelyOverflowingIndexQueue<PointerType: Pointer<UnsafeCell<u64>>> {
+    pub struct SafelyOverflowingIndexQueue<PointerType: Pointer<AtomicU64>> {
         data_ptr: PointerType,
         pub(super) has_producer: AtomicBool,
         pub(super) has_consumer: AtomicBool,
@@ -142,25 +141,19 @@ pub mod details {
         read_position: AtomicU64,
     }
 
-    unsafe impl<PointerType: Pointer<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: Pointer<AtomicU64> + ZeroCopySend> ZeroCopySend
         for SafelyOverflowingIndexQueue<PointerType>
     {
     }
-    unsafe impl<PointerType: Pointer<UnsafeCell<u64>>> Sync
-        for SafelyOverflowingIndexQueue<PointerType>
-    {
-    }
-    unsafe impl<PointerType: Pointer<UnsafeCell<u64>>> Send
-        for SafelyOverflowingIndexQueue<PointerType>
-    {
-    }
+    unsafe impl<PointerType: Pointer<AtomicU64>> Sync for SafelyOverflowingIndexQueue<PointerType> {}
+    unsafe impl<PointerType: Pointer<AtomicU64>> Send for SafelyOverflowingIndexQueue<PointerType> {}
 
-    impl SafelyOverflowingIndexQueue<OwningPointer<UnsafeCell<u64>>> {
+    impl SafelyOverflowingIndexQueue<OwningPointer<AtomicU64>> {
         pub fn new(capacity: usize) -> Self {
-            let mut data_ptr = OwningPointer::<UnsafeCell<u64>>::new_with_alloc(capacity + 1);
+            let mut data_ptr = OwningPointer::<AtomicU64>::new_with_alloc(capacity + 1);
 
             for i in 0..capacity + 1 {
-                unsafe { data_ptr.as_mut_ptr().add(i).write(UnsafeCell::new(0)) };
+                unsafe { data_ptr.as_mut_ptr().add(i).write(AtomicU64::new(0)) };
             }
 
             Self {
@@ -175,7 +168,7 @@ pub mod details {
         }
     }
 
-    impl RelocatableContainer for SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>> {
+    impl RelocatableContainer for SafelyOverflowingIndexQueue<RelocatablePointer<AtomicU64>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             unsafe {
                 Self {
@@ -200,14 +193,14 @@ pub mod details {
             unsafe {
                 self.data_ptr.init(fail!(from self, when allocator
             .allocate( Layout::from_size_align_unchecked(
-                    core::mem::size_of::<u64>() * (self.capacity + 1),
-                    core::mem::align_of::<u64>())),
+                    core::mem::size_of::<AtomicU64>() * (self.capacity + 1),
+                    core::mem::align_of::<AtomicU64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
                 for i in 0..self.capacity + 1 {
-                    (self.data_ptr.as_ptr() as *mut UnsafeCell<usize>)
+                    (self.data_ptr.as_ptr() as *mut AtomicU64)
                         .add(i)
-                        .write(UnsafeCell::new(0));
+                        .write(AtomicU64::new(0));
                 }
             }
             self.is_memory_initialized.store(true, Ordering::Relaxed);
@@ -219,7 +212,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> SafelyOverflowingIndexQueue<PointerType> {
+    impl<PointerType: Pointer<AtomicU64> + Debug> SafelyOverflowingIndexQueue<PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -231,16 +224,15 @@ pub mod details {
         /// Returns the amount of memory required to create a [`SafelyOverflowingIndexQueue`] with
         /// the provided capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<UnsafeCell<u64>>(capacity + 1)
+            unaligned_mem_size::<AtomicU64>(capacity + 1)
         }
 
-        fn at(&self, position: u64) -> *mut u64 {
+        fn at(&self, position: u64) -> &AtomicU64 {
             unsafe {
-                (*self
+                &*self
                     .data_ptr
                     .as_ptr()
-                    .add((position % (self.capacity as u64 + 1)) as usize))
-                .get()
+                    .add((position % (self.capacity as u64 + 1)) as usize)
             }
         }
         /// Acquires the [`Producer`] of the [`SafelyOverflowingIndexQueue`]. This is threadsafe and
@@ -337,7 +329,7 @@ pub mod details {
             let read_position = self.read_position.load(Ordering::Relaxed);
             let is_full = write_position == read_position + self.capacity as u64;
 
-            unsafe { self.at(write_position).write(value) };
+            self.at(write_position).store(value, Ordering::Relaxed);
 
             ////////////////
             // SYNC POINT W
@@ -359,7 +351,7 @@ pub mod details {
                     )
                     .is_ok()
             {
-                let value = unsafe { *self.at(read_position) };
+                let value = self.at(read_position).load(Ordering::Relaxed);
                 Some(value)
             } else {
                 None
@@ -388,7 +380,7 @@ pub mod details {
 
             let mut value;
             loop {
-                value = unsafe { *self.at(read_position) };
+                value = self.at(read_position).load(Ordering::Relaxed);
 
                 match self.read_position.compare_exchange(
                     read_position,
@@ -456,8 +448,8 @@ pub mod details {
 #[repr(C)]
 pub struct FixedSizeSafelyOverflowingIndexQueue<const CAPACITY: usize> {
     state: RelocatableSafelyOverflowingIndexQueue,
-    data: [UnsafeCell<u64>; CAPACITY],
-    data_plus_one: UnsafeCell<u64>,
+    data: [AtomicU64; CAPACITY],
+    data_plus_one: AtomicU64,
 }
 
 unsafe impl<const CAPACITY: usize> Sync for FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {}
@@ -474,8 +466,8 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     pub fn new() -> Self {
         let mut new_self = Self {
             state: unsafe { RelocatableSafelyOverflowingIndexQueue::new_uninit(CAPACITY) },
-            data: [const { UnsafeCell::new(0) }; CAPACITY],
-            data_plus_one: UnsafeCell::new(0),
+            data: [const { AtomicU64::new(0) }; CAPACITY],
+            data_plus_one: AtomicU64::new(0),
         };
 
         // SAFETY: Creating a pointer to an existing member is always not null
@@ -497,12 +489,12 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     }
 
     /// See [`SafelyOverflowingIndexQueue::acquire_producer()`]
-    pub fn acquire_producer(&self) -> Option<Producer<'_, RelocatablePointer<UnsafeCell<u64>>>> {
+    pub fn acquire_producer(&self) -> Option<Producer<'_, RelocatablePointer<AtomicU64>>> {
         self.state.acquire_producer()
     }
 
     /// See [`SafelyOverflowingIndexQueue::acquire_consumer()`]
-    pub fn acquire_consumer(&self) -> Option<Consumer<'_, RelocatablePointer<UnsafeCell<u64>>>> {
+    pub fn acquire_consumer(&self) -> Option<Consumer<'_, RelocatablePointer<AtomicU64>>> {
         self.state.acquire_consumer()
     }
 
