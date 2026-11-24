@@ -224,6 +224,8 @@ _test-integrations-ros2 toolchain target_triplet profile has_nostd has_doc extra
         source "{{INTEGRATIONS_ROS2_MESSAGES_INSTALL_BASE}}/setup.bash"
     fi
     export CARGO_TARGET_DIR="{{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}"
+    export FASTRTPS_DEFAULT_PROFILES_FILE="{{INTEGRATIONS_ROS2_DIR}}/link-adapter/tests/fastdds_intraprocess_off.xml"
+    export FASTDDS_DEFAULT_PROFILES_FILE="$FASTRTPS_DEFAULT_PROFILES_FILE"
 
     if [ "{{has_nostd}}" = "true" ]; then
         echo "Error: the ros2 workspace cannot be built with --no_std" >&2
