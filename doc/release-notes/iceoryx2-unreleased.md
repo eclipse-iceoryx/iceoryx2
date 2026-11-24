@@ -30,6 +30,7 @@
 * [#2179](https://github.com/eclipse-iceoryx/iceoryx2/issues/2179) Add `chmod` and `chown` to POSIX abstraction
 * [#2184](https://github.com/eclipse-iceoryx/iceoryx2/issues/2184) Add option to override the service types for the language bindings with a custom implementation
 * [#2209](https://github.com/eclipse-iceoryx/iceoryx2/issues/2209) Record flatbuffer root type in the type name of flatbuffer payloads
+* [#2271](https://github.com/eclipse-iceoryx/iceoryx2/issues/2271) Implement `AtomicCopy` for `RelocatableOption`
 
 ### Bugfixes
 
@@ -65,6 +66,7 @@
 * [#2264](https://github.com/eclipse-iceoryx/iceoryx2/issues/2264) Pass the coverage flags on to programs that link the C++ libraries
 * [#2265](https://github.com/eclipse-iceoryx/iceoryx2/issues/2265) Fix the example README commands that fail, the drop order of the C++ event multiplexing waiter and the leaks of the C blackboard examples
 * [#2268](https://github.com/eclipse-iceoryx/iceoryx2/issues/2268) Make clippy and rustdoc pass for every crate checked on its own
+* [#2275](https://github.com/eclipse-iceoryx/iceoryx2/issues/2275) Fix data race in `UniqueIndexSet`
 
 ### Refactoring
 
