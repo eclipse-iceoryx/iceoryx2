@@ -41,6 +41,20 @@ unsafe impl<Service: crate::service::Service, T: DataSegmentSharedState> Send
 {
 }
 
+impl<Service: crate::service::Service, T: DataSegmentSharedState> Clone
+    for ChunkMutInnerSharedState<Service, T>
+{
+    fn clone(&self) -> Self {
+        Self {
+            port_shared_state: self.port_shared_state.clone(),
+            offset_to_chunk: AtomicU64::new(self.offset_to_chunk.load(Ordering::Relaxed)),
+            shm_raw_ptr: AtomicUsize::new(self.shm_raw_ptr.load(Ordering::Relaxed)),
+            slice_len: AtomicUsize::new(self.slice_len.load(Ordering::Relaxed)),
+            owns_loan: AtomicBool::new(false),
+        }
+    }
+}
+
 impl<Service: crate::service::Service, T: DataSegmentSharedState> Abandonable
     for ChunkMutInnerSharedState<Service, T>
 {
@@ -90,26 +104,6 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> Debug
     }
 }
 
-impl<Service: crate::service::Service, T: DataSegmentSharedState> Clone
-    for ChunkMutSharedState<Service, T>
-{
-    fn clone(&self) -> Self {
-        let shared = self.share();
-        let cloned_shared = OnceCell::new();
-        cloned_shared.get_or_init(|| shared.clone());
-        Self {
-            owned: ChunkMutInnerSharedState {
-                port_shared_state: self.owned.port_shared_state.clone(),
-                offset_to_chunk: AtomicU64::new(0),
-                shm_raw_ptr: AtomicUsize::new(0),
-                slice_len: AtomicUsize::new(0),
-                owns_loan: AtomicBool::new(false),
-            },
-            shared: cloned_shared,
-        }
-    }
-}
-
 impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutSharedState<Service, T> {
     pub fn new(port_shared_state: &Service::ArcThreadSafetyPolicy<T>, chunk: &ChunkMut) -> Self {
         Self {
@@ -124,15 +118,24 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutShared
         }
     }
 
+    pub fn clone_sharing_chunk_ownership(&self) -> Self {
+        let shared = self.share();
+        let cloned_shared = OnceCell::new();
+        cloned_shared.get_or_init(|| shared.clone());
+        Self {
+            owned: self.owned.clone(),
+            shared: cloned_shared,
+        }
+    }
+
+    /// The first call moves the ownership of the chunk into the shared state. From then on
+    /// every copy holds the shared state, and the chunk is returned when the last holder is
+    /// dropped.
     fn share(&self) -> &Service::ArcThreadSafetyPolicy<ChunkMutInnerSharedState<Service, T>> {
         self.shared.get_or_init(|| {
-            let state = match Service::ArcThreadSafetyPolicy::new(ChunkMutInnerSharedState {
-                port_shared_state: self.owned.port_shared_state.clone(),
-                offset_to_chunk: AtomicU64::new(self.owned.offset_to_chunk.load(Ordering::Relaxed)),
-                shm_raw_ptr: AtomicUsize::new(self.owned.shm_raw_ptr.load(Ordering::Relaxed)),
-                slice_len: AtomicUsize::new(self.owned.slice_len.load(Ordering::Relaxed)),
-                owns_loan: AtomicBool::new(true),
-            }) {
+            let inner = self.owned.clone();
+            inner.owns_loan.store(true, Ordering::Relaxed);
+            let state = match Service::ArcThreadSafetyPolicy::new(inner) {
                 Ok(v) => v,
                 Err(e) => {
                     fatal_panic!(from "ChunkMutSharedState::share()",
@@ -163,7 +166,7 @@ impl<Service: crate::service::Service, T: DataSegmentSharedState> ChunkMutShared
         &self,
         chunk: &ChunkMut,
     ) -> ResizableMemory<ShmPointer, ChunkMutSharedState<Service, T>> {
-        let memory = self.clone();
+        let memory = self.clone_sharing_chunk_ownership();
         let state = self.share().lock();
         let port_state = state.port_shared_state.lock();
         let allocation_strategy = port_state.allocation_strategy();

@@ -200,7 +200,7 @@ impl<
 
         RequestMut {
             chunk: self.chunk.clone(),
-            shared_state: self.shared_state.clone(),
+            shared_state: self.shared_state.clone_sharing_chunk_ownership(),
             was_sample_sent: false,
             channel_id: self.channel_id,
             _request_payload: PhantomData,

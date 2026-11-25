@@ -189,7 +189,7 @@ impl<Service: crate::service::Service, ResponsePayload, ResponseHeader: Debug + 
 
         ResponseMut {
             shared_loan_counter: self.shared_loan_counter.clone(),
-            shared_state: self.shared_state.clone(),
+            shared_state: self.shared_state.clone_sharing_chunk_ownership(),
             connection_id: self.connection_id,
             chunk: self.chunk.clone(),
             channel_id: self.channel_id,
