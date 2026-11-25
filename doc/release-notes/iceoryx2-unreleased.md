@@ -51,6 +51,7 @@
 * [#2124](https://github.com/eclipse-iceoryx/iceoryx2/issues/2124) Remove clone impl from RelocatablePointer
 * [#2137](https://github.com/eclipse-iceoryx/iceoryx2/issues/2137) Fix typo in `BackpressureAction` enum
 * [#2142](https://github.com/eclipse-iceoryx/iceoryx2/issues/2142) Initialize the node counter of the global management segment when the segment is created
+* [#2144](https://github.com/eclipse-iceoryx/iceoryx2/issues/2144) Remove the service tag after the service resources, so that a process killed while removing a service no longer leaves the service unusable
 * [#2195](https://github.com/eclipse-iceoryx/iceoryx2/issues/2195) Keep thread names terminated on macOS and reject names that do not fit
 * [#2215](https://github.com/eclipse-iceoryx/iceoryx2/issues/2215) Add missing `slice_len` function in `PendingResponse`
 * [#2219](https://github.com/eclipse-iceoryx/iceoryx2/issues/2219) Return `LoanError` instead of crashing when a C++ loan with a user header fails

@@ -265,6 +265,7 @@ pub(crate) mod naming_scheme;
 pub mod resource;
 
 use core::fmt::Debug;
+use core::mem::ManuallyDrop;
 use core::ptr::NonNull;
 use core::time::Duration;
 
@@ -461,14 +462,14 @@ pub struct ServiceDetails<S: Service> {
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
 pub struct ServiceState<S: Service, R: ServiceResource> {
-    pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig<S::Bag>>,
-    pub(crate) additional_resource: R,
+    pub(crate) dynamic_storage: ManuallyDrop<S::DynamicStorage<DynamicConfig<S::Bag>>>,
+    pub(crate) additional_resource: ManuallyDrop<R>,
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: SharedNode<S>,
 
     // IMPORTANT: The static service config must be removed last since it contains the details about all
     // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
-    pub(crate) static_storage: S::StaticStorage,
+    pub(crate) static_storage: ManuallyDrop<S::StaticStorage>,
 }
 
 impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
@@ -476,11 +477,11 @@ impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
         let this = unsafe { this.as_mut() };
 
         unsafe {
-            S::DynamicStorage::abandon_in_place(NonNull::from_mut(&mut this.dynamic_storage))
+            S::DynamicStorage::abandon_in_place(NonNull::from_mut(&mut *this.dynamic_storage))
         };
-        unsafe { R::abandon_in_place(NonNull::from_mut(&mut this.additional_resource)) };
+        unsafe { R::abandon_in_place(NonNull::from_mut(&mut *this.additional_resource)) };
         unsafe { SharedNode::<S>::abandon_in_place(NonNull::from_mut(&mut this.shared_node)) };
-        unsafe { S::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.static_storage)) };
+        unsafe { S::StaticStorage::abandon_in_place(NonNull::from_mut(&mut *this.static_storage)) };
     }
 }
 
@@ -537,9 +538,9 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
         let new_self = Self {
             static_config,
             shared_node,
-            dynamic_storage,
-            static_storage,
-            additional_resource,
+            dynamic_storage: ManuallyDrop::new(dynamic_storage),
+            static_storage: ManuallyDrop::new(static_storage),
+            additional_resource: ManuallyDrop::new(additional_resource),
         };
         trace!(from "Service::open()", "open service: {} ({:?})",
             new_self.static_config.name(), new_self.static_config.service_hash());
@@ -551,6 +552,7 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
         let hash = self.static_config.service_hash();
+        let mut removed = false;
         self.shared_node.registered_services().remove(hash, |handle| {
             match self.dynamic_storage.get().deregister_node_id(handle) {
                 Ok(DeregisterNodeState::HasOwners) => {
@@ -561,6 +563,10 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
                     self.additional_resource.acquire_ownership();
+                    unsafe { ManuallyDrop::drop(&mut self.dynamic_storage) };
+                    unsafe { ManuallyDrop::drop(&mut self.additional_resource) };
+                    unsafe { ManuallyDrop::drop(&mut self.static_storage) };
+                    removed = true;
                     trace!(from origin, "close and remove service: {} ({:?})",
                             self.static_config.name(), hash);
                 }
@@ -573,12 +579,20 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
             // The service tag must be removed after the node was deregistered from the dynamic
             // config. If this is reordered one has to search through all available services to
             // ensure that the node is not connected to another service.
+            // It must also be removed after the service resources, so that a crash during the
+            // removal leaves the tag for the dead node cleanup.
             if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), hash, self.shared_node.config())
             {
                 debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",
                         self.shared_node.id(), e);
             }
         });
+
+        if !removed {
+            unsafe { ManuallyDrop::drop(&mut self.dynamic_storage) };
+            unsafe { ManuallyDrop::drop(&mut self.additional_resource) };
+            unsafe { ManuallyDrop::drop(&mut self.static_storage) };
+        }
     }
 }
 
