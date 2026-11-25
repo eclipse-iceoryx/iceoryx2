@@ -69,6 +69,7 @@
 * [#2265](https://github.com/eclipse-iceoryx/iceoryx2/issues/2265) Fix the example README commands that fail, the drop order of the C++ event multiplexing waiter and the leaks of the C blackboard examples
 * [#2268](https://github.com/eclipse-iceoryx/iceoryx2/issues/2268) Make clippy and rustdoc pass for every crate checked on its own
 * [#2275](https://github.com/eclipse-iceoryx/iceoryx2/issues/2275) Fix data race in `UniqueIndexSet`
+* [#2280](https://github.com/eclipse-iceoryx/iceoryx2/issues/2280) Store the used chunk lists of a connection as bits, which makes them 8 times smaller
 
 ### Refactoring
 
