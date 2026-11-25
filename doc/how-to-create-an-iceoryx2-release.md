@@ -55,6 +55,8 @@ release blog-article.
 * Test if Yocto builds and runs with the current codebase
 * Check if the new features are marked as done, e.g. `README.md`, `ROADMAP.md`,
   etc.
+* Check if new versions of the language bindings are available and update them
+  in the `README.md`
 * Grep for 'planned'
 * Verify to be on the right branch, e.g. 'main' or 'release-x.y'
 * Check the code examples in the documentation:
