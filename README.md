@@ -160,21 +160,21 @@ The support levels can be adjusted when required.
 
 ## Language Bindings
 
-| Language   | State       | Version | Maintainer                 | Link                                               |
-| :--------- | :---------: | :-----: | :------------------------- | :------------------------------------------------- |
-| C          | done        | latest  | core team                  | https://github.com/eclipse-iceoryx/iceoryx2        |
-| C++        | done        | latest  | core team                  | https://github.com/eclipse-iceoryx/iceoryx2        |
-| C#         | done        | v0.8.1  | https://github.com/patdhlk | https://github.com/eclipse-iceoryx/iceoryx2-csharp |
-| Dart       | planned     |         |                            |                                                    |
-| Delphi     | done        | v0.10.0 | https://github.com/neslib  | https://github.com/neslib/Neslib.Iceoryx2          |
-| Go         | in progress |         |                            | https://github.com/eclipse-iceoryx/iceoryx2-go     |
-| Java       | planned     |         |                            |                                                    |
-| Kotlin     | planned     |         |                            |                                                    |
-| Lua        | planned     |         |                            |                                                    |
-| Python     | done        | latest  | core team                  | https://github.com/eclipse-iceoryx/iceoryx2        |
-| Swift      | planned     |         |                            |                                                    |
-| Typescript | planned     |         |                            |                                                    |
-| Zig        | planned     |         |                            |                                                    |
+| Language   | State       | Version | Maintainer                                               | Link                                                                                                     |
+| :--------- | :---------: | :-----: | :------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| C          | done        | latest  | core team                                                | [https://github.com/eclipse-iceoryx/iceoryx2](https://github.com/eclipse-iceoryx/iceoryx2)               |
+| C++        | done        | latest  | core team                                                | [https://github.com/eclipse-iceoryx/iceoryx2](https://github.com/eclipse-iceoryx/iceoryx2)               |
+| C#         | done        | v0.8.1  | [https://github.com/patdhlk](https://github.com/patdhlk) | [https://github.com/eclipse-iceoryx/iceoryx2-csharp](https://github.com/eclipse-iceoryx/iceoryx2-csharp) |
+| Dart       | planned     |         |                                                          |                                                                                                          |
+| Delphi     | done        | v0.10.0 | [https://github.com/neslib](https://github.com/neslib)   | [https://github.com/neslib/Neslib.Iceoryx2](https://github.com/neslib/Neslib.Iceoryx2)                   |
+| Go         | in progress |         |                                                          | [https://github.com/eclipse-iceoryx/iceoryx2-go](https://github.com/eclipse-iceoryx/iceoryx2-go)         |
+| Java       | planned     |         |                                                          |                                                                                                          |
+| Kotlin     | planned     |         |                                                          |                                                                                                          |
+| Lua        | planned     |         |                                                          |                                                                                                          |
+| Python     | done        | latest  | core team                                                | [https://github.com/eclipse-iceoryx/iceoryx2](https://github.com/eclipse-iceoryx/iceoryx2)               |
+| Swift      | planned     |         |                                                          |                                                                                                          |
+| Typescript | planned     |         |                                                          |                                                                                                          |
+| Zig        | planned     |         |                                                          |                                                                                                          |
 
 ## Commercial Support
 
