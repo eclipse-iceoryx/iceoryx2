@@ -40,5 +40,6 @@ pub mod service_request_response_builder;
 pub mod service_request_response_flatbuffer;
 pub mod subscriber;
 pub mod unique_id_generator;
+pub mod user_trigger;
 pub mod waitset;
 pub mod writer;
