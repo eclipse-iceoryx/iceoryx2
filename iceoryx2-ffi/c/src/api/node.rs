@@ -14,9 +14,10 @@
 
 use crate::api::cleanup_state::iox2_cleanup_state_t;
 use crate::api::{
-    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ServiceBuilderUnion, WaitSetBuilderUnion,
-    iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr,
-    iox2_service_builder_h, iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ServiceBuilderUnion, UserTriggerUnion,
+    WaitSetBuilderUnion, iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr,
+    iox2_node_name_ptr, iox2_service_builder_h, iox2_service_builder_t, iox2_service_name_ptr,
+    iox2_service_type_e, iox2_user_trigger_h, iox2_user_trigger_t,
 };
 use crate::{iox2_messaging_pattern_e, iox2_waitset_builder_h, iox2_waitset_builder_t};
 
@@ -855,6 +856,73 @@ pub unsafe extern "C" fn iox2_node_waitset_builder(
 
         (*waitset_builder_struct_ptr).as_handle()
     }
+}
+
+/// Creates a user trigger that wakes up a WaitSet from any thread of the process.
+///
+/// # Arguments
+///
+/// * `node_handle` - Must be a valid [`iox2_node_h_ref`] obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)
+/// * `user_trigger_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_user_trigger_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `user_trigger_handle_ptr` - An uninitialized or dangling [`iox2_user_trigger_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_user_trigger_create_error_e`](crate::iox2_user_trigger_create_error_e) otherwise.
+///
+/// # Safety
+///
+/// * The `node_handle` is still valid after the return of this function and can be use in another function call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_node_create_user_trigger(
+    node_handle: iox2_node_h_ref,
+    user_trigger_struct_ptr: *mut iox2_user_trigger_t,
+    user_trigger_handle_ptr: *mut iox2_user_trigger_h,
+) -> c_int {
+    node_handle.assert_non_null();
+    debug_assert!(!user_trigger_handle_ptr.is_null());
+
+    let mut user_trigger_struct_ptr = user_trigger_struct_ptr;
+    fn no_op(_: *mut iox2_user_trigger_t) {}
+    let mut deleter: fn(*mut iox2_user_trigger_t) = no_op;
+    if user_trigger_struct_ptr.is_null() {
+        user_trigger_struct_ptr = iox2_user_trigger_t::alloc();
+        deleter = iox2_user_trigger_t::dealloc;
+    }
+    debug_assert!(!user_trigger_struct_ptr.is_null());
+    unsafe {
+        let node = &mut *node_handle.as_type();
+        match node.service_type {
+            iox2_service_type_e::IPC => match node.value.as_ref().ipc.create_user_trigger() {
+                Ok(user_trigger) => {
+                    (*user_trigger_struct_ptr).init(
+                        node.service_type,
+                        UserTriggerUnion::new_ipc(user_trigger),
+                        deleter,
+                    );
+                }
+                Err(error) => {
+                    deleter(user_trigger_struct_ptr);
+                    return error.into_c_int();
+                }
+            },
+            iox2_service_type_e::LOCAL => match node.value.as_ref().local.create_user_trigger() {
+                Ok(user_trigger) => {
+                    (*user_trigger_struct_ptr).init(
+                        node.service_type,
+                        UserTriggerUnion::new_local(user_trigger),
+                        deleter,
+                    );
+                }
+                Err(error) => {
+                    deleter(user_trigger_struct_ptr);
+                    return error.into_c_int();
+                }
+            },
+        }
+
+        *user_trigger_handle_ptr = (*user_trigger_struct_ptr).as_handle();
+    }
+    IOX2_OK
 }
 
 /// This function needs to be called to destroy the node!
