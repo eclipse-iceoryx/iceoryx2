@@ -25,7 +25,7 @@ use r2r_rcl::{
 use super::flatbuffer::{
     FieldPlacement, Slot, StructIndex, StructOffset, TableIndex, TablePlacement,
 };
-use super::model::{Kind, Model, ValueIndex};
+use super::model::{Kind, Model, ModelIndex, ValueIndex};
 use super::{cdr, flatbuffer};
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -132,6 +132,42 @@ impl<'a> Compiler<'a> {
                 refusal,
             })?;
 
+            // A sequence of messages is one value of this model. The message
+            // it repeats is compiled separately, and the value refers to that
+            // model.
+            if member.type_id_ == introspection::MESSAGE && introspection::is_sequence(member) {
+                let Some(element) = schema::element_object(self.schema, field) else {
+                    fail!(
+                        from origin,
+                        with CompileError { path, refusal: mismatch(member, field) },
+                        "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+                    );
+                };
+                let message = unsafe { introspection::message(member) };
+                let (model, field_kind) = if element.is_struct() {
+                    let model = unsafe { self.add_repeated_struct(element, message, &path)? };
+                    (model, flatbuffer::FieldKind::StructVector(model))
+                } else {
+                    let model = unsafe { self.add_repeated_table(element, message, &path)? };
+                    (model, flatbuffer::FieldKind::TableVector(model))
+                };
+
+                let placement = FieldPlacement::Table(Slot {
+                    table,
+                    vtable_offset: field.offset(),
+                });
+                let index = self.add_value(
+                    Kind::MessageSequence(model),
+                    cdr::MemberKind::MessageSequence(model),
+                    placement,
+                    field_kind,
+                );
+                self.compiled.flatbuffer.tables[usize::from(table.0)]
+                    .values
+                    .push(index);
+                continue;
+            }
+
             // Define a nested table or a struct at the field to hold a nested
             // message.
             if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
@@ -199,7 +235,8 @@ impl<'a> Compiler<'a> {
 
         // Add the values of the struct, which starts at the first byte of
         // its own entry.
-        unsafe { self.add_struct_values(object, message, entry, START_OF_STRUCT, path)? };
+        let target = StructRef::Entry(entry);
+        unsafe { self.add_struct_values(object, message, target, START_OF_STRUCT, path)? };
 
         // Order the values of the struct by their offsets.
         let layout = &mut self.compiled.flatbuffer;
@@ -213,7 +250,8 @@ impl<'a> Compiler<'a> {
 
     /// Adds the values of a message to the struct that holds them.
     ///
-    /// `offset` is where `object` starts within the struct at `entry`.
+    /// `offset` is where `object` starts within the struct that `target`
+    /// refers to.
     ///
     /// # Safety
     ///
@@ -222,7 +260,7 @@ impl<'a> Compiler<'a> {
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
-        entry: StructIndex,
+        target: StructRef,
         offset: StructOffset,
         path: &str,
     ) -> Result<(), CompileError> {
@@ -250,7 +288,7 @@ impl<'a> Compiler<'a> {
                     }
                 };
                 let message = unsafe { introspection::message(member) };
-                unsafe { self.add_struct_values(nested, message, entry, offset, &path)? };
+                unsafe { self.add_struct_values(nested, message, target, offset, &path)? };
                 continue;
             }
 
@@ -258,15 +296,97 @@ impl<'a> Compiler<'a> {
             let (kind, member_kind, field_kind) =
                 kinds(member, field).map_err(|refusal| CompileError { path, refusal })?;
 
-            let slot = self.compiled.flatbuffer.structs[usize::from(entry.0)].slot;
-            let placement = FieldPlacement::Struct { slot, offset };
+            let layout = &self.compiled.flatbuffer;
+            let placement = match target {
+                StructRef::Entry(entry) => FieldPlacement::Struct {
+                    slot: layout.structs[usize::from(entry.0)].slot,
+                    offset,
+                },
+                StructRef::Root => FieldPlacement::VectorElement { offset },
+            };
             let index = self.add_value(kind, member_kind, placement, field_kind);
-            self.compiled.flatbuffer.structs[usize::from(entry.0)]
-                .values
-                .push(index);
+
+            let layout = &mut self.compiled.flatbuffer;
+            match (target, &mut layout.root) {
+                (StructRef::Entry(entry), _) => {
+                    layout.structs[usize::from(entry.0)].values.push(index);
+                }
+                (StructRef::Root, flatbuffer::RootObject::Struct { values, .. }) => {
+                    values.push(index)
+                }
+                (StructRef::Root, flatbuffer::RootObject::Table) => {
+                    unreachable!("the root of the layout is a struct")
+                }
+            }
         }
 
         Ok(())
+    }
+
+    /// Compiles a message that is the element of a sequence, held by a table.
+    ///
+    /// # Safety
+    ///
+    /// `message` must point to the members of a loaded introspection typesupport.
+    unsafe fn add_repeated_table(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        path: &str,
+    ) -> Result<ModelIndex, CompileError> {
+        // Compile the message like a root message.
+        let mut compiler = Compiler {
+            schema: self.schema,
+            compiled: Compiled::default(),
+        };
+        unsafe { compiler.add_table(object, message, TablePlacement::Root, path)? };
+
+        Ok(self.add_repeated(compiler.compiled))
+    }
+
+    /// Compiles a message that is the element of a sequence, held by a
+    /// struct.
+    ///
+    /// # Safety
+    ///
+    /// `message` must point to the members of a loaded introspection typesupport.
+    unsafe fn add_repeated_struct(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        path: &str,
+    ) -> Result<ModelIndex, CompileError> {
+        // Compile the message with the struct as the root of its layout.
+        let mut compiler = Compiler {
+            schema: self.schema,
+            compiled: Compiled::default(),
+        };
+        compiler.compiled.flatbuffer.root = flatbuffer::RootObject::Struct {
+            number_of_bytes: object.bytesize() as u16,
+            alignment: object.minalign() as u16,
+            values: Vec::new(),
+        };
+        let target = StructRef::Root;
+        unsafe { compiler.add_struct_values(object, message, target, START_OF_STRUCT, path)? };
+
+        // Order the values of the struct by their offsets.
+        let layout = &mut compiler.compiled.flatbuffer;
+        if let flatbuffer::RootObject::Struct { values, .. } = &mut layout.root {
+            sort_by_offset(values, &layout.fields);
+        }
+
+        Ok(self.add_repeated(compiler.compiled))
+    }
+
+    /// Adds the compiled element of a sequence to the repeated models and
+    /// layouts of this message, returning the index they share.
+    fn add_repeated(&mut self, repeated: Compiled) -> ModelIndex {
+        let index = ModelIndex(self.compiled.model.repeated.len() as u16);
+        self.compiled.model.repeated.push(repeated.model);
+        self.compiled.cdr.repeated.push(repeated.cdr);
+        self.compiled.flatbuffer.repeated.push(repeated.flatbuffer);
+
+        index
     }
 
     /// Adds a value of `kind` with its member and its field, returning its
@@ -305,9 +425,16 @@ impl<'a> Compiler<'a> {
 /// The offset of the first byte of a struct.
 const START_OF_STRUCT: StructOffset = StructOffset(0);
 
+/// Refers to one of the structs of a flatbuffer layout.
+#[derive(Debug, Clone, Copy)]
+enum StructRef {
+    Entry(StructIndex),
+    Root,
+}
+
 fn sort_by_offset(values: &mut [ValueIndex], fields: &[flatbuffer::FieldEntry]) {
     values.sort_by_key(|index| match fields[usize::from(index.0)].placement {
-        FieldPlacement::Struct { offset, .. } => offset,
+        FieldPlacement::Struct { offset, .. } | FieldPlacement::VectorElement { offset } => offset,
         FieldPlacement::Table(_) => unreachable!("the value sits in a struct"),
     });
 }

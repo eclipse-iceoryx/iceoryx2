@@ -10,15 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::next::model::{ScalarType, ScalarValue, ValueIndex};
+use crate::next::model::{ModelIndex, ScalarType, ScalarValue, ValueIndex};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Layout {
+    pub root: RootObject,
     /// The root table comes first and a nested table comes after the table
     /// that holds it.
     pub tables: Vec<TableEntry>,
     pub structs: Vec<StructEntry>,
     pub fields: Vec<FieldEntry>,
+    /// The layouts of the messages that repeat, by model index.
+    pub repeated: Vec<Layout>,
 }
 
 impl Layout {
@@ -29,6 +32,23 @@ impl Layout {
     pub fn table(&self, index: TableIndex) -> &TableEntry {
         &self.tables[usize::from(index.0)]
     }
+
+    pub fn repeated(&self, index: ModelIndex) -> &Layout {
+        &self.repeated[usize::from(index.0)]
+    }
+}
+
+/// The table or the struct that holds one message in a flatbuffer.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub enum RootObject {
+    #[default]
+    Table,
+    Struct {
+        number_of_bytes: u16,
+        alignment: u16,
+        /// The values the struct holds, in the order of their offsets.
+        values: Vec<ValueIndex>,
+    },
 }
 
 /// The position of a table in a [`Layout`].
@@ -90,13 +110,21 @@ pub enum FieldPlacement {
         /// From the start of the struct to the field.
         offset: StructOffset,
     },
+    /// Within a struct that is an element of a vector.
+    VectorElement {
+        /// From the start of the struct to the field.
+        offset: StructOffset,
+    },
 }
 
 impl FieldPlacement {
     /// The slot the field is found through.
-    pub fn slot(self) -> Slot {
+    ///
+    /// Returns None for a field in an element of a vector.
+    pub fn slot(self) -> Option<Slot> {
         match self {
-            FieldPlacement::Table(slot) | FieldPlacement::Struct { slot, .. } => slot,
+            FieldPlacement::Table(slot) | FieldPlacement::Struct { slot, .. } => Some(slot),
+            FieldPlacement::VectorElement { .. } => None,
         }
     }
 }
@@ -110,6 +138,8 @@ pub enum FieldKind {
     String,
     ScalarVector(ScalarType),
     StringVector,
+    TableVector(ModelIndex),
+    StructVector(ModelIndex),
     /// Within a struct.
     ScalarArray {
         scalar: ScalarType,

@@ -17,7 +17,9 @@ use flatbuffers::{
 };
 use iceoryx2_log::{fail, origin};
 
-use super::layout::{FieldEntry, FieldKind, FieldPlacement, Layout, TableIndex, TablePlacement};
+use super::layout::{
+    FieldEntry, FieldKind, FieldPlacement, Layout, RootObject, TableIndex, TablePlacement,
+};
 use crate::next::model::{ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
 
 /// A flatbuffer that holds no root offset.
@@ -51,6 +53,58 @@ impl<'a> Iterator for StringElementIter<'a> {
 
 impl ExactSizeIterator for StringElementIter<'_> {}
 
+#[derive(Debug)]
+pub struct MessageElementIter<'a> {
+    layout: &'a Layout,
+    buffer: &'a [u8],
+    next: Location,
+    number_of_remaining_elements: usize,
+}
+
+impl<'a> Iterator for MessageElementIter<'a> {
+    type Item = Result<Reader<'a>, Infallible>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.number_of_remaining_elements == 0 {
+            return None;
+        }
+        self.number_of_remaining_elements -= 1;
+
+        let element = self.next;
+        let root = match self.layout.root {
+            // The element is the offset to a table.
+            RootObject::Table => {
+                self.next = Location(element.0 + size_of::<UOffsetT>());
+                // SAFETY: the vector holds an offset at the element.
+                let offset = unsafe { read_scalar_at::<UOffsetT>(self.buffer, element.0) };
+                Location(element.0 + offset as usize)
+            }
+            // The element is the struct itself.
+            RootObject::Struct {
+                number_of_bytes, ..
+            } => {
+                self.next = Location(element.0 + usize::from(number_of_bytes));
+                element
+            }
+        };
+
+        Some(Ok(Reader {
+            layout: self.layout,
+            buffer: self.buffer,
+            root,
+        }))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (
+            self.number_of_remaining_elements,
+            Some(self.number_of_remaining_elements),
+        )
+    }
+}
+
+impl ExactSizeIterator for MessageElementIter<'_> {}
+
 /// A location within the bytes of a flatbuffer.
 #[derive(Debug, Clone, Copy)]
 struct Location(usize);
@@ -60,7 +114,7 @@ struct Location(usize);
 pub struct Reader<'a> {
     layout: &'a Layout,
     buffer: &'a [u8],
-    /// Where the root table starts.
+    /// Where the root table or the root struct of the layout starts.
     root: Location,
 }
 
@@ -93,7 +147,7 @@ impl<'a> Reader<'a> {
     /// Returns None when the flatbuffer omits the table.
     fn locate_table(&self, index: TableIndex) -> Option<flatbuffers::Table<'a>> {
         let TablePlacement::Nested(slot) = self.layout.table(index).placement else {
-            // SAFETY: the root of a flatbuffer is a table.
+            // SAFETY: the root of a layout with tables is a table.
             return Some(unsafe { flatbuffers::Table::new(self.buffer, self.root.0) });
         };
         let holder = self.locate_table(slot.table)?;
@@ -115,6 +169,9 @@ impl<'a> Reader<'a> {
                 let location = locate_slot(self.locate_table(slot.table)?, slot.vtable_offset)?;
                 Some(Location(location.0 + usize::from(offset.0)))
             }
+            FieldPlacement::VectorElement { offset } => {
+                Some(Location(self.root.0 + usize::from(offset.0)))
+            }
         }
     }
 }
@@ -123,6 +180,14 @@ impl Values for Reader<'_> {
     type Error = Infallible;
     type StringElementIter<'a>
         = StringElementIter<'a>
+    where
+        Self: 'a;
+    type MessageElement<'a>
+        = Reader<'a>
+    where
+        Self: 'a;
+    type MessageElementIter<'a>
+        = MessageElementIter<'a>
     where
         Self: 'a;
 
@@ -174,7 +239,14 @@ impl Values for Reader<'_> {
                 let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
                 &buffer[location.0..location.0 + number_of_bytes]
             }
-            (FieldKind::Scalar { .. } | FieldKind::String | FieldKind::StringVector, Some(_)) => {
+            (
+                FieldKind::Scalar { .. }
+                | FieldKind::String
+                | FieldKind::StringVector
+                | FieldKind::TableVector(_)
+                | FieldKind::StructVector(_),
+                Some(_),
+            ) => {
                 unreachable!("the value holds scalar elements in the model")
             }
         };
@@ -202,6 +274,27 @@ impl Values for Reader<'_> {
 
         Ok(StringElementIter {
             elements: vector.iter(),
+        })
+    }
+
+    /// The elements of the message sequence value at `index`.
+    ///
+    /// None when the flatbuffer omits it.
+    fn message_elements(&self, index: ValueIndex) -> Result<MessageElementIter<'_>, Infallible> {
+        let field = self.layout.field(index);
+        let (FieldKind::TableVector(model) | FieldKind::StructVector(model)) = field.kind else {
+            unreachable!("the value holds message elements in the model")
+        };
+        let (next, number_of_elements) = match self.locate_field(field) {
+            Some(location) => locate_vector(self.buffer, location),
+            None => (self.root, 0),
+        };
+
+        Ok(MessageElementIter {
+            layout: self.layout.repeated(model),
+            buffer: self.buffer,
+            next,
+            number_of_remaining_elements: number_of_elements,
         })
     }
 }

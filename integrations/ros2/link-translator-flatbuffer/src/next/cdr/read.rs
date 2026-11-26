@@ -14,7 +14,9 @@ use iceoryx2_integrations_ros2_link_adapter::cdr::reader::{self, Endianness, Loc
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
+use crate::next::model::{
+    ByteOrder, ModelIndex, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadError {
@@ -86,7 +88,8 @@ impl<'a> StringElementIter<'a> {
             MemberKind::Scalar(_)
             | MemberKind::String
             | MemberKind::ScalarSequence(_)
-            | MemberKind::ScalarArray { .. } => {
+            | MemberKind::ScalarArray { .. }
+            | MemberKind::MessageSequence(_) => {
                 unreachable!("the value holds string elements in the model")
             }
         };
@@ -120,6 +123,53 @@ impl<'a> Iterator for StringElementIter<'a> {
 impl ExactSizeIterator for StringElementIter<'_> {}
 
 #[derive(Debug)]
+pub struct MessageElementIter<'a> {
+    layout: &'a Layout,
+    reader: reader::Reader<'a>,
+    number_of_remaining_elements: usize,
+}
+
+impl<'a> MessageElementIter<'a> {
+    /// The message elements of the value at `index` of `layout`.
+    ///
+    /// `reader` is placed at the start of the value.
+    fn new(
+        layout: &'a Layout,
+        index: ValueIndex,
+        mut reader: reader::Reader<'a>,
+    ) -> Result<Self, ReadError> {
+        let (model, number_of_elements) = read_message_element_count(layout, index, &mut reader)?;
+
+        Ok(Self {
+            layout: layout.repeated(model),
+            reader,
+            number_of_remaining_elements: number_of_elements,
+        })
+    }
+}
+
+impl<'a> Iterator for MessageElementIter<'a> {
+    type Item = Result<Locations<'a>, ReadError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.number_of_remaining_elements == 0 {
+            return None;
+        }
+        self.number_of_remaining_elements -= 1;
+        Some(locate_message(self.layout, &mut self.reader))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (
+            self.number_of_remaining_elements,
+            Some(self.number_of_remaining_elements),
+        )
+    }
+}
+
+impl ExactSizeIterator for MessageElementIter<'_> {}
+
+#[derive(Debug)]
 pub struct Locations<'a> {
     layout: &'a Layout,
     reader: reader::Reader<'a>,
@@ -137,6 +187,14 @@ impl Values for Locations<'_> {
     type Error = ReadError;
     type StringElementIter<'a>
         = StringElementIter<'a>
+    where
+        Self: 'a;
+    type MessageElement<'a>
+        = Locations<'a>
+    where
+        Self: 'a;
+    type MessageElementIter<'a>
+        = MessageElementIter<'a>
     where
         Self: 'a;
 
@@ -172,6 +230,11 @@ impl Values for Locations<'_> {
             self.reader.at(self.location(index)),
             self.layout.member(index).kind,
         )
+    }
+
+    fn message_elements(&self, index: ValueIndex) -> Result<MessageElementIter<'_>, ReadError> {
+        // Start at the saved location of the member.
+        MessageElementIter::new(self.layout, index, self.reader.at(self.location(index)))
     }
 }
 
@@ -240,6 +303,7 @@ fn walk_message(
             kind @ (MemberKind::StringSequence | MemberKind::StringArray { .. }) => {
                 skip_string_elements(reader, kind)
             }
+            MemberKind::MessageSequence(_) => skip_message_elements(layout, *index, reader),
         };
         fail!(
             from origin,
@@ -287,7 +351,8 @@ fn read_scalar_elements<'a>(
         MemberKind::Scalar(_)
         | MemberKind::String
         | MemberKind::StringSequence
-        | MemberKind::StringArray { .. } => {
+        | MemberKind::StringArray { .. }
+        | MemberKind::MessageSequence(_) => {
             unreachable!("the value holds scalar elements in the model")
         }
     };
@@ -311,4 +376,40 @@ fn skip_string_elements(
     *reader = elements.reader;
 
     Ok(())
+}
+
+fn skip_message_elements(
+    layout: &Layout,
+    index: ValueIndex,
+    reader: &mut reader::Reader<'_>,
+) -> Result<(), ReadError> {
+    let (model, number_of_elements) = read_message_element_count(layout, index, reader)?;
+    for _ in 0..number_of_elements {
+        walk_message(layout.repeated(model), reader, &mut |_, _| {})?;
+    }
+
+    Ok(())
+}
+
+/// The model and the number of the message elements of the value at `index`
+/// of `layout`.
+///
+/// The number of a sequence is read from `reader`, which is at the start of
+/// the value.
+fn read_message_element_count(
+    layout: &Layout,
+    index: ValueIndex,
+    reader: &mut reader::Reader<'_>,
+) -> Result<(ModelIndex, usize), ReadError> {
+    Ok(match layout.member(index).kind {
+        MemberKind::MessageSequence(model) => (model, reader.read_length()?),
+        MemberKind::Scalar(_)
+        | MemberKind::String
+        | MemberKind::ScalarSequence(_)
+        | MemberKind::ScalarArray { .. }
+        | MemberKind::StringSequence
+        | MemberKind::StringArray { .. } => {
+            unreachable!("the value holds message elements in the model")
+        }
+    })
 }

@@ -13,12 +13,19 @@
 /// Describes the values that appear within a message.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Model {
+    /// Values that appear once per message without any repitition.
     pub values: Vec<Kind>,
+    /// Describes a recurring model of values within a message.
+    pub repeated: Vec<Model>,
 }
 
 /// An index to a specific value description within the model.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ValueIndex(pub u16);
+
+/// The index to a specific repeated model within the model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ModelIndex(pub u16);
 
 /// The interface to retrieve the values described by the model.
 pub trait Values {
@@ -26,6 +33,18 @@ pub trait Values {
 
     /// The string elements of a value in their order.
     type StringElementIter<'a>: ExactSizeIterator<Item = Result<&'a [u8], Self::Error>>
+    where
+        Self: 'a;
+
+    /// A source of the values of one element of a message sequence.
+    type MessageElement<'a>: Values<Error = Self::Error>
+    where
+        Self: 'a;
+
+    /// The message elements of a value in their order.
+    type MessageElementIter<'a>: ExactSizeIterator<
+        Item = Result<Self::MessageElement<'a>, Self::Error>,
+    >
     where
         Self: 'a;
 
@@ -51,6 +70,13 @@ pub trait Values {
         &self,
         index: ValueIndex,
     ) -> Result<Self::StringElementIter<'_>, Self::Error>;
+
+    /// Returns the elements of the message sequence value at `index`, or an
+    /// error when the source cannot provide them.
+    fn message_elements(
+        &self,
+        index: ValueIndex,
+    ) -> Result<Self::MessageElementIter<'_>, Self::Error>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,6 +92,7 @@ pub enum Kind {
     StringArray {
         number_of_elements: u32,
     },
+    MessageSequence(ModelIndex),
 }
 
 /// The order of the bytes of a scalar.

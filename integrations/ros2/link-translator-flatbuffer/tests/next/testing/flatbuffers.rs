@@ -13,18 +13,20 @@
 use flatbuffers::FlatBufferBuilder;
 use ros_env::builtin_interfaces::msg::rmw::Time;
 use ros_env::geometry_msgs::msg::rmw::{
-    Pose, PoseStamped, PoseWithCovariance, PoseWithCovarianceStamped,
+    Pose, PoseArray, PoseStamped, PoseWithCovariance, PoseWithCovarianceStamped,
 };
-use ros_env::sensor_msgs::msg::rmw::{ChannelFloat32, JointState};
+use ros_env::sensor_msgs::msg::rmw::{ChannelFloat32, JointState, PointCloud};
 use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
 
 use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
 use crate::schemas::joint_state::sensor_msgs::msg as joint_state;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
+use crate::schemas::pose_array::geometry_msgs::msg as pose_array;
+use crate::schemas::pose_array_struct::geometry_msgs::msg as pose_array_struct;
 use crate::schemas::pose_with_covariance::geometry_msgs::msg as pose_with_covariance;
 use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
 use crate::schemas::time::builtin_interfaces::msg as time;
-use crate::schemas::{self, header, header_struct, pose_stamped};
+use crate::schemas::{self, header, header_struct, point_cloud, pose_stamped};
 
 pub trait ToFlatbuffer {
     fn to_flatbuffer(&self) -> Vec<u8>;
@@ -228,6 +230,117 @@ impl ToFlatbuffer for JointState {
     }
 }
 
+impl ToFlatbuffer for PoseArray {
+    fn to_flatbuffer(&self) -> Vec<u8> {
+        let mut builder = FlatBufferBuilder::new();
+        let frame_id = builder.create_string(&self.header.frame_id.to_string());
+        let stamp = schemas::pose_array::builtin_interfaces::msg::Time::new(
+            self.header.stamp.sec,
+            self.header.stamp.nanosec,
+        );
+        let header = schemas::pose_array::std_msgs::msg::Header::create(
+            &mut builder,
+            &schemas::pose_array::std_msgs::msg::HeaderArgs {
+                stamp: Some(&stamp),
+                frame_id: Some(frame_id),
+            },
+        );
+        let poses: Vec<_> = self
+            .poses
+            .as_slice()
+            .iter()
+            .map(|pose| {
+                let position =
+                    pose_array::Point::new(pose.position.x, pose.position.y, pose.position.z);
+                let orientation = pose_array::Quaternion::new(
+                    pose.orientation.x,
+                    pose.orientation.y,
+                    pose.orientation.z,
+                    pose.orientation.w,
+                );
+                pose_array::Pose::create(
+                    &mut builder,
+                    &pose_array::PoseArgs {
+                        position: Some(&position),
+                        orientation: Some(&orientation),
+                    },
+                )
+            })
+            .collect();
+        let poses = builder.create_vector(&poses);
+        let root = pose_array::PoseArray::create(
+            &mut builder,
+            &pose_array::PoseArrayArgs {
+                header: Some(header),
+                poses: Some(poses),
+            },
+        );
+        builder.finish_minimal(root);
+        builder.finished_data().to_vec()
+    }
+}
+
+impl ToFlatbuffer for PointCloud {
+    fn to_flatbuffer(&self) -> Vec<u8> {
+        let mut builder = FlatBufferBuilder::new();
+        let frame_id = builder.create_string(&self.header.frame_id.to_string());
+        let stamp = point_cloud::builtin_interfaces::msg::Time::new(
+            self.header.stamp.sec,
+            self.header.stamp.nanosec,
+        );
+        let header = point_cloud::std_msgs::msg::Header::create(
+            &mut builder,
+            &point_cloud::std_msgs::msg::HeaderArgs {
+                stamp: Some(&stamp),
+                frame_id: Some(frame_id),
+            },
+        );
+        let points: Vec<_> = self
+            .points
+            .as_slice()
+            .iter()
+            .map(|point| {
+                point_cloud::geometry_msgs::msg::Point32::create(
+                    &mut builder,
+                    &point_cloud::geometry_msgs::msg::Point32Args {
+                        x: point.x,
+                        y: point.y,
+                        z: point.z,
+                    },
+                )
+            })
+            .collect();
+        let points = builder.create_vector(&points);
+        let channels: Vec<_> = self
+            .channels
+            .as_slice()
+            .iter()
+            .map(|channel| {
+                let name = builder.create_string(&channel.name.to_string());
+                let values = builder.create_vector(channel.values.as_slice());
+                point_cloud::sensor_msgs::msg::ChannelFloat32::create(
+                    &mut builder,
+                    &point_cloud::sensor_msgs::msg::ChannelFloat32Args {
+                        name: Some(name),
+                        values: Some(values),
+                    },
+                )
+            })
+            .collect();
+        let channels = builder.create_vector(&channels);
+        let root = point_cloud::sensor_msgs::msg::PointCloud::create(
+            &mut builder,
+            &point_cloud::sensor_msgs::msg::PointCloudArgs {
+                header: Some(header),
+                points: Some(points),
+                channels: Some(channels),
+            },
+        );
+        builder.finish_minimal(root);
+        builder.finished_data().to_vec()
+    }
+}
+
 pub fn pose_with_covariance_flatbuffer(pose: &Pose, covariance: &[f64]) -> Vec<u8> {
     let mut builder = FlatBufferBuilder::new();
     let covariance = builder.create_vector(covariance);
@@ -245,6 +358,48 @@ pub fn pose_with_covariance_flatbuffer(pose: &Pose, covariance: &[f64]) -> Vec<u
         &pose_with_covariance::PoseWithCovarianceArgs {
             pose: Some(&pose),
             covariance: Some(covariance),
+        },
+    );
+    builder.finish_minimal(root);
+    builder.finished_data().to_vec()
+}
+
+pub fn pose_array_flatbuffer_with_struct_poses(message: &PoseArray) -> Vec<u8> {
+    let mut builder = FlatBufferBuilder::new();
+    let frame_id = builder.create_string(&message.header.frame_id.to_string());
+    let stamp = schemas::pose_array_struct::builtin_interfaces::msg::Time::new(
+        message.header.stamp.sec,
+        message.header.stamp.nanosec,
+    );
+    let header = schemas::pose_array_struct::std_msgs::msg::Header::create(
+        &mut builder,
+        &schemas::pose_array_struct::std_msgs::msg::HeaderArgs {
+            stamp: Some(&stamp),
+            frame_id: Some(frame_id),
+        },
+    );
+    let poses: Vec<_> = message
+        .poses
+        .as_slice()
+        .iter()
+        .map(|pose| {
+            let position =
+                pose_array_struct::Point::new(pose.position.x, pose.position.y, pose.position.z);
+            let orientation = pose_array_struct::Quaternion::new(
+                pose.orientation.x,
+                pose.orientation.y,
+                pose.orientation.z,
+                pose.orientation.w,
+            );
+            pose_array_struct::Pose::new(&position, &orientation)
+        })
+        .collect();
+    let poses = builder.create_vector(&poses);
+    let root = pose_array_struct::PoseArray::create(
+        &mut builder,
+        &pose_array_struct::PoseArrayArgs {
+            header: Some(header),
+            poses: Some(poses),
         },
     );
     builder.finish_minimal(root);

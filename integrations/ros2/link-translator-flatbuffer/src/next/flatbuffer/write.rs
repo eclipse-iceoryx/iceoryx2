@@ -16,7 +16,9 @@ use flatbuffers::{
 };
 use iceoryx2_log::{fail, origin};
 
-use super::layout::{FieldKind, FieldPlacement, Layout, StructEntry, TableIndex, TablePlacement};
+use super::layout::{
+    FieldKind, FieldPlacement, Layout, RootObject, StructEntry, TableIndex, TablePlacement,
+};
 use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
 
 /// Writes `values` into `builder` as a finished flatbuffer.
@@ -131,6 +133,47 @@ fn write_table<V: Values, A: Allocator>(
                 let vector_offset = builder
                     .create_vector(element_offsets.as_slice())
                     .as_union_value();
+                value_offsets.push((slot.vtable_offset, vector_offset));
+            }
+            FieldKind::TableVector(model) => {
+                let elements = fail!(
+                    from origin,
+                    when values.message_elements(*index),
+                    "Unable to take the message elements of the value {}", index.0
+                );
+
+                // Write the table of each element first. The vector then
+                // refers to them by their offsets.
+                element_offsets.clear();
+                for element in elements {
+                    let element = fail!(
+                        from origin,
+                        when element,
+                        "Unable to take a message element of the value {}", index.0
+                    );
+                    let element_offset = fail!(
+                        from origin,
+                        when write_message(layout.repeated(model), &element, builder),
+                        "Unable to write a message element of the value {}", index.0
+                    );
+                    element_offsets.push(element_offset.as_union_value());
+                }
+                let vector_offset = builder
+                    .create_vector(element_offsets.as_slice())
+                    .as_union_value();
+                value_offsets.push((slot.vtable_offset, vector_offset));
+            }
+            FieldKind::StructVector(model) => {
+                let elements = fail!(
+                    from origin,
+                    when values.message_elements(*index),
+                    "Unable to take the message elements of the value {}", index.0
+                );
+                let vector_offset = fail!(
+                    from origin,
+                    when write_struct_vector(layout.repeated(model), elements, builder),
+                    "Unable to write the vector of structs of the value {}", index.0
+                );
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
         }
@@ -253,6 +296,51 @@ fn write_scalar_vector<A: Allocator>(
     }
 }
 
+/// Writes `elements` as a vector of the struct that is the root of `layout`,
+/// returning its offset.
+fn write_struct_vector<E: Values, A: Allocator>(
+    layout: &Layout,
+    elements: impl ExactSizeIterator<Item = Result<E, E::Error>>,
+    builder: &mut FlatBufferBuilder<'_, A>,
+) -> Result<WIPOffset<UnionWIPOffset>, E::Error> {
+    let origin = origin!("flatbuffer::write_struct_vector");
+
+    let RootObject::Struct {
+        number_of_bytes,
+        alignment,
+        values: struct_values,
+    } = &layout.root
+    else {
+        unreachable!("the elements of a vector of structs are structs")
+    };
+
+    // Take every element before writing one. The builder fills the flatbuffer
+    // back to front and needs the last element first.
+    let mut taken = Vec::with_capacity(elements.len());
+    for element in elements {
+        let element = fail!(
+            from origin,
+            when element,
+            "Unable to take an element of a vector of structs"
+        );
+        taken.push(element);
+    }
+
+    // Write the structs one after the other, aligned as a whole.
+    let number_of_vector_bytes = taken.len() * usize::from(*number_of_bytes);
+    builder.start_vector::<u8>(number_of_vector_bytes);
+    align(builder, number_of_vector_bytes, usize::from(*alignment));
+    for element in taken.iter().rev() {
+        fail!(
+            from origin,
+            when push_struct(layout, struct_values, *number_of_bytes, StructDestination::Vector, element, builder),
+            "Unable to write an element of a vector of structs"
+        );
+    }
+
+    Ok(builder.end_vector::<u8>(taken.len()).as_union_value())
+}
+
 /// Writes the struct `entry` whole into its slot of the open table.
 fn write_struct<V: Values, A: Allocator>(
     layout: &Layout,
@@ -269,10 +357,19 @@ fn write_struct<V: Values, A: Allocator>(
         layout,
         &entry.values,
         entry.number_of_bytes,
-        entry.slot.vtable_offset,
+        StructDestination::Slot(entry.slot.vtable_offset),
         values,
         builder,
     )
+}
+
+/// Where a struct that is pushed into the builder should be placed.
+#[derive(Debug, Clone, Copy)]
+enum StructDestination {
+    /// A slot of the open table.
+    Slot(VOffsetT),
+    /// The open vector.
+    Vector,
 }
 
 /// Pushes the struct of `number_of_bytes` that holds `struct_values`, which
@@ -281,7 +378,7 @@ fn push_struct<V: Values, A: Allocator>(
     layout: &Layout,
     struct_values: &[ValueIndex],
     number_of_bytes: u16,
-    vtable_offset: VOffsetT,
+    destination: StructDestination,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
 ) -> Result<(), V::Error> {
@@ -292,7 +389,9 @@ fn push_struct<V: Values, A: Allocator>(
     let mut position = usize::from(number_of_bytes);
     for index in struct_values.iter().rev() {
         let field = layout.field(*index);
-        let FieldPlacement::Struct { offset, .. } = field.placement else {
+        let (FieldPlacement::Struct { offset, .. } | FieldPlacement::VectorElement { offset }) =
+            field.placement
+        else {
             unreachable!("the value sits in the struct")
         };
         match field.kind {
@@ -305,8 +404,8 @@ fn push_struct<V: Values, A: Allocator>(
 
                 let bytes = &value.to_le_bytes()[..scalar.number_of_bytes()];
                 let end = usize::from(offset.0) + bytes.len();
-                push_padding(builder, vtable_offset, &mut position, end);
-                push_bytes(builder, vtable_offset, &mut position, bytes);
+                push_padding(builder, destination, &mut position, end);
+                push_bytes(builder, destination, &mut position, bytes);
             }
             FieldKind::ScalarArray {
                 scalar,
@@ -320,21 +419,25 @@ fn push_struct<V: Values, A: Allocator>(
 
                 let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
                 let end = usize::from(offset.0) + number_of_bytes;
-                push_padding(builder, vtable_offset, &mut position, end);
+                push_padding(builder, destination, &mut position, end);
 
                 // Left zero if no elements to push.
                 if elements.bytes.len() == number_of_bytes {
-                    push_scalar_elements(builder, vtable_offset, &mut position, scalar, elements);
+                    push_scalar_elements(builder, destination, &mut position, scalar, elements);
                 }
             }
-            FieldKind::String | FieldKind::ScalarVector(_) | FieldKind::StringVector => {
+            FieldKind::String
+            | FieldKind::ScalarVector(_)
+            | FieldKind::StringVector
+            | FieldKind::TableVector(_)
+            | FieldKind::StructVector(_) => {
                 unreachable!("a struct holds scalars and arrays of scalars")
             }
         }
     }
 
     // Push the padding before the first value.
-    push_padding(builder, vtable_offset, &mut position, 0);
+    push_padding(builder, destination, &mut position, 0);
 
     Ok(())
 }
@@ -343,21 +446,21 @@ fn push_struct<V: Values, A: Allocator>(
 /// `position` back.
 fn push_scalar_elements<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
-    vtable_offset: VOffsetT,
+    destination: StructDestination,
     position: &mut usize,
     scalar: ScalarType,
     elements: ScalarElements<'_>,
 ) {
     if elements.byte_order == ByteOrder::Little || scalar.number_of_bytes() == 1 {
         // The elements lie in the byte order of the flatbuffer.
-        push_bytes(builder, vtable_offset, position, elements.bytes);
+        push_bytes(builder, destination, position, elements.bytes);
     } else {
         // The elements lie in the other byte order.
         for bytes in elements.bytes.chunks_exact(scalar.number_of_bytes()).rev() {
             let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
             push_bytes(
                 builder,
-                vtable_offset,
+                destination,
                 position,
                 &value.to_le_bytes()[..scalar.number_of_bytes()],
             );
@@ -368,39 +471,41 @@ fn push_scalar_elements<A: Allocator>(
 /// Pushes zeros into a struct from `position` back to `end`.
 fn push_padding<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
-    vtable_offset: VOffsetT,
+    destination: StructDestination,
     position: &mut usize,
     end: usize,
 ) {
     while *position > end {
-        push_byte(builder, vtable_offset, position, 0);
+        push_byte(builder, destination, position, 0);
     }
 }
 
 /// Pushes `bytes` into a struct last to first from `position` back.
 fn push_bytes<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
-    vtable_offset: VOffsetT,
+    destination: StructDestination,
     position: &mut usize,
     bytes: &[u8],
 ) {
     for byte in bytes.iter().rev() {
-        push_byte(builder, vtable_offset, position, *byte);
+        push_byte(builder, destination, position, *byte);
     }
 }
 
 /// Pushes the byte before `position` into a struct.
 fn push_byte<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
-    vtable_offset: VOffsetT,
+    destination: StructDestination,
     position: &mut usize,
     byte: u8,
 ) {
     *position -= 1;
-    match *position {
-        // The first byte of the struct is pushed through the slot, which then
-        // refers to the start of the struct.
-        0 => builder.push_slot_always(vtable_offset, byte),
+    match (*position, destination) {
+        // The first byte of a struct in a slot is pushed through the slot,
+        // which then refers to the start of the struct.
+        (0, StructDestination::Slot(vtable_offset)) => {
+            builder.push_slot_always(vtable_offset, byte)
+        }
         _ => {
             builder.push(byte);
         }

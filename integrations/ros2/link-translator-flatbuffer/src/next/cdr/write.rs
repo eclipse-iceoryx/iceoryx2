@@ -268,6 +268,29 @@ fn write_message<V: Values, R: ForwardRegion>(
                     );
                 }
             }
+            MemberKind::MessageSequence(model) => {
+                let elements = match values.message_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the message sequence value {}", index.0
+                        );
+                    }
+                };
+                fail!(
+                    from origin,
+                    when writer.write_length(elements.len()),
+                    to WriteError<V::Error>,
+                    "Unable to write the length of the message sequence value {}", index.0
+                );
+                fail!(
+                    from origin,
+                    when write_message_elements::<V, R>(layout.repeated(model), elements, writer),
+                    "Unable to write the message sequence value {}", index.0
+                );
+            }
         }
     }
 
@@ -365,6 +388,34 @@ fn write_string_elements<V: Values, R: ForwardRegion>(
             when writer.write_string(bytes),
             to WriteError<V::Error>,
             "Unable to write a string element of {} bytes", bytes.len()
+        );
+    }
+
+    Ok(())
+}
+
+fn write_message_elements<V: Values, R: ForwardRegion>(
+    layout: &Layout,
+    elements: V::MessageElementIter<'_>,
+    writer: &mut writer::Writer<R>,
+) -> Result<(), WriteError<V::Error>> {
+    let origin = origin!("cdr::write_message_elements");
+
+    for element in elements {
+        let element = match element {
+            Ok(element) => element,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with WriteError::Values(error),
+                    "Unable to take a message element"
+                );
+            }
+        };
+        fail!(
+            from origin,
+            when write_message(layout, &element, writer),
+            "Unable to write a message element"
         );
     }
 

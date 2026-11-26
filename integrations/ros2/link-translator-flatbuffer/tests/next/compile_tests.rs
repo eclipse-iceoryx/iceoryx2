@@ -13,7 +13,7 @@
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::model::{
-    Kind, ScalarType, ScalarValue, ValueIndex,
+    Kind, ModelIndex, ScalarType, ScalarValue, ValueIndex,
 };
 use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{Refusal, cdr, flatbuffer};
 
@@ -78,10 +78,10 @@ fn records_the_vtable_offset_of_each_field() {
     .expect("compiles");
 
     assert_that!(compiled.flatbuffer.fields, len 3);
-    assert_that!(compiled.flatbuffer.fields[0].placement.slot().vtable_offset, eq multi_array_dimension::MultiArrayDimension::VT_LABEL);
+    assert_that!(compiled.flatbuffer.fields[0].placement.slot().expect("sits in a table").vtable_offset, eq multi_array_dimension::MultiArrayDimension::VT_LABEL);
     assert_that!(compiled.flatbuffer.fields[0].kind, eq flatbuffer::FieldKind::String);
-    assert_that!(compiled.flatbuffer.fields[1].placement.slot().vtable_offset, eq multi_array_dimension::MultiArrayDimension::VT_SIZE);
-    assert_that!(compiled.flatbuffer.fields[2].placement.slot().vtable_offset, eq multi_array_dimension::MultiArrayDimension::VT_STRIDE);
+    assert_that!(compiled.flatbuffer.fields[1].placement.slot().expect("sits in a table").vtable_offset, eq multi_array_dimension::MultiArrayDimension::VT_SIZE);
+    assert_that!(compiled.flatbuffer.fields[2].placement.slot().expect("sits in a table").vtable_offset, eq multi_array_dimension::MultiArrayDimension::VT_STRIDE);
 }
 
 #[test]
@@ -154,8 +154,8 @@ fn records_which_table_holds_each_value() {
             vtable_offset: header::std_msgs::msg::Header::VT_STAMP,
         })
     );
-    assert_that!(compiled.flatbuffer.field(SEC_VALUE_INDEX).placement.slot().table, eq STAMP_TABLE_INDEX);
-    assert_that!(compiled.flatbuffer.field(FRAME_ID_VALUE_INDEX).placement.slot().table, eq ROOT_TABLE_INDEX);
+    assert_that!(compiled.flatbuffer.field(SEC_VALUE_INDEX).placement.slot().expect("sits in a table").table, eq STAMP_TABLE_INDEX);
+    assert_that!(compiled.flatbuffer.field(FRAME_ID_VALUE_INDEX).placement.slot().expect("sits in a table").table, eq ROOT_TABLE_INDEX);
 }
 
 #[test]
@@ -324,6 +324,59 @@ fn tells_string_sequences_from_strings() {
             Kind::ScalarSequence(ScalarType::F64),
             Kind::ScalarSequence(ScalarType::F64),
         ]
+    );
+}
+
+#[test]
+fn gives_a_repeated_message_its_own_model() {
+    const POSES_MODEL_INDEX: ModelIndex = ModelIndex(0);
+    const NUMBER_OF_POSE_VALUES: usize = 7;
+
+    let compiled = compile(schemas::POSE_ARRAY, messages::POSE_ARRAY).expect("compiles");
+
+    assert_that!(
+        compiled.model.values,
+        eq vec![
+            Kind::Scalar(ScalarType::I32),
+            Kind::Scalar(ScalarType::U32),
+            Kind::String,
+            Kind::MessageSequence(POSES_MODEL_INDEX),
+        ]
+    );
+    assert_that!(
+        compiled.model.repeated[usize::from(POSES_MODEL_INDEX.0)].values,
+        eq vec![Kind::Scalar(ScalarType::F64); NUMBER_OF_POSE_VALUES]
+    );
+}
+
+#[test]
+fn gives_a_repeated_struct_a_layout_with_a_struct_root() {
+    const POSES_VALUE_INDEX: ValueIndex = ValueIndex(3);
+    const POSES_MODEL_INDEX: ModelIndex = ModelIndex(0);
+    const NUMBER_OF_POSE_VALUES: u16 = 7;
+    const POSE_NUMBER_OF_BYTES: u16 = 56;
+    const POSE_ALIGNMENT: u16 = 8;
+    const ORIENTATION_W_VALUE_INDEX: ValueIndex = ValueIndex(6);
+    const ORIENTATION_W_OFFSET: flatbuffer::StructOffset = flatbuffer::StructOffset(48);
+
+    let compiled = compile(schemas::POSE_ARRAY_STRUCT, messages::POSE_ARRAY).expect("compiles");
+
+    assert_that!(
+        compiled.flatbuffer.field(POSES_VALUE_INDEX).kind,
+        eq flatbuffer::FieldKind::StructVector(POSES_MODEL_INDEX)
+    );
+    let poses = compiled.flatbuffer.repeated(POSES_MODEL_INDEX);
+    assert_that!(
+        poses.root,
+        eq flatbuffer::RootObject::Struct {
+            number_of_bytes: POSE_NUMBER_OF_BYTES,
+            alignment: POSE_ALIGNMENT,
+            values: (0..NUMBER_OF_POSE_VALUES).map(ValueIndex).collect(),
+        }
+    );
+    assert_that!(
+        poses.field(ORIENTATION_W_VALUE_INDEX).placement,
+        eq flatbuffer::FieldPlacement::VectorElement { offset: ORIENTATION_W_OFFSET }
     );
 }
 

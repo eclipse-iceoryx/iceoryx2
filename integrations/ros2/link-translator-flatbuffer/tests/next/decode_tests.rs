@@ -22,17 +22,19 @@ use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
 
 use crate::next::testing::messages;
 use crate::next::testing::messages::{
-    joint_state_message, pose_stamped_message, pose_with_covariance_message,
-    pose_with_covariance_stamped_message,
+    joint_state_message, point_cloud_message, pose_array_message, pose_stamped_message,
+    pose_with_covariance_message, pose_with_covariance_stamped_message,
 };
 use crate::next::testing::{compile, decode, encode, serialize};
 use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
 use crate::schemas::joint_state::sensor_msgs::msg as joint_state;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
+use crate::schemas::pose_array::geometry_msgs::msg as pose_array;
+use crate::schemas::pose_array_struct::geometry_msgs::msg as pose_array_struct;
 use crate::schemas::pose_with_covariance::geometry_msgs::msg as pose_with_covariance;
 use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
 use crate::schemas::time::builtin_interfaces::msg as time;
-use crate::schemas::{self, header, header_struct, pose_stamped};
+use crate::schemas::{self, header, header_struct, point_cloud, pose_stamped};
 
 fn channel_float32_as_big_endian_cdr(message: &ChannelFloat32) -> Vec<u8> {
     const BIG_ENDIAN_HEADER: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
@@ -324,4 +326,65 @@ fn writes_a_string_sequence_as_a_vector_of_strings() {
     assert_that!(names, eq message_names);
     let effort: Vec<f64> = decoded.effort().expect("holds effort").iter().collect();
     assert_that!(effort, eq message.effort.as_slice().to_vec());
+}
+
+#[test]
+fn writes_a_message_sequence_as_a_vector_of_tables() {
+    const SECOND_POSE: usize = 1;
+
+    let compiled = compile(schemas::POSE_ARRAY, messages::POSE_ARRAY).expect("compiles");
+    let message = pose_array_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_array::root_as_pose_array(&flatbuffer).expect("is a flatbuffer");
+    let poses = decoded.poses().expect("holds poses");
+    assert_that!(poses.len(), eq message.poses.as_slice().len());
+    let pose = poses.get(SECOND_POSE);
+    let expected = &message.poses.as_slice()[SECOND_POSE];
+    assert_that!(pose.position().expect("holds a position").x(), eq expected.position.x);
+    assert_that!(pose.orientation().expect("holds an orientation").w(), eq expected.orientation.w);
+}
+
+#[test]
+fn writes_message_elements_of_varying_size() {
+    const SECOND_CHANNEL: usize = 1;
+
+    let compiled = compile(schemas::POINT_CLOUD, messages::POINT_CLOUD).expect("compiles");
+    let message = point_cloud_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded =
+        point_cloud::sensor_msgs::msg::root_as_point_cloud(&flatbuffer).expect("is a flatbuffer");
+    let channels = decoded.channels().expect("holds channels");
+    assert_that!(channels.len(), eq message.channels.as_slice().len());
+    let channel = channels.get(SECOND_CHANNEL);
+    let expected = &message.channels.as_slice()[SECOND_CHANNEL];
+    let expected_name = expected.name.to_string();
+    assert_that!(channel.name(), eq Some(expected_name.as_str()));
+    let values: Vec<f32> = channel.values().expect("holds values").iter().collect();
+    assert_that!(values, eq expected.values.as_slice().to_vec());
+    let points = decoded.points().expect("holds points");
+    assert_that!(points.len(), eq message.points.as_slice().len());
+}
+
+#[test]
+fn writes_a_message_sequence_as_a_vector_of_structs() {
+    const FIRST_POSE: usize = 0;
+    const SECOND_POSE: usize = 1;
+
+    let compiled = compile(schemas::POSE_ARRAY_STRUCT, messages::POSE_ARRAY).expect("compiles");
+    let message = pose_array_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_array_struct::root_as_pose_array(&flatbuffer).expect("is a flatbuffer");
+    let poses = decoded.poses().expect("holds poses");
+    let expected = message.poses.as_slice();
+    assert_that!(poses.len(), eq expected.len());
+    assert_that!(poses.get(FIRST_POSE).position().x(), eq expected[FIRST_POSE].position.x);
+    assert_that!(poses.get(FIRST_POSE).orientation().w(), eq expected[FIRST_POSE].orientation.w);
+    assert_that!(poses.get(SECOND_POSE).position().x(), eq expected[SECOND_POSE].position.x);
+    assert_that!(poses.get(SECOND_POSE).orientation().w(), eq expected[SECOND_POSE].orientation.w);
 }

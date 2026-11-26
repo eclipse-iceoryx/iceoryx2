@@ -42,6 +42,19 @@ pub(super) fn object<'a>(
     Some(schema.objects().get(field.type_().index() as usize))
 }
 
+/// The table or struct that the elements of the vector `field` holds are.
+///
+/// Returns None when the field holds no vector of tables or structs.
+pub(super) fn element_object<'a>(
+    schema: reflection::Schema<'a>,
+    field: reflection::Field<'_>,
+) -> Option<Object<'a>> {
+    if field.type_().base_type() != BaseType::Vector || field.type_().element() != BaseType::Obj {
+        return None;
+    }
+    Some(schema.objects().get(field.type_().index() as usize))
+}
+
 /// The type of `field` as written in a schema e.g. `[double]`.
 pub(super) fn field_type(field: reflection::Field<'_>) -> String {
     let ty = field.type_();

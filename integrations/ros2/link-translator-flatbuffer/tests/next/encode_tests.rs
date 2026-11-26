@@ -19,19 +19,20 @@ use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{
 use iceoryx2_link_backend::wire::region::Region;
 use ros_env::builtin_interfaces::msg::rmw::Time;
 use ros_env::geometry_msgs::msg::rmw::{
-    Point, Pose, PoseWithCovariance, PoseWithCovarianceStamped, Quaternion,
+    Point, Pose, PoseArray, PoseWithCovariance, PoseWithCovarianceStamped, Quaternion,
 };
 use ros_env::sensor_msgs::msg::rmw::{ChannelFloat32, JointState};
 use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension, UInt8};
 
 use crate::next::testing::flatbuffers::{
     ToFlatbuffer, empty_flatbuffer, header_flatbuffer_with_a_struct_stamp,
-    header_flatbuffer_without_a_stamp, pose_with_covariance_flatbuffer,
+    header_flatbuffer_without_a_stamp, pose_array_flatbuffer_with_struct_poses,
+    pose_with_covariance_flatbuffer,
 };
 use crate::next::testing::messages;
 use crate::next::testing::messages::{
-    joint_state_message, pose_stamped_message, pose_with_covariance_message,
-    pose_with_covariance_stamped_message,
+    joint_state_message, point_cloud_message, pose_array_message, pose_stamped_message,
+    pose_with_covariance_message, pose_with_covariance_stamped_message,
 };
 use crate::next::testing::{compile, encode, serialize};
 use crate::schemas;
@@ -347,6 +348,67 @@ fn writes_an_absent_string_vector_as_an_empty_sequence() {
     };
 
     let mut encoded_bytes = encode(&compiled, &empty_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn matches_the_rmw_for_a_message_sequence() {
+    let compiled = compile(schemas::POSE_ARRAY, messages::POSE_ARRAY).expect("compiles");
+    let message = pose_array_message();
+
+    let mut encoded_bytes = encode(&compiled, &message.to_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn writes_an_absent_table_vector_as_an_empty_sequence() {
+    let compiled = compile(schemas::POSE_ARRAY, messages::POSE_ARRAY).expect("compiles");
+    let message = PoseArray {
+        header: Header {
+            stamp: Time { sec: 0, nanosec: 0 },
+            frame_id: "".into(),
+        },
+        poses: vec![].into(),
+    };
+
+    let mut encoded_bytes = encode(&compiled, &empty_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn matches_the_rmw_for_message_elements_of_varying_size() {
+    let compiled = compile(schemas::POINT_CLOUD, messages::POINT_CLOUD).expect("compiles");
+    let message = point_cloud_message();
+
+    let mut encoded_bytes = encode(&compiled, &message.to_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn matches_the_rmw_for_a_vector_of_structs() {
+    let compiled = compile(schemas::POSE_ARRAY_STRUCT, messages::POSE_ARRAY).expect("compiles");
+    let message = pose_array_message();
+
+    let mut encoded_bytes = encode(
+        &compiled,
+        &pose_array_flatbuffer_with_struct_poses(&message),
+    );
 
     let rmw_bytes = serialize(&message);
     assert_that!(encoded_bytes.len(), le rmw_bytes.len());

@@ -15,8 +15,8 @@ mod read;
 mod write;
 
 pub use layout::{
-    FieldEntry, FieldKind, FieldPlacement, Layout, Slot, StructEntry, StructIndex, StructOffset,
-    TableEntry, TableIndex, TablePlacement,
+    FieldEntry, FieldKind, FieldPlacement, Layout, RootObject, Slot, StructEntry, StructIndex,
+    StructOffset, TableEntry, TableIndex, TablePlacement,
 };
-pub use read::{Reader, StringElementIter, Truncated};
+pub use read::{MessageElementIter, Reader, StringElementIter, Truncated};
 pub use write::write;

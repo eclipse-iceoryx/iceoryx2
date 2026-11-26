@@ -19,6 +19,9 @@ pub const HEADER_MISMATCHED: &[u8] = include_bytes!("header_mismatched.bfbs");
 pub const HEADER_STRUCT: &[u8] = include_bytes!("header_struct.bfbs");
 pub const JOINT_STATE: &[u8] = include_bytes!("joint_state.bfbs");
 pub const MULTI_ARRAY_DIMENSION: &[u8] = include_bytes!("multi_array_dimension.bfbs");
+pub const POINT_CLOUD: &[u8] = include_bytes!("point_cloud.bfbs");
+pub const POSE_ARRAY: &[u8] = include_bytes!("pose_array.bfbs");
+pub const POSE_ARRAY_STRUCT: &[u8] = include_bytes!("pose_array_struct.bfbs");
 pub const POSE_STAMPED: &[u8] = include_bytes!("pose_stamped.bfbs");
 pub const POSE_WITH_COVARIANCE: &[u8] = include_bytes!("pose_with_covariance.bfbs");
 pub const POSE_WITH_COVARIANCE_STAMPED: &[u8] = include_bytes!("pose_with_covariance_stamped.bfbs");
@@ -52,6 +55,21 @@ pub mod joint_state;
 #[allow(clippy::all)]
 #[rustfmt::skip]
 pub mod multi_array_dimension;
+
+#[path = "point_cloud_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod point_cloud;
+
+#[path = "pose_array_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod pose_array;
+
+#[path = "pose_array_struct_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod pose_array_struct;
 
 #[path = "pose_stamped_generated.rs"]
 #[allow(clippy::all)]

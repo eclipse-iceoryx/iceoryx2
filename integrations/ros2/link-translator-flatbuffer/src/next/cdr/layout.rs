@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::next::model::{ScalarType, ValueIndex};
+use crate::next::model::{ModelIndex, ScalarType, ValueIndex};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Layout {
@@ -18,11 +18,17 @@ pub struct Layout {
     pub members: Vec<MemberEntry>,
     /// The values in the order the CDR holds them.
     pub order: Vec<ValueIndex>,
+    /// The layouts of the messages that repeat, by model index.
+    pub repeated: Vec<Layout>,
 }
 
 impl Layout {
     pub fn member(&self, index: ValueIndex) -> &MemberEntry {
         &self.members[usize::from(index.0)]
+    }
+
+    pub fn repeated(&self, index: ModelIndex) -> &Layout {
+        &self.repeated[usize::from(index.0)]
     }
 }
 
@@ -44,4 +50,5 @@ pub enum MemberKind {
     StringArray {
         number_of_elements: u32,
     },
+    MessageSequence(ModelIndex),
 }
