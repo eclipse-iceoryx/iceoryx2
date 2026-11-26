@@ -22,9 +22,7 @@ use r2r_rcl::{
     rosidl_typesupport_introspection_c__MessageMembers as MessageMembers,
 };
 
-use super::flatbuffer::{
-    FieldPlacement, Slot, StructIndex, StructOffset, TableIndex, TablePlacement,
-};
+use super::flatbuffer::{FieldPlacement, Slot, StructOffset, TableIndex, TablePlacement};
 use super::model::{Kind, Model, ModelIndex, ValueIndex};
 use super::{cdr, flatbuffer};
 
@@ -235,7 +233,7 @@ impl<'a> Compiler<'a> {
         path: &str,
     ) -> Result<(), CompileError> {
         // Add the struct to the flatbuffer layout.
-        let entry = StructIndex(self.compiled.flatbuffer.structs.len() as u16);
+        let entry = self.compiled.flatbuffer.structs.len();
         self.compiled
             .flatbuffer
             .structs
@@ -246,25 +244,22 @@ impl<'a> Compiler<'a> {
                 values: Vec::new(),
             });
 
-        // Add the values of the struct, which starts at the first byte of
-        // its own entry.
-        let target = StructRef::Entry(entry);
-        unsafe { self.add_struct_values(object, message, target, START_OF_STRUCT, path)? };
+        let start = FieldPlacement::Struct {
+            slot,
+            offset: START_OF_STRUCT,
+        };
+        unsafe { self.add_struct_values(object, message, start, path)? };
 
         // Order the values of the struct by their offsets.
         let layout = &mut self.compiled.flatbuffer;
-        sort_by_offset(
-            &mut layout.structs[usize::from(entry.0)].values,
-            &layout.fields,
-        );
+        sort_by_offset(&mut layout.structs[entry].values, &layout.fields);
 
         Ok(())
     }
 
     /// Adds the values of a message to the struct that holds them.
     ///
-    /// `offset` is where `object` starts within the struct that `target`
-    /// refers to.
+    /// `start` is the placement of the first byte of `object`.
     ///
     /// # Safety
     ///
@@ -273,12 +268,9 @@ impl<'a> Compiler<'a> {
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
-        target: StructRef,
-        offset: StructOffset,
+        start: FieldPlacement,
         path: &str,
     ) -> Result<(), CompileError> {
-        let origin = origin!("compile::add_struct_values");
-
         for member in unsafe { introspection::members(message) } {
             let name = unsafe { introspection::member_name(member) };
             let path = member_path(path, name);
@@ -286,50 +278,77 @@ impl<'a> Compiler<'a> {
                 path: path.clone(),
                 refusal,
             })?;
-            let offset = StructOffset(offset.0 + field.offset());
-
-            // Add the values of a nested message that a nested struct holds.
-            if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
-                let nested = match schema::object(self.schema, field) {
-                    Some(nested) if nested.is_struct() => nested,
-                    _ => {
-                        fail!(
-                            from origin,
-                            with CompileError { path, refusal: mismatch(member, field) },
-                            "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-                        );
-                    }
-                };
-                let message = unsafe { introspection::message(member) };
-                unsafe { self.add_struct_values(nested, message, target, offset, &path)? };
-                continue;
-            }
-
-            // Check that the member and the field hold the same scalar.
-            let (kind, member_kind, field_kind) =
-                pair(member, field).map_err(|refusal| CompileError { path, refusal })?;
-
-            let layout = &self.compiled.flatbuffer;
-            let placement = match target {
-                StructRef::Entry(entry) => FieldPlacement::Struct {
-                    slot: layout.structs[usize::from(entry.0)].slot,
-                    offset,
+            let placement = match start {
+                FieldPlacement::Struct { slot, offset } => FieldPlacement::Struct {
+                    slot,
+                    offset: StructOffset(offset.0 + field.offset()),
                 },
-                StructRef::Root => FieldPlacement::VectorElement { offset },
+                FieldPlacement::VectorElement { offset } => FieldPlacement::VectorElement {
+                    offset: StructOffset(offset.0 + field.offset()),
+                },
+                FieldPlacement::Table(_) => unreachable!("a struct starts in a struct"),
             };
-            let index = self.add_value(kind, member_kind, placement, field_kind);
+            unsafe { self.add_struct_value(member, field, placement, path)? };
+        }
 
-            let layout = &mut self.compiled.flatbuffer;
-            match (target, &mut layout.root) {
-                (StructRef::Entry(entry), _) => {
-                    layout.structs[usize::from(entry.0)].values.push(index);
+        Ok(())
+    }
+
+    /// Adds the values of `member` to the struct that holds `field`.
+    ///
+    /// `placement` is the placement of `field`.
+    ///
+    /// # Safety
+    ///
+    /// `member` must belong to a loaded introspection typesupport.
+    unsafe fn add_struct_value(
+        &mut self,
+        member: &MessageMember,
+        field: reflection::Field<'a>,
+        placement: FieldPlacement,
+        path: String,
+    ) -> Result<(), CompileError> {
+        let origin = origin!("compile::add_struct_value");
+
+        // Add the values of a nested message that a nested struct holds. The
+        // nested struct starts where the field is placed.
+        if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
+            let nested = match schema::object(self.schema, field) {
+                Some(nested) if nested.is_struct() => nested,
+                _ => {
+                    fail!(
+                        from origin,
+                        with CompileError { path, refusal: mismatch(member, field) },
+                        "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+                    );
                 }
-                (StructRef::Root, flatbuffer::RootObject::Struct { values, .. }) => {
-                    values.push(index)
-                }
-                (StructRef::Root, flatbuffer::RootObject::Table) => {
-                    unreachable!("the root of the layout is a struct")
-                }
+            };
+            let message = unsafe { introspection::message(member) };
+            return unsafe { self.add_struct_values(nested, message, placement, &path) };
+        }
+
+        // Check that the member and the field hold the same scalar.
+        let (kind, member_kind, field_kind) =
+            pair(member, field).map_err(|refusal| CompileError { path, refusal })?;
+        let index = self.add_value(kind, member_kind, placement, field_kind);
+
+        // Add the value to the struct it is placed in.
+        let layout = &mut self.compiled.flatbuffer;
+        match (placement, &mut layout.root) {
+            (FieldPlacement::Struct { slot, .. }, _) => layout
+                .structs
+                .iter_mut()
+                .find(|entry| entry.slot == slot)
+                .expect("the struct of a placement is part of the layout")
+                .values
+                .push(index),
+            (
+                FieldPlacement::VectorElement { .. },
+                flatbuffer::RootObject::Struct { values, .. },
+            ) => values.push(index),
+            (FieldPlacement::VectorElement { .. }, flatbuffer::RootObject::Table)
+            | (FieldPlacement::Table(_), _) => {
+                unreachable!("the value is placed in a struct")
             }
         }
 
@@ -379,8 +398,10 @@ impl<'a> Compiler<'a> {
             alignment: object.minalign() as u16,
             values: Vec::new(),
         };
-        let target = StructRef::Root;
-        unsafe { compiler.add_struct_values(object, message, target, START_OF_STRUCT, path)? };
+        let start = FieldPlacement::VectorElement {
+            offset: START_OF_STRUCT,
+        };
+        unsafe { compiler.add_struct_values(object, message, start, path)? };
 
         // Order the values of the struct by their offsets.
         let layout = &mut compiler.compiled.flatbuffer;
@@ -437,13 +458,6 @@ impl<'a> Compiler<'a> {
 
 /// The offset of the first byte of a struct.
 const START_OF_STRUCT: StructOffset = StructOffset(0);
-
-/// Refers to one of the structs of a flatbuffer layout.
-#[derive(Debug, Clone, Copy)]
-enum StructRef {
-    Entry(StructIndex),
-    Root,
-}
 
 fn sort_by_offset(values: &mut [ValueIndex], fields: &[flatbuffer::FieldEntry]) {
     values.sort_by_key(|index| match fields[usize::from(index.0)].placement {
