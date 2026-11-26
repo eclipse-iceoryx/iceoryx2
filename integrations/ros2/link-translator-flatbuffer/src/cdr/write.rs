@@ -365,7 +365,7 @@ fn write_scalar_sequence<R: ForwardRegion>(
 ) -> Result<(), writer::SequenceError> {
     let number_of_bytes = scalar_type.number_of_bytes();
 
-    if elements.byte_order == ByteOrder::HOST || number_of_bytes == 1 {
+    if is_copyable(scalar_type, elements) {
         // The elements lie in the byte order of the CDR. Copy them in bulk.
         writer.write_sequence(elements.bytes, number_of_bytes)?;
     } else {
@@ -394,7 +394,7 @@ fn write_scalar_array<R: ForwardRegion>(
         for _ in 0..number_of_elements {
             write_scalar(writer, zero)?;
         }
-    } else if elements.byte_order == ByteOrder::HOST || number_of_bytes == 1 {
+    } else if is_copyable(scalar_type, elements) {
         // The elements lie in the byte order of the CDR. Copy them in bulk.
         writer.write_array(elements.bytes, number_of_bytes)?;
     } else {
@@ -406,6 +406,11 @@ fn write_scalar_array<R: ForwardRegion>(
     }
 
     Ok(())
+}
+
+/// Whether `elements` lie in the byte order of the CDR.
+fn is_copyable(scalar_type: ScalarType, elements: ScalarElements<'_>) -> bool {
+    elements.byte_order == ByteOrder::HOST || scalar_type.number_of_bytes() == 1
 }
 
 fn write_string_elements<V: Values, R: ForwardRegion>(
