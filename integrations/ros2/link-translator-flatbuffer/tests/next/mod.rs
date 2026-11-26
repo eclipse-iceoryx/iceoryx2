@@ -11,4 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod compile_tests;
+mod encode_tests;
 mod testing;

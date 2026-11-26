@@ -10,16 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod flatbuffers;
 pub mod messages;
+
+pub use crate::testing::serialize;
 
 use iceoryx2_integrations_ros2_link_adapter::typesupport::{self, IntrospectionKind};
 use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{
     self as translator, CompileError, Compiled,
 };
 use iceoryx2_link_backend::service_description::Schema;
+use iceoryx2_link_backend::wire::region::Region;
 
 pub fn compile(schema: &[u8], message: &str) -> Result<Compiled, CompileError> {
     let schema = Schema::new(schema.to_vec()).expect("is a schema");
     let typesupport = typesupport::get::<IntrospectionKind>(message).expect("is loaded");
     translator::compile(&schema, &typesupport)
+}
+
+pub fn encode(compiled: &Compiled, flatbuffer: &[u8]) -> Vec<u8> {
+    let mut cdr: Vec<u8> = Vec::new();
+    translator::encode(compiled, flatbuffer, cdr.forward()).expect("encodes");
+    cdr
 }

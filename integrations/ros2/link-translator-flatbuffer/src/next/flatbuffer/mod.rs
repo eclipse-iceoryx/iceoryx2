@@ -11,5 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod layout;
+mod read;
 
 pub use layout::{FieldEntry, FieldKind, FieldPlacement, Layout, Slot, TableEntry, TableIndex};
+pub use read::{Reader, Truncated};

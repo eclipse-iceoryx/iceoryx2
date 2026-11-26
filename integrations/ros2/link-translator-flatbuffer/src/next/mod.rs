@@ -25,7 +25,9 @@
 
 pub mod cdr;
 mod compile;
+mod encode;
 pub mod flatbuffer;
 pub mod model;
 
 pub use compile::{CompileError, Compiled, Refusal, compile};
+pub use encode::{EncodeError, encode};
