@@ -21,6 +21,20 @@ use super::layout::{
 };
 use crate::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteError<E> {
+    /// A value cannot be taken from its source.
+    Values(E),
+}
+
+impl<E: core::fmt::Debug> core::fmt::Display for WriteError<E> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "WriteError::{self:?}")
+    }
+}
+
+impl<E: core::fmt::Debug> core::error::Error for WriteError<E> {}
+
 /// Writes `values` into `builder` as a finished flatbuffer.
 ///
 /// `layout` gives the place of each value in the flatbuffer. Fails when a
@@ -29,7 +43,7 @@ pub fn write<V: Values, A: Allocator>(
     layout: &Layout,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), V::Error> {
+) -> Result<(), WriteError<V::Error>> {
     let origin = origin!("flatbuffer::write");
 
     let root = fail!(
@@ -48,7 +62,7 @@ fn write_message<V: Values, A: Allocator>(
     layout: &Layout,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<TableFinishedWIPOffset>, V::Error> {
+) -> Result<WIPOffset<TableFinishedWIPOffset>, WriteError<V::Error>> {
     let origin = origin!("flatbuffer::write_message");
 
     // Lists that hold the offsets of one table at a time. They are created
@@ -81,7 +95,7 @@ fn write_table<V: Values, A: Allocator>(
     element_offsets: &mut Vec<WIPOffset<UnionWIPOffset>>,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<TableFinishedWIPOffset>, V::Error> {
+) -> Result<WIPOffset<TableFinishedWIPOffset>, WriteError<V::Error>> {
     let origin = origin!("flatbuffer::write_table");
 
     // Write the strings and vectors of this table into the flatbuffer and
@@ -95,39 +109,59 @@ fn write_table<V: Values, A: Allocator>(
         match field.kind {
             FieldKind::Scalar { .. } | FieldKind::ScalarArray { .. } => {}
             FieldKind::String => {
-                let bytes = fail!(
-                    from origin,
-                    when values.string(*index),
-                    "Unable to take the string value {}", index.0
-                );
+                let bytes = match values.string(*index) {
+                    Ok(bytes) => bytes,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the string value {}", index.0
+                        );
+                    }
+                };
                 let string_offset = builder.create_byte_string(bytes).as_union_value();
                 value_offsets.push((slot.vtable_offset, string_offset));
             }
             FieldKind::ScalarVector(scalar_type) => {
-                let elements = fail!(
-                    from origin,
-                    when values.scalar_elements(*index),
-                    "Unable to take the scalar elements of the value {}", index.0
-                );
+                let elements = match values.scalar_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the scalar elements of the value {}", index.0
+                        );
+                    }
+                };
                 let vector_offset = write_scalar_vector(builder, scalar_type, elements);
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::StringVector => {
-                let elements = fail!(
-                    from origin,
-                    when values.string_elements(*index),
-                    "Unable to take the string elements of the value {}", index.0
-                );
+                let elements = match values.string_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the string elements of the value {}", index.0
+                        );
+                    }
+                };
 
                 // Write the strings first. The vector then refers to them by
                 // their offsets.
                 element_offsets.clear();
                 for element in elements {
-                    let bytes = fail!(
-                        from origin,
-                        when element,
-                        "Unable to take a string element of the value {}", index.0
-                    );
+                    let bytes = match element {
+                        Ok(bytes) => bytes,
+                        Err(error) => {
+                            fail!(
+                                from origin,
+                                with WriteError::Values(error),
+                                "Unable to take a string element of the value {}", index.0
+                            );
+                        }
+                    };
                     element_offsets.push(builder.create_byte_string(bytes).as_union_value());
                 }
                 let vector_offset = builder
@@ -136,21 +170,31 @@ fn write_table<V: Values, A: Allocator>(
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::TableVector(model) => {
-                let elements = fail!(
-                    from origin,
-                    when values.message_elements(*index),
-                    "Unable to take the message elements of the value {}", index.0
-                );
+                let elements = match values.message_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the message elements of the value {}", index.0
+                        );
+                    }
+                };
 
                 // Write the table of each element first. The vector then
                 // refers to them by their offsets.
                 element_offsets.clear();
                 for element in elements {
-                    let element = fail!(
-                        from origin,
-                        when element,
-                        "Unable to take a message element of the value {}", index.0
-                    );
+                    let element = match element {
+                        Ok(element) => element,
+                        Err(error) => {
+                            fail!(
+                                from origin,
+                                with WriteError::Values(error),
+                                "Unable to take a message element of the value {}", index.0
+                            );
+                        }
+                    };
                     let element_offset = fail!(
                         from origin,
                         when write_message(layout.repeated(model), &element, builder),
@@ -164,11 +208,16 @@ fn write_table<V: Values, A: Allocator>(
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::StructVector(model) => {
-                let elements = fail!(
-                    from origin,
-                    when values.message_elements(*index),
-                    "Unable to take the message elements of the value {}", index.0
-                );
+                let elements = match values.message_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the message elements of the value {}", index.0
+                        );
+                    }
+                };
                 let vector_offset = fail!(
                     from origin,
                     when write_struct_vector(layout.repeated(model), elements, builder),
@@ -218,11 +267,16 @@ fn write_table<V: Values, A: Allocator>(
         if let (FieldKind::Scalar { default, .. }, FieldPlacement::Table(slot)) =
             (field.kind, field.placement)
         {
-            let value = fail!(
-                from origin,
-                when values.scalar(*index),
-                "Unable to take the scalar value {}", index.0
-            );
+            let value = match values.scalar(*index) {
+                Ok(value) => value,
+                Err(error) => {
+                    fail!(
+                        from origin,
+                        with WriteError::Values(error),
+                        "Unable to take the scalar value {}", index.0
+                    );
+                }
+            };
             if value != default {
                 write_scalar(builder, slot.vtable_offset, value);
             }
@@ -302,7 +356,7 @@ fn write_struct_vector<E: Values, A: Allocator>(
     layout: &Layout,
     elements: impl ExactSizeIterator<Item = Result<E, E::Error>>,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<UnionWIPOffset>, E::Error> {
+) -> Result<WIPOffset<UnionWIPOffset>, WriteError<E::Error>> {
     let origin = origin!("flatbuffer::write_struct_vector");
 
     let RootObject::Struct {
@@ -318,11 +372,16 @@ fn write_struct_vector<E: Values, A: Allocator>(
     // back to front and needs the last element first.
     let mut taken_elements = Vec::with_capacity(elements.len());
     for element in elements {
-        let element = fail!(
-            from origin,
-            when element,
-            "Unable to take an element of a vector of structs"
-        );
+        let element = match element {
+            Ok(element) => element,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with WriteError::Values(error),
+                    "Unable to take an element of a vector of structs"
+                );
+            }
+        };
         taken_elements.push(element);
     }
 
@@ -349,7 +408,7 @@ fn write_struct<V: Values, A: Allocator>(
     entry: &StructEntry,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), V::Error> {
+) -> Result<(), WriteError<V::Error>> {
     align(
         builder,
         usize::from(entry.number_of_bytes),
@@ -383,7 +442,7 @@ fn push_struct<V: Values, A: Allocator>(
     destination: StructDestination,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), V::Error> {
+) -> Result<(), WriteError<V::Error>> {
     let origin = origin!("flatbuffer::push_struct");
 
     // The builder fills the flatbuffer back to front. Push the values last
@@ -398,11 +457,16 @@ fn push_struct<V: Values, A: Allocator>(
         };
         match field.kind {
             FieldKind::Scalar { scalar_type, .. } => {
-                let value = fail!(
-                    from origin,
-                    when values.scalar(*index),
-                    "Unable to take the scalar value {}", index.0
-                );
+                let value = match values.scalar(*index) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the scalar value {}", index.0
+                        );
+                    }
+                };
 
                 let bytes = &value.to_le_bytes()[..scalar_type.number_of_bytes()];
                 let end = usize::from(offset.0) + bytes.len();
@@ -413,11 +477,16 @@ fn push_struct<V: Values, A: Allocator>(
                 scalar_type,
                 number_of_elements,
             } => {
-                let elements = fail!(
-                    from origin,
-                    when values.scalar_elements(*index),
-                    "Unable to take the scalar elements of the value {}", index.0
-                );
+                let elements = match values.scalar_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the scalar elements of the value {}", index.0
+                        );
+                    }
+                };
 
                 let number_of_bytes = number_of_elements as usize * scalar_type.number_of_bytes();
                 let end = usize::from(offset.0) + number_of_bytes;

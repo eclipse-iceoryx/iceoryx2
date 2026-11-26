@@ -19,4 +19,4 @@ pub use layout::{
     StructOffset, TableEntry, TableIndex, TablePlacement,
 };
 pub use read::{MessageElementIter, Reader, StringElementIter, Truncated};
-pub use write::write;
+pub use write::{WriteError, write};

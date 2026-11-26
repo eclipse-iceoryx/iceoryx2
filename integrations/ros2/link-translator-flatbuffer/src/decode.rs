@@ -35,6 +35,14 @@ impl core::fmt::Display for DecodeError {
 
 impl core::error::Error for DecodeError {}
 
+impl From<flatbuffer::WriteError<cdr::ReadError>> for DecodeError {
+    fn from(error: flatbuffer::WriteError<cdr::ReadError>) -> Self {
+        match error {
+            flatbuffer::WriteError::Values(error) => error.into(),
+        }
+    }
+}
+
 impl From<cdr::ReadError> for DecodeError {
     fn from(error: cdr::ReadError) -> Self {
         match error {
