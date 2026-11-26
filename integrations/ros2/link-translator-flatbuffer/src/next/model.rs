@@ -71,8 +71,10 @@ pub trait Values {
         index: ValueIndex,
     ) -> Result<Self::StringElementIter<'_>, Self::Error>;
 
-    /// Returns the elements of the message sequence value at `index`, or an
-    /// error when the source cannot provide them.
+    /// Returns the elements of the message sequence or message array value at
+    /// `index`, or an error when the source cannot provide them.
+    ///
+    /// The source of an array may hold no elements.
     fn message_elements(
         &self,
         index: ValueIndex,
@@ -93,6 +95,10 @@ pub enum Kind {
         number_of_elements: u32,
     },
     MessageSequence(ModelIndex),
+    MessageArray {
+        model: ModelIndex,
+        number_of_elements: u32,
+    },
 }
 
 /// The order of the bytes of a scalar.

@@ -12,6 +12,7 @@
 
 //! The binary schemas and their Rust bindings Must be generated before running tests.
 
+pub const ARRAYS: &[u8] = include_bytes!("arrays.bfbs");
 pub const CHANNEL_FLOAT32: &[u8] = include_bytes!("channel_float32.bfbs");
 pub const CHANNEL_FLOAT32_MISMATCHED: &[u8] = include_bytes!("channel_float32_mismatched.bfbs");
 pub const HEADER: &[u8] = include_bytes!("header.bfbs");
@@ -30,6 +31,11 @@ pub const TIME_MISMATCHED: &[u8] = include_bytes!("time_mismatched.bfbs");
 pub const TIME_RENAMED: &[u8] = include_bytes!("time_renamed.bfbs");
 pub const UINT8_ENUM: &[u8] = include_bytes!("uint8_enum.bfbs");
 pub const WSTRING: &[u8] = include_bytes!("wstring.bfbs");
+
+#[path = "arrays_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod arrays;
 
 #[path = "channel_float32_generated.rs"]
 #[allow(clippy::all)]

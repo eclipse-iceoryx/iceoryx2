@@ -89,7 +89,8 @@ impl<'a> StringElementIter<'a> {
             | MemberKind::String
             | MemberKind::ScalarSequence(_)
             | MemberKind::ScalarArray { .. }
-            | MemberKind::MessageSequence(_) => {
+            | MemberKind::MessageSequence(_)
+            | MemberKind::MessageArray { .. } => {
                 unreachable!("the value holds string elements in the model")
             }
         };
@@ -303,7 +304,9 @@ fn walk_message(
             kind @ (MemberKind::StringSequence | MemberKind::StringArray { .. }) => {
                 skip_string_elements(reader, kind)
             }
-            MemberKind::MessageSequence(_) => skip_message_elements(layout, *index, reader),
+            MemberKind::MessageSequence(_) | MemberKind::MessageArray { .. } => {
+                skip_message_elements(layout, *index, reader)
+            }
         };
         fail!(
             from origin,
@@ -352,7 +355,8 @@ fn read_scalar_elements<'a>(
         | MemberKind::String
         | MemberKind::StringSequence
         | MemberKind::StringArray { .. }
-        | MemberKind::MessageSequence(_) => {
+        | MemberKind::MessageSequence(_)
+        | MemberKind::MessageArray { .. } => {
             unreachable!("the value holds scalar elements in the model")
         }
     };
@@ -403,6 +407,10 @@ fn read_message_element_count(
 ) -> Result<(ModelIndex, usize), ReadError> {
     Ok(match layout.member(index).kind {
         MemberKind::MessageSequence(model) => (model, reader.read_length()?),
+        MemberKind::MessageArray {
+            model,
+            number_of_elements,
+        } => (model, number_of_elements as usize),
         MemberKind::Scalar(_)
         | MemberKind::String
         | MemberKind::ScalarSequence(_)

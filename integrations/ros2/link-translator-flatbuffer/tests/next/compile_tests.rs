@@ -394,3 +394,45 @@ fn pairs_an_enum_with_its_underlying_scalar() {
 
     assert_that!(compiled.model.values, eq vec![Kind::Scalar(ScalarType::U8)]);
 }
+
+#[test]
+fn records_the_number_of_elements_of_string_and_message_arrays() {
+    const STRING_VALUES_INDEX: usize = 13;
+    const BASIC_TYPES_VALUES_INDEX: usize = 14;
+    const BASIC_TYPES_MODEL_INDEX: ModelIndex = ModelIndex(0);
+    const NUMBER_OF_ELEMENTS: u32 = 3;
+
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+
+    assert_that!(
+        compiled.model.values[STRING_VALUES_INDEX],
+        eq Kind::StringArray { number_of_elements: NUMBER_OF_ELEMENTS }
+    );
+    assert_that!(
+        compiled.model.values[BASIC_TYPES_VALUES_INDEX],
+        eq Kind::MessageArray {
+            model: BASIC_TYPES_MODEL_INDEX,
+            number_of_elements: NUMBER_OF_ELEMENTS,
+        }
+    );
+}
+
+#[test]
+fn pairs_bounded_sequences_like_sequences() {
+    const BOOL_VALUES_INDEX: usize = 0;
+    const STRING_VALUES_INDEX: usize = 13;
+    const BASIC_TYPES_VALUES_INDEX: usize = 14;
+    const BASIC_TYPES_MODEL_INDEX: ModelIndex = ModelIndex(0);
+
+    let compiled = compile(schemas::ARRAYS, messages::BOUNDED_SEQUENCES).expect("compiles");
+
+    assert_that!(
+        compiled.model.values[BOOL_VALUES_INDEX],
+        eq Kind::ScalarSequence(ScalarType::Bool)
+    );
+    assert_that!(compiled.model.values[STRING_VALUES_INDEX], eq Kind::StringSequence);
+    assert_that!(
+        compiled.model.values[BASIC_TYPES_VALUES_INDEX],
+        eq Kind::MessageSequence(BASIC_TYPES_MODEL_INDEX)
+    );
+}

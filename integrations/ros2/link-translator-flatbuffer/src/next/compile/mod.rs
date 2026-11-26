@@ -132,10 +132,10 @@ impl<'a> Compiler<'a> {
                 refusal,
             })?;
 
-            // A sequence of messages is one value of this model. The message
-            // it repeats is compiled separately, and the value refers to that
-            // model.
-            if member.type_id_ == introspection::MESSAGE && introspection::is_sequence(member) {
+            // A sequence or an array of messages is one value of this model.
+            // The message it repeats is compiled separately, and the value
+            // refers to that model.
+            if member.type_id_ == introspection::MESSAGE && member.is_array_ {
                 let Some(element) = schema::element_object(self.schema, field) else {
                     fail!(
                         from origin,
@@ -156,12 +156,25 @@ impl<'a> Compiler<'a> {
                     table,
                     vtable_offset: field.offset(),
                 });
-                let index = self.add_value(
-                    Kind::MessageSequence(model),
-                    cdr::MemberKind::MessageSequence(model),
-                    placement,
-                    field_kind,
-                );
+                let (kind, member_kind) = if introspection::is_sequence(member) {
+                    (
+                        Kind::MessageSequence(model),
+                        cdr::MemberKind::MessageSequence(model),
+                    )
+                } else {
+                    let number_of_elements = member.array_size_ as u32;
+                    (
+                        Kind::MessageArray {
+                            model,
+                            number_of_elements,
+                        },
+                        cdr::MemberKind::MessageArray {
+                            model,
+                            number_of_elements,
+                        },
+                    )
+                };
+                let index = self.add_value(kind, member_kind, placement, field_kind);
                 self.compiled.flatbuffer.tables[usize::from(table.0)]
                     .values
                     .push(index);

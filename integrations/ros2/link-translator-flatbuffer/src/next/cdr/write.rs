@@ -291,6 +291,48 @@ fn write_message<V: Values, R: ForwardRegion>(
                     "Unable to write the message sequence value {}", index.0
                 );
             }
+            MemberKind::MessageArray {
+                model,
+                number_of_elements,
+            } => {
+                let elements = match values.message_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the message array value {}", index.0
+                        );
+                    }
+                };
+
+                let expected = number_of_elements as usize;
+                let actual = elements.len();
+                if actual == 0 {
+                    // The source holds no elements. Write a message of zeros
+                    // for each.
+                    for _ in 0..number_of_elements {
+                        fail!(
+                            from origin,
+                            when write_zero_message(layout.repeated(model), writer),
+                            "Unable to write a message of zeros of the message array value {}", index.0
+                        );
+                    }
+                } else if actual == expected {
+                    fail!(
+                        from origin,
+                        when write_message_elements::<V, R>(layout.repeated(model), elements, writer),
+                        "Unable to write the message array value {}", index.0
+                    );
+                } else {
+                    fail!(
+                        from origin,
+                        with WriteError::ArrayLength { expected, actual },
+                        "The message array value {} holds {} elements and its source {}",
+                        index.0, expected, actual
+                    );
+                }
+            }
         }
     }
 
@@ -417,6 +459,48 @@ fn write_message_elements<V: Values, R: ForwardRegion>(
             when write_message(layout, &element, writer),
             "Unable to write a message element"
         );
+    }
+
+    Ok(())
+}
+
+/// Writes a message of `layout` whose scalars are zero and whose strings and
+/// sequences are empty.
+fn write_zero_message<E, R: ForwardRegion>(
+    layout: &Layout,
+    writer: &mut writer::Writer<R>,
+) -> Result<(), WriteError<E>> {
+    for index in &layout.order {
+        match layout.member(*index).kind {
+            MemberKind::Scalar(scalar) => {
+                write_scalar(writer, ScalarValue::from_le_bytes(scalar, &[0; 8]))?;
+            }
+            MemberKind::String => writer.write_string(&[])?,
+            MemberKind::ScalarSequence(_)
+            | MemberKind::StringSequence
+            | MemberKind::MessageSequence(_) => writer.write_length(0)?,
+            MemberKind::ScalarArray {
+                scalar,
+                number_of_elements,
+            } => {
+                for _ in 0..number_of_elements {
+                    write_scalar(writer, ScalarValue::from_le_bytes(scalar, &[0; 8]))?;
+                }
+            }
+            MemberKind::StringArray { number_of_elements } => {
+                for _ in 0..number_of_elements {
+                    writer.write_string(&[])?;
+                }
+            }
+            MemberKind::MessageArray {
+                model,
+                number_of_elements,
+            } => {
+                for _ in 0..number_of_elements {
+                    write_zero_message(layout.repeated(model), writer)?;
+                }
+            }
+        }
     }
 
     Ok(())

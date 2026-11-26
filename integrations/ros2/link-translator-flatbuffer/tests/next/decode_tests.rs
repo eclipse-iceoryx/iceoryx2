@@ -19,13 +19,15 @@ use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{
 use ros_env::builtin_interfaces::msg::rmw::Time;
 use ros_env::sensor_msgs::msg::rmw::ChannelFloat32;
 use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
+use ros_env::test_msgs::msg::rmw::BoundedSequences;
 
 use crate::next::testing::messages;
 use crate::next::testing::messages::{
-    joint_state_message, point_cloud_message, pose_array_message, pose_stamped_message,
-    pose_with_covariance_message, pose_with_covariance_stamped_message,
+    arrays_message, joint_state_message, point_cloud_message, pose_array_message,
+    pose_stamped_message, pose_with_covariance_message, pose_with_covariance_stamped_message,
 };
 use crate::next::testing::{compile, decode, encode, serialize};
+use crate::schemas::arrays::test_msgs::msg as arrays;
 use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
 use crate::schemas::joint_state::sensor_msgs::msg as joint_state;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
@@ -387,4 +389,50 @@ fn writes_a_message_sequence_as_a_vector_of_structs() {
     assert_that!(poses.get(FIRST_POSE).orientation().w(), eq expected[FIRST_POSE].orientation.w);
     assert_that!(poses.get(SECOND_POSE).position().x(), eq expected[SECOND_POSE].position.x);
     assert_that!(poses.get(SECOND_POSE).orientation().w(), eq expected[SECOND_POSE].orientation.w);
+}
+
+#[test]
+fn writes_string_and_message_arrays_as_vectors() {
+    const SECOND_ELEMENT: usize = 1;
+    const THIRD_ELEMENT: usize = 2;
+
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+    let message = arrays_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = arrays::root_as_arrays(&flatbuffer).expect("is a flatbuffer");
+    let strings = decoded.string_values().expect("holds strings");
+    assert_that!(strings.len(), eq message.string_values.len());
+    assert_that!(strings.get(THIRD_ELEMENT), eq "third");
+    let basic_types = decoded.basic_types_values().expect("holds basic types");
+    assert_that!(basic_types.len(), eq message.basic_types_values.len());
+    assert_that!(
+        basic_types.get(SECOND_ELEMENT).int32_value(),
+        eq message.basic_types_values[SECOND_ELEMENT].int32_value
+    );
+}
+
+#[test]
+fn encoding_the_decoded_flatbuffer_reproduces_the_rmw_bytes_of_string_and_message_arrays() {
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+    let rmw_bytes = serialize(&arrays_message());
+
+    let mut encoded_bytes = encode(&compiled, &decode(&compiled, &rmw_bytes));
+
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn encoding_the_decoded_flatbuffer_reproduces_the_rmw_bytes_of_bounded_sequences() {
+    let compiled = compile(schemas::ARRAYS, messages::BOUNDED_SEQUENCES).expect("compiles");
+    let rmw_bytes = serialize(&BoundedSequences::default());
+
+    let mut encoded_bytes = encode(&compiled, &decode(&compiled, &rmw_bytes));
+
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
 }

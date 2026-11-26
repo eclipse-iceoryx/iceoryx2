@@ -31,11 +31,12 @@ use crate::next::testing::flatbuffers::{
 };
 use crate::next::testing::messages;
 use crate::next::testing::messages::{
-    joint_state_message, point_cloud_message, pose_array_message, pose_stamped_message,
-    pose_with_covariance_message, pose_with_covariance_stamped_message,
+    arrays_message_of_zeros, joint_state_message, point_cloud_message, pose_array_message,
+    pose_stamped_message, pose_with_covariance_message, pose_with_covariance_stamped_message,
 };
 use crate::next::testing::{compile, encode, serialize};
 use crate::schemas;
+use crate::schemas::arrays::test_msgs::msg as arrays;
 use crate::schemas::uint8_enum::std_msgs::msg as uint8_enum;
 
 #[test]
@@ -477,4 +478,46 @@ fn writes_an_enum_as_its_integer() {
     assert_that!(encoded_bytes.len(), le rmw_bytes.len());
     encoded_bytes.resize(rmw_bytes.len(), 0);
     assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn writes_absent_vectors_as_string_and_message_arrays_of_zeros() {
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+
+    let mut encoded_bytes = encode(&compiled, &empty_flatbuffer());
+
+    let rmw_bytes = serialize(&arrays_message_of_zeros());
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn refuses_a_vector_of_tables_with_another_number_of_elements() {
+    const NUMBER_OF_ELEMENTS: usize = 3;
+    const TOO_FEW_ELEMENTS: usize = 2;
+
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+    let mut builder = FlatBufferBuilder::new();
+    let basic_types: Vec<_> = (0..TOO_FEW_ELEMENTS)
+        .map(|_| arrays::BasicTypes::create(&mut builder, &arrays::BasicTypesArgs::default()))
+        .collect();
+    let basic_types = builder.create_vector(&basic_types);
+    let root = arrays::Arrays::create(
+        &mut builder,
+        &arrays::ArraysArgs {
+            basic_types_values: Some(basic_types),
+            ..Default::default()
+        },
+    );
+    builder.finish_minimal(root);
+    let mut cdr: Vec<u8> = Vec::new();
+
+    let error =
+        translator::encode(&compiled, builder.finished_data(), cdr.forward()).expect_err("refuses");
+
+    assert_that!(
+        error,
+        eq EncodeError::ArrayLength { expected: NUMBER_OF_ELEMENTS, actual: TOO_FEW_ELEMENTS }
+    );
 }

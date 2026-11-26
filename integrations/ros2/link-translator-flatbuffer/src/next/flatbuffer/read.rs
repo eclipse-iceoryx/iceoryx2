@@ -277,7 +277,7 @@ impl Values for Reader<'_> {
         })
     }
 
-    /// The elements of the message sequence value at `index`.
+    /// The elements of the message sequence or message array value at `index`.
     ///
     /// None when the flatbuffer omits it.
     fn message_elements(&self, index: ValueIndex) -> Result<MessageElementIter<'_>, Infallible> {

@@ -51,4 +51,8 @@ pub enum MemberKind {
         number_of_elements: u32,
     },
     MessageSequence(ModelIndex),
+    MessageArray {
+        model: ModelIndex,
+        number_of_elements: u32,
+    },
 }

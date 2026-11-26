@@ -17,7 +17,10 @@ use ros_env::geometry_msgs::msg::rmw::{
 };
 use ros_env::sensor_msgs::msg::rmw::{ChannelFloat32, JointState, PointCloud};
 use ros_env::std_msgs::msg::rmw::Header;
+use ros_env::test_msgs::msg::rmw::{Arrays, Defaults};
 
+pub const ARRAYS: &str = "test_msgs/msg/Arrays";
+pub const BOUNDED_SEQUENCES: &str = "test_msgs/msg/BoundedSequences";
 pub const CHANNEL_FLOAT32: &str = "sensor_msgs/msg/ChannelFloat32";
 pub const HEADER: &str = "std_msgs/msg/Header";
 pub const JOINT_STATE: &str = "sensor_msgs/msg/JointState";
@@ -104,6 +107,49 @@ pub fn point_cloud_message() -> PointCloud {
         ]
         .into(),
     }
+}
+
+pub fn arrays_message() -> Arrays {
+    let mut message = Arrays::default();
+    message.string_values = ["first".into(), "".into(), "third".into()];
+    message.basic_types_values[1].int32_value = -7;
+    message.basic_types_values[2].float64_value = 2.5;
+    message.alignment_check = 42;
+    message
+}
+
+pub fn arrays_message_of_zeros() -> Arrays {
+    let mut message = Arrays::default();
+    message.defaults_values = core::array::from_fn(|_| Defaults {
+        bool_value: Default::default(),
+        byte_value: Default::default(),
+        char_value: Default::default(),
+        float32_value: Default::default(),
+        float64_value: Default::default(),
+        int8_value: Default::default(),
+        uint8_value: Default::default(),
+        int16_value: Default::default(),
+        uint16_value: Default::default(),
+        int32_value: Default::default(),
+        uint32_value: Default::default(),
+        int64_value: Default::default(),
+        uint64_value: Default::default(),
+    });
+    message.bool_values_default = Default::default();
+    message.byte_values_default = Default::default();
+    message.char_values_default = Default::default();
+    message.float32_values_default = Default::default();
+    message.float64_values_default = Default::default();
+    message.int8_values_default = Default::default();
+    message.uint8_values_default = Default::default();
+    message.int16_values_default = Default::default();
+    message.uint16_values_default = Default::default();
+    message.int32_values_default = Default::default();
+    message.uint32_values_default = Default::default();
+    message.int64_values_default = Default::default();
+    message.uint64_values_default = Default::default();
+    message.string_values_default = Default::default();
+    message
 }
 
 pub fn pose_stamped_message() -> PoseStamped {
