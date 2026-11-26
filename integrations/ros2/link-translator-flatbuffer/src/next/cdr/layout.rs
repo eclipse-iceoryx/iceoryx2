@@ -40,4 +40,8 @@ pub enum MemberKind {
         scalar: ScalarType,
         number_of_elements: u32,
     },
+    StringSequence,
+    StringArray {
+        number_of_elements: u32,
+    },
 }

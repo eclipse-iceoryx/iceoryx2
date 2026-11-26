@@ -22,10 +22,12 @@ use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
 
 use crate::next::testing::messages;
 use crate::next::testing::messages::{
-    pose_stamped_message, pose_with_covariance_message, pose_with_covariance_stamped_message,
+    joint_state_message, pose_stamped_message, pose_with_covariance_message,
+    pose_with_covariance_stamped_message,
 };
 use crate::next::testing::{compile, decode, encode, serialize};
 use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
+use crate::schemas::joint_state::sensor_msgs::msg as joint_state;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
 use crate::schemas::pose_with_covariance::geometry_msgs::msg as pose_with_covariance;
 use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
@@ -297,4 +299,29 @@ fn writes_a_scalar_array_as_an_array_inside_a_struct() {
     let covariance: Vec<f64> = pose.covariance().iter().collect();
     assert_that!(covariance, eq message.pose.covariance.to_vec());
     assert_that!(pose.pose().orientation().w(), eq message.pose.pose.orientation.w);
+}
+
+#[test]
+fn writes_a_string_sequence_as_a_vector_of_strings() {
+    let compiled = compile(schemas::JOINT_STATE, messages::JOINT_STATE).expect("compiles");
+    let message = joint_state_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = joint_state::root_as_joint_state(&flatbuffer).expect("is a flatbuffer");
+    let names: Vec<String> = decoded
+        .name()
+        .expect("holds names")
+        .iter()
+        .map(str::to_string)
+        .collect();
+    let message_names: Vec<String> = message
+        .name
+        .as_slice()
+        .iter()
+        .map(|name| name.to_string())
+        .collect();
+    assert_that!(names, eq message_names);
+    let effort: Vec<f64> = decoded.effort().expect("holds effort").iter().collect();
+    assert_that!(effort, eq message.effort.as_slice().to_vec());
 }

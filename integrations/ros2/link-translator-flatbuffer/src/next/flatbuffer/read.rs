@@ -12,7 +12,9 @@
 
 use core::convert::Infallible;
 
-use flatbuffers::{Follow, ForwardsUOffset, UOffsetT, VOffsetT, read_scalar_at};
+use flatbuffers::{
+    Follow, ForwardsUOffset, UOffsetT, VOffsetT, Vector, VectorIter, read_scalar_at,
+};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{FieldEntry, FieldKind, FieldPlacement, Layout, TableIndex, TablePlacement};
@@ -29,6 +31,25 @@ impl core::fmt::Display for Truncated {
 }
 
 impl core::error::Error for Truncated {}
+
+#[derive(Debug)]
+pub struct StringElementIter<'a> {
+    elements: VectorIter<'a, ForwardsUOffset<&'a [u8]>>,
+}
+
+impl<'a> Iterator for StringElementIter<'a> {
+    type Item = Result<&'a [u8], Infallible>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.elements.next().map(Ok)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.elements.size_hint()
+    }
+}
+
+impl ExactSizeIterator for StringElementIter<'_> {}
 
 /// A location within the bytes of a flatbuffer.
 #[derive(Debug, Clone, Copy)]
@@ -100,6 +121,10 @@ impl<'a> Reader<'a> {
 
 impl Values for Reader<'_> {
     type Error = Infallible;
+    type StringElementIter<'a>
+        = StringElementIter<'a>
+    where
+        Self: 'a;
 
     /// The scalar value at `index`.
     ///
@@ -149,7 +174,7 @@ impl Values for Reader<'_> {
                 let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
                 &buffer[location.0..location.0 + number_of_bytes]
             }
-            (FieldKind::Scalar { .. } | FieldKind::String, Some(_)) => {
+            (FieldKind::Scalar { .. } | FieldKind::String | FieldKind::StringVector, Some(_)) => {
                 unreachable!("the value holds scalar elements in the model")
             }
         };
@@ -157,6 +182,26 @@ impl Values for Reader<'_> {
         Ok(ScalarElements {
             bytes,
             byte_order: ByteOrder::Little,
+        })
+    }
+
+    /// The elements of the string sequence or string array value at `index`.
+    ///
+    /// None when the flatbuffer omits it.
+    fn string_elements(&self, index: ValueIndex) -> Result<StringElementIter<'_>, Infallible> {
+        let vector = match self.locate_field(self.layout.field(index)) {
+            // SAFETY: the field holds a vector of strings.
+            Some(location) => unsafe {
+                ForwardsUOffset::<Vector<'_, ForwardsUOffset<&[u8]>>>::follow(
+                    self.buffer,
+                    location.0,
+                )
+            },
+            None => Vector::default(),
+        };
+
+        Ok(StringElementIter {
+            elements: vector.iter(),
         })
     }
 }

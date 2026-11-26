@@ -81,6 +81,10 @@ pub(super) fn scalar_array(field: reflection::Field<'_>) -> Option<(ScalarType, 
     Some((scalar, u32::from(field.type_().fixed_length())))
 }
 
+pub(super) fn is_string_vector(field: reflection::Field<'_>) -> bool {
+    field.type_().base_type() == BaseType::Vector && field.type_().element() == BaseType::String
+}
+
 fn scalar_of(base_type: BaseType) -> Option<ScalarType> {
     match base_type {
         BaseType::Bool => Some(ScalarType::Bool),

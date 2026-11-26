@@ -15,10 +15,11 @@ use ros_env::builtin_interfaces::msg::rmw::Time;
 use ros_env::geometry_msgs::msg::rmw::{
     Pose, PoseStamped, PoseWithCovariance, PoseWithCovarianceStamped,
 };
-use ros_env::sensor_msgs::msg::rmw::ChannelFloat32;
+use ros_env::sensor_msgs::msg::rmw::{ChannelFloat32, JointState};
 use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
 
 use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
+use crate::schemas::joint_state::sensor_msgs::msg as joint_state;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
 use crate::schemas::pose_with_covariance::geometry_msgs::msg as pose_with_covariance;
 use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
@@ -180,6 +181,46 @@ impl ToFlatbuffer for PoseWithCovarianceStamped {
             &pose_with_covariance_stamped::PoseWithCovarianceStampedArgs {
                 header: Some(header),
                 pose: Some(&pose),
+            },
+        );
+        builder.finish_minimal(root);
+        builder.finished_data().to_vec()
+    }
+}
+
+impl ToFlatbuffer for JointState {
+    fn to_flatbuffer(&self) -> Vec<u8> {
+        let mut builder = FlatBufferBuilder::new();
+        let frame_id = builder.create_string(&self.header.frame_id.to_string());
+        let stamp = schemas::joint_state::builtin_interfaces::msg::Time::new(
+            self.header.stamp.sec,
+            self.header.stamp.nanosec,
+        );
+        let header = schemas::joint_state::std_msgs::msg::Header::create(
+            &mut builder,
+            &schemas::joint_state::std_msgs::msg::HeaderArgs {
+                stamp: Some(&stamp),
+                frame_id: Some(frame_id),
+            },
+        );
+        let names: Vec<_> = self
+            .name
+            .as_slice()
+            .iter()
+            .map(|name| builder.create_string(&name.to_string()))
+            .collect();
+        let name = builder.create_vector(&names);
+        let position = builder.create_vector(self.position.as_slice());
+        let velocity = builder.create_vector(self.velocity.as_slice());
+        let effort = builder.create_vector(self.effort.as_slice());
+        let root = joint_state::JointState::create(
+            &mut builder,
+            &joint_state::JointStateArgs {
+                header: Some(header),
+                name: Some(name),
+                position: Some(position),
+                velocity: Some(velocity),
+                effort: Some(effort),
             },
         );
         builder.finish_minimal(root);

@@ -109,6 +109,7 @@ pub enum FieldKind {
     },
     String,
     ScalarVector(ScalarType),
+    StringVector,
     /// Within a struct.
     ScalarArray {
         scalar: ScalarType,

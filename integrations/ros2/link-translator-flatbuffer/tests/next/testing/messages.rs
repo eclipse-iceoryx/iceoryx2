@@ -14,10 +14,12 @@ use ros_env::builtin_interfaces::msg::rmw::Time;
 use ros_env::geometry_msgs::msg::rmw::{
     Point, Pose, PoseStamped, PoseWithCovariance, PoseWithCovarianceStamped, Quaternion,
 };
+use ros_env::sensor_msgs::msg::rmw::JointState;
 use ros_env::std_msgs::msg::rmw::Header;
 
 pub const CHANNEL_FLOAT32: &str = "sensor_msgs/msg/ChannelFloat32";
 pub const HEADER: &str = "std_msgs/msg/Header";
+pub const JOINT_STATE: &str = "sensor_msgs/msg/JointState";
 pub const MULTI_ARRAY_DIMENSION: &str = "std_msgs/msg/MultiArrayDimension";
 pub const POSE_STAMPED: &str = "geometry_msgs/msg/PoseStamped";
 pub const POSE_WITH_COVARIANCE: &str = "geometry_msgs/msg/PoseWithCovariance";
@@ -37,6 +39,16 @@ pub fn pose_with_covariance_message() -> PoseWithCovariance {
     PoseWithCovariance {
         pose: pose_stamped_message().pose,
         covariance: core::array::from_fn(|index| index as f64 * 0.5),
+    }
+}
+
+pub fn joint_state_message() -> JointState {
+    JointState {
+        header: pose_stamped_message().header,
+        name: vec!["shoulder".into(), "elbow".into(), "wrist_1".into()].into(),
+        position: vec![0.1, -0.2, 0.3].into(),
+        velocity: vec![].into(),
+        effort: vec![1.0, 2.0, 3.0].into(),
     }
 }
 

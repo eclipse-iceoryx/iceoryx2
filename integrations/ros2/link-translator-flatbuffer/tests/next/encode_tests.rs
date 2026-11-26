@@ -21,7 +21,7 @@ use ros_env::builtin_interfaces::msg::rmw::Time;
 use ros_env::geometry_msgs::msg::rmw::{
     Point, Pose, PoseWithCovariance, PoseWithCovarianceStamped, Quaternion,
 };
-use ros_env::sensor_msgs::msg::rmw::ChannelFloat32;
+use ros_env::sensor_msgs::msg::rmw::{ChannelFloat32, JointState};
 use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension, UInt8};
 
 use crate::next::testing::flatbuffers::{
@@ -30,7 +30,8 @@ use crate::next::testing::flatbuffers::{
 };
 use crate::next::testing::messages;
 use crate::next::testing::messages::{
-    pose_stamped_message, pose_with_covariance_message, pose_with_covariance_stamped_message,
+    joint_state_message, pose_stamped_message, pose_with_covariance_message,
+    pose_with_covariance_stamped_message,
 };
 use crate::next::testing::{compile, encode, serialize};
 use crate::schemas;
@@ -311,6 +312,41 @@ fn matches_the_rmw_for_an_array_inside_a_struct() {
     let message = pose_with_covariance_stamped_message();
 
     let mut encoded_bytes = encode(&compiled, &message.to_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn matches_the_rmw_for_a_string_sequence() {
+    let compiled = compile(schemas::JOINT_STATE, messages::JOINT_STATE).expect("compiles");
+    let message = joint_state_message();
+
+    let mut encoded_bytes = encode(&compiled, &message.to_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn writes_an_absent_string_vector_as_an_empty_sequence() {
+    let compiled = compile(schemas::JOINT_STATE, messages::JOINT_STATE).expect("compiles");
+    let message = JointState {
+        header: Header {
+            stamp: Time { sec: 0, nanosec: 0 },
+            frame_id: "".into(),
+        },
+        name: vec![].into(),
+        position: vec![].into(),
+        velocity: vec![].into(),
+        effort: vec![].into(),
+    };
+
+    let mut encoded_bytes = encode(&compiled, &empty_flatbuffer());
 
     let rmw_bytes = serialize(&message);
     assert_that!(encoded_bytes.len(), le rmw_bytes.len());

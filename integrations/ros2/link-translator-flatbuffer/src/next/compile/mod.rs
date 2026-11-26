@@ -407,6 +407,33 @@ fn kinds(
         };
     }
 
+    // Pair a sequence or an array of strings with a vector of strings.
+    if member.type_id_ == introspection::STRING
+        && (introspection::is_sequence(member) || introspection::is_array(member))
+    {
+        if !schema::is_string_vector(field) {
+            fail!(
+                from origin,
+                with mismatch(member, field),
+                "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+            );
+        }
+
+        // The model and the CDR distinguish a sequence from an array. The
+        // flatbuffer holds both as a vector of strings.
+        let (kind, member_kind) = if introspection::is_sequence(member) {
+            (Kind::StringSequence, cdr::MemberKind::StringSequence)
+        } else {
+            let number_of_elements = member.array_size_ as u32;
+            (
+                Kind::StringArray { number_of_elements },
+                cdr::MemberKind::StringArray { number_of_elements },
+            )
+        };
+
+        return Ok((kind, member_kind, flatbuffer::FieldKind::StringVector));
+    }
+
     if member.is_array_ || member.type_id_ == introspection::MESSAGE {
         fail!(
             from origin,

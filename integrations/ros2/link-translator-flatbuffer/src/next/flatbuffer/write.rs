@@ -49,9 +49,11 @@ fn write_message<V: Values, A: Allocator>(
 ) -> Result<WIPOffset<TableFinishedWIPOffset>, V::Error> {
     let origin = origin!("flatbuffer::write_message");
 
-    // A list that holds the offsets of one table at a time. It is created
-    // here so that writing each table reuses its memory to save reallocation.
+    // Lists that hold the offsets of one table at a time. They are created
+    // here so that writing each table reuses their memory to save
+    // reallocation.
     let mut value_offsets = Vec::new();
+    let mut element_offsets = Vec::new();
 
     // Write the tables last to first, so that a nested table is written
     // before the table that holds it.
@@ -60,7 +62,7 @@ fn write_message<V: Values, A: Allocator>(
     for index in (0..layout.tables.len()).rev() {
         let table = fail!(
             from origin,
-            when write_table(layout, TableIndex(index as u16), &written, &mut value_offsets, values, builder),
+            when write_table(layout, TableIndex(index as u16), &written, &mut value_offsets, &mut element_offsets, values, builder),
             "Unable to write the table {}", index
         );
         written[index] = Some(table);
@@ -74,6 +76,7 @@ fn write_table<V: Values, A: Allocator>(
     table: TableIndex,
     written: &[Option<WIPOffset<TableFinishedWIPOffset>>],
     value_offsets: &mut Vec<(VOffsetT, WIPOffset<UnionWIPOffset>)>,
+    element_offsets: &mut Vec<WIPOffset<UnionWIPOffset>>,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
 ) -> Result<WIPOffset<TableFinishedWIPOffset>, V::Error> {
@@ -105,6 +108,29 @@ fn write_table<V: Values, A: Allocator>(
                     "Unable to take the scalar elements of the value {}", index.0
                 );
                 let vector_offset = write_scalar_vector(builder, scalar, elements);
+                value_offsets.push((slot.vtable_offset, vector_offset));
+            }
+            FieldKind::StringVector => {
+                let elements = fail!(
+                    from origin,
+                    when values.string_elements(*index),
+                    "Unable to take the string elements of the value {}", index.0
+                );
+
+                // Write the strings first. The vector then refers to them by
+                // their offsets.
+                element_offsets.clear();
+                for element in elements {
+                    let bytes = fail!(
+                        from origin,
+                        when element,
+                        "Unable to take a string element of the value {}", index.0
+                    );
+                    element_offsets.push(builder.create_byte_string(bytes).as_union_value());
+                }
+                let vector_offset = builder
+                    .create_vector(element_offsets.as_slice())
+                    .as_union_value();
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
         }
@@ -301,7 +327,7 @@ fn push_struct<V: Values, A: Allocator>(
                     push_scalar_elements(builder, vtable_offset, &mut position, scalar, elements);
                 }
             }
-            FieldKind::String | FieldKind::ScalarVector(_) => {
+            FieldKind::String | FieldKind::ScalarVector(_) | FieldKind::StringVector => {
                 unreachable!("a struct holds scalars and arrays of scalars")
             }
         }

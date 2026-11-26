@@ -24,6 +24,11 @@ pub struct ValueIndex(pub u16);
 pub trait Values {
     type Error;
 
+    /// The string elements of a value in their order.
+    type StringElementIter<'a>: ExactSizeIterator<Item = Result<&'a [u8], Self::Error>>
+    where
+        Self: 'a;
+
     /// Returns the scalar value at `index`, or an error when the source
     /// cannot provide it.
     fn scalar(&self, index: ValueIndex) -> Result<ScalarValue, Self::Error>;
@@ -37,6 +42,15 @@ pub trait Values {
     ///
     /// The source of an array may hold no elements.
     fn scalar_elements(&self, index: ValueIndex) -> Result<ScalarElements<'_>, Self::Error>;
+
+    /// Returns the elements of the string sequence or string array value at
+    /// `index`, or an error when the source cannot provide them.
+    ///
+    /// The source of an array may hold no elements.
+    fn string_elements(
+        &self,
+        index: ValueIndex,
+    ) -> Result<Self::StringElementIter<'_>, Self::Error>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +60,10 @@ pub enum Kind {
     ScalarSequence(ScalarType),
     ScalarArray {
         scalar: ScalarType,
+        number_of_elements: u32,
+    },
+    StringSequence,
+    StringArray {
         number_of_elements: u32,
     },
 }

@@ -17,6 +17,7 @@ pub const CHANNEL_FLOAT32_MISMATCHED: &[u8] = include_bytes!("channel_float32_mi
 pub const HEADER: &[u8] = include_bytes!("header.bfbs");
 pub const HEADER_MISMATCHED: &[u8] = include_bytes!("header_mismatched.bfbs");
 pub const HEADER_STRUCT: &[u8] = include_bytes!("header_struct.bfbs");
+pub const JOINT_STATE: &[u8] = include_bytes!("joint_state.bfbs");
 pub const MULTI_ARRAY_DIMENSION: &[u8] = include_bytes!("multi_array_dimension.bfbs");
 pub const POSE_STAMPED: &[u8] = include_bytes!("pose_stamped.bfbs");
 pub const POSE_WITH_COVARIANCE: &[u8] = include_bytes!("pose_with_covariance.bfbs");
@@ -41,6 +42,11 @@ pub mod header;
 #[allow(clippy::all)]
 #[rustfmt::skip]
 pub mod header_struct;
+
+#[path = "joint_state_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod joint_state;
 
 #[path = "multi_array_dimension_generated.rs"]
 #[allow(clippy::all)]

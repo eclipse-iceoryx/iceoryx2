@@ -18,5 +18,5 @@ pub use layout::{
     FieldEntry, FieldKind, FieldPlacement, Layout, Slot, StructEntry, StructIndex, StructOffset,
     TableEntry, TableIndex, TablePlacement,
 };
-pub use read::{Reader, Truncated};
+pub use read::{Reader, StringElementIter, Truncated};
 pub use write::write;

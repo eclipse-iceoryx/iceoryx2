@@ -63,6 +63,15 @@ impl<E> From<writer::StringError> for WriteError<E> {
     }
 }
 
+impl<E> From<writer::LengthError> for WriteError<E> {
+    fn from(error: writer::LengthError) -> Self {
+        match error {
+            writer::LengthError::Region(error) => WriteError::Region(error),
+            writer::LengthError::TooLong => WriteError::TooLong,
+        }
+    }
+}
+
 impl<E> From<writer::SequenceError> for WriteError<E> {
     fn from(error: writer::SequenceError) -> Self {
         match error {
@@ -196,6 +205,69 @@ fn write_message<V: Values, R: ForwardRegion>(
                     "Unable to write the scalar array value {}", index.0
                 );
             }
+            MemberKind::StringSequence => {
+                let elements = match values.string_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the string sequence value {}", index.0
+                        );
+                    }
+                };
+                fail!(
+                    from origin,
+                    when writer.write_length(elements.len()),
+                    to WriteError<V::Error>,
+                    "Unable to write the length of the string sequence value {}", index.0
+                );
+                fail!(
+                    from origin,
+                    when write_string_elements::<V, R>(writer, elements),
+                    "Unable to write the string sequence value {}", index.0
+                );
+            }
+            MemberKind::StringArray { number_of_elements } => {
+                let elements = match values.string_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the string array value {}", index.0
+                        );
+                    }
+                };
+
+                let expected = number_of_elements as usize;
+                let actual = elements.len();
+                if actual == 0 {
+                    // The source holds no elements. Write an empty string for
+                    // each.
+                    for _ in 0..number_of_elements {
+                        fail!(
+                            from origin,
+                            when writer.write_string(&[]),
+                            to WriteError<V::Error>,
+                            "Unable to write an empty string of the string array value {}", index.0
+                        );
+                    }
+                } else if actual == expected {
+                    fail!(
+                        from origin,
+                        when write_string_elements::<V, R>(writer, elements),
+                        "Unable to write the string array value {}", index.0
+                    );
+                } else {
+                    fail!(
+                        from origin,
+                        with WriteError::ArrayLength { expected, actual },
+                        "The string array value {} holds {} elements and its source {}",
+                        index.0, expected, actual
+                    );
+                }
+            }
         }
     }
 
@@ -266,6 +338,34 @@ fn write_scalar_array<R: ForwardRegion>(
             let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
             write_scalar(writer, value)?;
         }
+    }
+
+    Ok(())
+}
+
+fn write_string_elements<V: Values, R: ForwardRegion>(
+    writer: &mut writer::Writer<R>,
+    elements: V::StringElementIter<'_>,
+) -> Result<(), WriteError<V::Error>> {
+    let origin = origin!("cdr::write_string_elements");
+
+    for element in elements {
+        let bytes = match element {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with WriteError::Values(error),
+                    "Unable to take a string element"
+                );
+            }
+        };
+        fail!(
+            from origin,
+            when writer.write_string(bytes),
+            to WriteError<V::Error>,
+            "Unable to write a string element of {} bytes", bytes.len()
+        );
     }
 
     Ok(())

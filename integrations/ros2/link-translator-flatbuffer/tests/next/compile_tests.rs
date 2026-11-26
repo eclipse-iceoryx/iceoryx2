@@ -310,6 +310,24 @@ fn records_the_offset_of_an_array_inside_a_struct() {
 }
 
 #[test]
+fn tells_string_sequences_from_strings() {
+    let compiled = compile(schemas::JOINT_STATE, messages::JOINT_STATE).expect("compiles");
+
+    assert_that!(
+        compiled.model.values,
+        eq vec![
+            Kind::Scalar(ScalarType::I32),
+            Kind::Scalar(ScalarType::U32),
+            Kind::String,
+            Kind::StringSequence,
+            Kind::ScalarSequence(ScalarType::F64),
+            Kind::ScalarSequence(ScalarType::F64),
+            Kind::ScalarSequence(ScalarType::F64),
+        ]
+    );
+}
+
+#[test]
 fn refuses_a_member_of_a_type_no_field_carries() {
     let error = compile(schemas::WSTRING, messages::WSTRING).expect_err("refuses");
 

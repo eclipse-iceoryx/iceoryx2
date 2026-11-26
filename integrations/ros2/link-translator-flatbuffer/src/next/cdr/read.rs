@@ -72,6 +72,54 @@ impl From<reader::StringError> for ReadError {
 }
 
 #[derive(Debug)]
+pub struct StringElementIter<'a> {
+    reader: reader::Reader<'a>,
+    number_of_remaining_elements: usize,
+}
+
+impl<'a> StringElementIter<'a> {
+    /// The string elements of the member that starts where `reader` is.
+    fn new(mut reader: reader::Reader<'a>, kind: MemberKind) -> Result<Self, ReadError> {
+        let number_of_elements = match kind {
+            MemberKind::StringSequence => reader.read_length()?,
+            MemberKind::StringArray { number_of_elements } => number_of_elements as usize,
+            MemberKind::Scalar(_)
+            | MemberKind::String
+            | MemberKind::ScalarSequence(_)
+            | MemberKind::ScalarArray { .. } => {
+                unreachable!("the value holds string elements in the model")
+            }
+        };
+
+        Ok(Self {
+            reader,
+            number_of_remaining_elements: number_of_elements,
+        })
+    }
+}
+
+impl<'a> Iterator for StringElementIter<'a> {
+    type Item = Result<&'a [u8], ReadError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.number_of_remaining_elements == 0 {
+            return None;
+        }
+        self.number_of_remaining_elements -= 1;
+        Some(read_string(&mut self.reader))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (
+            self.number_of_remaining_elements,
+            Some(self.number_of_remaining_elements),
+        )
+    }
+}
+
+impl ExactSizeIterator for StringElementIter<'_> {}
+
+#[derive(Debug)]
 pub struct Locations<'a> {
     layout: &'a Layout,
     reader: reader::Reader<'a>,
@@ -87,6 +135,10 @@ impl Locations<'_> {
 
 impl Values for Locations<'_> {
     type Error = ReadError;
+    type StringElementIter<'a>
+        = StringElementIter<'a>
+    where
+        Self: 'a;
 
     fn scalar(&self, index: ValueIndex) -> Result<ScalarValue, ReadError> {
         let MemberKind::Scalar(scalar) = self.layout.member(index).kind else {
@@ -110,6 +162,14 @@ impl Values for Locations<'_> {
         // Read the member from its saved location.
         read_scalar_elements(
             &mut self.reader.at(self.location(index)),
+            self.layout.member(index).kind,
+        )
+    }
+
+    fn string_elements(&self, index: ValueIndex) -> Result<StringElementIter<'_>, ReadError> {
+        // Start at the saved location of the member.
+        StringElementIter::new(
+            self.reader.at(self.location(index)),
             self.layout.member(index).kind,
         )
     }
@@ -177,6 +237,9 @@ fn walk_message(
             kind @ (MemberKind::ScalarSequence(_) | MemberKind::ScalarArray { .. }) => {
                 read_scalar_elements(reader, kind).map(|_| ())
             }
+            kind @ (MemberKind::StringSequence | MemberKind::StringArray { .. }) => {
+                skip_string_elements(reader, kind)
+            }
         };
         fail!(
             from origin,
@@ -221,7 +284,10 @@ fn read_scalar_elements<'a>(
             scalar,
             number_of_elements,
         } => reader.read_array(number_of_elements as usize, scalar.number_of_bytes())?,
-        MemberKind::Scalar(_) | MemberKind::String => {
+        MemberKind::Scalar(_)
+        | MemberKind::String
+        | MemberKind::StringSequence
+        | MemberKind::StringArray { .. } => {
             unreachable!("the value holds scalar elements in the model")
         }
     };
@@ -232,4 +298,17 @@ fn read_scalar_elements<'a>(
             Endianness::Big => ByteOrder::Big,
         },
     })
+}
+
+fn skip_string_elements(
+    reader: &mut reader::Reader<'_>,
+    kind: MemberKind,
+) -> Result<(), ReadError> {
+    let mut elements = StringElementIter::new(reader.at(reader.location()), kind)?;
+    for element in &mut elements {
+        element?;
+    }
+    *reader = elements.reader;
+
+    Ok(())
 }
