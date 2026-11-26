@@ -10,11 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_integrations_ros2_link_adapter::cdr::reader::{self, Location};
+use iceoryx2_integrations_ros2_link_adapter::cdr::reader::{self, Endianness, Location};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::next::model::{ScalarType, ScalarValue, ValueIndex, Values};
+use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadError {
@@ -105,6 +105,14 @@ impl Values for Locations<'_> {
         // Read the member from its saved location.
         read_string(&mut self.reader.at(self.location(index)))
     }
+
+    fn scalar_elements(&self, index: ValueIndex) -> Result<ScalarElements<'_>, ReadError> {
+        // Read the member from its saved location.
+        read_scalar_elements(
+            &mut self.reader.at(self.location(index)),
+            self.layout.member(index).kind,
+        )
+    }
 }
 
 /// Locates the values `layout` places in `cdr`.
@@ -166,6 +174,9 @@ fn walk_message(
         let read = match layout.member(*index).kind {
             MemberKind::Scalar(scalar) => read_scalar(reader, scalar).map(|_| ()),
             MemberKind::String => read_string(reader).map(|_| ()),
+            kind @ (MemberKind::ScalarSequence(_) | MemberKind::ScalarArray { .. }) => {
+                read_scalar_elements(reader, kind).map(|_| ())
+            }
         };
         fail!(
             from origin,
@@ -198,4 +209,27 @@ fn read_scalar(
 
 fn read_string<'a>(reader: &mut reader::Reader<'a>) -> Result<&'a [u8], ReadError> {
     Ok(reader.read_string()?)
+}
+
+fn read_scalar_elements<'a>(
+    reader: &mut reader::Reader<'a>,
+    kind: MemberKind,
+) -> Result<ScalarElements<'a>, ReadError> {
+    let bytes = match kind {
+        MemberKind::ScalarSequence(scalar) => reader.read_sequence(scalar.number_of_bytes())?,
+        MemberKind::ScalarArray {
+            scalar,
+            number_of_elements,
+        } => reader.read_array(number_of_elements as usize, scalar.number_of_bytes())?,
+        MemberKind::Scalar(_) | MemberKind::String => {
+            unreachable!("the value holds scalar elements in the model")
+        }
+    };
+    Ok(ScalarElements {
+        bytes,
+        byte_order: match reader.endianness() {
+            Endianness::Little => ByteOrder::Little,
+            Endianness::Big => ByteOrder::Big,
+        },
+    })
 }

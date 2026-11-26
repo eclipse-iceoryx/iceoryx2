@@ -35,4 +35,9 @@ pub struct MemberEntry {
 pub enum MemberKind {
     Scalar(ScalarType),
     String,
+    ScalarSequence(ScalarType),
+    ScalarArray {
+        scalar: ScalarType,
+        number_of_elements: u32,
+    },
 }

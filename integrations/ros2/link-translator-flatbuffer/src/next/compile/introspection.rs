@@ -110,6 +110,15 @@ pub(super) fn member_type(member: &MessageMember) -> String {
     }
 }
 
+pub(super) fn is_sequence(member: &MessageMember) -> bool {
+    member.is_array_ && (member.array_size_ == 0 || member.is_upper_bound_)
+}
+
+/// Whether `member` is an array of a fixed number of elements.
+pub(super) fn is_array(member: &MessageMember) -> bool {
+    member.is_array_ && member.array_size_ > 0 && !member.is_upper_bound_
+}
+
 pub(super) fn scalar_type(member: &MessageMember) -> Option<ScalarType> {
     match member.type_id_ {
         BOOLEAN => Some(ScalarType::Bool),

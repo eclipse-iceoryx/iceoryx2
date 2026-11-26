@@ -23,8 +23,11 @@ pub enum EncodeError {
     Truncated,
     /// The region cannot hold the CDR.
     Region(ResizeError),
-    /// A string exceeds its length prefix.
+    /// A string or a sequence exceeds its length prefix.
     TooLong,
+    /// A vector holds another number of elements than the array it is
+    /// encoded as.
+    ArrayLength { expected: usize, actual: usize },
 }
 
 impl core::fmt::Display for EncodeError {
@@ -47,6 +50,9 @@ impl From<cdr::WriteError<Infallible>> for EncodeError {
             cdr::WriteError::Values(never) => match never {},
             cdr::WriteError::Region(error) => EncodeError::Region(error),
             cdr::WriteError::TooLong => EncodeError::TooLong,
+            cdr::WriteError::ArrayLength { expected, actual } => {
+                EncodeError::ArrayLength { expected, actual }
+            }
         }
     }
 }

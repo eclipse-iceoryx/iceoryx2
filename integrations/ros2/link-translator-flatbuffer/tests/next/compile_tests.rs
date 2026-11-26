@@ -20,6 +20,7 @@ use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{Refusal, cdr, 
 use crate::next::testing::compile;
 use crate::next::testing::messages;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
+use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
 use crate::schemas::{self, header, header_struct, pose_stamped};
 
 #[test]
@@ -228,6 +229,83 @@ fn adds_the_values_of_a_struct_inside_a_struct_to_the_outer_struct() {
     assert_that!(
         compiled.flatbuffer.field(ValueIndex(ORIENTATION_W_VALUE_INDEX)).placement,
         eq flatbuffer::FieldPlacement::Struct { slot: POSE_SLOT, offset: ORIENTATION_W_OFFSET }
+    );
+}
+
+#[test]
+fn tells_scalar_sequences_from_scalars() {
+    let compiled = compile(schemas::CHANNEL_FLOAT32, messages::CHANNEL_FLOAT32).expect("compiles");
+
+    assert_that!(
+        compiled.model.values,
+        eq vec![Kind::String, Kind::ScalarSequence(ScalarType::F32)]
+    );
+}
+
+#[test]
+fn refuses_a_vector_of_another_scalar() {
+    let error = compile(
+        schemas::CHANNEL_FLOAT32_MISMATCHED,
+        messages::CHANNEL_FLOAT32,
+    )
+    .expect_err("refuses");
+
+    assert_that!(error.path, eq "values");
+    assert_that!(
+        error.refusal,
+        eq Refusal::Mismatch { member: "float32[]".into(), field: "[Double]".into() }
+    );
+}
+
+#[test]
+fn records_the_number_of_elements_of_a_scalar_array() {
+    const COVARIANCE_VALUE_INDEX: usize = 7;
+    const COVARIANCE_NUMBER_OF_ELEMENTS: u32 = 36;
+
+    let compiled = compile(
+        schemas::POSE_WITH_COVARIANCE,
+        messages::POSE_WITH_COVARIANCE,
+    )
+    .expect("compiles");
+
+    assert_that!(
+        compiled.model.values[COVARIANCE_VALUE_INDEX],
+        eq Kind::ScalarArray {
+            scalar: ScalarType::F64,
+            number_of_elements: COVARIANCE_NUMBER_OF_ELEMENTS,
+        }
+    );
+}
+
+#[test]
+fn records_the_offset_of_an_array_inside_a_struct() {
+    const ROOT_TABLE_INDEX: flatbuffer::TableIndex = flatbuffer::TableIndex(0);
+    const COVARIANCE_VALUE_INDEX: ValueIndex = ValueIndex(10);
+    const COVARIANCE_NUMBER_OF_ELEMENTS: u32 = 36;
+    const COVARIANCE_OFFSET: flatbuffer::StructOffset = flatbuffer::StructOffset(56);
+    const POSE_SLOT: flatbuffer::Slot = flatbuffer::Slot {
+        table: ROOT_TABLE_INDEX,
+        vtable_offset: pose_with_covariance_stamped::PoseWithCovarianceStamped::VT_POSE,
+    };
+
+    let compiled = compile(
+        schemas::POSE_WITH_COVARIANCE_STAMPED,
+        messages::POSE_WITH_COVARIANCE_STAMPED,
+    )
+    .expect("compiles");
+
+    assert_that!(
+        *compiled.flatbuffer.field(COVARIANCE_VALUE_INDEX),
+        eq flatbuffer::FieldEntry {
+            placement: flatbuffer::FieldPlacement::Struct {
+                slot: POSE_SLOT,
+                offset: COVARIANCE_OFFSET,
+            },
+            kind: flatbuffer::FieldKind::ScalarArray {
+                scalar: ScalarType::F64,
+                number_of_elements: COVARIANCE_NUMBER_OF_ELEMENTS,
+            },
+        }
     );
 }
 

@@ -108,4 +108,10 @@ pub enum FieldKind {
         default: ScalarValue,
     },
     String,
+    ScalarVector(ScalarType),
+    /// Within a struct.
+    ScalarArray {
+        scalar: ScalarType,
+        number_of_elements: u32,
+    },
 }

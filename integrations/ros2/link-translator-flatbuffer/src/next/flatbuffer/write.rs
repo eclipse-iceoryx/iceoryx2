@@ -17,7 +17,7 @@ use flatbuffers::{
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{FieldKind, FieldPlacement, Layout, StructEntry, TableIndex, TablePlacement};
-use crate::next::model::{ScalarValue, ValueIndex, Values};
+use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
 
 /// Writes `values` into `builder` as a finished flatbuffer.
 ///
@@ -79,8 +79,8 @@ fn write_table<V: Values, A: Allocator>(
 ) -> Result<WIPOffset<TableFinishedWIPOffset>, V::Error> {
     let origin = origin!("flatbuffer::write_table");
 
-    // Write the strings of this table into the flatbuffer and save their
-    // offsets.
+    // Write the strings and vectors of this table into the flatbuffer and
+    // save their offsets.
     value_offsets.clear();
     for index in &layout.table(table).values {
         let field = layout.field(*index);
@@ -88,7 +88,7 @@ fn write_table<V: Values, A: Allocator>(
             unreachable!("a value of a table sits in one of its slots")
         };
         match field.kind {
-            FieldKind::Scalar { .. } => {}
+            FieldKind::Scalar { .. } | FieldKind::ScalarArray { .. } => {}
             FieldKind::String => {
                 let bytes = fail!(
                     from origin,
@@ -97,6 +97,15 @@ fn write_table<V: Values, A: Allocator>(
                 );
                 let string_offset = builder.create_byte_string(bytes).as_union_value();
                 value_offsets.push((slot.vtable_offset, string_offset));
+            }
+            FieldKind::ScalarVector(scalar) => {
+                let elements = fail!(
+                    from origin,
+                    when values.scalar_elements(*index),
+                    "Unable to take the scalar elements of the value {}", index.0
+                );
+                let vector_offset = write_scalar_vector(builder, scalar, elements);
+                value_offsets.push((slot.vtable_offset, vector_offset));
             }
         }
     }
@@ -116,7 +125,8 @@ fn write_table<V: Values, A: Allocator>(
     // Write this table. Everything from here to its end sits inside it.
     let start = builder.start_table();
 
-    // Refer to the strings and nested tables written before by their offsets.
+    // Refer to the strings, vectors and nested tables written before by their
+    // offsets.
     for (vtable_offset, value_offset) in value_offsets.iter() {
         builder.push_slot_always(*vtable_offset, *value_offset);
     }
@@ -170,6 +180,50 @@ fn write_scalar<A: Allocator>(
         ScalarValue::I64(value) => builder.push_slot_always(vtable_offset, value),
         ScalarValue::F32(value) => builder.push_slot_always(vtable_offset, value),
         ScalarValue::F64(value) => builder.push_slot_always(vtable_offset, value),
+    }
+}
+
+/// Writes `elements` of the type `scalar` as a vector, returning its offset.
+fn write_scalar_vector<A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
+    scalar: ScalarType,
+    elements: ScalarElements<'_>,
+) -> WIPOffset<UnionWIPOffset> {
+    macro_rules! vector {
+        ($ty:ty) => {{
+            // Copy the elements as-is if they are in the byte order of the
+            // host at an address aligned to their type.
+            if elements.byte_order == ByteOrder::HOST {
+                // SAFETY: every bit pattern is a value of the type.
+                let (before, typed, after) = unsafe { elements.bytes.align_to::<$ty>() };
+                if before.is_empty() && after.is_empty() {
+                    return builder.create_vector(typed).as_union_value();
+                }
+            }
+
+            // Push the elements one by one otherwise.
+            let typed = elements.bytes.chunks_exact(size_of::<$ty>()).map(|bytes| {
+                let bytes = bytes.try_into().expect("a chunk holds one element");
+                match elements.byte_order {
+                    ByteOrder::Little => <$ty>::from_le_bytes(bytes),
+                    ByteOrder::Big => <$ty>::from_be_bytes(bytes),
+                }
+            });
+            builder.create_vector_from_iter(typed).as_union_value()
+        }};
+    }
+
+    match scalar {
+        ScalarType::Bool | ScalarType::U8 => builder.create_vector(elements.bytes).as_union_value(),
+        ScalarType::I8 => vector!(i8),
+        ScalarType::U16 => vector!(u16),
+        ScalarType::I16 => vector!(i16),
+        ScalarType::U32 => vector!(u32),
+        ScalarType::I32 => vector!(i32),
+        ScalarType::U64 => vector!(u64),
+        ScalarType::I64 => vector!(i64),
+        ScalarType::F32 => vector!(f32),
+        ScalarType::F64 => vector!(f64),
     }
 }
 
@@ -228,8 +282,27 @@ fn push_struct<V: Values, A: Allocator>(
                 push_padding(builder, vtable_offset, &mut position, end);
                 push_bytes(builder, vtable_offset, &mut position, bytes);
             }
-            FieldKind::String => {
-                unreachable!("a struct holds scalars")
+            FieldKind::ScalarArray {
+                scalar,
+                number_of_elements,
+            } => {
+                let elements = fail!(
+                    from origin,
+                    when values.scalar_elements(*index),
+                    "Unable to take the scalar elements of the value {}", index.0
+                );
+
+                let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
+                let end = usize::from(offset.0) + number_of_bytes;
+                push_padding(builder, vtable_offset, &mut position, end);
+
+                // Left zero if no elements to push.
+                if elements.bytes.len() == number_of_bytes {
+                    push_scalar_elements(builder, vtable_offset, &mut position, scalar, elements);
+                }
+            }
+            FieldKind::String | FieldKind::ScalarVector(_) => {
+                unreachable!("a struct holds scalars and arrays of scalars")
             }
         }
     }
@@ -238,6 +311,32 @@ fn push_struct<V: Values, A: Allocator>(
     push_padding(builder, vtable_offset, &mut position, 0);
 
     Ok(())
+}
+
+/// Pushes `elements` of the type `scalar` into a struct last to first from
+/// `position` back.
+fn push_scalar_elements<A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
+    vtable_offset: VOffsetT,
+    position: &mut usize,
+    scalar: ScalarType,
+    elements: ScalarElements<'_>,
+) {
+    if elements.byte_order == ByteOrder::Little || scalar.number_of_bytes() == 1 {
+        // The elements lie in the byte order of the flatbuffer.
+        push_bytes(builder, vtable_offset, position, elements.bytes);
+    } else {
+        // The elements lie in the other byte order.
+        for bytes in elements.bytes.chunks_exact(scalar.number_of_bytes()).rev() {
+            let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
+            push_bytes(
+                builder,
+                vtable_offset,
+                position,
+                &value.to_le_bytes()[..scalar.number_of_bytes()],
+            );
+        }
+    }
 }
 
 /// Pushes zeros into a struct from `position` back to `end`.

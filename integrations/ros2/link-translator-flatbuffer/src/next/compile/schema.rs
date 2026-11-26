@@ -60,6 +60,27 @@ pub(super) fn scalar_type(field: reflection::Field<'_>) -> Option<ScalarType> {
     scalar_of(field.type_().base_type())
 }
 
+/// The scalar type of the elements of the vector `field` holds.
+///
+/// Returns None when the field holds no vector of scalars.
+pub(super) fn element_scalar_type(field: reflection::Field<'_>) -> Option<ScalarType> {
+    if field.type_().base_type() != BaseType::Vector {
+        return None;
+    }
+    scalar_of(field.type_().element())
+}
+
+/// The scalar type and the number of elements of the array `field` holds.
+///
+/// Returns None when the field holds no array of scalars.
+pub(super) fn scalar_array(field: reflection::Field<'_>) -> Option<(ScalarType, u32)> {
+    if field.type_().base_type() != BaseType::Array {
+        return None;
+    }
+    let scalar = scalar_of(field.type_().element())?;
+    Some((scalar, u32::from(field.type_().fixed_length())))
+}
+
 fn scalar_of(base_type: BaseType) -> Option<ScalarType> {
     match base_type {
         BaseType::Bool => Some(ScalarType::Bool),

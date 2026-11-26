@@ -350,6 +350,63 @@ fn kinds(
         );
     }
 
+    // Pair a sequence of scalars with a vector of the same scalar.
+    if introspection::is_sequence(member)
+        && let Some(member_type) = introspection::scalar_type(member)
+    {
+        return match schema::element_scalar_type(field) {
+            Some(field_type) if member_type == field_type => Ok((
+                Kind::ScalarSequence(field_type),
+                cdr::MemberKind::ScalarSequence(member_type),
+                flatbuffer::FieldKind::ScalarVector(field_type),
+            )),
+            _ => {
+                fail!(
+                    from origin,
+                    with mismatch(member, field),
+                    "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+                );
+            }
+        };
+    }
+
+    // Pair an array of scalars with a vector of the same scalar or with an
+    // array of the same scalar and number of elements.
+    if introspection::is_array(member)
+        && let Some(member_type) = introspection::scalar_type(member)
+    {
+        let number_of_elements = member.array_size_ as u32;
+        let kind = Kind::ScalarArray {
+            scalar: member_type,
+            number_of_elements,
+        };
+        let member_kind = cdr::MemberKind::ScalarArray {
+            scalar: member_type,
+            number_of_elements,
+        };
+        if schema::element_scalar_type(field) == Some(member_type) {
+            let field_kind = flatbuffer::FieldKind::ScalarVector(member_type);
+            return Ok((kind, member_kind, field_kind));
+        }
+        return match schema::scalar_array(field) {
+            Some(array) if array == (member_type, number_of_elements) => Ok((
+                kind,
+                member_kind,
+                flatbuffer::FieldKind::ScalarArray {
+                    scalar: member_type,
+                    number_of_elements,
+                },
+            )),
+            _ => {
+                fail!(
+                    from origin,
+                    with mismatch(member, field),
+                    "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+                );
+            }
+        };
+    }
+
     if member.is_array_ || member.type_id_ == introspection::MESSAGE {
         fail!(
             from origin,

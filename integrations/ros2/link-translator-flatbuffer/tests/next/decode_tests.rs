@@ -17,14 +17,39 @@ use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{
     self as translator, DecodeError,
 };
 use ros_env::builtin_interfaces::msg::rmw::Time;
+use ros_env::sensor_msgs::msg::rmw::ChannelFloat32;
 use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
 
 use crate::next::testing::messages;
-use crate::next::testing::messages::pose_stamped_message;
+use crate::next::testing::messages::{
+    pose_stamped_message, pose_with_covariance_message, pose_with_covariance_stamped_message,
+};
 use crate::next::testing::{compile, decode, encode, serialize};
+use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
+use crate::schemas::pose_with_covariance::geometry_msgs::msg as pose_with_covariance;
+use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
 use crate::schemas::time::builtin_interfaces::msg as time;
 use crate::schemas::{self, header, header_struct, pose_stamped};
+
+fn channel_float32_as_big_endian_cdr(message: &ChannelFloat32) -> Vec<u8> {
+    const BIG_ENDIAN_HEADER: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
+    const LENGTH_ALIGNMENT: usize = 4;
+
+    let name = message.name.to_string();
+    let mut cdr = BIG_ENDIAN_HEADER.to_vec();
+    cdr.extend_from_slice(&(name.len() as u32 + 1).to_be_bytes());
+    cdr.extend_from_slice(name.as_bytes());
+    cdr.push(0);
+    while !cdr.len().is_multiple_of(LENGTH_ALIGNMENT) {
+        cdr.push(0);
+    }
+    cdr.extend_from_slice(&(message.values.as_slice().len() as u32).to_be_bytes());
+    for value in message.values.as_slice() {
+        cdr.extend_from_slice(&value.to_be_bytes());
+    }
+    cdr
+}
 
 #[test]
 fn reads_the_scalars_of_the_rmw() {
@@ -198,4 +223,78 @@ fn writes_a_struct_inside_a_struct() {
     assert_that!(pose.orientation().y(), eq message.pose.orientation.y);
     assert_that!(pose.orientation().z(), eq message.pose.orientation.z);
     assert_that!(pose.orientation().w(), eq message.pose.orientation.w);
+}
+
+#[test]
+fn writes_a_scalar_sequence_as_a_vector() {
+    const VALUES: [f32; 3] = [0.5, -1.25, 3.0];
+
+    let compiled = compile(schemas::CHANNEL_FLOAT32, messages::CHANNEL_FLOAT32).expect("compiles");
+    let message = ChannelFloat32 {
+        name: "intensity".into(),
+        values: VALUES.to_vec().into(),
+    };
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = channel_float32::root_as_channel_float_32(&flatbuffer).expect("is a flatbuffer");
+    let values: Vec<f32> = decoded.values().expect("holds values").iter().collect();
+    assert_that!(values, eq VALUES.to_vec());
+}
+
+#[test]
+fn reads_a_scalar_sequence_from_big_endian_cdr() {
+    const VALUES: [f32; 3] = [0.5, -1.25, 3.0];
+
+    let compiled = compile(schemas::CHANNEL_FLOAT32, messages::CHANNEL_FLOAT32).expect("compiles");
+    let message = ChannelFloat32 {
+        name: "intensity".into(),
+        values: VALUES.to_vec().into(),
+    };
+
+    let flatbuffer = decode(&compiled, &channel_float32_as_big_endian_cdr(&message));
+
+    let decoded = channel_float32::root_as_channel_float_32(&flatbuffer).expect("is a flatbuffer");
+    let values: Vec<f32> = decoded.values().expect("holds values").iter().collect();
+    assert_that!(values, eq VALUES.to_vec());
+}
+
+#[test]
+fn writes_a_scalar_array_as_a_vector() {
+    let compiled = compile(
+        schemas::POSE_WITH_COVARIANCE,
+        messages::POSE_WITH_COVARIANCE,
+    )
+    .expect("compiles");
+    let message = pose_with_covariance_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded =
+        pose_with_covariance::root_as_pose_with_covariance(&flatbuffer).expect("is a flatbuffer");
+    let covariance: Vec<f64> = decoded
+        .covariance()
+        .expect("holds a covariance")
+        .iter()
+        .collect();
+    assert_that!(covariance, eq message.covariance.to_vec());
+}
+
+#[test]
+fn writes_a_scalar_array_as_an_array_inside_a_struct() {
+    let compiled = compile(
+        schemas::POSE_WITH_COVARIANCE_STAMPED,
+        messages::POSE_WITH_COVARIANCE_STAMPED,
+    )
+    .expect("compiles");
+    let message = pose_with_covariance_stamped_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_with_covariance_stamped::root_as_pose_with_covariance_stamped(&flatbuffer)
+        .expect("is a flatbuffer");
+    let pose = decoded.pose().expect("holds a pose");
+    let covariance: Vec<f64> = pose.covariance().iter().collect();
+    assert_that!(covariance, eq message.pose.covariance.to_vec());
+    assert_that!(pose.pose().orientation().w(), eq message.pose.pose.orientation.w);
 }

@@ -15,7 +15,7 @@ use iceoryx2_link_backend::wire::region::{ForwardRegion, ResizeError};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::next::model::{ScalarValue, Values};
+use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, Values};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
@@ -23,8 +23,11 @@ pub enum WriteError<E> {
     Values(E),
     /// The region cannot hold the CDR.
     Region(ResizeError),
-    /// A string exceeds its length prefix.
+    /// A string or a sequence exceeds its length prefix.
     TooLong,
+    /// The source of an array holds another number of elements than the
+    /// array does.
+    ArrayLength { expected: usize, actual: usize },
 }
 
 impl<E: core::fmt::Debug> core::fmt::Display for WriteError<E> {
@@ -56,6 +59,15 @@ impl<E> From<writer::StringError> for WriteError<E> {
         match error {
             writer::StringError::Region(error) => WriteError::Region(error),
             writer::StringError::TooLong => WriteError::TooLong,
+        }
+    }
+}
+
+impl<E> From<writer::SequenceError> for WriteError<E> {
+    fn from(error: writer::SequenceError) -> Self {
+        match error {
+            writer::SequenceError::Region(error) => WriteError::Region(error),
+            writer::SequenceError::TooLong => WriteError::TooLong,
         }
     }
 }
@@ -133,6 +145,57 @@ fn write_message<V: Values, R: ForwardRegion>(
                     "Unable to write the string value {}", index.0
                 );
             }
+            MemberKind::ScalarSequence(scalar) => {
+                let elements = match values.scalar_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the scalar sequence value {}", index.0
+                        );
+                    }
+                };
+                fail!(
+                    from origin,
+                    when write_scalar_sequence(writer, scalar, elements),
+                    to WriteError<V::Error>,
+                    "Unable to write the scalar sequence value {}", index.0
+                );
+            }
+            MemberKind::ScalarArray {
+                scalar,
+                number_of_elements,
+            } => {
+                let elements = match values.scalar_elements(*index) {
+                    Ok(elements) => elements,
+                    Err(error) => {
+                        fail!(
+                            from origin,
+                            with WriteError::Values(error),
+                            "Unable to take the scalar array value {}", index.0
+                        );
+                    }
+                };
+
+                // A source without elements is written as zeros.
+                let expected = number_of_elements as usize;
+                let actual = elements.bytes.len() / scalar.number_of_bytes();
+                if actual != 0 && actual != expected {
+                    fail!(
+                        from origin,
+                        with WriteError::ArrayLength { expected, actual },
+                        "The scalar array value {} holds {} elements and its source {}",
+                        index.0, expected, actual
+                    );
+                }
+                fail!(
+                    from origin,
+                    when write_scalar_array(writer, scalar, number_of_elements, elements),
+                    to WriteError<V::Error>,
+                    "Unable to write the scalar array value {}", index.0
+                );
+            }
         }
     }
 
@@ -156,4 +219,54 @@ fn write_scalar<R: ForwardRegion>(
         ScalarValue::F32(value) => writer.write_f32(value),
         ScalarValue::F64(value) => writer.write_f64(value),
     }
+}
+
+fn write_scalar_sequence<R: ForwardRegion>(
+    writer: &mut writer::Writer<R>,
+    scalar: ScalarType,
+    elements: ScalarElements<'_>,
+) -> Result<(), writer::SequenceError> {
+    let number_of_bytes = scalar.number_of_bytes();
+
+    if elements.byte_order == ByteOrder::HOST || number_of_bytes == 1 {
+        // The elements lie in the byte order of the CDR. Copy them in bulk.
+        writer.write_sequence(elements.bytes, number_of_bytes)?;
+    } else {
+        // The elements lie in the other byte order. Write them one by one.
+        writer.write_length(elements.bytes.len() / number_of_bytes)?;
+        for bytes in elements.bytes.chunks_exact(number_of_bytes) {
+            let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
+            write_scalar(writer, value)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn write_scalar_array<R: ForwardRegion>(
+    writer: &mut writer::Writer<R>,
+    scalar: ScalarType,
+    number_of_elements: u32,
+    elements: ScalarElements<'_>,
+) -> Result<(), writer::ScalarError> {
+    let number_of_bytes = scalar.number_of_bytes();
+
+    if elements.bytes.is_empty() {
+        // The source holds no elements. Write a zero for each.
+        let zero = ScalarValue::from_le_bytes(scalar, &[0; 8]);
+        for _ in 0..number_of_elements {
+            write_scalar(writer, zero)?;
+        }
+    } else if elements.byte_order == ByteOrder::HOST || number_of_bytes == 1 {
+        // The elements lie in the byte order of the CDR. Copy them in bulk.
+        writer.write_array(elements.bytes, number_of_bytes)?;
+    } else {
+        // The elements lie in the other byte order. Write them one by one.
+        for bytes in elements.bytes.chunks_exact(number_of_bytes) {
+            let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
+            write_scalar(writer, value)?;
+        }
+    }
+
+    Ok(())
 }

@@ -12,11 +12,11 @@
 
 use core::convert::Infallible;
 
-use flatbuffers::{Follow, ForwardsUOffset, UOffsetT, VOffsetT};
+use flatbuffers::{Follow, ForwardsUOffset, UOffsetT, VOffsetT, read_scalar_at};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{FieldEntry, FieldKind, FieldPlacement, Layout, TableIndex, TablePlacement};
-use crate::next::model::{ScalarValue, ValueIndex, Values};
+use crate::next::model::{ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
 
 /// A flatbuffer that holds no root offset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,6 +126,39 @@ impl Values for Reader<'_> {
             None => &[],
         })
     }
+
+    /// The elements of the scalar sequence or scalar array value at `index`.
+    ///
+    /// None when the flatbuffer omits it.
+    fn scalar_elements(&self, index: ValueIndex) -> Result<ScalarElements<'_>, Infallible> {
+        let field = self.layout.field(index);
+        let buffer = self.buffer;
+        let bytes = match (field.kind, self.locate_field(field)) {
+            (_, None) => &[],
+            (FieldKind::ScalarVector(scalar), Some(location)) => {
+                let (first, number_of_elements) = locate_vector(buffer, location);
+                &buffer[first.0..first.0 + number_of_elements * scalar.number_of_bytes()]
+            }
+            (
+                FieldKind::ScalarArray {
+                    scalar,
+                    number_of_elements,
+                },
+                Some(location),
+            ) => {
+                let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
+                &buffer[location.0..location.0 + number_of_bytes]
+            }
+            (FieldKind::Scalar { .. } | FieldKind::String, Some(_)) => {
+                unreachable!("the value holds scalar elements in the model")
+            }
+        };
+
+        Ok(ScalarElements {
+            bytes,
+            byte_order: ByteOrder::Little,
+        })
+    }
 }
 
 fn locate_slot(table: flatbuffers::Table<'_>, vtable_offset: VOffsetT) -> Option<Location> {
@@ -133,4 +166,17 @@ fn locate_slot(table: flatbuffers::Table<'_>, vtable_offset: VOffsetT) -> Option
         0 => None,
         offset => Some(Location(table.loc() + usize::from(offset))),
     }
+}
+
+/// The location of the first element and the number of elements of the
+/// vector that the offset at `location` refers to.
+fn locate_vector(buffer: &[u8], location: Location) -> (Location, usize) {
+    // SAFETY: the field holds the offset to a vector, which starts with its
+    // number of elements.
+    let (vector, number_of_elements) = unsafe {
+        let vector = location.0 + read_scalar_at::<UOffsetT>(buffer, location.0) as usize;
+        (vector, read_scalar_at::<UOffsetT>(buffer, vector) as usize)
+    };
+
+    (Location(vector + size_of::<UOffsetT>()), number_of_elements)
 }

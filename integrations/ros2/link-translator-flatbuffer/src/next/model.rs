@@ -31,12 +31,45 @@ pub trait Values {
     /// Returns the bytes of the string value at `index`, or an error when
     /// the source cannot provide it.
     fn string(&self, index: ValueIndex) -> Result<&[u8], Self::Error>;
+
+    /// Returns the elements of the scalar sequence or scalar array value at
+    /// `index`, or an error when the source cannot provide them.
+    ///
+    /// The source of an array may hold no elements.
+    fn scalar_elements(&self, index: ValueIndex) -> Result<ScalarElements<'_>, Self::Error>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
     Scalar(ScalarType),
     String,
+    ScalarSequence(ScalarType),
+    ScalarArray {
+        scalar: ScalarType,
+        number_of_elements: u32,
+    },
+}
+
+/// The order of the bytes of a scalar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ByteOrder {
+    Little,
+    Big,
+}
+
+impl ByteOrder {
+    #[cfg(target_endian = "little")]
+    pub const HOST: ByteOrder = ByteOrder::Little;
+    #[cfg(target_endian = "big")]
+    pub const HOST: ByteOrder = ByteOrder::Big;
+}
+
+/// The elements of a sequence or an array of scalars as they lie in their
+/// source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ScalarElements<'a> {
+    pub bytes: &'a [u8],
+    pub byte_order: ByteOrder,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,6 +133,15 @@ impl ScalarValue {
         bytes
     }
 
+    /// The value of the type `scalar` stored in `byte_order` at the start of
+    /// `bytes`.
+    pub fn from_bytes(scalar: ScalarType, bytes: &[u8], byte_order: ByteOrder) -> Self {
+        match byte_order {
+            ByteOrder::Little => Self::from_le_bytes(scalar, bytes),
+            ByteOrder::Big => Self::from_be_bytes(scalar, bytes),
+        }
+    }
+
     /// The value of the type `scalar` stored little-endian at the start of `bytes`.
     pub fn from_le_bytes(scalar: ScalarType, bytes: &[u8]) -> Self {
         macro_rules! from_le_bytes {
@@ -123,6 +165,31 @@ impl ScalarValue {
             ScalarType::I64 => ScalarValue::I64(from_le_bytes!(i64)),
             ScalarType::F32 => ScalarValue::F32(from_le_bytes!(f32)),
             ScalarType::F64 => ScalarValue::F64(from_le_bytes!(f64)),
+        }
+    }
+    /// The value of the type `scalar` stored big-endian at the start of `bytes`.
+    pub fn from_be_bytes(scalar: ScalarType, bytes: &[u8]) -> Self {
+        macro_rules! from_be_bytes {
+            ($ty:ty) => {
+                <$ty>::from_be_bytes(
+                    bytes[..size_of::<$ty>()]
+                        .try_into()
+                        .expect("the slice is the size of the scalar"),
+                )
+            };
+        }
+        match scalar {
+            ScalarType::Bool => ScalarValue::Bool(bytes[0] != 0),
+            ScalarType::U8 => ScalarValue::U8(bytes[0]),
+            ScalarType::I8 => ScalarValue::I8(bytes[0] as i8),
+            ScalarType::U16 => ScalarValue::U16(from_be_bytes!(u16)),
+            ScalarType::I16 => ScalarValue::I16(from_be_bytes!(i16)),
+            ScalarType::U32 => ScalarValue::U32(from_be_bytes!(u32)),
+            ScalarType::I32 => ScalarValue::I32(from_be_bytes!(i32)),
+            ScalarType::U64 => ScalarValue::U64(from_be_bytes!(u64)),
+            ScalarType::I64 => ScalarValue::I64(from_be_bytes!(i64)),
+            ScalarType::F32 => ScalarValue::F32(from_be_bytes!(f32)),
+            ScalarType::F64 => ScalarValue::F64(from_be_bytes!(f64)),
         }
     }
 }
