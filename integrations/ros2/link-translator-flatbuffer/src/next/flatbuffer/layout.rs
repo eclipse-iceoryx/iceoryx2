@@ -14,8 +14,10 @@ use crate::next::model::{ScalarType, ScalarValue, ValueIndex};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Layout {
-    /// The root table comes first.
+    /// The root table comes first and a nested table comes after the table
+    /// that holds it.
     pub tables: Vec<TableEntry>,
+    pub structs: Vec<StructEntry>,
     pub fields: Vec<FieldEntry>,
 }
 
@@ -35,13 +37,40 @@ pub struct TableIndex(pub u16);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TableEntry {
+    pub placement: TablePlacement,
+    /// The values the table holds outside of its structs.
     pub values: Vec<ValueIndex>,
+}
+
+/// Where a table sits in a flatbuffer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TablePlacement {
+    Root,
+    /// In the slot of another table.
+    Nested(Slot),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Slot {
     pub table: TableIndex,
     pub vtable_offset: u16,
+}
+
+/// The position of a struct in a [`Layout`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StructIndex(pub u16);
+
+/// A number of bytes from the start of a struct.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StructOffset(pub u16);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructEntry {
+    pub slot: Slot,
+    pub number_of_bytes: u16,
+    pub alignment: u16,
+    /// The values the struct holds, in the order of their offsets.
+    pub values: Vec<ValueIndex>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -55,13 +84,19 @@ pub struct FieldEntry {
 pub enum FieldPlacement {
     /// In a slot of a table.
     Table(Slot),
+    /// Within the struct that a slot holds.
+    Struct {
+        slot: Slot,
+        /// From the start of the struct to the field.
+        offset: StructOffset,
+    },
 }
 
 impl FieldPlacement {
     /// The slot the field is found through.
     pub fn slot(self) -> Slot {
         match self {
-            FieldPlacement::Table(slot) => slot,
+            FieldPlacement::Table(slot) | FieldPlacement::Struct { slot, .. } => slot,
         }
     }
 }

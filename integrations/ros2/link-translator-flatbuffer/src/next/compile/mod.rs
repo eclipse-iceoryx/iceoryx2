@@ -22,7 +22,9 @@ use r2r_rcl::{
     rosidl_typesupport_introspection_c__MessageMembers as MessageMembers,
 };
 
-use super::flatbuffer::{FieldPlacement, Slot, TableIndex};
+use super::flatbuffer::{
+    FieldPlacement, Slot, StructIndex, StructOffset, TableIndex, TablePlacement,
+};
 use super::model::{Kind, Model, ValueIndex};
 use super::{cdr, flatbuffer};
 
@@ -74,11 +76,14 @@ pub fn compile(
 
     // Walk the message and the root table together.
     let mut compiler = Compiler {
+        schema,
         compiled: Compiled::default(),
     };
 
     // SAFETY: the typesupport keeps the members valid while it is loaded.
-    if let Err(error) = unsafe { compiler.add_table(root, typesupport.members(), "") } {
+    if let Err(error) =
+        unsafe { compiler.add_table(root, typesupport.members(), TablePlacement::Root, "") }
+    {
         fail!(
             from origin,
             with error,
@@ -89,11 +94,12 @@ pub fn compile(
     Ok(compiler.compiled)
 }
 
-struct Compiler {
+struct Compiler<'a> {
+    schema: reflection::Schema<'a>,
     compiled: Compiled,
 }
 
-impl Compiler {
+impl<'a> Compiler<'a> {
     /// Adds the table that holds a message.
     ///
     /// # Safety
@@ -101,16 +107,22 @@ impl Compiler {
     /// `message` must point to the members of a loaded introspection typesupport.
     unsafe fn add_table(
         &mut self,
-        object: Object<'_>,
+        object: Object<'a>,
         message: *const MessageMembers,
+        placement: TablePlacement,
         path: &str,
     ) -> Result<(), CompileError> {
+        let origin = origin!("compile::add_table");
+
         // Add the table to the flatbuffer layout.
         let table = TableIndex(self.compiled.flatbuffer.tables.len() as u16);
         self.compiled
             .flatbuffer
             .tables
-            .push(flatbuffer::TableEntry { values: Vec::new() });
+            .push(flatbuffer::TableEntry {
+                placement,
+                values: Vec::new(),
+            });
 
         for member in unsafe { introspection::members(message) } {
             let name = unsafe { introspection::member_name(member) };
@@ -119,6 +131,30 @@ impl Compiler {
                 path: path.clone(),
                 refusal,
             })?;
+
+            // Define a nested table or a struct at the field to hold a nested
+            // message.
+            if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
+                let Some(nested) = schema::object(self.schema, field) else {
+                    fail!(
+                        from origin,
+                        with CompileError { path, refusal: mismatch(member, field) },
+                        "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+                    );
+                };
+                let slot = Slot {
+                    table,
+                    vtable_offset: field.offset(),
+                };
+                let message = unsafe { introspection::message(member) };
+                if nested.is_struct() {
+                    unsafe { self.add_struct(nested, message, slot, &path)? };
+                } else {
+                    let placement = TablePlacement::Nested(slot);
+                    unsafe { self.add_table(nested, message, placement, &path)? };
+                }
+                continue;
+            }
 
             // Check that the member and the field hold the same kind of value.
             let (kind, member_kind, field_kind) =
@@ -130,6 +166,102 @@ impl Compiler {
             });
             let index = self.add_value(kind, member_kind, placement, field_kind);
             self.compiled.flatbuffer.tables[usize::from(table.0)]
+                .values
+                .push(index);
+        }
+
+        Ok(())
+    }
+
+    /// Adds the struct that holds a nested message in a slot of a table.
+    ///
+    /// # Safety
+    ///
+    /// `message` must point to the members of a loaded introspection typesupport.
+    unsafe fn add_struct(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        slot: Slot,
+        path: &str,
+    ) -> Result<(), CompileError> {
+        // Add the struct to the flatbuffer layout.
+        let entry = StructIndex(self.compiled.flatbuffer.structs.len() as u16);
+        self.compiled
+            .flatbuffer
+            .structs
+            .push(flatbuffer::StructEntry {
+                slot,
+                number_of_bytes: object.bytesize() as u16,
+                alignment: object.minalign() as u16,
+                values: Vec::new(),
+            });
+
+        // Add the values of the struct, which starts at the first byte of
+        // its own entry.
+        unsafe { self.add_struct_values(object, message, entry, START_OF_STRUCT, path)? };
+
+        // Order the values of the struct by their offsets.
+        let layout = &mut self.compiled.flatbuffer;
+        sort_by_offset(
+            &mut layout.structs[usize::from(entry.0)].values,
+            &layout.fields,
+        );
+
+        Ok(())
+    }
+
+    /// Adds the values of a message to the struct that holds them.
+    ///
+    /// `offset` is where `object` starts within the struct at `entry`.
+    ///
+    /// # Safety
+    ///
+    /// `message` must point to the members of a loaded introspection typesupport.
+    unsafe fn add_struct_values(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        entry: StructIndex,
+        offset: StructOffset,
+        path: &str,
+    ) -> Result<(), CompileError> {
+        let origin = origin!("compile::add_struct_values");
+
+        for member in unsafe { introspection::members(message) } {
+            let name = unsafe { introspection::member_name(member) };
+            let path = member_path(path, name);
+            let field = schema::field(object, name).map_err(|refusal| CompileError {
+                path: path.clone(),
+                refusal,
+            })?;
+            let offset = StructOffset(offset.0 + field.offset());
+
+            // Add the values of a nested message that a nested struct holds.
+            if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
+                let nested = match schema::object(self.schema, field) {
+                    Some(nested) if nested.is_struct() => nested,
+                    _ => {
+                        fail!(
+                            from origin,
+                            with CompileError { path, refusal: mismatch(member, field) },
+                            "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
+                        );
+                    }
+                };
+                let message = unsafe { introspection::message(member) };
+                unsafe { self.add_struct_values(nested, message, entry, offset, &path)? };
+                continue;
+            }
+
+            // Check that the member and the field hold the same scalar.
+            let (kind, member_kind, field_kind) =
+                kinds(member, field).map_err(|refusal| CompileError { path, refusal })?;
+
+            let slot = self.compiled.flatbuffer.structs[usize::from(entry.0)].slot;
+            let placement = FieldPlacement::Struct { slot, offset };
+            let index = self.add_value(kind, member_kind, placement, field_kind);
+            self.compiled.flatbuffer.structs[usize::from(entry.0)]
                 .values
                 .push(index);
         }
@@ -167,6 +299,23 @@ impl Compiler {
             });
 
         index
+    }
+}
+
+/// The offset of the first byte of a struct.
+const START_OF_STRUCT: StructOffset = StructOffset(0);
+
+fn sort_by_offset(values: &mut [ValueIndex], fields: &[flatbuffer::FieldEntry]) {
+    values.sort_by_key(|index| match fields[usize::from(index.0)].placement {
+        FieldPlacement::Struct { offset, .. } => offset,
+        FieldPlacement::Table(_) => unreachable!("the value sits in a struct"),
+    });
+}
+
+fn mismatch(member: &MessageMember, field: reflection::Field<'_>) -> Refusal {
+    Refusal::Mismatch {
+        member: introspection::member_type(member),
+        field: schema::field_type(field),
     }
 }
 

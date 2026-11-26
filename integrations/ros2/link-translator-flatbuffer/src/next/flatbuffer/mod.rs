@@ -14,6 +14,9 @@ mod layout;
 mod read;
 mod write;
 
-pub use layout::{FieldEntry, FieldKind, FieldPlacement, Layout, Slot, TableEntry, TableIndex};
+pub use layout::{
+    FieldEntry, FieldKind, FieldPlacement, Layout, Slot, StructEntry, StructIndex, StructOffset,
+    TableEntry, TableIndex, TablePlacement,
+};
 pub use read::{Reader, Truncated};
 pub use write::write;

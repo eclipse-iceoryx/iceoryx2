@@ -29,6 +29,19 @@ pub(super) fn field<'a>(object: Object<'a>, name: &str) -> Result<reflection::Fi
     Ok(field)
 }
 
+/// The table or struct `field` holds.
+///
+/// Returns None when the field holds another type.
+pub(super) fn object<'a>(
+    schema: reflection::Schema<'a>,
+    field: reflection::Field<'_>,
+) -> Option<Object<'a>> {
+    if field.type_().base_type() != BaseType::Obj {
+        return None;
+    }
+    Some(schema.objects().get(field.type_().index() as usize))
+}
+
 /// The type of `field` as written in a schema e.g. `[double]`.
 pub(super) fn field_type(field: reflection::Field<'_>) -> String {
     let ty = field.type_();

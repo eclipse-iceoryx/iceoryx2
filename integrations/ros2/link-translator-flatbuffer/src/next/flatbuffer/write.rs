@@ -11,12 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use flatbuffers::{
-    Allocator, FlatBufferBuilder, TableFinishedWIPOffset, UnionWIPOffset, VOffsetT, WIPOffset,
+    Allocator, FlatBufferBuilder, Push, PushAlignment, TableFinishedWIPOffset, UnionWIPOffset,
+    VOffsetT, WIPOffset,
 };
 use iceoryx2_log::{fail, origin};
 
-use super::layout::{FieldKind, FieldPlacement, Layout, TableIndex};
-use crate::next::model::{ScalarValue, Values};
+use super::layout::{FieldKind, FieldPlacement, Layout, StructEntry, TableIndex, TablePlacement};
+use crate::next::model::{ScalarValue, ValueIndex, Values};
 
 /// Writes `values` into `builder` as a finished flatbuffer.
 ///
@@ -52,13 +53,14 @@ fn write_message<V: Values, A: Allocator>(
     // here so that writing each table reuses its memory to save reallocation.
     let mut value_offsets = Vec::new();
 
-    // Write the tables of the layout.
+    // Write the tables last to first, so that a nested table is written
+    // before the table that holds it.
     let mut written: Vec<Option<WIPOffset<TableFinishedWIPOffset>>> =
         vec![None; layout.tables.len()];
     for index in (0..layout.tables.len()).rev() {
         let table = fail!(
             from origin,
-            when write_table(layout, TableIndex(index as u16), &mut value_offsets, values, builder),
+            when write_table(layout, TableIndex(index as u16), &written, &mut value_offsets, values, builder),
             "Unable to write the table {}", index
         );
         written[index] = Some(table);
@@ -70,6 +72,7 @@ fn write_message<V: Values, A: Allocator>(
 fn write_table<V: Values, A: Allocator>(
     layout: &Layout,
     table: TableIndex,
+    written: &[Option<WIPOffset<TableFinishedWIPOffset>>],
     value_offsets: &mut Vec<(VOffsetT, WIPOffset<UnionWIPOffset>)>,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
@@ -81,7 +84,9 @@ fn write_table<V: Values, A: Allocator>(
     value_offsets.clear();
     for index in &layout.table(table).values {
         let field = layout.field(*index);
-        let FieldPlacement::Table(slot) = field.placement;
+        let FieldPlacement::Table(slot) = field.placement else {
+            unreachable!("a value of a table sits in one of its slots")
+        };
         match field.kind {
             FieldKind::Scalar { .. } => {}
             FieldKind::String => {
@@ -96,12 +101,35 @@ fn write_table<V: Values, A: Allocator>(
         }
     }
 
+    // Collect the offsets of the tables nested in this table.
+    for (nested, table_offset) in layout.tables.iter().zip(written) {
+        let TablePlacement::Nested(slot) = nested.placement else {
+            continue;
+        };
+        if slot.table == table {
+            let table_offset =
+                table_offset.expect("a nested table is written before the table that holds it");
+            value_offsets.push((slot.vtable_offset, table_offset.as_union_value()));
+        }
+    }
+
     // Write this table. Everything from here to its end sits inside it.
     let start = builder.start_table();
 
-    // Refer to the strings written before by their offsets.
+    // Refer to the strings and nested tables written before by their offsets.
     for (vtable_offset, value_offset) in value_offsets.iter() {
         builder.push_slot_always(*vtable_offset, *value_offset);
+    }
+
+    // Write the structs of this table into their slots.
+    for entry in &layout.structs {
+        if entry.slot.table == table {
+            fail!(
+                from origin,
+                when write_struct(layout, entry, values, builder),
+                "Unable to write the struct in the slot {}", entry.slot.vtable_offset
+            );
+        }
     }
 
     // Write the scalars of this table into their slots. A scalar at its
@@ -142,5 +170,161 @@ fn write_scalar<A: Allocator>(
         ScalarValue::I64(value) => builder.push_slot_always(vtable_offset, value),
         ScalarValue::F32(value) => builder.push_slot_always(vtable_offset, value),
         ScalarValue::F64(value) => builder.push_slot_always(vtable_offset, value),
+    }
+}
+
+/// Writes the struct `entry` whole into its slot of the open table.
+fn write_struct<V: Values, A: Allocator>(
+    layout: &Layout,
+    entry: &StructEntry,
+    values: &V,
+    builder: &mut FlatBufferBuilder<'_, A>,
+) -> Result<(), V::Error> {
+    align(
+        builder,
+        usize::from(entry.number_of_bytes),
+        usize::from(entry.alignment),
+    );
+    push_struct(
+        layout,
+        &entry.values,
+        entry.number_of_bytes,
+        entry.slot.vtable_offset,
+        values,
+        builder,
+    )
+}
+
+/// Pushes the struct of `number_of_bytes` that holds `struct_values`, which
+/// are in the order of their offsets.
+fn push_struct<V: Values, A: Allocator>(
+    layout: &Layout,
+    struct_values: &[ValueIndex],
+    number_of_bytes: u16,
+    vtable_offset: VOffsetT,
+    values: &V,
+    builder: &mut FlatBufferBuilder<'_, A>,
+) -> Result<(), V::Error> {
+    let origin = origin!("flatbuffer::push_struct");
+
+    // The builder fills the flatbuffer back to front. Push the values last
+    // to first with the padding that follows each.
+    let mut position = usize::from(number_of_bytes);
+    for index in struct_values.iter().rev() {
+        let field = layout.field(*index);
+        let FieldPlacement::Struct { offset, .. } = field.placement else {
+            unreachable!("the value sits in the struct")
+        };
+        match field.kind {
+            FieldKind::Scalar { scalar, .. } => {
+                let value = fail!(
+                    from origin,
+                    when values.scalar(*index),
+                    "Unable to take the scalar value {}", index.0
+                );
+
+                let bytes = &value.to_le_bytes()[..scalar.number_of_bytes()];
+                let end = usize::from(offset.0) + bytes.len();
+                push_padding(builder, vtable_offset, &mut position, end);
+                push_bytes(builder, vtable_offset, &mut position, bytes);
+            }
+            FieldKind::String => {
+                unreachable!("a struct holds scalars")
+            }
+        }
+    }
+
+    // Push the padding before the first value.
+    push_padding(builder, vtable_offset, &mut position, 0);
+
+    Ok(())
+}
+
+/// Pushes zeros into a struct from `position` back to `end`.
+fn push_padding<A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
+    vtable_offset: VOffsetT,
+    position: &mut usize,
+    end: usize,
+) {
+    while *position > end {
+        push_byte(builder, vtable_offset, position, 0);
+    }
+}
+
+/// Pushes `bytes` into a struct last to first from `position` back.
+fn push_bytes<A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
+    vtable_offset: VOffsetT,
+    position: &mut usize,
+    bytes: &[u8],
+) {
+    for byte in bytes.iter().rev() {
+        push_byte(builder, vtable_offset, position, *byte);
+    }
+}
+
+/// Pushes the byte before `position` into a struct.
+fn push_byte<A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
+    vtable_offset: VOffsetT,
+    position: &mut usize,
+    byte: u8,
+) {
+    *position -= 1;
+    match *position {
+        // The first byte of the struct is pushed through the slot, which then
+        // refers to the start of the struct.
+        0 => builder.push_slot_always(vtable_offset, byte),
+        _ => {
+            builder.push(byte);
+        }
+    }
+}
+
+/// Pads the builder so that the `number_of_bytes` pushed next start at a
+/// multiple of `alignment` in the finished flatbuffer.
+fn align<A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
+    number_of_bytes: usize,
+    alignment: usize,
+) {
+    match alignment {
+        1 => {
+            builder.push(Align::<1>);
+        }
+        2 => {
+            builder.push(Align::<2>);
+        }
+        4 => {
+            builder.push(Align::<4>);
+        }
+        8 => {
+            builder.push(Align::<8>);
+        }
+        16 => {
+            builder.push(Align::<16>);
+        }
+        other => unreachable!("a flatbuffer aligns to at most 16 bytes, not {other}"),
+    }
+    while !(builder.unfinished_data().len() + number_of_bytes).is_multiple_of(alignment) {
+        builder.push(0u8);
+    }
+}
+
+/// A push of no bytes that registers an alignment with the builder.
+struct Align<const N: usize>;
+
+impl<const N: usize> Push for Align<N> {
+    type Output = Self;
+
+    unsafe fn push(&self, _dst: &mut [u8], _written_len: usize) {}
+
+    fn size() -> usize {
+        0
+    }
+
+    fn alignment() -> PushAlignment {
+        PushAlignment::new(N)
     }
 }

@@ -18,10 +18,14 @@ use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{
 };
 use iceoryx2_link_backend::wire::region::Region;
 use ros_env::builtin_interfaces::msg::rmw::Time;
-use ros_env::std_msgs::msg::rmw::{MultiArrayDimension, UInt8};
+use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension, UInt8};
 
-use crate::next::testing::flatbuffers::{ToFlatbuffer, empty_flatbuffer};
+use crate::next::testing::flatbuffers::{
+    ToFlatbuffer, empty_flatbuffer, header_flatbuffer_with_a_struct_stamp,
+    header_flatbuffer_without_a_stamp,
+};
 use crate::next::testing::messages;
+use crate::next::testing::messages::pose_stamped_message;
 use crate::next::testing::{compile, encode, serialize};
 use crate::schemas;
 use crate::schemas::uint8_enum::std_msgs::msg as uint8_enum;
@@ -98,6 +102,89 @@ fn refuses_a_flatbuffer_without_a_root_offset() {
     let error = translator::encode(&compiled, &NO_ROOT_OFFSET, cdr.forward()).expect_err("refuses");
 
     assert_that!(error, eq EncodeError::Truncated);
+}
+
+#[test]
+fn matches_the_rmw_for_a_nested_table() {
+    let compiled = compile(schemas::HEADER, messages::HEADER).expect("compiles");
+    let message = Header {
+        stamp: Time {
+            sec: 1_700_000_000,
+            nanosec: 123_456_789,
+        },
+        frame_id: "base_link".into(),
+    };
+
+    let mut encoded_bytes = encode(&compiled, &message.to_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn writes_an_absent_nested_table_as_its_defaults() {
+    let compiled = compile(schemas::HEADER, messages::HEADER).expect("compiles");
+    let message = Header {
+        stamp: Time { sec: 0, nanosec: 0 },
+        frame_id: "base_link".into(),
+    };
+
+    let mut encoded_bytes = encode(&compiled, &header_flatbuffer_without_a_stamp(&message));
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn matches_the_rmw_for_a_struct() {
+    let compiled = compile(schemas::HEADER_STRUCT, messages::HEADER).expect("compiles");
+    let message = Header {
+        stamp: Time {
+            sec: 1_700_000_000,
+            nanosec: 123_456_789,
+        },
+        frame_id: "base_link".into(),
+    };
+
+    let mut encoded_bytes = encode(&compiled, &header_flatbuffer_with_a_struct_stamp(&message));
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn writes_an_absent_struct_as_zeros() {
+    let compiled = compile(schemas::HEADER_STRUCT, messages::HEADER).expect("compiles");
+    let message = Header {
+        stamp: Time { sec: 0, nanosec: 0 },
+        frame_id: "base_link".into(),
+    };
+
+    let mut encoded_bytes = encode(&compiled, &header_flatbuffer_without_a_stamp(&message));
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn matches_the_rmw_for_a_struct_inside_a_struct() {
+    let compiled = compile(schemas::POSE_STAMPED, messages::POSE_STAMPED).expect("compiles");
+    let message = pose_stamped_message();
+
+    let mut encoded_bytes = encode(&compiled, &message.to_flatbuffer());
+
+    let rmw_bytes = serialize(&message);
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
 }
 
 #[test]

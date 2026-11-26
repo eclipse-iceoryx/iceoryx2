@@ -15,7 +15,7 @@ use core::convert::Infallible;
 use flatbuffers::{Follow, ForwardsUOffset, UOffsetT, VOffsetT};
 use iceoryx2_log::{fail, origin};
 
-use super::layout::{FieldEntry, FieldKind, FieldPlacement, Layout};
+use super::layout::{FieldEntry, FieldKind, FieldPlacement, Layout, TableIndex, TablePlacement};
 use crate::next::model::{ScalarValue, ValueIndex, Values};
 
 /// A flatbuffer that holds no root offset.
@@ -67,15 +67,34 @@ impl<'a> Reader<'a> {
         })
     }
 
+    /// Locates the table at `index` in the flatbuffer.
+    ///
+    /// Returns None when the flatbuffer omits the table.
+    fn locate_table(&self, index: TableIndex) -> Option<flatbuffers::Table<'a>> {
+        let TablePlacement::Nested(slot) = self.layout.table(index).placement else {
+            // SAFETY: the root of a flatbuffer is a table.
+            return Some(unsafe { flatbuffers::Table::new(self.buffer, self.root.0) });
+        };
+        let holder = self.locate_table(slot.table)?;
+        let location = locate_slot(holder, slot.vtable_offset)?;
+
+        // SAFETY: the field holds a table.
+        Some(unsafe { ForwardsUOffset::<flatbuffers::Table<'_>>::follow(holder.buf(), location.0) })
+    }
+
     /// Locates `field` in the flatbuffer.
     ///
     /// Returns None when the flatbuffer omits the field.
     fn locate_field(&self, field: &FieldEntry) -> Option<Location> {
-        let FieldPlacement::Table(slot) = field.placement;
-        // SAFETY: the root of a flatbuffer is a table.
-        let table = unsafe { flatbuffers::Table::new(self.buffer, self.root.0) };
-
-        locate_slot(table, slot.vtable_offset)
+        match field.placement {
+            FieldPlacement::Table(slot) => {
+                locate_slot(self.locate_table(slot.table)?, slot.vtable_offset)
+            }
+            FieldPlacement::Struct { slot, offset } => {
+                let location = locate_slot(self.locate_table(slot.table)?, slot.vtable_offset)?;
+                Some(Location(location.0 + usize::from(offset.0)))
+            }
+        }
     }
 }
 

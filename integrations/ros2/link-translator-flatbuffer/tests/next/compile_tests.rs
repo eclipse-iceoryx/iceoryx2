@@ -19,8 +19,8 @@ use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{Refusal, cdr, 
 
 use crate::next::testing::compile;
 use crate::next::testing::messages;
-use crate::schemas;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
+use crate::schemas::{self, header, header_struct, pose_stamped};
 
 #[test]
 fn adds_one_value_per_member() {
@@ -122,6 +122,112 @@ fn refuses_a_field_of_another_kind() {
     assert_that!(
         error.refusal,
         eq Refusal::Mismatch { member: "uint32".into(), field: "Bool".into() }
+    );
+}
+
+#[test]
+fn adds_the_values_of_a_nested_message() {
+    let compiled = compile(schemas::HEADER, messages::HEADER).expect("compiles");
+
+    assert_that!(
+        compiled.model.values,
+        eq vec![Kind::Scalar(ScalarType::I32), Kind::Scalar(ScalarType::U32), Kind::String]
+    );
+}
+
+#[test]
+fn records_which_table_holds_each_value() {
+    const ROOT_TABLE_INDEX: flatbuffer::TableIndex = flatbuffer::TableIndex(0);
+    const STAMP_TABLE_INDEX: flatbuffer::TableIndex = flatbuffer::TableIndex(1);
+    const SEC_VALUE_INDEX: ValueIndex = ValueIndex(0);
+    const FRAME_ID_VALUE_INDEX: ValueIndex = ValueIndex(2);
+
+    let compiled = compile(schemas::HEADER, messages::HEADER).expect("compiles");
+
+    assert_that!(compiled.flatbuffer.tables, len 2);
+    assert_that!(compiled.flatbuffer.table(ROOT_TABLE_INDEX).placement, eq flatbuffer::TablePlacement::Root);
+    assert_that!(
+        compiled.flatbuffer.table(STAMP_TABLE_INDEX).placement,
+        eq flatbuffer::TablePlacement::Nested(flatbuffer::Slot {
+            table: ROOT_TABLE_INDEX,
+            vtable_offset: header::std_msgs::msg::Header::VT_STAMP,
+        })
+    );
+    assert_that!(compiled.flatbuffer.field(SEC_VALUE_INDEX).placement.slot().table, eq STAMP_TABLE_INDEX);
+    assert_that!(compiled.flatbuffer.field(FRAME_ID_VALUE_INDEX).placement.slot().table, eq ROOT_TABLE_INDEX);
+}
+
+#[test]
+fn reports_the_path_of_a_refused_nested_member() {
+    let error = compile(schemas::HEADER_MISMATCHED, messages::HEADER).expect_err("refuses");
+
+    assert_that!(error.path, eq "stamp.nanosec");
+    assert_that!(
+        error.refusal,
+        eq Refusal::Mismatch { member: "uint32".into(), field: "Bool".into() }
+    );
+}
+
+#[test]
+fn records_the_struct_that_holds_each_value() {
+    const ROOT_TABLE_INDEX: flatbuffer::TableIndex = flatbuffer::TableIndex(0);
+    const SEC_VALUE_INDEX: ValueIndex = ValueIndex(0);
+    const NANOSEC_VALUE_INDEX: ValueIndex = ValueIndex(1);
+    const NANOSEC_OFFSET: flatbuffer::StructOffset = flatbuffer::StructOffset(4);
+    const TIME_NUMBER_OF_BYTES: u16 = 8;
+    const TIME_ALIGNMENT: u16 = 4;
+    const STAMP_SLOT: flatbuffer::Slot = flatbuffer::Slot {
+        table: ROOT_TABLE_INDEX,
+        vtable_offset: header_struct::std_msgs::msg::Header::VT_STAMP,
+    };
+
+    let compiled = compile(schemas::HEADER_STRUCT, messages::HEADER).expect("compiles");
+
+    assert_that!(
+        compiled.flatbuffer.structs,
+        eq vec![flatbuffer::StructEntry {
+            slot: STAMP_SLOT,
+            number_of_bytes: TIME_NUMBER_OF_BYTES,
+            alignment: TIME_ALIGNMENT,
+            values: vec![SEC_VALUE_INDEX, NANOSEC_VALUE_INDEX],
+        }]
+    );
+    assert_that!(
+        compiled.flatbuffer.field(NANOSEC_VALUE_INDEX).placement,
+        eq flatbuffer::FieldPlacement::Struct { slot: STAMP_SLOT, offset: NANOSEC_OFFSET }
+    );
+}
+
+#[test]
+fn adds_the_values_of_a_struct_inside_a_struct_to_the_outer_struct() {
+    const ROOT_TABLE_INDEX: flatbuffer::TableIndex = flatbuffer::TableIndex(0);
+    const POSITION_X_VALUE_INDEX: u16 = 3;
+    const ORIENTATION_W_VALUE_INDEX: u16 = 9;
+    const ORIENTATION_W_OFFSET: flatbuffer::StructOffset = flatbuffer::StructOffset(48);
+    const POSE_STRUCT_INDEX: usize = 1;
+    const POSE_NUMBER_OF_BYTES: u16 = 56;
+    const POSE_ALIGNMENT: u16 = 8;
+    const POSE_SLOT: flatbuffer::Slot = flatbuffer::Slot {
+        table: ROOT_TABLE_INDEX,
+        vtable_offset: pose_stamped::geometry_msgs::msg::PoseStamped::VT_POSE,
+    };
+
+    let compiled = compile(schemas::POSE_STAMPED, messages::POSE_STAMPED).expect("compiles");
+
+    assert_that!(
+        compiled.flatbuffer.structs[POSE_STRUCT_INDEX],
+        eq flatbuffer::StructEntry {
+            slot: POSE_SLOT,
+            number_of_bytes: POSE_NUMBER_OF_BYTES,
+            alignment: POSE_ALIGNMENT,
+            values: (POSITION_X_VALUE_INDEX..=ORIENTATION_W_VALUE_INDEX)
+                .map(ValueIndex)
+                .collect(),
+        }
+    );
+    assert_that!(
+        compiled.flatbuffer.field(ValueIndex(ORIENTATION_W_VALUE_INDEX)).placement,
+        eq flatbuffer::FieldPlacement::Struct { slot: POSE_SLOT, offset: ORIENTATION_W_OFFSET }
     );
 }
 

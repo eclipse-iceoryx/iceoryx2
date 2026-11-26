@@ -69,7 +69,37 @@ pub enum ScalarValue {
     F64(f64),
 }
 
+impl ScalarType {
+    pub fn number_of_bytes(self) -> usize {
+        match self {
+            ScalarType::Bool | ScalarType::U8 | ScalarType::I8 => 1,
+            ScalarType::U16 | ScalarType::I16 => 2,
+            ScalarType::U32 | ScalarType::I32 | ScalarType::F32 => 4,
+            ScalarType::U64 | ScalarType::I64 | ScalarType::F64 => 8,
+        }
+    }
+}
+
 impl ScalarValue {
+    /// The little-endian bytes of the value, followed by zeros.
+    pub fn to_le_bytes(self) -> [u8; 8] {
+        let mut bytes = [0; 8];
+        match self {
+            ScalarValue::Bool(value) => bytes[0] = u8::from(value),
+            ScalarValue::U8(value) => bytes[0] = value,
+            ScalarValue::I8(value) => bytes[..1].copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::U16(value) => bytes[..2].copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::I16(value) => bytes[..2].copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::U32(value) => bytes[..4].copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::I32(value) => bytes[..4].copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::U64(value) => bytes.copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::I64(value) => bytes.copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::F32(value) => bytes[..4].copy_from_slice(&value.to_le_bytes()),
+            ScalarValue::F64(value) => bytes.copy_from_slice(&value.to_le_bytes()),
+        }
+        bytes
+    }
+
     /// The value of the type `scalar` stored little-endian at the start of `bytes`.
     pub fn from_le_bytes(scalar: ScalarType, bytes: &[u8]) -> Self {
         macro_rules! from_le_bytes {

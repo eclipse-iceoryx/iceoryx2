@@ -12,17 +12,36 @@
 
 //! The binary schemas and their Rust bindings Must be generated before running tests.
 
+pub const HEADER: &[u8] = include_bytes!("header.bfbs");
+pub const HEADER_MISMATCHED: &[u8] = include_bytes!("header_mismatched.bfbs");
+pub const HEADER_STRUCT: &[u8] = include_bytes!("header_struct.bfbs");
 pub const MULTI_ARRAY_DIMENSION: &[u8] = include_bytes!("multi_array_dimension.bfbs");
+pub const POSE_STAMPED: &[u8] = include_bytes!("pose_stamped.bfbs");
 pub const TIME: &[u8] = include_bytes!("time.bfbs");
 pub const TIME_MISMATCHED: &[u8] = include_bytes!("time_mismatched.bfbs");
 pub const TIME_RENAMED: &[u8] = include_bytes!("time_renamed.bfbs");
 pub const UINT8_ENUM: &[u8] = include_bytes!("uint8_enum.bfbs");
 pub const WSTRING: &[u8] = include_bytes!("wstring.bfbs");
 
+#[path = "header_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod header;
+
+#[path = "header_struct_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod header_struct;
+
 #[path = "multi_array_dimension_generated.rs"]
 #[allow(clippy::all)]
 #[rustfmt::skip]
 pub mod multi_array_dimension;
+
+#[path = "pose_stamped_generated.rs"]
+#[allow(clippy::all)]
+#[rustfmt::skip]
+pub mod pose_stamped;
 
 #[path = "time_generated.rs"]
 #[allow(clippy::all)]
