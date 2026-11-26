@@ -848,6 +848,85 @@ fn reader_honors_a_big_endian_header() {
 }
 
 #[test]
+fn reader_at_a_location_reads_the_value_again() {
+    const FIRST: u32 = 7;
+    const STRING: &str = "hello";
+    const LAST: u32 = 9;
+
+    let mut written_bytes = Vec::new();
+    let mut writer = Writer::new(written_bytes.forward()).expect("starts");
+    writer.write_u32(FIRST).expect("writes");
+    writer.write_string(STRING.as_bytes()).expect("writes");
+    writer.write_u32(LAST).expect("writes");
+    let mut reader = Reader::new(&written_bytes).expect("starts");
+    reader.read_u32().expect("reads");
+    let location = reader.location();
+    reader.read_string().expect("reads");
+
+    let mut reader_at_location = reader.at(location);
+
+    assert_that!(reader_at_location.read_string(), eq Ok(STRING.as_bytes()));
+    assert_that!(reader_at_location.read_u32(), eq Ok(LAST));
+    assert_that!(reader.read_u32(), eq Ok(LAST));
+}
+
+#[test]
+fn reader_at_a_location_skips_the_padding_of_the_message() {
+    const BYTE: u8 = 1;
+    const VALUE: u64 = 0x0102_0304_0506_0708;
+
+    let mut written_bytes = Vec::new();
+    let mut writer = Writer::new(written_bytes.forward()).expect("starts");
+    writer.write_u8(BYTE).expect("writes");
+    writer.write_u64(VALUE).expect("writes");
+    let mut reader = Reader::new(&written_bytes).expect("starts");
+    reader.read_u8().expect("reads");
+    let location = reader.location();
+
+    let mut reader_at_location = reader.at(location);
+
+    assert_that!(reader_at_location.read_u64(), eq Ok(VALUE));
+    assert_that!(reader_at_location.is_exhausted(), eq true);
+}
+
+#[test]
+fn reader_at_a_location_honors_a_big_endian_header() {
+    const FIRST: u32 = 7;
+    const FLOAT64: f64 = 1.5;
+    const PADDING: [u8; 4] = [0; 4];
+
+    let mut message_bytes = ENCAPSULATION_BE.to_vec();
+    message_bytes.extend_from_slice(&FIRST.to_be_bytes());
+    message_bytes.extend_from_slice(&PADDING);
+    message_bytes.extend_from_slice(&FLOAT64.to_be_bytes());
+    let mut reader = Reader::new(&message_bytes).expect("starts");
+    reader.read_u32().expect("reads");
+    let location = reader.location();
+
+    let mut reader_at_location = reader.at(location);
+
+    assert_that!(reader_at_location.endianness(), eq Endianness::Big);
+    assert_that!(reader_at_location.read_f64(), eq Ok(FLOAT64));
+}
+
+#[test]
+fn reader_at_a_location_past_the_end_is_exhausted() {
+    const VALUE: u64 = 0x0102_0304_0506_0708;
+
+    let mut long_bytes = ENCAPSULATION_LE.to_vec();
+    long_bytes.extend_from_slice(&VALUE.to_le_bytes());
+    let mut long_reader = Reader::new(&long_bytes).expect("starts");
+    long_reader.read_u64().expect("reads");
+    let location = long_reader.location();
+    let short_reader = Reader::new(&ENCAPSULATION_LE).expect("starts");
+
+    let mut reader_at_location = short_reader.at(location);
+
+    assert_that!(reader_at_location.is_exhausted(), eq true);
+    assert_that!(reader_at_location.read_u8(), eq Err(reader::ScalarError::Truncated));
+}
+
+#[test]
 fn reader_refuses_other_encapsulations() {
     const PL_CDR_LE: [u8; 4] = [0x00, 0x03, 0x00, 0x00];
     const CDR2_LE: [u8; 4] = [0x00, 0x07, 0x00, 0x00];
