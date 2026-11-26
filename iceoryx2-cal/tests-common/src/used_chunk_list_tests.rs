@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_testing_macros::tests;
 
-#[tests(1, 2, 3, 128)]
+#[tests(1, 2, 3, 63, 64, 65, 128)]
 pub mod generic {
     use alloc::vec;
 
@@ -54,5 +54,31 @@ pub mod generic {
             assert_that!(sut.remove(i), eq true);
             assert_that!(sut.remove(i), eq false);
         }
+    }
+
+    #[test]
+    fn remove_all_returns_exactly_the_inserted_values<const CAPACITY: usize>() {
+        const STEP: usize = 3;
+        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+        let mut inserted = vec![false; sut.capacity()];
+
+        for i in (0..sut.capacity())
+            .step_by(STEP)
+            .chain([sut.capacity() - 1])
+        {
+            sut.insert(i);
+            inserted[i] = true;
+        }
+
+        let mut removed = vec![false; sut.capacity()];
+        sut.remove_all(|index| {
+            assert_that!(removed[index], eq false);
+            removed[index] = true;
+        });
+        assert_that!(removed, eq inserted);
+
+        let mut removed_twice = 0;
+        sut.remove_all(|_| removed_twice += 1);
+        assert_that!(removed_twice, eq 0);
     }
 }
