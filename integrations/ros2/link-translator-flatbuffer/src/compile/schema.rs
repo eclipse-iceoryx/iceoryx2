@@ -13,8 +13,8 @@
 use iceoryx2_bb_flatbuffers::reflection::{self, BaseType, Object};
 use iceoryx2_log::{fail, origin};
 
-use crate::next::Refusal;
-use crate::next::model::{ScalarType, ScalarValue};
+use crate::Refusal;
+use crate::model::{ScalarType, ScalarValue};
 
 pub(super) fn field<'a>(object: Object<'a>, name: &str) -> Result<reflection::Field<'a>, Refusal> {
     let origin = origin!("compile::schema::field");

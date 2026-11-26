@@ -18,6 +18,7 @@ use iceoryx2_bb_flatbuffers::{
 use iceoryx2_integrations_ros2_link_adapter::translator::{
     EmptyHeader, TranslationError as HeaderError,
 };
+use iceoryx2_integrations_ros2_link_adapter::typesupport::{self, IntrospectionKind, LoadError};
 use iceoryx2_integrations_ros2_link_adapter::{MessageType, MirroredHeader, TypeName};
 use iceoryx2_link_adapter::{LocalTypes, SampleShape, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::{
@@ -25,7 +26,7 @@ use iceoryx2_link_backend::service_description::{
 };
 use iceoryx2_log::{fail, origin};
 
-use crate::pairing;
+use crate::CompileError;
 use crate::transcoder::FlatbufferTranscoder;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,8 +49,10 @@ pub enum TranslationError {
     InvalidSchema(InvalidSchema),
     /// The schema's root type and the topic type are not the same type.
     Mismatch,
-    /// The schema and the message do not pair member by member.
-    Pairing(pairing::PairingError),
+    /// The introspection typesupport of the message cannot be loaded.
+    Introspection(LoadError),
+    /// The schema and the message cannot be compiled together.
+    Compile(CompileError),
     /// The local user header is neither the RosHeader nor absent.
     Header(HeaderError),
 }
@@ -166,12 +169,22 @@ impl Translator<SampleShape> for FlatbufferTranslator {
                 "The schema's root type '{}' is not the topic type '{}'", schema.root_type(), remote.type_name.as_str()
             );
         }
-        let table = match pairing::compile(schema.bytes(), type_name.as_str()) {
-            Ok(table) => table,
+        let typesupport = match typesupport::get::<IntrospectionKind>(type_name.as_str()) {
+            Ok(typesupport) => typesupport,
             Err(error) => {
                 fail!(
                     from origin,
-                    with TranslationError::Pairing(error),
+                    with TranslationError::Introspection(error),
+                    "The introspection of '{}' cannot be loaded", type_name.as_str()
+                );
+            }
+        };
+        let compiled = match crate::compile(schema, &typesupport) {
+            Ok(compiled) => compiled,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with TranslationError::Compile(error),
                     "The schema of '{}' does not match the message", type_name.as_str()
                 );
             }
@@ -184,7 +197,10 @@ impl Translator<SampleShape> for FlatbufferTranslator {
             "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.identifier.type_name()
         );
 
-        let payload = FlatbufferTranscoder { type_name, table };
+        let payload = FlatbufferTranscoder {
+            type_name,
+            compiled,
+        };
         Ok(match header {
             MirroredHeader::RosHeader => SampleTranscoders::TranscodePayload(payload),
             MirroredHeader::None => SampleTranscoders::TranscodeBoth(EmptyHeader, payload),

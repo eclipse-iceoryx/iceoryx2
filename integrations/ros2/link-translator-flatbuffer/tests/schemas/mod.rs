@@ -20,6 +20,7 @@ pub const HEADER_MISMATCHED: &[u8] = include_bytes!("header_mismatched.bfbs");
 pub const HEADER_STRUCT: &[u8] = include_bytes!("header_struct.bfbs");
 pub const JOINT_STATE: &[u8] = include_bytes!("joint_state.bfbs");
 pub const MULTI_ARRAY_DIMENSION: &[u8] = include_bytes!("multi_array_dimension.bfbs");
+pub const NO_SUCH_MESSAGE: &[u8] = include_bytes!("no_such_message.bfbs");
 pub const POINT_CLOUD: &[u8] = include_bytes!("point_cloud.bfbs");
 pub const POSE_ARRAY: &[u8] = include_bytes!("pose_array.bfbs");
 pub const POSE_ARRAY_STRUCT: &[u8] = include_bytes!("pose_array_struct.bfbs");

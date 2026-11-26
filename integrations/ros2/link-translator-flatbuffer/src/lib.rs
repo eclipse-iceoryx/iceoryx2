@@ -38,15 +38,33 @@
 //! service's root type. For a topic it looks the schema up in the
 //! flatbuffer schema search path `iceoryx2` is configured with, by the
 //! root type, as `iceoryx2` does for a service.
+//!
+//! The translation goes through a neutral model for describing the contents
+//! of a message.
+//! The [`Model`](model::Model) is used to derive the layouts for different message formats
+//! independently. The model describes the contents by [`Kind`](model::Kind), which are
+//! mapped to different layouts by their [`ValueIndex`](model::ValueIndex).
+//!
+//! ```text
+//! model           layout of one format      layout of another format
+//! 0 String        value 0, first            value 0, in slot 6
+//! 1 Scalar U32    value 1, second           value 1, in slot 8
+//! 2 Scalar U32    value 2, third            value 2, in slot 4
+//! ```
 
-pub mod decode;
-pub mod encode;
-pub mod next;
-pub mod pairing;
+pub mod cdr;
+mod compile;
+mod decode;
+mod encode;
+pub mod flatbuffer;
+pub mod model;
 mod transcoder;
 mod translator;
 mod validation;
 
+pub use compile::{CompileError, Compiled, Refusal, compile};
+pub use decode::{DecodeError, decode};
+pub use encode::{EncodeError, encode};
 pub use transcoder::{FlatbufferTranscoder, TranscodeFailure};
 pub use translator::{FlatbufferTranslator, TranslationError};
 pub use validation::{TypeMismatch, type_mismatches};

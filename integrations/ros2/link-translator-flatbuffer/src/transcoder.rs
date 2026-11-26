@@ -18,15 +18,14 @@ use iceoryx2_link_adapter::{SampleBytesRef, TranscodeError, Transcoder};
 use iceoryx2_link_backend::wire::region::{BackwardRegion, Region, ResizeError};
 use iceoryx2_log::{fail, origin};
 
-use crate::pairing::Table;
-use crate::{decode, encode};
+use crate::{Compiled, DecodeError, EncodeError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranscodeFailure {
     /// The payload does not encode as the message.
-    Encode(encode::EncodeError),
+    Encode(EncodeError),
     /// The wire bytes do not decode as the schema.
-    Decode(decode::DecodeError),
+    Decode(DecodeError),
 }
 
 impl core::fmt::Display for TranscodeFailure {
@@ -37,12 +36,12 @@ impl core::fmt::Display for TranscodeFailure {
 
 impl core::error::Error for TranscodeFailure {}
 
-/// Converts between a flatbuffer and the CDR of a ROS 2 message through the
-/// table compiled for the two.
+/// Converts between a flatbuffer and the CDR of a ROS 2 message through a
+/// pre-compiled model.
 #[derive(Debug)]
 pub struct FlatbufferTranscoder {
     pub(crate) type_name: TypeName,
-    pub(crate) table: Table,
+    pub(crate) compiled: Compiled,
 }
 
 impl<'a> Transcoder<SampleBytesRef<'a>> for FlatbufferTranscoder {
@@ -56,9 +55,9 @@ impl<'a> Transcoder<SampleBytesRef<'a>> for FlatbufferTranscoder {
         let origin = origin!("FlatbufferTranscoder::encode");
 
         // The CDR is written into the payload from its front.
-        match encode::cdr(&self.table, local.payload, into.forward()) {
+        match crate::encode(&self.compiled, local.payload, into.forward()) {
             Ok(()) => Ok(()),
-            Err(encode::EncodeError::Region(_)) => {
+            Err(EncodeError::Region(_)) => {
                 fail!(
                     from origin,
                     with TranscodeError::Refused,
@@ -94,7 +93,7 @@ impl<'a> Transcoder<SampleBytesRef<'a>> for FlatbufferTranscoder {
 
         // Build the flatbuffer
         let mut builder = FlatBufferBuilder::new_in(RegionAllocator(region));
-        if let Err(error) = decode::flatbuffer(&self.table, wire.payload, &mut builder) {
+        if let Err(error) = crate::decode(&self.compiled, wire.payload, &mut builder) {
             fail!(
                 from origin,
                 with TranscodeError::Transcoder(TranscodeFailure::Decode(error)),

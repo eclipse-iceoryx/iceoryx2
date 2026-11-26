@@ -10,19 +10,47 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod flatbuffers;
+pub mod messages;
+
 use core::ffi::c_void;
 
+use ::flatbuffers::FlatBufferBuilder;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_integrations_ros2_link_adapter::typesupport::{self, IntrospectionKind};
+use iceoryx2_integrations_ros2_link_translator_flatbuffer::{
+    self as translator, CompileError, Compiled,
+};
+use iceoryx2_link_backend::service_description::Schema;
+use iceoryx2_link_backend::wire::region::Region;
 use r2r_rcl::{
-    RMW_RET_OK, rcutils_allocator_t, rcutils_get_default_allocator, rmw_deserialize, rmw_serialize,
-    rmw_serialized_message_t, rosidl_message_type_support_t,
+    RMW_RET_OK, rcutils_allocator_t, rmw_serialize, rmw_serialized_message_t,
+    rosidl_message_type_support_t,
 };
 use rosidl_runtime_rs::RmwMessage;
 
+pub fn compile(schema: &[u8], message: &str) -> Result<Compiled, CompileError> {
+    let schema = Schema::new(schema.to_vec()).expect("is a schema");
+    let typesupport = typesupport::get::<IntrospectionKind>(message).expect("is loaded");
+    translator::compile(&schema, &typesupport)
+}
+
+pub fn encode(compiled: &Compiled, flatbuffer: &[u8]) -> Vec<u8> {
+    let mut cdr: Vec<u8> = Vec::new();
+    translator::encode(compiled, flatbuffer, cdr.forward()).expect("encodes");
+    cdr
+}
+
+pub fn decode(compiled: &Compiled, cdr: &[u8]) -> Vec<u8> {
+    let mut builder = FlatBufferBuilder::new();
+    translator::decode(compiled, cdr, &mut builder).expect("decodes");
+    builder.finished_data().to_vec()
+}
+
 /// The serialization of `message` by the rmw.
-/// The serialized form of `message` as the rmw reports it. The rmw leaves
-/// padding uninitialized and reports its size estimate as the length, so
-/// the bytes come from a zeroing allocator to make them comparable.
+///
+/// The rmw leaves padding uninitialized and reports its size estimate as the
+/// length. The bytes come from a zeroing allocator to make them comparable.
 pub fn serialize<M: RmwMessage>(message: &M) -> Vec<u8> {
     let mut buffer = Vec::new();
     let mut serialized = rmw_serialized_message_t {
@@ -81,28 +109,6 @@ fn zeroing_allocator(buffer: &mut Vec<u8>) -> rcutils_allocator_t {
         zero_allocate: Some(zero_allocate),
         state: (buffer as *mut Vec<u8>).cast::<c_void>(),
     }
-}
-
-/// The message the rmw deserializes from `bytes`.
-pub fn deserialize<M: RmwMessage>(bytes: &[u8]) -> M {
-    // Deserialize the message.
-    let serialized = rmw_serialized_message_t {
-        buffer: bytes.as_ptr().cast_mut(),
-        buffer_length: bytes.len(),
-        buffer_capacity: bytes.len(),
-        allocator: unsafe { rcutils_get_default_allocator() },
-    };
-    let mut message = M::default();
-    let ret = unsafe {
-        rmw_deserialize(
-            &serialized,
-            type_support::<M>(),
-            (&mut message as *mut M).cast::<c_void>(),
-        )
-    };
-    assert_that!(ret, eq RMW_RET_OK as i32);
-
-    message
 }
 
 fn type_support<M: RmwMessage>() -> *const rosidl_message_type_support_t {

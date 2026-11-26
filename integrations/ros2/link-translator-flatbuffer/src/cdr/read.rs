@@ -14,7 +14,7 @@ use iceoryx2_integrations_ros2_link_adapter::cdr::reader::{self, Endianness, Loc
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::next::model::{
+use crate::model::{
     ByteOrder, ModelIndex, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
 };
 

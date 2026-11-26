@@ -18,7 +18,7 @@ use r2r_rcl::{
     rosidl_typesupport_introspection_c_field_types as FieldType,
 };
 
-use crate::next::model::ScalarType;
+use crate::model::ScalarType;
 
 pub(super) const FLOAT: u8 = FieldType::rosidl_typesupport_introspection_c__ROS_TYPE_FLOAT as u8;
 pub(super) const DOUBLE: u8 = FieldType::rosidl_typesupport_introspection_c__ROS_TYPE_DOUBLE as u8;

@@ -12,16 +12,16 @@
 
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::model::{
+use iceoryx2_integrations_ros2_link_translator_flatbuffer::model::{
     Kind, ModelIndex, ScalarType, ScalarValue, ValueIndex,
 };
-use iceoryx2_integrations_ros2_link_translator_flatbuffer::next::{Refusal, cdr, flatbuffer};
+use iceoryx2_integrations_ros2_link_translator_flatbuffer::{Refusal, cdr, flatbuffer};
 
-use crate::next::testing::compile;
-use crate::next::testing::messages;
 use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
 use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
 use crate::schemas::{self, header, header_struct, pose_stamped};
+use crate::testing::compile;
+use crate::testing::messages;
 
 #[test]
 fn adds_one_value_per_member() {

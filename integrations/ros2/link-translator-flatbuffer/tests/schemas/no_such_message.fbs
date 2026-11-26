@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod compile_tests;
-mod decode_tests;
-mod encode_tests;
-mod testing;
+namespace no_such_msgs.msg;
+
+table Nothing {
+    value: int32;
+}
+
+root_type Nothing;

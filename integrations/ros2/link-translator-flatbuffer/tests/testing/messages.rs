@@ -110,46 +110,49 @@ pub fn point_cloud_message() -> PointCloud {
 }
 
 pub fn arrays_message() -> Arrays {
-    let mut message = Arrays::default();
-    message.string_values = ["first".into(), "".into(), "third".into()];
+    let mut message = Arrays {
+        string_values: ["first".into(), "".into(), "third".into()],
+        alignment_check: 42,
+        ..Default::default()
+    };
     message.basic_types_values[1].int32_value = -7;
     message.basic_types_values[2].float64_value = 2.5;
-    message.alignment_check = 42;
     message
 }
 
 pub fn arrays_message_of_zeros() -> Arrays {
-    let mut message = Arrays::default();
-    message.defaults_values = core::array::from_fn(|_| Defaults {
-        bool_value: Default::default(),
-        byte_value: Default::default(),
-        char_value: Default::default(),
-        float32_value: Default::default(),
-        float64_value: Default::default(),
-        int8_value: Default::default(),
-        uint8_value: Default::default(),
-        int16_value: Default::default(),
-        uint16_value: Default::default(),
-        int32_value: Default::default(),
-        uint32_value: Default::default(),
-        int64_value: Default::default(),
-        uint64_value: Default::default(),
-    });
-    message.bool_values_default = Default::default();
-    message.byte_values_default = Default::default();
-    message.char_values_default = Default::default();
-    message.float32_values_default = Default::default();
-    message.float64_values_default = Default::default();
-    message.int8_values_default = Default::default();
-    message.uint8_values_default = Default::default();
-    message.int16_values_default = Default::default();
-    message.uint16_values_default = Default::default();
-    message.int32_values_default = Default::default();
-    message.uint32_values_default = Default::default();
-    message.int64_values_default = Default::default();
-    message.uint64_values_default = Default::default();
-    message.string_values_default = Default::default();
-    message
+    Arrays {
+        defaults_values: core::array::from_fn(|_| Defaults {
+            bool_value: Default::default(),
+            byte_value: Default::default(),
+            char_value: Default::default(),
+            float32_value: Default::default(),
+            float64_value: Default::default(),
+            int8_value: Default::default(),
+            uint8_value: Default::default(),
+            int16_value: Default::default(),
+            uint16_value: Default::default(),
+            int32_value: Default::default(),
+            uint32_value: Default::default(),
+            int64_value: Default::default(),
+            uint64_value: Default::default(),
+        }),
+        bool_values_default: Default::default(),
+        byte_values_default: Default::default(),
+        char_values_default: Default::default(),
+        float32_values_default: Default::default(),
+        float64_values_default: Default::default(),
+        int8_values_default: Default::default(),
+        uint8_values_default: Default::default(),
+        int16_values_default: Default::default(),
+        uint16_values_default: Default::default(),
+        int32_values_default: Default::default(),
+        uint32_values_default: Default::default(),
+        int64_values_default: Default::default(),
+        uint64_values_default: Default::default(),
+        string_values_default: Default::default(),
+        ..Default::default()
+    }
 }
 
 pub fn pose_stamped_message() -> PoseStamped {

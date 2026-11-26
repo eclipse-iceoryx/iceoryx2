@@ -19,7 +19,7 @@ use iceoryx2_log::{fail, origin};
 use super::layout::{
     FieldKind, FieldPlacement, Layout, RootObject, StructEntry, TableIndex, TablePlacement,
 };
-use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
+use crate::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
 
 /// Writes `values` into `builder` as a finished flatbuffer.
 ///

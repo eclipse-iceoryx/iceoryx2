@@ -20,7 +20,7 @@ use iceoryx2_log::{fail, origin};
 use super::layout::{
     FieldEntry, FieldKind, FieldPlacement, Layout, RootObject, TableIndex, TablePlacement,
 };
-use crate::next::model::{ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
+use crate::model::{ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
 
 /// A flatbuffer that holds no root offset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

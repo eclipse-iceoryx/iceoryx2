@@ -15,7 +15,7 @@ use iceoryx2_link_backend::wire::region::{ForwardRegion, ResizeError};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::next::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, Values};
+use crate::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, Values};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
