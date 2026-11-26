@@ -41,6 +41,7 @@
 
 pub mod decode;
 pub mod encode;
+pub mod next;
 pub mod pairing;
 mod transcoder;
 mod translator;

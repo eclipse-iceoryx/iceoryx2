@@ -12,7 +12,9 @@
 
 mod decode_tests;
 mod encode_tests;
+mod next;
 mod pairing_tests;
+mod schemas;
 mod testing;
 mod translator_tests;
 mod validation_tests;
