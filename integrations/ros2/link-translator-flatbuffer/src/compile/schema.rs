@@ -90,8 +90,8 @@ pub(super) fn scalar_array(field: reflection::Field<'_>) -> Option<(ScalarType, 
     if field.type_().base_type() != BaseType::Array {
         return None;
     }
-    let scalar = scalar_of(field.type_().element())?;
-    Some((scalar, u32::from(field.type_().fixed_length())))
+    let scalar_type = scalar_of(field.type_().element())?;
+    Some((scalar_type, u32::from(field.type_().fixed_length())))
 }
 
 pub(super) fn is_string_vector(field: reflection::Field<'_>) -> bool {
@@ -115,10 +115,10 @@ fn scalar_of(base_type: BaseType) -> Option<ScalarType> {
     }
 }
 
-/// The default of `field` as a value of the type `scalar`.
-pub(super) fn default_value(field: reflection::Field<'_>, scalar: ScalarType) -> ScalarValue {
+/// The default of `field` as a value of the type `scalar_type`.
+pub(super) fn default_value(field: reflection::Field<'_>, scalar_type: ScalarType) -> ScalarValue {
     let (integer, real) = (field.default_integer(), field.default_real());
-    match scalar {
+    match scalar_type {
         ScalarType::Bool => ScalarValue::Bool(integer != 0),
         ScalarType::U8 => ScalarValue::U8(integer as u8),
         ScalarType::I8 => ScalarValue::I8(integer as i8),

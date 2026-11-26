@@ -43,7 +43,7 @@ pub enum MemberKind {
     String,
     ScalarSequence(ScalarType),
     ScalarArray {
-        scalar: ScalarType,
+        scalar_type: ScalarType,
         number_of_elements: u32,
     },
     StringSequence,

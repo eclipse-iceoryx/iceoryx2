@@ -96,12 +96,12 @@ fn records_the_default_of_a_scalar_field() {
 
     assert_that!(
         compiled.flatbuffer.fields[1].kind,
-        eq flatbuffer::FieldKind::Scalar { scalar: ScalarType::U32, default: ScalarValue::U32(0) }
+        eq flatbuffer::FieldKind::Scalar { scalar_type: ScalarType::U32, default: ScalarValue::U32(0) }
     );
     assert_that!(
         compiled.flatbuffer.fields[2].kind,
         eq flatbuffer::FieldKind::Scalar {
-            scalar: ScalarType::U32,
+            scalar_type: ScalarType::U32,
             default: ScalarValue::U32(STRIDE_DEFAULT),
         }
     );
@@ -271,7 +271,7 @@ fn records_the_number_of_elements_of_a_scalar_array() {
     assert_that!(
         compiled.model.values[COVARIANCE_VALUE_INDEX],
         eq Kind::ScalarArray {
-            scalar: ScalarType::F64,
+            scalar_type: ScalarType::F64,
             number_of_elements: COVARIANCE_NUMBER_OF_ELEMENTS,
         }
     );
@@ -302,7 +302,7 @@ fn records_the_offset_of_an_array_inside_a_struct() {
                 offset: COVARIANCE_OFFSET,
             },
             kind: flatbuffer::FieldKind::ScalarArray {
-                scalar: ScalarType::F64,
+                scalar_type: ScalarType::F64,
                 number_of_elements: COVARIANCE_NUMBER_OF_ELEMENTS,
             },
         }

@@ -87,7 +87,7 @@ pub enum Kind {
     String,
     ScalarSequence(ScalarType),
     ScalarArray {
-        scalar: ScalarType,
+        scalar_type: ScalarType,
         number_of_elements: u32,
     },
     StringSequence,
@@ -184,17 +184,18 @@ impl ScalarValue {
         bytes
     }
 
-    /// The value of the type `scalar` stored in `byte_order` at the start of
-    /// `bytes`.
-    pub fn from_bytes(scalar: ScalarType, bytes: &[u8], byte_order: ByteOrder) -> Self {
+    /// The value of the type `scalar_type` stored in `byte_order` at the start
+    /// of `bytes`.
+    pub fn from_bytes(scalar_type: ScalarType, bytes: &[u8], byte_order: ByteOrder) -> Self {
         match byte_order {
-            ByteOrder::Little => Self::from_le_bytes(scalar, bytes),
-            ByteOrder::Big => Self::from_be_bytes(scalar, bytes),
+            ByteOrder::Little => Self::from_le_bytes(scalar_type, bytes),
+            ByteOrder::Big => Self::from_be_bytes(scalar_type, bytes),
         }
     }
 
-    /// The value of the type `scalar` stored little-endian at the start of `bytes`.
-    pub fn from_le_bytes(scalar: ScalarType, bytes: &[u8]) -> Self {
+    /// The value of the type `scalar_type` stored little-endian at the start
+    /// of `bytes`.
+    pub fn from_le_bytes(scalar_type: ScalarType, bytes: &[u8]) -> Self {
         macro_rules! from_le_bytes {
             ($ty:ty) => {
                 <$ty>::from_le_bytes(
@@ -204,7 +205,7 @@ impl ScalarValue {
                 )
             };
         }
-        match scalar {
+        match scalar_type {
             ScalarType::Bool => ScalarValue::Bool(bytes[0] != 0),
             ScalarType::U8 => ScalarValue::U8(bytes[0]),
             ScalarType::I8 => ScalarValue::I8(bytes[0] as i8),
@@ -218,8 +219,9 @@ impl ScalarValue {
             ScalarType::F64 => ScalarValue::F64(from_le_bytes!(f64)),
         }
     }
-    /// The value of the type `scalar` stored big-endian at the start of `bytes`.
-    pub fn from_be_bytes(scalar: ScalarType, bytes: &[u8]) -> Self {
+    /// The value of the type `scalar_type` stored big-endian at the start of
+    /// `bytes`.
+    pub fn from_be_bytes(scalar_type: ScalarType, bytes: &[u8]) -> Self {
         macro_rules! from_be_bytes {
             ($ty:ty) => {
                 <$ty>::from_be_bytes(
@@ -229,7 +231,7 @@ impl ScalarValue {
                 )
             };
         }
-        match scalar {
+        match scalar_type {
             ScalarType::Bool => ScalarValue::Bool(bytes[0] != 0),
             ScalarType::U8 => ScalarValue::U8(bytes[0]),
             ScalarType::I8 => ScalarValue::I8(bytes[0] as i8),

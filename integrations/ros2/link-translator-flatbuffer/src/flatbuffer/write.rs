@@ -103,13 +103,13 @@ fn write_table<V: Values, A: Allocator>(
                 let string_offset = builder.create_byte_string(bytes).as_union_value();
                 value_offsets.push((slot.vtable_offset, string_offset));
             }
-            FieldKind::ScalarVector(scalar) => {
+            FieldKind::ScalarVector(scalar_type) => {
                 let elements = fail!(
                     from origin,
                     when values.scalar_elements(*index),
                     "Unable to take the scalar elements of the value {}", index.0
                 );
-                let vector_offset = write_scalar_vector(builder, scalar, elements);
+                let vector_offset = write_scalar_vector(builder, scalar_type, elements);
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::StringVector => {
@@ -252,10 +252,10 @@ fn write_scalar<A: Allocator>(
     }
 }
 
-/// Writes `elements` of the type `scalar` as a vector, returning its offset.
+/// Writes `elements` of the type `scalar_type` as a vector, returning its offset.
 fn write_scalar_vector<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
-    scalar: ScalarType,
+    scalar_type: ScalarType,
     elements: ScalarElements<'_>,
 ) -> WIPOffset<UnionWIPOffset> {
     macro_rules! vector {
@@ -282,7 +282,7 @@ fn write_scalar_vector<A: Allocator>(
         }};
     }
 
-    match scalar {
+    match scalar_type {
         ScalarType::Bool | ScalarType::U8 => builder.create_vector(elements.bytes).as_union_value(),
         ScalarType::I8 => vector!(i8),
         ScalarType::U16 => vector!(u16),
@@ -316,21 +316,21 @@ fn write_struct_vector<E: Values, A: Allocator>(
 
     // Take every element before writing one. The builder fills the flatbuffer
     // back to front and needs the last element first.
-    let mut taken = Vec::with_capacity(elements.len());
+    let mut taken_elements = Vec::with_capacity(elements.len());
     for element in elements {
         let element = fail!(
             from origin,
             when element,
             "Unable to take an element of a vector of structs"
         );
-        taken.push(element);
+        taken_elements.push(element);
     }
 
     // Write the structs one after the other, aligned as a whole.
-    let number_of_vector_bytes = taken.len() * usize::from(*number_of_bytes);
+    let number_of_vector_bytes = taken_elements.len() * usize::from(*number_of_bytes);
     builder.start_vector::<u8>(number_of_vector_bytes);
     align(builder, number_of_vector_bytes, usize::from(*alignment));
-    for element in taken.iter().rev() {
+    for element in taken_elements.iter().rev() {
         fail!(
             from origin,
             when push_struct(layout, struct_values, *number_of_bytes, StructDestination::Vector, element, builder),
@@ -338,7 +338,9 @@ fn write_struct_vector<E: Values, A: Allocator>(
         );
     }
 
-    Ok(builder.end_vector::<u8>(taken.len()).as_union_value())
+    Ok(builder
+        .end_vector::<u8>(taken_elements.len())
+        .as_union_value())
 }
 
 /// Writes the struct `entry` whole into its slot of the open table.
@@ -395,20 +397,20 @@ fn push_struct<V: Values, A: Allocator>(
             unreachable!("the value sits in the struct")
         };
         match field.kind {
-            FieldKind::Scalar { scalar, .. } => {
+            FieldKind::Scalar { scalar_type, .. } => {
                 let value = fail!(
                     from origin,
                     when values.scalar(*index),
                     "Unable to take the scalar value {}", index.0
                 );
 
-                let bytes = &value.to_le_bytes()[..scalar.number_of_bytes()];
+                let bytes = &value.to_le_bytes()[..scalar_type.number_of_bytes()];
                 let end = usize::from(offset.0) + bytes.len();
                 push_padding(builder, destination, &mut position, end);
                 push_bytes(builder, destination, &mut position, bytes);
             }
             FieldKind::ScalarArray {
-                scalar,
+                scalar_type,
                 number_of_elements,
             } => {
                 let elements = fail!(
@@ -417,13 +419,19 @@ fn push_struct<V: Values, A: Allocator>(
                     "Unable to take the scalar elements of the value {}", index.0
                 );
 
-                let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
+                let number_of_bytes = number_of_elements as usize * scalar_type.number_of_bytes();
                 let end = usize::from(offset.0) + number_of_bytes;
                 push_padding(builder, destination, &mut position, end);
 
                 // Left zero if no elements to push.
                 if elements.bytes.len() == number_of_bytes {
-                    push_scalar_elements(builder, destination, &mut position, scalar, elements);
+                    push_scalar_elements(
+                        builder,
+                        destination,
+                        &mut position,
+                        scalar_type,
+                        elements,
+                    );
                 }
             }
             FieldKind::String
@@ -442,27 +450,31 @@ fn push_struct<V: Values, A: Allocator>(
     Ok(())
 }
 
-/// Pushes `elements` of the type `scalar` into a struct last to first from
+/// Pushes `elements` of the type `scalar_type` into a struct last to first from
 /// `position` back.
 fn push_scalar_elements<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
     destination: StructDestination,
     position: &mut usize,
-    scalar: ScalarType,
+    scalar_type: ScalarType,
     elements: ScalarElements<'_>,
 ) {
-    if elements.byte_order == ByteOrder::Little || scalar.number_of_bytes() == 1 {
+    if elements.byte_order == ByteOrder::Little || scalar_type.number_of_bytes() == 1 {
         // The elements lie in the byte order of the flatbuffer.
         push_bytes(builder, destination, position, elements.bytes);
     } else {
         // The elements lie in the other byte order.
-        for bytes in elements.bytes.chunks_exact(scalar.number_of_bytes()).rev() {
-            let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
+        for bytes in elements
+            .bytes
+            .chunks_exact(scalar_type.number_of_bytes())
+            .rev()
+        {
+            let value = ScalarValue::from_bytes(scalar_type, bytes, elements.byte_order);
             push_bytes(
                 builder,
                 destination,
                 position,
-                &value.to_le_bytes()[..scalar.number_of_bytes()],
+                &value.to_le_bytes()[..scalar_type.number_of_bytes()],
             );
         }
     }

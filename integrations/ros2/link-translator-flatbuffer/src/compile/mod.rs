@@ -207,7 +207,7 @@ impl<'a> Compiler<'a> {
 
             // Check that the member and the field hold the same kind of value.
             let (kind, member_kind, field_kind) =
-                kinds(member, field).map_err(|refusal| CompileError { path, refusal })?;
+                pair(member, field).map_err(|refusal| CompileError { path, refusal })?;
 
             let placement = FieldPlacement::Table(Slot {
                 table,
@@ -307,7 +307,7 @@ impl<'a> Compiler<'a> {
 
             // Check that the member and the field hold the same scalar.
             let (kind, member_kind, field_kind) =
-                kinds(member, field).map_err(|refusal| CompileError { path, refusal })?;
+                pair(member, field).map_err(|refusal| CompileError { path, refusal })?;
 
             let layout = &self.compiled.flatbuffer;
             let placement = match target {
@@ -472,11 +472,11 @@ fn member_path(parent: &str, name: &str) -> String {
 /// Returns the kind of the value in the model, the kind of the member in the
 /// CDR layout and the kind of the field in the flatbuffer layout. Fails when
 /// the member and the field do not hold compatible values.
-fn kinds(
+fn pair(
     member: &MessageMember,
     field: reflection::Field<'_>,
 ) -> Result<(Kind, cdr::MemberKind, flatbuffer::FieldKind), Refusal> {
-    let origin = origin!("compile::kinds");
+    let origin = origin!("compile::pair");
 
     // Refuse the types that no flatbuffer field carries.
     if matches!(
@@ -517,11 +517,11 @@ fn kinds(
     {
         let number_of_elements = member.array_size_ as u32;
         let kind = Kind::ScalarArray {
-            scalar: member_type,
+            scalar_type: member_type,
             number_of_elements,
         };
         let member_kind = cdr::MemberKind::ScalarArray {
-            scalar: member_type,
+            scalar_type: member_type,
             number_of_elements,
         };
         if schema::element_scalar_type(field) == Some(member_type) {
@@ -533,7 +533,7 @@ fn kinds(
                 kind,
                 member_kind,
                 flatbuffer::FieldKind::ScalarArray {
-                    scalar: member_type,
+                    scalar_type: member_type,
                     number_of_elements,
                 },
             )),
@@ -596,7 +596,7 @@ fn kinds(
             Kind::Scalar(field_type),
             cdr::MemberKind::Scalar(member_type),
             flatbuffer::FieldKind::Scalar {
-                scalar: field_type,
+                scalar_type: field_type,
                 default: schema::default_value(field, field_type),
             },
         )),

@@ -200,12 +200,12 @@ impl Values for Locations<'_> {
         Self: 'a;
 
     fn scalar(&self, index: ValueIndex) -> Result<ScalarValue, ReadError> {
-        let MemberKind::Scalar(scalar) = self.layout.member(index).kind else {
+        let MemberKind::Scalar(scalar_type) = self.layout.member(index).kind else {
             unreachable!("the value is a scalar in the model")
         };
 
         // Read the member from its saved location.
-        read_scalar(&mut self.reader.at(self.location(index)), scalar)
+        read_scalar(&mut self.reader.at(self.location(index)), scalar_type)
     }
 
     fn string(&self, index: ValueIndex) -> Result<&[u8], ReadError> {
@@ -296,7 +296,7 @@ fn walk_message(
         // Read the member to move the reader to the start of the next one.
         // The value itself is dropped.
         let read = match layout.member(*index).kind {
-            MemberKind::Scalar(scalar) => read_scalar(reader, scalar).map(|_| ()),
+            MemberKind::Scalar(scalar_type) => read_scalar(reader, scalar_type).map(|_| ()),
             MemberKind::String => read_string(reader).map(|_| ()),
             kind @ (MemberKind::ScalarSequence(_) | MemberKind::ScalarArray { .. }) => {
                 read_scalar_elements(reader, kind).map(|_| ())
@@ -320,9 +320,9 @@ fn walk_message(
 
 fn read_scalar(
     reader: &mut reader::Reader<'_>,
-    scalar: ScalarType,
+    scalar_type: ScalarType,
 ) -> Result<ScalarValue, ReadError> {
-    Ok(match scalar {
+    Ok(match scalar_type {
         ScalarType::Bool => ScalarValue::Bool(reader.read_bool()?),
         ScalarType::U8 => ScalarValue::U8(reader.read_u8()?),
         ScalarType::I8 => ScalarValue::I8(reader.read_i8()?),
@@ -346,11 +346,13 @@ fn read_scalar_elements<'a>(
     kind: MemberKind,
 ) -> Result<ScalarElements<'a>, ReadError> {
     let bytes = match kind {
-        MemberKind::ScalarSequence(scalar) => reader.read_sequence(scalar.number_of_bytes())?,
+        MemberKind::ScalarSequence(scalar_type) => {
+            reader.read_sequence(scalar_type.number_of_bytes())?
+        }
         MemberKind::ScalarArray {
-            scalar,
+            scalar_type,
             number_of_elements,
-        } => reader.read_array(number_of_elements as usize, scalar.number_of_bytes())?,
+        } => reader.read_array(number_of_elements as usize, scalar_type.number_of_bytes())?,
         MemberKind::Scalar(_)
         | MemberKind::String
         | MemberKind::StringSequence

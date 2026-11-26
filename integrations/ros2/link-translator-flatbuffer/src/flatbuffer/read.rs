@@ -196,12 +196,16 @@ impl Values for Reader<'_> {
     /// It is the default of the field when the flatbuffer omits it.
     fn scalar(&self, index: ValueIndex) -> Result<ScalarValue, Infallible> {
         let field = self.layout.field(index);
-        let FieldKind::Scalar { scalar, default } = field.kind else {
+        let FieldKind::Scalar {
+            scalar_type,
+            default,
+        } = field.kind
+        else {
             unreachable!("the value is a scalar in the model")
         };
 
         Ok(match self.locate_field(field) {
-            Some(location) => ScalarValue::from_le_bytes(scalar, &self.buffer[location.0..]),
+            Some(location) => ScalarValue::from_le_bytes(scalar_type, &self.buffer[location.0..]),
             None => default,
         })
     }
@@ -225,18 +229,18 @@ impl Values for Reader<'_> {
         let buffer = self.buffer;
         let bytes = match (field.kind, self.locate_field(field)) {
             (_, None) => &[],
-            (FieldKind::ScalarVector(scalar), Some(location)) => {
+            (FieldKind::ScalarVector(scalar_type), Some(location)) => {
                 let (first, number_of_elements) = locate_vector(buffer, location);
-                &buffer[first.0..first.0 + number_of_elements * scalar.number_of_bytes()]
+                &buffer[first.0..first.0 + number_of_elements * scalar_type.number_of_bytes()]
             }
             (
                 FieldKind::ScalarArray {
-                    scalar,
+                    scalar_type,
                     number_of_elements,
                 },
                 Some(location),
             ) => {
-                let number_of_bytes = number_of_elements as usize * scalar.number_of_bytes();
+                let number_of_bytes = number_of_elements as usize * scalar_type.number_of_bytes();
                 &buffer[location.0..location.0 + number_of_bytes]
             }
             (

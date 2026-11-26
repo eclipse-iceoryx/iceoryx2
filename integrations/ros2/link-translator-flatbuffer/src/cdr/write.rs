@@ -154,7 +154,7 @@ fn write_message<V: Values, R: ForwardRegion>(
                     "Unable to write the string value {}", index.0
                 );
             }
-            MemberKind::ScalarSequence(scalar) => {
+            MemberKind::ScalarSequence(scalar_type) => {
                 let elements = match values.scalar_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
@@ -167,13 +167,13 @@ fn write_message<V: Values, R: ForwardRegion>(
                 };
                 fail!(
                     from origin,
-                    when write_scalar_sequence(writer, scalar, elements),
+                    when write_scalar_sequence(writer, scalar_type, elements),
                     to WriteError<V::Error>,
                     "Unable to write the scalar sequence value {}", index.0
                 );
             }
             MemberKind::ScalarArray {
-                scalar,
+                scalar_type,
                 number_of_elements,
             } => {
                 let elements = match values.scalar_elements(*index) {
@@ -189,7 +189,7 @@ fn write_message<V: Values, R: ForwardRegion>(
 
                 // A source without elements is written as zeros.
                 let expected = number_of_elements as usize;
-                let actual = elements.bytes.len() / scalar.number_of_bytes();
+                let actual = elements.bytes.len() / scalar_type.number_of_bytes();
                 if actual != 0 && actual != expected {
                     fail!(
                         from origin,
@@ -200,7 +200,7 @@ fn write_message<V: Values, R: ForwardRegion>(
                 }
                 fail!(
                     from origin,
-                    when write_scalar_array(writer, scalar, number_of_elements, elements),
+                    when write_scalar_array(writer, scalar_type, number_of_elements, elements),
                     to WriteError<V::Error>,
                     "Unable to write the scalar array value {}", index.0
                 );
@@ -360,10 +360,10 @@ fn write_scalar<R: ForwardRegion>(
 
 fn write_scalar_sequence<R: ForwardRegion>(
     writer: &mut writer::Writer<R>,
-    scalar: ScalarType,
+    scalar_type: ScalarType,
     elements: ScalarElements<'_>,
 ) -> Result<(), writer::SequenceError> {
-    let number_of_bytes = scalar.number_of_bytes();
+    let number_of_bytes = scalar_type.number_of_bytes();
 
     if elements.byte_order == ByteOrder::HOST || number_of_bytes == 1 {
         // The elements lie in the byte order of the CDR. Copy them in bulk.
@@ -372,7 +372,7 @@ fn write_scalar_sequence<R: ForwardRegion>(
         // The elements lie in the other byte order. Write them one by one.
         writer.write_length(elements.bytes.len() / number_of_bytes)?;
         for bytes in elements.bytes.chunks_exact(number_of_bytes) {
-            let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
+            let value = ScalarValue::from_bytes(scalar_type, bytes, elements.byte_order);
             write_scalar(writer, value)?;
         }
     }
@@ -382,15 +382,15 @@ fn write_scalar_sequence<R: ForwardRegion>(
 
 fn write_scalar_array<R: ForwardRegion>(
     writer: &mut writer::Writer<R>,
-    scalar: ScalarType,
+    scalar_type: ScalarType,
     number_of_elements: u32,
     elements: ScalarElements<'_>,
 ) -> Result<(), writer::ScalarError> {
-    let number_of_bytes = scalar.number_of_bytes();
+    let number_of_bytes = scalar_type.number_of_bytes();
 
     if elements.bytes.is_empty() {
         // The source holds no elements. Write a zero for each.
-        let zero = ScalarValue::from_le_bytes(scalar, &[0; 8]);
+        let zero = ScalarValue::from_le_bytes(scalar_type, &[0; 8]);
         for _ in 0..number_of_elements {
             write_scalar(writer, zero)?;
         }
@@ -400,7 +400,7 @@ fn write_scalar_array<R: ForwardRegion>(
     } else {
         // The elements lie in the other byte order. Write them one by one.
         for bytes in elements.bytes.chunks_exact(number_of_bytes) {
-            let value = ScalarValue::from_bytes(scalar, bytes, elements.byte_order);
+            let value = ScalarValue::from_bytes(scalar_type, bytes, elements.byte_order);
             write_scalar(writer, value)?;
         }
     }
@@ -472,19 +472,19 @@ fn write_zero_message<E, R: ForwardRegion>(
 ) -> Result<(), WriteError<E>> {
     for index in &layout.order {
         match layout.member(*index).kind {
-            MemberKind::Scalar(scalar) => {
-                write_scalar(writer, ScalarValue::from_le_bytes(scalar, &[0; 8]))?;
+            MemberKind::Scalar(scalar_type) => {
+                write_scalar(writer, ScalarValue::from_le_bytes(scalar_type, &[0; 8]))?;
             }
             MemberKind::String => writer.write_string(&[])?,
             MemberKind::ScalarSequence(_)
             | MemberKind::StringSequence
             | MemberKind::MessageSequence(_) => writer.write_length(0)?,
             MemberKind::ScalarArray {
-                scalar,
+                scalar_type,
                 number_of_elements,
             } => {
                 for _ in 0..number_of_elements {
-                    write_scalar(writer, ScalarValue::from_le_bytes(scalar, &[0; 8]))?;
+                    write_scalar(writer, ScalarValue::from_le_bytes(scalar_type, &[0; 8]))?;
                 }
             }
             MemberKind::StringArray { number_of_elements } => {

@@ -86,8 +86,6 @@ pub fn type_mismatches(config: &Config) -> Vec<TypeMismatch> {
     mismatches
 }
 
-/// The mismatch between the flatbuffer `payload_type` of the service
-/// `service_name` and `ros2_type`, if any.
 fn type_mismatch(
     service_name: &ServiceName,
     payload_type: &str,

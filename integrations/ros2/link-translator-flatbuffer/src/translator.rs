@@ -235,8 +235,8 @@ fn flatbuffer_schema(types: &SampleTypes) -> Result<&Schema, TranslationError> {
     }
 }
 
-/// The ROS 2 type name that the root type `root_type` names,
-/// `sensor_msgs.msg.JointState` for `sensor_msgs/msg/JointState`.
+/// The ROS 2 type of the same name as the root type `root_type` e.g.
+/// `sensor_msgs/msg/JointState` for `sensor_msgs.msg.JointState`.
 fn ros_type_name(root_type: &str) -> Result<TypeName, TranslationError> {
     let origin = origin!("ros_type_name");
 

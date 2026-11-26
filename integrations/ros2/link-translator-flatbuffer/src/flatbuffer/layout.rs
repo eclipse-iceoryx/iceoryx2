@@ -132,7 +132,7 @@ impl FieldPlacement {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FieldKind {
     Scalar {
-        scalar: ScalarType,
+        scalar_type: ScalarType,
         default: ScalarValue,
     },
     String,
@@ -142,7 +142,7 @@ pub enum FieldKind {
     StructVector(ModelIndex),
     /// Within a struct.
     ScalarArray {
-        scalar: ScalarType,
+        scalar_type: ScalarType,
         number_of_elements: u32,
     },
 }
