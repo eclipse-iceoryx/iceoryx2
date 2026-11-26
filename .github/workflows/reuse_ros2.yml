@@ -47,7 +47,7 @@ jobs:
           RMW_PKG="ros-${{ inputs.ros-distro }}-$(echo '${{ inputs.rmw }}' | tr '_' '-')"
           # The message packages the workspace builds against. Installing them
           # upgrades them past a base image that predates their Rust crates.
-          MSG_PKGS="ros-${{ inputs.ros-distro }}-builtin-interfaces ros-${{ inputs.ros-distro }}-std-msgs ros-${{ inputs.ros-distro }}-geometry-msgs ros-${{ inputs.ros-distro }}-sensor-msgs ros-${{ inputs.ros-distro }}-example-interfaces"
+          MSG_PKGS="ros-${{ inputs.ros-distro }}-builtin-interfaces ros-${{ inputs.ros-distro }}-std-msgs ros-${{ inputs.ros-distro }}-geometry-msgs ros-${{ inputs.ros-distro }}-sensor-msgs ros-${{ inputs.ros-distro }}-example-interfaces ros-${{ inputs.ros-distro }}-test-msgs"
           # The demo nodes the end-to-end tests of the examples run against.
           DEMO_PKGS="ros-${{ inputs.ros-distro }}-demo-nodes-cpp"
           apt-get update
