@@ -375,9 +375,16 @@ impl<
         self.increment_loan_counter()?;
         let shared_state = self.shared_state.lock();
 
-        let chunk = shared_state
+        let chunk = match shared_state
             .response_sender
-            .allocate(shared_state.response_sender.chunk_layout(slice_len))?;
+            .allocate(shared_state.response_sender.chunk_layout(slice_len))
+        {
+            Ok(chunk) => chunk,
+            Err(e) => {
+                self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
+                return Err(e);
+            }
+        };
 
         let header_ptr: *mut service::header::request_response::ResponseHeader =
             chunk.header.cast();

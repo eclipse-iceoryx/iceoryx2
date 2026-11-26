@@ -276,6 +276,36 @@ pub mod server {
         assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::OutOfMemory));
     }
 
+    #[conformance_test]
+    pub fn failed_loan_does_not_keep_its_loan_slot<Sut: Service>() {
+        let service_name = generate_service_name();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service
+            .server_builder()
+            .override_response_preallocation(|_| 1)
+            .max_loaned_responses_per_request(1)
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = sut.receive().unwrap().unwrap();
+        active_request.send_copy(0).unwrap();
+        let response = pending_response.receive().unwrap().unwrap();
+
+        assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::OutOfMemory));
+        drop(response);
+        assert_that!(active_request.loan(), is_ok);
+    }
+
     pub fn override_preallocated_responses_to_zero_rounds_up_to_one<Sut: Service>() {
         let service_name = generate_service_name();
         let test = Test::<Sut>::new();
