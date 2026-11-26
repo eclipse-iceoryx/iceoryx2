@@ -12,7 +12,7 @@
 
 use iceoryx2_log::{fail, origin};
 
-use super::{CDR_BE, CDR_LE, ENCAPSULATION_LEN, IDENTIFIER_BYTES};
+use super::{CDR_BE, CDR_LE, ENCAPSULATION_LEN, IDENTIFIER_BYTES, NUL};
 
 /// The byte order a message is encoded in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -364,7 +364,7 @@ impl<'a> Reader<'a> {
             to StringError,
             "Unable to read the {} bytes of a string", number_of_bytes
         );
-        let Some((0, string)) = bytes.split_last() else {
+        let Some((&NUL, string)) = bytes.split_last() else {
             fail!(
                 from origin,
                 with StringError::InvalidString,
