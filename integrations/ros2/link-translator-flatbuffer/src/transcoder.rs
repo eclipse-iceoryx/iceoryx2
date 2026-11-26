@@ -37,8 +37,8 @@ impl core::fmt::Display for TranscodeFailure {
 
 impl core::error::Error for TranscodeFailure {}
 
-/// Converts between a flatbuffer and the CDR of the ROS 2 message its
-/// schema mirrors using the table compiled for the pair.
+/// Converts between a flatbuffer and the CDR of a ROS 2 message through the
+/// table compiled for the two.
 #[derive(Debug)]
 pub struct FlatbufferTranscoder {
     pub(crate) type_name: TypeName,

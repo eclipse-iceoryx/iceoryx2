@@ -69,12 +69,12 @@ impl From<HeaderError> for TranslationError {
 }
 
 /// The translator for services whose payload is a flatbuffer with a
-/// schema mirroring a ROS 2 message.
+/// schema that describes a ROS 2 message.
 #[derive(Debug, Default, Clone)]
 pub struct FlatbufferTranslator {
-    /// The user header of the services mirroring topics.
+    /// The user header of the services that topics are propagated to.
     pub header: MirroredHeader,
-    /// The directory the schemas of mirrored topics are looked up in, as
+    /// The directory the schemas of propagated topics are looked up in, as
     /// `iceoryx2` is configured with.
     pub schema_path: Option<Path>,
 }
@@ -172,7 +172,7 @@ impl Translator<SampleShape> for FlatbufferTranslator {
                 fail!(
                     from origin,
                     with TranslationError::Pairing(error),
-                    "The schema of '{}' does not mirror the message", type_name.as_str()
+                    "The schema of '{}' does not match the message", type_name.as_str()
                 );
             }
         };
@@ -219,7 +219,7 @@ fn flatbuffer_schema(types: &SampleTypes) -> Result<&Schema, TranslationError> {
     }
 }
 
-/// The ROS 2 type name the root type `root_type` mirrors,
+/// The ROS 2 type name that the root type `root_type` names,
 /// `sensor_msgs.msg.JointState` for `sensor_msgs/msg/JointState`.
 fn ros_type_name(root_type: &str) -> Result<TypeName, TranslationError> {
     let origin = origin!("ros_type_name");
@@ -228,12 +228,12 @@ fn ros_type_name(root_type: &str) -> Result<TypeName, TranslationError> {
         from origin,
         when TypeName::new(&root_type.replace('.', "/")),
         with TranslationError::InvalidRootType,
-        "The root type '{}' does not mirror a ROS 2 type", root_type
+        "The root type '{}' does not name a ROS 2 type", root_type
     );
     Ok(type_name)
 }
 
-/// The schema type name of the root type mirroring the ROS 2 type
+/// The schema type name of the root type that names the ROS 2 type
 /// `type_name`, the namespace `sensor_msgs.msg` and the name `JointState`
 /// for `sensor_msgs/msg/JointState`.
 fn schema_type_name(type_name: &str) -> Result<SchemaTypeName, TranslationError> {

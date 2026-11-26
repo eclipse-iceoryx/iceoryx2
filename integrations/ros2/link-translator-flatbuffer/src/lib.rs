@@ -13,8 +13,8 @@
 //! A translator between flatbuffer payloads and ROS 2 messages.
 //!
 //! The translator reads the schema of the payload and the introspection
-//! typesupport of the message. A schema mirrors the message it translates
-//! to. For example, `sensor_msgs/msg/JointState` is mirrored by:
+//! typesupport of the message. A schema describes the message it translates
+//! to. For example, `sensor_msgs/msg/JointState` is described by:
 //!
 //! ```text
 //! namespace sensor_msgs.msg;
