@@ -12,6 +12,8 @@
 
 mod layout;
 mod read;
+mod write;
 
 pub use layout::{FieldEntry, FieldKind, FieldPlacement, Layout, Slot, TableEntry, TableIndex};
 pub use read::{Reader, Truncated};
+pub use write::write;

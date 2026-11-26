@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod layout;
+mod read;
 mod write;
 
 pub use layout::{Layout, MemberEntry, MemberKind};
+pub use read::{Locations, ReadError, locate};
 pub use write::{WriteError, write};
