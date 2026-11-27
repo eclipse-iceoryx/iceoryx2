@@ -17,29 +17,35 @@ use std::collections::BTreeMap;
 use crate::codec::{EntityKind, Token, TokenError, TopicInfo};
 
 #[derive(Debug, Default)]
-pub struct Graph {
+pub(crate) struct Graph {
     entities: BTreeMap<String, Token>,
 }
 
 impl Graph {
     /// Adds the entity of a token, true when the graph changed.
-    pub fn put(&mut self, key: &str) -> Result<bool, TokenError> {
+    pub(crate) fn put(&mut self, key: &str) -> Result<bool, TokenError> {
         let token = Token::parse(key)?;
         Ok(self.entities.insert(key.to_string(), token).is_none())
     }
 
     /// Removes the entity of a token, true when the graph changed.
-    pub fn delete(&mut self, key: &str) -> bool {
+    pub(crate) fn delete(&mut self, key: &str) -> bool {
         self.entities.remove(key).is_some()
     }
 
     /// The topics of the publishers and subscriptions whose token passes `filter`.
-    pub fn topics(&self, filter: impl Fn(&Token) -> bool) -> BTreeMap<&str, Vec<&TopicInfo>> {
+    pub(crate) fn topics(
+        &self,
+        filter: impl Fn(&Token) -> bool,
+    ) -> BTreeMap<&str, Vec<&TopicInfo>> {
         self.list(filter, [EntityKind::Publisher, EntityKind::Subscription])
     }
 
     /// The services of the servers and clients whose token passes `filter`.
-    pub fn services(&self, filter: impl Fn(&Token) -> bool) -> BTreeMap<&str, Vec<&TopicInfo>> {
+    pub(crate) fn services(
+        &self,
+        filter: impl Fn(&Token) -> bool,
+    ) -> BTreeMap<&str, Vec<&TopicInfo>> {
         self.list(
             filter,
             [EntityKind::ServiceServer, EntityKind::ServiceClient],
