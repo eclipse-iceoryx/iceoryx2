@@ -20,7 +20,7 @@ use iceoryx2_log::{fail, origin};
 use super::layout::{
     FieldEntry, FieldKind, FieldPlacement, Layout, RootObject, TableIndex, TablePlacement,
 };
-use crate::model::{ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
+use crate::model::{self, ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadError {
@@ -56,54 +56,46 @@ impl<'a> Iterator for StringElementIter<'a> {
 impl ExactSizeIterator for StringElementIter<'_> {}
 
 #[derive(Debug)]
-pub struct MessageElementIter<'a> {
+pub struct MessageElements<'a> {
+    /// The layout of one element.
     layout: &'a Layout,
     buffer: &'a [u8],
-    next: Location,
-    number_of_remaining_elements: usize,
+    /// Where the first element of the vector starts.
+    first: Location,
+    number_of_elements: usize,
 }
 
-impl<'a> Iterator for MessageElementIter<'a> {
-    type Item = Result<Reader<'a>, Infallible>;
+impl model::MessageElements for MessageElements<'_> {
+    type Error = Infallible;
+    type Element<'a>
+        = Reader<'a>
+    where
+        Self: 'a;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.number_of_remaining_elements == 0 {
-            return None;
-        }
-        self.number_of_remaining_elements -= 1;
+    fn number_of_elements(&self) -> usize {
+        self.number_of_elements
+    }
 
-        let element = self.next;
+    fn element(&self, position: usize) -> Reader<'_> {
         let root = match self.layout.root {
             RootObject::Table => {
-                self.next = Location(element.0 + size_of::<UOffsetT>());
+                let element = self.first.0 + position * size_of::<UOffsetT>();
                 // SAFETY: the vector holds an offset at the element.
-                let offset = unsafe { read_scalar_at::<UOffsetT>(self.buffer, element.0) };
-                Location(element.0 + offset as usize)
+                let offset = unsafe { read_scalar_at::<UOffsetT>(self.buffer, element) };
+                Location(element + offset as usize)
             }
             RootObject::Struct {
                 number_of_bytes, ..
-            } => {
-                self.next = Location(element.0 + usize::from(number_of_bytes));
-                element
-            }
+            } => Location(self.first.0 + position * usize::from(number_of_bytes)),
         };
 
-        Some(Ok(Reader {
+        Reader {
             layout: self.layout,
             buffer: self.buffer,
             root,
-        }))
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (
-            self.number_of_remaining_elements,
-            Some(self.number_of_remaining_elements),
-        )
+        }
     }
 }
-
-impl ExactSizeIterator for MessageElementIter<'_> {}
 
 /// A location within the bytes of a flatbuffer.
 #[derive(Debug, Clone, Copy)]
@@ -183,12 +175,8 @@ impl Values for Reader<'_> {
         = StringElementIter<'a>
     where
         Self: 'a;
-    type MessageElement<'a>
-        = Reader<'a>
-    where
-        Self: 'a;
-    type MessageElementIter<'a>
-        = MessageElementIter<'a>
+    type MessageElements<'a>
+        = MessageElements<'a>
     where
         Self: 'a;
 
@@ -285,21 +273,21 @@ impl Values for Reader<'_> {
     /// The elements of the message sequence or message array value at `index`.
     ///
     /// None when the flatbuffer omits it.
-    fn message_elements(&self, index: ValueIndex) -> Result<MessageElementIter<'_>, Infallible> {
+    fn message_elements(&self, index: ValueIndex) -> Result<MessageElements<'_>, Infallible> {
         let field = self.layout.field(index);
         let (FieldKind::TableVector(model) | FieldKind::StructVector(model)) = field.kind else {
             unreachable!("the value holds message elements in the model")
         };
-        let (next, number_of_elements) = match self.locate_field(field) {
+        let (first, number_of_elements) = match self.locate_field(field) {
             Some(location) => locate_vector(self.buffer, location),
             None => (self.root, 0),
         };
 
-        Ok(MessageElementIter {
+        Ok(MessageElements {
             layout: self.layout.repeated(model),
             buffer: self.buffer,
-            next,
-            number_of_remaining_elements: number_of_elements,
+            first,
+            number_of_elements,
         })
     }
 }

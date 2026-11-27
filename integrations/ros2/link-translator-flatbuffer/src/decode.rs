@@ -63,7 +63,7 @@ pub fn decode<A: Allocator>(
 ) -> Result<(), DecodeError> {
     let origin = origin!("decode");
 
-    let locations = fail!(
+    let message = fail!(
         from origin,
         when cdr::locate(&compiled.cdr, cdr),
         to DecodeError,
@@ -72,7 +72,7 @@ pub fn decode<A: Allocator>(
 
     fail!(
         from origin,
-        when flatbuffer::write(&compiled.flatbuffer, &locations, builder),
+        when flatbuffer::write(&compiled.flatbuffer, &message.reader(), builder),
         to DecodeError,
         "Unable to write the values of the CDR into the flatbuffer"
     );

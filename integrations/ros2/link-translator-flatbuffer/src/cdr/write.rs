@@ -15,7 +15,7 @@ use iceoryx2_link_backend::wire::region::{ForwardRegion, ResizeError};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, Values};
+use crate::model::{ByteOrder, MessageElements, ScalarElements, ScalarType, ScalarValue, Values};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
@@ -280,13 +280,13 @@ fn write_message<V: Values, R: ForwardRegion>(
                 };
                 fail!(
                     from origin,
-                    when writer.write_length(elements.len()),
+                    when writer.write_length(elements.number_of_elements()),
                     to WriteError<V::Error>,
                     "Unable to write the length of the message sequence value {}", index.0
                 );
                 fail!(
                     from origin,
-                    when write_message_elements::<V, R>(layout.repeated(model), elements, writer),
+                    when write_message_elements(layout.repeated(model), &elements, writer),
                     "Unable to write the message sequence value {}", index.0
                 );
             }
@@ -306,7 +306,7 @@ fn write_message<V: Values, R: ForwardRegion>(
                 };
 
                 let expected = number_of_elements as usize;
-                let actual = elements.len();
+                let actual = elements.number_of_elements();
                 if actual == 0 {
                     // A source without elements is written as zeros.
                     for _ in 0..number_of_elements {
@@ -319,7 +319,7 @@ fn write_message<V: Values, R: ForwardRegion>(
                 } else if actual == expected {
                     fail!(
                         from origin,
-                        when write_message_elements::<V, R>(layout.repeated(model), elements, writer),
+                        when write_message_elements(layout.repeated(model), &elements, writer),
                         "Unable to write the message array value {}", index.0
                     );
                 } else {
@@ -439,24 +439,15 @@ fn write_string_elements<V: Values, R: ForwardRegion>(
     Ok(())
 }
 
-fn write_message_elements<V: Values, R: ForwardRegion>(
+fn write_message_elements<E: MessageElements, R: ForwardRegion>(
     layout: &Layout,
-    elements: V::MessageElementIter<'_>,
+    elements: &E,
     writer: &mut writer::Writer<R>,
-) -> Result<(), WriteError<V::Error>> {
+) -> Result<(), WriteError<E::Error>> {
     let origin = origin!("cdr::write_message_elements");
 
-    for element in elements {
-        let element = match element {
-            Ok(element) => element,
-            Err(error) => {
-                fail!(
-                    from origin,
-                    with WriteError::Values(error),
-                    "Unable to take a message element"
-                );
-            }
-        };
+    for position in 0..elements.number_of_elements() {
+        let element = elements.element(position);
         fail!(
             from origin,
             when write_message(layout, &element, writer),

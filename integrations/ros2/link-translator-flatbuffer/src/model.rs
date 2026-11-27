@@ -36,15 +36,8 @@ pub trait Values {
     where
         Self: 'a;
 
-    /// A source of the values of one element of a message sequence.
-    type MessageElement<'a>: Values<Error = Self::Error>
-    where
-        Self: 'a;
-
-    /// The message elements of a value in their order.
-    type MessageElementIter<'a>: ExactSizeIterator<
-        Item = Result<Self::MessageElement<'a>, Self::Error>,
-    >
+    /// The message elements of a value.
+    type MessageElements<'a>: MessageElements<Error = Self::Error>
     where
         Self: 'a;
 
@@ -75,10 +68,19 @@ pub trait Values {
     /// `index`, or an error when the source cannot provide them.
     ///
     /// The source of an array may hold no elements.
-    fn message_elements(
-        &self,
-        index: ValueIndex,
-    ) -> Result<Self::MessageElementIter<'_>, Self::Error>;
+    fn message_elements(&self, index: ValueIndex)
+    -> Result<Self::MessageElements<'_>, Self::Error>;
+}
+
+/// The interface to retrieve the message elements of a value.
+pub trait MessageElements {
+    type Error;
+    type Element<'a>: Values<Error = Self::Error>
+    where
+        Self: 'a;
+
+    fn number_of_elements(&self) -> usize;
+    fn element(&self, position: usize) -> Self::Element<'_>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -19,7 +19,9 @@ use iceoryx2_log::{fail, origin};
 use super::layout::{
     FieldKind, FieldPlacement, Layout, RootObject, StructEntry, TableIndex, TablePlacement,
 };
-use crate::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values};
+use crate::model::{
+    ByteOrder, MessageElements, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
@@ -188,17 +190,8 @@ fn write_table<V: Values, A: Allocator>(
                 // Write the table of each element first. The vector then
                 // refers to them by their offsets.
                 element_offsets.clear();
-                for element in elements {
-                    let element = match element {
-                        Ok(element) => element,
-                        Err(error) => {
-                            fail!(
-                                from origin,
-                                with WriteError::Values(error),
-                                "Unable to take a message element of the value {}", index.0
-                            );
-                        }
-                    };
+                for position in 0..elements.number_of_elements() {
+                    let element = elements.element(position);
                     let element_offset = fail!(
                         from origin,
                         when write_message(layout.repeated(model), &element, builder),
@@ -224,7 +217,7 @@ fn write_table<V: Values, A: Allocator>(
                 };
                 let vector_offset = fail!(
                     from origin,
-                    when write_struct_vector(layout.repeated(model), elements, builder),
+                    when write_struct_vector(layout.repeated(model), &elements, builder),
                     "Unable to write the vector of structs of the value {}", index.0
                 );
                 value_offsets.push((slot.vtable_offset, vector_offset));
@@ -360,9 +353,9 @@ fn write_scalar_vector<A: Allocator>(
 /// Writes `elements` as a vector of the struct that is the root of `layout`.
 ///
 /// Returns the offset of the vector.
-fn write_struct_vector<E: Values, A: Allocator>(
+fn write_struct_vector<E: MessageElements, A: Allocator>(
     layout: &Layout,
-    elements: impl ExactSizeIterator<Item = Result<E, E::Error>>,
+    elements: &E,
     builder: &mut FlatBufferBuilder<'_, A>,
 ) -> Result<WIPOffset<UnionWIPOffset>, WriteError<E::Error>> {
     let origin = origin!("flatbuffer::write_struct_vector");
@@ -376,37 +369,25 @@ fn write_struct_vector<E: Values, A: Allocator>(
         unreachable!("the elements of a vector of structs are structs")
     };
 
-    // Take every element before writing one. The builder fills the flatbuffer
-    // back to front and needs the last element first.
-    let mut taken_elements = Vec::with_capacity(elements.len());
-    for element in elements {
-        let element = match element {
-            Ok(element) => element,
-            Err(error) => {
-                fail!(
-                    from origin,
-                    with WriteError::Values(error),
-                    "Unable to take an element of a vector of structs"
-                );
-            }
-        };
-        taken_elements.push(element);
-    }
-
     // Write the structs one after the other, aligned as a whole.
-    let number_of_vector_bytes = taken_elements.len() * usize::from(*number_of_bytes);
+    let number_of_elements = elements.number_of_elements();
+    let number_of_vector_bytes = number_of_elements * usize::from(*number_of_bytes);
     builder.start_vector::<u8>(number_of_vector_bytes);
     align(builder, number_of_vector_bytes, usize::from(*alignment));
-    for element in taken_elements.iter().rev() {
+
+    // The builder fills the flatbuffer back to front and needs the last
+    // element first.
+    for position in (0..number_of_elements).rev() {
+        let element = elements.element(position);
         fail!(
             from origin,
-            when push_struct(layout, struct_values, *number_of_bytes, StructDestination::Vector, element, builder),
+            when push_struct(layout, struct_values, *number_of_bytes, StructDestination::Vector, &element, builder),
             "Unable to write an element of a vector of structs"
         );
     }
 
     Ok(builder
-        .end_vector::<u8>(taken_elements.len())
+        .end_vector::<u8>(number_of_elements)
         .as_union_value())
 }
 

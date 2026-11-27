@@ -18,5 +18,5 @@ pub use layout::{
     FieldEntry, FieldKind, FieldPlacement, Layout, RootObject, Slot, StructEntry, StructIndex,
     StructOffset, TableEntry, TableIndex, TablePlacement,
 };
-pub use read::{MessageElementIter, ReadError, Reader, StringElementIter};
+pub use read::{MessageElements, ReadError, Reader, StringElementIter};
 pub use write::{WriteError, write};

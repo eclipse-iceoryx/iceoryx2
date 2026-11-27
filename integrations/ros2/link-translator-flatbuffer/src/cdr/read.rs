@@ -14,8 +14,9 @@ use iceoryx2_integrations_ros2_link_adapter::cdr::reader::{self, Endianness, Loc
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
+use crate::model::MessageElements as _;
 use crate::model::{
-    ByteOrder, ModelIndex, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
+    self, ByteOrder, ModelIndex, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -122,77 +123,105 @@ impl<'a> Iterator for StringElementIter<'a> {
 impl ExactSizeIterator for StringElementIter<'_> {}
 
 #[derive(Debug)]
-pub struct MessageElementIter<'a> {
-    layout: &'a Layout,
-    reader: reader::Reader<'a>,
-    number_of_remaining_elements: usize,
+pub struct Message<'a> {
+    elements: MessageElements<'a>,
 }
 
-impl<'a> MessageElementIter<'a> {
-    /// The message elements of the member at `index` of `layout` that starts
-    /// at the provided `reader`.
+impl Message<'_> {
+    pub fn reader(&self) -> Reader<'_> {
+        const POSITION_OF_MESSAGE: usize = 0;
+
+        self.elements.element(POSITION_OF_MESSAGE)
+    }
+}
+
+#[derive(Debug)]
+pub struct MessageElements<'a> {
+    /// The layout of one element.
+    layout: &'a Layout,
+    reader: reader::Reader<'a>,
+    number_of_elements: usize,
+    /// The location of every value of every element by value index
+    /// in the [`Layout`].
+    locations: Vec<Location>,
+}
+
+impl<'a> MessageElements<'a> {
+    /// The `number_of_elements` messages of `layout` that start at the
+    /// provided `reader`.
     fn new(
         layout: &'a Layout,
-        index: ValueIndex,
         mut reader: reader::Reader<'a>,
+        number_of_elements: usize,
     ) -> Result<Self, ReadError> {
-        let (model, number_of_elements) = read_message_element_count(layout, index, &mut reader)?;
+        let number_of_members = layout.members.len();
+
+        // The number of elements comes from the CDR and is not trusted, so
+        // the list grows as the messages are found.
+        let mut locations = Vec::new();
+        for position in 0..number_of_elements {
+            let start = position * number_of_members;
+            locations.resize(start + number_of_members, reader.location());
+            walk_message(layout, &mut reader, &mut |index, location| {
+                locations[start + usize::from(index.0)] = location;
+            })?;
+        }
 
         Ok(Self {
-            layout: layout.repeated(model),
+            layout,
             reader,
-            number_of_remaining_elements: number_of_elements,
+            number_of_elements,
+            locations,
         })
     }
 }
 
-impl<'a> Iterator for MessageElementIter<'a> {
-    type Item = Result<Locations<'a>, ReadError>;
+impl model::MessageElements for MessageElements<'_> {
+    type Error = ReadError;
+    type Element<'a>
+        = Reader<'a>
+    where
+        Self: 'a;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.number_of_remaining_elements == 0 {
-            return None;
-        }
-        self.number_of_remaining_elements -= 1;
-        Some(locate_message(self.layout, &mut self.reader))
+    fn number_of_elements(&self) -> usize {
+        self.number_of_elements
     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (
-            self.number_of_remaining_elements,
-            Some(self.number_of_remaining_elements),
-        )
+    fn element(&self, position: usize) -> Reader<'_> {
+        let number_of_members = self.layout.members.len();
+        let start = position * number_of_members;
+
+        Reader {
+            layout: self.layout,
+            reader: self.reader.at(self.reader.location()),
+            locations: &self.locations[start..start + number_of_members],
+        }
     }
 }
 
-impl ExactSizeIterator for MessageElementIter<'_> {}
-
+/// Reads the values of a layout from a CDR reader.
 #[derive(Debug)]
-pub struct Locations<'a> {
+pub struct Reader<'a> {
     layout: &'a Layout,
     reader: reader::Reader<'a>,
     /// By value index in the [`Layout`].
-    locations: Vec<Location>,
+    locations: &'a [Location],
 }
 
-impl Locations<'_> {
+impl Reader<'_> {
     fn location(&self, index: ValueIndex) -> Location {
         self.locations[usize::from(index.0)]
     }
 }
 
-impl Values for Locations<'_> {
+impl Values for Reader<'_> {
     type Error = ReadError;
     type StringElementIter<'a>
         = StringElementIter<'a>
     where
         Self: 'a;
-    type MessageElement<'a>
-        = Locations<'a>
-    where
-        Self: 'a;
-    type MessageElementIter<'a>
-        = MessageElementIter<'a>
+    type MessageElements<'a>
+        = MessageElements<'a>
     where
         Self: 'a;
 
@@ -224,7 +253,7 @@ impl Values for Locations<'_> {
         )
     }
 
-    fn message_elements(&self, index: ValueIndex) -> Result<MessageElementIter<'_>, ReadError> {
+    fn message_elements(&self, index: ValueIndex) -> Result<MessageElements<'_>, ReadError> {
         read_message_elements(self.layout, index, self.reader.at(self.location(index)))
     }
 }
@@ -232,39 +261,25 @@ impl Values for Locations<'_> {
 /// Locates the values described by `layout` in the provided `cdr` bytes.
 ///
 /// Fails when the bytes do not hold the values of the layout.
-pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<Locations<'a>, ReadError> {
+pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<Message<'a>, ReadError> {
+    const NUMBER_OF_MESSAGES: usize = 1;
+
     let origin = origin!("cdr::locate");
 
-    let mut reader = fail!(
+    let reader = fail!(
         from origin,
         when reader::Reader::new(cdr),
         to ReadError,
         "Unable to read the header of the CDR of {} bytes", cdr.len()
     );
 
-    let locations = fail!(
+    let elements = fail!(
         from origin,
-        when locate_message(layout, &mut reader),
+        when MessageElements::new(layout, reader, NUMBER_OF_MESSAGES),
         "Unable to locate the values in the CDR of {} bytes", cdr.len()
     );
 
-    Ok(locations)
-}
-
-fn locate_message<'a>(
-    layout: &'a Layout,
-    reader: &mut reader::Reader<'a>,
-) -> Result<Locations<'a>, ReadError> {
-    let mut locations = vec![reader.location(); layout.members.len()];
-    walk_message(layout, reader, &mut |index, location| {
-        locations[usize::from(index.0)] = location;
-    })?;
-
-    Ok(Locations {
-        layout,
-        reader: reader.at(reader.location()),
-        locations,
-    })
+    Ok(Message { elements })
 }
 
 /// Walks the members of the message of `layout` that starts at the provided
@@ -405,9 +420,10 @@ fn read_message_element_count(
 fn read_message_elements<'a>(
     layout: &'a Layout,
     index: ValueIndex,
-    reader: reader::Reader<'a>,
-) -> Result<MessageElementIter<'a>, ReadError> {
-    MessageElementIter::new(layout, index, reader)
+    mut reader: reader::Reader<'a>,
+) -> Result<MessageElements<'a>, ReadError> {
+    let (model, number_of_elements) = read_message_element_count(layout, index, &mut reader)?;
+    MessageElements::new(layout.repeated(model), reader, number_of_elements)
 }
 
 fn skip_string_elements(
