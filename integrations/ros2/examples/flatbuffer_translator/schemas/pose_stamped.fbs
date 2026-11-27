@@ -1,0 +1,40 @@
+namespace builtin_interfaces.msg;
+
+struct Time {
+    sec: int32;
+    nanosec: uint32;
+}
+
+namespace std_msgs.msg;
+
+table Header {
+    stamp: builtin_interfaces.msg.Time;
+    frame_id: string;
+}
+
+namespace geometry_msgs.msg;
+
+struct Point {
+    x: double;
+    y: double;
+    z: double;
+}
+
+struct Quaternion {
+    x: double;
+    y: double;
+    z: double;
+    w: double;
+}
+
+table Pose {
+    position: Point;
+    orientation: Quaternion;
+}
+
+table PoseStamped {
+    header: std_msgs.msg.Header;
+    pose: Pose;
+}
+
+root_type PoseStamped;

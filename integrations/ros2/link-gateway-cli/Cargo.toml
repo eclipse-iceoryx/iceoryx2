@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 iceoryx2-integrations-ros2-link-adapter = { workspace = true }
+iceoryx2-integrations-ros2-link-translator-flatbuffer = { workspace = true }
 
 iceoryx2 = { workspace = true }
 iceoryx2-cli = { workspace = true }

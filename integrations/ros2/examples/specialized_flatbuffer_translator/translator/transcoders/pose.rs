@@ -20,7 +20,7 @@ use ros_env::geometry_msgs::msg::{Point, PoseStamped, Quaternion};
 use ros_env::std_msgs::msg::Header;
 
 use super::{RegionAllocator, TranscodeFailure};
-use crate::flatbuffer_translator::schemas::{Pose, PoseArgs, Quat, Vec3};
+use crate::specialized_flatbuffer_translator::schemas::{Pose, PoseArgs, Quat, Vec3};
 
 /// Converts between a [`Pose`] flatbuffer and the CDR of a
 /// `geometry_msgs/msg/PoseStamped`.

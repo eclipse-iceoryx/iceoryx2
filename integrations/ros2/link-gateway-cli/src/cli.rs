@@ -66,6 +66,15 @@ pub struct Cli {
 
     #[clap(
         long,
+        value_name = "DIR",
+        help = "Look up the binary flatbuffer schema of a ROS 2 topic's type in this directory \
+                with the Flatbuffer translator. Defaults to the flatbuffer schema path of the \
+                iceoryx2 config."
+    )]
+    pub schema_path: Option<PathBuf>,
+
+    #[clap(
+        long,
         help = "Create the services mirroring ROS 2 topics with the RosHeader user header. \
                 It carries the ROS 2 message info of each sample."
     )]
@@ -132,4 +141,7 @@ pub enum Translator {
     /// typesupport libraries. Only supports fixed-sized structs that can be
     /// placed in shared memory.
     PlainStruct,
+    /// Converts flatbuffer payloads to ROS 2 messages and back through the
+    /// schema's reflection and the ROS 2 typesupport libraries.
+    Flatbuffer,
 }

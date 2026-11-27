@@ -1,0 +1,25 @@
+namespace builtin_interfaces.msg;
+
+struct Time {
+    sec: int32;
+    nanosec: uint32;
+}
+
+namespace std_msgs.msg;
+
+table Header {
+    stamp: builtin_interfaces.msg.Time;
+    frame_id: string;
+}
+
+namespace sensor_msgs.msg;
+
+table JointState {
+    header: std_msgs.msg.Header;
+    name: [string];
+    position: [double];
+    velocity: [double];
+    effort: [double];
+}
+
+root_type JointState;

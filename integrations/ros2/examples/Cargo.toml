@@ -33,24 +33,40 @@ iceoryx2-link-gateway = { workspace = true }
 path = "lib.rs"
 
 [[example]]
-name = "flatbuffer_gateway"
-path = "flatbuffer_translator/gateway.rs"
+name = "flatbuffer_joint_state_publisher"
+path = "flatbuffer_translator/joint_state_publisher.rs"
 
 [[example]]
-name = "flatbuffer_joint_readings_publisher"
-path = "flatbuffer_translator/joint_readings_publisher.rs"
+name = "flatbuffer_joint_state_subscriber"
+path = "flatbuffer_translator/joint_state_subscriber.rs"
 
 [[example]]
-name = "flatbuffer_pose_publisher"
-path = "flatbuffer_translator/pose_publisher.rs"
+name = "flatbuffer_pose_stamped_publisher"
+path = "flatbuffer_translator/pose_stamped_publisher.rs"
 
 [[example]]
-name = "flatbuffer_joint_readings_subscriber"
-path = "flatbuffer_translator/joint_readings_subscriber.rs"
+name = "flatbuffer_pose_stamped_subscriber"
+path = "flatbuffer_translator/pose_stamped_subscriber.rs"
 
 [[example]]
-name = "flatbuffer_pose_subscriber"
-path = "flatbuffer_translator/pose_subscriber.rs"
+name = "specialized_flatbuffer_gateway"
+path = "specialized_flatbuffer_translator/gateway.rs"
+
+[[example]]
+name = "specialized_flatbuffer_joint_readings_publisher"
+path = "specialized_flatbuffer_translator/joint_readings_publisher.rs"
+
+[[example]]
+name = "specialized_flatbuffer_pose_publisher"
+path = "specialized_flatbuffer_translator/pose_publisher.rs"
+
+[[example]]
+name = "specialized_flatbuffer_joint_readings_subscriber"
+path = "specialized_flatbuffer_translator/joint_readings_subscriber.rs"
+
+[[example]]
+name = "specialized_flatbuffer_pose_subscriber"
+path = "specialized_flatbuffer_translator/pose_subscriber.rs"
 
 [[example]]
 name = "passthrough_prefix_mapping_publisher"

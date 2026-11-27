@@ -22,7 +22,7 @@ require_tool flatc
 
 #### Test Setup
 
-cd integrations/ros2/examples/flatbuffer_translator/schemas
+cd integrations/ros2/examples/specialized_flatbuffer_translator/schemas
 spawn flatc --schema --binary joint_readings.fbs pose.fbs
 wait
 cd ${REPO_ROOT}
@@ -36,7 +36,7 @@ set timeout 30
 
 set env(IOX2_LOG_LEVEL) trace
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --example flatbuffer_gateway
+    -p iceoryx2-integrations-ros2-examples --example specialized_flatbuffer_gateway
 set id_gateway $spawn_id
 drain_output $id_gateway
 unset env(IOX2_LOG_LEVEL)
@@ -54,7 +54,7 @@ drain_output $id_pub
 expect_output_from $id_gateway "Opened PublishSubscribe bridge of \"Pose\""
 
 spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
-    -p iceoryx2-integrations-ros2-examples --example flatbuffer_pose_subscriber
+    -p iceoryx2-integrations-ros2-examples --example specialized_flatbuffer_pose_subscriber
 set id_subscriber $spawn_id
 
 #### Test Assertion

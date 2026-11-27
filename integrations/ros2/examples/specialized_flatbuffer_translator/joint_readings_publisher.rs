@@ -14,23 +14,23 @@
 //! gateway propagates to the ROS 2 topic `/joint_states`.
 //!
 //! ```bash
-//! cargo run --example flatbuffer_joint_readings_publisher
+//! cargo run --example specialized_flatbuffer_joint_readings_publisher
 //! # in other shells:
-//! #   cargo run --example flatbuffer_gateway
+//! #   cargo run --example specialized_flatbuffer_gateway
 //! #   ros2 topic echo /joint_states
 //! ```
 
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_integrations_ros2_examples::flatbuffer_translator::schemas::{
+use iceoryx2_integrations_ros2_examples::specialized_flatbuffer_translator::schemas::{
     JointReadings, JointReadingsArgs, Timestamp,
 };
 
 const SERVICE_NAME: &str = "JointReadings";
 const SCHEMA_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/flatbuffer_translator/schemas/joint_readings.bfbs"
+    "/specialized_flatbuffer_translator/schemas/joint_readings.bfbs"
 );
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);

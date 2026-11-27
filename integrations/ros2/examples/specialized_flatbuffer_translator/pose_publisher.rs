@@ -14,23 +14,23 @@
 //! propagates to the ROS 2 topic `/pose`.
 //!
 //! ```bash
-//! cargo run --example flatbuffer_pose_publisher
+//! cargo run --example specialized_flatbuffer_pose_publisher
 //! # in other shells:
-//! #   cargo run --example flatbuffer_gateway
+//! #   cargo run --example specialized_flatbuffer_gateway
 //! #   ros2 topic echo /pose
 //! ```
 
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_integrations_ros2_examples::flatbuffer_translator::schemas::{
+use iceoryx2_integrations_ros2_examples::specialized_flatbuffer_translator::schemas::{
     Pose, PoseArgs, Quat, Vec3,
 };
 
 const SERVICE_NAME: &str = "Pose";
 const SCHEMA_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/flatbuffer_translator/schemas/pose.bfbs"
+    "/specialized_flatbuffer_translator/schemas/pose.bfbs"
 );
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
