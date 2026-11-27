@@ -17,8 +17,8 @@ use r2r_rcl::{
 
 use super::{introspection, join_path};
 
-/// The pair of a member of a message with a field of a table or a struct.
-pub(super) struct MemberPairing<'a> {
+/// A member of a message and the field it is paired with.
+pub(super) struct Pair<'a> {
     pub member: &'a MessageMember,
     /// The path of the member from the root message.
     pub member_path: String,
@@ -34,12 +34,12 @@ pub(super) struct MemberPairing<'a> {
 pub(super) unsafe fn pairings<'a>(
     message: *const MessageMembers,
     message_path: &str,
-) -> Vec<MemberPairing<'a>> {
+) -> Vec<Pair<'a>> {
     unsafe { introspection::members(message) }
         .iter()
         .map(|member| {
             let name = unsafe { introspection::member_name(member) };
-            MemberPairing {
+            Pair {
                 member,
                 member_path: join_path(message_path, name),
                 field_path: name,

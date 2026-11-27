@@ -40,6 +40,74 @@ impl Layout {
     pub fn repeated(&self, index: ModelIndex) -> &Layout {
         &self.repeated[usize::from(index.0)]
     }
+
+    /// Adds a table at `placement`.
+    ///
+    /// Returns the index of the table.
+    pub(crate) fn add_table(&mut self, placement: TablePlacement) -> TableIndex {
+        self.tables.push(TableEntry {
+            placement,
+            values: Vec::new(),
+        });
+
+        TableIndex((self.tables.len() - 1) as u16)
+    }
+
+    /// Adds the value at `index` to the table that holds `slot`.
+    pub(crate) fn add_table_value(&mut self, slot: Slot, index: ValueIndex) {
+        self.tables[usize::from(slot.table.0)].values.push(index);
+    }
+
+    /// Adds the struct of `number_of_bytes` and `alignment` in `slot`.
+    pub(crate) fn add_struct(&mut self, slot: Slot, number_of_bytes: u16, alignment: u16) {
+        self.structs.push(StructEntry {
+            slot,
+            number_of_bytes,
+            alignment,
+            values: Vec::new(),
+        });
+    }
+
+    /// Adds the value at `index` to the struct that `placement` places it in.
+    pub(crate) fn add_struct_value(&mut self, placement: FieldPlacement, index: ValueIndex) {
+        let values = match placement {
+            // The struct sits in a slot of a table.
+            FieldPlacement::Struct { slot, .. } => {
+                let entry = self
+                    .structs
+                    .iter_mut()
+                    .find(|entry| entry.slot == slot)
+                    .expect("the struct of a placement is part of the layout");
+                &mut entry.values
+            }
+            // The struct is the root of the layout.
+            FieldPlacement::VectorElement { .. } => {
+                let RootObject::Struct { values, .. } = &mut self.root else {
+                    unreachable!("the root of the layout is a struct")
+                };
+                values
+            }
+            FieldPlacement::Table(_) => unreachable!("the value is placed in a struct"),
+        };
+        values.push(index);
+    }
+
+    /// Orders the values of each struct by their offsets.
+    pub(crate) fn sort_struct_values(&mut self) {
+        for entry in &mut self.structs {
+            sort_by_offset(&mut entry.values, &self.fields);
+        }
+        if let RootObject::Struct { values, .. } = &mut self.root {
+            sort_by_offset(values, &self.fields);
+        }
+    }
+}
+
+fn sort_by_offset(values: &mut [ValueIndex], fields: &[FieldEntry]) {
+    values.sort_by_key(|index| match fields[usize::from(index.0)].placement {
+        FieldPlacement::Struct { offset, .. } | FieldPlacement::VectorElement { offset } => offset,
+        FieldPlacement::Table(_) => unreachable!("the value sits in a struct"),
+    });
 }
 
 /// The table or the struct that holds one message in a flatbuffer.

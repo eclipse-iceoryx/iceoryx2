@@ -12,9 +12,10 @@
 
 mod introspection;
 mod pairing;
+mod resolve;
 mod schema;
 
-use iceoryx2_bb_flatbuffers::reflection::{self, BaseType, Object, root_as_schema};
+use iceoryx2_bb_flatbuffers::reflection::{self, Object, root_as_schema};
 use iceoryx2_integrations_ros2_link_adapter::typesupport::{IntrospectionKind, TypeSupport};
 use iceoryx2_link_backend::service_description::Schema;
 use iceoryx2_log::{fail, origin};
@@ -26,7 +27,8 @@ use r2r_rcl::{
 use super::flatbuffer::{FieldPlacement, Slot, StructOffset, TableIndex, TablePlacement};
 use super::model::{Kind, Model, ModelIndex, ValueIndex};
 use super::{cdr, flatbuffer};
-use pairing::MemberPairing;
+use pairing::Pair;
+use resolve::Resolved;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Compiled {
@@ -65,6 +67,8 @@ pub fn compile(
     schema: &Schema,
     typesupport: &TypeSupport<IntrospectionKind>,
 ) -> Result<Compiled, CompileError> {
+    const ROOT_MESSAGE_PATH: &str = "";
+
     let origin = origin!("compile");
 
     // Find the root table of the schema.
@@ -78,9 +82,14 @@ pub fn compile(
     };
 
     // SAFETY: the typesupport keeps the members valid while it is loaded.
-    if let Err(error) =
-        unsafe { compiler.add_table(root, typesupport.members(), TablePlacement::Root, "") }
-    {
+    if let Err(error) = unsafe {
+        compiler.compile_table(
+            root,
+            typesupport.members(),
+            TablePlacement::Root,
+            ROOT_MESSAGE_PATH,
+        )
+    } {
         fail!(
             from origin,
             with error,
@@ -97,259 +106,303 @@ struct Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    /// Adds the table that holds a message.
+    /// Compiles a message that a table holds.
     ///
     /// # Safety
     ///
     /// `message` must point to the members of a loaded introspection typesupport.
-    unsafe fn add_table(
+    unsafe fn compile_table(
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
         placement: TablePlacement,
         message_path: &str,
     ) -> Result<(), CompileError> {
-        let origin = origin!("compile::add_table");
+        let table = self.compiled.flatbuffer.add_table(placement);
 
-        // Add the table to the flatbuffer layout.
-        let table = TableIndex(self.compiled.flatbuffer.tables.len() as u16);
-        self.compiled
-            .flatbuffer
-            .tables
-            .push(flatbuffer::TableEntry {
-                placement,
-                values: Vec::new(),
-            });
-
-        for MemberPairing {
-            member,
-            member_path,
-            field_path,
-        } in unsafe { pairing::pairings(message, message_path) }
-        {
-            let (placement, field) =
-                self.place_table_field(object, table, field_path)
-                    .map_err(|refusal| CompileError {
-                        path: member_path.clone(),
-                        refusal,
-                    })?;
-            let FieldPlacement::Table(slot) = placement else {
-                unreachable!("a field of a table sits in a slot")
-            };
-
-            // A sequence or an array of messages is one value of this model.
-            // The message it repeats is compiled separately, and the value
-            // refers to that model.
-            if member.type_id_ == introspection::MESSAGE && member.is_array_ {
-                let Some(element) = schema::element_object(self.schema, field) else {
-                    fail!(
-                        from origin,
-                        with CompileError { path: member_path, refusal: mismatch(member, field) },
-                        "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-                    );
-                };
-                let message = unsafe { introspection::message(member) };
-                let (model, field_kind) = if element.is_struct() {
-                    let model =
-                        unsafe { self.add_repeated_struct(element, message, &member_path)? };
-                    (model, flatbuffer::FieldKind::StructVector(model))
-                } else {
-                    let model = unsafe { self.add_repeated_table(element, message, &member_path)? };
-                    (model, flatbuffer::FieldKind::TableVector(model))
-                };
-
-                let (kind, member_kind) = if introspection::is_sequence(member) {
-                    (
-                        Kind::MessageSequence(model),
-                        cdr::MemberKind::MessageSequence(model),
-                    )
-                } else {
-                    let number_of_elements = member.array_size_ as u32;
-                    (
-                        Kind::MessageArray {
-                            model,
-                            number_of_elements,
-                        },
-                        cdr::MemberKind::MessageArray {
-                            model,
-                            number_of_elements,
-                        },
-                    )
-                };
-                let index = self.add_value(kind, member_kind, placement, field_kind);
-                self.compiled.flatbuffer.tables[usize::from(slot.table.0)]
-                    .values
-                    .push(index);
-                continue;
-            }
-
-            // Define a nested table or a struct at the field to hold a nested
-            // message.
-            if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
-                let Some(nested) = schema::object(self.schema, field) else {
-                    fail!(
-                        from origin,
-                        with CompileError { path: member_path, refusal: mismatch(member, field) },
-                        "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-                    );
-                };
-                let message = unsafe { introspection::message(member) };
-                if nested.is_struct() {
-                    unsafe { self.add_struct(nested, message, slot, &member_path)? };
-                } else {
-                    let placement = TablePlacement::Nested(slot);
-                    unsafe { self.add_table(nested, message, placement, &member_path)? };
-                }
-                continue;
-            }
-
-            // Check that the member and the field hold the same kind of value.
-            let (kind, member_kind, field_kind) =
-                pair(member, field).map_err(|refusal| CompileError {
-                    path: member_path,
-                    refusal,
-                })?;
-
-            let index = self.add_value(kind, member_kind, placement, field_kind);
-            self.compiled.flatbuffer.tables[usize::from(slot.table.0)]
-                .values
-                .push(index);
+        for pair in unsafe { pairing::pairings(message, message_path) } {
+            unsafe { self.compile_table_pair(object, table, pair)? };
         }
+        self.compiled.flatbuffer.sort_struct_values();
 
         Ok(())
     }
 
-    /// Adds the struct that holds a nested message in a slot of a table.
+    /// Compiles a pair of a member with a field of the table `object`.
+    ///
+    /// # Safety
+    ///
+    /// The member of `pair` must belong to a loaded introspection typesupport.
+    unsafe fn compile_table_pair(
+        &mut self,
+        object: Object<'a>,
+        table: TableIndex,
+        pair: Pair<'_>,
+    ) -> Result<(), CompileError> {
+        let (placement, field) = self
+            .place_table_field(object, table, pair.field_path)
+            .map_err(|refusal| CompileError {
+                path: pair.member_path.clone(),
+                refusal,
+            })?;
+
+        let FieldPlacement::Table(slot) = placement else {
+            unreachable!("a field of a table sits in a slot")
+        };
+
+        let resolved = resolve::pair(self.schema, &pair, field, placement).map_err(|refusal| {
+            CompileError {
+                path: pair.member_path.clone(),
+                refusal,
+            }
+        })?;
+        let Pair {
+            member,
+            member_path,
+            ..
+        } = pair;
+        let (kind, member_kind, field_kind) = match resolved {
+            Resolved::Value {
+                kind,
+                member_kind,
+                field_kind,
+            } => (kind, member_kind, field_kind),
+            Resolved::Nested { object: nested } => {
+                return unsafe { self.compile_nested(member, nested, slot, &member_path) };
+            }
+            Resolved::Repeated {
+                element,
+                number_of_elements,
+            } => unsafe {
+                self.compile_repeated(member, element, number_of_elements, &member_path)?
+            },
+        };
+
+        let index = self
+            .compiled
+            .add_value(kind, member_kind, placement, field_kind);
+        self.compiled.flatbuffer.add_table_value(slot, index);
+
+        Ok(())
+    }
+
+    /// Compiles the nested message of `member` that the table or the struct
+    /// `nested` in `slot` holds.
+    ///
+    /// # Safety
+    ///
+    /// `member` must belong to a loaded introspection typesupport.
+    unsafe fn compile_nested(
+        &mut self,
+        member: &MessageMember,
+        nested: Object<'a>,
+        slot: Slot,
+        member_path: &str,
+    ) -> Result<(), CompileError> {
+        let message = unsafe { introspection::message(member) };
+        if nested.is_struct() {
+            unsafe { self.compile_struct(nested, message, slot, member_path) }
+        } else {
+            let placement = TablePlacement::Nested(slot);
+            unsafe { self.compile_table(nested, message, placement, member_path) }
+        }
+    }
+
+    /// Compiles the message that `member` repeats and that a vector of the
+    /// table or the struct `element` holds.
+    ///
+    /// The message is compiled separately. Returns the kinds of the one value
+    /// that refers to its model.
+    ///
+    /// # Safety
+    ///
+    /// `member` must belong to a loaded introspection typesupport.
+    unsafe fn compile_repeated(
+        &mut self,
+        member: &MessageMember,
+        element: Object<'a>,
+        number_of_elements: Option<u32>,
+        member_path: &str,
+    ) -> Result<(Kind, cdr::MemberKind, flatbuffer::FieldKind), CompileError> {
+        let message = unsafe { introspection::message(member) };
+        let (model, field_kind) = if element.is_struct() {
+            let model = unsafe { self.compile_repeated_struct(element, message, member_path)? };
+            (model, flatbuffer::FieldKind::StructVector(model))
+        } else {
+            let model = unsafe { self.compile_repeated_table(element, message, member_path)? };
+            (model, flatbuffer::FieldKind::TableVector(model))
+        };
+        let (kind, member_kind) = match number_of_elements {
+            None => (
+                Kind::MessageSequence(model),
+                cdr::MemberKind::MessageSequence(model),
+            ),
+            Some(number_of_elements) => (
+                Kind::MessageArray {
+                    model,
+                    number_of_elements,
+                },
+                cdr::MemberKind::MessageArray {
+                    model,
+                    number_of_elements,
+                },
+            ),
+        };
+
+        Ok((kind, member_kind, field_kind))
+    }
+
+    /// Compiles a nested message that a struct in a slot of a table holds.
     ///
     /// # Safety
     ///
     /// `message` must point to the members of a loaded introspection typesupport.
-    unsafe fn add_struct(
+    unsafe fn compile_struct(
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
         slot: Slot,
         message_path: &str,
     ) -> Result<(), CompileError> {
-        // Add the struct to the flatbuffer layout.
-        let entry = self.compiled.flatbuffer.structs.len();
-        self.compiled
-            .flatbuffer
-            .structs
-            .push(flatbuffer::StructEntry {
-                slot,
-                number_of_bytes: object.bytesize() as u16,
-                alignment: object.minalign() as u16,
-                values: Vec::new(),
-            });
+        self.compiled.flatbuffer.add_struct(
+            slot,
+            object.bytesize() as u16,
+            object.minalign() as u16,
+        );
 
         let start = FieldPlacement::Struct {
             slot,
             offset: START_OF_STRUCT,
         };
-        unsafe { self.add_struct_values(object, message, start, message_path)? };
-
-        // Order the values of the struct by their offsets.
-        let layout = &mut self.compiled.flatbuffer;
-        sort_by_offset(&mut layout.structs[entry].values, &layout.fields);
-
-        Ok(())
+        unsafe { self.compile_struct_pairs(object, message, start, message_path) }
     }
 
-    /// Adds the values of a message to the struct that holds them.
+    /// Compiles the pairs of a message with a struct.
     ///
     /// `start` is the placement of the first byte of `object`.
     ///
     /// # Safety
     ///
     /// `message` must point to the members of a loaded introspection typesupport.
-    unsafe fn add_struct_values(
+    unsafe fn compile_struct_pairs(
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
         start: FieldPlacement,
         message_path: &str,
     ) -> Result<(), CompileError> {
-        for MemberPairing {
-            member,
-            member_path,
-            field_path,
-        } in unsafe { pairing::pairings(message, message_path) }
-        {
-            let (placement, field) =
-                self.place_struct_field(object, start, field_path)
-                    .map_err(|refusal| CompileError {
-                        path: member_path.clone(),
-                        refusal,
-                    })?;
-            unsafe { self.add_struct_value(member, field, placement, member_path)? };
+        for pair in unsafe { pairing::pairings(message, message_path) } {
+            let (placement, field) = self
+                .place_struct_field(object, start, pair.field_path)
+                .map_err(|refusal| CompileError {
+                    path: pair.member_path.clone(),
+                    refusal,
+                })?;
+            unsafe { self.compile_struct_pair(pair, field, placement)? };
         }
 
         Ok(())
     }
 
-    /// Adds the values of `member` to the struct that holds `field`.
-    ///
-    /// `placement` is the placement of `field`.
+    /// Compiles a pair of a member with the struct field `field`.
     ///
     /// # Safety
     ///
-    /// `member` must belong to a loaded introspection typesupport.
-    unsafe fn add_struct_value(
+    /// The member of `pair` must belong to a loaded introspection typesupport.
+    unsafe fn compile_struct_pair(
         &mut self,
-        member: &MessageMember,
+        pair: Pair<'_>,
         field: reflection::Field<'a>,
         placement: FieldPlacement,
-        member_path: String,
     ) -> Result<(), CompileError> {
-        let origin = origin!("compile::add_struct_value");
-
-        // Add the values of a nested message that a nested struct holds. The
-        // nested struct starts where the field is placed.
-        if member.type_id_ == introspection::MESSAGE && !member.is_array_ {
-            let nested = match schema::object(self.schema, field) {
-                Some(nested) if nested.is_struct() => nested,
-                _ => {
-                    fail!(
-                        from origin,
-                        with CompileError { path: member_path, refusal: mismatch(member, field) },
-                        "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-                    );
-                }
-            };
-            let message = unsafe { introspection::message(member) };
-            return unsafe { self.add_struct_values(nested, message, placement, &member_path) };
-        }
-
-        // Check that the member and the field hold the same scalar.
-        let (kind, member_kind, field_kind) =
-            pair(member, field).map_err(|refusal| CompileError {
-                path: member_path,
+        let resolved = resolve::pair(self.schema, &pair, field, placement).map_err(|refusal| {
+            CompileError {
+                path: pair.member_path.clone(),
                 refusal,
-            })?;
-        let index = self.add_value(kind, member_kind, placement, field_kind);
-
-        // Add the value to the struct it is placed in.
-        let layout = &mut self.compiled.flatbuffer;
-        match (placement, &mut layout.root) {
-            (FieldPlacement::Struct { slot, .. }, _) => layout
-                .structs
-                .iter_mut()
-                .find(|entry| entry.slot == slot)
-                .expect("the struct of a placement is part of the layout")
-                .values
-                .push(index),
-            (
-                FieldPlacement::VectorElement { .. },
-                flatbuffer::RootObject::Struct { values, .. },
-            ) => values.push(index),
-            (FieldPlacement::VectorElement { .. }, flatbuffer::RootObject::Table)
-            | (FieldPlacement::Table(_), _) => {
-                unreachable!("the value is placed in a struct")
             }
-        }
+        })?;
+        let Pair {
+            member,
+            member_path,
+            ..
+        } = pair;
+
+        let (kind, member_kind, field_kind) = match resolved {
+            Resolved::Value {
+                kind,
+                member_kind,
+                field_kind,
+            } => (kind, member_kind, field_kind),
+
+            // Add the values of a nested message that a nested struct holds.
+            // The nested struct starts where the field is placed.
+            Resolved::Nested { object: nested } => {
+                let message = unsafe { introspection::message(member) };
+                return unsafe {
+                    self.compile_struct_pairs(nested, message, placement, &member_path)
+                };
+            }
+
+            Resolved::Repeated { .. } => unreachable!("a struct holds no sequence of messages"),
+        };
+        let index = self
+            .compiled
+            .add_value(kind, member_kind, placement, field_kind);
+        self.compiled.flatbuffer.add_struct_value(placement, index);
 
         Ok(())
+    }
+
+    /// Compiles a message that a table holds as the element of a sequence.
+    ///
+    /// # Safety
+    ///
+    /// `message` must point to the members of a loaded introspection typesupport.
+    unsafe fn compile_repeated_table(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        message_path: &str,
+    ) -> Result<ModelIndex, CompileError> {
+        // Compile the message like a root message.
+        let mut compiler = Compiler {
+            schema: self.schema,
+            compiled: Compiled::default(),
+        };
+        unsafe { compiler.compile_table(object, message, TablePlacement::Root, message_path)? };
+
+        Ok(self.compiled.add_repeated(compiler.compiled))
+    }
+
+    /// Compiles a message that a struct holds as the element of a sequence.
+    ///
+    /// # Safety
+    ///
+    /// `message` must point to the members of a loaded introspection typesupport.
+    unsafe fn compile_repeated_struct(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        message_path: &str,
+    ) -> Result<ModelIndex, CompileError> {
+        // Compile the message with the struct as the root of its layout.
+        let mut compiler = Compiler {
+            schema: self.schema,
+            compiled: Compiled::default(),
+        };
+        compiler.compiled.flatbuffer.root = flatbuffer::RootObject::Struct {
+            number_of_bytes: object.bytesize() as u16,
+            alignment: object.minalign() as u16,
+            values: Vec::new(),
+        };
+        let start = FieldPlacement::VectorElement {
+            offset: START_OF_STRUCT,
+        };
+        unsafe { compiler.compile_struct_pairs(object, message, start, message_path)? };
+
+        compiler.compiled.flatbuffer.sort_struct_values();
+
+        Ok(self.compiled.add_repeated(compiler.compiled))
     }
 
     /// Places the field `field_path` of the table `object`.
@@ -394,76 +447,9 @@ impl<'a> Compiler<'a> {
 
         Ok((placement, field))
     }
+}
 
-    /// Adds the table that holds a message as the element of a sequence.
-    ///
-    /// # Safety
-    ///
-    /// `message` must point to the members of a loaded introspection typesupport.
-    unsafe fn add_repeated_table(
-        &mut self,
-        object: Object<'a>,
-        message: *const MessageMembers,
-        message_path: &str,
-    ) -> Result<ModelIndex, CompileError> {
-        // Compile the message like a root message.
-        let mut compiler = Compiler {
-            schema: self.schema,
-            compiled: Compiled::default(),
-        };
-        unsafe { compiler.add_table(object, message, TablePlacement::Root, message_path)? };
-
-        Ok(self.add_repeated(compiler.compiled))
-    }
-
-    /// Adds the struct that holds a message as the element of a sequence.
-    ///
-    /// # Safety
-    ///
-    /// `message` must point to the members of a loaded introspection typesupport.
-    unsafe fn add_repeated_struct(
-        &mut self,
-        object: Object<'a>,
-        message: *const MessageMembers,
-        message_path: &str,
-    ) -> Result<ModelIndex, CompileError> {
-        // Compile the message with the struct as the root of its layout.
-        let mut compiler = Compiler {
-            schema: self.schema,
-            compiled: Compiled::default(),
-        };
-        compiler.compiled.flatbuffer.root = flatbuffer::RootObject::Struct {
-            number_of_bytes: object.bytesize() as u16,
-            alignment: object.minalign() as u16,
-            values: Vec::new(),
-        };
-        let start = FieldPlacement::VectorElement {
-            offset: START_OF_STRUCT,
-        };
-        unsafe { compiler.add_struct_values(object, message, start, message_path)? };
-
-        // Order the values of the struct by their offsets.
-        let layout = &mut compiler.compiled.flatbuffer;
-        if let flatbuffer::RootObject::Struct { values, .. } = &mut layout.root {
-            sort_by_offset(values, &layout.fields);
-        }
-
-        Ok(self.add_repeated(compiler.compiled))
-    }
-
-    /// Adds the compiled element of a sequence to the repeated models and
-    /// layouts of this message.
-    ///
-    /// Returns the index they share.
-    fn add_repeated(&mut self, repeated: Compiled) -> ModelIndex {
-        let index = ModelIndex(self.compiled.model.repeated.len() as u16);
-        self.compiled.model.repeated.push(repeated.model);
-        self.compiled.cdr.repeated.push(repeated.cdr);
-        self.compiled.flatbuffer.repeated.push(repeated.flatbuffer);
-
-        index
-    }
-
+impl Compiled {
     /// Adds a value of `kind` with its member and its field.
     ///
     /// Returns the index of the value.
@@ -475,24 +461,33 @@ impl<'a> Compiler<'a> {
         field_kind: flatbuffer::FieldKind,
     ) -> ValueIndex {
         // Add the value to the model.
-        let index = ValueIndex(self.compiled.model.values.len() as u16);
-        self.compiled.model.values.push(kind);
+        let index = ValueIndex(self.model.values.len() as u16);
+        self.model.values.push(kind);
 
         // Add the member of the value to the CDR layout.
-        self.compiled
-            .cdr
+        self.cdr
             .members
             .push(cdr::MemberEntry { kind: member_kind });
-        self.compiled.cdr.order.push(index);
+        self.cdr.order.push(index);
 
         // Add the field of the value to the flatbuffer layout.
-        self.compiled
-            .flatbuffer
-            .fields
-            .push(flatbuffer::FieldEntry {
-                placement,
-                kind: field_kind,
-            });
+        self.flatbuffer.fields.push(flatbuffer::FieldEntry {
+            placement,
+            kind: field_kind,
+        });
+
+        index
+    }
+
+    /// Adds the compiled element of a sequence to the repeated models and
+    /// layouts.
+    ///
+    /// Returns the index they share.
+    fn add_repeated(&mut self, repeated: Compiled) -> ModelIndex {
+        let index = ModelIndex(self.model.repeated.len() as u16);
+        self.model.repeated.push(repeated.model);
+        self.cdr.repeated.push(repeated.cdr);
+        self.flatbuffer.repeated.push(repeated.flatbuffer);
 
         index
     }
@@ -501,167 +496,10 @@ impl<'a> Compiler<'a> {
 /// The offset of the first byte of a struct.
 const START_OF_STRUCT: StructOffset = StructOffset(0);
 
-fn sort_by_offset(values: &mut [ValueIndex], fields: &[flatbuffer::FieldEntry]) {
-    values.sort_by_key(|index| match fields[usize::from(index.0)].placement {
-        FieldPlacement::Struct { offset, .. } | FieldPlacement::VectorElement { offset } => offset,
-        FieldPlacement::Table(_) => unreachable!("the value sits in a struct"),
-    });
-}
-
-fn mismatch(member: &MessageMember, field: reflection::Field<'_>) -> Refusal {
-    Refusal::Mismatch {
-        member: introspection::member_type(member),
-        field: schema::field_type(field),
-    }
-}
-
 fn join_path(parent: &str, name: &str) -> String {
     if parent.is_empty() {
         name.to_string()
     } else {
         format!("{parent}.{name}")
-    }
-}
-
-/// Pairs `member` with `field` as one value.
-///
-/// Returns the kind of the value in the model, the kind of the member in the
-/// CDR layout and the kind of the field in the flatbuffer layout. Fails when
-/// the member and the field do not hold compatible values.
-fn pair(
-    member: &MessageMember,
-    field: reflection::Field<'_>,
-) -> Result<(Kind, cdr::MemberKind, flatbuffer::FieldKind), Refusal> {
-    let origin = origin!("compile::pair");
-
-    // Refuse the types that no flatbuffer field carries.
-    if matches!(
-        member.type_id_,
-        introspection::WSTRING | introspection::WCHAR | introspection::LONG_DOUBLE
-    ) {
-        fail!(
-            from origin,
-            with Refusal::Unsupported { member: introspection::member_type(member) },
-            "A {} member has no flatbuffer field that carries it", introspection::member_type(member)
-        );
-    }
-
-    // Pair a sequence of scalars with a vector of the same scalar.
-    if introspection::is_sequence(member)
-        && let Some(member_type) = introspection::scalar_type(member)
-    {
-        return match schema::element_scalar_type(field) {
-            Some(field_type) if member_type == field_type => Ok((
-                Kind::ScalarSequence(field_type),
-                cdr::MemberKind::ScalarSequence(member_type),
-                flatbuffer::FieldKind::ScalarVector(field_type),
-            )),
-            _ => {
-                fail!(
-                    from origin,
-                    with mismatch(member, field),
-                    "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-                );
-            }
-        };
-    }
-
-    // Pair an array of scalars with a vector of the same scalar or with an
-    // array of the same scalar and number of elements.
-    if introspection::is_array(member)
-        && let Some(member_type) = introspection::scalar_type(member)
-    {
-        let number_of_elements = member.array_size_ as u32;
-        let kind = Kind::ScalarArray {
-            scalar_type: member_type,
-            number_of_elements,
-        };
-        let member_kind = cdr::MemberKind::ScalarArray {
-            scalar_type: member_type,
-            number_of_elements,
-        };
-        if schema::element_scalar_type(field) == Some(member_type) {
-            let field_kind = flatbuffer::FieldKind::ScalarVector(member_type);
-            return Ok((kind, member_kind, field_kind));
-        }
-        return match schema::scalar_array(field) {
-            Some(array) if array == (member_type, number_of_elements) => Ok((
-                kind,
-                member_kind,
-                flatbuffer::FieldKind::ScalarArray {
-                    scalar_type: member_type,
-                    number_of_elements,
-                },
-            )),
-            _ => {
-                fail!(
-                    from origin,
-                    with mismatch(member, field),
-                    "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-                );
-            }
-        };
-    }
-
-    // Pair a sequence or an array of strings with a vector of strings.
-    if member.type_id_ == introspection::STRING
-        && (introspection::is_sequence(member) || introspection::is_array(member))
-    {
-        if !schema::is_string_vector(field) {
-            fail!(
-                from origin,
-                with mismatch(member, field),
-                "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-            );
-        }
-
-        // The model and the CDR distinguish a sequence from an array. The
-        // flatbuffer holds both as a vector of strings.
-        let (kind, member_kind) = if introspection::is_sequence(member) {
-            (Kind::StringSequence, cdr::MemberKind::StringSequence)
-        } else {
-            let number_of_elements = member.array_size_ as u32;
-            (
-                Kind::StringArray { number_of_elements },
-                cdr::MemberKind::StringArray { number_of_elements },
-            )
-        };
-
-        return Ok((kind, member_kind, flatbuffer::FieldKind::StringVector));
-    }
-
-    if member.is_array_ || member.type_id_ == introspection::MESSAGE {
-        fail!(
-            from origin,
-            with Refusal::Unsupported { member: introspection::member_type(member) },
-            "A {} member has no flatbuffer field that carries it", introspection::member_type(member)
-        );
-    }
-    if member.type_id_ == introspection::STRING && field.type_().base_type() == BaseType::String {
-        return Ok((
-            Kind::String,
-            cdr::MemberKind::String,
-            flatbuffer::FieldKind::String,
-        ));
-    }
-    match (
-        introspection::scalar_type(member),
-        schema::scalar_type(field),
-    ) {
-        (Some(member_type), Some(field_type)) if member_type == field_type => Ok((
-            Kind::Scalar(field_type),
-            cdr::MemberKind::Scalar(member_type),
-            flatbuffer::FieldKind::Scalar {
-                scalar_type: field_type,
-                default: schema::default_value(field, field_type),
-            },
-        )),
-        _ => {
-            fail!(
-                from origin,
-                with Refusal::Mismatch { member: introspection::member_type(member), field: schema::field_type(field) },
-                "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
-            );
-        }
     }
 }
