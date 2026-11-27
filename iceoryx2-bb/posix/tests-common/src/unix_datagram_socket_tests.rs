@@ -15,7 +15,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::{Time, nanosleep};
@@ -409,4 +409,58 @@ pub fn abandoning_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_f
     drop(sut_receiver);
 
     assert_that!(File::does_exist(&socket_name).unwrap(), eq false);
+}
+
+fn read_umask() -> posix::mode_t {
+    unsafe {
+        let previous = posix::umask(0o022);
+        posix::umask(previous);
+        previous
+    }
+}
+
+#[test]
+pub fn concurrent_bind_does_not_change_the_process_umask() {
+    let _watchdog = Watchdog::new();
+
+    create_test_directory();
+
+    let before = read_umask();
+
+    const CONCURRENT_BINDS: usize = 8;
+    let paths: Vec<FilePath> = (0..CONCURRENT_BINDS)
+        .map(|_| generate_file_path())
+        .collect();
+
+    let handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(CONCURRENT_BINDS as u32)
+        .create(&handle)
+        .unwrap();
+
+    let successful_binds = AtomicUsize::new(0);
+
+    thread_scope(|scope| {
+        for path in &paths {
+            scope
+                .thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    let receiver = UnixDatagramReceiverBuilder::new(path)
+                        .permission(Permission::OWNER_READ_WRITE)
+                        .creation_mode(CreationMode::PurgeAndCreate)
+                        .create();
+                    assert_that!(receiver, is_ok);
+                    successful_binds.fetch_add(1, Ordering::Relaxed);
+                })
+                .unwrap();
+        }
+        Ok(())
+    })
+    .unwrap();
+
+    assert_that!(successful_binds.load(Ordering::Relaxed), eq CONCURRENT_BINDS);
+
+    let after = read_umask();
+
+    assert_that!(after, eq before);
 }
