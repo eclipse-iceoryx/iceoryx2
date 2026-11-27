@@ -39,10 +39,9 @@ pub(super) enum Resolved<'a> {
     },
 }
 
-/// Resolves `pair` against `field`, the field it is placed at.
+/// Resolves `pair` against the `field` that it is placed at.
 ///
-/// `placement` is the placement of `field`. Fails when the member and the
-/// field do not hold compatible values.
+/// Fails when the member and the field do not hold compatible values.
 pub(super) fn pair<'a>(
     schema: reflection::Schema<'a>,
     pair: &Pair<'_>,

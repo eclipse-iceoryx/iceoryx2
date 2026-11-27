@@ -111,8 +111,8 @@
 //! # Translating
 //!
 //! Each format provides a [`MessageView`](model::MessageView) of its bytes and
-//! a writer for its layout. A view hands out values by their `ValueIndex`, and
-//! a writer asks a view for the values in the order its format needs them.
+//! a writer for its layout. Values are retrieved from the view by their
+//! `ValueIndex` in the model, in the order required by their layouts.
 //!
 //! ```text
 //! decode  CDR        ─► cdr::Reader        ─► MessageView ─► flatbuffer::write
@@ -121,12 +121,11 @@
 //!
 //! * A writer never sees the other format. It only knows its own layout and has
 //!   a `MessageView` to access its values.
-//! * The CDR is walked once to locate its values, since a later member starts
-//!   where the earlier ones end. The flatbuffer is read in place through its
-//!   offsets.
-//! * The elements of a sequence of messages are again
-//!   [`MessageView`](model::MessageView)s, read with the layout of the repeated
-//!   message.
+//! * The CDR is walked once to locate its values and the flatbuffer reads
+//!   values directly by their offsets.
+//! * The elements of a sequence of messages are also accessed by
+//!   [`MessageView`](model::MessageView)s. They are a described by a single
+//!   layout which is used to retrieve their values.
 //!
 //! # Compiling
 //!

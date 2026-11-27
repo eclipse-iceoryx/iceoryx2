@@ -60,7 +60,7 @@ pub enum Refusal {
 }
 
 /// Compiles the model of the message that `schema` and `typesupport` both
-/// describe, with its layout in each of the two formats.
+/// describe and its layout in each of the two formats.
 ///
 /// Fails when the two do not describe the same message.
 pub fn compile(

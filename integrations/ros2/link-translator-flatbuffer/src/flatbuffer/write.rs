@@ -422,8 +422,9 @@ enum StructDestination {
     Vector,
 }
 
-/// Pushes the struct of `number_of_bytes` that holds `struct_values`, which
-/// are in the order of their offsets.
+/// Pushes the struct of `number_of_bytes` that holds `struct_values`.
+///
+/// `struct_values` are in the order of their offsets.
 fn push_struct<M: MessageView, A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
     layout: &Layout,
