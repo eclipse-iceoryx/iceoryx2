@@ -21,8 +21,8 @@ use crate::model::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
-    /// A value cannot be taken from its source.
-    Values(E),
+    /// A value cannot be read from the view of the message.
+    Read(E),
     /// The CDR cannot be written into the provided region.
     Region(ResizeError),
     /// A string or a sequence exceeds its length prefix.
@@ -83,50 +83,50 @@ impl<E> From<writer::SequenceError> for WriteError<E> {
     }
 }
 
-/// Writes `values` as the CDR of the message of `layout` into `region`.
+/// Writes `message` as the CDR that `layout` describes into `region`.
 ///
-/// Fails when a value cannot be taken from `values` or the region cannot
+/// Fails when a value cannot be taken from `message` or the region cannot
 /// hold the CDR.
-pub fn write<V: MessageView, R: ForwardRegion>(
+pub fn write<M: MessageView, R: ForwardRegion>(
     layout: &Layout,
-    values: &V,
+    message: &M,
     region: R,
-) -> Result<(), WriteError<V::Error>> {
+) -> Result<(), WriteError<M::Error>> {
     let origin = origin!("cdr::write");
 
     let mut writer = fail!(
         from origin,
         when writer::Writer::new(region),
-        to WriteError<V::Error>,
+        to WriteError<M::Error>,
         "Unable to start the CDR"
     );
 
     fail!(
         from origin,
-        when write_message(layout, values, &mut writer),
-        "Unable to write the values as CDR"
+        when write_message(&mut writer, layout, message),
+        "Unable to write the message as CDR"
     );
 
     Ok(())
 }
 
-fn write_message<V: MessageView, R: ForwardRegion>(
-    layout: &Layout,
-    values: &V,
+fn write_message<M: MessageView, R: ForwardRegion>(
     writer: &mut writer::Writer<R>,
-) -> Result<(), WriteError<V::Error>> {
+    layout: &Layout,
+    message: &M,
+) -> Result<(), WriteError<M::Error>> {
     let origin = origin!("cdr::write_message");
 
     // Write the members in CDR order.
     for index in &layout.order {
         match layout.member(*index).kind {
             MemberKind::Scalar(_) => {
-                let value = match values.scalar(*index) {
+                let value = match message.scalar(*index) {
                     Ok(value) => value,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the scalar value {}", index.0
                         );
                     }
@@ -134,17 +134,17 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 fail!(
                     from origin,
                     when write_scalar(writer, value),
-                    to WriteError<V::Error>,
+                    to WriteError<M::Error>,
                     "Unable to write the scalar value {}", index.0
                 );
             }
             MemberKind::String => {
-                let bytes = match values.string(*index) {
+                let bytes = match message.string(*index) {
                     Ok(bytes) => bytes,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the string value {}", index.0
                         );
                     }
@@ -152,17 +152,17 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 fail!(
                     from origin,
                     when writer.write_string(bytes),
-                    to WriteError<V::Error>,
+                    to WriteError<M::Error>,
                     "Unable to write the string value {}", index.0
                 );
             }
             MemberKind::ScalarSequence(scalar_type) => {
-                let elements = match values.scalar_elements(*index) {
+                let elements = match message.scalar_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the scalar sequence value {}", index.0
                         );
                     }
@@ -170,7 +170,7 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 fail!(
                     from origin,
                     when write_scalar_sequence(writer, scalar_type, elements),
-                    to WriteError<V::Error>,
+                    to WriteError<M::Error>,
                     "Unable to write the scalar sequence value {}", index.0
                 );
             }
@@ -178,12 +178,12 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 scalar_type,
                 number_of_elements,
             } => {
-                let elements = match values.scalar_elements(*index) {
+                let elements = match message.scalar_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the scalar array value {}", index.0
                         );
                     }
@@ -203,17 +203,17 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 fail!(
                     from origin,
                     when write_scalar_array(writer, scalar_type, number_of_elements, elements),
-                    to WriteError<V::Error>,
+                    to WriteError<M::Error>,
                     "Unable to write the scalar array value {}", index.0
                 );
             }
             MemberKind::StringSequence => {
-                let elements = match values.string_elements(*index) {
+                let elements = match message.string_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the string sequence value {}", index.0
                         );
                     }
@@ -221,22 +221,22 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 fail!(
                     from origin,
                     when writer.write_length(elements.len()),
-                    to WriteError<V::Error>,
+                    to WriteError<M::Error>,
                     "Unable to write the length of the string sequence value {}", index.0
                 );
                 fail!(
                     from origin,
-                    when write_string_elements::<V, R>(writer, elements),
+                    when write_string_elements::<M, R>(writer, elements),
                     "Unable to write the string sequence value {}", index.0
                 );
             }
             MemberKind::StringArray { number_of_elements } => {
-                let elements = match values.string_elements(*index) {
+                let elements = match message.string_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the string array value {}", index.0
                         );
                     }
@@ -250,14 +250,14 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                         fail!(
                             from origin,
                             when writer.write_string(&[]),
-                            to WriteError<V::Error>,
+                            to WriteError<M::Error>,
                             "Unable to write an empty string of the string array value {}", index.0
                         );
                     }
                 } else if actual == expected {
                     fail!(
                         from origin,
-                        when write_string_elements::<V, R>(writer, elements),
+                        when write_string_elements::<M, R>(writer, elements),
                         "Unable to write the string array value {}", index.0
                     );
                 } else {
@@ -270,12 +270,12 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 }
             }
             MemberKind::MessageSequence(model) => {
-                let elements = match values.message_elements(*index) {
+                let elements = match message.message_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the message sequence value {}", index.0
                         );
                     }
@@ -283,12 +283,12 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 fail!(
                     from origin,
                     when writer.write_length(elements.number_of_elements()),
-                    to WriteError<V::Error>,
+                    to WriteError<M::Error>,
                     "Unable to write the length of the message sequence value {}", index.0
                 );
                 fail!(
                     from origin,
-                    when write_message_elements(layout.repeated(model), &elements, writer),
+                    when write_message_elements(writer, layout.repeated(model), &elements),
                     "Unable to write the message sequence value {}", index.0
                 );
             }
@@ -296,12 +296,12 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                 model,
                 number_of_elements,
             } => {
-                let elements = match values.message_elements(*index) {
+                let elements = match message.message_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the message array value {}", index.0
                         );
                     }
@@ -314,14 +314,14 @@ fn write_message<V: MessageView, R: ForwardRegion>(
                     for _ in 0..number_of_elements {
                         fail!(
                             from origin,
-                            when write_zero_message(layout.repeated(model), writer),
+                            when write_zero_message(writer, layout.repeated(model)),
                             "Unable to write a message of zeros of the message array value {}", index.0
                         );
                     }
                 } else if actual == expected {
                     fail!(
                         from origin,
-                        when write_message_elements(layout.repeated(model), &elements, writer),
+                        when write_message_elements(writer, layout.repeated(model), &elements),
                         "Unable to write the message array value {}", index.0
                     );
                 } else {
@@ -413,10 +413,10 @@ fn is_copyable(scalar_type: ScalarType, elements: ScalarElements<'_>) -> bool {
     elements.byte_order == ByteOrder::HOST || scalar_type.number_of_bytes() == 1
 }
 
-fn write_string_elements<V: MessageView, R: ForwardRegion>(
+fn write_string_elements<M: MessageView, R: ForwardRegion>(
     writer: &mut writer::Writer<R>,
-    elements: V::StringElementIter<'_>,
-) -> Result<(), WriteError<V::Error>> {
+    elements: M::StringElementIter<'_>,
+) -> Result<(), WriteError<M::Error>> {
     let origin = origin!("cdr::write_string_elements");
 
     for element in elements {
@@ -425,7 +425,7 @@ fn write_string_elements<V: MessageView, R: ForwardRegion>(
             Err(error) => {
                 fail!(
                     from origin,
-                    with WriteError::Values(error),
+                    with WriteError::Read(error),
                     "Unable to take a string element"
                 );
             }
@@ -433,7 +433,7 @@ fn write_string_elements<V: MessageView, R: ForwardRegion>(
         fail!(
             from origin,
             when writer.write_string(bytes),
-            to WriteError<V::Error>,
+            to WriteError<M::Error>,
             "Unable to write a string element of {} bytes", bytes.len()
         );
     }
@@ -442,9 +442,9 @@ fn write_string_elements<V: MessageView, R: ForwardRegion>(
 }
 
 fn write_message_elements<E: MessageElements, R: ForwardRegion>(
+    writer: &mut writer::Writer<R>,
     layout: &Layout,
     elements: &E,
-    writer: &mut writer::Writer<R>,
 ) -> Result<(), WriteError<E::Error>> {
     let origin = origin!("cdr::write_message_elements");
 
@@ -452,7 +452,7 @@ fn write_message_elements<E: MessageElements, R: ForwardRegion>(
         let element = elements.element(position);
         fail!(
             from origin,
-            when write_message(layout, &element, writer),
+            when write_message(writer, layout, &element),
             "Unable to write a message element"
         );
     }
@@ -463,8 +463,8 @@ fn write_message_elements<E: MessageElements, R: ForwardRegion>(
 /// Writes a message of `layout` whose scalars are zero and whose strings and
 /// sequences are empty.
 fn write_zero_message<E, R: ForwardRegion>(
-    layout: &Layout,
     writer: &mut writer::Writer<R>,
+    layout: &Layout,
 ) -> Result<(), WriteError<E>> {
     for index in &layout.order {
         match layout.member(*index).kind {
@@ -493,7 +493,7 @@ fn write_zero_message<E, R: ForwardRegion>(
                 number_of_elements,
             } => {
                 for _ in 0..number_of_elements {
-                    write_zero_message(layout.repeated(model), writer)?;
+                    write_zero_message(writer, layout.repeated(model))?;
                 }
             }
         }

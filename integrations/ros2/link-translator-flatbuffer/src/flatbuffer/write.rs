@@ -25,8 +25,8 @@ use crate::model::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
-    /// A value cannot be taken from its source.
-    Values(E),
+    /// A value cannot be read from the view of the message.
+    Read(E),
 }
 
 impl<E: core::fmt::Debug> core::fmt::Display for WriteError<E> {
@@ -37,35 +37,35 @@ impl<E: core::fmt::Debug> core::fmt::Display for WriteError<E> {
 
 impl<E: core::fmt::Debug> core::error::Error for WriteError<E> {}
 
-/// Writes `values` into `builder` as a finished flatbuffer.
+/// Writes `message` into `builder` as a finished flatbuffer.
 ///
 /// `layout` gives the place of each value in the flatbuffer. Fails when a
-/// value cannot be taken from `values`.
-pub fn write<V: MessageView, A: Allocator>(
+/// value cannot be taken from `message`.
+pub fn write<M: MessageView, A: Allocator>(
     layout: &Layout,
-    values: &V,
+    message: &M,
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), WriteError<V::Error>> {
+) -> Result<(), WriteError<M::Error>> {
     let origin = origin!("flatbuffer::write");
 
     let root = fail!(
         from origin,
-        when write_message(layout, values, builder),
-        "Unable to write the values into the flatbuffer"
+        when write_message(builder, layout, message),
+        "Unable to write the message into the flatbuffer"
     );
     builder.finish(root, None);
 
     Ok(())
 }
 
-/// Writes `values` as the tables described by `layout`.
+/// Writes `message` as the tables described by `layout`.
 ///
 /// Returns the offset of the root table.
-fn write_message<V: MessageView, A: Allocator>(
-    layout: &Layout,
-    values: &V,
+fn write_message<M: MessageView, A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<TableFinishedWIPOffset>, WriteError<V::Error>> {
+    layout: &Layout,
+    message: &M,
+) -> Result<WIPOffset<TableFinishedWIPOffset>, WriteError<M::Error>> {
     let origin = origin!("flatbuffer::write_message");
 
     // Lists that hold the offsets of one table at a time. They are created
@@ -81,7 +81,7 @@ fn write_message<V: MessageView, A: Allocator>(
     for index in (0..layout.tables.len()).rev() {
         let table = fail!(
             from origin,
-            when write_table(layout, TableIndex(index as u16), &table_offsets, &mut value_offsets, &mut element_offsets, values, builder),
+            when write_table(builder, layout, TableIndex(index as u16), &table_offsets, &mut value_offsets, &mut element_offsets, message),
             "Unable to write the table {}", index
         );
         table_offsets[index] = Some(table);
@@ -90,18 +90,18 @@ fn write_message<V: MessageView, A: Allocator>(
     Ok(table_offsets[0].expect("a layout has a root table"))
 }
 
-/// Writes `values` as the table at `table` of `layout`.
+/// Writes `message` as the table at `table` of `layout`.
 ///
 /// Returns the offset of the table.
-fn write_table<V: MessageView, A: Allocator>(
+fn write_table<M: MessageView, A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
     layout: &Layout,
     table: TableIndex,
     table_offsets: &[Option<WIPOffset<TableFinishedWIPOffset>>],
     value_offsets: &mut Vec<(VOffsetT, WIPOffset<UnionWIPOffset>)>,
     element_offsets: &mut Vec<WIPOffset<UnionWIPOffset>>,
-    values: &V,
-    builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<WIPOffset<TableFinishedWIPOffset>, WriteError<V::Error>> {
+    message: &M,
+) -> Result<WIPOffset<TableFinishedWIPOffset>, WriteError<M::Error>> {
     let origin = origin!("flatbuffer::write_table");
 
     // Write the strings and vectors of this table into the flatbuffer and
@@ -115,12 +115,12 @@ fn write_table<V: MessageView, A: Allocator>(
         match field.kind {
             FieldKind::Scalar { .. } | FieldKind::ScalarArray { .. } => {}
             FieldKind::String => {
-                let bytes = match values.string(*index) {
+                let bytes = match message.string(*index) {
                     Ok(bytes) => bytes,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the string value {}", index.0
                         );
                     }
@@ -129,12 +129,12 @@ fn write_table<V: MessageView, A: Allocator>(
                 value_offsets.push((slot.vtable_offset, string_offset));
             }
             FieldKind::ScalarVector(scalar_type) => {
-                let elements = match values.scalar_elements(*index) {
+                let elements = match message.scalar_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the scalar elements of the value {}", index.0
                         );
                     }
@@ -143,12 +143,12 @@ fn write_table<V: MessageView, A: Allocator>(
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::StringVector => {
-                let elements = match values.string_elements(*index) {
+                let elements = match message.string_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the string elements of the value {}", index.0
                         );
                     }
@@ -163,7 +163,7 @@ fn write_table<V: MessageView, A: Allocator>(
                         Err(error) => {
                             fail!(
                                 from origin,
-                                with WriteError::Values(error),
+                                with WriteError::Read(error),
                                 "Unable to take a string element of the value {}", index.0
                             );
                         }
@@ -176,12 +176,12 @@ fn write_table<V: MessageView, A: Allocator>(
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::TableVector(model) => {
-                let elements = match values.message_elements(*index) {
+                let elements = match message.message_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the message elements of the value {}", index.0
                         );
                     }
@@ -194,7 +194,7 @@ fn write_table<V: MessageView, A: Allocator>(
                     let element = elements.element(position);
                     let element_offset = fail!(
                         from origin,
-                        when write_message(layout.repeated(model), &element, builder),
+                        when write_message(builder, layout.repeated(model), &element),
                         "Unable to write a message element of the value {}", index.0
                     );
                     element_offsets.push(element_offset.as_union_value());
@@ -205,19 +205,19 @@ fn write_table<V: MessageView, A: Allocator>(
                 value_offsets.push((slot.vtable_offset, vector_offset));
             }
             FieldKind::StructVector(model) => {
-                let elements = match values.message_elements(*index) {
+                let elements = match message.message_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the message elements of the value {}", index.0
                         );
                     }
                 };
                 let vector_offset = fail!(
                     from origin,
-                    when write_struct_vector(layout.repeated(model), &elements, builder),
+                    when write_struct_vector(builder, layout.repeated(model), &elements),
                     "Unable to write the vector of structs of the value {}", index.0
                 );
                 value_offsets.push((slot.vtable_offset, vector_offset));
@@ -251,7 +251,7 @@ fn write_table<V: MessageView, A: Allocator>(
         if entry.slot.table == table {
             fail!(
                 from origin,
-                when write_struct(layout, entry, values, builder),
+                when write_struct(builder, layout, entry, message),
                 "Unable to write the struct in the slot {}", entry.slot.vtable_offset
             );
         }
@@ -264,12 +264,12 @@ fn write_table<V: MessageView, A: Allocator>(
         if let (FieldKind::Scalar { default, .. }, FieldPlacement::Table(slot)) =
             (field.kind, field.placement)
         {
-            let value = match values.scalar(*index) {
+            let value = match message.scalar(*index) {
                 Ok(value) => value,
                 Err(error) => {
                     fail!(
                         from origin,
-                        with WriteError::Values(error),
+                        with WriteError::Read(error),
                         "Unable to take the scalar value {}", index.0
                     );
                 }
@@ -354,9 +354,9 @@ fn write_scalar_vector<A: Allocator>(
 ///
 /// Returns the offset of the vector.
 fn write_struct_vector<E: MessageElements, A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
     layout: &Layout,
     elements: &E,
-    builder: &mut FlatBufferBuilder<'_, A>,
 ) -> Result<WIPOffset<UnionWIPOffset>, WriteError<E::Error>> {
     let origin = origin!("flatbuffer::write_struct_vector");
 
@@ -381,7 +381,7 @@ fn write_struct_vector<E: MessageElements, A: Allocator>(
         let element = elements.element(position);
         fail!(
             from origin,
-            when push_struct(layout, struct_values, *number_of_bytes, StructDestination::Vector, &element, builder),
+            when push_struct(builder, layout, struct_values, *number_of_bytes, StructDestination::Vector, &element),
             "Unable to write an element of a vector of structs"
         );
     }
@@ -391,25 +391,25 @@ fn write_struct_vector<E: MessageElements, A: Allocator>(
         .as_union_value())
 }
 
-/// Writes `values` as the struct `entry` into its slot of the open table.
-fn write_struct<V: MessageView, A: Allocator>(
+/// Writes `message` as the struct `entry` into its slot of the open table.
+fn write_struct<M: MessageView, A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
     layout: &Layout,
     entry: &StructEntry,
-    values: &V,
-    builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), WriteError<V::Error>> {
+    message: &M,
+) -> Result<(), WriteError<M::Error>> {
     align(
         builder,
         usize::from(entry.number_of_bytes),
         usize::from(entry.alignment),
     );
     push_struct(
+        builder,
         layout,
         &entry.values,
         entry.number_of_bytes,
         StructDestination::Slot(entry.slot.vtable_offset),
-        values,
-        builder,
+        message,
     )
 }
 
@@ -424,14 +424,14 @@ enum StructDestination {
 
 /// Pushes the struct of `number_of_bytes` that holds `struct_values`, which
 /// are in the order of their offsets.
-fn push_struct<V: MessageView, A: Allocator>(
+fn push_struct<M: MessageView, A: Allocator>(
+    builder: &mut FlatBufferBuilder<'_, A>,
     layout: &Layout,
     struct_values: &[ValueIndex],
     number_of_bytes: u16,
     destination: StructDestination,
-    values: &V,
-    builder: &mut FlatBufferBuilder<'_, A>,
-) -> Result<(), WriteError<V::Error>> {
+    message: &M,
+) -> Result<(), WriteError<M::Error>> {
     let origin = origin!("flatbuffer::push_struct");
 
     // The builder fills the flatbuffer back to front. Push the values last
@@ -446,12 +446,12 @@ fn push_struct<V: MessageView, A: Allocator>(
         };
         match field.kind {
             FieldKind::Scalar { scalar_type, .. } => {
-                let value = match values.scalar(*index) {
+                let value = match message.scalar(*index) {
                     Ok(value) => value,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the scalar value {}", index.0
                         );
                     }
@@ -466,12 +466,12 @@ fn push_struct<V: MessageView, A: Allocator>(
                 scalar_type,
                 number_of_elements,
             } => {
-                let elements = match values.scalar_elements(*index) {
+                let elements = match message.scalar_elements(*index) {
                     Ok(elements) => elements,
                     Err(error) => {
                         fail!(
                             from origin,
-                            with WriteError::Values(error),
+                            with WriteError::Read(error),
                             "Unable to take the scalar elements of the value {}", index.0
                         );
                     }

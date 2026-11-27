@@ -49,7 +49,7 @@ impl From<flatbuffer::ReadError> for EncodeError {
 impl From<cdr::WriteError<Infallible>> for EncodeError {
     fn from(error: cdr::WriteError<Infallible>) -> Self {
         match error {
-            cdr::WriteError::Values(never) => match never {},
+            cdr::WriteError::Read(never) => match never {},
             cdr::WriteError::Region(error) => EncodeError::Region(error),
             cdr::WriteError::TooLong => EncodeError::TooLong,
             cdr::WriteError::ArrayLength { expected, actual } => {

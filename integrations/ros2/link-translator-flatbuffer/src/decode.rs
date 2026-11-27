@@ -36,7 +36,7 @@ impl core::error::Error for DecodeError {}
 impl From<flatbuffer::WriteError<cdr::ReadError>> for DecodeError {
     fn from(error: flatbuffer::WriteError<cdr::ReadError>) -> Self {
         match error {
-            flatbuffer::WriteError::Values(error) => error.into(),
+            flatbuffer::WriteError::Read(error) => error.into(),
         }
     }
 }
