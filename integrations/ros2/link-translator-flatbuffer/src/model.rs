@@ -19,11 +19,11 @@ pub struct Model {
     pub repeated: Vec<Model>,
 }
 
-/// An index to a specific value description within the model.
+/// The position of a value in a [`Model`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ValueIndex(pub u16);
 
-/// The index to a specific repeated model within the model.
+/// The position of a repeated model in a [`Model`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ModelIndex(pub u16);
 

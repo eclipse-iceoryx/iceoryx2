@@ -21,7 +21,7 @@ use crate::model::{ByteOrder, ScalarElements, ScalarType, ScalarValue, Values};
 pub enum WriteError<E> {
     /// A value cannot be taken from its source.
     Values(E),
-    /// The region cannot hold the CDR.
+    /// The CDR cannot be written into the provided region.
     Region(ResizeError),
     /// A string or a sequence exceeds its length prefix.
     TooLong,
@@ -243,8 +243,7 @@ fn write_message<V: Values, R: ForwardRegion>(
                 let expected = number_of_elements as usize;
                 let actual = elements.len();
                 if actual == 0 {
-                    // The source holds no elements. Write an empty string for
-                    // each.
+                    // A source without elements is written as an empty string.
                     for _ in 0..number_of_elements {
                         fail!(
                             from origin,
@@ -309,8 +308,7 @@ fn write_message<V: Values, R: ForwardRegion>(
                 let expected = number_of_elements as usize;
                 let actual = elements.len();
                 if actual == 0 {
-                    // The source holds no elements. Write a message of zeros
-                    // for each.
+                    // A source without elements is written as zeros.
                     for _ in 0..number_of_elements {
                         fail!(
                             from origin,
@@ -389,7 +387,7 @@ fn write_scalar_array<R: ForwardRegion>(
     let number_of_bytes = scalar_type.number_of_bytes();
 
     if elements.bytes.is_empty() {
-        // The source holds no elements. Write a zero for each.
+        // A source without elements is written as zeros.
         let zero = ScalarValue::from_le_bytes(scalar_type, &[0; 8]);
         for _ in 0..number_of_elements {
             write_scalar(writer, zero)?;

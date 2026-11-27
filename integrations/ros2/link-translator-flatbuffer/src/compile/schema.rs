@@ -115,7 +115,6 @@ fn scalar_of(base_type: BaseType) -> Option<ScalarType> {
     }
 }
 
-/// The default of `field` as a value of the type `scalar_type`.
 pub(super) fn default_value(field: reflection::Field<'_>, scalar_type: ScalarType) -> ScalarValue {
     let (integer, real) = (field.default_integer(), field.default_real());
     match scalar_type {

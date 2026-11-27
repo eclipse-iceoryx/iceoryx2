@@ -56,8 +56,9 @@ pub fn write<V: Values, A: Allocator>(
     Ok(())
 }
 
-/// Writes `values` as the tables of the message of `layout`, returning the
-/// offset of its root table.
+/// Writes `values` as the tables described by `layout`.
+///
+/// Returns the offset of the root table.
 fn write_message<V: Values, A: Allocator>(
     layout: &Layout,
     values: &V,
@@ -73,24 +74,27 @@ fn write_message<V: Values, A: Allocator>(
 
     // Write the tables last to first, so that a nested table is written
     // before the table that holds it.
-    let mut written: Vec<Option<WIPOffset<TableFinishedWIPOffset>>> =
+    let mut table_offsets: Vec<Option<WIPOffset<TableFinishedWIPOffset>>> =
         vec![None; layout.tables.len()];
     for index in (0..layout.tables.len()).rev() {
         let table = fail!(
             from origin,
-            when write_table(layout, TableIndex(index as u16), &written, &mut value_offsets, &mut element_offsets, values, builder),
+            when write_table(layout, TableIndex(index as u16), &table_offsets, &mut value_offsets, &mut element_offsets, values, builder),
             "Unable to write the table {}", index
         );
-        written[index] = Some(table);
+        table_offsets[index] = Some(table);
     }
 
-    Ok(written[0].expect("a layout has a root table"))
+    Ok(table_offsets[0].expect("a layout has a root table"))
 }
 
+/// Writes `values` as the table at `table` of `layout`.
+///
+/// Returns the offset of the table.
 fn write_table<V: Values, A: Allocator>(
     layout: &Layout,
     table: TableIndex,
-    written: &[Option<WIPOffset<TableFinishedWIPOffset>>],
+    table_offsets: &[Option<WIPOffset<TableFinishedWIPOffset>>],
     value_offsets: &mut Vec<(VOffsetT, WIPOffset<UnionWIPOffset>)>,
     element_offsets: &mut Vec<WIPOffset<UnionWIPOffset>>,
     values: &V,
@@ -229,7 +233,7 @@ fn write_table<V: Values, A: Allocator>(
     }
 
     // Collect the offsets of the tables nested in this table.
-    for (nested, table_offset) in layout.tables.iter().zip(written) {
+    for (nested, table_offset) in layout.tables.iter().zip(table_offsets) {
         let TablePlacement::Nested(slot) = nested.placement else {
             continue;
         };
@@ -286,6 +290,7 @@ fn write_table<V: Values, A: Allocator>(
     Ok(builder.end_table(start))
 }
 
+/// Writes `value` into the slot at `vtable_offset` of the open table.
 fn write_scalar<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
     vtable_offset: VOffsetT,
@@ -306,7 +311,9 @@ fn write_scalar<A: Allocator>(
     }
 }
 
-/// Writes `elements` of the type `scalar_type` as a vector, returning its offset.
+/// Writes `elements` as a vector of the type `scalar_type`.
+///
+/// Returns the offset of the vector.
 fn write_scalar_vector<A: Allocator>(
     builder: &mut FlatBufferBuilder<'_, A>,
     scalar_type: ScalarType,
@@ -350,8 +357,9 @@ fn write_scalar_vector<A: Allocator>(
     }
 }
 
-/// Writes `elements` as a vector of the struct that is the root of `layout`,
-/// returning its offset.
+/// Writes `elements` as a vector of the struct that is the root of `layout`.
+///
+/// Returns the offset of the vector.
 fn write_struct_vector<E: Values, A: Allocator>(
     layout: &Layout,
     elements: impl ExactSizeIterator<Item = Result<E, E::Error>>,
@@ -402,7 +410,7 @@ fn write_struct_vector<E: Values, A: Allocator>(
         .as_union_value())
 }
 
-/// Writes the struct `entry` whole into its slot of the open table.
+/// Writes `values` as the struct `entry` into its slot of the open table.
 fn write_struct<V: Values, A: Allocator>(
     layout: &Layout,
     entry: &StructEntry,
@@ -623,7 +631,8 @@ fn align<A: Allocator>(
     }
 }
 
-/// A push of no bytes that registers an alignment with the builder.
+/// A value of no bytes whose push tells the builder that the flatbuffer holds
+/// data aligned to `N` bytes.
 struct Align<const N: usize>;
 
 impl<const N: usize> Push for Align<N> {

@@ -24,9 +24,7 @@ pub enum ReadError {
     Truncated,
     /// The CDR names an encapsulation other than plain CDR.
     UnsupportedEncapsulation,
-    /// A bool is neither 0 nor 1.
     InvalidBool,
-    /// A string has no terminating NUL.
     InvalidString,
 }
 
@@ -80,7 +78,7 @@ pub struct StringElementIter<'a> {
 }
 
 impl<'a> StringElementIter<'a> {
-    /// The string elements of the member that starts where `reader` is.
+    /// The string elements of the member that starts at the provided `reader`.
     fn new(mut reader: reader::Reader<'a>, kind: MemberKind) -> Result<Self, ReadError> {
         let number_of_elements = match kind {
             MemberKind::StringSequence => reader.read_length()?,
@@ -110,7 +108,7 @@ impl<'a> Iterator for StringElementIter<'a> {
             return None;
         }
         self.number_of_remaining_elements -= 1;
-        Some(read_string(&mut self.reader))
+        Some(self.reader.read_string().map_err(ReadError::from))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -131,9 +129,8 @@ pub struct MessageElementIter<'a> {
 }
 
 impl<'a> MessageElementIter<'a> {
-    /// The message elements of the value at `index` of `layout`.
-    ///
-    /// `reader` is placed at the start of the value.
+    /// The message elements of the member at `index` of `layout` that starts
+    /// at the provided `reader`.
     fn new(
         layout: &'a Layout,
         index: ValueIndex,
@@ -174,7 +171,7 @@ impl ExactSizeIterator for MessageElementIter<'_> {}
 pub struct Locations<'a> {
     layout: &'a Layout,
     reader: reader::Reader<'a>,
-    /// By value index.
+    /// By value index in the [`Layout`].
     locations: Vec<Location>,
 }
 
@@ -200,25 +197,20 @@ impl Values for Locations<'_> {
         Self: 'a;
 
     fn scalar(&self, index: ValueIndex) -> Result<ScalarValue, ReadError> {
-        let MemberKind::Scalar(scalar_type) = self.layout.member(index).kind else {
-            unreachable!("the value is a scalar in the model")
-        };
-
-        // Read the member from its saved location.
-        read_scalar(&mut self.reader.at(self.location(index)), scalar_type)
+        read_scalar(
+            &mut self.reader.at(self.location(index)),
+            self.layout.member(index).kind,
+        )
     }
 
     fn string(&self, index: ValueIndex) -> Result<&[u8], ReadError> {
-        let MemberKind::String = self.layout.member(index).kind else {
-            unreachable!("the value is a string in the model")
-        };
-
-        // Read the member from its saved location.
-        read_string(&mut self.reader.at(self.location(index)))
+        read_string(
+            &mut self.reader.at(self.location(index)),
+            self.layout.member(index).kind,
+        )
     }
 
     fn scalar_elements(&self, index: ValueIndex) -> Result<ScalarElements<'_>, ReadError> {
-        // Read the member from its saved location.
         read_scalar_elements(
             &mut self.reader.at(self.location(index)),
             self.layout.member(index).kind,
@@ -226,22 +218,20 @@ impl Values for Locations<'_> {
     }
 
     fn string_elements(&self, index: ValueIndex) -> Result<StringElementIter<'_>, ReadError> {
-        // Start at the saved location of the member.
-        StringElementIter::new(
+        read_string_elements(
             self.reader.at(self.location(index)),
             self.layout.member(index).kind,
         )
     }
 
     fn message_elements(&self, index: ValueIndex) -> Result<MessageElementIter<'_>, ReadError> {
-        // Start at the saved location of the member.
-        MessageElementIter::new(self.layout, index, self.reader.at(self.location(index)))
+        read_message_elements(self.layout, index, self.reader.at(self.location(index)))
     }
 }
 
-/// Locates the values `layout` places in `cdr`.
+/// Locates the values described by `layout` in the provided `cdr` bytes.
 ///
-/// Fails when the bytes do not hold a message of the layout.
+/// Fails when the bytes do not hold the values of the layout.
 pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<Locations<'a>, ReadError> {
     let origin = origin!("cdr::locate");
 
@@ -277,11 +267,12 @@ fn locate_message<'a>(
     })
 }
 
-/// Walks the members of one message of `layout` from where `reader` is.
+/// Walks the members of the message of `layout` that starts at the provided
+/// `reader`.
 ///
-/// `visit` receives the location of each member before the member is read.
-/// The reader ends at the first byte after the message. Fails when the bytes
-/// do not hold a message of the layout.
+/// Calls `visit` with the location of each member and leaves the reader at
+/// the first byte after the message. Fails when the bytes do not hold a
+/// message of the layout.
 fn walk_message(
     layout: &Layout,
     reader: &mut reader::Reader<'_>,
@@ -294,10 +285,10 @@ fn walk_message(
         visit(*index, reader.location());
 
         // Read the member to move the reader to the start of the next one.
-        // The value itself is dropped.
+        // The value is not stored by the walk.
         let read = match layout.member(*index).kind {
-            MemberKind::Scalar(scalar_type) => read_scalar(reader, scalar_type).map(|_| ()),
-            MemberKind::String => read_string(reader).map(|_| ()),
+            kind @ MemberKind::Scalar(_) => read_scalar(reader, kind).map(|_| ()),
+            kind @ MemberKind::String => read_string(reader, kind).map(|_| ()),
             kind @ (MemberKind::ScalarSequence(_) | MemberKind::ScalarArray { .. }) => {
                 read_scalar_elements(reader, kind).map(|_| ())
             }
@@ -320,8 +311,12 @@ fn walk_message(
 
 fn read_scalar(
     reader: &mut reader::Reader<'_>,
-    scalar_type: ScalarType,
+    kind: MemberKind,
 ) -> Result<ScalarValue, ReadError> {
+    let MemberKind::Scalar(scalar_type) = kind else {
+        unreachable!("the value is a scalar in the model")
+    };
+
     Ok(match scalar_type {
         ScalarType::Bool => ScalarValue::Bool(reader.read_bool()?),
         ScalarType::U8 => ScalarValue::U8(reader.read_u8()?),
@@ -337,7 +332,14 @@ fn read_scalar(
     })
 }
 
-fn read_string<'a>(reader: &mut reader::Reader<'a>) -> Result<&'a [u8], ReadError> {
+fn read_string<'a>(
+    reader: &mut reader::Reader<'a>,
+    kind: MemberKind,
+) -> Result<&'a [u8], ReadError> {
+    let MemberKind::String = kind else {
+        unreachable!("the value is a string in the model")
+    };
+
     Ok(reader.read_string()?)
 }
 
@@ -371,6 +373,43 @@ fn read_scalar_elements<'a>(
     })
 }
 
+fn read_string_elements<'a>(
+    reader: reader::Reader<'a>,
+    kind: MemberKind,
+) -> Result<StringElementIter<'a>, ReadError> {
+    StringElementIter::new(reader, kind)
+}
+
+fn read_message_element_count(
+    layout: &Layout,
+    index: ValueIndex,
+    reader: &mut reader::Reader<'_>,
+) -> Result<(ModelIndex, usize), ReadError> {
+    Ok(match layout.member(index).kind {
+        MemberKind::MessageSequence(model) => (model, reader.read_length()?),
+        MemberKind::MessageArray {
+            model,
+            number_of_elements,
+        } => (model, number_of_elements as usize),
+        MemberKind::Scalar(_)
+        | MemberKind::String
+        | MemberKind::ScalarSequence(_)
+        | MemberKind::ScalarArray { .. }
+        | MemberKind::StringSequence
+        | MemberKind::StringArray { .. } => {
+            unreachable!("the value holds message elements in the model")
+        }
+    })
+}
+
+fn read_message_elements<'a>(
+    layout: &'a Layout,
+    index: ValueIndex,
+    reader: reader::Reader<'a>,
+) -> Result<MessageElementIter<'a>, ReadError> {
+    MessageElementIter::new(layout, index, reader)
+}
+
 fn skip_string_elements(
     reader: &mut reader::Reader<'_>,
     kind: MemberKind,
@@ -395,31 +434,4 @@ fn skip_message_elements(
     }
 
     Ok(())
-}
-
-/// The model and the number of the message elements of the value at `index`
-/// of `layout`.
-///
-/// The number of a sequence is read from `reader`, which is at the start of
-/// the value.
-fn read_message_element_count(
-    layout: &Layout,
-    index: ValueIndex,
-    reader: &mut reader::Reader<'_>,
-) -> Result<(ModelIndex, usize), ReadError> {
-    Ok(match layout.member(index).kind {
-        MemberKind::MessageSequence(model) => (model, reader.read_length()?),
-        MemberKind::MessageArray {
-            model,
-            number_of_elements,
-        } => (model, number_of_elements as usize),
-        MemberKind::Scalar(_)
-        | MemberKind::String
-        | MemberKind::ScalarSequence(_)
-        | MemberKind::ScalarArray { .. }
-        | MemberKind::StringSequence
-        | MemberKind::StringArray { .. } => {
-            unreachable!("the value holds message elements in the model")
-        }
-    })
 }

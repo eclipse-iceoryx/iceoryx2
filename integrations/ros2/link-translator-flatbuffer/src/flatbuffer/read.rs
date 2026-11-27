@@ -22,17 +22,19 @@ use super::layout::{
 };
 use crate::model::{ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
 
-/// A flatbuffer that holds no root offset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Truncated;
+pub enum ReadError {
+    /// The flatbuffer is too short to hold its root offset.
+    MissingRootOffset,
+}
 
-impl core::fmt::Display for Truncated {
+impl core::fmt::Display for ReadError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Truncated")
+        write!(f, "ReadError::{self:?}")
     }
 }
 
-impl core::error::Error for Truncated {}
+impl core::error::Error for ReadError {}
 
 #[derive(Debug)]
 pub struct StringElementIter<'a> {
@@ -72,14 +74,12 @@ impl<'a> Iterator for MessageElementIter<'a> {
 
         let element = self.next;
         let root = match self.layout.root {
-            // The element is the offset to a table.
             RootObject::Table => {
                 self.next = Location(element.0 + size_of::<UOffsetT>());
                 // SAFETY: the vector holds an offset at the element.
                 let offset = unsafe { read_scalar_at::<UOffsetT>(self.buffer, element.0) };
                 Location(element.0 + offset as usize)
             }
-            // The element is the struct itself.
             RootObject::Struct {
                 number_of_bytes, ..
             } => {
@@ -119,16 +119,17 @@ pub struct Reader<'a> {
 }
 
 impl<'a> Reader<'a> {
-    /// A reader of the values `layout` places in `flatbuffer`.
+    /// Creates a reader of the values described by `layout` in the provided
+    /// `flatbuffer` bytes.
     ///
-    /// Fails when the bytes hold no root offset.
-    pub fn new(layout: &'a Layout, flatbuffer: &'a [u8]) -> Result<Self, Truncated> {
+    /// Fails when the bytes are too short to hold a root offset.
+    pub fn new(layout: &'a Layout, flatbuffer: &'a [u8]) -> Result<Self, ReadError> {
         let origin = origin!("flatbuffer::Reader::new");
 
         if flatbuffer.len() < size_of::<UOffsetT>() {
             fail!(
                 from origin,
-                with Truncated,
+                with ReadError::MissingRootOffset,
                 "The flatbuffer of {} bytes holds no root offset", flatbuffer.len()
             );
         }

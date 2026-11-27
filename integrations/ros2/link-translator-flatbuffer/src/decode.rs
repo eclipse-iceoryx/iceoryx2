@@ -21,9 +21,7 @@ pub enum DecodeError {
     Truncated,
     /// The CDR names an encapsulation other than plain CDR.
     UnsupportedEncapsulation,
-    /// A bool is neither 0 nor 1.
     InvalidBool,
-    /// A string has no terminating NUL.
     InvalidString,
 }
 

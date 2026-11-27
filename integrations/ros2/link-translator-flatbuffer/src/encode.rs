@@ -38,9 +38,11 @@ impl core::fmt::Display for EncodeError {
 
 impl core::error::Error for EncodeError {}
 
-impl From<flatbuffer::Truncated> for EncodeError {
-    fn from(_: flatbuffer::Truncated) -> Self {
-        EncodeError::Truncated
+impl From<flatbuffer::ReadError> for EncodeError {
+    fn from(error: flatbuffer::ReadError) -> Self {
+        match error {
+            flatbuffer::ReadError::MissingRootOffset => EncodeError::Truncated,
+        }
     }
 }
 

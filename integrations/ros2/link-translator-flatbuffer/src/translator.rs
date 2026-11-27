@@ -31,29 +31,17 @@ use crate::transcoder::FlatbufferTranscoder;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranslationError {
-    /// The local payload is not a flatbuffer.
     NotAFlatbuffer,
-    /// The schema's root type is not a ROS 2 type name with dots.
     InvalidRootType,
-    /// The topic type does not fit into a schema type name.
     TypeNameTooLong,
-    /// No flatbuffer schema search path is configured.
     NoSchemaPath,
-    /// The search path holds no schema for the topic type.
     SchemaNotFound,
-    /// The search path could not be searched.
     SchemaLookup(FindSchemaFileError),
-    /// The schema file could not be read.
     SchemaUnreadable,
-    /// The schema file is not a usable schema.
     InvalidSchema(InvalidSchema),
-    /// The schema's root type and the topic type are not the same type.
     Mismatch,
-    /// The introspection typesupport of the message cannot be loaded.
     Introspection(LoadError),
-    /// The schema and the message cannot be compiled together.
     Compile(CompileError),
-    /// The local user header is neither the RosHeader nor absent.
     Header(HeaderError),
 }
 
@@ -71,14 +59,10 @@ impl From<HeaderError> for TranslationError {
     }
 }
 
-/// The translator for services whose payload is a flatbuffer with a
-/// schema that describes a ROS 2 message.
+/// The translator for services whose payload is a flatbuffer.
 #[derive(Debug, Default, Clone)]
 pub struct FlatbufferTranslator {
-    /// The user header of the services that topics are propagated to.
     pub header: MirroredHeader,
-    /// The directory the schemas of propagated topics are looked up in, as
-    /// `iceoryx2` is configured with.
     pub schema_path: Option<Path>,
 }
 
@@ -208,7 +192,6 @@ impl Translator<SampleShape> for FlatbufferTranslator {
     }
 }
 
-/// The description of a flatbuffer payload of `schema`.
 fn payload_description(schema: Schema) -> TypeDescription {
     let flatbuffer = TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize);
     TypeDescription {
@@ -219,7 +202,6 @@ fn payload_description(schema: Schema) -> TypeDescription {
     }
 }
 
-/// The schema of the flatbuffer payload of `types`.
 fn flatbuffer_schema(types: &SampleTypes) -> Result<&Schema, TranslationError> {
     let origin = origin!("flatbuffer_schema");
 

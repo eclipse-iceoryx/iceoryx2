@@ -16,9 +16,9 @@ use crate::model::{ModelIndex, ScalarType, ValueIndex};
 pub struct Layout {
     /// By value index.
     pub members: Vec<MemberEntry>,
-    /// The values in the order the CDR holds them.
+    /// By order in CDR bytes.
     pub order: Vec<ValueIndex>,
-    /// The layouts of the messages that repeat, by model index.
+    /// By model index.
     pub repeated: Vec<Layout>,
 }
 

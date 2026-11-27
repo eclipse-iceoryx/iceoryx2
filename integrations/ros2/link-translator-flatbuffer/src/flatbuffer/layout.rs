@@ -15,12 +15,16 @@ use crate::model::{ModelIndex, ScalarType, ScalarValue, ValueIndex};
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Layout {
     pub root: RootObject,
+    /// By table index.
+    ///
     /// The root table comes first and a nested table comes after the table
     /// that holds it.
     pub tables: Vec<TableEntry>,
+    /// By struct index.
     pub structs: Vec<StructEntry>,
+    /// By value index.
     pub fields: Vec<FieldEntry>,
-    /// The layouts of the messages that repeat, by model index.
+    /// By model index.
     pub repeated: Vec<Layout>,
 }
 
@@ -46,7 +50,8 @@ pub enum RootObject {
     Struct {
         number_of_bytes: u16,
         alignment: u16,
-        /// The values the struct holds, in the order of their offsets.
+        /// The values stored in the struct in the order of their offsets, by
+        /// value index in the [`Layout`].
         values: Vec<ValueIndex>,
     },
 }
@@ -58,7 +63,7 @@ pub struct TableIndex(pub u16);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TableEntry {
     pub placement: TablePlacement,
-    /// The values the table holds outside of its structs.
+    /// The values stored in the table, by value index in the [`Layout`].
     pub values: Vec<ValueIndex>,
 }
 
@@ -80,7 +85,7 @@ pub struct Slot {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StructIndex(pub u16);
 
-/// A number of bytes from the start of a struct.
+/// The number of bytes from the start of a struct.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StructOffset(pub u16);
 
@@ -89,7 +94,8 @@ pub struct StructEntry {
     pub slot: Slot,
     pub number_of_bytes: u16,
     pub alignment: u16,
-    /// The values the struct holds, in the order of their offsets.
+    /// The values stored in the struct in the order of their offsets, by
+    /// value index in the [`Layout`].
     pub values: Vec<ValueIndex>,
 }
 
@@ -105,22 +111,12 @@ pub enum FieldPlacement {
     /// In a slot of a table.
     Table(Slot),
     /// Within the struct that a slot holds.
-    Struct {
-        slot: Slot,
-        /// From the start of the struct to the field.
-        offset: StructOffset,
-    },
+    Struct { slot: Slot, offset: StructOffset },
     /// Within a struct that is an element of a vector.
-    VectorElement {
-        /// From the start of the struct to the field.
-        offset: StructOffset,
-    },
+    VectorElement { offset: StructOffset },
 }
 
 impl FieldPlacement {
-    /// The slot the field is found through.
-    ///
-    /// Returns None for a field in an element of a vector.
     pub fn slot(self) -> Option<Slot> {
         match self {
             FieldPlacement::Table(slot) | FieldPlacement::Struct { slot, .. } => Some(slot),

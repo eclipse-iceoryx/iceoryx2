@@ -22,9 +22,7 @@ use crate::{Compiled, DecodeError, EncodeError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranscodeFailure {
-    /// The payload does not encode as the message.
     Encode(EncodeError),
-    /// The wire bytes do not decode as the schema.
     Decode(DecodeError),
 }
 
@@ -36,7 +34,7 @@ impl core::fmt::Display for TranscodeFailure {
 
 impl core::error::Error for TranscodeFailure {}
 
-/// Converts between a flatbuffer and the CDR of a ROS 2 message through a
+/// Transcodes between a flatbuffer and the CDR of a ROS 2 message through a
 /// pre-compiled model.
 #[derive(Debug)]
 pub struct FlatbufferTranscoder {
@@ -115,7 +113,7 @@ impl<'a> Transcoder<SampleBytesRef<'a>> for FlatbufferTranscoder {
     }
 }
 
-/// A backward region as the memory a flatbuffer is built in.
+/// Implementation of a flatbuffer allocator over a backwards-growing region.
 struct RegionAllocator<B: BackwardRegion>(B);
 
 impl<B: BackwardRegion> Deref for RegionAllocator<B> {

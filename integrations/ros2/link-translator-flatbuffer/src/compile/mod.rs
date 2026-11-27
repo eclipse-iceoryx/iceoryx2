@@ -50,11 +50,8 @@ impl core::error::Error for CompileError {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Refusal {
-    /// The member has no field of its name.
     MissingField,
-    /// The member and the field carry different kinds of value.
     Mismatch { member: String, field: String },
-    /// No flatbuffer field carries the type of the member.
     Unsupported { member: String },
 }
 
@@ -355,7 +352,7 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    /// Compiles a message that is the element of a sequence, held by a table.
+    /// Adds the table that holds a message as the element of a sequence.
     ///
     /// # Safety
     ///
@@ -376,8 +373,7 @@ impl<'a> Compiler<'a> {
         Ok(self.add_repeated(compiler.compiled))
     }
 
-    /// Compiles a message that is the element of a sequence, held by a
-    /// struct.
+    /// Adds the struct that holds a message as the element of a sequence.
     ///
     /// # Safety
     ///
@@ -413,7 +409,9 @@ impl<'a> Compiler<'a> {
     }
 
     /// Adds the compiled element of a sequence to the repeated models and
-    /// layouts of this message, returning the index they share.
+    /// layouts of this message.
+    ///
+    /// Returns the index they share.
     fn add_repeated(&mut self, repeated: Compiled) -> ModelIndex {
         let index = ModelIndex(self.compiled.model.repeated.len() as u16);
         self.compiled.model.repeated.push(repeated.model);
@@ -423,8 +421,9 @@ impl<'a> Compiler<'a> {
         index
     }
 
-    /// Adds a value of `kind` with its member and its field, returning its
-    /// index.
+    /// Adds a value of `kind` with its member and its field.
+    ///
+    /// Returns the index of the value.
     fn add_value(
         &mut self,
         kind: Kind,
