@@ -117,3 +117,6 @@ const CDR_LE: [u8; 2] = [0x00, 0x01];
 const CDR_NE: [u8; 2] = CDR_LE;
 #[cfg(target_endian = "big")]
 const CDR_NE: [u8; 2] = CDR_BE;
+
+/// The byte that terminates a string.
+const NUL: u8 = 0;

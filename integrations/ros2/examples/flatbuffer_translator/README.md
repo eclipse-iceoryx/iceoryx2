@@ -3,22 +3,24 @@
 Utilizes a reflection-based translator from flatbuffers to the CDR format
 used by ROS 2. The translator expects flatbuffer layouts matching the layouts
 of the ROS 2 messages. Flatbuffer reflection and ROS 2 introspection
-typesupports are leveraged to construct a model for translation when services
-are discovered, which is then consulted during the hot path.
+typesupports are leveraged to construct a model for translation when
+`iceoryx2` services are discovered, which is then consulted during the hot
+path.
 
-| Service       | Root type                        | Topic           | ROS 2 type                      |
-| ------------- | -------------------------------- | --------------- | ------------------------------- |
-| `JointState`  | `sensor_msgs.msg.JointState`     | `/joint_states` | `sensor_msgs/msg/JointState`    |
-| `PoseStamped` | `geometry_msgs.msg.PoseStamped`  | `/pose`         | `geometry_msgs/msg/PoseStamped` |
+| `iceoryx2` service | Root type                        | ROS 2 topic     | ROS 2 type                      |
+| ------------------ | -------------------------------- | --------------- | ------------------------------- |
+| `JointState`       | `sensor_msgs.msg.JointState`     | `/joint_states` | `sensor_msgs/msg/JointState`    |
+| `PoseStamped`      | `geometry_msgs.msg.PoseStamped`  | `/pose`         | `geometry_msgs/msg/PoseStamped` |
 
 * `schemas/` holds the `.fbs` schemas used by the example. Rust bindings and
   the binary `.bfbs` are generated from them with `flatc` before building.
-  The binary schema is stored along with services and used for translation.
-* `mapping.toml` pairs the services with the topics.
+  The binary schema is stored along with `iceoryx2` services and used for
+  translation.
+* `mapping.toml` pairs the `iceoryx2` services with the ROS 2 topics.
 * `joint_state_publisher` and `joint_state_subscriber` publish and subscribe
-  on the service `JointState`.
+  on the `iceoryx2` service `JointState`.
 * `pose_stamped_publisher` and `pose_stamped_subscriber` publish and subscribe
-  on the service `PoseStamped`.
+  on the `iceoryx2` service `PoseStamped`.
 
 The translator pairs a schema with the ROS 2 message named by its root type,
 e.g. `joint_state.fbs` with `sensor_msgs/msg/JointState`:
@@ -135,7 +137,7 @@ cargo run --manifest-path integrations/ros2/Cargo.toml --example flatbuffer_join
 ros2 topic echo --qos-reliability reliable /joint_states sensor_msgs/msg/JointState
 ```
 
-Naming the type and the reliability lets `echo` start before the topic
+Naming the type and the reliability lets `echo` start before the ROS 2 topic
 exists.
 
 ### Inbound
@@ -167,12 +169,12 @@ ros2 topic pub -r 1 /pose geometry_msgs/msg/PoseStamped "{header: {frame_id: wor
 
 1. Write a schema whose root type names the ROS 2 message.
 2. Generate its `.bfbs` into the schema path.
-3. Add the service to `mapping.toml` with the payload type
+3. Add the `iceoryx2` service to `mapping.toml` with the payload type
    `iox2::Flatbuffer<root type>`.
 
-The gateway warns at startup when the payload type of a mapped service does
-not correspond to its ROS 2 type.
+The gateway warns at startup when the payload type of a mapped `iceoryx2`
+service does not correspond to its ROS 2 type.
 
-With the prefix mapping, `mapping.toml` is not needed. A service named
-`ros2://topics/<topic>` is paired with the topic `/<topic>` and the ROS 2
-type is taken from the schema's root type.
+With the prefix mapping, `mapping.toml` is not needed. An `iceoryx2` service
+named `ros2://topics/<topic>` is paired with the ROS 2 topic `/<topic>` and
+the ROS 2 type is taken from the schema's root type.

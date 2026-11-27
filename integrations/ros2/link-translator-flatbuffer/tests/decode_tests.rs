@@ -10,313 +10,427 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use flatbuffers::{FlatBufferBuilder, ForwardsUOffset, Table, VOffsetT, Vector};
-use iceoryx2_bb_flatbuffers_generated::schema::ros2::geometry_msgs::msg::{
-    POLYGON, POSE_STAMPED, POSE_WITH_COVARIANCE,
-};
-use iceoryx2_bb_flatbuffers_generated::schema::ros2::sensor_msgs::msg::JOINT_STATE;
-use iceoryx2_bb_flatbuffers_generated::schema::ros2::std_msgs::msg::UINT8_ENUM;
+use flatbuffers::FlatBufferBuilder;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_integrations_ros2_link_translator_flatbuffer::pairing::{self, compile};
-use iceoryx2_integrations_ros2_link_translator_flatbuffer::{decode, encode};
-use iceoryx2_link_backend::wire::region::Region;
+use iceoryx2_integrations_ros2_link_translator_flatbuffer::{self as translator, DecodeError};
 use ros_env::builtin_interfaces::msg::rmw::Time;
-use ros_env::geometry_msgs::msg::rmw::{
-    Point, Point32, Polygon, Pose, PoseStamped, PoseWithCovariance, Quaternion,
+use ros_env::sensor_msgs::msg::rmw::ChannelFloat32;
+use ros_env::std_msgs::msg::rmw::{Header, MultiArrayDimension};
+use ros_env::test_msgs::msg::rmw::BoundedSequences;
+
+use crate::schemas::arrays::test_msgs::msg as arrays;
+use crate::schemas::channel_float32::sensor_msgs::msg as channel_float32;
+use crate::schemas::joint_state::sensor_msgs::msg as joint_state;
+use crate::schemas::multi_array_dimension::std_msgs::msg as multi_array_dimension;
+use crate::schemas::pose_array::geometry_msgs::msg as pose_array;
+use crate::schemas::pose_array_struct::geometry_msgs::msg as pose_array_struct;
+use crate::schemas::pose_with_covariance::geometry_msgs::msg as pose_with_covariance;
+use crate::schemas::pose_with_covariance_stamped::geometry_msgs::msg as pose_with_covariance_stamped;
+use crate::schemas::time::builtin_interfaces::msg as time;
+use crate::schemas::{self, header, header_struct, point_cloud, pose_stamped};
+use crate::testing::messages;
+use crate::testing::messages::{
+    arrays_message, joint_state_message, point_cloud_message, pose_array_message,
+    pose_stamped_message, pose_with_covariance_message, pose_with_covariance_stamped_message,
 };
-use ros_env::sensor_msgs::msg::rmw::JointState;
-use ros_env::std_msgs::msg::rmw::{Header, UInt8};
+use crate::testing::{compile, decode, encode, serialize};
 
-use crate::testing::serialize;
+fn channel_float32_as_big_endian_cdr(message: &ChannelFloat32) -> Vec<u8> {
+    const BIG_ENDIAN_HEADER: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
+    const LENGTH_ALIGNMENT: usize = 4;
 
-/// The vtable offset of the `index`th field of a table.
-const fn slot(index: u16) -> VOffsetT {
-    4 + 2 * index
-}
-
-fn decode(table: &pairing::Table, cdr: &[u8]) -> Vec<u8> {
-    let mut builder = FlatBufferBuilder::new();
-    decode::flatbuffer(table, cdr, &mut builder).expect("decodes");
-    builder.finished_data().to_vec()
-}
-
-fn encode(table: &pairing::Table, flatbuffer: &[u8]) -> Vec<u8> {
-    let mut cdr: Vec<u8> = Vec::new();
-    encode::cdr(table, flatbuffer, cdr.forward()).expect("encodes");
+    let name = message.name.to_string();
+    let mut cdr = BIG_ENDIAN_HEADER.to_vec();
+    cdr.extend_from_slice(&(name.len() as u32 + 1).to_be_bytes());
+    cdr.extend_from_slice(name.as_bytes());
+    cdr.push(0);
+    while !cdr.len().is_multiple_of(LENGTH_ALIGNMENT) {
+        cdr.push(0);
+    }
+    cdr.extend_from_slice(&(message.values.as_slice().len() as u32).to_be_bytes());
+    for value in message.values.as_slice() {
+        cdr.extend_from_slice(&value.to_be_bytes());
+    }
     cdr
 }
 
-fn root(flatbuffer: &[u8]) -> Table<'_> {
-    // SAFETY: the flatbuffer was built by the decoder.
-    unsafe { flatbuffers::root_unchecked::<Table<'_>>(flatbuffer) }
-}
+#[test]
+fn reads_the_scalars_of_the_rmw() {
+    let compiled = compile(schemas::TIME, messages::TIME).expect("compiles");
+    let message = Time {
+        sec: 1_700_000_000,
+        nanosec: 123_456_789,
+    };
 
-fn nested_table<'a>(table: Table<'a>, index: u16) -> Table<'a> {
-    // SAFETY: the slot holds a table.
-    unsafe { table.get::<ForwardsUOffset<Table<'a>>>(slot(index), None) }.expect("is present")
-}
+    let flatbuffer = decode(&compiled, &serialize(&message));
 
-fn string<'a>(table: Table<'a>, index: u16) -> &'a str {
-    // SAFETY: the slot holds a string.
-    unsafe { table.get::<ForwardsUOffset<&'a str>>(slot(index), None) }.expect("is present")
-}
-
-fn f64_vector<'a>(table: Table<'a>, index: u16) -> Vec<f64> {
-    // SAFETY: the slot holds a vector of doubles.
-    unsafe { table.get::<ForwardsUOffset<Vector<'a, f64>>>(slot(index), None) }
-        .expect("is present")
-        .iter()
-        .collect()
-}
-
-/// The bytes of the struct in the slot `index` of `table`.
-fn struct_bytes<'a>(table: Table<'a>, index: u16) -> &'a [u8] {
-    let offset = table.vtable().get(slot(index)) as usize;
-    assert_that!(offset, ne 0);
-    &table.buf()[table.loc() + offset..]
-}
-
-fn f64_at(bytes: &[u8], offset: usize) -> f64 {
-    f64::from_le_bytes(bytes[offset..offset + 8].try_into().expect("8 bytes"))
-}
-
-fn header() -> Header {
-    Header {
-        stamp: Time {
-            sec: 1_700_000_000,
-            nanosec: 123_456_789,
-        },
-        frame_id: "base_link".into(),
-    }
-}
-
-fn pose() -> Pose {
-    Pose {
-        position: Point {
-            x: 1.0,
-            y: 2.0,
-            z: 3.0,
-        },
-        orientation: Quaternion {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-            w: 1.0,
-        },
-    }
+    let decoded = time::root_as_time(&flatbuffer).expect("is a flatbuffer");
+    assert_that!(decoded.sec(), eq message.sec);
+    assert_that!(decoded.nanosec(), eq message.nanosec);
 }
 
 #[test]
-fn decodes_a_joint_state_into_its_flatbuffer() {
-    let table = compile(JOINT_STATE, "sensor_msgs/msg/JointState").expect("pairs");
-    let message = JointState {
-        header: header(),
-        name: vec!["shoulder".into(), "elbow".into(), "wrist_1".into()].into(),
-        position: vec![0.1, -0.2, 0.3].into(),
-        velocity: vec![].into(),
-        effort: vec![1.0, 2.0, 3.0].into(),
+fn writes_fields_declared_in_another_order() {
+    const LABEL: &str = "rows";
+
+    let compiled = compile(
+        schemas::MULTI_ARRAY_DIMENSION,
+        messages::MULTI_ARRAY_DIMENSION,
+    )
+    .expect("compiles");
+    let message = MultiArrayDimension {
+        label: LABEL.into(),
+        size: 2,
+        stride: 6,
     };
-    let rmw_bytes = serialize(&message);
 
-    let flatbuffer = decode(&table, &rmw_bytes);
+    let flatbuffer = decode(&compiled, &serialize(&message));
 
-    let joint_state = root(&flatbuffer);
-    let header = nested_table(joint_state, 0);
-    let stamp = struct_bytes(header, 0);
-    assert_that!(i32::from_le_bytes(stamp[..4].try_into().expect("4 bytes")), eq message.header.stamp.sec);
-    assert_that!(u32::from_le_bytes(stamp[4..8].try_into().expect("4 bytes")), eq message.header.stamp.nanosec);
-    assert_that!(string(header, 1), eq "base_link");
-    // SAFETY: the slot holds a vector of strings.
-    let names = unsafe {
-        joint_state.get::<ForwardsUOffset<Vector<'_, ForwardsUOffset<&str>>>>(slot(1), None)
-    }
-    .expect("is present");
-    assert_that!(names.iter().collect::<Vec<_>>(), eq vec!["shoulder", "elbow", "wrist_1"]);
-    assert_that!(f64_vector(joint_state, 2), eq vec![0.1, -0.2, 0.3]);
-    assert_that!(f64_vector(joint_state, 3), eq Vec::<f64>::new());
-    assert_that!(f64_vector(joint_state, 4), eq vec![1.0, 2.0, 3.0]);
-}
-
-#[test]
-fn decodes_a_pose_stamped_into_its_flatbuffer() {
-    let table = compile(POSE_STAMPED, "geometry_msgs/msg/PoseStamped").expect("pairs");
-    let message = PoseStamped {
-        header: header(),
-        pose: pose(),
-    };
-    let rmw_bytes = serialize(&message);
-
-    let flatbuffer = decode(&table, &rmw_bytes);
-
-    let pose = nested_table(root(&flatbuffer), 1);
-    let position = struct_bytes(pose, 0);
-    assert_that!(f64_at(position, 0), eq 1.0);
-    assert_that!(f64_at(position, 8), eq 2.0);
-    assert_that!(f64_at(position, 16), eq 3.0);
-    let orientation = struct_bytes(pose, 1);
-    assert_that!(f64_at(orientation, 0), eq 0.0);
-    assert_that!(f64_at(orientation, 24), eq 1.0);
-}
-
-#[test]
-fn decodes_a_vector_of_structs() {
-    let table = compile(POLYGON, "geometry_msgs/msg/Polygon").expect("pairs");
-    let message = Polygon {
-        points: vec![
-            Point32 {
-                x: 1.0,
-                y: 2.0,
-                z: 3.0,
-            },
-            Point32 {
-                x: 4.0,
-                y: 5.0,
-                z: 6.0,
-            },
-        ]
-        .into(),
-    };
-    let rmw_bytes = serialize(&message);
-
-    let flatbuffer = decode(&table, &rmw_bytes);
-
-    const POINT32_SIZE: usize = 12;
-    // SAFETY: the slot holds a vector, read as bytes to count its elements.
-    let points = unsafe { root(&flatbuffer).get::<ForwardsUOffset<Vector<'_, u8>>>(slot(0), None) }
-        .expect("is present");
-    assert_that!(points.len(), eq 2);
-    // The elements follow the length prefix, `Vector<u8>` counts them as bytes.
-    let elements = points.bytes().as_ptr() as usize - flatbuffer.as_ptr() as usize;
-    let second = &flatbuffer[elements + POINT32_SIZE..elements + 2 * POINT32_SIZE];
-    assert_that!(f32::from_le_bytes(second[..4].try_into().expect("4 bytes")), eq 4.0);
-    assert_that!(f32::from_le_bytes(second[8..].try_into().expect("4 bytes")), eq 6.0);
+    let decoded =
+        multi_array_dimension::root_as_multi_array_dimension(&flatbuffer).expect("is a flatbuffer");
+    assert_that!(decoded.label(), eq Some(LABEL));
+    assert_that!(decoded.size(), eq message.size);
+    assert_that!(decoded.stride(), eq message.stride);
 }
 
 #[test]
 fn omits_a_scalar_at_its_default() {
-    let table = compile(UINT8_ENUM, "std_msgs/msg/UInt8").expect("pairs");
-    let rmw_bytes = serialize(&UInt8 { data: 0 });
+    const STRIDE_DEFAULT: u32 = 1;
+    const ABSENT: u16 = 0;
 
-    let flatbuffer = decode(&table, &rmw_bytes);
+    let compiled = compile(
+        schemas::MULTI_ARRAY_DIMENSION,
+        messages::MULTI_ARRAY_DIMENSION,
+    )
+    .expect("compiles");
+    let message = MultiArrayDimension {
+        label: "rows".into(),
+        size: 2,
+        stride: STRIDE_DEFAULT,
+    };
 
-    assert_that!(root(&flatbuffer).vtable().get(slot(0)), eq 0);
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded =
+        multi_array_dimension::root_as_multi_array_dimension(&flatbuffer).expect("is a flatbuffer");
+    let stride_offset = decoded
+        ._tab
+        .vtable()
+        .get(multi_array_dimension::MultiArrayDimension::VT_STRIDE);
+    assert_that!(stride_offset, eq ABSENT);
+    assert_that!(decoded.stride(), eq STRIDE_DEFAULT);
 }
 
 #[test]
-fn keeps_a_scalar_off_its_default() {
-    const HIGH: u8 = 1;
-    let table = compile(UINT8_ENUM, "std_msgs/msg/UInt8").expect("pairs");
-    let rmw_bytes = serialize(&UInt8 { data: HIGH });
-
-    let flatbuffer = decode(&table, &rmw_bytes);
-
-    // SAFETY: the slot holds a byte.
-    let data = unsafe { root(&flatbuffer).get::<u8>(slot(0), Some(0)) };
-    assert_that!(data, eq Some(HIGH));
-}
-
-#[test]
-fn a_decoded_joint_state_encodes_back_to_the_rmw_bytes() {
-    let table = compile(JOINT_STATE, "sensor_msgs/msg/JointState").expect("pairs");
-    let message = JointState {
-        header: header(),
-        name: vec!["shoulder".into(), "elbow".into(), "wrist_1".into()].into(),
-        position: vec![0.1, -0.2, 0.3].into(),
-        velocity: vec![].into(),
-        effort: vec![1.0, 2.0, 3.0].into(),
+fn encoding_the_decoded_flatbuffer_reproduces_the_rmw_bytes() {
+    let compiled = compile(
+        schemas::MULTI_ARRAY_DIMENSION,
+        messages::MULTI_ARRAY_DIMENSION,
+    )
+    .expect("compiles");
+    let message = MultiArrayDimension {
+        label: "rows".into(),
+        size: 2,
+        stride: 6,
     };
     let rmw_bytes = serialize(&message);
 
-    let mut encoded_bytes = encode(&table, &decode(&table, &rmw_bytes));
+    let mut encoded_bytes = encode(&compiled, &decode(&compiled, &rmw_bytes));
 
-    // The rmw reports its size estimate as the length and zero-fills past
-    // the message.
     assert_that!(encoded_bytes.len(), le rmw_bytes.len());
     encoded_bytes.resize(rmw_bytes.len(), 0);
     assert_that!(encoded_bytes, eq rmw_bytes);
 }
 
 #[test]
-fn a_decoded_pose_stamped_encodes_back_to_the_rmw_bytes() {
-    let table = compile(POSE_STAMPED, "geometry_msgs/msg/PoseStamped").expect("pairs");
-    let message = PoseStamped {
-        header: header(),
-        pose: pose(),
+fn refuses_a_cdr_that_ends_within_a_value() {
+    const NUMBER_OF_BYTES_WITHIN_SEC: usize = 6;
+
+    let compiled = compile(schemas::TIME, messages::TIME).expect("compiles");
+    let message = Time {
+        sec: 1_700_000_000,
+        nanosec: 123_456_789,
     };
     let rmw_bytes = serialize(&message);
-
-    let mut encoded_bytes = encode(&table, &decode(&table, &rmw_bytes));
-
-    // The rmw reports its size estimate as the length and zero-fills past
-    // the message.
-    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
-    encoded_bytes.resize(rmw_bytes.len(), 0);
-    assert_that!(encoded_bytes, eq rmw_bytes);
-}
-
-#[test]
-fn a_decoded_fixed_array_encodes_back_to_the_rmw_bytes() {
-    let table =
-        compile(POSE_WITH_COVARIANCE, "geometry_msgs/msg/PoseWithCovariance").expect("pairs");
-    let message = PoseWithCovariance {
-        pose: pose(),
-        covariance: core::array::from_fn(|index| index as f64 * 0.5),
-    };
-    let rmw_bytes = serialize(&message);
-
-    let mut encoded_bytes = encode(&table, &decode(&table, &rmw_bytes));
-
-    // The rmw reports its size estimate as the length and zero-fills past
-    // the message.
-    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
-    encoded_bytes.resize(rmw_bytes.len(), 0);
-    assert_that!(encoded_bytes, eq rmw_bytes);
-}
-
-#[test]
-fn a_decoded_vector_of_structs_encodes_back_to_the_rmw_bytes() {
-    let table = compile(POLYGON, "geometry_msgs/msg/Polygon").expect("pairs");
-    let message = Polygon {
-        points: vec![
-            Point32 {
-                x: 1.0,
-                y: 2.0,
-                z: 3.0,
-            },
-            Point32 {
-                x: 4.0,
-                y: 5.0,
-                z: 6.0,
-            },
-            Point32 {
-                x: 7.0,
-                y: 8.0,
-                z: 9.0,
-            },
-        ]
-        .into(),
-    };
-    let rmw_bytes = serialize(&message);
-
-    let mut encoded_bytes = encode(&table, &decode(&table, &rmw_bytes));
-
-    // The rmw reports its size estimate as the length and zero-fills past
-    // the message.
-    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
-    encoded_bytes.resize(rmw_bytes.len(), 0);
-    assert_that!(encoded_bytes, eq rmw_bytes);
-}
-
-#[test]
-fn refuses_truncated_cdr() {
-    const TRUNCATED_LEN: usize = 8;
-    let table = compile(JOINT_STATE, "sensor_msgs/msg/JointState").expect("pairs");
-    let rmw_bytes = serialize(&JointState::default());
-
     let mut builder = FlatBufferBuilder::new();
-    let error =
-        decode::flatbuffer(&table, &rmw_bytes[..TRUNCATED_LEN], &mut builder).expect_err("refuses");
 
-    assert_that!(error, eq decode::DecodeError::Truncated);
+    let error = translator::decode(
+        &compiled,
+        &rmw_bytes[..NUMBER_OF_BYTES_WITHIN_SEC],
+        &mut builder,
+    )
+    .expect_err("refuses");
+
+    assert_that!(error, eq DecodeError::Truncated);
+}
+
+#[test]
+fn writes_a_nested_message_as_a_nested_table() {
+    const FRAME_ID: &str = "base_link";
+
+    let compiled = compile(schemas::HEADER, messages::HEADER).expect("compiles");
+    let message = Header {
+        stamp: Time {
+            sec: 1_700_000_000,
+            nanosec: 123_456_789,
+        },
+        frame_id: FRAME_ID.into(),
+    };
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = header::std_msgs::msg::root_as_header(&flatbuffer).expect("is a flatbuffer");
+    let stamp = decoded.stamp().expect("holds a stamp");
+    assert_that!(stamp.sec(), eq message.stamp.sec);
+    assert_that!(stamp.nanosec(), eq message.stamp.nanosec);
+    assert_that!(decoded.frame_id(), eq Some(FRAME_ID));
+}
+
+#[test]
+fn writes_a_nested_message_as_a_struct() {
+    const FRAME_ID: &str = "base_link";
+
+    let compiled = compile(schemas::HEADER_STRUCT, messages::HEADER).expect("compiles");
+    let message = Header {
+        stamp: Time {
+            sec: 1_700_000_000,
+            nanosec: 123_456_789,
+        },
+        frame_id: FRAME_ID.into(),
+    };
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded =
+        header_struct::std_msgs::msg::root_as_header(&flatbuffer).expect("is a flatbuffer");
+    let stamp = decoded.stamp().expect("holds a stamp");
+    assert_that!(stamp.sec(), eq message.stamp.sec);
+    assert_that!(stamp.nanosec(), eq message.stamp.nanosec);
+    assert_that!(decoded.frame_id(), eq Some(FRAME_ID));
+}
+
+#[test]
+fn writes_a_struct_inside_a_struct() {
+    let compiled = compile(schemas::POSE_STAMPED, messages::POSE_STAMPED).expect("compiles");
+    let message = pose_stamped_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_stamped::geometry_msgs::msg::root_as_pose_stamped(&flatbuffer)
+        .expect("is a flatbuffer");
+    let pose = decoded.pose().expect("holds a pose");
+    assert_that!(pose.position().x(), eq message.pose.position.x);
+    assert_that!(pose.position().y(), eq message.pose.position.y);
+    assert_that!(pose.position().z(), eq message.pose.position.z);
+    assert_that!(pose.orientation().x(), eq message.pose.orientation.x);
+    assert_that!(pose.orientation().y(), eq message.pose.orientation.y);
+    assert_that!(pose.orientation().z(), eq message.pose.orientation.z);
+    assert_that!(pose.orientation().w(), eq message.pose.orientation.w);
+}
+
+#[test]
+fn writes_a_scalar_sequence_as_a_vector() {
+    const VALUES: [f32; 3] = [0.5, -1.25, 3.0];
+
+    let compiled = compile(schemas::CHANNEL_FLOAT32, messages::CHANNEL_FLOAT32).expect("compiles");
+    let message = ChannelFloat32 {
+        name: "intensity".into(),
+        values: VALUES.to_vec().into(),
+    };
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = channel_float32::root_as_channel_float_32(&flatbuffer).expect("is a flatbuffer");
+    let values: Vec<f32> = decoded.values().expect("holds values").iter().collect();
+    assert_that!(values, eq VALUES.to_vec());
+}
+
+#[test]
+fn reads_a_scalar_sequence_from_big_endian_cdr() {
+    const VALUES: [f32; 3] = [0.5, -1.25, 3.0];
+
+    let compiled = compile(schemas::CHANNEL_FLOAT32, messages::CHANNEL_FLOAT32).expect("compiles");
+    let message = ChannelFloat32 {
+        name: "intensity".into(),
+        values: VALUES.to_vec().into(),
+    };
+
+    let flatbuffer = decode(&compiled, &channel_float32_as_big_endian_cdr(&message));
+
+    let decoded = channel_float32::root_as_channel_float_32(&flatbuffer).expect("is a flatbuffer");
+    let values: Vec<f32> = decoded.values().expect("holds values").iter().collect();
+    assert_that!(values, eq VALUES.to_vec());
+}
+
+#[test]
+fn writes_a_scalar_array_as_a_vector() {
+    let compiled = compile(
+        schemas::POSE_WITH_COVARIANCE,
+        messages::POSE_WITH_COVARIANCE,
+    )
+    .expect("compiles");
+    let message = pose_with_covariance_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded =
+        pose_with_covariance::root_as_pose_with_covariance(&flatbuffer).expect("is a flatbuffer");
+    let covariance: Vec<f64> = decoded
+        .covariance()
+        .expect("holds a covariance")
+        .iter()
+        .collect();
+    assert_that!(covariance, eq message.covariance.to_vec());
+}
+
+#[test]
+fn writes_a_scalar_array_as_an_array_inside_a_struct() {
+    let compiled = compile(
+        schemas::POSE_WITH_COVARIANCE_STAMPED,
+        messages::POSE_WITH_COVARIANCE_STAMPED,
+    )
+    .expect("compiles");
+    let message = pose_with_covariance_stamped_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_with_covariance_stamped::root_as_pose_with_covariance_stamped(&flatbuffer)
+        .expect("is a flatbuffer");
+    let pose = decoded.pose().expect("holds a pose");
+    let covariance: Vec<f64> = pose.covariance().iter().collect();
+    assert_that!(covariance, eq message.pose.covariance.to_vec());
+    assert_that!(pose.pose().orientation().w(), eq message.pose.pose.orientation.w);
+}
+
+#[test]
+fn writes_a_string_sequence_as_a_vector_of_strings() {
+    let compiled = compile(schemas::JOINT_STATE, messages::JOINT_STATE).expect("compiles");
+    let message = joint_state_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = joint_state::root_as_joint_state(&flatbuffer).expect("is a flatbuffer");
+    let names: Vec<String> = decoded
+        .name()
+        .expect("holds names")
+        .iter()
+        .map(str::to_string)
+        .collect();
+    let message_names: Vec<String> = message
+        .name
+        .as_slice()
+        .iter()
+        .map(|name| name.to_string())
+        .collect();
+    assert_that!(names, eq message_names);
+    let effort: Vec<f64> = decoded.effort().expect("holds effort").iter().collect();
+    assert_that!(effort, eq message.effort.as_slice().to_vec());
+}
+
+#[test]
+fn writes_a_message_sequence_as_a_vector_of_tables() {
+    const SECOND_POSE: usize = 1;
+
+    let compiled = compile(schemas::POSE_ARRAY, messages::POSE_ARRAY).expect("compiles");
+    let message = pose_array_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_array::root_as_pose_array(&flatbuffer).expect("is a flatbuffer");
+    let poses = decoded.poses().expect("holds poses");
+    assert_that!(poses.len(), eq message.poses.as_slice().len());
+    let pose = poses.get(SECOND_POSE);
+    let expected = &message.poses.as_slice()[SECOND_POSE];
+    assert_that!(pose.position().expect("holds a position").x(), eq expected.position.x);
+    assert_that!(pose.orientation().expect("holds an orientation").w(), eq expected.orientation.w);
+}
+
+#[test]
+fn writes_message_elements_of_varying_size() {
+    const SECOND_CHANNEL: usize = 1;
+
+    let compiled = compile(schemas::POINT_CLOUD, messages::POINT_CLOUD).expect("compiles");
+    let message = point_cloud_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded =
+        point_cloud::sensor_msgs::msg::root_as_point_cloud(&flatbuffer).expect("is a flatbuffer");
+    let channels = decoded.channels().expect("holds channels");
+    assert_that!(channels.len(), eq message.channels.as_slice().len());
+    let channel = channels.get(SECOND_CHANNEL);
+    let expected = &message.channels.as_slice()[SECOND_CHANNEL];
+    let expected_name = expected.name.to_string();
+    assert_that!(channel.name(), eq Some(expected_name.as_str()));
+    let values: Vec<f32> = channel.values().expect("holds values").iter().collect();
+    assert_that!(values, eq expected.values.as_slice().to_vec());
+    let points = decoded.points().expect("holds points");
+    assert_that!(points.len(), eq message.points.as_slice().len());
+}
+
+#[test]
+fn writes_a_message_sequence_as_a_vector_of_structs() {
+    const FIRST_POSE: usize = 0;
+    const SECOND_POSE: usize = 1;
+
+    let compiled = compile(schemas::POSE_ARRAY_STRUCT, messages::POSE_ARRAY).expect("compiles");
+    let message = pose_array_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = pose_array_struct::root_as_pose_array(&flatbuffer).expect("is a flatbuffer");
+    let poses = decoded.poses().expect("holds poses");
+    let expected = message.poses.as_slice();
+    assert_that!(poses.len(), eq expected.len());
+    assert_that!(poses.get(FIRST_POSE).position().x(), eq expected[FIRST_POSE].position.x);
+    assert_that!(poses.get(FIRST_POSE).orientation().w(), eq expected[FIRST_POSE].orientation.w);
+    assert_that!(poses.get(SECOND_POSE).position().x(), eq expected[SECOND_POSE].position.x);
+    assert_that!(poses.get(SECOND_POSE).orientation().w(), eq expected[SECOND_POSE].orientation.w);
+}
+
+#[test]
+fn writes_string_and_message_arrays_as_vectors() {
+    const SECOND_ELEMENT: usize = 1;
+    const THIRD_ELEMENT: usize = 2;
+
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+    let message = arrays_message();
+
+    let flatbuffer = decode(&compiled, &serialize(&message));
+
+    let decoded = arrays::root_as_arrays(&flatbuffer).expect("is a flatbuffer");
+    let strings = decoded.string_values().expect("holds strings");
+    assert_that!(strings.len(), eq message.string_values.len());
+    assert_that!(strings.get(THIRD_ELEMENT), eq "third");
+    let basic_types = decoded.basic_types_values().expect("holds basic types");
+    assert_that!(basic_types.len(), eq message.basic_types_values.len());
+    assert_that!(
+        basic_types.get(SECOND_ELEMENT).int32_value(),
+        eq message.basic_types_values[SECOND_ELEMENT].int32_value
+    );
+}
+
+#[test]
+fn encoding_the_decoded_flatbuffer_reproduces_the_rmw_bytes_of_string_and_message_arrays() {
+    let compiled = compile(schemas::ARRAYS, messages::ARRAYS).expect("compiles");
+    let rmw_bytes = serialize(&arrays_message());
+
+    let mut encoded_bytes = encode(&compiled, &decode(&compiled, &rmw_bytes));
+
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
+}
+
+#[test]
+fn encoding_the_decoded_flatbuffer_reproduces_the_rmw_bytes_of_bounded_sequences() {
+    let compiled = compile(schemas::ARRAYS, messages::BOUNDED_SEQUENCES).expect("compiles");
+    let rmw_bytes = serialize(&BoundedSequences::default());
+
+    let mut encoded_bytes = encode(&compiled, &decode(&compiled, &rmw_bytes));
+
+    assert_that!(encoded_bytes.len(), le rmw_bytes.len());
+    encoded_bytes.resize(rmw_bytes.len(), 0);
+    assert_that!(encoded_bytes, eq rmw_bytes);
 }

@@ -18,8 +18,9 @@ use iceoryx2_integrations_ros2_link_adapter::mapping::static_mapping::{Config, E
 /// correspond to its ROS 2 type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeMismatch {
-    /// The payload type names no root type.
-    RootTypeMissing { service_name: ServiceName },
+    RootTypeMissing {
+        service_name: ServiceName,
+    },
     /// The payload type's root type corresponds to another ROS 2 type.
     Disagrees {
         service_name: ServiceName,
@@ -86,8 +87,6 @@ pub fn type_mismatches(config: &Config) -> Vec<TypeMismatch> {
     mismatches
 }
 
-/// The mismatch between the flatbuffer `payload_type` of the service
-/// `service_name` and `ros2_type`, if any.
 fn type_mismatch(
     service_name: &ServiceName,
     payload_type: &str,

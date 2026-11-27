@@ -12,7 +12,7 @@
 
 use iceoryx2_log::{fail, origin};
 
-use super::{CDR_BE, CDR_LE, ENCAPSULATION_LEN, IDENTIFIER_BYTES};
+use super::{CDR_BE, CDR_LE, ENCAPSULATION_LEN, IDENTIFIER_BYTES, NUL};
 
 /// The byte order a message is encoded in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -99,6 +99,10 @@ impl From<ScalarError> for StringError {
     }
 }
 
+/// A saved location within the bytes of a message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Location(usize);
+
 /// An XCDR1 reader over the bytes of a message.
 #[derive(Debug)]
 pub struct Reader<'a> {
@@ -151,6 +155,20 @@ impl<'a> Reader<'a> {
     /// Whether every byte of the message has been read.
     pub fn is_exhausted(&self) -> bool {
         self.cursor == self.bytes.len()
+    }
+
+    /// Save the current location within the bytes of the message.
+    pub fn location(&self) -> Location {
+        Location(self.cursor)
+    }
+
+    /// Produces a reader at the provided location.
+    pub fn at(&self, location: Location) -> Reader<'a> {
+        Reader {
+            bytes: self.bytes,
+            cursor: location.0.min(self.bytes.len()),
+            endianness: self.endianness,
+        }
     }
 
     pub fn read_bool(&mut self) -> Result<bool, BoolError> {
@@ -346,7 +364,7 @@ impl<'a> Reader<'a> {
             to StringError,
             "Unable to read the {} bytes of a string", number_of_bytes
         );
-        let Some((0, string)) = bytes.split_last() else {
+        let Some((&NUL, string)) = bytes.split_last() else {
             fail!(
                 from origin,
                 with StringError::InvalidString,

@@ -1,0 +1,48 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+namespace builtin_interfaces.msg;
+
+struct Time {
+    sec: int32;
+    nanosec: uint32;
+}
+
+namespace std_msgs.msg;
+
+table Header {
+    stamp: builtin_interfaces.msg.Time;
+    frame_id: string;
+}
+
+namespace geometry_msgs.msg;
+
+table Point32 {
+    x: float32;
+    y: float32;
+    z: float32;
+}
+
+namespace sensor_msgs.msg;
+
+table ChannelFloat32 {
+    name: string;
+    values: [float32];
+}
+
+table PointCloud {
+    header: std_msgs.msg.Header;
+    points: [geometry_msgs.msg.Point32];
+    channels: [ChannelFloat32];
+}
+
+root_type PointCloud;

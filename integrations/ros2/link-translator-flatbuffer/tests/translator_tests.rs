@@ -37,6 +37,7 @@ use ros_env::sensor_msgs::msg::rmw::JointState;
 use ros_env::std_msgs::msg::rmw::Header;
 use rosidl_runtime_rs::RmwMessage;
 
+use crate::schemas;
 use crate::testing::serialize;
 
 const JOINT_STATE_TYPE: &str = "sensor_msgs/msg/JointState";
@@ -264,6 +265,38 @@ fn transcoders_refuse_a_remote_type_other_than_the_root_type() {
         .expect_err("refuses");
 
     assert_that!(error, eq TranslationError::Mismatch);
+}
+
+#[test]
+fn transcoders_refuse_a_root_type_without_an_introspection_typesupport() {
+    const NO_SUCH_MESSAGE_TYPE: &str = "no_such_msgs/msg/Nothing";
+
+    let translator = translator(None);
+
+    let error = translator
+        .transcoders(
+            &flatbuffer_types(schemas::NO_SUCH_MESSAGE),
+            &message_type(NO_SUCH_MESSAGE_TYPE),
+        )
+        .expect_err("refuses");
+
+    assert_that!(matches!(error, TranslationError::Introspection(_)), eq true);
+}
+
+#[test]
+fn transcoders_refuse_a_schema_that_does_not_match_its_message() {
+    const TIME_TYPE: &str = "builtin_interfaces/msg/Time";
+
+    let translator = translator(None);
+
+    let error = translator
+        .transcoders(
+            &flatbuffer_types(schemas::TIME_MISMATCHED),
+            &message_type(TIME_TYPE),
+        )
+        .expect_err("refuses");
+
+    assert_that!(matches!(error, TranslationError::Compile(_)), eq true);
 }
 
 /// The rmw bytes of `message` after decoding them into a flatbuffer and

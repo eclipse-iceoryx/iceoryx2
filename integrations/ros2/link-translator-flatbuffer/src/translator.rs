@@ -18,6 +18,7 @@ use iceoryx2_bb_flatbuffers::{
 use iceoryx2_integrations_ros2_link_adapter::translator::{
     EmptyHeader, TranslationError as HeaderError,
 };
+use iceoryx2_integrations_ros2_link_adapter::typesupport::{self, IntrospectionKind, LoadError};
 use iceoryx2_integrations_ros2_link_adapter::{MessageType, MirroredHeader, TypeName};
 use iceoryx2_link_adapter::{LocalTypes, SampleShape, SampleTranscoders, Translator};
 use iceoryx2_link_backend::service_description::{
@@ -25,32 +26,22 @@ use iceoryx2_link_backend::service_description::{
 };
 use iceoryx2_log::{fail, origin};
 
-use crate::pairing;
+use crate::CompileError;
 use crate::transcoder::FlatbufferTranscoder;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TranslationError {
-    /// The local payload is not a flatbuffer.
     NotAFlatbuffer,
-    /// The schema's root type is not a ROS 2 type name with dots.
     InvalidRootType,
-    /// The topic type does not fit into a schema type name.
     TypeNameTooLong,
-    /// No flatbuffer schema search path is configured.
     NoSchemaPath,
-    /// The search path holds no schema for the topic type.
     SchemaNotFound,
-    /// The search path could not be searched.
     SchemaLookup(FindSchemaFileError),
-    /// The schema file could not be read.
     SchemaUnreadable,
-    /// The schema file is not a usable schema.
     InvalidSchema(InvalidSchema),
-    /// The schema's root type and the topic type are not the same type.
     Mismatch,
-    /// The schema and the message do not pair member by member.
-    Pairing(pairing::PairingError),
-    /// The local user header is neither the RosHeader nor absent.
+    Introspection(LoadError),
+    Compile(CompileError),
     Header(HeaderError),
 }
 
@@ -68,14 +59,10 @@ impl From<HeaderError> for TranslationError {
     }
 }
 
-/// The translator for services whose payload is a flatbuffer with a
-/// schema mirroring a ROS 2 message.
+/// The translator for services whose payload is a flatbuffer.
 #[derive(Debug, Default, Clone)]
 pub struct FlatbufferTranslator {
-    /// The user header of the services mirroring topics.
     pub header: MirroredHeader,
-    /// The directory the schemas of mirrored topics are looked up in, as
-    /// `iceoryx2` is configured with.
     pub schema_path: Option<Path>,
 }
 
@@ -166,13 +153,23 @@ impl Translator<SampleShape> for FlatbufferTranslator {
                 "The schema's root type '{}' is not the topic type '{}'", schema.root_type(), remote.type_name.as_str()
             );
         }
-        let table = match pairing::compile(schema.bytes(), type_name.as_str()) {
-            Ok(table) => table,
+        let typesupport = match typesupport::get::<IntrospectionKind>(type_name.as_str()) {
+            Ok(typesupport) => typesupport,
             Err(error) => {
                 fail!(
                     from origin,
-                    with TranslationError::Pairing(error),
-                    "The schema of '{}' does not mirror the message", type_name.as_str()
+                    with TranslationError::Introspection(error),
+                    "The introspection of '{}' cannot be loaded", type_name.as_str()
+                );
+            }
+        };
+        let compiled = match crate::compile(schema, &typesupport) {
+            Ok(compiled) => compiled,
+            Err(error) => {
+                fail!(
+                    from origin,
+                    with TranslationError::Compile(error),
+                    "The schema of '{}' does not match the message", type_name.as_str()
                 );
             }
         };
@@ -184,7 +181,10 @@ impl Translator<SampleShape> for FlatbufferTranslator {
             "Header '{}' is not the RosHeader, ROS 2 cannot fill it", local.user_header.identifier.type_name()
         );
 
-        let payload = FlatbufferTranscoder { type_name, table };
+        let payload = FlatbufferTranscoder {
+            type_name,
+            compiled,
+        };
         Ok(match header {
             MirroredHeader::RosHeader => SampleTranscoders::TranscodePayload(payload),
             MirroredHeader::None => SampleTranscoders::TranscodeBoth(EmptyHeader, payload),
@@ -192,7 +192,6 @@ impl Translator<SampleShape> for FlatbufferTranslator {
     }
 }
 
-/// The description of a flatbuffer payload of `schema`.
 fn payload_description(schema: Schema) -> TypeDescription {
     let flatbuffer = TypeDetail::new::<Flatbuffer<()>>(TypeVariant::FixedSize);
     TypeDescription {
@@ -203,7 +202,6 @@ fn payload_description(schema: Schema) -> TypeDescription {
     }
 }
 
-/// The schema of the flatbuffer payload of `types`.
 fn flatbuffer_schema(types: &SampleTypes) -> Result<&Schema, TranslationError> {
     let origin = origin!("flatbuffer_schema");
 
@@ -219,8 +217,8 @@ fn flatbuffer_schema(types: &SampleTypes) -> Result<&Schema, TranslationError> {
     }
 }
 
-/// The ROS 2 type name the root type `root_type` mirrors,
-/// `sensor_msgs.msg.JointState` for `sensor_msgs/msg/JointState`.
+/// The ROS 2 type of the same name as the root type `root_type` e.g.
+/// `sensor_msgs/msg/JointState` for `sensor_msgs.msg.JointState`.
 fn ros_type_name(root_type: &str) -> Result<TypeName, TranslationError> {
     let origin = origin!("ros_type_name");
 
@@ -228,12 +226,12 @@ fn ros_type_name(root_type: &str) -> Result<TypeName, TranslationError> {
         from origin,
         when TypeName::new(&root_type.replace('.', "/")),
         with TranslationError::InvalidRootType,
-        "The root type '{}' does not mirror a ROS 2 type", root_type
+        "The root type '{}' does not name a ROS 2 type", root_type
     );
     Ok(type_name)
 }
 
-/// The schema type name of the root type mirroring the ROS 2 type
+/// The schema type name of the root type that names the ROS 2 type
 /// `type_name`, the namespace `sensor_msgs.msg` and the name `JointState`
 /// for `sensor_msgs/msg/JointState`.
 fn schema_type_name(type_name: &str) -> Result<SchemaTypeName, TranslationError> {

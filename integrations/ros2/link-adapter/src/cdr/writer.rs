@@ -13,7 +13,7 @@
 use iceoryx2_link_backend::wire::region::{ForwardRegion, ResizeError};
 use iceoryx2_log::{fail, origin};
 
-use super::{CDR_NE, ENCAPSULATION_LEN, IDENTIFIER_BYTES, OPTIONS_BYTES};
+use super::{CDR_NE, ENCAPSULATION_LEN, IDENTIFIER_BYTES, NUL, OPTIONS_BYTES};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreateError {
@@ -273,7 +273,7 @@ impl<R: ForwardRegion> Writer<R> {
             "Unable to extend the region by the {} bytes of a string", number_of_bytes
         );
         self.region[start..start + bytes.len()].copy_from_slice(bytes);
-        self.region[start + bytes.len()] = 0;
+        self.region[start + bytes.len()] = NUL;
 
         Ok(())
     }

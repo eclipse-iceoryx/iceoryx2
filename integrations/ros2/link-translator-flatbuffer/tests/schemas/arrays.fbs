@@ -1,0 +1,86 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+namespace test_msgs.msg;
+
+table BasicTypes {
+    bool_value: bool;
+    byte_value: ubyte;
+    char_value: ubyte;
+    float32_value: float32;
+    float64_value: float64;
+    int8_value: int8;
+    uint8_value: uint8;
+    int16_value: int16;
+    uint16_value: uint16;
+    int32_value: int32;
+    uint32_value: uint32;
+    int64_value: int64;
+    uint64_value: uint64;
+}
+
+table Constants {
+    structure_needs_at_least_one_member: ubyte;
+}
+
+table Defaults {
+    bool_value: bool;
+    byte_value: ubyte;
+    char_value: ubyte;
+    float32_value: float32;
+    float64_value: float64;
+    int8_value: int8;
+    uint8_value: uint8;
+    int16_value: int16;
+    uint16_value: uint16;
+    int32_value: int32;
+    uint32_value: uint32;
+    int64_value: int64;
+    uint64_value: uint64;
+}
+
+table Arrays {
+    bool_values: [bool];
+    byte_values: [ubyte];
+    char_values: [ubyte];
+    float32_values: [float32];
+    float64_values: [float64];
+    int8_values: [int8];
+    uint8_values: [uint8];
+    int16_values: [int16];
+    uint16_values: [uint16];
+    int32_values: [int32];
+    uint32_values: [uint32];
+    int64_values: [int64];
+    uint64_values: [uint64];
+    string_values: [string];
+    basic_types_values: [BasicTypes];
+    constants_values: [Constants];
+    defaults_values: [Defaults];
+    bool_values_default: [bool];
+    byte_values_default: [ubyte];
+    char_values_default: [ubyte];
+    float32_values_default: [float32];
+    float64_values_default: [float64];
+    int8_values_default: [int8];
+    uint8_values_default: [uint8];
+    int16_values_default: [int16];
+    uint16_values_default: [uint16];
+    int32_values_default: [int32];
+    uint32_values_default: [uint32];
+    int64_values_default: [int64];
+    uint64_values_default: [uint64];
+    string_values_default: [string];
+    alignment_check: int32;
+}
+
+root_type Arrays;

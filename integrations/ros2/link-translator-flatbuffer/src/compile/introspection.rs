@@ -18,6 +18,8 @@ use r2r_rcl::{
     rosidl_typesupport_introspection_c_field_types as FieldType,
 };
 
+use crate::model::ScalarType;
+
 pub(super) const FLOAT: u8 = FieldType::rosidl_typesupport_introspection_c__ROS_TYPE_FLOAT as u8;
 pub(super) const DOUBLE: u8 = FieldType::rosidl_typesupport_introspection_c__ROS_TYPE_DOUBLE as u8;
 pub(super) const LONG_DOUBLE: u8 =
@@ -41,38 +43,34 @@ pub(super) const WSTRING: u8 =
 pub(super) const MESSAGE: u8 =
     FieldType::rosidl_typesupport_introspection_c__ROS_TYPE_MESSAGE as u8;
 
-/// The message `member` holds, by its members.
+/// The members of the message `member` holds.
 ///
 /// # Safety
 ///
-/// `member` must belong to a loaded introspection typesupport and be a
-/// message.
+/// The introspection typesupport of `member` must be loaded and `member` must
+/// be a message.
 pub(super) unsafe fn message(member: &MessageMember) -> *const MessageMembers {
     unsafe { (*member.members_).data }.cast::<MessageMembers>()
 }
 
-/// The members of `message`.
-///
 /// # Safety
 ///
-/// `message` must point to the members of a loaded introspection typesupport.
+/// The introspection typesupport that `message` points into must be loaded.
 pub(super) unsafe fn members<'a>(message: *const MessageMembers) -> &'a [MessageMember] {
     let message = unsafe { &*message };
     unsafe { core::slice::from_raw_parts(message.members_, message.member_count_ as usize) }
 }
 
-/// The name of `member`.
-///
 /// # Safety
 ///
-/// `member` must belong to a loaded introspection typesupport.
+/// The introspection typesupport of `member` must be loaded.
 pub(super) unsafe fn member_name(member: &MessageMember) -> &str {
     unsafe { CStr::from_ptr(member.name_) }
         .to_str()
         .expect("rosidl names members in ASCII")
 }
 
-/// The type of `member` as written in a `.msg`, `float64[3]`.
+/// The type of `member` as written in a `.msg` e.g. `float64[3]`.
 pub(super) fn member_type(member: &MessageMember) -> String {
     let base = match member.type_id_ {
         FLOAT => "float32".to_string(),
@@ -109,5 +107,31 @@ pub(super) fn member_type(member: &MessageMember) -> String {
         format!("{base}[<={}]", member.array_size_)
     } else {
         format!("{base}[{}]", member.array_size_)
+    }
+}
+
+pub(super) fn is_sequence(member: &MessageMember) -> bool {
+    member.is_array_ && (member.array_size_ == 0 || member.is_upper_bound_)
+}
+
+/// Whether `member` is an array of a fixed number of elements.
+pub(super) fn is_array(member: &MessageMember) -> bool {
+    member.is_array_ && member.array_size_ > 0 && !member.is_upper_bound_
+}
+
+pub(super) fn scalar_type(member: &MessageMember) -> Option<ScalarType> {
+    match member.type_id_ {
+        BOOLEAN => Some(ScalarType::Bool),
+        OCTET | UINT8 | CHAR => Some(ScalarType::U8),
+        INT8 => Some(ScalarType::I8),
+        UINT16 => Some(ScalarType::U16),
+        INT16 => Some(ScalarType::I16),
+        UINT32 => Some(ScalarType::U32),
+        INT32 => Some(ScalarType::I32),
+        UINT64 => Some(ScalarType::U64),
+        INT64 => Some(ScalarType::I64),
+        FLOAT => Some(ScalarType::F32),
+        DOUBLE => Some(ScalarType::F64),
+        _ => None,
     }
 }
