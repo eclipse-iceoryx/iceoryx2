@@ -119,37 +119,56 @@ impl<'a> Compiler<'a> {
         message_path: &str,
     ) -> Result<(), CompileError> {
         let table = self.compiled.flatbuffer.add_table(placement);
-
-        for pair in unsafe { pairing::pairings(message, message_path) } {
-            unsafe { self.compile_table_pair(object, table, pair)? };
-        }
+        unsafe { self.compile_table_fields(object, table, message, message_path)? };
         self.compiled.flatbuffer.sort_struct_values();
 
         Ok(())
     }
 
-    /// Compiles a pair of a member with a field of the table `object`.
+    /// Compiles the fields of the table `object` with the members of a message.
+    ///
+    /// # Safety
+    ///
+    /// The introspection typesupport that `message` points into must be loaded.
+    unsafe fn compile_table_fields(
+        &mut self,
+        object: Object<'a>,
+        table: TableIndex,
+        message: *const MessageMembers,
+        message_path: &str,
+    ) -> Result<(), CompileError> {
+        for pair in unsafe { pairing::pair_members_with_fields(message, message_path) } {
+            let (placement, field) = self
+                .place_table_field(object, table, pair.field_path)
+                .map_err(|refusal| CompileError {
+                    path: pair.member_path.clone(),
+                    refusal,
+                })?;
+            match placement {
+                FieldPlacement::Table(slot) => unsafe {
+                    self.compile_table_field(pair, field, slot)?
+                },
+                FieldPlacement::Struct { .. } | FieldPlacement::VectorElement { .. } => {
+                    unreachable!("a field of a table sits in a slot")
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Compiles the table field `field` with the member it is paired with.
     ///
     /// # Safety
     ///
     /// The introspection typesupport of the member of `pair` must be loaded.
-    unsafe fn compile_table_pair(
+    unsafe fn compile_table_field(
         &mut self,
-        object: Object<'a>,
-        table: TableIndex,
         pair: Pair<'_>,
+        field: reflection::Field<'a>,
+        slot: Slot,
     ) -> Result<(), CompileError> {
-        let (placement, field) = self
-            .place_table_field(object, table, pair.field_path)
-            .map_err(|refusal| CompileError {
-                path: pair.member_path.clone(),
-                refusal,
-            })?;
-
-        let FieldPlacement::Table(slot) = placement else {
-            unreachable!("a field of a table sits in a slot")
-        };
-
+        let placement = FieldPlacement::Table(slot);
         let resolved = resolve::pair(self.schema, &pair, field, placement).map_err(|refusal| {
             CompileError {
                 path: pair.member_path.clone(),
@@ -186,6 +205,105 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    /// Compiles a nested message that a struct in a slot of a table holds.
+    ///
+    /// # Safety
+    ///
+    /// The introspection typesupport that `message` points into must be loaded.
+    unsafe fn compile_struct(
+        &mut self,
+        object: Object<'a>,
+        message: *const MessageMembers,
+        slot: Slot,
+        message_path: &str,
+    ) -> Result<(), CompileError> {
+        self.compiled.flatbuffer.add_struct(
+            slot,
+            object.bytesize() as u16,
+            object.minalign() as u16,
+        );
+
+        let start = FieldPlacement::Struct {
+            slot,
+            offset: START_OF_STRUCT,
+        };
+        unsafe { self.compile_struct_fields(object, start, message, message_path) }
+    }
+
+    /// Compiles the fields of the struct `object` with the members of a message.
+    ///
+    /// # Safety
+    ///
+    /// The introspection typesupport that `message` points into must be loaded.
+    unsafe fn compile_struct_fields(
+        &mut self,
+        object: Object<'a>,
+        start: FieldPlacement,
+        message: *const MessageMembers,
+        message_path: &str,
+    ) -> Result<(), CompileError> {
+        for pair in unsafe { pairing::pair_members_with_fields(message, message_path) } {
+            let (placement, field) = self
+                .place_struct_field(object, start, pair.field_path)
+                .map_err(|refusal| CompileError {
+                    path: pair.member_path.clone(),
+                    refusal,
+                })?;
+            unsafe { self.compile_struct_field(pair, field, placement)? };
+        }
+
+        Ok(())
+    }
+
+    /// Compiles the struct field `field` with the member it is paired with.
+    ///
+    /// # Safety
+    ///
+    /// The introspection typesupport of the member of `pair` must be loaded.
+    unsafe fn compile_struct_field(
+        &mut self,
+        pair: Pair<'_>,
+        field: reflection::Field<'a>,
+        placement: FieldPlacement,
+    ) -> Result<(), CompileError> {
+        let resolved = resolve::pair(self.schema, &pair, field, placement).map_err(|refusal| {
+            CompileError {
+                path: pair.member_path.clone(),
+                refusal,
+            }
+        })?;
+        let Pair {
+            member,
+            member_path,
+            ..
+        } = pair;
+
+        let (kind, member_kind, field_kind) = match resolved {
+            Resolved::Value {
+                kind,
+                member_kind,
+                field_kind,
+            } => (kind, member_kind, field_kind),
+
+            // Add the values of a nested message that a nested struct holds.
+            // The nested struct starts where the field is placed.
+            Resolved::Nested { object: nested } => {
+                let message = unsafe { introspection::message(member) };
+                return unsafe {
+                    self.compile_struct_fields(nested, placement, message, &member_path)
+                };
+            }
+
+            Resolved::Repeated { .. } => unreachable!("a struct holds no sequence of messages"),
+        };
+        let index = self
+            .compiled
+            .add_value(kind, member_kind, placement, field_kind);
+        self.compiled.flatbuffer.add_struct_value(placement, index);
+
+        Ok(())
+    }
+
     /// Compiles the nested message of `member` that the table or the struct
     /// `nested` in `slot` holds.
     ///
@@ -210,9 +328,6 @@ impl<'a> Compiler<'a> {
 
     /// Compiles the message that `member` repeats and that a vector of the
     /// table or the struct `element` holds.
-    ///
-    /// The message is compiled separately. Returns the kinds of the one value
-    /// that refers to its model.
     ///
     /// # Safety
     ///
@@ -250,107 +365,6 @@ impl<'a> Compiler<'a> {
         };
 
         Ok((kind, member_kind, field_kind))
-    }
-
-    /// Compiles a nested message that a struct in a slot of a table holds.
-    ///
-    /// # Safety
-    ///
-    /// The introspection typesupport that `message` points into must be loaded.
-    unsafe fn compile_struct(
-        &mut self,
-        object: Object<'a>,
-        message: *const MessageMembers,
-        slot: Slot,
-        message_path: &str,
-    ) -> Result<(), CompileError> {
-        self.compiled.flatbuffer.add_struct(
-            slot,
-            object.bytesize() as u16,
-            object.minalign() as u16,
-        );
-
-        let start = FieldPlacement::Struct {
-            slot,
-            offset: START_OF_STRUCT,
-        };
-        unsafe { self.compile_struct_pairs(object, message, start, message_path) }
-    }
-
-    /// Compiles the pairs of a message with a struct.
-    ///
-    /// `start` is the placement of the first byte of `object`.
-    ///
-    /// # Safety
-    ///
-    /// The introspection typesupport that `message` points into must be loaded.
-    unsafe fn compile_struct_pairs(
-        &mut self,
-        object: Object<'a>,
-        message: *const MessageMembers,
-        start: FieldPlacement,
-        message_path: &str,
-    ) -> Result<(), CompileError> {
-        for pair in unsafe { pairing::pairings(message, message_path) } {
-            let (placement, field) = self
-                .place_struct_field(object, start, pair.field_path)
-                .map_err(|refusal| CompileError {
-                    path: pair.member_path.clone(),
-                    refusal,
-                })?;
-            unsafe { self.compile_struct_pair(pair, field, placement)? };
-        }
-
-        Ok(())
-    }
-
-    /// Compiles a pair of a member with the struct field `field`.
-    ///
-    /// # Safety
-    ///
-    /// The introspection typesupport of the member of `pair` must be loaded.
-    unsafe fn compile_struct_pair(
-        &mut self,
-        pair: Pair<'_>,
-        field: reflection::Field<'a>,
-        placement: FieldPlacement,
-    ) -> Result<(), CompileError> {
-        let resolved = resolve::pair(self.schema, &pair, field, placement).map_err(|refusal| {
-            CompileError {
-                path: pair.member_path.clone(),
-                refusal,
-            }
-        })?;
-        let Pair {
-            member,
-            member_path,
-            ..
-        } = pair;
-
-        let (kind, member_kind, field_kind) = match resolved {
-            Resolved::Value {
-                kind,
-                member_kind,
-                field_kind,
-            } => (kind, member_kind, field_kind),
-
-            // Add the values of a nested message that a nested struct holds.
-            // The nested struct starts where the field is placed.
-            Resolved::Nested { object: nested } => {
-                let message = unsafe { introspection::message(member) };
-                return unsafe {
-                    self.compile_struct_pairs(nested, message, placement, &member_path)
-                };
-            }
-
-            Resolved::Repeated { .. } => unreachable!("a struct holds no sequence of messages"),
-        };
-        let index = self
-            .compiled
-            .add_value(kind, member_kind, placement, field_kind);
-        self.compiled.flatbuffer.add_struct_value(placement, index);
-
-        Ok(())
     }
 
     /// Compiles a message that a table holds as the element of a sequence.
@@ -398,7 +412,7 @@ impl<'a> Compiler<'a> {
         let start = FieldPlacement::VectorElement {
             offset: START_OF_STRUCT,
         };
-        unsafe { compiler.compile_struct_pairs(object, message, start, message_path)? };
+        unsafe { compiler.compile_struct_fields(object, start, message, message_path)? };
 
         compiler.compiled.flatbuffer.sort_struct_values();
 

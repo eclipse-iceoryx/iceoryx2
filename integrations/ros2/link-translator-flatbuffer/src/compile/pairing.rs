@@ -31,7 +31,7 @@ pub(super) struct Pair<'a> {
 /// # Safety
 ///
 /// The introspection typesupport that `message` points into must be loaded.
-pub(super) unsafe fn pairings<'a>(
+pub(super) unsafe fn pair_members_with_fields<'a>(
     message: *const MessageMembers,
     message_path: &str,
 ) -> Vec<Pair<'a>> {
