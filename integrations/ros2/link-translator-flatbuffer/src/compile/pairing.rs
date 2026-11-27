@@ -30,7 +30,7 @@ pub(super) struct Pair<'a> {
 ///
 /// # Safety
 ///
-/// `message` must point to the members of a loaded introspection typesupport.
+/// The introspection typesupport that `message` points into must be loaded.
 pub(super) unsafe fn pairings<'a>(
     message: *const MessageMembers,
     message_path: &str,

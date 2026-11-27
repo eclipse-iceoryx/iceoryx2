@@ -47,15 +47,15 @@ pub(super) const MESSAGE: u8 =
 ///
 /// # Safety
 ///
-/// `member` must belong to a loaded introspection typesupport and be a
-/// message.
+/// The introspection typesupport of `member` must be loaded and `member` must
+/// be a message.
 pub(super) unsafe fn message(member: &MessageMember) -> *const MessageMembers {
     unsafe { (*member.members_).data }.cast::<MessageMembers>()
 }
 
 /// # Safety
 ///
-/// `message` must point to the members of a loaded introspection typesupport.
+/// The introspection typesupport that `message` points into must be loaded.
 pub(super) unsafe fn members<'a>(message: *const MessageMembers) -> &'a [MessageMember] {
     let message = unsafe { &*message };
     unsafe { core::slice::from_raw_parts(message.members_, message.member_count_ as usize) }
@@ -63,7 +63,7 @@ pub(super) unsafe fn members<'a>(message: *const MessageMembers) -> &'a [Message
 
 /// # Safety
 ///
-/// `member` must belong to a loaded introspection typesupport.
+/// The introspection typesupport of `member` must be loaded.
 pub(super) unsafe fn member_name(member: &MessageMember) -> &str {
     unsafe { CStr::from_ptr(member.name_) }
         .to_str()

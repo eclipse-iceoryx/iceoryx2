@@ -110,7 +110,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `message` must point to the members of a loaded introspection typesupport.
+    /// The introspection typesupport that `message` points into must be loaded.
     unsafe fn compile_table(
         &mut self,
         object: Object<'a>,
@@ -132,7 +132,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// The member of `pair` must belong to a loaded introspection typesupport.
+    /// The introspection typesupport of the member of `pair` must be loaded.
     unsafe fn compile_table_pair(
         &mut self,
         object: Object<'a>,
@@ -191,7 +191,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `member` must belong to a loaded introspection typesupport.
+    /// The introspection typesupport of `member` must be loaded.
     unsafe fn compile_nested(
         &mut self,
         member: &MessageMember,
@@ -216,7 +216,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `member` must belong to a loaded introspection typesupport.
+    /// The introspection typesupport of `member` must be loaded.
     unsafe fn compile_repeated(
         &mut self,
         member: &MessageMember,
@@ -256,7 +256,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `message` must point to the members of a loaded introspection typesupport.
+    /// The introspection typesupport that `message` points into must be loaded.
     unsafe fn compile_struct(
         &mut self,
         object: Object<'a>,
@@ -283,7 +283,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `message` must point to the members of a loaded introspection typesupport.
+    /// The introspection typesupport that `message` points into must be loaded.
     unsafe fn compile_struct_pairs(
         &mut self,
         object: Object<'a>,
@@ -308,7 +308,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// The member of `pair` must belong to a loaded introspection typesupport.
+    /// The introspection typesupport of the member of `pair` must be loaded.
     unsafe fn compile_struct_pair(
         &mut self,
         pair: Pair<'_>,
@@ -357,7 +357,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `message` must point to the members of a loaded introspection typesupport.
+    /// The introspection typesupport that `message` points into must be loaded.
     unsafe fn compile_repeated_table(
         &mut self,
         object: Object<'a>,
@@ -378,7 +378,7 @@ impl<'a> Compiler<'a> {
     ///
     /// # Safety
     ///
-    /// `message` must point to the members of a loaded introspection typesupport.
+    /// The introspection typesupport that `message` points into must be loaded.
     unsafe fn compile_repeated_struct(
         &mut self,
         object: Object<'a>,
