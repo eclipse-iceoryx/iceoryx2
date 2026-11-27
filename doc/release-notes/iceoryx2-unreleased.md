@@ -70,6 +70,7 @@
 * [#2268](https://github.com/eclipse-iceoryx/iceoryx2/issues/2268) Make clippy and rustdoc pass for every crate checked on its own
 * [#2275](https://github.com/eclipse-iceoryx/iceoryx2/issues/2275) Fix data race in `UniqueIndexSet`
 * [#2280](https://github.com/eclipse-iceoryx/iceoryx2/issues/2280) Store the used chunk lists of a connection as bits, which makes them 8 times smaller
+* [#2288](https://github.com/eclipse-iceoryx/iceoryx2/issues/2288) Fix data race in `SafelyOverflowingIndexQueue`
 
 ### Refactoring
 
