@@ -67,6 +67,7 @@ _verify-dispatch what tool *flags:
         echo "Scope:"
         echo "  sdk                    target the main workspace"
         echo "  integrations-zenoh     target the zenoh workspace"
+        echo "  integrations-ros2-protocol  target the ros2-protocol workspace"
         echo "  integrations-ros2      target the ros2 workspace (requires a sourced ROS 2 env)"
         echo "  all                    target all workspaces"
         echo "  <package>              target a specific package (std-propagation only)"
@@ -178,6 +179,7 @@ _verify-clippy workspace target_triplet profile has_nostd extra_args:
 # with the path being relative to the repository root.
 MIRI_WHITELIST_SDK   := "iceoryx2-link/backend:uninitialized_memory"
 MIRI_WHITELIST_INTEGRATIONS_ZENOH := ""
+MIRI_WHITELIST_INTEGRATIONS_ROS2_PROTOCOL := ""
 MIRI_WHITELIST_INTEGRATIONS_ROS2  := ""
 
 [private]
@@ -193,6 +195,7 @@ _verify-miri workspace extra_args:
         case "$WS" in
             sdk)                WHITELIST="{{MIRI_WHITELIST_SDK}}" ;;
             integrations-zenoh) WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS_ZENOH}}" ;;
+            integrations-ros2-protocol) WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS_ROS2_PROTOCOL}}" ;;
             integrations-ros2)  WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS_ROS2}}" ;;
         esac
 
@@ -222,7 +225,7 @@ _verify-std-propagation what:
     set -euo pipefail
 
     case "{{what}}" in
-        sdk|integrations-zenoh|integrations-ros2|all) just _verify-std-propagation-workspace "{{what}}" ;;
+        sdk|integrations-zenoh|integrations-ros2-protocol|integrations-ros2|all) just _verify-std-propagation-workspace "{{what}}" ;;
         *)                  just _verify-std-propagation-package "{{what}}" ;;
     esac
 
@@ -248,6 +251,12 @@ _verify-std-propagation-workspace workspace:
                 TOMLS=$(find ./integrations/zenoh -name "Cargo.toml" \
                     -not -path "*/target/*" \
                     | grep -v "^\./integrations/zenoh/Cargo\.toml$" \
+                    | sort)
+                ;;
+            integrations-ros2-protocol)
+                TOMLS=$(find ./integrations/ros2-protocol -name "Cargo.toml" \
+                    -not -path "*/target/*" \
+                    | grep -v "^\./integrations/ros2-protocol/Cargo\.toml$" \
                     | sort)
                 ;;
             integrations-ros2)

@@ -16,6 +16,7 @@
 
 INTEGRATIONS_DIR := justfile_directory() / "integrations"
 INTEGRATIONS_ZENOH_DIR := INTEGRATIONS_DIR / "zenoh"
+INTEGRATIONS_ROS2_PROTOCOL_DIR := INTEGRATIONS_DIR / "ros2-protocol"
 INTEGRATIONS_ROS2_DIR := INTEGRATIONS_DIR / "ros2"
 
 # One target directory per distribution.

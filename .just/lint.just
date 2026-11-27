@@ -48,6 +48,7 @@ _lint-dispatch what target *flags:
         echo "Workspace:"
         echo "  sdk                 lint the main workspace"
         echo "  integrations-zenoh  lint the zenoh workspace"
+        echo "  integrations-ros2-protocol  lint the ros2-protocol workspace"
         echo "  integrations-ros2   lint the ros2 workspace"
         echo "  all                 lint everything"
         echo ""
@@ -64,7 +65,7 @@ _lint-dispatch what target *flags:
     eval "$PARSED_ARGS"
 
     case "{{what}}" in
-        sdk|integrations-zenoh|integrations-ros2|all)
+        sdk|integrations-zenoh|integrations-ros2-protocol|integrations-ros2|all)
             WORKSPACE="{{what}}"
             ;;
         --help|-h)
@@ -140,6 +141,7 @@ _lint-markdown workspace mode:
     case "{{workspace}}" in
         sdk)          FILES=$(git ls-files '*.md' | grep -v '^integrations/' || true) ;;
         integrations-zenoh) FILES=$(git ls-files '*.md' | grep '^integrations/zenoh/' || true) ;;
+        integrations-ros2-protocol) FILES=$(git ls-files '*.md' | grep '^integrations/ros2-protocol/' || true) ;;
         integrations-ros2)  FILES=$(git ls-files '*.md' | grep '^integrations/ros2/' || true) ;;
         all)          FILES=$(git ls-files '*.md') ;;
     esac

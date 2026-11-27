@@ -26,6 +26,7 @@ _doc-dispatch workspace target *flags:
         echo "Workspace:"
         echo "  sdk                 build docs for the main workspace"
         echo "  integrations-zenoh  build docs for the zenoh workspace"
+        echo "  integrations-ros2-protocol  build docs for the ros2-protocol workspace"
         echo "  integrations-ros2   build docs for the ros2 workspace (requires a sourced ROS 2 env)"
         echo "  all                 build docs for all workspaces"
         echo ""
@@ -79,6 +80,7 @@ _doc-rust workspace:
         case "$WS" in
             sdk)          echo "Available at: {{justfile_directory()}}/target/doc/" ;;
             integrations-zenoh) echo "Available at: {{INTEGRATIONS_ZENOH_DIR}}/target/doc/" ;;
+            integrations-ros2-protocol) echo "Available at: {{INTEGRATIONS_ROS2_PROTOCOL_DIR}}/target/doc/" ;;
             integrations-ros2)  echo "Available at: {{INTEGRATIONS_ROS2_CARGO_TARGET_DIR}}/doc/" ;;
         esac
     done

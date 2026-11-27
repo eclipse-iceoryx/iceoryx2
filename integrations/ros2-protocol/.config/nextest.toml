@@ -1,0 +1,3 @@
+[profile.default]
+fail-fast = false
+test-threads = 1

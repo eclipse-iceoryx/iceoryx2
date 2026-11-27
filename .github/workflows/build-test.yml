@@ -71,6 +71,7 @@ jobs:
         run: |
           just lint sdk rust
           just lint integrations-zenoh rust
+          just lint integrations-ros2-protocol rust
 
       - name: Install rust-script
         run: cargo install rust-script --locked
@@ -79,6 +80,7 @@ jobs:
         run: |
           just verify sdk std-propagation
           just verify integrations-zenoh std-propagation
+          just verify integrations-ros2-protocol std-propagation
           just verify integrations-ros2 std-propagation
 
   nightly-check:
@@ -127,6 +129,7 @@ jobs:
         run: |
           just lint sdk markdown
           just lint integrations-zenoh markdown
+          just lint integrations-ros2-protocol markdown
 
       - name: Check config key documentation
         run: ./internal/scripts/ci_check_description_vector_and_README.sh
@@ -181,12 +184,14 @@ jobs:
         run: |
           just test sdk --doc --profile dev-fast-build
           just test integrations-zenoh --doc --profile dev-fast-build
+          just test integrations-ros2-protocol --doc --profile dev-fast-build
 
       - name: Build documentation
         shell: bash
         run: |
           just doc sdk rust
           just doc integrations-zenoh rust
+          just doc integrations-ros2-protocol rust
 
   cargo-nextest:
     needs: preflight-check
@@ -420,6 +425,20 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       profile: "dev-fast-build"
       workspace: zenoh
+
+  integrations-ros2-protocol-stable-debug:
+    needs: [preflight-check, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable, 1.89.0]
+    uses: ./.github/workflows/reuse_stable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: "dev-fast-build"
+      workspace: ros2-protocol
 
   integrations-ros2-stable-debug:
     needs: [preflight-check]
@@ -659,6 +678,7 @@ jobs:
         static-code-analysis-cpp,
         sdk-stable-debug,
         integrations-zenoh-stable-debug,
+        integrations-ros2-protocol-stable-debug,
         integrations-ros2-stable-debug,
         freebsd,
         Bazel,
