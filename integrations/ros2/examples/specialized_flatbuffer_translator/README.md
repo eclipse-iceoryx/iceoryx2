@@ -5,21 +5,22 @@ flatbuffers on `iceoryx2` services. It assumes a system designed before
 deciding to integrate with ROS 2. The schemas used are specific to the system,
 and are mapped to ROS 2 topic types:
 
-| Service         | Flatbuffer            | Topic           | ROS 2 type                      |
-| --------------- | --------------------- | --------------- | ------------------------------- |
-| `JointReadings` | `robot.JointReadings` | `/joint_states` | `sensor_msgs/msg/JointState`    |
-| `Pose`          | `robot.Pose`          | `/pose`         | `geometry_msgs/msg/PoseStamped` |
+| `iceoryx2` service | Flatbuffer            | ROS 2 topic     | ROS 2 type                      |
+| ------------------ | --------------------- | --------------- | ------------------------------- |
+| `JointReadings`    | `robot.JointReadings` | `/joint_states` | `sensor_msgs/msg/JointState`    |
+| `Pose`             | `robot.Pose`          | `/pose`         | `geometry_msgs/msg/PoseStamped` |
 
 * `schemas/` holds the `.fbs` schemas used by the example. Rust bindings and
   the binary `.bfbs` are generated from them with `flatc` before building.
-  The binary schema is stored along with services and used for translation.
+  The binary schema is stored along with `iceoryx2` services and used for
+  translation.
 * `translator/transcoders/` holds one transcoder per pair to convert between
   the flatbuffer and the CDR bytes propagated in ROS 2.
 * `translator/mod.rs` holds the translator. It embeds the two `.bfbs`, which
-  are compared with the schema stored in the service on discovery and provides
-  the matching transcoder to use for the bytes passing between service and
-  topic.
-* `mapping.toml` pairs the services with the topics.
+  are compared with the schema stored in the `iceoryx2` service on discovery
+  and provides the matching transcoder to use for the bytes passing between
+  the `iceoryx2` service and the ROS 2 topic.
+* `mapping.toml` pairs the `iceoryx2` services with the ROS 2 topics.
 * `gateway.rs` initializes a gateway with the implemented translator.
 
 ## Prerequisites
@@ -102,7 +103,7 @@ cargo run --manifest-path integrations/ros2/Cargo.toml --example specialized_fla
 ros2 topic echo --qos-reliability reliable /joint_states sensor_msgs/msg/JointState
 ```
 
-Naming the type and the reliability lets `echo` start before the topic
+Naming the type and the reliability lets `echo` start before the ROS 2 topic
 exists.
 
 ### Inbound

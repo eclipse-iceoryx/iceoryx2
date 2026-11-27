@@ -1,20 +1,20 @@
 # Plain Struct Translator
 
-Applications whose services carry the C structs rosidl generates for ROS 2
-messages (`geometry_msgs/msg/Twist`, `example_interfaces/srv/AddTwoInts`)
-which the gateway CLI's plain-struct translator serializes to CDR at the
-boundary.
+Applications whose `iceoryx2` services carry the C structs rosidl generates
+for ROS 2 messages (`geometry_msgs/msg/Twist`,
+`example_interfaces/srv/AddTwoInts`) which the gateway CLI's plain-struct
+translator serializes to CDR at the boundary.
 
-* `prefix_mapping_publisher` and `prefix_mapping_subscriber` on the service
-  `ros2://topics/cmd_vel`, which the prefix mapping pairs with the topic
-  `/cmd_vel`.
-* `prefix_mapping_client` and `prefix_mapping_server` on the service
+* `prefix_mapping_publisher` and `prefix_mapping_subscriber` on the `iceoryx2`
+  service `ros2://topics/cmd_vel`, which the prefix mapping pairs with the
+  ROS 2 topic `/cmd_vel`.
+* `prefix_mapping_client` and `prefix_mapping_server` on the `iceoryx2` service
   `ros2://services/add_two_ints`, which the prefix mapping pairs with the
   ROS 2 service `/add_two_ints`.
-* `static_mapping_publisher` and `static_mapping_subscriber` on the service
-  `CmdVel`, which [`static_mapping.toml`](static_mapping.toml) pairs with
-  the topic `/cmd_vel`.
-* `static_mapping_client` and `static_mapping_server` on the service
+* `static_mapping_publisher` and `static_mapping_subscriber` on the `iceoryx2`
+  service `CmdVel`, which [`static_mapping.toml`](static_mapping.toml) pairs
+  with the ROS 2 topic `/cmd_vel`.
+* `static_mapping_client` and `static_mapping_server` on the `iceoryx2` service
   `AddTwoInts`, which [`static_mapping.toml`](static_mapping.toml) pairs
   with the ROS 2 service `/add_two_ints`.
 
@@ -48,9 +48,9 @@ for building.
 
 ### Prefix Mapping
 
-The prefix mapping pairs services named `ros2://topics/<topic>` with the topic
-`/<topic>` and services named `ros2://services/<service>` with the ROS 2
-service `/<service>`.
+The prefix mapping pairs `iceoryx2` services named `ros2://topics/<topic>` with
+the ROS 2 topic `/<topic>` and `iceoryx2` services named
+`ros2://services/<service>` with the ROS 2 service `/<service>`.
 
 #### Publish-Subscribe
 
@@ -78,8 +78,9 @@ ros2 topic echo /cmd_vel geometry_msgs/msg/Twist
 
 ##### Inbound
 
-From ROS 2 to `iceoryx2`. Allow only the example's topic with `--allow`, as the
-gateway otherwise mirrors every topic it discovers in the ROS 2 graph.
+From ROS 2 to `iceoryx2`. Allow only the example's ROS 2 topic with `--allow`,
+as the gateway otherwise mirrors every ROS 2 topic it discovers in the ROS 2
+graph.
 
 ###### Terminal 1: gateway
 
@@ -104,8 +105,8 @@ ros2 topic pub -r 1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
 ##### Outbound
 
 From `iceoryx2` to ROS 2, an `iceoryx2` client calls a ROS 2 server. Allow
-only the example's service with `--allow`, as the gateway otherwise mirrors
-every service it discovers in the ROS 2 graph.
+only the example's ROS 2 service with `--allow`, as the gateway otherwise
+mirrors every ROS 2 service it discovers in the ROS 2 graph.
 
 ###### Terminal 1: gateway
 
@@ -128,7 +129,7 @@ cargo run --manifest-path integrations/ros2/Cargo.toml --example plain_struct_pr
 ##### Inbound
 
 From ROS 2 to `iceoryx2`, a ROS 2 client calls an `iceoryx2` server. Allow
-only the example's service with `--allow`.
+only the example's ROS 2 service with `--allow`.
 
 ###### Terminal 1: gateway
 
@@ -150,8 +151,8 @@ ros2 service call /add_two_ints example_interfaces/srv/AddTwoInts "{a: 2, b: 3}"
 
 ### Static Mapping
 
-The static mapping pairs the services and topics listed in
-[`static_mapping.toml`](static_mapping.toml).
+The static mapping pairs the `iceoryx2` services with the ROS 2 topics and
+ROS 2 services listed in [`static_mapping.toml`](static_mapping.toml).
 
 #### Publish-Subscribe
 
