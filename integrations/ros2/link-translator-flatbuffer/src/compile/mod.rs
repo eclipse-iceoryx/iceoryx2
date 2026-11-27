@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod introspection;
+mod pairing;
 mod schema;
 
 use iceoryx2_bb_flatbuffers::reflection::{self, BaseType, Object, root_as_schema};
@@ -25,6 +26,7 @@ use r2r_rcl::{
 use super::flatbuffer::{FieldPlacement, Slot, StructOffset, TableIndex, TablePlacement};
 use super::model::{Kind, Model, ModelIndex, ValueIndex};
 use super::{cdr, flatbuffer};
+use pairing::MemberPairing;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Compiled {
@@ -105,7 +107,7 @@ impl<'a> Compiler<'a> {
         object: Object<'a>,
         message: *const MessageMembers,
         placement: TablePlacement,
-        path: &str,
+        message_path: &str,
     ) -> Result<(), CompileError> {
         let origin = origin!("compile::add_table");
 
@@ -119,13 +121,21 @@ impl<'a> Compiler<'a> {
                 values: Vec::new(),
             });
 
-        for member in unsafe { introspection::members(message) } {
-            let name = unsafe { introspection::member_name(member) };
-            let path = member_path(path, name);
-            let field = schema::field(object, name).map_err(|refusal| CompileError {
-                path: path.clone(),
-                refusal,
-            })?;
+        for MemberPairing {
+            member,
+            member_path,
+            field_path,
+        } in unsafe { pairing::pairings(message, message_path) }
+        {
+            let (placement, field) =
+                self.place_table_field(object, table, field_path)
+                    .map_err(|refusal| CompileError {
+                        path: member_path.clone(),
+                        refusal,
+                    })?;
+            let FieldPlacement::Table(slot) = placement else {
+                unreachable!("a field of a table sits in a slot")
+            };
 
             // A sequence or an array of messages is one value of this model.
             // The message it repeats is compiled separately, and the value
@@ -134,23 +144,20 @@ impl<'a> Compiler<'a> {
                 let Some(element) = schema::element_object(self.schema, field) else {
                     fail!(
                         from origin,
-                        with CompileError { path, refusal: mismatch(member, field) },
+                        with CompileError { path: member_path, refusal: mismatch(member, field) },
                         "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
                     );
                 };
                 let message = unsafe { introspection::message(member) };
                 let (model, field_kind) = if element.is_struct() {
-                    let model = unsafe { self.add_repeated_struct(element, message, &path)? };
+                    let model =
+                        unsafe { self.add_repeated_struct(element, message, &member_path)? };
                     (model, flatbuffer::FieldKind::StructVector(model))
                 } else {
-                    let model = unsafe { self.add_repeated_table(element, message, &path)? };
+                    let model = unsafe { self.add_repeated_table(element, message, &member_path)? };
                     (model, flatbuffer::FieldKind::TableVector(model))
                 };
 
-                let placement = FieldPlacement::Table(Slot {
-                    table,
-                    vtable_offset: field.offset(),
-                });
                 let (kind, member_kind) = if introspection::is_sequence(member) {
                     (
                         Kind::MessageSequence(model),
@@ -170,7 +177,7 @@ impl<'a> Compiler<'a> {
                     )
                 };
                 let index = self.add_value(kind, member_kind, placement, field_kind);
-                self.compiled.flatbuffer.tables[usize::from(table.0)]
+                self.compiled.flatbuffer.tables[usize::from(slot.table.0)]
                     .values
                     .push(index);
                 continue;
@@ -182,34 +189,29 @@ impl<'a> Compiler<'a> {
                 let Some(nested) = schema::object(self.schema, field) else {
                     fail!(
                         from origin,
-                        with CompileError { path, refusal: mismatch(member, field) },
+                        with CompileError { path: member_path, refusal: mismatch(member, field) },
                         "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
                     );
                 };
-                let slot = Slot {
-                    table,
-                    vtable_offset: field.offset(),
-                };
                 let message = unsafe { introspection::message(member) };
                 if nested.is_struct() {
-                    unsafe { self.add_struct(nested, message, slot, &path)? };
+                    unsafe { self.add_struct(nested, message, slot, &member_path)? };
                 } else {
                     let placement = TablePlacement::Nested(slot);
-                    unsafe { self.add_table(nested, message, placement, &path)? };
+                    unsafe { self.add_table(nested, message, placement, &member_path)? };
                 }
                 continue;
             }
 
             // Check that the member and the field hold the same kind of value.
             let (kind, member_kind, field_kind) =
-                pair(member, field).map_err(|refusal| CompileError { path, refusal })?;
+                pair(member, field).map_err(|refusal| CompileError {
+                    path: member_path,
+                    refusal,
+                })?;
 
-            let placement = FieldPlacement::Table(Slot {
-                table,
-                vtable_offset: field.offset(),
-            });
             let index = self.add_value(kind, member_kind, placement, field_kind);
-            self.compiled.flatbuffer.tables[usize::from(table.0)]
+            self.compiled.flatbuffer.tables[usize::from(slot.table.0)]
                 .values
                 .push(index);
         }
@@ -227,7 +229,7 @@ impl<'a> Compiler<'a> {
         object: Object<'a>,
         message: *const MessageMembers,
         slot: Slot,
-        path: &str,
+        message_path: &str,
     ) -> Result<(), CompileError> {
         // Add the struct to the flatbuffer layout.
         let entry = self.compiled.flatbuffer.structs.len();
@@ -245,7 +247,7 @@ impl<'a> Compiler<'a> {
             slot,
             offset: START_OF_STRUCT,
         };
-        unsafe { self.add_struct_values(object, message, start, path)? };
+        unsafe { self.add_struct_values(object, message, start, message_path)? };
 
         // Order the values of the struct by their offsets.
         let layout = &mut self.compiled.flatbuffer;
@@ -266,26 +268,21 @@ impl<'a> Compiler<'a> {
         object: Object<'a>,
         message: *const MessageMembers,
         start: FieldPlacement,
-        path: &str,
+        message_path: &str,
     ) -> Result<(), CompileError> {
-        for member in unsafe { introspection::members(message) } {
-            let name = unsafe { introspection::member_name(member) };
-            let path = member_path(path, name);
-            let field = schema::field(object, name).map_err(|refusal| CompileError {
-                path: path.clone(),
-                refusal,
-            })?;
-            let placement = match start {
-                FieldPlacement::Struct { slot, offset } => FieldPlacement::Struct {
-                    slot,
-                    offset: StructOffset(offset.0 + field.offset()),
-                },
-                FieldPlacement::VectorElement { offset } => FieldPlacement::VectorElement {
-                    offset: StructOffset(offset.0 + field.offset()),
-                },
-                FieldPlacement::Table(_) => unreachable!("a struct starts in a struct"),
-            };
-            unsafe { self.add_struct_value(member, field, placement, path)? };
+        for MemberPairing {
+            member,
+            member_path,
+            field_path,
+        } in unsafe { pairing::pairings(message, message_path) }
+        {
+            let (placement, field) =
+                self.place_struct_field(object, start, field_path)
+                    .map_err(|refusal| CompileError {
+                        path: member_path.clone(),
+                        refusal,
+                    })?;
+            unsafe { self.add_struct_value(member, field, placement, member_path)? };
         }
 
         Ok(())
@@ -303,7 +300,7 @@ impl<'a> Compiler<'a> {
         member: &MessageMember,
         field: reflection::Field<'a>,
         placement: FieldPlacement,
-        path: String,
+        member_path: String,
     ) -> Result<(), CompileError> {
         let origin = origin!("compile::add_struct_value");
 
@@ -315,18 +312,21 @@ impl<'a> Compiler<'a> {
                 _ => {
                     fail!(
                         from origin,
-                        with CompileError { path, refusal: mismatch(member, field) },
+                        with CompileError { path: member_path, refusal: mismatch(member, field) },
                         "A {} member does not pair with a {} field", introspection::member_type(member), schema::field_type(field)
                     );
                 }
             };
             let message = unsafe { introspection::message(member) };
-            return unsafe { self.add_struct_values(nested, message, placement, &path) };
+            return unsafe { self.add_struct_values(nested, message, placement, &member_path) };
         }
 
         // Check that the member and the field hold the same scalar.
         let (kind, member_kind, field_kind) =
-            pair(member, field).map_err(|refusal| CompileError { path, refusal })?;
+            pair(member, field).map_err(|refusal| CompileError {
+                path: member_path,
+                refusal,
+            })?;
         let index = self.add_value(kind, member_kind, placement, field_kind);
 
         // Add the value to the struct it is placed in.
@@ -352,6 +352,49 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    /// Places the field `field_path` of the table `object`.
+    ///
+    /// Fails when the table has no such field.
+    fn place_table_field(
+        &self,
+        object: Object<'a>,
+        table: TableIndex,
+        field_path: &str,
+    ) -> Result<(FieldPlacement, reflection::Field<'a>), Refusal> {
+        let field = schema::field(object, field_path)?;
+        let slot = Slot {
+            table,
+            vtable_offset: field.offset(),
+        };
+
+        Ok((FieldPlacement::Table(slot), field))
+    }
+
+    /// Places the field `field_path` of the struct `object`.
+    ///
+    /// `start` is the placement of the first byte of `object`. Fails when the
+    /// struct has no such field.
+    fn place_struct_field(
+        &self,
+        object: Object<'a>,
+        start: FieldPlacement,
+        field_path: &str,
+    ) -> Result<(FieldPlacement, reflection::Field<'a>), Refusal> {
+        let field = schema::field(object, field_path)?;
+        let placement = match start {
+            FieldPlacement::Struct { slot, offset } => FieldPlacement::Struct {
+                slot,
+                offset: StructOffset(offset.0 + field.offset()),
+            },
+            FieldPlacement::VectorElement { offset } => FieldPlacement::VectorElement {
+                offset: StructOffset(offset.0 + field.offset()),
+            },
+            FieldPlacement::Table(_) => unreachable!("a struct starts in a struct"),
+        };
+
+        Ok((placement, field))
+    }
+
     /// Adds the table that holds a message as the element of a sequence.
     ///
     /// # Safety
@@ -361,14 +404,14 @@ impl<'a> Compiler<'a> {
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
-        path: &str,
+        message_path: &str,
     ) -> Result<ModelIndex, CompileError> {
         // Compile the message like a root message.
         let mut compiler = Compiler {
             schema: self.schema,
             compiled: Compiled::default(),
         };
-        unsafe { compiler.add_table(object, message, TablePlacement::Root, path)? };
+        unsafe { compiler.add_table(object, message, TablePlacement::Root, message_path)? };
 
         Ok(self.add_repeated(compiler.compiled))
     }
@@ -382,7 +425,7 @@ impl<'a> Compiler<'a> {
         &mut self,
         object: Object<'a>,
         message: *const MessageMembers,
-        path: &str,
+        message_path: &str,
     ) -> Result<ModelIndex, CompileError> {
         // Compile the message with the struct as the root of its layout.
         let mut compiler = Compiler {
@@ -397,7 +440,7 @@ impl<'a> Compiler<'a> {
         let start = FieldPlacement::VectorElement {
             offset: START_OF_STRUCT,
         };
-        unsafe { compiler.add_struct_values(object, message, start, path)? };
+        unsafe { compiler.add_struct_values(object, message, start, message_path)? };
 
         // Order the values of the struct by their offsets.
         let layout = &mut compiler.compiled.flatbuffer;
@@ -472,7 +515,7 @@ fn mismatch(member: &MessageMember, field: reflection::Field<'_>) -> Refusal {
     }
 }
 
-fn member_path(parent: &str, name: &str) -> String {
+fn join_path(parent: &str, name: &str) -> String {
     if parent.is_empty() {
         name.to_string()
     } else {
