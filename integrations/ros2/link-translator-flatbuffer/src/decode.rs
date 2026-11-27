@@ -72,7 +72,7 @@ pub fn decode<A: Allocator>(
 
     fail!(
         from origin,
-        when flatbuffer::write(&compiled.flatbuffer, &message.reader(), builder),
+        when flatbuffer::write(&compiled.flatbuffer, &message.view(), builder),
         to DecodeError,
         "Unable to write the values of the CDR into the flatbuffer"
     );

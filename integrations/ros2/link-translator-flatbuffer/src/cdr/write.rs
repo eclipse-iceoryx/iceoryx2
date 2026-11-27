@@ -15,7 +15,9 @@ use iceoryx2_link_backend::wire::region::{ForwardRegion, ResizeError};
 use iceoryx2_log::{fail, origin};
 
 use super::layout::{Layout, MemberKind};
-use crate::model::{ByteOrder, MessageElements, ScalarElements, ScalarType, ScalarValue, Values};
+use crate::model::{
+    ByteOrder, MessageElements, MessageView, ScalarElements, ScalarType, ScalarValue,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError<E> {
@@ -85,7 +87,7 @@ impl<E> From<writer::SequenceError> for WriteError<E> {
 ///
 /// Fails when a value cannot be taken from `values` or the region cannot
 /// hold the CDR.
-pub fn write<V: Values, R: ForwardRegion>(
+pub fn write<V: MessageView, R: ForwardRegion>(
     layout: &Layout,
     values: &V,
     region: R,
@@ -108,7 +110,7 @@ pub fn write<V: Values, R: ForwardRegion>(
     Ok(())
 }
 
-fn write_message<V: Values, R: ForwardRegion>(
+fn write_message<V: MessageView, R: ForwardRegion>(
     layout: &Layout,
     values: &V,
     writer: &mut writer::Writer<R>,
@@ -411,7 +413,7 @@ fn is_copyable(scalar_type: ScalarType, elements: ScalarElements<'_>) -> bool {
     elements.byte_order == ByteOrder::HOST || scalar_type.number_of_bytes() == 1
 }
 
-fn write_string_elements<V: Values, R: ForwardRegion>(
+fn write_string_elements<V: MessageView, R: ForwardRegion>(
     writer: &mut writer::Writer<R>,
     elements: V::StringElementIter<'_>,
 ) -> Result<(), WriteError<V::Error>> {

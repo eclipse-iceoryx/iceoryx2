@@ -16,7 +16,7 @@ use iceoryx2_log::{fail, origin};
 use super::layout::{Layout, MemberKind};
 use crate::model::MessageElements as _;
 use crate::model::{
-    self, ByteOrder, ModelIndex, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
+    self, ByteOrder, MessageView, ModelIndex, ScalarElements, ScalarType, ScalarValue, ValueIndex,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -123,12 +123,12 @@ impl<'a> Iterator for StringElementIter<'a> {
 impl ExactSizeIterator for StringElementIter<'_> {}
 
 #[derive(Debug)]
-pub struct Message<'a> {
+pub struct LocatedMessage<'a> {
     elements: MessageElements<'a>,
 }
 
-impl Message<'_> {
-    pub fn reader(&self) -> Reader<'_> {
+impl LocatedMessage<'_> {
+    pub fn view(&self) -> Reader<'_> {
         const POSITION_OF_MESSAGE: usize = 0;
 
         self.elements.element(POSITION_OF_MESSAGE)
@@ -150,8 +150,8 @@ impl<'a> MessageElements<'a> {
     /// The `number_of_elements` messages of `layout` that start at the
     /// provided `reader`.
     fn new(
-        layout: &'a Layout,
         mut reader: reader::Reader<'a>,
+        layout: &'a Layout,
         number_of_elements: usize,
     ) -> Result<Self, ReadError> {
         let number_of_members = layout.members.len();
@@ -162,7 +162,7 @@ impl<'a> MessageElements<'a> {
         for position in 0..number_of_elements {
             let start = position * number_of_members;
             locations.resize(start + number_of_members, reader.location());
-            walk_message(layout, &mut reader, &mut |index, location| {
+            walk_message(&mut reader, layout, &mut |index, location| {
                 locations[start + usize::from(index.0)] = location;
             })?;
         }
@@ -214,7 +214,7 @@ impl Reader<'_> {
     }
 }
 
-impl Values for Reader<'_> {
+impl MessageView for Reader<'_> {
     type Error = ReadError;
     type StringElementIter<'a>
         = StringElementIter<'a>
@@ -254,14 +254,14 @@ impl Values for Reader<'_> {
     }
 
     fn message_elements(&self, index: ValueIndex) -> Result<MessageElements<'_>, ReadError> {
-        read_message_elements(self.layout, index, self.reader.at(self.location(index)))
+        read_message_elements(self.reader.at(self.location(index)), self.layout, index)
     }
 }
 
 /// Locates the values described by `layout` in the provided `cdr` bytes.
 ///
 /// Fails when the bytes do not hold the values of the layout.
-pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<Message<'a>, ReadError> {
+pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<LocatedMessage<'a>, ReadError> {
     const NUMBER_OF_MESSAGES: usize = 1;
 
     let origin = origin!("cdr::locate");
@@ -275,11 +275,11 @@ pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<Message<'a>, Read
 
     let elements = fail!(
         from origin,
-        when MessageElements::new(layout, reader, NUMBER_OF_MESSAGES),
+        when MessageElements::new(reader, layout, NUMBER_OF_MESSAGES),
         "Unable to locate the values in the CDR of {} bytes", cdr.len()
     );
 
-    Ok(Message { elements })
+    Ok(LocatedMessage { elements })
 }
 
 /// Walks the members of the message of `layout` that starts at the provided
@@ -289,8 +289,8 @@ pub fn locate<'a>(layout: &'a Layout, cdr: &'a [u8]) -> Result<Message<'a>, Read
 /// the first byte after the message. Fails when the bytes do not hold a
 /// message of the layout.
 fn walk_message(
-    layout: &Layout,
     reader: &mut reader::Reader<'_>,
+    layout: &Layout,
     visit: &mut dyn FnMut(ValueIndex, Location),
 ) -> Result<(), ReadError> {
     let origin = origin!("cdr::walk_message");
@@ -311,7 +311,7 @@ fn walk_message(
                 skip_string_elements(reader, kind)
             }
             MemberKind::MessageSequence(_) | MemberKind::MessageArray { .. } => {
-                skip_message_elements(layout, *index, reader)
+                skip_message_elements(reader, layout, *index)
             }
         };
         fail!(
@@ -396,9 +396,9 @@ fn read_string_elements<'a>(
 }
 
 fn read_message_element_count(
+    reader: &mut reader::Reader<'_>,
     layout: &Layout,
     index: ValueIndex,
-    reader: &mut reader::Reader<'_>,
 ) -> Result<(ModelIndex, usize), ReadError> {
     Ok(match layout.member(index).kind {
         MemberKind::MessageSequence(model) => (model, reader.read_length()?),
@@ -418,12 +418,12 @@ fn read_message_element_count(
 }
 
 fn read_message_elements<'a>(
+    mut reader: reader::Reader<'a>,
     layout: &'a Layout,
     index: ValueIndex,
-    mut reader: reader::Reader<'a>,
 ) -> Result<MessageElements<'a>, ReadError> {
-    let (model, number_of_elements) = read_message_element_count(layout, index, &mut reader)?;
-    MessageElements::new(layout.repeated(model), reader, number_of_elements)
+    let (model, number_of_elements) = read_message_element_count(&mut reader, layout, index)?;
+    MessageElements::new(reader, layout.repeated(model), number_of_elements)
 }
 
 fn skip_string_elements(
@@ -440,13 +440,13 @@ fn skip_string_elements(
 }
 
 fn skip_message_elements(
+    reader: &mut reader::Reader<'_>,
     layout: &Layout,
     index: ValueIndex,
-    reader: &mut reader::Reader<'_>,
 ) -> Result<(), ReadError> {
-    let (model, number_of_elements) = read_message_element_count(layout, index, reader)?;
+    let (model, number_of_elements) = read_message_element_count(reader, layout, index)?;
     for _ in 0..number_of_elements {
-        walk_message(layout.repeated(model), reader, &mut |_, _| {})?;
+        walk_message(reader, layout.repeated(model), &mut |_, _| {})?;
     }
 
     Ok(())

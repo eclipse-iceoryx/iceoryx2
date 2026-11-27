@@ -20,7 +20,7 @@ use super::layout::{
     FieldKind, FieldPlacement, Layout, RootObject, StructEntry, TableIndex, TablePlacement,
 };
 use crate::model::{
-    ByteOrder, MessageElements, ScalarElements, ScalarType, ScalarValue, ValueIndex, Values,
+    ByteOrder, MessageElements, MessageView, ScalarElements, ScalarType, ScalarValue, ValueIndex,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,7 +41,7 @@ impl<E: core::fmt::Debug> core::error::Error for WriteError<E> {}
 ///
 /// `layout` gives the place of each value in the flatbuffer. Fails when a
 /// value cannot be taken from `values`.
-pub fn write<V: Values, A: Allocator>(
+pub fn write<V: MessageView, A: Allocator>(
     layout: &Layout,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
@@ -61,7 +61,7 @@ pub fn write<V: Values, A: Allocator>(
 /// Writes `values` as the tables described by `layout`.
 ///
 /// Returns the offset of the root table.
-fn write_message<V: Values, A: Allocator>(
+fn write_message<V: MessageView, A: Allocator>(
     layout: &Layout,
     values: &V,
     builder: &mut FlatBufferBuilder<'_, A>,
@@ -93,7 +93,7 @@ fn write_message<V: Values, A: Allocator>(
 /// Writes `values` as the table at `table` of `layout`.
 ///
 /// Returns the offset of the table.
-fn write_table<V: Values, A: Allocator>(
+fn write_table<V: MessageView, A: Allocator>(
     layout: &Layout,
     table: TableIndex,
     table_offsets: &[Option<WIPOffset<TableFinishedWIPOffset>>],
@@ -392,7 +392,7 @@ fn write_struct_vector<E: MessageElements, A: Allocator>(
 }
 
 /// Writes `values` as the struct `entry` into its slot of the open table.
-fn write_struct<V: Values, A: Allocator>(
+fn write_struct<V: MessageView, A: Allocator>(
     layout: &Layout,
     entry: &StructEntry,
     values: &V,
@@ -424,7 +424,7 @@ enum StructDestination {
 
 /// Pushes the struct of `number_of_bytes` that holds `struct_values`, which
 /// are in the order of their offsets.
-fn push_struct<V: Values, A: Allocator>(
+fn push_struct<V: MessageView, A: Allocator>(
     layout: &Layout,
     struct_values: &[ValueIndex],
     number_of_bytes: u16,

@@ -28,7 +28,7 @@ pub struct ValueIndex(pub u16);
 pub struct ModelIndex(pub u16);
 
 /// The interface to retrieve the values described by the model.
-pub trait Values {
+pub trait MessageView {
     type Error;
 
     /// The string elements of a value in their order.
@@ -75,7 +75,7 @@ pub trait Values {
 /// The interface to retrieve the message elements of a value.
 pub trait MessageElements {
     type Error;
-    type Element<'a>: Values<Error = Self::Error>
+    type Element<'a>: MessageView<Error = Self::Error>
     where
         Self: 'a;
 

@@ -20,7 +20,7 @@ use iceoryx2_log::{fail, origin};
 use super::layout::{
     FieldEntry, FieldKind, FieldPlacement, Layout, RootObject, TableIndex, TablePlacement,
 };
-use crate::model::{self, ByteOrder, ScalarElements, ScalarValue, ValueIndex, Values};
+use crate::model::{self, ByteOrder, MessageView, ScalarElements, ScalarValue, ValueIndex};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadError {
@@ -169,7 +169,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-impl Values for Reader<'_> {
+impl MessageView for Reader<'_> {
     type Error = Infallible;
     type StringElementIter<'a>
         = StringElementIter<'a>

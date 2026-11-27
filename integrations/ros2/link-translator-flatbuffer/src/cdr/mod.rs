@@ -15,5 +15,5 @@ mod read;
 mod write;
 
 pub use layout::{Layout, MemberEntry, MemberKind};
-pub use read::{Message, MessageElements, ReadError, Reader, StringElementIter, locate};
+pub use read::{LocatedMessage, MessageElements, ReadError, Reader, StringElementIter, locate};
 pub use write::{WriteError, write};
