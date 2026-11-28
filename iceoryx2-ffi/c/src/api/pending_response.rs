@@ -70,7 +70,7 @@ impl PendingResponseUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<PendingResponseUnion>
 pub struct iox2_pending_response_storage_t {
-    internal: [u8; 88], // magic number obtained with size_of::<Option<PendingResponseUnion>>()
+    internal: [u8; 120], // magic number obtained with size_of::<Option<PendingResponseUnion>>()
 }
 
 #[repr(C)]

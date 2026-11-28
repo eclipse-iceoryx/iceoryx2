@@ -142,7 +142,7 @@ impl RequestMutUninitUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<RequestMutUninitUnion>
 pub struct iox2_request_mut_storage_t {
-    internal: [u8; 224], // magic number obtained with size_of::<Option<RequestMutUninitUnion>>()
+    internal: [u8; 304], // magic number obtained with size_of::<Option<RequestMutUninitUnion>>()
 }
 
 #[repr(C)]

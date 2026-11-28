@@ -41,7 +41,6 @@ use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::{shared_memory::ShmPointer, zero_copy_connection::ChannelId};
-use iceoryx2_log::fail;
 
 use crate::{
     payload::number_of_elements,
@@ -151,10 +150,7 @@ impl<
         chunk: ChunkMut,
         channel_id: ChannelId,
     ) -> Result<Self, LoanError> {
-        let shared_state = fail!(from "RequestMutUninit::new_flatbuffer()",
-            when ChunkMutSharedState::new(shared_state, &chunk),
-            with LoanError::InternalFailure,
-            "Unable to create the request since the underlying shared state could not be initialized.");
+        let shared_state = ChunkMutSharedState::new(shared_state, &chunk);
 
         let mut new_self = Self {
             flatbuffer_builder: None,
@@ -204,7 +200,7 @@ impl<
 
         RequestMut {
             chunk: self.chunk.clone(),
-            shared_state: self.shared_state.clone(),
+            shared_state: self.shared_state.clone_sharing_chunk_ownership(),
             was_sample_sent: false,
             channel_id: self.channel_id,
             _request_payload: PhantomData,
@@ -266,10 +262,7 @@ impl<
         chunk: ChunkMut,
         channel_id: ChannelId,
     ) -> Result<Self, LoanError> {
-        let shared_state = fail!(from "RequestMutUninit::new()",
-            when ChunkMutSharedState::new(shared_state, &chunk),
-            with LoanError::InternalFailure,
-            "Unable to create the request since the underlying shared state could not be initialized.");
+        let shared_state = ChunkMutSharedState::new(shared_state, &chunk);
         Ok(Self {
             flatbuffer_builder: None,
             shared_state,
@@ -467,14 +460,14 @@ impl<
     /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
     /// Sending the content when it is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(
-        mut self,
+        self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        self.assume_init_was_called = true;
+        let this = core::mem::ManuallyDrop::new(self);
         RequestMut {
-            chunk: self.chunk.clone(),
-            shared_state: self.shared_state.clone(),
+            chunk: this.chunk.clone(),
+            shared_state: unsafe { core::ptr::read(&this.shared_state) },
             was_sample_sent: false,
-            channel_id: self.channel_id,
+            channel_id: this.channel_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_header: PhantomData,

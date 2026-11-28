@@ -105,7 +105,6 @@ use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_flatbuffers::ResizableMemory;
 use iceoryx2_cal::shared_memory::ShmPointer;
-use iceoryx2_log::fail;
 
 /// The memory used inside the [`FlatBufferBuilder`].
 pub type FlatbufferMemory<Service> =
@@ -178,10 +177,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
     ) -> Result<Self, LoanError> {
-        let shared_state = fail!(from "SampleMutUninit::new_flatbuffer()",
-            when ChunkMutSharedState::new(publisher_shared_state, &chunk),
-            with LoanError::InternalFailure,
-            "Unable to create the sample since the underlying shared state could not be initialized.");
+        let shared_state = ChunkMutSharedState::new(publisher_shared_state, &chunk);
 
         let mut new_self = Self {
             flatbuffer_builder: None,
@@ -323,10 +319,7 @@ impl<
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         chunk: ChunkMut,
     ) -> Result<Self, LoanError> {
-        let shared_state = fail!(from "SampleMutUninit::new()",
-            when ChunkMutSharedState::new(publisher_shared_state, &chunk),
-            with LoanError::InternalFailure,
-            "Unable to create the sample since the underlying shared state could not be initialized.");
+        let shared_state = ChunkMutSharedState::new(publisher_shared_state, &chunk);
 
         Ok(Self {
             flatbuffer_builder: None,

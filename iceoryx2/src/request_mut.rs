@@ -44,6 +44,7 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::payload::number_of_elements;
@@ -244,24 +245,23 @@ impl<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
-        let shared_state = self.shared_state.clone();
-        shared_state.call(|s| {
-            match s.send_request(&self.chunk, self.channel_id, self.header().request_id) {
-                Ok(number_of_server_connections) => {
-                    s.loan_counter.fetch_sub(1, Ordering::Relaxed);
-                    self.was_sample_sent = true;
-                    let active_request = PendingResponse {
-                        number_of_server_connections,
-                        request: self,
-                        _service: PhantomData,
-                        _response_payload: PhantomData,
-                        _response_header: PhantomData,
-                    };
-                    Ok(active_request)
-                }
-                Err(e) => Err(e),
+        let port_shared_state = self.shared_state.clone_shared_port_state();
+        let s = port_shared_state.lock();
+        match s.send_request(&self.chunk, self.channel_id, self.header().request_id) {
+            Ok(number_of_server_connections) => {
+                s.loan_counter.fetch_sub(1, Ordering::Relaxed);
+                self.was_sample_sent = true;
+                let active_request = PendingResponse {
+                    number_of_server_connections,
+                    request: self,
+                    _service: PhantomData,
+                    _response_payload: PhantomData,
+                    _response_header: PhantomData,
+                };
+                Ok(active_request)
             }
-        })
+            Err(e) => Err(e),
+        }
     }
 }
 
