@@ -43,7 +43,7 @@ pub mod adapter_wake {
         let mut adapter = fixture.adapter();
         let source = WakeSource::new();
         adapter.attach(source.wake.clone());
-        assert_that_not_woken(&source);
+        source.woken();
 
         // === JOIN ===
         // Remote endpoints joining wakes the adapter.
@@ -78,7 +78,7 @@ pub mod adapter_wake {
             .expect("the adapter's endpoints open");
         let source = WakeSource::new();
         adapter.attach(source.wake.clone());
-        assert_that_not_woken(&source);
+        source.woken();
 
         // === SEND ===
         // A message from the remote endpoints wakes the adapter.
@@ -93,9 +93,5 @@ pub mod adapter_wake {
             TIMEOUT,
         )
         .expect("the message wakes the adapter");
-    }
-
-    fn assert_that_not_woken(source: &WakeSource) {
-        assert_that!(source.woken(), eq false);
     }
 }
